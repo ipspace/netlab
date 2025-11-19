@@ -5,127 +5,6 @@ message: |
   in the red VLAN
 
   h1 and h2 should be able to ping each other
-groups:
-  hosts:
-    members:
-    - h1
-    - h2
-    - h3
-    device: linux
-    node_data:
-      provider: clab
-  switches:
-    members:
-    - s1
-    module:
-    - vlan
-  all:
-    vars:
-      netlab_show_config: true
-    members: []
-    _default_group: true
-vlans:
-  red:
-    mode: bridge
-    id: 700
-    prefix:
-      ipv4: 172.16.0.0/24
-      allocation: id_based
-    neighbors:
-    - ipv4: 172.16.0.1/24
-      ifname: eth1
-      node: h1
-    - ipv4: 172.16.0.2/24
-      ifname: eth1
-      node: h2
-    - ifname: BDI700
-      node: s1
-      vlan:
-        mode: bridge
-        name: red
-    host_count: 2
-links:
-- interfaces:
-  - node: s1
-    ipv4: 172.16.1.4/24
-    ifindex: 2
-    ifname: GigabitEthernet2
-  - node: h3
-    ipv4: 172.16.1.3/24
-    ifindex: 1
-    ifname: eth1
-  _linkname: links[1]
-  linkindex: 1
-  libvirt:
-    provider:
-      clab: true
-  type: lan
-  bridge: ml_17_1
-  node_count: 2
-  role: stub
-  prefix:
-    ipv4: 172.16.1.0/24
-- interfaces:
-  - node: s1
-    vlan:
-      access: red
-    _vlan_mode: bridge
-    ifindex: 3
-    ifname: GigabitEthernet3
-  - node: h1
-    ipv4: 172.16.0.1/24
-    ifindex: 1
-    ifname: eth1
-  _linkname: vlans.red.links[1]
-  vlan:
-    access: red
-  linkindex: 2
-  prefix:
-    ipv4: 172.16.0.0/24
-    allocation: id_based
-  type: lan
-  libvirt:
-    provider:
-      clab: true
-  bridge: ml_17_2
-  node_count: 2
-- interfaces:
-  - node: s1
-    vlan:
-      access: red
-    _vlan_mode: bridge
-    ifindex: 4
-    ifname: GigabitEthernet4
-  - node: h2
-    ipv4: 172.16.0.2/24
-    ifindex: 1
-    ifname: eth1
-  _linkname: vlans.red.links[2]
-  vlan:
-    access: red
-  linkindex: 3
-  prefix:
-    ipv4: 172.16.0.0/24
-    allocation: id_based
-  type: lan
-  libvirt:
-    provider:
-      clab: true
-  bridge: ml_17_3
-  node_count: 2
-validate:
-- description: Pinging H2 from H1
-  nodes:
-  - h1
-  wait_msg: Waiting for STP to enable the ports
-  wait: 45
-  plugin: ping('h2')
-  name: ping
-input:
-- /home/pipi/net101/tools/tests/integration/vlan/01-vlan-bridge-single.yml
-- /home/pipi/net101/tools/tests/integration/vlan/topology-defaults.yml
-- /home/pipi/.netlab.yml
-- package:topology-defaults.yml
 defaults:
   provider: libvirt
   providers:
@@ -436,7 +315,7 @@ defaults:
         build: https://netlab.tools/labs/asav/
         create_iso: asav
     cat8000v:
-      description: Cisco CSR 1000v
+      description: Cisco Catalyst 8000v
       attributes:
         global:
           ios:
@@ -448,6 +327,13 @@ defaults:
             debug:
               type: list
               split_lines: true
+          cat8000v:
+            license:
+              type: str
+              valid_values:
+              - essential
+              - advantage
+              - premier
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -626,6 +512,8 @@ defaults:
           --ram=4096 --disk path=vm.qcow2,bus=ide,format=qcow2 
           --network=network:vagrant-libvirt,model=virtio --graphics none 
           --import
+        cat8000v:
+          license: premier
         create_template: cat8000v.xml.j2
         create_iso: cat8000v
       _parents:
@@ -633,7 +521,7 @@ defaults:
       - csr
       provider: libvirt
     cisco8000v:
-      description: Cisco 8000v
+      description: Cisco 8000v (IOS/XR)
       mgmt_if: MgmtEth0/RP0/CPU0/0
       interface_name: FourHundredGigE0/0/0/{ifindex}
       loopback_interface_name: Loopback{ifindex}
@@ -655,19 +543,49 @@ defaults:
           min_mtu: 68
           min_phy_mtu: 1500
           max_mtu: 9216
-        ospf:
-          unnumbered: true
-          password: true
-          priority: true
-          timers: true
+        bgp:
+          activate_af: true
+          import:
+          - ospf
+          - isis
+          - connected
+          - static
+          - vrf
         isis:
           circuit_type: true
           unnumbered:
             ipv4: true
             ipv6: true
             network: true
-        bgp:
-          activate_af: true
+          import:
+          - ospf
+          - bgp
+          - connected
+          - static
+          - vrf
+        ospf:
+          unnumbered: true
+          password: true
+          priority: true
+          timers: true
+          default: true
+          import:
+          - bgp
+          - isis
+          - connected
+          - static
+          - vrf
+        routing:
+          static:
+            vrf: true
+            inter_vrf: true
+            discard: true
+        vlan:
+          model: router
+          subif_name: '{ifname}.{vlan.access_id}'
+          svi_interface_name: BVI{vlan}
+          mixed_trunk: true
+          native_routed: false
       external:
         image: none
       support:
@@ -1243,7 +1161,7 @@ defaults:
         vxlan: {}
       mtu: 1500
       clab:
-        image: vrnetlab/dell_ftos10v:10.5.6.6
+        image: vrnetlab/vr-ftosv
         build: https://containerlab.dev/manual/kinds/vr-ftosv/
         node:
           kind: vr-ftosv
@@ -1775,7 +1693,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:17.16.01a
+        image: vrnetlab/cisco_iol:17.12.01
         node:
           kind: cisco_iol
       role: router
@@ -1953,7 +1871,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:L2-17.16.01a
+        image: vrnetlab/cisco_iol:L2-17.12.01
         node:
           kind: cisco_iol
           type: l2
@@ -2509,6 +2427,10 @@ defaults:
         ansible_user: vagrant
         ansible_ssh_pass: vagrant
         ansible_become_password: vagrant
+        group_vars:
+          netlab_check_retries: 120
+          netlab_ready:
+          - ssh
       features:
         initial:
           ipv4:
@@ -2518,19 +2440,43 @@ defaults:
           min_mtu: 68
           min_phy_mtu: 1500
           max_mtu: 9216
-        ospf:
-          unnumbered: true
-          password: true
-          priority: true
-          timers: true
+        bgp:
+          activate_af: true
+          import:
+          - ospf
+          - isis
+          - connected
+          - static
+          - vrf
         isis:
           circuit_type: true
           unnumbered:
             ipv4: true
             ipv6: true
             network: true
-        bgp:
-          activate_af: true
+          import:
+          - ospf
+          - bgp
+          - connected
+          - static
+          - vrf
+        ospf:
+          unnumbered: true
+          password: true
+          priority: true
+          timers: true
+          default: true
+          import:
+          - bgp
+          - isis
+          - connected
+          - static
+          - vrf
+        routing:
+          static:
+            vrf: true
+            inter_vrf: true
+            discard: true
       external:
         image: none
       support:
@@ -3122,7 +3068,7 @@ defaults:
         min_tx: 100
         min_rx: 100
       clab:
-        image: ghcr.io/nokia/srlinux:25.10.1
+        image: ghcr.io/nokia/srlinux:25.3.2
         node:
           kind: srl
           type: ixr-d2
@@ -3894,7 +3840,7 @@ defaults:
         pre_install: vptx
         create_template: vptx.xml.j2
       clab:
-        image: vrnetlab/juniper_vjunosevolved:23.2R2.21-EVO
+        image: vrnetlab/juniper_vjunosevolved:25.2R1.8-EVO
         build: https://containerlab.dev/manual/kinds/vr-vjunosevolved/
         mtu: 1500
         node:
@@ -5150,6 +5096,13 @@ defaults:
         _keytype: id
         _requires:
         - vrf
+      cat8000v:
+        license:
+          type: str
+          valid_values:
+          - essential
+          - advantage
+          - premier
       eos:
         serialnumber: str
         systemmacaddr: mac
@@ -5650,6 +5603,51 @@ defaults:
       neighbors: 5
       maxlength: 255
     MAX_NODE_ID: 150
+    validate:
+      ping: 5
+      ping_long: 15
+      vxlan_ping: 20
+      ping_stp: 45
+      ping_irb: 10
+      ping_xx_long: 40
+      ra_send: 30
+      ospfv2_adj_p2p: 30
+      ospfv2_adj_lan: 50
+      ospfv2_adj_stp: 120
+      ospfv2_spf: 10
+      ospfv3_adj_p2p: 30
+      ospfv3_adj_lan: 50
+      ospfv3_spf: 10
+      ospf_import: 20
+      ebgp_session: 30
+      ibgp_session: 30
+      bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_v4_originate: 15
+      bgp_v6_originate: 15
+      bgp_v4_redist: 15
+      bgp_v6_redist: 15
+      isis_adj_p2p: 20
+      isis_adj_lan: 50
+      isis_spf: 15
+      isis_spf_long: 45
+      isis_redist: 30
+      rip_start: 60
+      rip_update: 20
+      ldp_adj: 30
+      stp_forwarding: 40
+      lacp_setup: 10
+      xr:
+        bgp_v4_originate: 80
+        bgp_v6_originate: 80
+        bgp_v4_redist: 90
+        isis_redist: 60
+      ios:
+        bgp_v6_redist: 60
+      cisco8000v:
+        ping_irb: 90
+      vjunos-router:
+        ping_irb: 90
   hints:
     evpn:
       irb_group: >
@@ -7291,6 +7289,7 @@ defaults:
       arubacx: true
       bird: true
       cat8000v: true
+      cisco8000v: true
       csr: true
       cumulus: true
       cumulus_nvue: true
@@ -7303,6 +7302,7 @@ defaults:
       ios: true
       iosv: true
       iosvl2: true
+      iosxr: true
       junos: true
       linux: true
       none: true
@@ -7316,6 +7316,7 @@ defaults:
       vptx: true
       vsrx: true
       vyos: true
+      xr: true
   sr:
     requires:
     - isis
@@ -7633,6 +7634,7 @@ defaults:
       bird:
         clab: true
       cat8000v: true
+      cisco8000v: true
       csr: true
       cumulus: true
       cumulus_nvue: true
@@ -7783,8 +7785,9 @@ defaults:
       vjunos-switch: true
       vyos: true
   sources:
+    extra:
+    - ../wait_times.yml
     list: []
-    extra: []
     user: []
     system: []
   workdir: /work/netlab_cicd
@@ -7821,6 +7824,128 @@ defaults:
   module:
   - vlan
   - routing
+groups:
+  hosts:
+    members:
+    - h1
+    - h2
+    - h3
+    device: linux
+    node_data:
+      provider: clab
+  switches:
+    members:
+    - s1
+    module:
+    - vlan
+  all:
+    vars:
+      netlab_show_config: true
+    members: []
+    _default_group: true
+vlans:
+  red:
+    mode: bridge
+    id: 700
+    prefix:
+      ipv4: 172.16.0.0/24
+      allocation: id_based
+    neighbors:
+    - ipv4: 172.16.0.1/24
+      ifname: eth1
+      node: h1
+    - ipv4: 172.16.0.2/24
+      ifname: eth1
+      node: h2
+    - ifname: BDI700
+      node: s1
+      vlan:
+        mode: bridge
+        name: red
+    host_count: 2
+links:
+- interfaces:
+  - node: s1
+    ipv4: 172.16.1.4/24
+    ifindex: 2
+    ifname: GigabitEthernet2
+  - node: h3
+    ipv4: 172.16.1.3/24
+    ifindex: 1
+    ifname: eth1
+  _linkname: links[1]
+  linkindex: 1
+  libvirt:
+    provider:
+      clab: true
+  type: lan
+  bridge: ml_17_1
+  node_count: 2
+  role: stub
+  prefix:
+    ipv4: 172.16.1.0/24
+- interfaces:
+  - node: s1
+    vlan:
+      access: red
+    _vlan_mode: bridge
+    ifindex: 3
+    ifname: GigabitEthernet3
+  - node: h1
+    ipv4: 172.16.0.1/24
+    ifindex: 1
+    ifname: eth1
+  _linkname: vlans.red.links[1]
+  vlan:
+    access: red
+  linkindex: 2
+  prefix:
+    ipv4: 172.16.0.0/24
+    allocation: id_based
+  type: lan
+  libvirt:
+    provider:
+      clab: true
+  bridge: ml_17_2
+  node_count: 2
+- interfaces:
+  - node: s1
+    vlan:
+      access: red
+    _vlan_mode: bridge
+    ifindex: 4
+    ifname: GigabitEthernet4
+  - node: h2
+    ipv4: 172.16.0.2/24
+    ifindex: 1
+    ifname: eth1
+  _linkname: vlans.red.links[2]
+  vlan:
+    access: red
+  linkindex: 3
+  prefix:
+    ipv4: 172.16.0.0/24
+    allocation: id_based
+  type: lan
+  libvirt:
+    provider:
+      clab: true
+  bridge: ml_17_3
+  node_count: 2
+validate:
+- description: Pinging H2 from H1
+  nodes:
+  - h1
+  wait_msg: Waiting for STP to enable the ports
+  wait: 45
+  plugin: ping('h2')
+  name: ping
+input:
+- /home/pipi/net101/tools/tests/integration/vlan/01-vlan-bridge-single.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/vlan/topology-defaults.yml
+- /home/pipi/.netlab.yml
+- package:topology-defaults.yml
 plugin:
 - multilab
 name: ml_17
@@ -8039,6 +8164,8 @@ nodes:
     id: 4
     role: router
     provider: libvirt
+    cat8000v:
+      license: premier
     min_mtu: 1500
     af:
       ipv4: true
@@ -8094,4 +8221,4 @@ libvirt:
 module:
 - vlan
 - routing
-_netlab_version: '25.11'
+_netlab_version: 25.11.01

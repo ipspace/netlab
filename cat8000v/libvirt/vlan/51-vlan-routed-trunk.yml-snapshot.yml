@@ -8,862 +8,6 @@ message: |
 
   Please note it might take a while for the lab to work due to
   STP and OSPF setup phase
-groups:
-  switches:
-    members:
-    - s1
-    - s2
-    module:
-    - vlan
-    device: frr
-    node_data:
-      provider: clab
-  routers:
-    members:
-    - r1
-    - r2
-    - ros
-    module:
-    - ospf
-    node_data:
-      role: router
-  external:
-    members:
-    - r1
-    - r2
-    device: frr
-    node_data:
-      provider: clab
-  all:
-    vars:
-      netlab_show_config: true
-    members: []
-    _default_group: true
-vlans:
-  red:
-    id: 700
-    prefix:
-      ipv4: 172.16.0.0/24
-      allocation: id_based
-    neighbors:
-    - ifname: GigabitEthernet2.2
-      node: ros
-      ipv4: 172.16.0.1/24
-      vlan:
-        mode: route
-        access_id: 700
-        name: red
-    - ipv4: 172.16.0.4/24
-      ifname: eth1
-      node: r1
-    - ifname: vlan700
-      node: s1
-      ipv4: 172.16.0.2/24
-      vlan:
-        mode: irb
-        name: red
-    - ifname: vlan700
-      node: s2
-      ipv4: 172.16.0.3/24
-      vlan:
-        mode: irb
-        name: red
-    host_count: 0
-  blue:
-    id: 701
-    prefix:
-      ipv4: 172.16.1.0/24
-      allocation: id_based
-    neighbors:
-    - ifname: GigabitEthernet2.1
-      node: ros
-      ipv4: 172.16.1.1/24
-      vlan:
-        mode: route
-        access_id: 701
-        name: blue
-    - ipv4: 172.16.1.5/24
-      ifname: eth1
-      node: r2
-    - ifname: vlan701
-      node: s1
-      ipv4: 172.16.1.2/24
-      vlan:
-        mode: irb
-        name: blue
-    - ifname: vlan701
-      node: s2
-      ipv4: 172.16.1.3/24
-      vlan:
-        mode: irb
-        name: blue
-    host_count: 0
-nodes:
-  ros:
-    role: router
-    module:
-    - vlan
-    - ospf
-    vlan:
-      mode: route
-      max_bridge_group: 2
-    name: ros
-    interfaces:
-    - linkindex: 2
-      type: lan
-      bridge: ml_17_2
-      name: ros -> s2
-      ifindex: 2
-      ifname: GigabitEthernet2
-      neighbors:
-      - ifname: eth2
-        node: s2
-      subif_index: 2
-    - bridge_group: 1
-      ipv4: 172.16.1.1/24
-      type: vlan_member
-      name: ros -> [r2,s1,s2]
-      ifindex: 3
-      ifname: GigabitEthernet2.1
-      neighbors:
-      - ipv4: 172.16.1.5/24
-        ifname: eth1
-        node: r2
-      - ifname: vlan701
-        node: s1
-        ipv4: 172.16.1.2/24
-        vlan:
-          mode: irb
-          name: blue
-      - ifname: vlan701
-        node: s2
-        ipv4: 172.16.1.3/24
-        vlan:
-          mode: irb
-          name: blue
-      vlan:
-        mode: route
-        access_id: 701
-        name: blue
-      parent_ifindex: 2
-      parent_ifname: GigabitEthernet2
-      virtual_interface: true
-      ospf:
-        area: 0.0.0.0
-        passive: false
-    - bridge_group: 2
-      ipv4: 172.16.0.1/24
-      type: vlan_member
-      name: ros -> [r1,s1,s2]
-      ifindex: 4
-      ifname: GigabitEthernet2.2
-      neighbors:
-      - ipv4: 172.16.0.4/24
-        ifname: eth1
-        node: r1
-      - ifname: vlan700
-        node: s1
-        ipv4: 172.16.0.2/24
-        vlan:
-          mode: irb
-          name: red
-      - ifname: vlan700
-        node: s2
-        ipv4: 172.16.0.3/24
-        vlan:
-          mode: irb
-          name: red
-      vlan:
-        mode: route
-        access_id: 700
-        name: red
-      parent_ifindex: 2
-      parent_ifname: GigabitEthernet2
-      virtual_interface: true
-      ospf:
-        area: 0.0.0.0
-        passive: false
-    device: cat8000v
-    box: cisco/cat8000v
-    ospf:
-      area: 0.0.0.0
-      router_id: 10.0.0.1
-      af:
-        ipv4: true
-    id: 1
-    provider: libvirt
-    min_mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: GigabitEthernet1
-      mac: ca:fe:00:01:00:00
-      ipv4: 192.168.17.101
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: Loopback0
-      ipv4: 10.0.0.1/32
-      ospf:
-        area: 0.0.0.0
-        passive: false
-    vlans:
-      blue:
-        id: 701
-        prefix:
-          ipv4: 172.16.1.0/24
-          allocation: id_based
-        mode: route
-        bridge_group: 1
-      red:
-        id: 700
-        prefix:
-          ipv4: 172.16.0.0/24
-          allocation: id_based
-        mode: route
-        bridge_group: 2
-  s1:
-    provider: clab
-    name: s1
-    interfaces:
-    - linkindex: 1
-      type: lan
-      bridge: ml_17_1
-      name: s1 -> s2
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ifname: eth1
-        node: s2
-      subif_index: 2
-    - vlan:
-        access: red
-        access_id: 700
-      linkindex: 3
-      type: lan
-      bridge: ml_17_3
-      ifindex: 2
-      ifname: eth2
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.0.4/24
-        ifname: eth1
-        node: r1
-      name: '[Access VLAN red] s1 -> r1'
-    - vlan:
-        access: blue
-        access_id: 701
-      linkindex: 4
-      type: lan
-      bridge: ml_17_4
-      ifindex: 3
-      ifname: eth3
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.1.5/24
-        ifname: eth1
-        node: r2
-      name: '[Access VLAN blue] s1 -> r2'
-    - vlan:
-        access: blue
-        access_id: 701
-      type: vlan_member
-      ifindex: 4
-      ifname: eth1.701
-      parent_ifindex: 1
-      parent_ifname: eth1
-      virtual_interface: true
-      neighbors:
-      - ipv4: 172.16.1.3/24
-        ifname: eth3
-        node: s2
-      name: '[SubIf VLAN blue] s1 -> s2'
-    - vlan:
-        access: red
-        access_id: 700
-      type: vlan_member
-      ifindex: 5
-      ifname: eth1.700
-      parent_ifindex: 1
-      parent_ifname: eth1
-      virtual_interface: true
-      neighbors:
-      - ipv4: 172.16.0.3/24
-        ifname: eth4
-        node: s2
-      name: '[SubIf VLAN red] s1 -> s2'
-    - ipv4: 172.16.0.2/24
-      vlan:
-        mode: irb
-        name: red
-      type: svi
-      ifindex: 40000
-      mac_address: caf4.0002.0000
-      ifname: vlan700
-      name: VLAN red (700) -> [ros,r1,s2]
-      virtual_interface: true
-      neighbors:
-      - ifname: GigabitEthernet2.2
-        node: ros
-        ipv4: 172.16.0.1/24
-        vlan:
-          mode: route
-          access_id: 700
-          name: red
-      - ipv4: 172.16.0.4/24
-        ifname: eth1
-        node: r1
-      - ifname: vlan700
-        node: s2
-        ipv4: 172.16.0.3/24
-        vlan:
-          mode: irb
-          name: red
-      bridge_group: 1
-      mtu: 1500
-    - ipv4: 172.16.1.2/24
-      vlan:
-        mode: irb
-        name: blue
-      type: svi
-      ifindex: 40001
-      mac_address: caf4.0002.0001
-      ifname: vlan701
-      name: VLAN blue (701) -> [ros,r2,s2]
-      virtual_interface: true
-      neighbors:
-      - ifname: GigabitEthernet2.1
-        node: ros
-        ipv4: 172.16.1.1/24
-        vlan:
-          mode: route
-          access_id: 701
-          name: blue
-      - ipv4: 172.16.1.5/24
-        ifname: eth1
-        node: r2
-      - ifname: vlan701
-        node: s2
-        ipv4: 172.16.1.3/24
-        vlan:
-          mode: irb
-          name: blue
-      bridge_group: 2
-      mtu: 1500
-    device: frr
-    module:
-    - vlan
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/s1/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.5.0
-    id: 2
-    role: router
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:02:00:00
-      ipv4: 192.168.17.102
-    hostname: clab-ml_17-s1
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.2/32
-    vlans:
-      red:
-        id: 700
-        prefix:
-          ipv4: 172.16.0.0/24
-          allocation: id_based
-        mode: irb
-        bridge_group: 1
-      blue:
-        id: 701
-        prefix:
-          ipv4: 172.16.1.0/24
-          allocation: id_based
-        mode: irb
-        bridge_group: 2
-    vlan:
-      max_bridge_group: 2
-  s2:
-    provider: clab
-    name: s2
-    interfaces:
-    - linkindex: 1
-      type: lan
-      bridge: ml_17_1
-      name: s2 -> s1
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ifname: eth1
-        node: s1
-      subif_index: 2
-    - linkindex: 2
-      type: lan
-      bridge: ml_17_2
-      name: s2 -> ros
-      ifindex: 2
-      ifname: eth2
-      mtu: 1500
-      neighbors:
-      - ifname: GigabitEthernet2
-        node: ros
-      subif_index: 2
-    - vlan:
-        access: blue
-        access_id: 701
-      type: vlan_member
-      ifindex: 3
-      ifname: eth1.701
-      parent_ifindex: 1
-      parent_ifname: eth1
-      virtual_interface: true
-      neighbors:
-      - ipv4: 172.16.1.2/24
-        ifname: eth4
-        node: s1
-      name: '[SubIf VLAN blue] s2 -> s1'
-    - vlan:
-        access: red
-        access_id: 700
-      type: vlan_member
-      ifindex: 4
-      ifname: eth1.700
-      parent_ifindex: 1
-      parent_ifname: eth1
-      virtual_interface: true
-      neighbors:
-      - ipv4: 172.16.0.2/24
-        ifname: eth5
-        node: s1
-      name: '[SubIf VLAN red] s2 -> s1'
-    - vlan:
-        access: blue
-        access_id: 701
-      type: vlan_member
-      ifindex: 5
-      ifname: eth2.701
-      parent_ifindex: 2
-      parent_ifname: eth2
-      virtual_interface: true
-      neighbors:
-      - ipv4: 172.16.1.1/24
-        ifname: GigabitEthernet3
-        node: ros
-      name: '[SubIf VLAN blue] s2 -> ros'
-    - vlan:
-        access: red
-        access_id: 700
-      type: vlan_member
-      ifindex: 6
-      ifname: eth2.700
-      parent_ifindex: 2
-      parent_ifname: eth2
-      virtual_interface: true
-      neighbors:
-      - ipv4: 172.16.0.1/24
-        ifname: GigabitEthernet4
-        node: ros
-      name: '[SubIf VLAN red] s2 -> ros'
-    - ipv4: 172.16.1.3/24
-      vlan:
-        mode: irb
-        name: blue
-      type: svi
-      ifindex: 40000
-      mac_address: caf4.0003.0000
-      ifname: vlan701
-      name: VLAN blue (701) -> [ros,r2,s1]
-      virtual_interface: true
-      neighbors:
-      - ifname: GigabitEthernet2.1
-        node: ros
-        ipv4: 172.16.1.1/24
-        vlan:
-          mode: route
-          access_id: 701
-          name: blue
-      - ipv4: 172.16.1.5/24
-        ifname: eth1
-        node: r2
-      - ifname: vlan701
-        node: s1
-        ipv4: 172.16.1.2/24
-        vlan:
-          mode: irb
-          name: blue
-      bridge_group: 1
-      mtu: 1500
-    - ipv4: 172.16.0.3/24
-      vlan:
-        mode: irb
-        name: red
-      type: svi
-      ifindex: 40001
-      mac_address: caf4.0003.0001
-      ifname: vlan700
-      name: VLAN red (700) -> [ros,r1,s1]
-      virtual_interface: true
-      neighbors:
-      - ifname: GigabitEthernet2.2
-        node: ros
-        ipv4: 172.16.0.1/24
-        vlan:
-          mode: route
-          access_id: 700
-          name: red
-      - ipv4: 172.16.0.4/24
-        ifname: eth1
-        node: r1
-      - ifname: vlan700
-        node: s1
-        ipv4: 172.16.0.2/24
-        vlan:
-          mode: irb
-          name: red
-      bridge_group: 2
-      mtu: 1500
-    device: frr
-    module:
-    - vlan
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/s2/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.5.0
-    id: 3
-    role: router
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:03:00:00
-      ipv4: 192.168.17.103
-    hostname: clab-ml_17-s2
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.3/32
-    vlans:
-      blue:
-        id: 701
-        prefix:
-          ipv4: 172.16.1.0/24
-          allocation: id_based
-        mode: irb
-        bridge_group: 1
-      red:
-        id: 700
-        prefix:
-          ipv4: 172.16.0.0/24
-          allocation: id_based
-        mode: irb
-        bridge_group: 2
-    vlan:
-      max_bridge_group: 2
-  r1:
-    role: router
-    provider: clab
-    name: r1
-    interfaces:
-    - ipv4: 172.16.0.4/24
-      linkindex: 3
-      type: lan
-      bridge: ml_17_3
-      name: r1 -> [ros,s1,s2]
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ifname: GigabitEthernet2.2
-        node: ros
-        ipv4: 172.16.0.1/24
-        vlan:
-          mode: route
-          access_id: 700
-          name: red
-      - ifname: vlan700
-        node: s1
-        ipv4: 172.16.0.2/24
-        vlan:
-          mode: irb
-          name: red
-      - ifname: vlan700
-        node: s2
-        ipv4: 172.16.0.3/24
-        vlan:
-          mode: irb
-          name: red
-      ospf:
-        area: 0.0.0.0
-        passive: false
-    device: frr
-    module:
-    - ospf
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/r1/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.5.0
-    ospf:
-      area: 0.0.0.0
-      router_id: 10.0.0.4
-      af:
-        ipv4: true
-    id: 4
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:04:00:00
-      ipv4: 192.168.17.104
-    hostname: clab-ml_17-r1
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.4/32
-      ospf:
-        area: 0.0.0.0
-        passive: false
-  r2:
-    role: router
-    provider: clab
-    name: r2
-    interfaces:
-    - ipv4: 172.16.1.5/24
-      linkindex: 4
-      type: lan
-      bridge: ml_17_4
-      name: r2 -> [ros,s1,s2]
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ifname: GigabitEthernet2.1
-        node: ros
-        ipv4: 172.16.1.1/24
-        vlan:
-          mode: route
-          access_id: 701
-          name: blue
-      - ifname: vlan701
-        node: s1
-        ipv4: 172.16.1.2/24
-        vlan:
-          mode: irb
-          name: blue
-      - ifname: vlan701
-        node: s2
-        ipv4: 172.16.1.3/24
-        vlan:
-          mode: irb
-          name: blue
-      ospf:
-        area: 0.0.0.0
-        passive: false
-    device: frr
-    module:
-    - ospf
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/r2/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.5.0
-    ospf:
-      area: 0.0.0.0
-      router_id: 10.0.0.5
-      af:
-        ipv4: true
-    id: 5
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:05:00:00
-      ipv4: 192.168.17.105
-    hostname: clab-ml_17-r2
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.5/32
-      ospf:
-        area: 0.0.0.0
-        passive: false
-links:
-- _linkname: links[1]
-  vlan:
-    trunk:
-      red: {}
-      blue: {}
-  interfaces:
-  - node: s1
-    vlan:
-      trunk:
-        red: {}
-        blue: {}
-    ifindex: 1
-    ifname: eth1
-  - node: s2
-    vlan:
-      trunk:
-        red: {}
-        blue: {}
-    ifindex: 1
-    ifname: eth1
-  linkindex: 1
-  prefix: {}
-  libvirt:
-    provider:
-      clab: true
-  type: lan
-  bridge: ml_17_1
-  node_count: 2
-- _linkname: links[2]
-  vlan:
-    trunk:
-      red: {}
-      blue: {}
-  interfaces:
-  - node: s2
-    vlan:
-      trunk:
-        red: {}
-        blue: {}
-    ifindex: 2
-    ifname: eth2
-  - node: ros
-    vlan:
-      trunk:
-        red: {}
-        blue: {}
-    ifindex: 2
-    ifname: GigabitEthernet2
-  linkindex: 2
-  prefix: {}
-  libvirt:
-    provider:
-      clab: true
-  type: lan
-  bridge: ml_17_2
-  node_count: 2
-- interfaces:
-  - node: r1
-    ipv4: 172.16.0.4/24
-    ifindex: 1
-    ifname: eth1
-  - node: s1
-    vlan:
-      access: red
-    _vlan_mode: irb
-    ipv4: 172.16.0.2/24
-    ifindex: 2
-    ifname: eth2
-  _linkname: vlans.red.links[1]
-  vlan:
-    access: red
-  linkindex: 3
-  prefix:
-    ipv4: 172.16.0.0/24
-    allocation: id_based
-  type: lan
-  libvirt:
-    provider:
-      clab: true
-  bridge: ml_17_3
-  node_count: 2
-- interfaces:
-  - node: r2
-    ipv4: 172.16.1.5/24
-    ifindex: 1
-    ifname: eth1
-  - node: s1
-    vlan:
-      access: blue
-    _vlan_mode: irb
-    ipv4: 172.16.1.2/24
-    ifindex: 3
-    ifname: eth3
-  _linkname: vlans.blue.links[1]
-  vlan:
-    access: blue
-  linkindex: 4
-  prefix:
-    ipv4: 172.16.1.0/24
-    allocation: id_based
-  type: lan
-  libvirt:
-    provider:
-      clab: true
-  bridge: ml_17_4
-  node_count: 2
-validate:
-- description: Check OSPF adjacencies
-  wait_msg: Waiting for OSPF adjacencies to form
-  wait: 120
-  nodes:
-  - r1
-  - r2
-  plugin: ospf_neighbor(nodes.ros.ospf.router_id)
-  name: adj
-- description: Reaching router-on-stick
-  wait: 20
-  wait_msg: Waiting for OSPF SPF to do its magic
-  nodes:
-  - r1
-  plugin: ping('ros',src=nodes.r1.loopback.ipv4)
-  name: ping_ros
-- description: Cross-VLAN reachability
-  wait: 5
-  wait_msg: Waiting for OSPF SPF to do its magic
-  nodes:
-  - r1
-  plugin: ping('r2',src=nodes.r1.loopback.ipv4)
-  name: ping_x
-input:
-- /home/pipi/net101/tools/tests/integration/vlan/51-vlan-routed-trunk.yml
-- /home/pipi/net101/tools/tests/integration/vlan/topology-defaults.yml
-- /home/pipi/.netlab.yml
-- package:topology-defaults.yml
 defaults:
   provider: libvirt
   providers:
@@ -1174,7 +318,7 @@ defaults:
         build: https://netlab.tools/labs/asav/
         create_iso: asav
     cat8000v:
-      description: Cisco CSR 1000v
+      description: Cisco Catalyst 8000v
       attributes:
         global:
           ios:
@@ -1186,6 +330,13 @@ defaults:
             debug:
               type: list
               split_lines: true
+          cat8000v:
+            license:
+              type: str
+              valid_values:
+              - essential
+              - advantage
+              - premier
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -1364,6 +515,8 @@ defaults:
           --ram=4096 --disk path=vm.qcow2,bus=ide,format=qcow2 
           --network=network:vagrant-libvirt,model=virtio --graphics none 
           --import
+        cat8000v:
+          license: premier
         create_template: cat8000v.xml.j2
         create_iso: cat8000v
       _parents:
@@ -1371,7 +524,7 @@ defaults:
       - csr
       provider: libvirt
     cisco8000v:
-      description: Cisco 8000v
+      description: Cisco 8000v (IOS/XR)
       mgmt_if: MgmtEth0/RP0/CPU0/0
       interface_name: FourHundredGigE0/0/0/{ifindex}
       loopback_interface_name: Loopback{ifindex}
@@ -1393,19 +546,49 @@ defaults:
           min_mtu: 68
           min_phy_mtu: 1500
           max_mtu: 9216
-        ospf:
-          unnumbered: true
-          password: true
-          priority: true
-          timers: true
+        bgp:
+          activate_af: true
+          import:
+          - ospf
+          - isis
+          - connected
+          - static
+          - vrf
         isis:
           circuit_type: true
           unnumbered:
             ipv4: true
             ipv6: true
             network: true
-        bgp:
-          activate_af: true
+          import:
+          - ospf
+          - bgp
+          - connected
+          - static
+          - vrf
+        ospf:
+          unnumbered: true
+          password: true
+          priority: true
+          timers: true
+          default: true
+          import:
+          - bgp
+          - isis
+          - connected
+          - static
+          - vrf
+        routing:
+          static:
+            vrf: true
+            inter_vrf: true
+            discard: true
+        vlan:
+          model: router
+          subif_name: '{ifname}.{vlan.access_id}'
+          svi_interface_name: BVI{vlan}
+          mixed_trunk: true
+          native_routed: false
       external:
         image: none
       support:
@@ -1981,7 +1164,7 @@ defaults:
         vxlan: {}
       mtu: 1500
       clab:
-        image: vrnetlab/dell_ftos10v:10.5.6.6
+        image: vrnetlab/vr-ftosv
         build: https://containerlab.dev/manual/kinds/vr-ftosv/
         node:
           kind: vr-ftosv
@@ -2513,7 +1696,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:17.16.01a
+        image: vrnetlab/cisco_iol:17.12.01
         node:
           kind: cisco_iol
       role: router
@@ -2691,7 +1874,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:L2-17.16.01a
+        image: vrnetlab/cisco_iol:L2-17.12.01
         node:
           kind: cisco_iol
           type: l2
@@ -3247,6 +2430,10 @@ defaults:
         ansible_user: vagrant
         ansible_ssh_pass: vagrant
         ansible_become_password: vagrant
+        group_vars:
+          netlab_check_retries: 120
+          netlab_ready:
+          - ssh
       features:
         initial:
           ipv4:
@@ -3256,19 +2443,43 @@ defaults:
           min_mtu: 68
           min_phy_mtu: 1500
           max_mtu: 9216
-        ospf:
-          unnumbered: true
-          password: true
-          priority: true
-          timers: true
+        bgp:
+          activate_af: true
+          import:
+          - ospf
+          - isis
+          - connected
+          - static
+          - vrf
         isis:
           circuit_type: true
           unnumbered:
             ipv4: true
             ipv6: true
             network: true
-        bgp:
-          activate_af: true
+          import:
+          - ospf
+          - bgp
+          - connected
+          - static
+          - vrf
+        ospf:
+          unnumbered: true
+          password: true
+          priority: true
+          timers: true
+          default: true
+          import:
+          - bgp
+          - isis
+          - connected
+          - static
+          - vrf
+        routing:
+          static:
+            vrf: true
+            inter_vrf: true
+            discard: true
       external:
         image: none
       support:
@@ -3860,7 +3071,7 @@ defaults:
         min_tx: 100
         min_rx: 100
       clab:
-        image: ghcr.io/nokia/srlinux:25.10.1
+        image: ghcr.io/nokia/srlinux:25.3.2
         node:
           kind: srl
           type: ixr-d2
@@ -4632,7 +3843,7 @@ defaults:
         pre_install: vptx
         create_template: vptx.xml.j2
       clab:
-        image: vrnetlab/juniper_vjunosevolved:23.2R2.21-EVO
+        image: vrnetlab/juniper_vjunosevolved:25.2R1.8-EVO
         build: https://containerlab.dev/manual/kinds/vr-vjunosevolved/
         mtu: 1500
         node:
@@ -5888,6 +5099,13 @@ defaults:
         _keytype: id
         _requires:
         - vrf
+      cat8000v:
+        license:
+          type: str
+          valid_values:
+          - essential
+          - advantage
+          - premier
       eos:
         serialnumber: str
         systemmacaddr: mac
@@ -6388,6 +5606,51 @@ defaults:
       neighbors: 5
       maxlength: 255
     MAX_NODE_ID: 150
+    validate:
+      ping: 5
+      ping_long: 15
+      vxlan_ping: 20
+      ping_stp: 45
+      ping_irb: 10
+      ping_xx_long: 40
+      ra_send: 30
+      ospfv2_adj_p2p: 30
+      ospfv2_adj_lan: 50
+      ospfv2_adj_stp: 120
+      ospfv2_spf: 10
+      ospfv3_adj_p2p: 30
+      ospfv3_adj_lan: 50
+      ospfv3_spf: 10
+      ospf_import: 20
+      ebgp_session: 30
+      ibgp_session: 30
+      bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_v4_originate: 15
+      bgp_v6_originate: 15
+      bgp_v4_redist: 15
+      bgp_v6_redist: 15
+      isis_adj_p2p: 20
+      isis_adj_lan: 50
+      isis_spf: 15
+      isis_spf_long: 45
+      isis_redist: 30
+      rip_start: 60
+      rip_update: 20
+      ldp_adj: 30
+      stp_forwarding: 40
+      lacp_setup: 10
+      xr:
+        bgp_v4_originate: 80
+        bgp_v6_originate: 80
+        bgp_v4_redist: 90
+        isis_redist: 60
+      ios:
+        bgp_v6_redist: 60
+      cisco8000v:
+        ping_irb: 90
+      vjunos-router:
+        ping_irb: 90
   hints:
     evpn:
       irb_group: >
@@ -8028,6 +7291,7 @@ defaults:
       arubacx: true
       bird: true
       cat8000v: true
+      cisco8000v: true
       csr: true
       cumulus: true
       cumulus_nvue: true
@@ -8040,6 +7304,7 @@ defaults:
       ios: true
       iosv: true
       iosvl2: true
+      iosxr: true
       junos: true
       linux: true
       none: true
@@ -8053,6 +7318,7 @@ defaults:
       vptx: true
       vsrx: true
       vyos: true
+      xr: true
   sr:
     requires:
     - isis
@@ -8370,6 +7636,7 @@ defaults:
       bird:
         clab: true
       cat8000v: true
+      cisco8000v: true
       csr: true
       cumulus: true
       cumulus_nvue: true
@@ -8520,8 +7787,9 @@ defaults:
       vjunos-switch: true
       vyos: true
   sources:
+    extra:
+    - ../wait_times.yml
     list: []
-    extra: []
     user: []
     system: []
   workdir: /work/netlab_cicd
@@ -8558,6 +7826,865 @@ defaults:
   module:
   - vlan
   - ospf
+groups:
+  switches:
+    members:
+    - s1
+    - s2
+    module:
+    - vlan
+    device: frr
+    node_data:
+      provider: clab
+  routers:
+    members:
+    - r1
+    - r2
+    - ros
+    module:
+    - ospf
+    node_data:
+      role: router
+  external:
+    members:
+    - r1
+    - r2
+    device: frr
+    node_data:
+      provider: clab
+  all:
+    vars:
+      netlab_show_config: true
+    members: []
+    _default_group: true
+vlans:
+  red:
+    id: 700
+    prefix:
+      ipv4: 172.16.0.0/24
+      allocation: id_based
+    neighbors:
+    - ifname: GigabitEthernet2.2
+      node: ros
+      ipv4: 172.16.0.1/24
+      vlan:
+        mode: route
+        access_id: 700
+        name: red
+    - ipv4: 172.16.0.4/24
+      ifname: eth1
+      node: r1
+    - ifname: vlan700
+      node: s1
+      ipv4: 172.16.0.2/24
+      vlan:
+        mode: irb
+        name: red
+    - ifname: vlan700
+      node: s2
+      ipv4: 172.16.0.3/24
+      vlan:
+        mode: irb
+        name: red
+    host_count: 0
+  blue:
+    id: 701
+    prefix:
+      ipv4: 172.16.1.0/24
+      allocation: id_based
+    neighbors:
+    - ifname: GigabitEthernet2.1
+      node: ros
+      ipv4: 172.16.1.1/24
+      vlan:
+        mode: route
+        access_id: 701
+        name: blue
+    - ipv4: 172.16.1.5/24
+      ifname: eth1
+      node: r2
+    - ifname: vlan701
+      node: s1
+      ipv4: 172.16.1.2/24
+      vlan:
+        mode: irb
+        name: blue
+    - ifname: vlan701
+      node: s2
+      ipv4: 172.16.1.3/24
+      vlan:
+        mode: irb
+        name: blue
+    host_count: 0
+nodes:
+  ros:
+    role: router
+    module:
+    - vlan
+    - ospf
+    vlan:
+      mode: route
+      max_bridge_group: 2
+    name: ros
+    interfaces:
+    - linkindex: 2
+      type: lan
+      bridge: ml_17_2
+      name: ros -> s2
+      ifindex: 2
+      ifname: GigabitEthernet2
+      neighbors:
+      - ifname: eth2
+        node: s2
+      subif_index: 2
+    - bridge_group: 1
+      ipv4: 172.16.1.1/24
+      type: vlan_member
+      name: ros -> [r2,s1,s2]
+      ifindex: 3
+      ifname: GigabitEthernet2.1
+      neighbors:
+      - ipv4: 172.16.1.5/24
+        ifname: eth1
+        node: r2
+      - ifname: vlan701
+        node: s1
+        ipv4: 172.16.1.2/24
+        vlan:
+          mode: irb
+          name: blue
+      - ifname: vlan701
+        node: s2
+        ipv4: 172.16.1.3/24
+        vlan:
+          mode: irb
+          name: blue
+      vlan:
+        mode: route
+        access_id: 701
+        name: blue
+      parent_ifindex: 2
+      parent_ifname: GigabitEthernet2
+      virtual_interface: true
+      ospf:
+        area: 0.0.0.0
+        passive: false
+    - bridge_group: 2
+      ipv4: 172.16.0.1/24
+      type: vlan_member
+      name: ros -> [r1,s1,s2]
+      ifindex: 4
+      ifname: GigabitEthernet2.2
+      neighbors:
+      - ipv4: 172.16.0.4/24
+        ifname: eth1
+        node: r1
+      - ifname: vlan700
+        node: s1
+        ipv4: 172.16.0.2/24
+        vlan:
+          mode: irb
+          name: red
+      - ifname: vlan700
+        node: s2
+        ipv4: 172.16.0.3/24
+        vlan:
+          mode: irb
+          name: red
+      vlan:
+        mode: route
+        access_id: 700
+        name: red
+      parent_ifindex: 2
+      parent_ifname: GigabitEthernet2
+      virtual_interface: true
+      ospf:
+        area: 0.0.0.0
+        passive: false
+    device: cat8000v
+    box: cisco/cat8000v
+    ospf:
+      area: 0.0.0.0
+      router_id: 10.0.0.1
+      af:
+        ipv4: true
+    id: 1
+    provider: libvirt
+    cat8000v:
+      license: premier
+    min_mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: GigabitEthernet1
+      mac: ca:fe:00:01:00:00
+      ipv4: 192.168.17.101
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.1/32
+      ospf:
+        area: 0.0.0.0
+        passive: false
+    vlans:
+      blue:
+        id: 701
+        prefix:
+          ipv4: 172.16.1.0/24
+          allocation: id_based
+        mode: route
+        bridge_group: 1
+      red:
+        id: 700
+        prefix:
+          ipv4: 172.16.0.0/24
+          allocation: id_based
+        mode: route
+        bridge_group: 2
+  s1:
+    provider: clab
+    name: s1
+    interfaces:
+    - linkindex: 1
+      type: lan
+      bridge: ml_17_1
+      name: s1 -> s2
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ifname: eth1
+        node: s2
+      subif_index: 2
+    - vlan:
+        access: red
+        access_id: 700
+      linkindex: 3
+      type: lan
+      bridge: ml_17_3
+      ifindex: 2
+      ifname: eth2
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.0.4/24
+        ifname: eth1
+        node: r1
+      name: '[Access VLAN red] s1 -> r1'
+    - vlan:
+        access: blue
+        access_id: 701
+      linkindex: 4
+      type: lan
+      bridge: ml_17_4
+      ifindex: 3
+      ifname: eth3
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.1.5/24
+        ifname: eth1
+        node: r2
+      name: '[Access VLAN blue] s1 -> r2'
+    - vlan:
+        access: blue
+        access_id: 701
+      type: vlan_member
+      ifindex: 4
+      ifname: eth1.701
+      parent_ifindex: 1
+      parent_ifname: eth1
+      virtual_interface: true
+      neighbors:
+      - ipv4: 172.16.1.3/24
+        ifname: eth3
+        node: s2
+      name: '[SubIf VLAN blue] s1 -> s2'
+    - vlan:
+        access: red
+        access_id: 700
+      type: vlan_member
+      ifindex: 5
+      ifname: eth1.700
+      parent_ifindex: 1
+      parent_ifname: eth1
+      virtual_interface: true
+      neighbors:
+      - ipv4: 172.16.0.3/24
+        ifname: eth4
+        node: s2
+      name: '[SubIf VLAN red] s1 -> s2'
+    - ipv4: 172.16.0.2/24
+      vlan:
+        mode: irb
+        name: red
+      type: svi
+      ifindex: 40000
+      mac_address: caf4.0002.0000
+      ifname: vlan700
+      name: VLAN red (700) -> [ros,r1,s2]
+      virtual_interface: true
+      neighbors:
+      - ifname: GigabitEthernet2.2
+        node: ros
+        ipv4: 172.16.0.1/24
+        vlan:
+          mode: route
+          access_id: 700
+          name: red
+      - ipv4: 172.16.0.4/24
+        ifname: eth1
+        node: r1
+      - ifname: vlan700
+        node: s2
+        ipv4: 172.16.0.3/24
+        vlan:
+          mode: irb
+          name: red
+      bridge_group: 1
+      mtu: 1500
+    - ipv4: 172.16.1.2/24
+      vlan:
+        mode: irb
+        name: blue
+      type: svi
+      ifindex: 40001
+      mac_address: caf4.0002.0001
+      ifname: vlan701
+      name: VLAN blue (701) -> [ros,r2,s2]
+      virtual_interface: true
+      neighbors:
+      - ifname: GigabitEthernet2.1
+        node: ros
+        ipv4: 172.16.1.1/24
+        vlan:
+          mode: route
+          access_id: 701
+          name: blue
+      - ipv4: 172.16.1.5/24
+        ifname: eth1
+        node: r2
+      - ifname: vlan701
+        node: s2
+        ipv4: 172.16.1.3/24
+        vlan:
+          mode: irb
+          name: blue
+      bridge_group: 2
+      mtu: 1500
+    device: frr
+    module:
+    - vlan
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/s1/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.5.0
+    id: 2
+    role: router
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:02:00:00
+      ipv4: 192.168.17.102
+    hostname: clab-ml_17-s1
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.2/32
+    vlans:
+      red:
+        id: 700
+        prefix:
+          ipv4: 172.16.0.0/24
+          allocation: id_based
+        mode: irb
+        bridge_group: 1
+      blue:
+        id: 701
+        prefix:
+          ipv4: 172.16.1.0/24
+          allocation: id_based
+        mode: irb
+        bridge_group: 2
+    vlan:
+      max_bridge_group: 2
+  s2:
+    provider: clab
+    name: s2
+    interfaces:
+    - linkindex: 1
+      type: lan
+      bridge: ml_17_1
+      name: s2 -> s1
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ifname: eth1
+        node: s1
+      subif_index: 2
+    - linkindex: 2
+      type: lan
+      bridge: ml_17_2
+      name: s2 -> ros
+      ifindex: 2
+      ifname: eth2
+      mtu: 1500
+      neighbors:
+      - ifname: GigabitEthernet2
+        node: ros
+      subif_index: 2
+    - vlan:
+        access: blue
+        access_id: 701
+      type: vlan_member
+      ifindex: 3
+      ifname: eth1.701
+      parent_ifindex: 1
+      parent_ifname: eth1
+      virtual_interface: true
+      neighbors:
+      - ipv4: 172.16.1.2/24
+        ifname: eth4
+        node: s1
+      name: '[SubIf VLAN blue] s2 -> s1'
+    - vlan:
+        access: red
+        access_id: 700
+      type: vlan_member
+      ifindex: 4
+      ifname: eth1.700
+      parent_ifindex: 1
+      parent_ifname: eth1
+      virtual_interface: true
+      neighbors:
+      - ipv4: 172.16.0.2/24
+        ifname: eth5
+        node: s1
+      name: '[SubIf VLAN red] s2 -> s1'
+    - vlan:
+        access: blue
+        access_id: 701
+      type: vlan_member
+      ifindex: 5
+      ifname: eth2.701
+      parent_ifindex: 2
+      parent_ifname: eth2
+      virtual_interface: true
+      neighbors:
+      - ipv4: 172.16.1.1/24
+        ifname: GigabitEthernet3
+        node: ros
+      name: '[SubIf VLAN blue] s2 -> ros'
+    - vlan:
+        access: red
+        access_id: 700
+      type: vlan_member
+      ifindex: 6
+      ifname: eth2.700
+      parent_ifindex: 2
+      parent_ifname: eth2
+      virtual_interface: true
+      neighbors:
+      - ipv4: 172.16.0.1/24
+        ifname: GigabitEthernet4
+        node: ros
+      name: '[SubIf VLAN red] s2 -> ros'
+    - ipv4: 172.16.1.3/24
+      vlan:
+        mode: irb
+        name: blue
+      type: svi
+      ifindex: 40000
+      mac_address: caf4.0003.0000
+      ifname: vlan701
+      name: VLAN blue (701) -> [ros,r2,s1]
+      virtual_interface: true
+      neighbors:
+      - ifname: GigabitEthernet2.1
+        node: ros
+        ipv4: 172.16.1.1/24
+        vlan:
+          mode: route
+          access_id: 701
+          name: blue
+      - ipv4: 172.16.1.5/24
+        ifname: eth1
+        node: r2
+      - ifname: vlan701
+        node: s1
+        ipv4: 172.16.1.2/24
+        vlan:
+          mode: irb
+          name: blue
+      bridge_group: 1
+      mtu: 1500
+    - ipv4: 172.16.0.3/24
+      vlan:
+        mode: irb
+        name: red
+      type: svi
+      ifindex: 40001
+      mac_address: caf4.0003.0001
+      ifname: vlan700
+      name: VLAN red (700) -> [ros,r1,s1]
+      virtual_interface: true
+      neighbors:
+      - ifname: GigabitEthernet2.2
+        node: ros
+        ipv4: 172.16.0.1/24
+        vlan:
+          mode: route
+          access_id: 700
+          name: red
+      - ipv4: 172.16.0.4/24
+        ifname: eth1
+        node: r1
+      - ifname: vlan700
+        node: s1
+        ipv4: 172.16.0.2/24
+        vlan:
+          mode: irb
+          name: red
+      bridge_group: 2
+      mtu: 1500
+    device: frr
+    module:
+    - vlan
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/s2/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.5.0
+    id: 3
+    role: router
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:03:00:00
+      ipv4: 192.168.17.103
+    hostname: clab-ml_17-s2
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.3/32
+    vlans:
+      blue:
+        id: 701
+        prefix:
+          ipv4: 172.16.1.0/24
+          allocation: id_based
+        mode: irb
+        bridge_group: 1
+      red:
+        id: 700
+        prefix:
+          ipv4: 172.16.0.0/24
+          allocation: id_based
+        mode: irb
+        bridge_group: 2
+    vlan:
+      max_bridge_group: 2
+  r1:
+    role: router
+    provider: clab
+    name: r1
+    interfaces:
+    - ipv4: 172.16.0.4/24
+      linkindex: 3
+      type: lan
+      bridge: ml_17_3
+      name: r1 -> [ros,s1,s2]
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ifname: GigabitEthernet2.2
+        node: ros
+        ipv4: 172.16.0.1/24
+        vlan:
+          mode: route
+          access_id: 700
+          name: red
+      - ifname: vlan700
+        node: s1
+        ipv4: 172.16.0.2/24
+        vlan:
+          mode: irb
+          name: red
+      - ifname: vlan700
+        node: s2
+        ipv4: 172.16.0.3/24
+        vlan:
+          mode: irb
+          name: red
+      ospf:
+        area: 0.0.0.0
+        passive: false
+    device: frr
+    module:
+    - ospf
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/r1/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.5.0
+    ospf:
+      area: 0.0.0.0
+      router_id: 10.0.0.4
+      af:
+        ipv4: true
+    id: 4
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:04:00:00
+      ipv4: 192.168.17.104
+    hostname: clab-ml_17-r1
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.4/32
+      ospf:
+        area: 0.0.0.0
+        passive: false
+  r2:
+    role: router
+    provider: clab
+    name: r2
+    interfaces:
+    - ipv4: 172.16.1.5/24
+      linkindex: 4
+      type: lan
+      bridge: ml_17_4
+      name: r2 -> [ros,s1,s2]
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ifname: GigabitEthernet2.1
+        node: ros
+        ipv4: 172.16.1.1/24
+        vlan:
+          mode: route
+          access_id: 701
+          name: blue
+      - ifname: vlan701
+        node: s1
+        ipv4: 172.16.1.2/24
+        vlan:
+          mode: irb
+          name: blue
+      - ifname: vlan701
+        node: s2
+        ipv4: 172.16.1.3/24
+        vlan:
+          mode: irb
+          name: blue
+      ospf:
+        area: 0.0.0.0
+        passive: false
+    device: frr
+    module:
+    - ospf
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/r2/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.5.0
+    ospf:
+      area: 0.0.0.0
+      router_id: 10.0.0.5
+      af:
+        ipv4: true
+    id: 5
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:05:00:00
+      ipv4: 192.168.17.105
+    hostname: clab-ml_17-r2
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.5/32
+      ospf:
+        area: 0.0.0.0
+        passive: false
+links:
+- _linkname: links[1]
+  vlan:
+    trunk:
+      red: {}
+      blue: {}
+  interfaces:
+  - node: s1
+    vlan:
+      trunk:
+        red: {}
+        blue: {}
+    ifindex: 1
+    ifname: eth1
+  - node: s2
+    vlan:
+      trunk:
+        red: {}
+        blue: {}
+    ifindex: 1
+    ifname: eth1
+  linkindex: 1
+  prefix: {}
+  libvirt:
+    provider:
+      clab: true
+  type: lan
+  bridge: ml_17_1
+  node_count: 2
+- _linkname: links[2]
+  vlan:
+    trunk:
+      red: {}
+      blue: {}
+  interfaces:
+  - node: s2
+    vlan:
+      trunk:
+        red: {}
+        blue: {}
+    ifindex: 2
+    ifname: eth2
+  - node: ros
+    vlan:
+      trunk:
+        red: {}
+        blue: {}
+    ifindex: 2
+    ifname: GigabitEthernet2
+  linkindex: 2
+  prefix: {}
+  libvirt:
+    provider:
+      clab: true
+  type: lan
+  bridge: ml_17_2
+  node_count: 2
+- interfaces:
+  - node: r1
+    ipv4: 172.16.0.4/24
+    ifindex: 1
+    ifname: eth1
+  - node: s1
+    vlan:
+      access: red
+    _vlan_mode: irb
+    ipv4: 172.16.0.2/24
+    ifindex: 2
+    ifname: eth2
+  _linkname: vlans.red.links[1]
+  vlan:
+    access: red
+  linkindex: 3
+  prefix:
+    ipv4: 172.16.0.0/24
+    allocation: id_based
+  type: lan
+  libvirt:
+    provider:
+      clab: true
+  bridge: ml_17_3
+  node_count: 2
+- interfaces:
+  - node: r2
+    ipv4: 172.16.1.5/24
+    ifindex: 1
+    ifname: eth1
+  - node: s1
+    vlan:
+      access: blue
+    _vlan_mode: irb
+    ipv4: 172.16.1.2/24
+    ifindex: 3
+    ifname: eth3
+  _linkname: vlans.blue.links[1]
+  vlan:
+    access: blue
+  linkindex: 4
+  prefix:
+    ipv4: 172.16.1.0/24
+    allocation: id_based
+  type: lan
+  libvirt:
+    provider:
+      clab: true
+  bridge: ml_17_4
+  node_count: 2
+validate:
+- description: Check OSPF adjacencies
+  wait_msg: Waiting for OSPF adjacencies to form
+  wait: 120
+  nodes:
+  - r1
+  - r2
+  plugin: ospf_neighbor(nodes.ros.ospf.router_id)
+  name: adj
+- description: Reaching router-on-stick
+  wait: 15
+  wait_msg: Waiting for OSPF SPF to do its magic
+  nodes:
+  - r1
+  plugin: ping('ros',src=nodes.r1.loopback.ipv4)
+  name: ping_ros
+- description: Cross-VLAN reachability
+  wait: 5
+  wait_msg: Waiting for OSPF SPF to do its magic
+  nodes:
+  - r1
+  plugin: ping('r2',src=nodes.r1.loopback.ipv4)
+  name: ping_x
+input:
+- /home/pipi/net101/tools/tests/integration/vlan/51-vlan-routed-trunk.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/vlan/topology-defaults.yml
+- /home/pipi/.netlab.yml
+- package:topology-defaults.yml
 plugin:
 - multilab
 name: ml_17
@@ -8594,4 +8721,4 @@ module:
 - ospf
 ospf:
   area: 0.0.0.0
-_netlab_version: '25.11'
+_netlab_version: 25.11.01
