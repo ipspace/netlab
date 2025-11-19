@@ -1,13 +1,14 @@
 {% import "templates/routing/_redistribute.iosxr.j2" as redistribute with context %}
 {% set KW_TYPE = {'level-1': 'level-1','level-1-2': 'level-1-2', 'level-2': 'level-2-only' } %}
-{% set ospf_pid=ospf.process|default(1) %}
-router isis Gandalf
+!
+{% macro config(isis,isis_net,interfaces,vrf='',ospf_pid=1) %}
+router isis {{ 'isis_'+vrf if vrf else 'Gandalf' }}{% if vrf %} vrf {{ vrf }}{% endif +%}
  log adjacency changes
  lsp-gen-interval initial-wait 50 secondary-wait 100 maximum-wait 500
 {% if isis.type is defined %}
  is-type {{ KW_TYPE[isis.type] }}
 {% endif %}
- net {{ isis.net }}
+ net {{ isis_net }}
 {% for naf in ['ipv4','ipv6'] if naf in af %}
 !
  address-family {{ naf }} unicast
@@ -21,7 +22,7 @@ router isis Gandalf
 {% endif %}
 {% endfor %}
 !
-{% for l in netlab_interfaces|default([]) if 'isis' in l %}
+{% for l in interfaces|default([]) if 'isis' in l %}
 !
  interface {{ l.ifname }}
 {%   if l.isis.passive|default(False) %}
@@ -40,3 +41,12 @@ router isis Gandalf
 {%     endif %}
 {%   endfor %}
 {% endfor %}
+{% endmacro %}
+!
+{% if isis is defined %}
+{{ config(
+      isis=isis,
+      isis_net=isis.net,
+      interfaces=netlab_interfaces,
+      ospf_pid=ospf.process|default(1)) }}
+{% endif %}

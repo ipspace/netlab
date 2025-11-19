@@ -6,7 +6,8 @@
 {% macro bgp_common(bgp) %}
  bgp unsafe-ebgp-policy
  bgp scan-time 5
-{% if bgp.router_id|ipv4 %}
+ bgp update-delay 5
+{% if bgp.router_id is defined %}
  bgp router-id {{ bgp.router_id }}
 {% endif %}
 {% if bgp.rr_cluster_id|default(False) %}
@@ -18,10 +19,13 @@
     for that neighbor, setting rr-client, next-hop-self and BGP community propagation
     for individual address families.
 #}
-{% macro bgp_neighbor(n,af) %}
+{% macro bgp_neighbor(n,af,vrf=False) %}
  neighbor {{ n[af] }}
   remote-as {{ n.as }}
   description {{ n.name }}
+{%     if vrf and af == 'ipv6' %}
+  session-open-mode both
+{%     endif %}
 {%     if '_source_intf' in n %}
   update-source {{ n._source_intf.ifname }}
 {%     endif %}
@@ -73,7 +77,7 @@ router bgp {{ bgp.as }}
 {%   endfor %}
 {% endfor %}
 {% for af in ['ipv4','ipv6'] %}
-{%   for n in bgp.neighbors if n[af] is defined %}
+{%   for n in bgp.neighbors|default([]) if n[af] is defined %}
 {{     bgp_neighbor(n,af) }}
 {%   endfor %}
 {% endfor %}
