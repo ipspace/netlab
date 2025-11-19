@@ -195,6 +195,11 @@ ok: [x1] =>
     sysctl -qw net.ipv6.conf.eth3.accept_ra=0
     ip link set dev eth3 mtu 1500
     ip link set eth3 up
+    ip link set eth4 down
+    sysctl -qw net.ipv6.conf.eth4.autoconf=0
+    sysctl -qw net.ipv6.conf.eth4.accept_ra=0
+    ip link set dev eth4 mtu 1500
+    ip link set eth4 up
   
     #
     # Add vtysh.conf file
@@ -218,7 +223,7 @@ ok: [x1] =>
     !
     interface lo
      no shutdown
-     ip address 10.42.0.1/32
+     ip address 10.0.0.2/32
      ipv6 address 2001:db8:cafe:42::1/64
     !
     interface eth1
@@ -231,17 +236,25 @@ ok: [x1] =>
     !
     interface eth2
      no shutdown
-     description x1 -> dut
-     ip address 10.1.0.6/30
-     ipv6 address 2001:db8:3:1::2/64
+     description x1 -> x2
+     ip address 10.1.0.5/30
+     ipv6 address 2001:db8:3:1::1/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
     interface eth3
      no shutdown
-     description x1 -> x2
-     ip address 10.1.0.9/30
-     ipv6 address 2001:db8:3:2::1/64
+     description x1 -> dut
+     ip address 10.1.0.10/30
+     ipv6 address 2001:db8:3:2::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface eth4
+     no shutdown
+     description x1 -> dut
+     ip address 10.1.0.14/30
+     ipv6 address 2001:db8:3:3::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -352,8 +365,8 @@ ok: [x2] =>
     interface eth1
      no shutdown
      description x2 -> x1
-     ip address 10.1.0.10/30
-     ipv6 address 2001:db8:3:2::2/64
+     ip address 10.1.0.6/30
+     ipv6 address 2001:db8:3:1::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -373,7 +386,7 @@ ok: [dut] =>
     lldp
      no management enable
     !
-    domain ipv4 host x1 10.42.0.1
+    domain ipv4 host x1 10.0.0.2
     domain ipv4 host x2 10.0.0.3
     domain ipv6 host x1 2001:db8:cafe:42::1
     domain ipv6 host x2 2001:db8:cafe:43::1
@@ -393,8 +406,15 @@ ok: [dut] =>
     interface FourHundredGigE0/0/0/1
      no shutdown
      description dut -> x1
-     ipv4 address 10.1.0.5 255.255.255.252
-     ipv6 address 2001:db8:3:1::1/64
+     ipv4 address 10.1.0.9 255.255.255.252
+     ipv6 address 2001:db8:3:2::1/64
+     ipv6 nd ra-interval 5
+    !
+    interface FourHundredGigE0/0/0/2
+     no shutdown
+     description dut -> x1
+     ipv4 address 10.1.0.13 255.255.255.252
+     ipv6 address 2001:db8:3:3::1/64
      ipv6 nd ra-interval 5
     !
 
@@ -427,8 +447,8 @@ ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -444,6 +464,7 @@ ok: [dut]
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=routing)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=vrf)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [x1]
@@ -476,12 +497,14 @@ ok: [dut] =>
     ! Static routes
     !
     router static
-      address-family ipv4 unicast 10.0.0.3/32 10.42.0.1
-      address-family ipv6 unicast 2001:db8:cafe:43::/64 2001:db8:cafe:42::1
-      address-family ipv4 unicast 10.42.0.1/32 FourHundredGigE0/0/0/0 10.1.0.2
-      address-family ipv4 unicast 10.42.0.1/32 FourHundredGigE0/0/0/1 10.1.0.6
-      address-family ipv6 unicast 2001:db8:cafe:42::/64 FourHundredGigE0/0/0/0 2001:db8:3::2
-      address-family ipv6 unicast 2001:db8:cafe:42::/64 FourHundredGigE0/0/0/1 2001:db8:3:1::2
+     vrf transport  address-family ipv4 unicast 10.0.0.2/32 FourHundredGigE0/0/0/1 10.1.0.10
+     vrf transport  address-family ipv4 unicast 10.0.0.2/32 FourHundredGigE0/0/0/2 10.1.0.14
+     vrf transport  address-family ipv6 unicast 2001:db8:cafe:42::/64 FourHundredGigE0/0/0/1 2001:db8:3:2::2
+     vrf transport  address-family ipv6 unicast 2001:db8:cafe:42::/64 FourHundredGigE0/0/0/2 2001:db8:3:3::2
+     vrf transport  address-family ipv4 unicast 10.0.0.3/32 FourHundredGigE0/0/0/1 10.1.0.10
+     vrf transport  address-family ipv4 unicast 10.0.0.3/32 FourHundredGigE0/0/0/2 10.1.0.14
+     vrf transport  address-family ipv6 unicast 2001:db8:cafe:43::/64 FourHundredGigE0/0/0/1 2001:db8:3:2::2
+     vrf transport  address-family ipv6 unicast 2001:db8:cafe:43::/64 FourHundredGigE0/0/0/2 2001:db8:3:3::2
 
 TASK [Deploy routing configuration] ********************************************
 skipping: [x1]
@@ -521,7 +544,7 @@ ok: [x1] =>
     ! OSPFv2 FRR configuration
     !
     router ospf
-     ospf router-id 10.42.0.1
+     ospf router-id 10.0.0.2
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
@@ -539,12 +562,17 @@ ok: [x1] =>
      ip ospf network point-to-point
     !
     interface eth2
-    ! x1 -> dut
+    ! x1 -> x2
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
     interface eth3
-    ! x1 -> x2
+    ! x1 -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface eth4
+    ! x1 -> dut
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
@@ -562,18 +590,23 @@ ok: [x1] =>
      ipv6 ospf6 network point-to-point
     !
     interface eth2
-    ! x1 -> dut
+    ! x1 -> x2
      ipv6 ospf6 area 0.0.0.0
      ipv6 ospf6 network point-to-point
     !
     interface eth3
-    ! x1 -> x2
+    ! x1 -> dut
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    interface eth4
+    ! x1 -> dut
      ipv6 ospf6 area 0.0.0.0
      ipv6 ospf6 network point-to-point
     !
     !
     router ospf6
-     ospf6 router-id 10.42.0.1
+     ospf6 router-id 10.0.0.2
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
@@ -652,16 +685,69 @@ TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/t
 changed: [x1]
 changed: [x2]
 
+TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Find configuration template for vrf] *************************************
+skipping: [x1]
+skipping: [x2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+skipping: [x1]
+skipping: [x2]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [x1]
+skipping: [x2]
+ok: [dut] => 
+  msg: |-
+    vrf configuration for dut
+    =========================================
+    vrf transport
+     rd 65000:1
+    !
+     address-family ipv4 unicast
+      import route-target 65000:1
+      export route-target 65000:1
+    !
+     address-family ipv6 unicast
+      import route-target 65000:1
+      export route-target 65000:1
+    !
+    interface FourHundredGigE0/0/0/1
+     vrf transport
+    !
+    interface FourHundredGigE0/0/0/2
+     vrf transport
+    !
+
+TASK [Deploy vrf configuration] ************************************************
+skipping: [x1]
+skipping: [x2]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/iosxr.yml for dut
+
+TASK [iosxr_config: deploying vrf from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/iosxr.j2] ***
+changed: [dut]
+
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=28   changed=2    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
-x1                         : ok=29   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-x2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+dut                        : ok=35   changed=3    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+x1                         : ok=31   changed=5    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+x2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
 
 
-Use this topology to test global IPv4 and IPv6 static routes. DUT has
+Use this topology to test VRF IPv4 and IPv6 static routes. DUT has
 to have static routes for loopback addresses of X1 and X2.
 
