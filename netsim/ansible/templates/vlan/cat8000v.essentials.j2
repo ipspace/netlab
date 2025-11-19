@@ -1,0 +1,32 @@
+{% if vlans is defined %}
+{%   for vname,vdata in vlans.items() %}
+!
+bridge-domain {{ vdata.id }}
+{%   endfor %}
+{% endif %}
+{% for ifdata in interfaces if ifdata.vlan.access_id is defined or ifdata.vlan.trunk_id is defined %}
+!
+interface {{ ifdata.ifname }}
+{%   if ifdata.vlan.trunk_id is defined %}
+{%     for vlan_id in ifdata.vlan.trunk_id if vlan_id != ifdata.vlan.access_id|default(0) %}
+ service instance {{ vlan_id }} ethernet
+  encapsulation dot1q {{ vlan_id }}
+  bridge-domain {{ vlan_id }}
+  rewrite ingress tag pop 1
+  rewrite egress tag push dot1q {{ vlan_id }}
+{%     endfor %}
+{%     if ifdata.vlan.native is defined %}
+ service instance {{ ifdata.vlan.access_id }} ethernet
+  encapsulation untagged
+  bridge-domain {{ ifdata.vlan.access_id }}
+{%     endif %}
+{%   elif ifdata.vlan.access_id is defined %}
+{%     if ifdata.type == 'vlan_member' %}
+ encapsulation dot1Q {{ ifdata.vlan.access_id }}
+{%     else %}
+ service instance {{ ifdata.vlan.access_id }} ethernet
+  encapsulation untagged
+  bridge-domain {{ ifdata.vlan.access_id }}
+{%     endif %}
+{%   endif %}
+{% endfor +%}
