@@ -62,6 +62,11 @@ def tests_parse(args: typing.List[str]) -> argparse.Namespace:
     dest='dryrun',
     action='store_true',
     help='Do a dry run (print the commands that would be executed)')
+  parser.add_argument(
+    '--pr',
+    dest='test_pr',
+    action='store_true',
+    help='Use the tests from the same directory netlab is started from (useful for PR testing)')
 
   return parser.parse_args(args)
 
@@ -204,6 +209,8 @@ def run_single_test(
   print(f'Running in {workdir}, logging to {log_path}')
   pwd = os.getcwd()
   os.chdir(os.path.expanduser(setup.params.test_path))
+  if dry_run:
+    print(f'Tests executed from {setup.params.test_path}')
   cmd = [ './device-module-test', test, '--workdir', workdir, '--logdir', log_path, '--batch' ]
   if limit:
     cmd += [ '--redo', limit ]
@@ -241,9 +248,24 @@ def run_tests(setup: Box, limit: typing.Optional[str], dry_run: bool = False) ->
           setup=setup,
           dry_run=dry_run)
 
+def adjust_test_paths(setup: Box) -> None:
+  nl_path = run_command(
+      ['which','netlab'],check_result=True,ignore_errors=True,return_stdout=True)
+
+  if not isinstance(nl_path,str):
+    log.fatal('Cannot get netlab path using "which netlab"')
+
+  nl_dir = os.path.dirname(nl_path)
+  setup.params.test_path = f'{nl_dir}/tests/integration'
+  setup.params.home = os.getcwd()
+  print(f'Test paths:\n{setup.params.to_yaml()}')
+
 def main() -> None:
   args = tests_parse(sys.argv[1:])
   setup = _read.load('setup.yml')
+  if args.test_pr:
+    adjust_test_paths(setup)
+
   devices.augment_device_settings(setup)
   prune_setup(setup,args)
 #  print(setup.to_yaml())
