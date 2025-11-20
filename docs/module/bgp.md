@@ -64,7 +64,7 @@ The following features are only supported on a subset of platforms:
 | Aruba AOS-CX             |  ✅ |  ❌  |  ✅ |  ✅ |
 | BIRD                     |  ✅ |  ❌  |  ❌  |  ❌  |
 | Cisco IOS/IOS XE[^18v]   |  ✅ | ✅ |  ✅ |  ✅ |
-| Cisco IOS XR[^XR]        |  ✅ |  ❌  |  ✅ |  ❌  |
+| Cisco IOS XR[^XR]        |  ✅ |  ❌  |  ✅ |  ✅ |
 | Cumulus Linux 4.x        |  ✅ |  ❌  |  ✅ |  ✅ |
 | Cumulus Linux 5.x (NVUE) |  ✅ |  ❌  |  ✅ |  ❌ |
 | Dell OS10                |  ✅ | ✅ |  ✅ |  ✅ |

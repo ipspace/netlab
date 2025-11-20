@@ -47,7 +47,7 @@ These platforms support additional IS-IS features:
 |------------------- | :-: | :-: | :-: |
 | Arista EOS         | ✅  | ✅  | ✅  |
 | Cisco IOS/XE[^18v] | ✅  | ✅  |  ❌  |
-| Cisco IOS XR[^XR]  | ✅  | ✅  |  ❌  |
+| Cisco IOS XR[^XR]  | ✅  | ✅  | ✅  |
 | Cisco Nexus OS     | ✅  |  ❌  |  ❌  |
 | FRR                | ✅  | ✅  | ✅  |
 | Junos[^Junos]      | ✅  |  ❌  |  ❌  |

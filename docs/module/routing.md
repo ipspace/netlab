@@ -458,6 +458,7 @@ _netlab_ supports static routes on these platforms:
 | Arista EOS          | ✅ | ✅ | ✅ | ✅ |
 | Aruba AOS-CX        | ✅ | ✅ | ✅ | [❗](caveats-aruba) |
 | Cisco IOS/XE[^18v]  | ✅ | ✅ | ✅ | ✅ |
+| Cisco IOS/XR[^XR]   | ✅ | ✅ | ✅ | ✅ |
 | Cumulus Linux 4.x   | ✅ |  ❌ | ✅ | ✅ |
 | Dell OS10           | ✅ | ✅ | ✅ | ✅ |
 | Junos               | ✅ | ✅ | ✅ | ❌ |

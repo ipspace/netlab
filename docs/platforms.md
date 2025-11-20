@@ -390,7 +390,7 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | --------------------- |:--:|:--:|:--:|:--:|:--:|:--:|
 | Arista EOS            | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
 | Aruba AOS-CX          | ✅ | ✅ |  ✅[❗](caveats-aruba) | [❗](caveats-aruba) | ❌ | ❌ |
-| Cisco 8000v (IOS/XR)  | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |  ❌ |
+| Cisco 8000v (IOS/XR)  | ✅ | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
 | Cisco Catalyst 8000v  | ✅ | ✅ |  ❌ | ✅ | ✅ | ✅ |
 | Cisco CSR 1000v       | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
 | Cisco IOL (IOS/XE)    | ✅ | ✅ |  ❌ | ✅ | ✅ | ✅ |
@@ -442,6 +442,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Cisco ASAv            | ❌ | ✅ | ❌ | ✅ | ❌ |
 | Cisco IOSv/IOSvL2     | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Cisco IOS XE[^18v]    | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Cisco IOS XR[^XR]     | ✅ | ✅ | ❌ | ✅ | ❌ |
 | Cisco Nexus OS        | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Cumulus Linux 4.x     | ✅ | ❌ | ❌ | ✅ | ❌ |
 | Cumulus Linux NVUE    |  ❌ | ❌ | ❌ | ✅ | ❌ |

@@ -1,0 +1,43 @@
+{% import "templates/ospf/iosxr.j2" as ospf_config with context %}
+{% import "templates/isis/iosxr.j2" as isis_config with context %}
+{% for vname,vdata in vrfs.items() %}
+vrf {{ vname }}
+ rd {{ vdata.rd }}
+!
+{%   for af in ['ipv4','ipv6'] if af in vdata.af|default({}) %}
+ address-family {{ af }} unicast
+{%     for rt in vdata.import %}
+  import route-target {{ rt }}
+{%     endfor %}
+{%     for rt in vdata.export %}
+  export route-target {{ rt }}
+{%     endfor %}
+!
+{%   endfor %}
+{% endfor %}
+{% for intf in netlab_interfaces if 'vrf' in intf %}
+interface {{ intf.ifname }}
+ vrf {{ intf.vrf }}
+!
+{% endfor %}
+{% if bgp.as is defined %}
+{%   include 'iosxr.bgp.j2' %}
+{% endif %}
+{% for vname,vdata in vrfs.items() if 'ospf' in vdata %}
+{%   for vaf in ['ipv4','ipv6'] if vaf in vdata.af %}
+{{     ospf_config.ospf_config(
+            igp_af=vaf,
+            pid=vdata.vrfidx,
+            ospf=vdata.ospf,
+            interfaces=vdata.ospf.interfaces|default([]),
+            vrf=vname) }}
+{%   endfor %}
+{% endfor %}
+{% for vname,vdata in vrfs.items() if 'isis' in vdata %}
+{{ isis_config.config(
+      isis=vdata.isis,
+      isis_net=vdata.isis.net,
+      interfaces=vdata.isis.interfaces,
+      ospf_pid=vdata.vrfidx,
+      vrf=vname) }}
+{% endfor %}

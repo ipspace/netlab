@@ -20,6 +20,7 @@ VRFs are supported on these platforms:
 | Aruba AOS-CX          | ✅  | ✅  | ✅  |
 | Cisco IOS             | ✅  | ✅  | ✅  |
 | Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  |
+| Cisco IOS XR[^XR]     | ✅  | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  |
 | Cumulus Linux 4.x     | ✅  | ✅  | ✅  |
 | Cumulus 5.x (NVUE)    | ✅  |  ✅ [❗](caveats-cumulus-nvue) |  ✅  |
@@ -40,6 +41,8 @@ VRFs are supported on these platforms:
 
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
+[^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
+
 (module-vrf-platform-routing-support)=
 These platforms support routing protocols in VRFs:
 
@@ -49,6 +52,7 @@ These platforms support routing protocols in VRFs:
 | Aruba AOS-CX          | ✅  | ✅  | ✅  | ❌  | ❌  | ❌  |
 | Cisco IOS/IOSvL2      | ✅ [❗](caveats-iosv) | ✅  | ✅  | ✅  | ✅  | ❌  |
 | Cisco IOS XE[^18v]    | ✅ [❗](caveats-csr) | ✅  | ✅  | ✅  | ✅  | ❌  |
+| Cisco IOS XR[^XR]     | ✅ | ✅  | ✅  | ❌  | ❌  | ✅  |
 | Cisco Nexus OS        | ✅  |  ❌  | ✅  | ❌  | ❌  | ❌  |
 | Cumulus Linux 4.x     | ✅  |  ❌  | ✅  | ✅  | ✅  | ❌  |
 | Cumulus 5.x (NVUE)    | ✅  |  ❌  | ✅  | ❌  | ❌  | ❌  |

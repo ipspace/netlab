@@ -55,8 +55,8 @@ The following table describes the per-platform support of individual router-leve
 | Arista EOS               | ✅| ✅| ✅| ✅| ✅|
 | Aruba AOS-CX             | ✅| ✅| ✅| ✅| ✅|
 | Cisco IOSv/IOSvL2        | ✅| ✅| ✅| ✅| ✅|
-| Cisco IOS XR[^XR]        | ✅| ✅| ✅| ✅| ✅|
 | Cisco IOS XE[^18v]       | ✅| ✅| ✅| ✅| ✅|
+| Cisco IOS XR[^XR]        | ✅| ✅| ✅| ✅| ✅|
 | Cisco Nexus OS           | ✅| ✅| ✅| ❌ | ❌ |
 | Cumulus Linux            | ✅| ✅| ✅| ✅| ✅|
 | Dell OS10 ([❗](caveats-os10)) | ✅| ✅| ✅| ✅| ✅|
@@ -161,6 +161,7 @@ These devices also support optional OSPF interface attributes:
 | Aruba AOS-CX             | ✅ | ✅ | ✅ | ❌  |
 | Cisco IOSv/IOSvL2        | ✅ | ✅ | ✅ | ❌  |
 | Cisco IOS XE[^18v]       | ✅ | ✅ | ✅ | ❌  |
+| Cisco IOS XR[^XR]        | ✅ | ✅ | ✅ | ❌  |
 | Cisco Nexus OS           | ✅ | ✅ | ✅ | ❌  |
 | Cumulus Linux 4.x        | ✅ | ✅ | ✅ | ❌  |
 | Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ❌  | ❌  |

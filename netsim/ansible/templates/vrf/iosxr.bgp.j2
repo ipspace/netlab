@@ -1,0 +1,41 @@
+{% import "templates/bgp/iosxr.j2" as bgp_config with context %}
+{% import "templates/routing/_redistribute.iosxr.j2" as redistribute with context %}
+!
+router bgp {{ bgp.as }}
+{{ bgp_config.bgp_common(bgp) }}
+{% for af in ['ipv4','ipv6'] %}
+{%   for vdata in vrfs.values() if vdata.bgp is defined and vdata.af[af] is defined %}
+{%     if loop.first %}
+ address-family vpn{{ af|replace('ip','') }} unicast
+  bgp import-delay 0 0
+  bgp scan-time 5
+{%     endif %}
+{%   endfor %}
+{% endfor %}
+{% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
+ vrf {{ vname }}
+  bgp unsafe-ebgp-policy
+{% if vdata.bgp.router_id is defined %}
+  bgp router-id {{ vdata.bgp.router_id }}
+{% endif %}
+{%   for af in ['ipv4','ipv6'] if af in vdata.af|default({}) %}
+!
+  address-family {{ af }} unicast
+{%     if vdata.bgp.import is defined %}
+{{  redistribute.config(
+          vdata.bgp,
+          af=af,
+          ospf_pid=vdata.vrfidx,
+          vrf=vname,
+          t_proto='bgp')|indent(2,first=True) }}
+{%     endif %}
+{%     for n in vdata.networks|default([]) if af in n %}
+   network {{ n[af]|ipaddr('0') }}
+{%     endfor %}
+{%   endfor %}
+{%   for n in vdata.bgp.neighbors|default([]) %}
+{%     for af in ['ipv4','ipv6'] if n[af] is defined %}
+{{       bgp_config.bgp_neighbor(n,af,vrf=True)|indent(1,first=True) }}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
