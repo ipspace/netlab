@@ -4,15 +4,17 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [x1]
+ok: [r1]
 ok: [r2]
 ok: [r3]
+ok: [r4]
 ok: [dut]
 
 TASK [Generic readiness tests] *************************************************
-skipping: [x1]
+skipping: [r1]
 skipping: [r2]
 skipping: [r3]
+skipping: [r4]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ssh.yml for dut => (item=ssh)
 
 TASK [Check if 'sshpass' is installed] *****************************************
@@ -48,87 +50,99 @@ ok: [dut] =>
   msg: Node dut is ready.
 
 TASK [Find device readiness script] ********************************************
-ok: [x1]
+ok: [r1]
 ok: [r2]
 ok: [r3]
+ok: [r4]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
-skipping: [x1]
+skipping: [r1]
 skipping: [r2]
 skipping: [r3]
+skipping: [r4]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [x1]
+ok: [r1]
 ok: [r2]
 ok: [r3]
+ok: [r4]
 ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
-ok: [x1]
+ok: [r1]
 ok: [r2]
 ok: [r3]
+ok: [r4]
 ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [x1]
+skipping: [r1]
 skipping: [r2]
 skipping: [r3]
+skipping: [r4]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [x1]
+ok: [r1]
 ok: [r2]
 ok: [r3]
+ok: [r4]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
-skipping: [x1]
+skipping: [r1]
 skipping: [r2]
 skipping: [r3]
+skipping: [r4]
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [dut]
-skipping: [x1]
+skipping: [r1]
 skipping: [r2]
 skipping: [r3]
+skipping: [r4]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [x1]
+ok: [r1]
 ok: [r2]
 ok: [r3]
+ok: [r4]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
-ok: [x1]
+ok: [r1]
 ok: [r2]
 ok: [r3]
+ok: [r4]
 ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [x1]
+skipping: [r1]
 skipping: [r2]
 skipping: [r3]
+skipping: [r4]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [x1]
+ok: [r1]
 ok: [r2]
 ok: [r3]
+ok: [r4]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [x1] => 
+ok: [r1] => 
   msg: |-
-    initial configuration for x1
+    initial configuration for r1
     =========================================
     #!/bin/bash
     #
@@ -208,7 +222,7 @@ ok: [x1] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname x1
+    hostname r1
     !
     log file /tmp/logging
   
@@ -227,7 +241,7 @@ ok: [x1] =>
     !
     interface eth1
      no shutdown
-     description x1 -> dut [external]
+     description r1 -> dut
      ip address 10.1.0.2/30
      ipv6 address 2001:db8:3::2/64
      ipv6 nd ra-interval 5
@@ -339,7 +353,7 @@ ok: [r2] =>
     !
     interface eth1
      no shutdown
-     description r2 -> dut
+     description r2 -> dut [external]
      ip address 10.1.0.6/30
      ipv6 address 2001:db8:3:1::2/64
      ipv6 nd ra-interval 5
@@ -462,6 +476,118 @@ ok: [r3] =>
     vtysh -f /tmp/config
     !
     exit 0
+ok: [r4] => 
+  msg: |-
+    initial configuration for r4
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname r4
+    !
+    log file /tmp/logging
+  
+    !
+    ip forwarding
+    ipv6 forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.5/32
+     ipv6 address 2001:db8:1:5::1/64
+    !
+    interface eth1
+     no shutdown
+     description r4 -> dut [external]
+     ip address 10.1.0.14/30
+     ipv6 address 2001:db8:3:3::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    !
+    exit 0
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -473,12 +599,14 @@ ok: [dut] =>
     lldp
      no management enable
     !
-    domain ipv4 host x1 10.0.0.2
+    domain ipv4 host r1 10.0.0.2
     domain ipv4 host r2 10.0.0.3
     domain ipv4 host r3 10.0.0.4
-    domain ipv6 host x1 2001:db8:1:2::1
+    domain ipv4 host r4 10.0.0.5
+    domain ipv6 host r1 2001:db8:1:2::1
     domain ipv6 host r2 2001:db8:1:3::1
     domain ipv6 host r3 2001:db8:1:4::1
+    domain ipv6 host r4 2001:db8:1:5::1
     !
     interface Loopback0
      no shutdown
@@ -487,16 +615,14 @@ ok: [dut] =>
     !
     interface FourHundredGigE0/0/0/0
      no shutdown
-     description dut -> x1 [external]
-     mtu 1514
+     description dut -> r1
      ipv4 address 10.1.0.1 255.255.255.252
      ipv6 address 2001:db8:3::1/64
      ipv6 nd ra-interval 5
     !
     interface FourHundredGigE0/0/0/1
      no shutdown
-     description dut -> r2
-     mtu 1514
+     description dut -> r2 [external]
      ipv4 address 10.1.0.5 255.255.255.252
      ipv6 address 2001:db8:3:1::1/64
      ipv6 nd ra-interval 5
@@ -504,15 +630,21 @@ ok: [dut] =>
     interface FourHundredGigE0/0/0/2
      no shutdown
      description dut -> r3
-     mtu 1514
      ipv4 address 10.1.0.9 255.255.255.252
      ipv6 address 2001:db8:3:2::1/64
+     ipv6 nd ra-interval 5
+    !
+    interface FourHundredGigE0/0/0/3
+     no shutdown
+     description dut -> r4 [external]
+     ipv4 address 10.1.0.13 255.255.255.252
+     ipv6 address 2001:db8:3:3::1/64
      ipv6 nd ra-interval 5
     !
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/iosxr.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x1, r2, r3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, r3, r4
 
 TASK [iosxr_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/iosxr.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
@@ -521,125 +653,119 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x1 -> localhost]
+changed: [r1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
-skipping: [x1]
+skipping: [r1]
 skipping: [r2]
 skipping: [r3]
+skipping: [r4]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, r2, r3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4
 
 TASK [template] ****************************************************************
-changed: [r2]
-changed: [x1]
 changed: [r3]
+changed: [r4]
+changed: [r1]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
-ok: [x1]
+ok: [r1]
 ok: [r2]
 ok: [r3]
+ok: [r4]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
 changed: [r3]
+changed: [r1]
 changed: [r2]
+changed: [r4]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-skipping: [x1]
+skipping: [r1]
 skipping: [r2]
 skipping: [r3]
+skipping: [r4]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [x1]
+ok: [r1]
 ok: [r2]
 ok: [r3]
+ok: [r4]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3 => (item=routing)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3 => (item=isis)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3 => (item=ospf)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3 => (item=bgp)
-
-TASK [Figure out whether to deploy the module routing on current device] *******
-ok: [x1]
-ok: [r2]
-ok: [r3]
-ok: [dut]
-
-TASK [Find configuration template for routing] *********************************
-skipping: [x1]
-skipping: [r2]
-skipping: [r3]
-ok: [dut]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-skipping: [x1]
-skipping: [r2]
-skipping: [r3]
-
-TASK [Find configuration deployment deploy_script for routing] *****************
-skipping: [x1]
-skipping: [r2]
-skipping: [r3]
-ok: [dut]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [x1]
-skipping: [r2]
-skipping: [r3]
-ok: [dut] => 
-  msg: |-
-    routing configuration for dut
-    =========================================
-    !
-    ! Static routes
-    !
-    router static
-      address-family ipv4 unicast 10.0.0.42/32 FourHundredGigE0/0/0/1 10.1.0.6
-      address-family ipv6 unicast 2001:db8:42::42/128 FourHundredGigE0/0/0/1 2001:db8:3:1::2
-
-TASK [Deploy routing configuration] ********************************************
-skipping: [x1]
-skipping: [r2]
-skipping: [r3]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/iosxr.yml for dut
-
-TASK [iosxr_config: deploying routing from /home/pipi/netlab_gh/netsim/ansible/templates/routing/iosxr.j2] ***
-changed: [dut]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=isis)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=vrf)
 
 TASK [Figure out whether to deploy the module isis on current device] **********
-ok: [x1]
+ok: [r1]
 ok: [r2]
 ok: [r3]
+ok: [r4]
 ok: [dut]
 
 TASK [Find configuration template for isis] ************************************
-skipping: [x1]
 skipping: [r2]
+ok: [r1]
+skipping: [r4]
 ok: [r3]
 ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [x1]
+skipping: [r1]
 skipping: [r2]
 skipping: [r3]
+skipping: [r4]
 
 TASK [Find configuration deployment deploy_script for isis] ********************
-skipping: [x1]
 skipping: [r2]
+skipping: [r4]
+ok: [r1]
 ok: [r3]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [x1]
 skipping: [r2]
+skipping: [r4]
+ok: [r1] => 
+  msg: |-
+    isis configuration for r1
+    =========================================
+    !
+    !
+    ipv6 forwarding
+    !
+    router isis Gandalf
+     log-adjacency-changes
+     hostname dynamic
+     is-type level-2
+     metric-style wide
+     lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
+     net 49.0001.0000.0000.0002.00
+     topology ipv6-unicast
+  
+  
+    !
+    interface lo
+    !
+     ip router isis Gandalf
+     ipv6 router isis Gandalf
+    !
+    interface eth1
+    ! r1 -> dut
+     ip router isis Gandalf
+     ipv6 router isis Gandalf
+     isis network point-to-point
+    !
+  
+    !
+    do write
 ok: [r3] => 
   msg: |-
     isis configuration for r3
@@ -651,13 +777,11 @@ ok: [r3] =>
     router isis Gandalf
      log-adjacency-changes
      hostname dynamic
-     is-type level-1-2
+     is-type level-2
      metric-style wide
      lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
      net 49.0001.0000.0000.0004.00
      topology ipv6-unicast
-  
-  
   
   
     !
@@ -681,223 +805,66 @@ ok: [dut] =>
     =========================================
     !
     !
-    router isis Gandalf
-  
-     log adjacency changes
-     lsp-gen-interval initial-wait 50 secondary-wait 100 maximum-wait 500
-     is-type level-1-2
-     net 49.0001.0000.0000.0001.00
-    !
-     address-family ipv4 unicast
-      metric-style wide
-      spf-interval initial-wait 50 secondary-wait 100 maximum-wait 500
-      redistribute bgp 65000
-      redistribute ospf 1
-      redistribute static
-  
-    !
-     address-family ipv6 unicast
-      metric-style wide
-      spf-interval initial-wait 50 secondary-wait 100 maximum-wait 500
-      no single-topology
-      redistribute bgp 65000
-      redistribute ospf 1
-      redistribute static
-  
-    !
-    !
-     interface Loopback0
-      address-family ipv4
-      address-family ipv6
-    !
-     interface FourHundredGigE0/0/0/1
-      point-to-point
-      address-family ipv4
-      address-family ipv6
-    !
-     interface FourHundredGigE0/0/0/2
-      point-to-point
-      address-family ipv4
-      address-family ipv6
 
 TASK [Deploy isis configuration] ***********************************************
-skipping: [x1]
 skipping: [r2]
+skipping: [r4]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/iosxr.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1, r3
 
 TASK [iosxr_config: deploying isis from /home/pipi/netlab_gh/netsim/ansible/templates/isis/iosxr.j2] ***
-changed: [dut]
+ok: [dut]
 
 TASK [template] ****************************************************************
 changed: [r3]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
+ok: [r1]
 ok: [r3]
 
 TASK [run /tmp/config.sh to deploy isis config from /home/pipi/netlab_gh/netsim/ansible/templates/isis/frr.j2] ***
+skipping: [r1]
 skipping: [r3]
 
 TASK [run vtysh to import isis config from /home/pipi/netlab_gh/netsim/ansible/templates/isis/frr.j2] ***
 changed: [r3]
-
-TASK [Figure out whether to deploy the module ospf on current device] **********
-ok: [x1]
-ok: [r2]
-ok: [r3]
-ok: [dut]
-
-TASK [Find configuration template for ospf] ************************************
-skipping: [x1]
-skipping: [r3]
-ok: [r2]
-ok: [dut]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-skipping: [x1]
-skipping: [r2]
-skipping: [r3]
-
-TASK [Find configuration deployment deploy_script for ospf] ********************
-skipping: [x1]
-skipping: [r3]
-ok: [r2]
-ok: [dut]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [x1]
-skipping: [r3]
-ok: [r2] => 
-  msg: |-
-    ospf configuration for r2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.3
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! r2 -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    ! OSPFv3 FRR configuration
-    !
-    interface lo
-    !
-     ipv6 ospf6 area 0.0.0.0
-    !
-    interface eth1
-    ! r2 -> dut
-     ipv6 ospf6 area 0.0.0.0
-     ipv6 ospf6 network point-to-point
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.3
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-  
-  
-    exit
-  
-    !
-    do write
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
-    !
-    router ospf 1
-     router-id 10.0.0.1
-  
-     loopback stub-network enable
-     redistribute isis Gandalf level-1-2
-  
-     area 0.0.0.0
-      interface Loopback0
-      interface FourHundredGigE0/0/0/1
-       network point-to-point
-      interface FourHundredGigE0/0/0/2
-       network point-to-point
-  
-    router ospfv3 1
-     router-id 10.0.0.1
-  
-     redistribute isis Gandalf level-1-2
-  
-     area 0.0.0.0
-      interface Loopback0
-      interface FourHundredGigE0/0/0/1
-       network point-to-point
-      interface FourHundredGigE0/0/0/2
-       network point-to-point
-
-TASK [Deploy ospf configuration] ***********************************************
-skipping: [x1]
-skipping: [r3]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/iosxr.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r2
-
-TASK [iosxr_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/iosxr.j2] ***
-changed: [dut]
-
-TASK [template] ****************************************************************
-changed: [r2]
-
-TASK [set_fact] ****************************************************************
-ok: [r2]
-
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
-skipping: [r2]
-
-TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r2]
+changed: [r1]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
-ok: [x1]
+ok: [r1]
 ok: [r2]
 ok: [r3]
+ok: [r4]
 ok: [dut]
 
 TASK [Find configuration template for bgp] *************************************
-skipping: [r2]
+skipping: [r1]
 skipping: [r3]
-ok: [x1]
+ok: [r2]
+ok: [r4]
 ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [x1]
+skipping: [r1]
 skipping: [r2]
 skipping: [r3]
+skipping: [r4]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
-skipping: [r2]
+skipping: [r1]
 skipping: [r3]
-ok: [x1]
+ok: [r2]
+ok: [r4]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [r2]
+skipping: [r1]
 skipping: [r3]
-ok: [x1] => 
+ok: [r2] => 
   msg: |-
-    bgp configuration for x1
+    bgp configuration for r2
     =========================================
     !
     router bgp 65100
@@ -908,13 +875,13 @@ ok: [x1] =>
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
-      bgp router-id 10.0.0.2
+      bgp router-id 10.0.0.3
     !
-      neighbor 10.1.0.1 remote-as 65000
-      neighbor 10.1.0.1 description dut
+      neighbor 10.1.0.5 remote-as 65000
+      neighbor 10.1.0.5 description dut
     !
-      neighbor 2001:db8:3::1 remote-as 65000
-      neighbor 2001:db8:3::1 description dut
+      neighbor 2001:db8:3:1::1 remote-as 65000
+      neighbor 2001:db8:3:1::1 description dut
     !
      address-family ipv4 unicast
     !
@@ -922,12 +889,12 @@ ok: [x1] =>
     !
     ! Originate networks from connected subnets
     !
-      network 10.0.0.2/32
+      network 10.0.0.3/32
     !
-      neighbor 10.1.0.1 activate
-      no neighbor 10.1.0.1 send-community all
-      neighbor 10.1.0.1 send-community standard
-      neighbor 10.1.0.1 send-community large
+      neighbor 10.1.0.5 activate
+      no neighbor 10.1.0.5 send-community all
+      neighbor 10.1.0.5 send-community standard
+      neighbor 10.1.0.5 send-community large
     !
      address-family ipv6 unicast
     !
@@ -935,12 +902,62 @@ ok: [x1] =>
     !
     ! Originate networks from connected subnets
     !
-      network 2001:db8:1:2::/64
+      network 2001:db8:1:3::/64
     !
-      neighbor 2001:db8:3::1 activate
-      no neighbor 2001:db8:3::1 send-community all
-      neighbor 2001:db8:3::1 send-community standard
-      neighbor 2001:db8:3::1 send-community large
+      neighbor 2001:db8:3:1::1 activate
+      no neighbor 2001:db8:3:1::1 send-community all
+      neighbor 2001:db8:3:1::1 send-community standard
+      neighbor 2001:db8:3:1::1 send-community large
+    !
+    !
+    !
+    do write
+ok: [r4] => 
+  msg: |-
+    bgp configuration for r4
+    =========================================
+    !
+    router bgp 65101
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.5
+    !
+      neighbor 10.1.0.13 remote-as 65000
+      neighbor 10.1.0.13 description dut
+    !
+      neighbor 2001:db8:3:3::1 remote-as 65000
+      neighbor 2001:db8:3:3::1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+    ! Originate networks from connected subnets
+    !
+      network 10.0.0.5/32
+    !
+      neighbor 10.1.0.13 activate
+      no neighbor 10.1.0.13 send-community all
+      neighbor 10.1.0.13 send-community standard
+      neighbor 10.1.0.13 send-community large
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+    ! Originate networks from connected subnets
+    !
+      network 2001:db8:1:5::/64
+    !
+      neighbor 2001:db8:3:3::1 activate
+      no neighbor 2001:db8:3:3::1 send-community all
+      neighbor 2001:db8:3:3::1 send-community standard
+      neighbor 2001:db8:3:3::1 send-community large
     !
     !
     !
@@ -962,62 +979,265 @@ ok: [dut] =>
       bgp scan-time 5
     !
       network 10.0.0.1/32
-      redistribute isis Gandalf level 1 level 2
-  
     !
     !
      address-family ipv6 unicast
       bgp scan-time 5
     !
       network 2001:db8:1:1::/64
-      redistribute isis Gandalf level 1 level 2
-  
-    !
-     neighbor 10.1.0.2
-      remote-as 65100
-      description x1
-      address-family ipv4 unicast
-       send-community-ebgp
-    !
-  
-     neighbor 2001:db8:3::2
-      remote-as 65100
-      description x1
-      address-family ipv6 unicast
-       send-community-ebgp
     !
 
 TASK [Deploy bgp configuration] ************************************************
-skipping: [r2]
+skipping: [r1]
 skipping: [r3]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/iosxr.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r2, r4
 
 TASK [iosxr_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/iosxr.j2] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x1]
+changed: [r4]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
-ok: [x1]
+ok: [r2]
+ok: [r4]
 
 TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-skipping: [x1]
+skipping: [r2]
+skipping: [r4]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [x1]
+changed: [r2]
+changed: [r4]
+
+TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [r1]
+ok: [r2]
+ok: [r3]
+ok: [r4]
+ok: [dut]
+
+TASK [Find configuration template for vrf] *************************************
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
+ok: [dut] => 
+  msg: |-
+    vrf configuration for dut
+    =========================================
+    vrf red
+     rd 65000:1
+    !
+     address-family ipv4 unicast
+      import route-target 65000:1
+      export route-target 65000:1
+    !
+     address-family ipv6 unicast
+      import route-target 65000:1
+      export route-target 65000:1
+    !
+    vrf blue
+     rd 65000:2
+    !
+     address-family ipv4 unicast
+      import route-target 65000:2
+      export route-target 65000:2
+    !
+     address-family ipv6 unicast
+      import route-target 65000:2
+      export route-target 65000:2
+    !
+    interface FourHundredGigE0/0/0/0
+     vrf red
+    !
+    interface FourHundredGigE0/0/0/1
+     vrf red
+    !
+    interface FourHundredGigE0/0/0/2
+     vrf blue
+    !
+    interface FourHundredGigE0/0/0/3
+     vrf blue
+    !
+    !
+    router bgp 65000
+     bgp unsafe-ebgp-policy
+     bgp scan-time 5
+     bgp update-delay 5
+     bgp router-id 10.0.0.1
+  
+     address-family vpnv4 unicast
+      bgp import-delay 0 0
+      bgp scan-time 5
+     address-family vpnv6 unicast
+      bgp import-delay 0 0
+      bgp scan-time 5
+     vrf red
+      bgp unsafe-ebgp-policy
+    !
+      address-family ipv4 unicast
+       redistribute connected
+       redistribute isis isis_red level 1 level 2
+  
+    !
+      address-family ipv6 unicast
+       redistribute connected
+       redistribute isis isis_red level 1 level 2
+  
+      neighbor 10.1.0.6
+       remote-as 65100
+       description r2
+       address-family ipv4 unicast
+        send-community-ebgp
+     !
+  
+      neighbor 2001:db8:3:1::2
+       remote-as 65100
+       description r2
+       session-open-mode both
+       address-family ipv6 unicast
+        send-community-ebgp
+     !
+  
+     vrf blue
+      bgp unsafe-ebgp-policy
+    !
+      address-family ipv4 unicast
+       redistribute connected
+       redistribute isis isis_blue level 1 level 2
+  
+    !
+      address-family ipv6 unicast
+       redistribute connected
+       redistribute isis isis_blue level 1 level 2
+  
+      neighbor 10.1.0.14
+       remote-as 65101
+       description r4
+       address-family ipv4 unicast
+        send-community-ebgp
+     !
+  
+      neighbor 2001:db8:3:3::2
+       remote-as 65101
+       description r4
+       session-open-mode both
+       address-family ipv6 unicast
+        send-community-ebgp
+     !
+  
+    router isis isis_red
+     vrf-context red
+  
+     log adjacency changes
+     lsp-gen-interval initial-wait 50 secondary-wait 100 maximum-wait 500
+     is-type level-2-only
+     net 49.0001.0000.0000.0001.00
+    !
+     address-family ipv4 unicast
+      metric-style wide
+      spf-interval initial-wait 50 secondary-wait 100 maximum-wait 500
+      redistribute bgp 65000
+      redistribute connected
+  
+    !
+     address-family ipv6 unicast
+      metric-style wide
+      spf-interval initial-wait 50 secondary-wait 100 maximum-wait 500
+      no single-topology
+      redistribute bgp 65000
+      redistribute connected
+  
+    !
+    !
+     interface FourHundredGigE0/0/0/0
+      point-to-point
+      address-family ipv4
+      address-family ipv6
+  
+    router isis isis_blue
+     vrf-context blue
+  
+     log adjacency changes
+     lsp-gen-interval initial-wait 50 secondary-wait 100 maximum-wait 500
+     is-type level-2-only
+     net 49.0001.0000.0000.0001.00
+    !
+     address-family ipv4 unicast
+      metric-style wide
+      spf-interval initial-wait 50 secondary-wait 100 maximum-wait 500
+      redistribute bgp 65000
+      redistribute connected
+  
+    !
+     address-family ipv6 unicast
+      metric-style wide
+      spf-interval initial-wait 50 secondary-wait 100 maximum-wait 500
+      no single-topology
+      redistribute bgp 65000
+      redistribute connected
+  
+    !
+    !
+     interface FourHundredGigE0/0/0/2
+      point-to-point
+      address-family ipv4
+      address-family ipv6
+
+TASK [Deploy vrf configuration] ************************************************
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/iosxr.yml for dut
+
+TASK [iosxr_config: deploying vrf from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/iosxr.j2] ***
+changed: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=47   changed=5    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-r2                         : ok=32   changed=4    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
-r3                         : ok=32   changed=4    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
-x1                         : ok=33   changed=5    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
+dut                        : ok=40   changed=3    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+r1                         : ok=31   changed=5    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+r2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+r3                         : ok=30   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+r4                         : ok=30   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
 
 
-Use this topology to test the two-way redistribution between ISIS and OSPFv2/OSPFv3/BGP
+The device under test has two dual-stack VRFs with two interfaces in each VRF.
+Routers are attached to those interfaces and run IS-IS and BGP with device
+under test.
+
+This scenario tests IS-IS in VRF, redistribution of connected subnets into
+IS-IS and two-way IS-IS-to-BGP redistribution.
+
+* r1 and r2 should be able to ping each other
+* r3 and r4 should be able to ping each other
+* r1 should not be able to reach r3
 
