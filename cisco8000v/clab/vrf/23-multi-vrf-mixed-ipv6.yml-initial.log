@@ -353,7 +353,7 @@ ok: [r2] =>
     !
     interface eth1
      no shutdown
-     description r2 -> dut
+     description r2 -> dut [external]
      ip address 10.1.0.6/30
      ipv6 address 2001:db8:3:1::2/64
      ipv6 nd ra-interval 5
@@ -575,7 +575,7 @@ ok: [r4] =>
     !
     interface eth1
      no shutdown
-     description r4 -> dut
+     description r4 -> dut [external]
      ! no ip address
      ipv6 address 2001:db8:13:1::2/64
      ipv6 nd ra-interval 5
@@ -619,7 +619,7 @@ ok: [dut] =>
     !
     interface FourHundredGigE0/0/0/1
      no shutdown
-     description dut -> r2
+     description dut -> r2 [external]
      mtu 1514
      ipv4 address 10.1.0.5 255.255.255.252
      ipv6 address 2001:db8:3:1::1/64
@@ -634,7 +634,7 @@ ok: [dut] =>
     !
     interface FourHundredGigE0/0/0/3
      no shutdown
-     description dut -> r4
+     description dut -> r4 [external]
      mtu 1514
      ipv6 address 2001:db8:13:1::1/64
      ipv6 nd ra-interval 5
@@ -643,12 +643,6 @@ ok: [dut] =>
      no shutdown
      description VRF Loopback blue
      ipv6 address 2001:db8:cafe:2001::1/64
-    !
-    interface Loopback2
-     no shutdown
-     description VRF Loopback red
-     ipv4 address 10.2.0.1 255.255.255.255
-     ipv6 address 2001:db8:cafe::1/64
     !
 
 TASK [Deploy initial configuration] ********************************************
@@ -674,10 +668,10 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4
 
 TASK [template] ****************************************************************
-changed: [r1]
-changed: [r3]
 changed: [r2]
 changed: [r4]
+changed: [r1]
+changed: [r3]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -686,10 +680,10 @@ ok: [r3]
 ok: [r4]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r2]
 changed: [r1]
-changed: [r3]
+changed: [r2]
 changed: [r4]
+changed: [r3]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
@@ -708,6 +702,7 @@ ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=bgp)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=vrf)
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
@@ -718,10 +713,10 @@ ok: [r4]
 ok: [dut]
 
 TASK [Find configuration template for ospf] ************************************
+skipping: [r2]
 ok: [r1]
-ok: [r2]
+skipping: [r4]
 ok: [r3]
-ok: [r4]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -732,13 +727,15 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [r2]
+skipping: [r4]
 ok: [r1]
-ok: [r2]
 ok: [r3]
-ok: [r4]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [r2]
+skipping: [r4]
 ok: [r1] => 
   msg: |-
     ospf configuration for r1
@@ -757,11 +754,11 @@ ok: [r1] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.2
+     ip ospf area 0.0.0.0
     !
     interface eth1
     ! r1 -> dut
-     ip ospf area 0.0.0.2
+     ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
   
@@ -770,11 +767,11 @@ ok: [r1] =>
     !
     interface lo
     !
-     ipv6 ospf6 area 0.0.0.2
+     ipv6 ospf6 area 0.0.0.0
     !
     interface eth1
     ! r1 -> dut
-     ipv6 ospf6 area 0.0.0.2
+     ipv6 ospf6 area 0.0.0.0
      ipv6 ospf6 network point-to-point
     !
     !
@@ -797,92 +794,16 @@ ok: [r3] =>
     !
     interface lo
     !
-     ipv6 ospf6 area 0.0.0.3
+     ipv6 ospf6 area 0.0.0.0
     !
     interface eth1
     ! r3 -> dut
-     ipv6 ospf6 area 0.0.0.3
+     ipv6 ospf6 area 0.0.0.0
      ipv6 ospf6 network point-to-point
     !
     !
     router ospf6
      ospf6 router-id 10.0.0.4
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-  
-  
-    exit
-  
-    !
-    do write
-ok: [r2] => 
-  msg: |-
-    ospf configuration for r2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.3
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.2
-    !
-    interface eth1
-    ! r2 -> dut
-     ip ospf area 0.0.0.2
-     ip ospf network point-to-point
-    !
-  
-    !
-    ! OSPFv3 FRR configuration
-    !
-    interface lo
-    !
-     ipv6 ospf6 area 0.0.0.2
-    !
-    interface eth1
-    ! r2 -> dut
-     ipv6 ospf6 area 0.0.0.2
-     ipv6 ospf6 network point-to-point
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.3
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-  
-  
-    exit
-  
-    !
-    do write
-ok: [r4] => 
-  msg: |-
-    ospf configuration for r4
-    =========================================
-    !
-    ! OSPFv3 FRR configuration
-    !
-    interface lo
-    !
-     ipv6 ospf6 area 0.0.0.4
-    !
-    interface eth1
-    ! r4 -> dut
-     ipv6 ospf6 area 0.0.0.4
-     ipv6 ospf6 network point-to-point
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.5
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
@@ -898,35 +819,194 @@ ok: [dut] =>
     !
 
 TASK [Deploy ospf configuration] ***********************************************
+skipping: [r2]
+skipping: [r4]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/iosxr.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, r3, r4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1, r3
 
 TASK [iosxr_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/iosxr.j2] ***
 ok: [dut]
 
 TASK [template] ****************************************************************
-changed: [r1]
-changed: [r4]
-changed: [r2]
 changed: [r3]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
+ok: [r1]
+ok: [r3]
+
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+skipping: [r1]
+skipping: [r3]
+
+TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [r3]
+changed: [r1]
+
+TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [r1]
 ok: [r2]
 ok: [r3]
 ok: [r4]
+ok: [dut]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [Find configuration template for bgp] *************************************
+skipping: [r1]
+skipping: [r3]
+ok: [r2]
+ok: [r4]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 skipping: [r4]
 
-TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [Find configuration deployment deploy_script for bgp] *********************
+skipping: [r1]
+skipping: [r3]
+ok: [r2]
+ok: [r4]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [r1]
+skipping: [r3]
+ok: [r2] => 
+  msg: |-
+    bgp configuration for r2
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.3
+    !
+      neighbor 10.1.0.5 remote-as 65000
+      neighbor 10.1.0.5 description dut
+    !
+      neighbor 2001:db8:3:1::1 remote-as 65000
+      neighbor 2001:db8:3:1::1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+    ! Originate networks from connected subnets
+    !
+      network 10.0.0.3/32
+    !
+      neighbor 10.1.0.5 activate
+      no neighbor 10.1.0.5 send-community all
+      neighbor 10.1.0.5 send-community standard
+      neighbor 10.1.0.5 send-community large
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+    ! Originate networks from connected subnets
+    !
+      network 2001:db8:1:3::/64
+    !
+      neighbor 2001:db8:3:1::1 activate
+      no neighbor 2001:db8:3:1::1 send-community all
+      neighbor 2001:db8:3:1::1 send-community standard
+      neighbor 2001:db8:3:1::1 send-community large
+    !
+    !
+    !
+    do write
+ok: [r4] => 
+  msg: |-
+    bgp configuration for r4
+    =========================================
+    !
+    router bgp 65101
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.5
+    !
+      neighbor 2001:db8:13:1::1 remote-as 65000
+      neighbor 2001:db8:13:1::1 description dut
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+    ! Originate networks from connected subnets
+    !
+      network 2001:db8:cafe:2000::5/128
+    !
+      neighbor 2001:db8:13:1::1 activate
+      no neighbor 2001:db8:13:1::1 send-community all
+      neighbor 2001:db8:13:1::1 send-community standard
+      neighbor 2001:db8:13:1::1 send-community large
+    !
+    !
+    !
+    do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    !
+    !
+    router bgp 65000
+     bgp unsafe-ebgp-policy
+     bgp scan-time 5
+     bgp update-delay 5
+     bgp router-id 10.0.0.1
+  
+    !
+     address-family ipv4 unicast
+      bgp scan-time 5
+    !
+      network 10.0.0.1/32
+    !
+    !
+     address-family ipv6 unicast
+      bgp scan-time 5
+    !
+      network 2001:db8:1:1::/64
+    !
+
+TASK [Deploy bgp configuration] ************************************************
+skipping: [r1]
+skipping: [r3]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/iosxr.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r2, r4
+
+TASK [iosxr_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/iosxr.j2] ***
+changed: [dut]
+
+TASK [template] ****************************************************************
+changed: [r4]
+changed: [r2]
+
+TASK [set_fact] ****************************************************************
+ok: [r2]
+ok: [r4]
+
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+skipping: [r2]
+skipping: [r4]
+
+TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [r2]
 changed: [r4]
-changed: [r1]
-changed: [r3]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [r1]
@@ -998,47 +1078,93 @@ ok: [dut] =>
     interface Loopback1
      vrf blue
     !
-    interface Loopback2
-     vrf red
     !
+    router bgp 65000
+     bgp unsafe-ebgp-policy
+     bgp scan-time 5
+     bgp update-delay 5
+     bgp router-id 10.0.0.1
+  
+     address-family vpnv4 unicast
+      bgp import-delay 0 0
+      bgp scan-time 5
+     address-family vpnv6 unicast
+      bgp import-delay 0 0
+      bgp scan-time 5
+     vrf blue
+      bgp unsafe-ebgp-policy
+    !
+      address-family ipv6 unicast
+       redistribute connected
+       redistribute ospf 101 match internal external nssa-external
+  
+       network 2001:db8:cafe:2001::/64
+      neighbor 2001:db8:13:1::2
+       remote-as 65101
+       description r4
+       session-open-mode both
+       address-family ipv6 unicast
+        send-community-ebgp
+     !
+  
+     vrf red
+      bgp unsafe-ebgp-policy
+    !
+      address-family ipv4 unicast
+       redistribute connected
+       redistribute ospf 100 match internal external nssa-external
+  
+    !
+      address-family ipv6 unicast
+       redistribute connected
+       redistribute ospf 100 match internal external nssa-external
+  
+      neighbor 10.1.0.6
+       remote-as 65100
+       description r2
+       address-family ipv4 unicast
+        send-community-ebgp
+     !
+  
+      neighbor 2001:db8:3:1::2
+       remote-as 65100
+       description r2
+       session-open-mode both
+       address-family ipv6 unicast
+        send-community-ebgp
+     !
+  
     router ospfv3 101 vrf blue
      router-id 10.0.0.1
   
+     redistribute bgp 65000
      redistribute connected
   
      area 0.0.0.0
-      interface Loopback1
-     area 0.0.0.3
       interface FourHundredGigE0/0/0/2
        network point-to-point
-     area 0.0.0.4
-      interface FourHundredGigE0/0/0/3
-       network point-to-point
+      interface Loopback1
   
     router ospf 100 vrf red
      router-id 10.0.0.1
   
      loopback stub-network enable
+     redistribute bgp 65000
      redistribute connected
   
-     area 0.0.0.2
+     area 0.0.0.0
       interface FourHundredGigE0/0/0/0
        network point-to-point
-      interface FourHundredGigE0/0/0/1
-       network point-to-point
-      interface Loopback2
   
     router ospfv3 100 vrf red
      router-id 10.0.0.1
   
+     redistribute bgp 65000
      redistribute connected
   
-     area 0.0.0.2
+     area 0.0.0.0
       interface FourHundredGigE0/0/0/0
        network point-to-point
-      interface FourHundredGigE0/0/0/1
-       network point-to-point
-      interface Loopback2
 
 TASK [Deploy vrf configuration] ************************************************
 skipping: [r1]
@@ -1054,18 +1180,18 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=33   changed=2    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-r1                         : ok=29   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-r2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-r3                         : ok=28   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-r4                         : ok=28   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+dut                        : ok=40   changed=3    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+r1                         : ok=31   changed=5    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+r2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+r3                         : ok=30   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+r4                         : ok=30   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
 
 
-The device under test has two VRFs with two interfaces in each VRF.
-Routers are attached to those interfaces and run OSPF with device under test.
-Assuming the multi-vrf test case succeeded, this one adds OSPF routing with
-CE routers.
+The device under test has two IPv6-only VRFs with two interfaces in each VRF.
+Routers are attached to those interfaces and run OSPF and BGP with device
+under test. Assuming the OSPF and BGP multi-vrf test cases succeeded, this one
+tests OSPF-to-BGP two-way redistribution.
 
 * r1 and r2 should be able to ping each other
 * r3 and r4 should be able to ping each other

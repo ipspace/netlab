@@ -1,14 +1,10 @@
 %YAML 1.1
 ---
 message: |
-  The device under test has two VRFs with two interfaces in each VRF.
-  Routers are attached to those interfaces and run OSPF with device under test.
-  Assuming the multi-vrf test case succeeded, this one adds OSPF routing with
-  CE routers.
+  The device under test has two user VRFs and a common services VRF. The
+  lab tests inter-VRF route leaking between common VRF and other VRFs
 
-  * r1 and r2 should be able to ping each other
-  * r3 and r4 should be able to ping each other
-  * r1 should not be able to reach r3
+  * h1 and h2 should be able to ping srv but not each other
 defaults:
   provider: clab
   providers:
@@ -7302,6 +7298,7 @@ defaults:
         - prefix
         - nexthop
         - aspath
+      node_copy: {}
     features:
       policy:
         set: Route map SET attributes
@@ -7808,8 +7805,6 @@ defaults:
       unknown: true
       vjunos-switch: true
       vyos: true
-  interfaces:
-    mtu: 1500
   sources:
     extra:
     - ../wait_times.yml
@@ -7847,36 +7842,24 @@ defaults:
     - vlan
     - vrf
     - vxlan
-  module:
-  - ospf
-  - vrf
   name: ml_17
-module:
-- ospf
-- vrf
+  module:
+  - vrf
+  - routing
 groups:
-  ce:
+  hosts:
     members:
-    - r1
-    - r2
-    - r3
-    - r4
-    device: frr
+    - h1
+    - h2
+    - srv
+    device: linux
     node_data:
       provider: clab
-  ce_red:
-    members:
-    - r1
-    - r2
-    node_data:
-      ospf:
-        area: 0.0.0.2
-  pe:
+  routers:
     members:
     - dut
     module:
     - vrf
-    - ospf
   all:
     vars:
       netlab_show_config: true
@@ -7884,567 +7867,51 @@ groups:
     _default_group: true
 vrfs:
   red:
-    ospf:
-      area: 0.0.0.2
-    loopback: true
-    id: 1
-    rd: '65000:1'
     import:
     - '65000:1'
+    - '65000:3'
+    id: 1
+    rd: '65000:1'
     export:
     - '65000:1'
   blue:
-    loopback: true
-    id: 2
-    rd: '65000:2'
     import:
     - '65000:2'
+    - '65000:3'
+    id: 2
+    rd: '65000:2'
     export:
     - '65000:2'
-nodes:
-  dut:
-    id: 1
-    name: dut
-    interfaces:
-    - ipv4: 10.1.0.1/30
-      vrf: red
-      linkindex: 1
-      type: p2p
-      name: dut -> r1
-      ifindex: 0
-      ifname: FourHundredGigE0/0/0/0
-      clab:
-        name: FH0_0_0_0
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.2/30
-        ifname: eth1
-        node: r1
-    - ipv4: 10.1.0.5/30
-      vrf: red
-      linkindex: 2
-      type: p2p
-      name: dut -> r2
-      ifindex: 1
-      ifname: FourHundredGigE0/0/0/1
-      clab:
-        name: FH0_0_0_1
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.6/30
-        ifname: eth1
-        node: r2
-    - ipv4: 10.1.0.9/30
-      vrf: blue
-      linkindex: 3
-      type: p2p
-      name: dut -> r3
-      ifindex: 2
-      ifname: FourHundredGigE0/0/0/2
-      clab:
-        name: FH0_0_0_2
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.10/30
-        ifname: eth1
-        node: r3
-    - ipv4: 10.1.0.13/30
-      vrf: blue
-      linkindex: 4
-      type: p2p
-      name: dut -> r4
-      ifindex: 3
-      ifname: FourHundredGigE0/0/0/3
-      clab:
-        name: FH0_0_0_3
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.14/30
-        ifname: eth1
-        node: r4
-    - type: loopback
-      name: VRF Loopback red
-      neighbors: []
-      vrf: red
-      virtual_interface: true
-      ifindex: 10001
-      ifname: Loopback1
-      ipv4: 10.2.0.1/32
-    - type: loopback
-      name: VRF Loopback blue
-      neighbors: []
-      vrf: blue
-      virtual_interface: true
-      ifindex: 10002
-      ifname: Loopback2
-      ipv4: 10.2.0.2/32
-    module:
-    - ospf
-    - vrf
-    device: cisco8000v
-    clab:
-      kind: cisco_c8000
-    box: cisco/cisco-8201-32fh:24.4.1
-    mtu: 1500
-    vrf:
-      as: 65000
-    provider: clab
-    min_mtu: 1500
-    af:
-      ipv4: true
-      vpnv4: true
-    mgmt:
-      ifname: MgmtEth0/RP0/CPU0/0
-      mac: ca:fe:00:01:00:00
-      ipv4: 192.168.17.101
-    hostname: clab-ml_17-dut
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: Loopback0
-      ipv4: 10.0.0.1/32
-    vrfs:
-      red:
-        ospf:
-          area: 0.0.0.2
-          router_id: 10.0.0.1
-          active: true
-          interfaces:
-          - ipv4: 10.1.0.1/30
-            vrf: red
-            linkindex: 1
-            type: p2p
-            name: dut -> r1
-            ifindex: 0
-            ifname: FourHundredGigE0/0/0/0
-            clab:
-              name: FH0_0_0_0
-            mtu: 1500
-            neighbors:
-            - ipv4: 10.1.0.2/30
-              ifname: eth1
-              node: r1
-            ospf:
-              area: 0.0.0.2
-              passive: false
-              network_type: point-to-point
-          - ipv4: 10.1.0.5/30
-            vrf: red
-            linkindex: 2
-            type: p2p
-            name: dut -> r2
-            ifindex: 1
-            ifname: FourHundredGigE0/0/0/1
-            clab:
-              name: FH0_0_0_1
-            mtu: 1500
-            neighbors:
-            - ipv4: 10.1.0.6/30
-              ifname: eth1
-              node: r2
-            ospf:
-              area: 0.0.0.2
-              passive: false
-              network_type: point-to-point
-          - type: loopback
-            name: VRF Loopback red
-            neighbors: []
-            vrf: red
-            virtual_interface: true
-            ifindex: 10001
-            ifname: Loopback1
-            ospf:
-              area: 0.0.0.2
-              passive: false
-            ipv4: 10.2.0.1/32
-          af:
-            ipv4: true
-          import:
-            connected:
-              auto: true
-        loopback: true
-        id: 1
-        rd: '65000:1'
-        import:
-        - '65000:1'
-        export:
-        - '65000:1'
-        af:
-          ipv4: true
-        networks:
-        - ipv4: 10.2.0.1/32
-        loopback_address:
-          ipv4: 10.2.0.1/32
-        vrfidx: 100
-      blue:
-        loopback: true
-        id: 2
-        rd: '65000:2'
-        import:
-        - '65000:2'
-        export:
-        - '65000:2'
-        af:
-          ipv4: true
-        networks:
-        - ipv4: 10.2.0.2/32
-        loopback_address:
-          ipv4: 10.2.0.2/32
-        vrfidx: 101
-        ospf:
-          area: 0.0.0.0
-          router_id: 10.0.0.1
-          active: true
-          interfaces:
-          - ipv4: 10.1.0.9/30
-            ospf:
-              area: 0.0.0.3
-              passive: false
-              network_type: point-to-point
-            vrf: blue
-            linkindex: 3
-            type: p2p
-            name: dut -> r3
-            ifindex: 2
-            ifname: FourHundredGigE0/0/0/2
-            clab:
-              name: FH0_0_0_2
-            mtu: 1500
-            neighbors:
-            - ipv4: 10.1.0.10/30
-              ifname: eth1
-              node: r3
-          - ipv4: 10.1.0.13/30
-            ospf:
-              area: 0.0.0.4
-              passive: false
-              network_type: point-to-point
-            vrf: blue
-            linkindex: 4
-            type: p2p
-            name: dut -> r4
-            ifindex: 3
-            ifname: FourHundredGigE0/0/0/3
-            clab:
-              name: FH0_0_0_3
-            mtu: 1500
-            neighbors:
-            - ipv4: 10.1.0.14/30
-              ifname: eth1
-              node: r4
-          - type: loopback
-            name: VRF Loopback blue
-            neighbors: []
-            vrf: blue
-            virtual_interface: true
-            ifindex: 10002
-            ifname: Loopback2
-            ospf:
-              area: 0.0.0.0
-              passive: false
-            ipv4: 10.2.0.2/32
-          af:
-            ipv4: true
-          import:
-            connected:
-              auto: true
-  r1:
-    ospf:
-      area: 0.0.0.2
-      router_id: 10.0.0.2
-      af:
-        ipv4: true
-    name: r1
-    interfaces:
-    - ipv4: 10.1.0.2/30
-      linkindex: 1
-      type: p2p
-      name: r1 -> dut
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.1/30
-        vrf: red
-        ifname: FourHundredGigE0/0/0/0
-        node: dut
-      ospf:
-        area: 0.0.0.2
-        passive: false
-        network_type: point-to-point
-    device: frr
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/r1/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.5.0
-    mtu: 1500
-    module:
-    - ospf
-    id: 2
-    role: router
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:02:00:00
-      ipv4: 192.168.17.102
-    hostname: clab-ml_17-r1
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.2/32
-      ospf:
-        area: 0.0.0.2
-        passive: false
-  r2:
-    ospf:
-      area: 0.0.0.2
-      router_id: 10.0.0.3
-      af:
-        ipv4: true
-    name: r2
-    interfaces:
-    - ipv4: 10.1.0.6/30
-      linkindex: 2
-      type: p2p
-      name: r2 -> dut
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.5/30
-        vrf: red
-        ifname: FourHundredGigE0/0/0/1
-        node: dut
-      ospf:
-        area: 0.0.0.2
-        passive: false
-        network_type: point-to-point
-    device: frr
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/r2/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.5.0
-    mtu: 1500
-    module:
-    - ospf
+  common:
+    import:
+    - '65000:1'
+    - '65000:2'
+    - '65000:3'
     id: 3
-    role: router
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:03:00:00
-      ipv4: 192.168.17.103
-    hostname: clab-ml_17-r2
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.3/32
-      ospf:
-        area: 0.0.0.2
-        passive: false
-  r3:
-    ospf:
-      area: 0.0.0.3
-      router_id: 10.0.0.4
-      af:
-        ipv4: true
-    name: r3
-    interfaces:
-    - ipv4: 10.1.0.10/30
-      ospf:
-        area: 0.0.0.3
-        passive: false
-        network_type: point-to-point
-      linkindex: 3
-      type: p2p
-      name: r3 -> dut
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.9/30
-        vrf: blue
-        ifname: FourHundredGigE0/0/0/2
-        node: dut
-    device: frr
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/r3/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.5.0
-    mtu: 1500
-    module:
-    - ospf
-    id: 4
-    role: router
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:04:00:00
-      ipv4: 192.168.17.104
-    hostname: clab-ml_17-r3
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.4/32
-      ospf:
-        area: 0.0.0.3
-        passive: false
-  r4:
-    ospf:
-      area: 0.0.0.4
-      router_id: 10.0.0.5
-      af:
-        ipv4: true
-    name: r4
-    interfaces:
-    - ipv4: 10.1.0.14/30
-      ospf:
-        area: 0.0.0.4
-        passive: false
-        network_type: point-to-point
-      linkindex: 4
-      type: p2p
-      name: r4 -> dut
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.13/30
-        vrf: blue
-        ifname: FourHundredGigE0/0/0/3
-        node: dut
-    device: frr
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/r4/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.5.0
-    mtu: 1500
-    module:
-    - ospf
-    id: 5
-    role: router
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:05:00:00
-      ipv4: 192.168.17.105
-    hostname: clab-ml_17-r4
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.5/32
-      ospf:
-        area: 0.0.0.4
-        passive: false
+    rd: '65000:3'
+    export:
+    - '65000:3'
 validate:
-- description: Check OSPF adjacencies in red VRF
-  wait_msg: Waiting for OSPF adjacencies to form
-  wait: 30
+- description: h1 trying to reach srv
+  wait: 90
+  wait_msg: Waiting for IPv4 routes
   nodes:
-  - r1
-  - r2
-  plugin: ospf_neighbor(nodes.dut.vrfs.red.ospf.router_id)
-  stop_on_error: true
-  name: red_adj
-- description: Check OSPF adjacencies in blue VRF
-  wait_msg: Waiting for OSPF adjacencies to form
-  wait: 30
-  nodes:
-  - r3
-  - r4
-  plugin: ospf_neighbor(nodes.dut.vrfs.blue.ospf.router_id)
-  stop_on_error: true
-  name: blue_adj
-- description: Check OSPF routes in red VRF (R1)
-  wait: 10
-  wait_msg: Waiting for OSPF SPF run
-  nodes:
-  - r1
-  plugin: ospf_prefix(nodes.r2.loopback.ipv4)
-  name: red_r1
-- description: Check OSPF routes in red VRF (R2)
-  wait: 10
-  wait_msg: Waiting for OSPF SPF run
-  nodes:
-  - r2
-  plugin: ospf_prefix(nodes.r1.loopback.ipv4)
-  name: red_r2
-- description: Check OSPF routes in blue VRF
-  wait_msg: Waiting for OSPF SPF run
-  wait: 10
-  nodes:
-  - r3
-  plugin: ospf_prefix(nodes.r4.loopback.ipv4)
-  name: blue_r3
-- description: Check OSPF routes in blue VRF
-  wait_msg: Waiting for OSPF SPF run
-  wait: 10
-  nodes:
-  - r4
-  plugin: ospf_prefix(nodes.r3.loopback.ipv4)
-  name: blue_r4
-- description: Check for blue OSPF routes in red VRF
-  nodes:
-  - r1
-  plugin: ospf_prefix(nodes.r4.loopback.ipv4,state='missing')
-  name: inter_route
-- description: Ping-based reachability test in VRF red
+  - h1
+  plugin: ping('srv')
+  name: red
+- description: h2 trying to reach srv
   wait: 15
   nodes:
-  - r1
-  plugin: ping('r2')
-  name: ping_red
-- description: Ping-based reachability test in VRF blue
-  wait: 10
+  - h2
+  plugin: ping('srv')
+  name: blue
+- description: h1 should not be able to reach h2
   nodes:
-  - r3
-  plugin: ping('r4')
-  name: ping_blue
-- description: Ping-based isolation test between blue and red VRF
-  nodes:
-  - r1
-  plugin: ping('r4',expect='fail')
-  name: inter_ping
+  - h1
+  plugin: ping('h2',expect='fail')
+  name: s2s
 input:
-- /home/pipi/net101/tools/tests/integration/vrf/11-multi-vrf-ospf.yml
+- /home/pipi/net101/tools/tests/integration/vrf/31-vrf-common-hosts.yml
 - /home/pipi/net101/tools/tests/integration/wait_times.yml
 - /home/pipi/net101/tools/tests/integration/warnings.yml
 - /home/pipi/.netlab.yml
@@ -8452,6 +7919,317 @@ input:
 plugin:
 - multilab
 name: ml_17
+nodes:
+  h1:
+    name: h1
+    interfaces:
+    - ipv4: 172.16.0.1/24
+      linkindex: 1
+      role: stub
+      type: lan
+      bridge: ml_17_1
+      name: h1 -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.0.4/24
+        vrf: red
+        ifname: FourHundredGigE0/0/0/0
+        node: dut
+      gateway:
+        ipv4: 172.16.0.4/24
+    device: linux
+    clab:
+      kind: linux
+      config_templates:
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: python:3.13-alpine
+    id: 1
+    role: host
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:01:00:00
+      ipv4: 192.168.17.101
+    hostname: clab-ml_17-h1
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          ipv4: 172.16.0.4
+          intf: eth1
+          idx: 0
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          ipv4: 172.16.0.4
+          intf: eth1
+          idx: 0
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          ipv4: 172.16.0.4
+          intf: eth1
+          idx: 0
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          ipv4: 172.16.0.4
+          intf: eth1
+          idx: 0
+    module:
+    - routing
+  h2:
+    name: h2
+    interfaces:
+    - ipv4: 172.16.1.2/24
+      linkindex: 2
+      role: stub
+      type: lan
+      bridge: ml_17_2
+      name: h2 -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.1.4/24
+        vrf: blue
+        ifname: FourHundredGigE0/0/0/1
+        node: dut
+      gateway:
+        ipv4: 172.16.1.4/24
+    device: linux
+    clab:
+      kind: linux
+      config_templates:
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: python:3.13-alpine
+    id: 2
+    role: host
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:02:00:00
+      ipv4: 192.168.17.102
+    hostname: clab-ml_17-h2
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          ipv4: 172.16.1.4
+          intf: eth1
+          idx: 0
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          ipv4: 172.16.1.4
+          intf: eth1
+          idx: 0
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          ipv4: 172.16.1.4
+          intf: eth1
+          idx: 0
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          ipv4: 172.16.1.4
+          intf: eth1
+          idx: 0
+    module:
+    - routing
+  srv:
+    name: srv
+    interfaces:
+    - ipv4: 172.16.2.3/24
+      linkindex: 3
+      role: stub
+      type: lan
+      bridge: ml_17_3
+      name: srv -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.2.4/24
+        vrf: common
+        ifname: FourHundredGigE0/0/0/2
+        node: dut
+      gateway:
+        ipv4: 172.16.2.4/24
+    device: linux
+    clab:
+      kind: linux
+      config_templates:
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: python:3.13-alpine
+    id: 3
+    role: host
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:03:00:00
+      ipv4: 192.168.17.103
+    hostname: clab-ml_17-srv
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          ipv4: 172.16.2.4
+          intf: eth1
+          idx: 0
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          ipv4: 172.16.2.4
+          intf: eth1
+          idx: 0
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          ipv4: 172.16.2.4
+          intf: eth1
+          idx: 0
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          ipv4: 172.16.2.4
+          intf: eth1
+          idx: 0
+    module:
+    - routing
+  dut:
+    name: dut
+    interfaces:
+    - ipv4: 172.16.0.4/24
+      vrf: red
+      linkindex: 1
+      role: stub
+      type: lan
+      bridge: ml_17_1
+      name: dut -> h1
+      ifindex: 0
+      ifname: FourHundredGigE0/0/0/0
+      clab:
+        name: FH0_0_0_0
+      neighbors:
+      - ipv4: 172.16.0.1/24
+        ifname: eth1
+        node: h1
+    - ipv4: 172.16.1.4/24
+      vrf: blue
+      linkindex: 2
+      role: stub
+      type: lan
+      bridge: ml_17_2
+      name: dut -> h2
+      ifindex: 1
+      ifname: FourHundredGigE0/0/0/1
+      clab:
+        name: FH0_0_0_1
+      neighbors:
+      - ipv4: 172.16.1.2/24
+        ifname: eth1
+        node: h2
+    - ipv4: 172.16.2.4/24
+      vrf: common
+      linkindex: 3
+      role: stub
+      type: lan
+      bridge: ml_17_3
+      name: dut -> srv
+      ifindex: 2
+      ifname: FourHundredGigE0/0/0/2
+      clab:
+        name: FH0_0_0_2
+      neighbors:
+      - ipv4: 172.16.2.3/24
+        ifname: eth1
+        node: srv
+    module:
+    - vrf
+    device: cisco8000v
+    clab:
+      kind: cisco_c8000
+    box: cisco/cisco-8201-32fh:24.4.1
+    vrf:
+      as: 65000
+    id: 4
+    provider: clab
+    min_mtu: 1500
+    af:
+      ipv4: true
+      vpnv4: true
+    mgmt:
+      ifname: MgmtEth0/RP0/CPU0/0
+      mac: ca:fe:00:04:00:00
+      ipv4: 192.168.17.104
+    hostname: clab-ml_17-dut
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.4/32
+    vrfs:
+      red:
+        import:
+        - '65000:1'
+        - '65000:3'
+        id: 1
+        rd: '65000:1'
+        export:
+        - '65000:1'
+        af:
+          ipv4: true
+        vrfidx: 100
+        _leaked_routes: true
+        bgp:
+          import:
+            connected:
+              auto: true
+      blue:
+        import:
+        - '65000:2'
+        - '65000:3'
+        id: 2
+        rd: '65000:2'
+        export:
+        - '65000:2'
+        af:
+          ipv4: true
+        vrfidx: 101
+        _leaked_routes: true
+        bgp:
+          import:
+            connected:
+              auto: true
+      common:
+        import:
+        - '65000:1'
+        - '65000:2'
+        - '65000:3'
+        id: 3
+        rd: '65000:3'
+        export:
+        - '65000:3'
+        af:
+          ipv4: true
+        vrfidx: 102
+        _leaked_routes: true
+        bgp:
+          import:
+            connected:
+              auto: true
+    bgp:
+      as: 65000
+      router_id: 10.0.0.4
 addressing:
   lan:
     ipv4: 172.16.0.0/16
@@ -8477,77 +8255,64 @@ addressing:
     ipv4: 10.2.0.0/24
     prefix: 32
 provider: clab
-ospf:
-  area: 0.0.0.0
+module:
+- vrf
+- routing
 vrf:
   as: 65000
 links:
 - interfaces:
   - node: dut
-    ipv4: 10.1.0.1/30
+    ipv4: 172.16.0.4/24
     ifindex: 0
     ifname: FourHundredGigE0/0/0/0
-  - node: r1
-    ipv4: 10.1.0.2/30
+  - node: h1
+    ipv4: 172.16.0.1/24
     ifindex: 1
     ifname: eth1
   _linkname: vrfs.red.links[1]
   vrf: red
   linkindex: 1
   node_count: 2
-  type: p2p
+  role: stub
+  type: lan
+  bridge: ml_17_1
   prefix:
-    ipv4: 10.1.0.0/30
+    ipv4: 172.16.0.0/24
 - interfaces:
   - node: dut
-    ipv4: 10.1.0.5/30
+    ipv4: 172.16.1.4/24
     ifindex: 1
     ifname: FourHundredGigE0/0/0/1
-  - node: r2
-    ipv4: 10.1.0.6/30
+  - node: h2
+    ipv4: 172.16.1.2/24
     ifindex: 1
     ifname: eth1
-  _linkname: vrfs.red.links[2]
-  vrf: red
-  linkindex: 2
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.4/30
-- interfaces:
-  - node: dut
-    ipv4: 10.1.0.9/30
-    ifindex: 2
-    ifname: FourHundredGigE0/0/0/2
-  - node: r3
-    ipv4: 10.1.0.10/30
-    ifindex: 1
-    ifname: eth1
-  ospf:
-    area: 0.0.0.3
   _linkname: vrfs.blue.links[1]
   vrf: blue
-  linkindex: 3
+  linkindex: 2
   node_count: 2
-  type: p2p
+  role: stub
+  type: lan
+  bridge: ml_17_2
   prefix:
-    ipv4: 10.1.0.8/30
+    ipv4: 172.16.1.0/24
 - interfaces:
   - node: dut
-    ipv4: 10.1.0.13/30
-    ifindex: 3
-    ifname: FourHundredGigE0/0/0/3
-  - node: r4
-    ipv4: 10.1.0.14/30
+    ipv4: 172.16.2.4/24
+    ifindex: 2
+    ifname: FourHundredGigE0/0/0/2
+  - node: srv
+    ipv4: 172.16.2.3/24
     ifindex: 1
     ifname: eth1
-  ospf:
-    area: 0.0.0.4
-  _linkname: vrfs.blue.links[2]
-  vrf: blue
-  linkindex: 4
+  _linkname: vrfs.common.links[1]
+  vrf: common
+  linkindex: 3
   node_count: 2
-  type: p2p
+  role: stub
+  type: lan
+  bridge: ml_17_3
   prefix:
-    ipv4: 10.1.0.12/30
+    ipv4: 172.16.2.0/24
 _netlab_version: 25.11.01

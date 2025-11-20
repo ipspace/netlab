@@ -2,9 +2,9 @@
 ---
 message: |
   The device under test has two VRFs with two interfaces in each VRF.
-  Routers are attached to those interfaces and run OSPF with device under test.
-  Assuming the multi-vrf test case succeeded, this one adds OSPF routing with
-  CE routers.
+  Routers are attached to those interfaces and run OSPF and BGP with
+  device under test. Assuming the OSPF and BGP multi-vrf test cases
+  succeeded, this one tests OSPF-to-BGP two-way redistribution.
 
   * r1 and r2 should be able to ping each other
   * r3 and r4 should be able to ping each other
@@ -4944,6 +4944,8 @@ defaults:
         debug:
           type: list
           split_lines: true
+      bgp_community_type:
+        valid_values: {}
     internal:
       input:
       pools: dict
@@ -6098,6 +6100,7 @@ defaults:
           rr:
             type: list
             _subtype: str
+      vrf_aware: {}
     features:
       local_as: Supports local-as functionality
       vrf_local_as: Supports local-as within a VRF
@@ -7847,46 +7850,53 @@ defaults:
     - vlan
     - vrf
     - vxlan
+  name: ml_17
   module:
   - ospf
+  - bgp
   - vrf
-  name: ml_17
-module:
-- ospf
-- vrf
 groups:
-  ce:
+  ce_ospf:
     members:
     - r1
-    - r2
     - r3
-    - r4
+    module:
+    - ospf
     device: frr
     node_data:
       provider: clab
-  ce_red:
+  ce_bgp:
     members:
-    - r1
     - r2
+    - r4
+    module:
+    - bgp
+    device: frr
     node_data:
-      ospf:
-        area: 0.0.0.2
+      provider: clab
   pe:
     members:
     - dut
     module:
     - vrf
     - ospf
+    - bgp
   all:
     vars:
       netlab_show_config: true
     members: []
     _default_group: true
+  as65000:
+    members:
+    - dut
+  as65100:
+    members:
+    - r2
+  as65101:
+    members:
+    - r4
 vrfs:
   red:
-    ospf:
-      area: 0.0.0.2
-    loopback: true
     id: 1
     rd: '65000:1'
     import:
@@ -7894,7 +7904,6 @@ vrfs:
     export:
     - '65000:1'
   blue:
-    loopback: true
     id: 2
     rd: '65000:2'
     import:
@@ -7903,7 +7912,132 @@ vrfs:
     - '65000:2'
 nodes:
   dut:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - extended
+        ebgp:
+        - standard
+        localas_ibgp:
+        - standard
+        - extended
+      next_hop_self: true
+      as: 65000
+      router_id: 10.0.0.1
+      neighbors: []
+      ipv4: true
     id: 1
+    vrfs:
+      red:
+        id: 1
+        rd: '65000:1'
+        import:
+        - '65000:1'
+        export:
+        - '65000:1'
+        ospf:
+          area: 0.0.0.0
+          router_id: 10.100.0.1
+          active: true
+          interfaces:
+          - ipv4: 10.1.0.1/30
+            vrf: red
+            linkindex: 1
+            type: p2p
+            name: dut -> r1
+            ifindex: 0
+            ifname: FourHundredGigE0/0/0/0
+            clab:
+              name: FH0_0_0_0
+            mtu: 1500
+            neighbors:
+            - ipv4: 10.1.0.2/30
+              ifname: eth1
+              node: r1
+            ospf:
+              area: 0.0.0.0
+              passive: false
+              network_type: point-to-point
+          af:
+            ipv4: true
+          import:
+            bgp:
+              auto: true
+            connected:
+              auto: true
+        bgp:
+          neighbors:
+          - ifindex: 1
+            name: r2
+            as: 65100
+            type: ebgp
+            ipv4: 10.1.0.6
+            activate:
+              ipv4: true
+          import:
+            connected:
+              auto: true
+            ospf:
+              auto: true
+        af:
+          ipv4: true
+        vrfidx: 100
+      blue:
+        id: 2
+        rd: '65000:2'
+        import:
+        - '65000:2'
+        export:
+        - '65000:2'
+        ospf:
+          area: 0.0.0.0
+          router_id: 10.101.0.1
+          active: true
+          interfaces:
+          - ipv4: 10.1.0.9/30
+            vrf: blue
+            linkindex: 3
+            type: p2p
+            name: dut -> r3
+            ifindex: 2
+            ifname: FourHundredGigE0/0/0/2
+            clab:
+              name: FH0_0_0_2
+            mtu: 1500
+            neighbors:
+            - ipv4: 10.1.0.10/30
+              ifname: eth1
+              node: r3
+            ospf:
+              area: 0.0.0.0
+              passive: false
+              network_type: point-to-point
+          af:
+            ipv4: true
+          import:
+            bgp:
+              auto: true
+            connected:
+              auto: true
+        bgp:
+          neighbors:
+          - ifindex: 3
+            name: r4
+            as: 65101
+            type: ebgp
+            ipv4: 10.1.0.14
+            activate:
+              ipv4: true
+          import:
+            connected:
+              auto: true
+            ospf:
+              auto: true
+        af:
+          ipv4: true
+        vrfidx: 101
     name: dut
     interfaces:
     - ipv4: 10.1.0.1/30
@@ -7923,6 +8057,7 @@ nodes:
     - ipv4: 10.1.0.5/30
       vrf: red
       linkindex: 2
+      role: external
       type: p2p
       name: dut -> r2
       ifindex: 1
@@ -7951,6 +8086,7 @@ nodes:
     - ipv4: 10.1.0.13/30
       vrf: blue
       linkindex: 4
+      role: external
       type: p2p
       name: dut -> r4
       ifindex: 3
@@ -7962,24 +8098,9 @@ nodes:
       - ipv4: 10.1.0.14/30
         ifname: eth1
         node: r4
-    - type: loopback
-      name: VRF Loopback red
-      neighbors: []
-      vrf: red
-      virtual_interface: true
-      ifindex: 10001
-      ifname: Loopback1
-      ipv4: 10.2.0.1/32
-    - type: loopback
-      name: VRF Loopback blue
-      neighbors: []
-      vrf: blue
-      virtual_interface: true
-      ifindex: 10002
-      ifname: Loopback2
-      ipv4: 10.2.0.2/32
     module:
     - ospf
+    - bgp
     - vrf
     device: cisco8000v
     clab:
@@ -8005,157 +8126,9 @@ nodes:
       ifindex: 0
       ifname: Loopback0
       ipv4: 10.0.0.1/32
-    vrfs:
-      red:
-        ospf:
-          area: 0.0.0.2
-          router_id: 10.0.0.1
-          active: true
-          interfaces:
-          - ipv4: 10.1.0.1/30
-            vrf: red
-            linkindex: 1
-            type: p2p
-            name: dut -> r1
-            ifindex: 0
-            ifname: FourHundredGigE0/0/0/0
-            clab:
-              name: FH0_0_0_0
-            mtu: 1500
-            neighbors:
-            - ipv4: 10.1.0.2/30
-              ifname: eth1
-              node: r1
-            ospf:
-              area: 0.0.0.2
-              passive: false
-              network_type: point-to-point
-          - ipv4: 10.1.0.5/30
-            vrf: red
-            linkindex: 2
-            type: p2p
-            name: dut -> r2
-            ifindex: 1
-            ifname: FourHundredGigE0/0/0/1
-            clab:
-              name: FH0_0_0_1
-            mtu: 1500
-            neighbors:
-            - ipv4: 10.1.0.6/30
-              ifname: eth1
-              node: r2
-            ospf:
-              area: 0.0.0.2
-              passive: false
-              network_type: point-to-point
-          - type: loopback
-            name: VRF Loopback red
-            neighbors: []
-            vrf: red
-            virtual_interface: true
-            ifindex: 10001
-            ifname: Loopback1
-            ospf:
-              area: 0.0.0.2
-              passive: false
-            ipv4: 10.2.0.1/32
-          af:
-            ipv4: true
-          import:
-            connected:
-              auto: true
-        loopback: true
-        id: 1
-        rd: '65000:1'
-        import:
-        - '65000:1'
-        export:
-        - '65000:1'
-        af:
-          ipv4: true
-        networks:
-        - ipv4: 10.2.0.1/32
-        loopback_address:
-          ipv4: 10.2.0.1/32
-        vrfidx: 100
-      blue:
-        loopback: true
-        id: 2
-        rd: '65000:2'
-        import:
-        - '65000:2'
-        export:
-        - '65000:2'
-        af:
-          ipv4: true
-        networks:
-        - ipv4: 10.2.0.2/32
-        loopback_address:
-          ipv4: 10.2.0.2/32
-        vrfidx: 101
-        ospf:
-          area: 0.0.0.0
-          router_id: 10.0.0.1
-          active: true
-          interfaces:
-          - ipv4: 10.1.0.9/30
-            ospf:
-              area: 0.0.0.3
-              passive: false
-              network_type: point-to-point
-            vrf: blue
-            linkindex: 3
-            type: p2p
-            name: dut -> r3
-            ifindex: 2
-            ifname: FourHundredGigE0/0/0/2
-            clab:
-              name: FH0_0_0_2
-            mtu: 1500
-            neighbors:
-            - ipv4: 10.1.0.10/30
-              ifname: eth1
-              node: r3
-          - ipv4: 10.1.0.13/30
-            ospf:
-              area: 0.0.0.4
-              passive: false
-              network_type: point-to-point
-            vrf: blue
-            linkindex: 4
-            type: p2p
-            name: dut -> r4
-            ifindex: 3
-            ifname: FourHundredGigE0/0/0/3
-            clab:
-              name: FH0_0_0_3
-            mtu: 1500
-            neighbors:
-            - ipv4: 10.1.0.14/30
-              ifname: eth1
-              node: r4
-          - type: loopback
-            name: VRF Loopback blue
-            neighbors: []
-            vrf: blue
-            virtual_interface: true
-            ifindex: 10002
-            ifname: Loopback2
-            ospf:
-              area: 0.0.0.0
-              passive: false
-            ipv4: 10.2.0.2/32
-          af:
-            ipv4: true
-          import:
-            connected:
-              auto: true
+      bgp:
+        advertise: true
   r1:
-    ospf:
-      area: 0.0.0.2
-      router_id: 10.0.0.2
-      af:
-        ipv4: true
     name: r1
     interfaces:
     - ipv4: 10.1.0.2/30
@@ -8171,10 +8144,12 @@ nodes:
         ifname: FourHundredGigE0/0/0/0
         node: dut
       ospf:
-        area: 0.0.0.2
+        area: 0.0.0.0
         passive: false
         network_type: point-to-point
     device: frr
+    module:
+    - ospf
     clab:
       kind: linux
       config_templates:
@@ -8185,8 +8160,11 @@ nodes:
       - clab_files/-shared-hosts:/etc/hosts:ro
     box: quay.io/frrouting/frr:10.5.0
     mtu: 1500
-    module:
-    - ospf
+    ospf:
+      area: 0.0.0.0
+      router_id: 10.0.0.2
+      af:
+        ipv4: true
     id: 2
     role: router
     af:
@@ -8204,18 +8182,41 @@ nodes:
       ifname: lo
       ipv4: 10.0.0.2/32
       ospf:
-        area: 0.0.0.2
+        area: 0.0.0.0
         passive: false
   r2:
-    ospf:
-      area: 0.0.0.2
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65100
       router_id: 10.0.0.3
-      af:
-        ipv4: true
+      neighbors:
+      - ifindex: 1
+        _vrf: red
+        name: dut
+        as: 65000
+        type: ebgp
+        ipv4: 10.1.0.5
+        activate:
+          ipv4: true
+      ipv4: true
     name: r2
     interfaces:
     - ipv4: 10.1.0.6/30
       linkindex: 2
+      role: external
       type: p2p
       name: r2 -> dut
       ifindex: 1
@@ -8226,11 +8227,9 @@ nodes:
         vrf: red
         ifname: FourHundredGigE0/0/0/1
         node: dut
-      ospf:
-        area: 0.0.0.2
-        passive: false
-        network_type: point-to-point
     device: frr
+    module:
+    - bgp
     clab:
       kind: linux
       config_templates:
@@ -8241,8 +8240,6 @@ nodes:
       - clab_files/-shared-hosts:/etc/hosts:ro
     box: quay.io/frrouting/frr:10.5.0
     mtu: 1500
-    module:
-    - ospf
     id: 3
     role: router
     af:
@@ -8259,22 +8256,12 @@ nodes:
       ifindex: 0
       ifname: lo
       ipv4: 10.0.0.3/32
-      ospf:
-        area: 0.0.0.2
-        passive: false
+      bgp:
+        advertise: true
   r3:
-    ospf:
-      area: 0.0.0.3
-      router_id: 10.0.0.4
-      af:
-        ipv4: true
     name: r3
     interfaces:
     - ipv4: 10.1.0.10/30
-      ospf:
-        area: 0.0.0.3
-        passive: false
-        network_type: point-to-point
       linkindex: 3
       type: p2p
       name: r3 -> dut
@@ -8286,7 +8273,13 @@ nodes:
         vrf: blue
         ifname: FourHundredGigE0/0/0/2
         node: dut
+      ospf:
+        area: 0.0.0.0
+        passive: false
+        network_type: point-to-point
     device: frr
+    module:
+    - ospf
     clab:
       kind: linux
       config_templates:
@@ -8297,8 +8290,11 @@ nodes:
       - clab_files/-shared-hosts:/etc/hosts:ro
     box: quay.io/frrouting/frr:10.5.0
     mtu: 1500
-    module:
-    - ospf
+    ospf:
+      area: 0.0.0.0
+      router_id: 10.0.0.4
+      af:
+        ipv4: true
     id: 4
     role: router
     af:
@@ -8316,22 +8312,41 @@ nodes:
       ifname: lo
       ipv4: 10.0.0.4/32
       ospf:
-        area: 0.0.0.3
+        area: 0.0.0.0
         passive: false
   r4:
-    ospf:
-      area: 0.0.0.4
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65101
       router_id: 10.0.0.5
-      af:
-        ipv4: true
+      neighbors:
+      - ifindex: 1
+        _vrf: blue
+        name: dut
+        as: 65000
+        type: ebgp
+        ipv4: 10.1.0.13
+        activate:
+          ipv4: true
+      ipv4: true
     name: r4
     interfaces:
     - ipv4: 10.1.0.14/30
-      ospf:
-        area: 0.0.0.4
-        passive: false
-        network_type: point-to-point
       linkindex: 4
+      role: external
       type: p2p
       name: r4 -> dut
       ifindex: 1
@@ -8343,6 +8358,8 @@ nodes:
         ifname: FourHundredGigE0/0/0/3
         node: dut
     device: frr
+    module:
+    - bgp
     clab:
       kind: linux
       config_templates:
@@ -8353,8 +8370,6 @@ nodes:
       - clab_files/-shared-hosts:/etc/hosts:ro
     box: quay.io/frrouting/frr:10.5.0
     mtu: 1500
-    module:
-    - ospf
     id: 5
     role: router
     af:
@@ -8371,80 +8386,98 @@ nodes:
       ifindex: 0
       ifname: lo
       ipv4: 10.0.0.5/32
-      ospf:
-        area: 0.0.0.4
-        passive: false
+      bgp:
+        advertise: true
 validate:
 - description: Check OSPF adjacencies in red VRF
   wait_msg: Waiting for OSPF adjacencies to form
   wait: 30
   nodes:
   - r1
-  - r2
   plugin: ospf_neighbor(nodes.dut.vrfs.red.ospf.router_id)
   stop_on_error: true
-  name: red_adj
+  name: red_ospf
 - description: Check OSPF adjacencies in blue VRF
   wait_msg: Waiting for OSPF adjacencies to form
   wait: 30
   nodes:
   - r3
-  - r4
   plugin: ospf_neighbor(nodes.dut.vrfs.blue.ospf.router_id)
   stop_on_error: true
-  name: blue_adj
-- description: Check OSPF routes in red VRF (R1)
-  wait: 10
-  wait_msg: Waiting for OSPF SPF run
+  name: blue_ospf
+- description: Check EBGP adjacencies with DUT
+  wait_msg: Waiting for EBGP sessions to start
+  nodes:
+  - r2
+  - r4
+  plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  wait: 30
+  stop_on_error: true
+  name: ebgp
+- description: Check connected subnet as OSPF prefix on R1
+  wait: 20
+  wait_msg: Waiting for OSPF convergence
+  fail: DUT is not redistributing connected subnets into OSPF
+  nodes:
+  - r1
+  plugin: ospf_prefix(nodes.r2.interfaces[0].ipv4)
+  name: red_c_ospf
+- description: Check connected subnet as BGP prefix on R2
+  wait: 90
+  wait_msg: Waiting for BGP convergence
+  fail: DUT is not redistributing connected subnets into BGP
+  nodes:
+  - r2
+  plugin: bgp_prefix(nodes.r1.interfaces[0].ipv4)
+  name: red_c_bgp
+- description: Check for BGP prefix on OSPF
+  wait_msg: Waiting for BGP and OSPF convergence
+  fail: BGP is not redistributed into OSPF
+  wait: 90
   nodes:
   - r1
   plugin: ospf_prefix(nodes.r2.loopback.ipv4)
-  name: red_r1
-- description: Check OSPF routes in red VRF (R2)
-  wait: 10
-  wait_msg: Waiting for OSPF SPF run
+  name: red_bgp_ospf
+- description: Check for OSPF prefix in BGP
+  wait_msg: Waiting for BGP and OSPF convergence
+  fail: OSPF is not redistributed into BGP
+  wait: 90
   nodes:
   - r2
-  plugin: ospf_prefix(nodes.r1.loopback.ipv4)
-  name: red_r2
-- description: Check OSPF routes in blue VRF
-  wait_msg: Waiting for OSPF SPF run
-  wait: 10
-  nodes:
-  - r3
-  plugin: ospf_prefix(nodes.r4.loopback.ipv4)
-  name: blue_r3
-- description: Check OSPF routes in blue VRF
-  wait_msg: Waiting for OSPF SPF run
-  wait: 10
-  nodes:
-  - r4
-  plugin: ospf_prefix(nodes.r3.loopback.ipv4)
-  name: blue_r4
-- description: Check for blue OSPF routes in red VRF
+  plugin: bgp_prefix(nodes.r1.loopback.ipv4)
+  name: red_ospf_bgp
+- description: Loopback-to-loopback reachability test in VRF red
+  wait_msg: Waiting for BGP and OSPF to start
+  wait: 5
   nodes:
   - r1
-  plugin: ospf_prefix(nodes.r4.loopback.ipv4,state='missing')
-  name: inter_route
-- description: Ping-based reachability test in VRF red
-  wait: 15
+  plugin: ping('r2',src=nodes.r1.loopback.ipv4)
+  name: red_lb_ping
+- description: Check for reachability of connected routes in OSPF
+  wait: 5
+  nodes:
+  - r2
+  plugin: ping('r1')
+  name: red_p_ospf
+- description: Check for reachability connected routes in BGP
   nodes:
   - r1
   plugin: ping('r2')
-  name: ping_red
-- description: Ping-based reachability test in VRF blue
-  wait: 10
+  name: red_p_bgp
+- description: Loopback-to-loopback reachability test in VRF blue
+  wait: 5
   nodes:
   - r3
-  plugin: ping('r4')
-  name: ping_blue
+  plugin: ping('r4',src=nodes.r3.loopback.ipv4)
+  name: blue_lb_ping
 - description: Ping-based isolation test between blue and red VRF
   nodes:
   - r1
-  plugin: ping('r4',expect='fail')
-  name: inter_ping
+  plugin: ping('r4',count=2,expect='fail')
+  wait: 5
+  name: inter_vrf
 input:
-- /home/pipi/net101/tools/tests/integration/vrf/11-multi-vrf-ospf.yml
+- /home/pipi/net101/tools/tests/integration/vrf/15-multi-vrf-mixed.yml
 - /home/pipi/net101/tools/tests/integration/wait_times.yml
 - /home/pipi/net101/tools/tests/integration/warnings.yml
 - /home/pipi/.netlab.yml
@@ -8477,6 +8510,19 @@ addressing:
     ipv4: 10.2.0.0/24
     prefix: 32
 provider: clab
+module:
+- ospf
+- bgp
+- vrf
+bgp:
+  advertise_loopback: true
+  community:
+    ibgp:
+    - standard
+    - extended
+    ebgp:
+    - standard
+  next_hop_self: true
 ospf:
   area: 0.0.0.0
 vrf:
@@ -8510,6 +8556,7 @@ links:
   _linkname: vrfs.red.links[2]
   vrf: red
   linkindex: 2
+  role: external
   node_count: 2
   type: p2p
   prefix:
@@ -8523,8 +8570,6 @@ links:
     ipv4: 10.1.0.10/30
     ifindex: 1
     ifname: eth1
-  ospf:
-    area: 0.0.0.3
   _linkname: vrfs.blue.links[1]
   vrf: blue
   linkindex: 3
@@ -8541,11 +8586,10 @@ links:
     ipv4: 10.1.0.14/30
     ifindex: 1
     ifname: eth1
-  ospf:
-    area: 0.0.0.4
   _linkname: vrfs.blue.links[2]
   vrf: blue
   linkindex: 4
+  role: external
   node_count: 2
   type: p2p
   prefix:
