@@ -391,7 +391,7 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | Arista EOS            | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
 | Aruba AOS-CX          | ✅ | ✅ |  ✅[❗](caveats-aruba) | [❗](caveats-aruba) | ❌ | ❌ |
 | Cisco 8000v (IOS/XR)  | ✅ | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
-| Cisco Catalyst 8000v  | ✅ | ✅ |  ❌ | ✅ | ✅ | ✅ |
+| Cisco Catalyst 8000v  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cisco CSR 1000v       | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
 | Cisco IOL (IOS/XE)    | ✅ | ✅ |  ❌ | ✅ | ✅ | ✅ |
 | Cisco IOSv/IOSvL2     | ✅ | ✅ |  ❌ | ✅ |  ❌ |  ❌ |
