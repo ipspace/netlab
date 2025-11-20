@@ -29,6 +29,7 @@ The following table describes the per-platform support of individual VXLAN featu
 | Arista EOS         | ✅  | ✅  | ✅  |
 | Aruba AOS-CX       | ✅  | ✅  |  ❌  |
 | Cisco CSR 1000v    | ✅  | ✅  |  ❌  |
+| Cisco Catalyst 8000v | ✅ | ✅ |  ❌  |
 | Cisco Nexus OS     | ✅  | ✅  |  ❌  |
 | Cumulus Linux 4.x  | ✅  | ✅  |  ❌  |
 | Cumulus 5.x (NVUE) | ✅  | ✅  |  ❌  |
