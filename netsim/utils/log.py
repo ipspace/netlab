@@ -29,6 +29,7 @@ BGP_SESSIONS = ('ibgp','ebgp')
 _ERROR_LOG: list = []
 _WARNING_LOG: list = []
 _HINTS_CACHE: list = []
+_WARNING_CACHE: list = []
 
 err_class_map = {                       # Map error classes into short error codes
   'MissingDependency':  'DEPEND',
@@ -294,9 +295,16 @@ def warning(*,
       text: str,
       module: typing.Optional[str] = None,
       flag: typing.Optional[str] = None,
+      once: bool = False,
       **kwargs: typing.Any) -> None:
 
-  global _HINTS_CACHE
+  global _HINTS_CACHE,_WARNING_CACHE
+
+  if text in _WARNING_CACHE:                      # Have we seen the exact same warning already?
+    if once:                                      # Do we want to generate it more than once?
+      return                                      # Nope? OK, we're done
+  else:
+    _WARNING_CACHE.append(text)                   # ...but remember it just in case...
 
   module = get_calling_module(module)
   if flag is None:
@@ -522,10 +530,11 @@ def debug_active(flag: str) -> bool:
 init_log_system: initialize the logging system (used to run test cases)
 """
 def init_log_system(header: bool = True) -> None:
-  global _ERROR_LOG,_HINTS_CACHE,_error_header_printed
+  global _ERROR_LOG,_HINTS_CACHE,_WARNING_CACHE,_error_header_printed
 
   _ERROR_LOG = []                                 # Clear the error log
-  _HINTS_CACHE = []                               # And the hints cache
+  _HINTS_CACHE = []                               # ... and the hints
+  _WARNING_CACHE = []                             # ... and the warning cache
   _error_header_printed = not header              # Mark header as printed if we don't want to have one
 
   _types.init_wrong_type()
