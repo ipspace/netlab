@@ -325,6 +325,13 @@ defaults:
             debug:
               type: list
               split_lines: true
+          cat8000v:
+            license:
+              type: str
+              valid_values:
+              - essential
+              - advantage
+              - premier
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -503,6 +510,8 @@ defaults:
           --ram=4096 --disk path=vm.qcow2,bus=ide,format=qcow2 
           --network=network:vagrant-libvirt,model=virtio --graphics none 
           --import
+        cat8000v:
+          license: premier
         create_template: cat8000v.xml.j2
         create_iso: cat8000v
       _parents:
@@ -568,7 +577,11 @@ defaults:
             vrf: true
             inter_vrf: true
             discard: true
-        vrf: {}
+        vrf:
+          bgp: true
+          isis: true
+          ospfv2: true
+          ospfv3: true
         vlan:
           model: router
           subif_name: '{ifname}.{vlan.access_id}'
@@ -2469,7 +2482,11 @@ defaults:
             vrf: true
             inter_vrf: true
             discard: true
-        vrf: {}
+        vrf:
+          bgp: true
+          isis: true
+          ospfv2: true
+          ospfv3: true
       external:
         image: none
       support:
@@ -5097,6 +5114,13 @@ defaults:
         _keytype: id
         _requires:
         - vrf
+      cat8000v:
+        license:
+          type: str
+          valid_values:
+          - essential
+          - advantage
+          - premier
       eos:
         serialnumber: str
         systemmacaddr: mac
@@ -5636,6 +5660,7 @@ defaults:
         bgp_v6_originate: 80
         bgp_v4_redist: 90
         isis_redist: 60
+        ebgp_session: 90
       ios:
         bgp_v6_redist: 60
       cisco8000v:
@@ -5762,12 +5787,12 @@ defaults:
     - /home/pipi/netlab_gh/netsim/validate
     plugin:
     - /work/netlab_cicd
-    - /home/pipi/net101/tools/tests/integration/routing
+    - /home/pipi/netlab_gh/tests/integration/routing
     - /home/pipi/.netlab
     - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
-      - /home/pipi/net101/tools/tests/integration/routing
+      - /home/pipi/netlab_gh/tests/integration/routing
       - /work/netlab_cicd
       - /home/pipi/.netlab
       - /home/pipi/netlab_gh/netsim/extra
@@ -7687,6 +7712,7 @@ defaults:
       - mgmt
       - management
       - mgmt_junos
+      node_copy: {}
     warnings:
       inactive: true
     features:
@@ -7823,6 +7849,7 @@ defaults:
   name: ml_17
   module:
   - routing
+  - vrf
 plugin:
 - test.vrf_check
 - multilab
@@ -7851,15 +7878,30 @@ prefix:
     ipv4: 172.16.42.0/24
     ipv6: 2001:db8:cafe:42::/64
     _name: x2_lan
+vrfs:
+  tenant:
+    id: 1
+    rd: '65000:1'
+    import:
+    - '65000:1'
+    export:
+    - '65000:1'
 nodes:
   dut:
     module:
     - routing
+    - vrf
     role: router
     routing:
       static:
       - ipv4: 172.16.42.42/32
         ipv6: 2001:db8:cafe:42::2a/128
+        nexthop:
+          discard: true
+          idx: 0
+      - ipv4: 172.16.42.64/32
+        ipv6: 2001:db8:cafe:42::40/128
+        vrf: tenant
         nexthop:
           discard: true
           idx: 0
@@ -7901,6 +7943,44 @@ nodes:
         ipv6: 2001:db8:cafe:42::2a/64
         ifname: eth1
         node: h3
+    - ipv4: 172.16.1.1/24
+      ipv6: 2001:db8:2:1::1/64
+      vrf: tenant
+      linkindex: 3
+      role: stub
+      type: lan
+      bridge: ml_17_3
+      name: dut -> v1
+      ifindex: 2
+      ifname: FourHundredGigE0/0/0/2
+      clab:
+        name: FH0_0_0_2
+      neighbors:
+      - ipv4: 172.16.1.4/24
+        ipv6: 2001:db8:2:1::4/64
+        ifname: eth1
+        node: v1
+    - ipv4: 172.16.42.1/24
+      ipv6: 2001:db8:cafe:42::1/64
+      vrf: tenant
+      linkindex: 4
+      role: stub
+      type: lan
+      bridge: ml_17_4
+      name: dut -> [v2,v3]
+      ifindex: 3
+      ifname: FourHundredGigE0/0/0/3
+      clab:
+        name: FH0_0_0_3
+      neighbors:
+      - ipv4: 172.16.42.5/24
+        ipv6: 2001:db8:cafe:42::5/64
+        ifname: eth1
+        node: v2
+      - ipv4: 172.16.42.64/24
+        ipv6: 2001:db8:cafe:42::40/64
+        ifname: eth1
+        node: v3
     device: cisco8000v
     clab:
       kind: cisco_c8000
@@ -7913,6 +7993,8 @@ nodes:
     af:
       ipv4: true
       ipv6: true
+      vpnv4: true
+      vpnv6: true
     mgmt:
       ifname: MgmtEth0/RP0/CPU0/0
       mac: ca:fe:00:01:00:00
@@ -7926,6 +8008,18 @@ nodes:
       ifname: Loopback0
       ipv4: 10.0.0.1/32
       ipv6: 2001:db8:1:1::1/64
+    vrfs:
+      tenant:
+        id: 1
+        rd: '65000:1'
+        import:
+        - '65000:1'
+        export:
+        - '65000:1'
+        af:
+          ipv4: true
+          ipv6: true
+        vrfidx: 100
   h1:
     name: h1
     interfaces:
@@ -8140,7 +8234,26 @@ nodes:
     - routing
   v1:
     name: v1
-    interfaces: []
+    interfaces:
+    - ipv4: 172.16.1.4/24
+      ipv6: 2001:db8:2:1::4/64
+      linkindex: 3
+      role: stub
+      type: lan
+      bridge: ml_17_3
+      name: v1 -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.1.1/24
+        ipv6: 2001:db8:2:1::1/64
+        vrf: tenant
+        ifname: FourHundredGigE0/0/0/2
+        node: dut
+      gateway:
+        ipv4: 172.16.1.1/24
+        ipv6: 2001:db8:2:1::1/64
     device: linux
     clab:
       kind: linux
@@ -8152,15 +8265,68 @@ nodes:
     id: 4
     role: host
     mtu: 1500
-    af: {}
+    af:
+      ipv4: true
+      ipv6: true
     mgmt:
       ifname: eth0
       mac: ca:fe:00:04:00:00
       ipv4: 192.168.17.104
     hostname: clab-ml_17-v1
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          ipv4: 172.16.1.1
+          intf: eth1
+          ipv6: 2001:db8:2:1::1
+          idx: 0
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          ipv4: 172.16.1.1
+          intf: eth1
+          ipv6: 2001:db8:2:1::1
+          idx: 0
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          ipv4: 172.16.1.1
+          intf: eth1
+          ipv6: 2001:db8:2:1::1
+          idx: 0
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          ipv4: 172.16.1.1
+          intf: eth1
+          ipv6: 2001:db8:2:1::1
+          idx: 0
+    module:
+    - routing
   v2:
     name: v2
-    interfaces: []
+    interfaces:
+    - ipv4: 172.16.42.5/24
+      ipv6: 2001:db8:cafe:42::5/64
+      linkindex: 4
+      role: stub
+      type: lan
+      bridge: ml_17_4
+      name: v2 -> [dut,v3]
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.42.1/24
+        ipv6: 2001:db8:cafe:42::1/64
+        vrf: tenant
+        ifname: FourHundredGigE0/0/0/3
+        node: dut
+      - ipv4: 172.16.42.64/24
+        ipv6: 2001:db8:cafe:42::40/64
+        ifname: eth1
+        node: v3
+      gateway:
+        ipv4: 172.16.42.1/24
+        ipv6: 2001:db8:cafe:42::1/64
     device: linux
     clab:
       kind: linux
@@ -8172,16 +8338,69 @@ nodes:
     id: 5
     role: host
     mtu: 1500
-    af: {}
+    af:
+      ipv4: true
+      ipv6: true
     mgmt:
       ifname: eth0
       mac: ca:fe:00:05:00:00
       ipv4: 192.168.17.105
     hostname: clab-ml_17-v2
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          ipv4: 172.16.42.1
+          intf: eth1
+          ipv6: 2001:db8:cafe:42::1
+          idx: 0
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          ipv4: 172.16.42.1
+          intf: eth1
+          ipv6: 2001:db8:cafe:42::1
+          idx: 0
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          ipv4: 172.16.42.1
+          intf: eth1
+          ipv6: 2001:db8:cafe:42::1
+          idx: 0
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          ipv4: 172.16.42.1
+          intf: eth1
+          ipv6: 2001:db8:cafe:42::1
+          idx: 0
+    module:
+    - routing
   v3:
     id: 64
     name: v3
-    interfaces: []
+    interfaces:
+    - ipv4: 172.16.42.64/24
+      ipv6: 2001:db8:cafe:42::40/64
+      linkindex: 4
+      role: stub
+      type: lan
+      bridge: ml_17_4
+      name: v3 -> [dut,v2]
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.42.1/24
+        ipv6: 2001:db8:cafe:42::1/64
+        vrf: tenant
+        ifname: FourHundredGigE0/0/0/3
+        node: dut
+      - ipv4: 172.16.42.5/24
+        ipv6: 2001:db8:cafe:42::5/64
+        ifname: eth1
+        node: v2
+      gateway:
+        ipv4: 172.16.42.1/24
+        ipv6: 2001:db8:cafe:42::1/64
     device: linux
     clab:
       kind: linux
@@ -8192,12 +8411,42 @@ nodes:
     box: python:3.13-alpine
     role: host
     mtu: 1500
-    af: {}
+    af:
+      ipv4: true
+      ipv6: true
     mgmt:
       ifname: eth0
       mac: ca:fe:00:40:00:00
       ipv4: 192.168.17.164
     hostname: clab-ml_17-v3
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          ipv4: 172.16.42.1
+          intf: eth1
+          ipv6: 2001:db8:cafe:42::1
+          idx: 0
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          ipv4: 172.16.42.1
+          intf: eth1
+          ipv6: 2001:db8:cafe:42::1
+          idx: 0
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          ipv4: 172.16.42.1
+          intf: eth1
+          ipv6: 2001:db8:cafe:42::1
+          idx: 0
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          ipv4: 172.16.42.1
+          intf: eth1
+          ipv6: 2001:db8:cafe:42::1
+          idx: 0
+    module:
+    - routing
 links:
 - interfaces:
   - node: dut
@@ -8245,6 +8494,54 @@ links:
   role: stub
   type: lan
   bridge: ml_17_2
+- interfaces:
+  - node: dut
+    ipv4: 172.16.1.1/24
+    ipv6: 2001:db8:2:1::1/64
+    ifindex: 2
+    ifname: FourHundredGigE0/0/0/2
+  - node: v1
+    ipv4: 172.16.1.4/24
+    ipv6: 2001:db8:2:1::4/64
+    ifindex: 1
+    ifname: eth1
+  _linkname: vrfs.tenant.links[1]
+  vrf: tenant
+  linkindex: 3
+  node_count: 2
+  role: stub
+  type: lan
+  bridge: ml_17_3
+  prefix:
+    ipv4: 172.16.1.0/24
+    ipv6: 2001:db8:2:1::/64
+- interfaces:
+  - node: dut
+    ipv4: 172.16.42.1/24
+    ipv6: 2001:db8:cafe:42::1/64
+    ifindex: 3
+    ifname: FourHundredGigE0/0/0/3
+  - node: v2
+    ipv4: 172.16.42.5/24
+    ipv6: 2001:db8:cafe:42::5/64
+    ifindex: 1
+    ifname: eth1
+  - node: v3
+    ipv4: 172.16.42.64/24
+    ipv6: 2001:db8:cafe:42::40/64
+    ifindex: 1
+    ifname: eth1
+  prefix:
+    ipv4: 172.16.42.0/24
+    ipv6: 2001:db8:cafe:42::/64
+    _name: x2_lan
+  _linkname: vrfs.tenant.links[2]
+  vrf: tenant
+  linkindex: 4
+  node_count: 3
+  role: stub
+  type: lan
+  bridge: ml_17_4
 validate:
 - description: Check RA-generated default route
   wait: 30
@@ -8276,15 +8573,31 @@ validate:
   - h1
   plugin: ping('h3',af='ipv6',expect='fail',count=3)
   name: ping_h3_v6
-- wait: 0
-  level: warning
-  fail: Device cisco8000v does support VRFs, skipping VRF-specific tests
-  name: v_warning
+- description: IPv4 ping V2 from V1
+  nodes:
+  - v1
+  plugin: ping('v2',af='ipv4')
+  name: vrf_v2_v4
+- description: IPv6 ping V2 from V1
+  nodes:
+  - v1
+  plugin: ping('v2',af='ipv6')
+  name: vrf_v2_v6
+- description: IPv4 ping V3 from V1
+  nodes:
+  - v1
+  plugin: ping('v3',af='ipv4',expect='fail',count=3)
+  name: vrf_v3_v4
+- description: IPv6 ping V3 from V1
+  nodes:
+  - v1
+  plugin: ping('v3',af='ipv6',expect='fail',count=3)
+  name: vrf_v3_v6
 input:
-- /home/pipi/net101/tools/tests/integration/routing/25-static-discard.yml
-- /home/pipi/net101/tools/tests/integration/routing/defaults-ds.yml
-- /home/pipi/net101/tools/tests/integration/wait_times.yml
-- /home/pipi/net101/tools/tests/integration/warnings.yml
+- /home/pipi/netlab_gh/tests/integration/routing/25-static-discard.yml
+- /home/pipi/netlab_gh/tests/integration/routing/defaults-ds.yml
+- /home/pipi/netlab_gh/tests/integration/wait_times.yml
+- /home/pipi/netlab_gh/tests/integration/warnings.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 name: ml_17
@@ -8319,6 +8632,7 @@ addressing:
 provider: clab
 module:
 - routing
+- vrf
 vrf:
   as: 65000
 _netlab_version: 25.11.01

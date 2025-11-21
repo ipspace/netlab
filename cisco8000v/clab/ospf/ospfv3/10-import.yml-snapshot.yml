@@ -325,6 +325,13 @@ defaults:
             debug:
               type: list
               split_lines: true
+          cat8000v:
+            license:
+              type: str
+              valid_values:
+              - essential
+              - advantage
+              - premier
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -503,6 +510,8 @@ defaults:
           --ram=4096 --disk path=vm.qcow2,bus=ide,format=qcow2 
           --network=network:vagrant-libvirt,model=virtio --graphics none 
           --import
+        cat8000v:
+          license: premier
         create_template: cat8000v.xml.j2
         create_iso: cat8000v
       _parents:
@@ -568,6 +577,11 @@ defaults:
             vrf: true
             inter_vrf: true
             discard: true
+        vrf:
+          bgp: true
+          isis: true
+          ospfv2: true
+          ospfv3: true
         vlan:
           model: router
           subif_name: '{ifname}.{vlan.access_id}'
@@ -2468,6 +2482,11 @@ defaults:
             vrf: true
             inter_vrf: true
             discard: true
+        vrf:
+          bgp: true
+          isis: true
+          ospfv2: true
+          ospfv3: true
       external:
         image: none
       support:
@@ -5096,6 +5115,13 @@ defaults:
         _keytype: id
         _requires:
         - vrf
+      cat8000v:
+        license:
+          type: str
+          valid_values:
+          - essential
+          - advantage
+          - premier
       eos:
         serialnumber: str
         systemmacaddr: mac
@@ -5624,6 +5650,7 @@ defaults:
       isis_adj_lan: 50
       isis_spf: 15
       isis_spf_long: 45
+      isis_redist: 30
       rip_start: 60
       rip_update: 20
       ldp_adj: 30
@@ -5633,10 +5660,13 @@ defaults:
         bgp_v4_originate: 80
         bgp_v6_originate: 80
         bgp_v4_redist: 90
+        isis_redist: 60
+        ebgp_session: 90
       ios:
         bgp_v6_redist: 60
       cisco8000v:
         ping_irb: 90
+        ping_long: 15
       vjunos-router:
         ping_irb: 90
   hints:
@@ -5757,14 +5787,14 @@ defaults:
     validate:
     - /home/pipi/netlab_gh/netsim/validate
     plugin:
-    - /home/pipi/net101/tools/tests/integration/plugin
+    - /home/pipi/netlab_gh/tests/integration/plugin
     - /work/netlab_cicd
-    - /home/pipi/net101/tools/tests/integration/ospf/ospfv3
+    - /home/pipi/netlab_gh/tests/integration/ospf/ospfv3
     - /home/pipi/.netlab
     - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
-      - /home/pipi/net101/tools/tests/integration/ospf/ospfv3
+      - /home/pipi/netlab_gh/tests/integration/ospf/ospfv3
       - /work/netlab_cicd
       - /home/pipi/.netlab
       - /home/pipi/netlab_gh/netsim/extra
@@ -7696,6 +7726,7 @@ defaults:
     supported_on:
       arubacx: true
       cat8000v: true
+      cisco8000v: true
       csr: true
       cumulus: true
       cumulus_nvue: true
@@ -7707,6 +7738,7 @@ defaults:
       ios: true
       iosv: true
       iosvl2: true
+      iosxr: true
       junos: true
       none: true
       nxos: true
@@ -7722,6 +7754,7 @@ defaults:
       vptx: true
       vsrx: true
       vyos: true
+      xr: true
   vxlan:
     requires:
     - vlan
@@ -8113,7 +8146,7 @@ validate:
   name: adj_ospf
 - description: Check EBGP sessions with DUT
   wait_msg: Wait for BGP sessions to be established
-  wait: 30
+  wait: 90
   nodes:
   - x1
   plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
@@ -8131,10 +8164,10 @@ validate:
   plugin: ospf6_prefix(nodes.dut.routing.static[0].ipv6)
   name: p_static
 input:
-- /home/pipi/net101/tools/tests/integration/ospf/ospfv3/10-import.yml
-- /home/pipi/net101/tools/tests/integration/wait_times.yml
-- /home/pipi/net101/tools/tests/integration/warnings.yml
-- /home/pipi/net101/tools/tests/integration/ospf/ospfv3/topology-defaults.yml
+- /home/pipi/netlab_gh/tests/integration/ospf/ospfv3/10-import.yml
+- /home/pipi/netlab_gh/tests/integration/wait_times.yml
+- /home/pipi/netlab_gh/tests/integration/warnings.yml
+- /home/pipi/netlab_gh/tests/integration/ospf/ospfv3/topology-defaults.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 name: ml_17
