@@ -20,8 +20,13 @@
     for individual address families.
 #}
 {% macro bgp_neighbor(n,af,vrf=False) %}
+!
  neighbor {{ n[af] }}
   remote-as {{ n.as }}
+{% if n.local_as is defined %}
+  local-as {{ n.local_as }}{%
+    if n.replace_global_as|default(True) and n.type != 'localas_ibgp' %} no-prepend replace-as{% endif +%}
+{% endif %}
   description {{ n.name }}
 {%     if vrf and af == 'ipv6' %}
   session-open-mode both
@@ -47,8 +52,7 @@
 {%         endif %}
 {%       endif %}
 {%     endif %}
-!
-{% endmacro %}
+{% endmacro -%}
 !
 {% if bgp.originate|default([]) %}
 router static
