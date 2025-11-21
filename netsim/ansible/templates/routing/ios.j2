@@ -2,8 +2,8 @@
 !
 {% if routing.policy|default({}) %}
 {%   call(p_entry,af_list) routemap.create_route_maps(routing.policy) -%}
-{%     if p_entry.set.community.delete_list|default(False) %}
-  set comm-list {{ p_entry.set.community.delete_list }} delete
+{%     if p_entry.delete.community.list is defined %}
+  set comm-list {{ p_entry.delete.community.list }} delete
 {%     endif %}
 {{     routemap.common_route_map_entry(p_entry,af_list) }}
 {%-  endcall %} 
@@ -11,10 +11,10 @@
 {% if routing.prefix|default({}) %}
 {%   include '_prefix_list_ios.j2' %}
 {% endif %}
+{% if routing.aspath|default({}) %}
 !
 ! AS-path access lists
 !
-{% if routing.aspath|default({}) %}
 {%   for asp_name,asp_list in routing.aspath.items() %}
 !
 {%     for asp_line in asp_list %}
@@ -30,10 +30,12 @@ ip community-list {{ c_value.type }} {{ c_name }} {{ c_line.action }} {{ c_line.
 {%     endfor %}
 {%   endfor %}
 {% endif %}
+{% for sr_data in routing.static|default([]) %}
+{%   if loop.first %}
 !
 ! Static routes
 !
-{% for sr_data in routing.static|default([]) %}
+{%   endif %}
 {%   set cmd_vrf = 'vrf ' + sr_data.vrf + ' ' if 'vrf' in sr_data else '' %}
 {%   set cmd_intf = sr_data.nexthop.intf + ' ' if 'intf' in sr_data.nexthop else '' %}
 {%   set leak_global = ' global' if sr_data.nexthop.vrf is defined and sr_data.nexthop.vrf is none else '' %}

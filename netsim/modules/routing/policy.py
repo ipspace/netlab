@@ -62,6 +62,29 @@ def normalize_policy_entry(p_entry: typing.Any, p_idx: int) -> typing.Any:
   if prepend is not None and isinstance(prepend,(int,str)):
     p_entry.set.prepend = { 'path': str(prepend) }
 
+  if p_entry.get('set.community.delete',None):    # Migrate set.community.delete into delete.community
+    p_entry.delete.community = p_entry.set.community
+    p_entry.delete.community.pop('delete')        # ... and remove the 'delete' keyword
+    p_entry.pop('set.community',None)
+    log.warning(
+      text='Replacing routing.policy.set.community.delete with routing.policy.delete.community',
+      more_hints=['The set.community.delete attribute is obsolete, use the new delete.community attribute'],
+      flag='set_delete',
+      once=True)
+
+  # Also, migrage set.community.delete_list into delete.community.list
+  #
+  if p_entry.get('set.community.delete_list',None):
+    p_entry.delete.community.list = p_entry.set.community.delete_list
+    p_entry.pop('set.community',None)
+    log.warning(
+      text='Replacing routing.policy.set.community.delete_list with routing.policy.delete.community.list',
+      more_hints=['The set.community.delete_list attribute is obsolete, use the new delete.community.list attribute'],
+      flag='set_delete_list',
+      once=True)
+
+  if 'set' in p_entry and not p_entry.set:        # If the policy 'set' operation is empty
+    p_entry.pop('set')                            # ... remove it completely
   normalize_routing_entry(p_entry,p_idx)          # Finally, do generic normalization
 
   return p_entry
@@ -104,10 +127,10 @@ def check_routing_policy(p_name: str,o_type: str, node: Box,topology: Box) -> bo
 
   OK = True
   for p_entry in p_data:                                    # Now iterate over routing policy entries
-    for p_param in ('set','match'):                         # Check SET and MATCH parameters
+    for p_param in ('set','match','delete'):                # Check SET, MATCH, and DELETE parameters
       if p_param not in p_entry:                            # No parameters of this type, move on
         continue
-      for kw in p_entry[p_param].keys():                    # Iterate over all SET/MATCH settings
+      for kw in p_entry[p_param].keys():                    # Iterate over all SET/MATCH/DELETE settings
         if not is_kw_supported(kw,d_features[p_param]):     # if a setting is not supported by the device...
           OK = False                                        # ... remember we found an error
           log.error(                                        # ... and report it
@@ -144,7 +167,7 @@ match_object_map: dict = {
   'match.nexthop': 'prefix',                                # Next-hop match requires a 'prefix' object
   'match.aspath': 'aspath',                                 # AS path match requires an 'aspath' object
   'match.community': 'community',                           # Community match requires a 'community' object
-  'set.community.delete_list': 'community'                  # Community delete_list requires a 'community' object
+  'delete.community.list': 'community'                      # Community delete list requires a 'community' object
 }
 
 def import_policy_filters(pname: str, o_name: str, node: Box, topology: Box) -> None:

@@ -6,7 +6,7 @@
 {%   endif %}
 {%- endmacro %}
 
-{% macro community_set(comm,c_append,c_delete) -%}
+{% macro community_set(comm,c_append=False,c_delete=False) -%}
 {% if c_delete %}
       then community delete x_comm_del_{{ comm|replace(':', '_')|replace('.', '_') }};
 {% elif c_append %}
@@ -28,21 +28,28 @@
 {%     if 'med' in p_entry.set %}
       then metric {{ p_entry.set.med }};
 {%     endif %}
-{%     if 'community' in p_entry.set %}
+{%     if p_entry.set.community is defined %}
 {%       set cset = p_entry.set.community %}
-{%         for kw in ('standard','extended','large') if kw in cset %}
-{%           if cset[kw] is not string %}
-{%             for cur_com in cset[kw] %}
-{{               community_set(cur_com, cset.append|default(False), cset.delete|default(False)) }}
-{%             endfor %}
-{%           else %}
-{{             community_set(cset[kw], cset.append|default(False), cset.delete|default(False)) }}
-{%           endif %}
+{%       for kw in ('standard','extended','large') if kw in cset %}
+{%         for cur_com in cset[kw] %}
+{{           community_set(cur_com,c_append=cset.append|default(False)) }}
 {%         endfor %}
+{%       endfor %}
 {%     endif %}
-
 {%     if 'prepend' in p_entry.set %}
 {{       prepend_set(p_entry.set.prepend,bgp.as|string) }}
+{%     endif %}
+{%   endif %}
+{# - DELETE entries #}
+{%   if p_entry.delete.community is defined %}
+{%     set dset = p_entry.delete.community %}
+{%     for kw in ('standard','extended','large') if kw in dset %}
+{%       for cur_com in dset[kw] %}
+{{         community_set(cur_com,c_delete=True) }}
+{%       endfor %}
+{%     endfor %}
+{%     if dset.list is defined %}
+      then community delete {{ dset.list }};
 {%     endif %}
 {%   endif %}
 {# - MATCH entries #}

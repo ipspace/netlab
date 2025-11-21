@@ -3,11 +3,11 @@
 !
 {% if routing.policy|default({}) %}
 {%   call(p_entry,af_list) routemap.create_route_maps(routing.policy) -%}
-{%     if 'bandwidth' in p_entry.set|default({}) %}
+{%     if p_entry.set.bandwidth is defined %}
   set extcommunity lbw {{ p_entry.set.bandwidth }}M
 {%     endif %}
-{%     if p_entry.set.community.delete_list|default(False) %}
-  set community community-list {{ p_entry.set.community.delete_list }} delete
+{%     if p_entry.delete.community.list is defined %}
+  set community community-list {{ p_entry.delete.community.list }} delete
 {%     endif %}
 {{     routemap.common_route_map_entry(p_entry,af_list) }}
 {%-   endcall %}
@@ -36,10 +36,10 @@ ipv6 prefix-list {{ p_name }}-ipv6
 {%     endfor %}
 {%   endfor %}
 {% endif %}
+{% if routing.aspath|default({}) %}
 !
 ! AS-path access lists
 !
-{% if routing.aspath|default({}) %}
 ip as-path regex-mode string
 {%   for asp_name,asp_list in routing.aspath.items() %}
 !
@@ -56,10 +56,12 @@ ip community-list {{ c_value.regexp }} {{ c_name }} {{ c_line.action }} {{ c_lin
 {%     endfor %}
 {%   endfor %}
 {% endif %}
+{% for sr_data in routing.static|default([]) %}
+{%   if loop.first %}
 !
 ! Static routes
 !
-{% for sr_data in routing.static|default([]) %}
+{%   endif %}
 {%   for sr_af in ['ipv4','ipv6'] if sr_af in sr_data %}
 {%     set cmd_af = 'ip' if sr_af == 'ipv4' else sr_af %}
 {%     set cmd_vrf = 'vrf ' + sr_data.vrf + ' ' if 'vrf' in sr_data else '' %}
