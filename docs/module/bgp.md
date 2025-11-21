@@ -103,6 +103,7 @@ These devices support BGP local-AS functionality to build EBGP or IBGP sessions:
 | Aruba AOS-CX             |  ✅ |  ❌  |
 | BIRD                     |  ✅ |  ✅ |
 | Cisco IOS/IOS XE[^18v]   |  ✅ |  ✅ |
+| Cisco IOS/XR[^XR]        |  ✅ |  ✅ |
 | Cumulus Linux 4.x        |  ✅ |  ❌  |
 | Cumulus Linux 5.x (NVUE) |  ✅ |  ✅ |
 | Dell OS10                |  ✅ |  ❌  |
