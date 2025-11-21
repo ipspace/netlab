@@ -321,20 +321,33 @@ diag debug application httpsd -1
 ## FRRouting
 
 * Many FRR configuration templates are not idempotent -- you cannot run **netlab initial** multiple times. Non-idempotent templates include VLAN and VRF configurations.
-* The VM version of FRR is a Debian VM. The FRR package is downloaded and installed during **vagrant up** processing in the libvirt environment. To postpone the FRR installation to the initial configuration process, set the node variable **netlab_quick_start** to `true`.
 * You can change the FRR default profile with the **netlab_frr_defaults** node parameter (`traditional` or `datacenter`, default is `datacenter`).
 * **netlab collect** downloads FRR configuration but not Linux interface configuration.
+* FRR has no default logging destinations. The initial device configuration adds file logging to `/tmp/logging`.
+* _netlab_ automatically enables FRR daemons required by the _netlab_ modules you use on individual nodes in the `/etc/frr/daemons` FRRouting configuration file. Use the **frr.daemons** node attribute to enable additional FRRouting daemons.
+
+**FRR-Specific Node Attributes:**
+
+* You can use the **frr.debug** global- or node attribute to [enable debugging](node-debug-attribute) during the initial device configuration.
+* You can specify a list of additional FRRouting daemons you want to have enabled in the **frr.daemons** node attribute.
+
+**FRR VM caveats:**
+
+* The VM version of FRR is a Debian VM. The FRR package is downloaded and installed during **vagrant up** processing in the libvirt environment. To postpone the FRR installation to the initial configuration process, set the node variable **netlab_quick_start** to `true`.
+
+**FRR container caveats:**
+
 * FRR containers need host kernel modules (drivers) to implement the data-plane functionality of *vrf*, *mpls*, and *vxlan* netlab modules. The kernel modules are automatically loaded (when available) during the **netlab up** processing.
 * VRF and VXLAN kernel modules are usually bundled with a Linux distribution. If your Ubuntu distribution does not include the MPLS drivers, try installing them with `sudo apt install linux-generic`.
 * You cannot load kernel modules in GitHub Codespaces and thus cannot use *vrf*, *mpls*, or *vxlan* modules on FRRouting nodes in that environment.
 * FRR containers have a management VRF. Use `ip vrf exec mgmt <command>` to run a CLI command that needs access to the outside world through the management interface. To disable the management VRF, set the **netlab_mgmt_vrf** node parameter to *False*.
 * FRR initial container configuration might fail if your Ubuntu distribution does not include the VRF kernel module. Install the VRF kernel module with the `sudo apt install linux-generic` and reboot the server.
+
+**FRR Implementation Caveats:**
+
 * FRR configures BFD as part of OSPFv2/OSPFv3 configuration.
-* IPv6 L3VPN over SRv6 works only for directly-connected IPv6 subnets. IPv6 EBGP routes received from CE-routers are not propagated across the IPv6 L3VPN IBGP session.
 * IPv6 L3VPN over SRv6 does not work in parallel with the IPv6 AF. You have to disable the IPv6 AF on IPv6 IBGP sessions with **bgp.activate.ipv6: []**.
 * An OSPFv3 ABR running FRR release 10.3 does not originate summary external routes from NSSA areas
-* FRR has no default logging destinations. The initial device configuration adds file logging to `/tmp/logging`.
-* You can use the **frr.debug** global- or node attribute to [enable debugging](node-debug-attribute) during the initial device configuration.
 
 (caveats-junos)=
 ## Common Junos caveats
