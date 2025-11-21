@@ -362,6 +362,7 @@ You can also change these *containerlab* parameters:
 * **clab.type** to set node type (used by Nokia SR OS and Nokia SR Linux).
 * **clab.dns** to [configure DNS servers and search domains](https://containerlab.dev/manual/nodes/#dns)
 * **clab.env** to [set container environment](https://containerlab.dev/manual/nodes/#env) (used to [set interface names for Arista cEOS](https://containerlab.dev/manual/kinds/ceos/#additional-interface-naming-considerations))
+* **clab.exec** to execute a list of commands after the container has started. If you want to start shell scripts, use **clab.binds** or **clab.config_templates** to make those scripts available to the container
 * **clab.license** to configure a license file for those platforms that require one
 * **clab.ports** to [map container ports to host ports](https://containerlab.dev/manual/nodes/#ports)
 * **clab.cmd** to [change the command of a container image](https://containerlab.dev/manual/nodes/#cmd).
