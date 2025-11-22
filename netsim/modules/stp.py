@@ -39,11 +39,10 @@ class STP(_Module):
       return
     features = devices.get_device_features(node,topology.defaults)
 
-    protocol = node.stp.protocol
     supported_protocols = features.get("stp.supported_protocols",[])
-    if protocol not in supported_protocols:
+    if node.stp.protocol not in supported_protocols:
       log.error(
-        f'node {node.name} (device {node.device}) does not support requested STP protocol ({protocol})',
+        f'node {node.name} (device {node.device}) does not support requested STP protocol ({node.stp.protocol})',
         log.IncorrectValue,
         'stp')
 
