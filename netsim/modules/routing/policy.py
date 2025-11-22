@@ -136,7 +136,7 @@ def check_routing_policy(p_name: str,o_type: str, node: Box,topology: Box) -> bo
           log.error(
             f"Routing policy entry #{p_entry.sequence} in '{p_name}' has 'action: deny' but also contains '{attr}' attributes",
             more_hints=["'set' and 'delete' attributes are meaningless for denied routes"],
-            category=log.IncorrectValue,
+            category=log.IncorrectAttr,
             module='routing')
 
     for p_param in ('set','match','delete'):               # Check SET, MATCH, and DELETE parameters
