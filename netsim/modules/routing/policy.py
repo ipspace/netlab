@@ -127,7 +127,20 @@ def check_routing_policy(p_name: str,o_type: str, node: Box,topology: Box) -> bo
 
   OK = True
   for p_entry in p_data:                                    # Now iterate over routing policy entries
-    for p_param in ('set','match','delete'):                # Check SET, MATCH, and DELETE parameters
+    # Check that deny actions don't have set or delete attributes
+    action = p_entry.get('action', 'permit')               # Default action is 'permit'
+    if action == 'deny':
+      for attr in ('set', 'delete'):
+        if attr in p_entry:
+          OK = False
+          log.error(
+            f"Routing policy entry #{p_entry.sequence} in '{p_name}' has 'action: deny' but also contains '{attr}' attributes",
+            more_hints=["'set' and 'delete' attributes are meaningless for denied routes"],
+            category=log.IncorrectValue,
+            module='routing')
+
+    for p_param in ('set','match','delete'):               # Check SET, MATCH, and DELETE parameters
+>>>>>>> 54fba34bd (Fix: Prevent 'set' and 'delete' attributes with 'action: deny' in routing policies (#2841))
       if p_param not in p_entry:                            # No parameters of this type, move on
         continue
       for kw in p_entry[p_param].keys():                    # Iterate over all SET/MATCH/DELETE settings
