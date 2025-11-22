@@ -17,12 +17,6 @@ def supports_stp(intf: Box) -> bool:
     return False
   return True
 
-"""
-Get the effective STP protocol for a node, following the hierarchy:
-node-level override → topology-level → default 'stp'
-"""
-def get_effective_stp_protocol(node: Box, topology: Box) -> str:
-  return node.get('stp.protocol', None) or topology.get('stp.protocol', 'stp')
 
 """
 configure_stub_port_type - for a L2 interface where all devices connected are hosts, sets the stp.port_type as <stub_port_type>
@@ -45,7 +39,7 @@ class STP(_Module):
       return
     features = devices.get_device_features(node,topology.defaults)
 
-    protocol = get_effective_stp_protocol(node,topology)
+    protocol = node.stp.protocol
     supported_protocols = features.get("stp.supported_protocols",[])
     if protocol not in supported_protocols:
       log.error(
@@ -99,7 +93,7 @@ class STP(_Module):
     # Check if per-VLAN priority is being used
     for vname,vdata in node.get('vlans',{}).items():
       if vdata.get('stp.priority',None):
-        stp_proto = get_effective_stp_protocol(node,topology)
+        stp_proto = node.stp.protocol
         if stp_proto != 'pvrst':
           log.error(
             f"Topology requires per-VLAN STP (pvrst) used on VLAN '{vname}' but global default is '{stp_proto}'",
