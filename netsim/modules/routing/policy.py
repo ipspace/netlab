@@ -140,7 +140,6 @@ def check_routing_policy(p_name: str,o_type: str, node: Box,topology: Box) -> bo
             module='routing')
 
     for p_param in ('set','match','delete'):               # Check SET, MATCH, and DELETE parameters
->>>>>>> 54fba34bd (Fix: Prevent 'set' and 'delete' attributes with 'action: deny' in routing policies (#2841))
       if p_param not in p_entry:                            # No parameters of this type, move on
         continue
       for kw in p_entry[p_param].keys():                    # Iterate over all SET/MATCH/DELETE settings
