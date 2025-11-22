@@ -98,7 +98,7 @@ The `iptables` or [`nftables`](https://netfilter.org/projects/nftables/) policy 
 If your server uses the **br_netfilter** module, use `sudo sysctl net.bridge.bridge-nf-call-ip6tables=0` to turn off filtering of bridged IPv6 traffic (caution: this setting applies to the whole server). The `net.bridge.bridge-nf-call-iptables` parameter controls the filtering of bridged IPv4 traffic, and the `net.bridge.bridge-nf-call-arptables` parameter controls ARP. Alternatively, you could use `sudo nft add chain ip6 filter 'FORWARD { policy accept; }'` to change the default handling of IPv6 traffic from **drop all** to **permit all**.
 
 ```{warning}
-Before changing the security settings of a server that is not a throwaway VM, please evaluate the broader impact of the changes you're planning to make.
+Before changing the security settings of a server that is not a throwaway VM, please evaluate the broader impact of the changes you plan to make.
 ```
 
 If you want to troubleshoot the setup of `nftables` on your system, use `sudo nft list table ip filter` or `sudo nft list table ip6 filter` (both Containerlab and Libvirt insert their own rules to handle various forwarding scenarios).
@@ -110,7 +110,7 @@ Finally, `sudo dropwatch -l kas` ([Ubuntu installation guide](https://snapcraft.
 
 Lab links are modeled as point-to-point *veth* links or as links to internal Linux bridges. If you want a lab link connected to the outside world, set **clab.uplink** to the name of the Ethernet interface on your server[^IFNAME]. The minimum *containerlab* release supporting this feature is release 0.43.0.
 
-Example: use the following topology to connect your lab to the outside world through `r1` on a Linux server that uses `enp86s0` as the name of the Ethernet interface:
+Example: Use the following topology to connect your lab to the outside world through `r1` on a Linux server that uses `enp86s0` as the name of the Ethernet interface:
 
 ```
 defaults.device: cumulus
@@ -126,12 +126,12 @@ links:
 [^IFNAME]: Use **ip addr** or **ifconfig** find the interface name.
 
 ```{note}
-In multi-provider topologies, set the **uplink** parameter only for the primary provider (specified in the topology-level **provider** attribute); netlab copies the **uplink** parameter to all secondary providers during the lab topology transformation process.
+In multi-provider topologies, set the **uplink** parameter only for the primary provider (specified in the topology-level **provider** attribute); netlab copies it to all secondary providers during the lab topology transformation.
 ```
 
 ### Containerlab Management Network
 
-*containerlab* creates a dedicated Docker network to connect the container management interfaces to the host TCP/IP stack. You can change the parameters of the management network in the **addressing.mgmt** pool:
+*containerlab* creates a dedicated Docker network to connect the container management interfaces to the host TCP/IP stack. You can change the management network parameters in the **addressing.mgmt** pool:
 
 * **ipv4**: The IPv4 prefix used for the management network (default: `192.168.121.0/24`)
 * **ipv6**: Optional IPv6 management network prefix. It's not set by default.
@@ -154,10 +154,10 @@ You can also set the **clab.network-mode** node parameter to *none* to disconnec
 *netlab* supports container port forwarding -- mapping of TCP ports on the container management IP address to ports on the host. You can use port forwarding to access the lab devices via the host's external IP address without exposing the management network to the outside world.
 
 ```{warning}
-Some containers do not run an SSH server and cannot be accessed via SSH, even if you set up port forwarding for the SSH port.
+Some containers do not run an SSH server and cannot be accessed via SSH, even if you set up SSH port forwarding.
 ```
 
-Port forwarding is turned off by default and can be enabled by configuring the **defaults.providers.clab.forwarded** dictionary. Dictionary keys are TCP port names (ssh, http, https, netconf), and dictionary values are the starting values of host ports. *netlab* assigns a unique host port to every forwarded container port based on the start value and container node ID.
+Port forwarding is off by default and can be enabled by configuring the **defaults.providers.clab.forwarded** dictionary. Dictionary keys are TCP port names (ssh, http, https, netconf), and dictionary values are the starting forwarded port numbers for those protocols. *netlab* assigns a unique host port to every forwarded container port based on the start value and container node ID.
 
 For example, when given the following topology...
 
@@ -196,7 +196,7 @@ The *vrnetlab* build process generates container tags based on the underlying VM
 (vrnetlab-usernames)=
 ### Usernames and Passwords
 
-Most *vrnetlab* containers start with an unconfigured virtual machine and download the initial device configuration (including usernames and passwords) through the emulated VM console port. Recently, the *vrnetlab* project uses **admin** as the default username and **admin** (or **admin@123**) as the default password.
+Most *vrnetlab* containers start with an unconfigured virtual machine and download the initial device configuration (including usernames and passwords) through the emulated VM console port. The *vrnetlab* project currently uses **admin** as the default username and **admin** (or **admin@123**) as the default password.
 
 While we're trying to keep _netlab_ default settings in sync with _vrnetlab_ code, you could experience a mismatch between what *vrnetlab* configures on a network device and what *netlab*  thinks it will do. In that case, change the _netlab_ defaults with:
 
@@ -205,7 +205,7 @@ $ netlab defaults devices._device_.clab.group_vars.ansible_user=_username_
 $ netlab defaults devices._device_.clab.group_vars.ansible_ssh_pass=_password_
 ```
 
-You can also use another _vrnetlab_ detail: most containers can use `USERNAME` and `PASSWORD` environment variables to specify the username/password of the admin user. You can set these variables with the node **clab.env.USERNAME** and **clab.env.PASSWORD** parameters. For example, use these node settings to have a custom username and password for a Cisco IOSv device:
+You can also use another _vrnetlab_ detail: most containers can use `USERNAME` and `PASSWORD` environment variables to specify the username/password of the admin user. You can set these variables using the node **clab.env.USERNAME** and **clab.env.PASSWORD** parameters. For example, use these node settings to have a custom username and password for a Cisco IOSv device:
 
 ```
 provider: clab
@@ -254,9 +254,11 @@ Alternatively, add the same settings to the [user defaults file](defaults-user-f
 
 During the **netlab up** process, *containerlab* starts the containers and reports success. The virtual machines in those containers might need minutes to start, which means that _netlab_ cannot continue with the initial configuration process.
 
-_vrnetlab_-based supported platforms go through an extra "_is the device ready_" check during the initial configuration process: _netlab_ tries to establish an SSH session with the device and execute a command. The SSH session is retried up to 20 times, and as each retry usually takes 30 seconds (due to TCP timeouts), **netlab initial** waits up to 10 minutes for a VM to become ready.
+Supported *vrnetlab*-based platforms undergo an additional "*is the device ready*" check during the initial configuration process: *netlab* attempts to establish an SSH session with the device and run a command[^NLCC]. The SSH session is retried up to **netlab_check_retries** times (default: 20), with a delay of **netlab_check_delay** (default: 5), for a total of over 100 seconds. Each retry takes up to 10 seconds in case the TCP session is stuck in the SYN state.
 
-If your virtual machines take even longer to boot, increase the number of retries. You can set the **netlab_check_retries** node variable to increase the number of retries for an individual node or set the **defaults.devices._device_.clab.group_vars.netlab_check_retries** variable to increase the number of retries for a specific device (see also [](topo-defaults) and [](defaults-user-file))
+[^NLCC]: Specified in the **netlab_check_command** variable; usually `show version`
+
+The **netlab_check_retries** parameter is set higher in system defaults for virtual machines that are slow to boot (for example, **vjunos-router**), but if you're working on a slow system, you might have to increase it even further. Set the **netlab_check_retries** node variable to increase the number of retries for an individual node or set the **defaults.devices._device_.clab.group_vars.netlab_check_retries** variable to increase the number of retries for a specific device (see also [](topo-defaults) and [](defaults-user-file))
 
 ## Advanced Topics
 
