@@ -47,6 +47,7 @@ You can set the **‌stp.enable** parameter in the **‌vlans** dictionary to en
 
 ## Node Parameters (global or per VLAN)
 
+* **stp.protocol** (one of `stp`, `mstp`, `rstp` or `pvrst`) -- STP flavor for this node (overrides global setting)
 * **stp.priority** (int 0..61440 in increments of 1024) -- STP priority for root election, by default, all nodes have equal priority 32656.  In case of equal priority, the bridge with the lowest MAC address becomes root; note that MAC addresses are assigned randomly in Netlab
 * **stp.port_type** (one of `normal`, `edge`, `network` or `auto`) -- STP port type for all interfaces connected to this node
 
