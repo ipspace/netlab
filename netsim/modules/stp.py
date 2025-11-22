@@ -92,10 +92,9 @@ class STP(_Module):
     # Check if per-VLAN priority is being used
     for vname,vdata in node.get('vlans',{}).items():
       if vdata.get('stp.priority',None):
-        stp_proto = node.stp.protocol
-        if stp_proto != 'pvrst':
+        if node.stp.protocol != 'pvrst':
           log.error(
-            f"Topology requires per-VLAN STP (pvrst) used on VLAN '{vname}' but global default is '{stp_proto}'",
+            f"Topology requires per-VLAN STP (pvrst) used on VLAN '{vname}' but global default is '{node.stp.protocol}'",
             log.IncorrectValue,
             'stp')
         elif not 'pvrst' in features.get('stp.supported_protocols',[]):
