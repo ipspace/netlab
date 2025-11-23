@@ -63,6 +63,11 @@ def normalize_policy_entry(p_entry: typing.Any, p_idx: int) -> typing.Any:
     p_entry.set.prepend = { 'path': str(prepend) }
 
   if p_entry.get('set.community.delete',None):    # Migrate set.community.delete into delete.community
+    if 'delete' in p_entry:
+      log.error(
+        'Cannot use "set.community.delete" and "delete" attributes in the same routing policy entry',
+        category=log.IncorrectAttr,
+        module='routing')
     p_entry.delete.community = p_entry.set.community
     p_entry.delete.community.pop('delete')        # ... and remove the 'delete' keyword
     p_entry.pop('set.community',None)
@@ -75,6 +80,11 @@ def normalize_policy_entry(p_entry: typing.Any, p_idx: int) -> typing.Any:
   # Also, migrage set.community.delete_list into delete.community.list
   #
   if p_entry.get('set.community.delete_list',None):
+    if 'delete' in p_entry:
+      log.error(
+        'Cannot use "set.community.delete_list" and "delete" attributes in the same routing policy entry',
+        category=log.IncorrectAttr,
+        module='routing')
     p_entry.delete.community.list = p_entry.set.community.delete_list
     p_entry.pop('set.community',None)
     log.warning(

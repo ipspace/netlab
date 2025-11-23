@@ -164,7 +164,7 @@ Apart from setting BGP communities on BGP routes, these devices can execute addi
 | VyOS                | ✅ | ❌  | ❌  |
 
 **Notes:**
-* _netlab_ is creating an internal BGP community list on FRR and Cisco IOS/XE to delete BGP communities specified with the **set.community.delete** routing policy parameter. This approach is currently limited to standard BGP communities.
+* _netlab_ is creating an internal BGP community list on FRR and Cisco IOS/XE to delete BGP communities specified with the **delete.community** routing policy parameter. This approach is currently limited to standard BGP communities.
 
 ### Shortcut Routing Policy Definitions
 
