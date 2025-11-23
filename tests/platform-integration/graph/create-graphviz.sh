@@ -2,34 +2,27 @@
 OPTS=${*:-bgp topo isis}
 rm *svg
 if [[ "$OPTS" == *"topo"* ]]; then
-  netlab graph --topology topo.yml dot-topo-default.svg
-  NETLAB_GRAPH_TITLE="Topology graph, no labels" \
-  NETLAB_OUTPUTS_GRAPH_NODE__ADDRESS__LABEL=False netlab graph --topology topo.yml dot-topo-no-labels.svg
-  NETLAB_GRAPH_TITLE="Topology graph, no AS clusters" \
-  NETLAB_OUTPUTS_GRAPH_AS__CLUSTERS=False netlab graph --topology topo.yml dot-topo-no-clusters.svg
-  NETLAB_GRAPH_TITLE="Topology graph, interface labels" \
-  NETLAB_OUTPUTS_GRAPH_INTERFACE__LABELS=True netlab graph --topology topo.yml dot-topo-intf-labels.svg
-  NETLAB_GRAPH_TITLE="Topology graph, custom groups" \
-  NETLAB_OUTPUTS_GRAPH_GROUPS=[fabric,host] netlab graph --topology topo.yml dot-topo-groups.svg
+  netlab graph --title "Default topology graph" --topology topo.yml dot-topo-default.svg
+  NETLAB_OUTPUTS_GRAPH_NODE__ADDRESS__LABEL=False \
+    netlab graph --title "Topology graph, no labels" --topology topo.yml dot-topo-no-labels.svg
+  NETLAB_OUTPUTS_GRAPH_AS__CLUSTERS=False \
+    netlab graph --title "Topology graph, no AS clusters" --topology topo.yml dot-topo-no-clusters.svg
+  NETLAB_OUTPUTS_GRAPH_INTERFACE__LABELS=True \
+    netlab graph --title "Topology graph, interface labels" --topology topo.yml dot-topo-intf-labels.svg
+  NETLAB_OUTPUTS_GRAPH_GROUPS=[fabric,host] \
+    netlab graph --title "Topology graph, custom groups" --topology topo.yml dot-topo-groups.svg
 fi
 if [[ "$OPTS" == *"bgp"* ]]; then
-  NETLAB_GRAPH_TITLE="Default BGP graph" \
   NETLAB_GROUPS_CORE_GRAPH_RANK=1 \
-  netlab graph --topology bgp.yml -t bgp dot-bgp-default.svg
-  NETLAB_GRAPH_TITLE="BGP graph with RR sessions" \
-  netlab graph --topology bgp.yml -t bgp -f rr dot-bgp-rr.svg
-  NETLAB_GRAPH_TITLE="BGP graph with VRF sessions" \
-  netlab graph --topology bgp.yml -t bgp -f vrf dot-bgp-vrf.svg
-  NETLAB_GRAPH_TITLE="No VRF sessions in the BGP graph" \
-  netlab graph --topology bgp.yml -t bgp -f novrf dot-bgp-novrf.svg
-  NETLAB_GRAPH_TITLE="EVPN BGP sessions" \
-  netlab graph --topology bgp.yml -t bgp -f evpn,rr dot-bgp-evpn.svg
+    netlab graph --title "Default BGP graph" --topology bgp.yml -t bgp dot-bgp-default.svg
+  netlab graph --title "BGP graph with RR sessions" --topology bgp.yml -t bgp -f rr dot-bgp-rr.svg
+  netlab graph --title "BGP graph with VRF sessions" --topology bgp.yml -t bgp -f vrf dot-bgp-vrf.svg
+  netlab graph --title "No VRF sessions in the BGP graph" --topology bgp.yml -t bgp -f novrf dot-bgp-novrf.svg
+  netlab graph --title "EVPN BGP sessions" --topology bgp.yml -t bgp -f evpn,rr dot-bgp-evpn.svg
 fi
 if [[ "$OPTS" == *"isis"* ]]; then
-  NETLAB_GRAPH_TITLE="IS-IS routing" \
-  netlab graph --topology isis.yml -t isis dot-isis.svg
+  netlab graph --title "IS-IS routing" --topology isis.yml -t isis dot-isis.svg
 fi
 if [[ "$OPTS" == *"vlan"* ]]; then
-  NETLAB_GRAPH_TITLE="VLAN Access and Trunk Links" \
-  netlab graph --topology vlan.yml -f vlan dot-vlan.svg
+  netlab graph --title "VLAN Access and Trunk Links" --topology vlan.yml -f vlan dot-vlan.svg
 fi

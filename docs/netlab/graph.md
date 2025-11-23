@@ -12,8 +12,9 @@ _netlab_ generates the graph description files. You will have to install [Graphv
 ## Usage
 
 ```text
-usage: netlab graph [-h] [-t {topology,bgp,isis}] [-f G_FORMAT] [-e {graphviz,d2}]
-                    [-i INSTANCE] [--snapshot [SNAPSHOT]] [--topology TOPOLOGY]
+usage: netlab graph [-h] [-t {topology,bgp,isis}] [--title G_TITLE] [-f G_FORMAT]
+                    [-e {graphviz,d2}] [-q] [-i INSTANCE] [--snapshot [SNAPSHOT]]
+                    [--topology TOPOLOGY]
                     [output]
 
 Create a graph description in Graphviz or D2 format or draw a graph
@@ -25,10 +26,12 @@ options:
   -h, --help            show this help message and exit
   -t, --type {topology,bgp,isis}
                         Graph type
+  --title G_TITLE       Graph title
   -f, --format G_FORMAT
                         Graph formatting parameters separated by commas
   -e, --engine {graphviz,d2}
                         Graphing engine
+  -q, --quiet           Report only major errors
   -i, --instance INSTANCE
                         Specify lab instance to create a graph from
   --snapshot [SNAPSHOT]
@@ -69,6 +72,8 @@ These formatting parameters can be applied to a **bgp** graph:
 * **vrf** -- draw VRF BGP sessions as dotted lines
 * **ipv4**, **ipv6**, **vpnv4**, **vpnv6**, **6pe**, or **evpn** -- draw the BGP sessions with the specified address families
 * **novrf** -- do not include VRF BGP sessions in the graph
+
+You can also specify/overwrite the graph title with the `--title` argument.
 
 ```{tip}
 * For more graph type- and graph formatting details, read the [GraphViz](outputs-graphviz) and [D2](outputs-d2) output module documentation.
