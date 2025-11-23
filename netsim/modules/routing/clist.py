@@ -30,19 +30,19 @@ def import_community_list(pname: str,o_name: str,node: Box,topology: Box) -> typ
 """
 replace_community_delete:
 
-* replace 'delete: true' with 'delete_list' if the 'set.community.delete' feature is set to 'clist'
+* replace 'delete.community' with 'delete.community.list' if the 'delete.community' feature is set to 'clist'
 * create a new community list if needed
 """
 def replace_community_delete(node: Box, p_name: str, p_entry: Box, topology: Box) -> None:
-  if not p_entry.get('set.community.delete',False):
+  if not p_entry.get('delete.community',None):
     return
   features = devices.get_device_features(node,topology.defaults)
-  if features.get('routing.policy.set.community.delete') != 'clist':
+  if features.get('routing.policy.delete.community') != 'clist':
     return
 
   clist = []
   for type in ['standard','large','extended']:
-    if type not in p_entry.set.community:
+    if type not in p_entry.delete.community:
       continue
     elif type in ['large','extended']:
       log.error(
@@ -51,15 +51,15 @@ def replace_community_delete(node: Box, p_name: str, p_entry: Box, topology: Box
         category=log.IncorrectType,
         module='routing')
     else:
-      clist += [ { 'type': 'standard', 'action': 'permit', '_value': i } for i in p_entry.set.community[type] ]
+      clist += [ { 'type': 'standard', 'action': 'permit', '_value': i } for i in p_entry.delete.community[type] ]
 
   if clist:
     cname = f"DEL_{p_name}_{p_entry.sequence}"
     node.routing.community[cname] = { 'action': 'permit', 'type': 'standard', 'value': clist }
-    p_entry.set.community.delete_list = cname
+    p_entry.delete.community.list = cname
   
-  for kw in ['standard','large','extended','delete']:
-    p_entry.set.community.pop(kw, None)
+  for kw in ['standard','large','extended']:
+    p_entry.delete.community.pop(kw, None)
 
 """
 fix_clist_entry: Fix an entry in the BGP community list.

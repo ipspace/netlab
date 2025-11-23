@@ -57,6 +57,7 @@ Routing policies are lists of instructions that can **match** route parameters a
 * **sequence**: Statement sequence number. When not specified, *netlab* sets a routing policy entry's **sequence** number to ten times its list position.
 * **match**: Conditions that must match for the routing policy entry to take effect. Entries without a **match** parameter match all routes
 * **set**: Parameters that are set on matched routes.
+* **delete**: Parameters that are deleted on matched routes.
 
 You can match these route parameters in a _netlab_ routing policy:
 
@@ -70,7 +71,7 @@ You can set these route parameters in a _netlab_ routing policy:
 * **med**: Route metric (for example, BGP MED)
 * **prepend**: BGP AS-path prepending ([more details](plugin-bgp-policy-attributes))
 * **weight**: BGP weight
-* **community**: A dictionary that can be used to set, add, or remove standard, large, or extended communities.
+* **community**: A dictionary that can be used to set or add standard, large, or extended communities.
 
 The **set.community** dictionary has these parameters:
 
@@ -78,8 +79,10 @@ The **set.community** dictionary has these parameters:
 * **large**: Large BGP communities to set
 * **extended**: Extended BGP communities to set. The value is passed to the network device as-is (the same value might not work on all devices).
 * **append**: Add communities to existing BGP communities
-* **delete**: Remove specified communities from the BGP route
-* **delete_list**: Remove communities matching the specified community list from the BGP route. Cannot be used with any other **set.community** parameters.
+
+You can delete these route parameters:
+
+* **community**: A dictionary that can be used to delete standard, large, or extended communities. The dictionary can also contain **list** element to delete all communities matching a BGP [community filter](generic-routing-community).
 
 Routing policies are specified in the global- or node-level **routing.policy** dictionary (see [](routing-object-import) and  [](routing-object-merge) for more details).
 
@@ -156,12 +159,12 @@ Apart from setting BGP communities on BGP routes, these devices can execute addi
 | Cisco IOS/XE[^18v]  | ✅ | ✅❗️| ✅ |
 | Cumulus Linux       | ✅ | ❌  | ❌  |
 | Dell OS10           | ✅ | ❌  | ❌  |
-| Junos               | ✅ | ✅ | ❌  |
+| Junos               | ✅ | ✅ | ✅ |
 | FRR                 | ✅ | ✅❗️ | ✅ |
 | VyOS                | ✅ | ❌  | ❌  |
 
 **Notes:**
-* _netlab_ is creating an internal BGP community list on FRR and Cisco IOS/XE to delete BGP communities specified with the **set.community.delete** routing policy parameter. This approach is currently limited to standard BGP communities.
+* _netlab_ is creating an internal BGP community list on FRR and Cisco IOS/XE to delete BGP communities specified with the **delete.community** routing policy parameter. This approach is currently limited to standard BGP communities.
 
 ### Shortcut Routing Policy Definitions
 
