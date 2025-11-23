@@ -731,7 +731,7 @@ defaults:
             daemons:
               type: list
               _subtype: str
-      provider: clab
+      provider: libvirt
     cumulus:
       features:
         bgp:
@@ -5575,7 +5575,7 @@ defaults:
       vsrx: true
       vyos: true
       xr: true
-  provider: clab
+  provider: libvirt
   providers:
     clab:
       description: containerlab with Docker
@@ -8289,7 +8289,8 @@ nodes:
     interfaces:
     - ipv4: 10.1.0.1/30
       linkindex: 1
-      type: p2p
+      type: lan
+      bridge: ml_17_1
       name: dut -> x1
       ifindex: 1
       ifname: eth1
@@ -8304,8 +8305,9 @@ nodes:
         network_type: point-to-point
     - ipv4: 10.1.0.5/30
       linkindex: 2
+      type: lan
+      bridge: ml_17_2
       role: external
-      type: p2p
       name: dut -> x2
       ifindex: 2
       ifname: eth2
@@ -8315,15 +8317,7 @@ nodes:
         ifname: eth1
         node: x2
     device: frr
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/dut/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.5.0
+    box: debian/bookworm64
     mtu: 1500
     module:
     - ospf
@@ -8374,14 +8368,13 @@ nodes:
       af:
         ipv4: true
     id: 1
-    provider: clab
+    provider: libvirt
     af:
       ipv4: true
     mgmt:
       ifname: eth0
       mac: ca:fe:00:01:00:00
       ipv4: 192.168.17.101
-    hostname: clab-ml_17-dut
     loopback:
       type: loopback
       neighbors: []
@@ -8395,6 +8388,7 @@ nodes:
         area: 0.0.0.0
         passive: false
   x1:
+    provider: clab
     bgp:
       advertise_loopback: true
       community:
@@ -8440,7 +8434,8 @@ nodes:
     interfaces:
     - ipv4: 10.1.0.2/30
       linkindex: 1
-      type: p2p
+      type: lan
+      bridge: ml_17_1
       name: x1 -> dut
       ifindex: 1
       ifname: eth1
@@ -8474,7 +8469,6 @@ nodes:
         ipv4: true
     id: 2
     role: router
-    provider: clab
     af:
       ipv4: true
     mgmt:
@@ -8497,6 +8491,7 @@ nodes:
     config:
     - bgp.session
   x2:
+    provider: clab
     bgp:
       advertise_loopback: true
       community:
@@ -8538,8 +8533,9 @@ nodes:
     interfaces:
     - ipv4: 10.1.0.6/30
       linkindex: 2
+      type: lan
+      bridge: ml_17_2
       role: external
-      type: p2p
       name: x2 -> dut
       ifindex: 1
       ifname: eth1
@@ -8561,7 +8557,6 @@ nodes:
     mtu: 1500
     id: 3
     role: router
-    provider: clab
     af:
       ipv4: true
     mgmt:
@@ -8581,8 +8576,12 @@ links:
     ifindex: 1
     ifname: eth1
   linkindex: 1
+  libvirt:
+    provider:
+      clab: true
+  type: lan
+  bridge: ml_17_1
   node_count: 2
-  type: p2p
   prefix:
     ipv4: 10.1.0.0/30
 - interfaces:
@@ -8596,9 +8595,13 @@ links:
     ifname: eth1
   _linkname: links[2]
   linkindex: 2
+  libvirt:
+    provider:
+      clab: true
+  type: lan
+  bridge: ml_17_2
   role: external
   node_count: 2
-  type: p2p
   prefix:
     ipv4: 10.1.0.4/30
 validate:
@@ -8667,7 +8670,10 @@ addressing:
   vrf_loopback:
     ipv4: 10.2.0.0/24
     prefix: 32
-provider: clab
+provider: libvirt
+libvirt:
+  providers:
+    clab: true
 bgp:
   advertise_loopback: true
   community:

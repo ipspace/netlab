@@ -313,7 +313,7 @@ defaults:
         build: https://netlab.tools/labs/asav/
         create_iso: asav
     cat8000v:
-      description: Cisco CSR 1000v
+      description: Cisco Catalyst 8000v
       attributes:
         global:
           ios:
@@ -325,6 +325,13 @@ defaults:
             debug:
               type: list
               split_lines: true
+          cat8000v:
+            license:
+              type: str
+              valid_values:
+              - essential
+              - advantage
+              - premier
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -346,7 +353,7 @@ defaults:
           netlab_check_retries: 50
           netlab_ready:
           - ssh
-        image: vrnetlab/cisco_c8000v:17.13.01a
+        image: vrnetlab/cisco_c8000v:17.16.01a
         node:
           kind: cisco_c8000v
         interface:
@@ -482,6 +489,7 @@ defaults:
           protocol:
           - vrrp
         sr: {}
+        vxlan: {}
         srv6:
           bgp: false
           isis: true
@@ -503,13 +511,15 @@ defaults:
           --ram=4096 --disk path=vm.qcow2,bus=ide,format=qcow2 
           --network=network:vagrant-libvirt,model=virtio --graphics none 
           --import
+        cat8000v:
+          license: premier
         create_template: cat8000v.xml.j2
         create_iso: cat8000v
       _parents:
       - ios
       - csr
     cisco8000v:
-      description: Cisco 8000v
+      description: Cisco 8000v (IOS/XR)
       mgmt_if: MgmtEth0/RP0/CPU0/0
       interface_name: FourHundredGigE0/0/0/{ifindex}
       loopback_interface_name: Loopback{ifindex}
@@ -531,19 +541,58 @@ defaults:
           min_mtu: 68
           min_phy_mtu: 1500
           max_mtu: 9216
-        ospf:
-          unnumbered: true
-          password: true
-          priority: true
-          timers: true
+        bgp:
+          activate_af: true
+          import:
+          - ospf
+          - isis
+          - connected
+          - static
+          - vrf
+          local_as: true
+          local_as_ibgp: true
+          vrf_local_as: true
+          confederation: true
         isis:
           circuit_type: true
           unnumbered:
             ipv4: true
             ipv6: true
             network: true
-        bgp:
-          activate_af: true
+          import:
+          - ospf
+          - bgp
+          - connected
+          - static
+          - vrf
+        ospf:
+          unnumbered: true
+          password: true
+          priority: true
+          timers: true
+          default: true
+          import:
+          - bgp
+          - isis
+          - connected
+          - static
+          - vrf
+        routing:
+          static:
+            vrf: true
+            inter_vrf: true
+            discard: true
+        vrf:
+          bgp: true
+          isis: true
+          ospfv2: true
+          ospfv3: true
+        vlan:
+          model: router
+          subif_name: '{ifname}.{vlan.access_id}'
+          svi_interface_name: BVI{vlan}
+          mixed_trunk: true
+          native_routed: false
       external:
         image: none
       support:
@@ -1310,7 +1359,8 @@ defaults:
           ospfv3: true
           bgp: true
           isis: true
-        vxlan: {}
+        vxlan:
+          vtep6: true
       clab:
         build: https://netlab.tools/labs/ceos/
         features:
@@ -1420,6 +1470,25 @@ defaults:
           gnupg: gpg
           curl: curl
           iproute2: bridge
+        netlab_frr_daemons:
+          bfd:
+          - bfdd
+          bgp:
+          - bgpd
+          ospf:
+          - ospfd
+          - ospf6d
+          ripv2:
+          - ripd
+          - ripngd
+          isis:
+          - isisd
+          vrf:
+          - bgpd
+          gateway:
+          - vrrpd
+          mpls:
+          - ldpd
       mtu: 1500
       clab:
         group_vars:
@@ -1613,11 +1682,17 @@ defaults:
             debug:
               type: list
               split_lines: true
+            daemons:
+              type: list
+              _subtype: str
         node:
           frr:
             debug:
               type: list
               split_lines: true
+            daemons:
+              type: list
+              _subtype: str
       provider: clab
     iol:
       description: Cisco IOL
@@ -2387,6 +2462,10 @@ defaults:
         ansible_user: vagrant
         ansible_ssh_pass: vagrant
         ansible_become_password: vagrant
+        group_vars:
+          netlab_check_retries: 120
+          netlab_ready:
+          - ssh
       features:
         initial:
           ipv4:
@@ -2396,19 +2475,52 @@ defaults:
           min_mtu: 68
           min_phy_mtu: 1500
           max_mtu: 9216
-        ospf:
-          unnumbered: true
-          password: true
-          priority: true
-          timers: true
+        bgp:
+          activate_af: true
+          import:
+          - ospf
+          - isis
+          - connected
+          - static
+          - vrf
+          local_as: true
+          local_as_ibgp: true
+          vrf_local_as: true
+          confederation: true
         isis:
           circuit_type: true
           unnumbered:
             ipv4: true
             ipv6: true
             network: true
-        bgp:
-          activate_af: true
+          import:
+          - ospf
+          - bgp
+          - connected
+          - static
+          - vrf
+        ospf:
+          unnumbered: true
+          password: true
+          priority: true
+          timers: true
+          default: true
+          import:
+          - bgp
+          - isis
+          - connected
+          - static
+          - vrf
+        routing:
+          static:
+            vrf: true
+            inter_vrf: true
+            discard: true
+        vrf:
+          bgp: true
+          isis: true
+          ospfv2: true
+          ospfv3: true
       external:
         image: none
       support:
@@ -2910,6 +3022,11 @@ defaults:
           kind: vr-ros
         interface:
           name: eth{ifindex-1}
+        group_vars:
+          netlab_check_retries: 50
+          netlab_ready:
+          - ssh
+          netlab_check_command: /system/resource/print
       external:
         image: none
       graphite:
@@ -4851,6 +4968,9 @@ defaults:
         debug:
           type: list
           split_lines: true
+        daemons:
+          type: list
+          _subtype: str
       ios:
         debug:
           type: list
@@ -5027,6 +5147,13 @@ defaults:
         _keytype: id
         _requires:
         - vrf
+      cat8000v:
+        license:
+          type: str
+          valid_values:
+          - essential
+          - advantage
+          - premier
       eos:
         serialnumber: str
         systemmacaddr: mac
@@ -5034,6 +5161,9 @@ defaults:
         debug:
           type: list
           split_lines: true
+        daemons:
+          type: list
+          _subtype: str
       ios:
         debug:
           type: list
@@ -5529,16 +5659,22 @@ defaults:
     MAX_NODE_ID: 150
     validate:
       ping: 5
+      ping_vrf: 5
       ping_long: 15
       vxlan_ping: 20
-      ping_xx_long: 40
+      ping_stp: 45
+      ping_irb: 10
       ra_send: 30
       ospfv2_adj_p2p: 30
       ospfv2_adj_lan: 50
+      ospfv2_adj_stp: 120
       ospfv2_spf: 10
+      ospfv2_spf_long: 30
       ospfv3_adj_p2p: 30
       ospfv3_adj_lan: 50
+      ospfv3_adj_stp: 120
       ospfv3_spf: 10
+      ospfv3_spf_long: 30
       ospf_import: 20
       ebgp_session: 30
       ibgp_session: 30
@@ -5552,6 +5688,7 @@ defaults:
       isis_adj_lan: 50
       isis_spf: 15
       isis_spf_long: 45
+      isis_redist: 30
       rip_start: 60
       rip_update: 20
       ldp_adj: 30
@@ -5560,8 +5697,18 @@ defaults:
       xr:
         bgp_v4_originate: 80
         bgp_v6_originate: 80
+        bgp_v4_redist: 90
+        isis_redist: 60
+        ebgp_session: 90
+        ping_vrf: 20
+        bgp_scan_long: 30
       ios:
         bgp_v6_redist: 60
+      cisco8000v:
+        ping_irb: 90
+        ping_long: 15
+      vjunos-router:
+        ping_irb: 90
   hints:
     evpn:
       irb_group: >
@@ -5678,18 +5825,18 @@ defaults:
     create: {}
   paths:
     validate:
-    - /home/pipi/netlab_gh/netsim/validate
+    - /home/pipi/net101/tools/netsim/validate
     plugin:
     - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/ospf/ospfv2
     - /home/pipi/.netlab
-    - /home/pipi/netlab_gh/netsim/extra
+    - /home/pipi/net101/tools/netsim/extra
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/ospf/ospfv2
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/netlab_gh/netsim/extra
+      - /home/pipi/net101/tools/netsim/extra
       files:
       - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
         '-' + node_provider + '.j2' }}"
@@ -5720,7 +5867,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks
+      - /home/pipi/net101/tools/netsim/ansible/tasks
       tasks_generic:
       - deploy-config/{{ netlab_device_type }}-{{ node_provider }}.yml
       - deploy-config/{{ netlab_device_type }}.yml
@@ -5741,8 +5888,8 @@ defaults:
       - deploy-config/{{ ansible_network_os }}.yml
     templates:
       dirs:
-      - /home/pipi/netlab_gh/netsim/daemons
-      - /home/pipi/netlab_gh/netsim/ansible/templates
+      - /home/pipi/net101/tools/netsim/daemons
+      - /home/pipi/net101/tools/netsim/ansible/templates
     t_files:
       files:
       - '{{config_module}}/{{netlab_device_type}}-{{provider|default(netlab_provider)}}.j2'
@@ -5754,7 +5901,7 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     ready:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
+      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -5762,7 +5909,7 @@ defaults:
       - '{{ansible_network_os}}.yml'
     collect:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
+      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
   ports:
     ssh: 22
     http: 80
@@ -7204,6 +7351,7 @@ defaults:
       arubacx: true
       bird: true
       cat8000v: true
+      cisco8000v: true
       csr: true
       cumulus: true
       cumulus_nvue: true
@@ -7216,6 +7364,7 @@ defaults:
       ios: true
       iosv: true
       iosvl2: true
+      iosxr: true
       junos: true
       linux: true
       none: true
@@ -7229,6 +7378,7 @@ defaults:
       vptx: true
       vsrx: true
       vyos: true
+      xr: true
   sr:
     requires:
     - isis
@@ -7544,6 +7694,7 @@ defaults:
       bird:
         clab: true
       cat8000v: true
+      cisco8000v: true
       csr: true
       cumulus: true
       cumulus_nvue: true
@@ -7613,6 +7764,7 @@ defaults:
     supported_on:
       arubacx: true
       cat8000v: true
+      cisco8000v: true
       csr: true
       cumulus: true
       cumulus_nvue: true
@@ -7624,6 +7776,7 @@ defaults:
       ios: true
       iosv: true
       iosvl2: true
+      iosxr: true
       junos: true
       none: true
       nxos: true
@@ -7639,6 +7792,7 @@ defaults:
       vptx: true
       vsrx: true
       vyos: true
+      xr: true
   vxlan:
     requires:
     - vlan
@@ -7679,6 +7833,7 @@ defaults:
       vtep6: VXLAN over IPv6
     supported_on:
       arubacx: true
+      cat8000v: true
       csr: true
       cumulus: true
       cumulus_nvue: true
@@ -7700,18 +7855,14 @@ defaults:
     list: []
     user: []
     system: []
+  workdir: /work/netlab_cicd
+  device: frr
   groups:
-    external:
-      device: frr
-      members: []
-      _default_group: true
     all:
       vars:
         netlab_show_config: true
       members: []
       _default_group: true
-  workdir: /work/netlab_cicd
-  device: frr
   plugin:
   - multilab
   _globals:
@@ -7748,10 +7899,6 @@ groups:
     - x3
     node_data:
       provider: clab
-  external:
-    device: frr
-    members: []
-    _default_group: true
   all:
     vars:
       netlab_show_config: true
@@ -8129,4 +8276,4 @@ addressing:
 provider: clab
 ospf:
   area: 0.0.0.0
-_netlab_version: 25.11-dev
+_netlab_version: 25.11.01

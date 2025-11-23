@@ -1,9 +1,10 @@
 %YAML 1.1
 ---
-message: This scenario tests basic interface, IPv4, and IPv6 configuration, 
-  including generation of IPv6 Router Advertisements
+message: |
+  This lab tests the OSPF areas. The device under test has three interfaces
+  in three different areas and the loopback interface in one of those areas.
 defaults:
-  provider: clab
+  provider: libvirt
   providers:
     clab:
       description: containerlab with Docker
@@ -1692,7 +1693,7 @@ defaults:
             daemons:
               type: list
               _subtype: str
-      provider: clab
+      provider: libvirt
     iol:
       description: Cisco IOL
       attributes:
@@ -5827,12 +5828,12 @@ defaults:
     - /home/pipi/net101/tools/netsim/validate
     plugin:
     - /work/netlab_cicd
-    - /home/pipi/net101/tools/tests/integration/initial
+    - /home/pipi/net101/tools/tests/integration/ospf/ospfv2
     - /home/pipi/.netlab
     - /home/pipi/net101/tools/netsim/extra
     custom:
       dirs:
-      - /home/pipi/net101/tools/tests/integration/initial
+      - /home/pipi/net101/tools/tests/integration/ospf/ospfv2
       - /work/netlab_cicd
       - /home/pipi/.netlab
       - /home/pipi/net101/tools/netsim/extra
@@ -7341,7 +7342,6 @@ defaults:
         - prefix
         - nexthop
         - aspath
-      node_copy: {}
     features:
       policy:
         set: Route map SET attributes
@@ -7850,8 +7850,8 @@ defaults:
       vyos: true
   sources:
     extra:
-    - ../wait_times.yml
-    - ../warnings.yml
+    - ../../wait_times.yml
+    - ../../warnings.yml
     list: []
     user: []
     system: []
@@ -7885,18 +7885,386 @@ defaults:
     - vlan
     - vrf
     - vxlan
-  name: ml_17
   module:
-  - routing
+  - ospf
+  name: ml_17
+module:
+- ospf
+groups:
+  probes:
+    device: frr
+    members:
+    - x1
+    - x2
+    - x3
+    node_data:
+      provider: clab
+  all:
+    vars:
+      netlab_show_config: true
+    members: []
+    _default_group: true
+nodes:
+  dut:
+    ospf:
+      area: 0.0.0.2
+      router_id: 10.0.0.1
+      af:
+        ipv4: true
+    role: router
+    id: 1
+    name: dut
+    interfaces:
+    - ipv4: 10.1.0.1/30
+      ospf:
+        area: 0.0.0.0
+        passive: false
+        network_type: point-to-point
+      mtu: 1500
+      linkindex: 1
+      type: lan
+      bridge: ml_17_1
+      name: dut -> x1
+      ifindex: 1
+      ifname: eth1
+      neighbors:
+      - ipv4: 10.1.0.2/30
+        ifname: eth1
+        node: x1
+    - ipv4: 10.1.0.5/30
+      ospf:
+        area: 0.0.0.2
+        passive: false
+        network_type: point-to-point
+      mtu: 1500
+      linkindex: 2
+      type: lan
+      bridge: ml_17_2
+      name: dut -> x2
+      ifindex: 2
+      ifname: eth2
+      neighbors:
+      - ipv4: 10.1.0.6/30
+        ifname: eth1
+        node: x2
+    - ipv4: 10.1.0.9/30
+      ospf:
+        area: 0.0.0.3
+        passive: false
+        network_type: point-to-point
+      mtu: 1500
+      linkindex: 3
+      type: lan
+      bridge: ml_17_3
+      name: dut -> x3
+      ifindex: 3
+      ifname: eth3
+      neighbors:
+      - ipv4: 10.1.0.10/30
+        ifname: eth1
+        node: x3
+    device: frr
+    box: debian/bookworm64
+    module:
+    - ospf
+    mtu: 1500
+    provider: libvirt
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:01:00:00
+      ipv4: 192.168.17.101
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.1/32
+      ospf:
+        area: 0.0.0.2
+        passive: false
+  x1:
+    provider: clab
+    ospf:
+      area: 0.0.0.0
+      router_id: 10.0.0.2
+      af:
+        ipv4: true
+    name: x1
+    interfaces:
+    - ipv4: 10.1.0.2/30
+      ospf:
+        area: 0.0.0.0
+        passive: false
+        network_type: point-to-point
+      mtu: 1500
+      linkindex: 1
+      type: lan
+      bridge: ml_17_1
+      name: x1 -> dut
+      ifindex: 1
+      ifname: eth1
+      neighbors:
+      - ipv4: 10.1.0.1/30
+        ifname: eth1
+        node: dut
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/x1/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.5.0
+    module:
+    - ospf
+    id: 2
+    role: router
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:02:00:00
+      ipv4: 192.168.17.102
+    hostname: clab-ml_17-x1
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.2/32
+      ospf:
+        area: 0.0.0.0
+        passive: false
+  x2:
+    provider: clab
+    ospf:
+      area: 0.0.0.2
+      router_id: 10.0.0.3
+      af:
+        ipv4: true
+    name: x2
+    interfaces:
+    - ipv4: 10.1.0.6/30
+      ospf:
+        area: 0.0.0.2
+        passive: false
+        network_type: point-to-point
+      mtu: 1500
+      linkindex: 2
+      type: lan
+      bridge: ml_17_2
+      name: x2 -> dut
+      ifindex: 1
+      ifname: eth1
+      neighbors:
+      - ipv4: 10.1.0.5/30
+        ifname: eth2
+        node: dut
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/x2/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.5.0
+    module:
+    - ospf
+    id: 3
+    role: router
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:03:00:00
+      ipv4: 192.168.17.103
+    hostname: clab-ml_17-x2
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.3/32
+      ospf:
+        area: 0.0.0.2
+        passive: false
+  x3:
+    provider: clab
+    ospf:
+      area: 0.0.0.3
+      router_id: 10.0.0.4
+      af:
+        ipv4: true
+    name: x3
+    interfaces:
+    - ipv4: 10.1.0.10/30
+      ospf:
+        area: 0.0.0.3
+        passive: false
+        network_type: point-to-point
+      mtu: 1500
+      linkindex: 3
+      type: lan
+      bridge: ml_17_3
+      name: x3 -> dut
+      ifindex: 1
+      ifname: eth1
+      neighbors:
+      - ipv4: 10.1.0.9/30
+        ifname: eth3
+        node: dut
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/x3/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.5.0
+    module:
+    - ospf
+    id: 4
+    role: router
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:04:00:00
+      ipv4: 192.168.17.104
+    hostname: clab-ml_17-x3
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.4/32
+      ospf:
+        area: 0.0.0.3
+        passive: false
+links:
+- _linkname: links[1]
+  ospf:
+    area: 0.0.0.0
+  mtu: 1500
+  interfaces:
+  - node: dut
+    ipv4: 10.1.0.1/30
+    ifindex: 1
+    ifname: eth1
+  - node: x1
+    ipv4: 10.1.0.2/30
+    ifindex: 1
+    ifname: eth1
+  linkindex: 1
+  libvirt:
+    provider:
+      clab: true
+  type: lan
+  bridge: ml_17_1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+- _linkname: links[2]
+  ospf:
+    area: 0.0.0.2
+  mtu: 1500
+  interfaces:
+  - node: dut
+    ipv4: 10.1.0.5/30
+    ifindex: 2
+    ifname: eth2
+  - node: x2
+    ipv4: 10.1.0.6/30
+    ifindex: 1
+    ifname: eth1
+  linkindex: 2
+  libvirt:
+    provider:
+      clab: true
+  type: lan
+  bridge: ml_17_2
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.4/30
+- _linkname: links[3]
+  ospf:
+    area: 0.0.0.3
+  mtu: 1500
+  interfaces:
+  - node: dut
+    ipv4: 10.1.0.9/30
+    ifindex: 3
+    ifname: eth3
+  - node: x3
+    ipv4: 10.1.0.10/30
+    ifindex: 1
+    ifname: eth1
+  linkindex: 3
+  libvirt:
+    provider:
+      clab: true
+  type: lan
+  bridge: ml_17_3
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.8/30
+validate:
+- description: Check OSPF adjacencies
+  wait: 30
+  wait_msg: Waiting for OSPF adjacency process to complete
+  nodes:
+  - x1
+  - x2
+  - x3
+  plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  name: adj
+- description: Check for DUT loopback prefix being an inter-area route in areas 
+    0 and 3
+  wait: 10
+  wait_msg: Waiting for DUT and SPF to do their magic
+  nodes:
+  - x1
+  - x3
+  plugin: ospf_prefix('10.0.0.1/32',rt='N IA')
+  name: lb
+- description: Check for DUT loopback prefix being an intra-area route in area 2
+  wait: 10
+  wait_msg: Waiting for SPF to do its magic
+  nodes:
+  - x2
+  plugin: ospf_prefix('10.0.0.1/32',rt='N')
+  name: lb2
+input:
+- /home/pipi/net101/tools/tests/integration/ospf/ospfv2/02-areas.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
+- /home/pipi/.netlab.yml
+- package:topology-defaults.yml
+plugin:
+- multilab
+name: ml_17
 addressing:
   lan:
     ipv4: 172.16.0.0/16
     prefix: 24
-    ipv6: 2001:db8:1::/48
   loopback:
     ipv4: 10.0.0.0/24
     prefix: 32
-    ipv6: 2001:db8::/48
   p2p:
     ipv4: 10.1.0.0/16
     prefix: 30
@@ -7914,284 +8282,10 @@ addressing:
   vrf_loopback:
     ipv4: 10.2.0.0/24
     prefix: 32
-groups:
-  hosts:
-    members:
-    - h1
-    - h2
-    device: linux
-    module:
-    - routing
-    node_data:
-      provider: clab
-      routing:
-        static:
-        - pool: loopback
-          nexthop:
-            node: r
-  all:
-    vars:
-      netlab_show_config: true
-    members: []
-    _default_group: true
-nodes:
-  r:
-    id: 132
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.132/32
-      ipv6: 2001:db8:0:84::1/64
-    eos:
-      systemmacaddr: ca-fe-0b-ad-00-01
-    name: r
-    interfaces:
-    - ra:
-        slaac: true
-      ipv4: 172.16.0.132/24
-      ipv6: 2001:db8:1::84/64
-      bandwidth: 1000
-      linkindex: 1
-      role: stub
-      type: lan
-      bridge: ml_17_1
-      name: r -> h1
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.0.1/24
-        ipv6: 2001:db8:1::1/64
-        ifname: eth1
-        node: h1
-    - ra:
-        slaac: true
-      ipv4: 172.16.1.132/24
-      ipv6: 2001:db8:1:1::84/64
-      bandwidth: 2000
-      linkindex: 2
-      role: stub
-      type: lan
-      bridge: ml_17_2
-      name: r -> h2
-      ifindex: 2
-      ifname: eth2
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.1.2/24
-        ipv6: 2001:db8:1:1::2/64
-        ifname: eth1
-        node: h2
-    device: frr
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/r/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.5.0
-    role: router
-    mtu: 1500
-    provider: clab
-    af:
-      ipv4: true
-      ipv6: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:84:00:00
-      ipv4: 192.168.17.232
-    hostname: clab-ml_17-r
-  h1:
-    routing:
-      static:
-      - ipv4: 10.0.0.0/24
-        nexthop:
-          ipv4: 172.16.0.132
-          intf: eth1
-          ipv6: 2001:db8:1::84
-          idx: 0
-      - ipv6: 2001:db8::/48
-        nexthop:
-          ipv4: 172.16.0.132
-          intf: eth1
-          ipv6: 2001:db8:1::84
-          idx: 0
-    name: h1
-    interfaces:
-    - ipv4: 172.16.0.1/24
-      ipv6: 2001:db8:1::1/64
-      bandwidth: 1000
-      linkindex: 1
-      role: stub
-      type: lan
-      bridge: ml_17_1
-      name: h1 -> r
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.0.132/24
-        ipv6: 2001:db8:1::84/64
-        ifname: eth1
-        node: r
-    device: linux
-    module:
-    - routing
-    clab:
-      kind: linux
-      config_templates:
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: python:3.13-alpine
-    id: 1
-    role: host
-    mtu: 1500
-    af:
-      ipv4: true
-      ipv6: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:01:00:00
-      ipv4: 192.168.17.101
-    hostname: clab-ml_17-h1
-  h2:
-    routing:
-      static:
-      - ipv4: 10.0.0.0/24
-        nexthop:
-          ipv4: 172.16.1.132
-          intf: eth1
-          ipv6: 2001:db8:1:1::84
-          idx: 0
-      - ipv6: 2001:db8::/48
-        nexthop:
-          ipv4: 172.16.1.132
-          intf: eth1
-          ipv6: 2001:db8:1:1::84
-          idx: 0
-    name: h2
-    interfaces:
-    - ipv4: 172.16.1.2/24
-      ipv6: 2001:db8:1:1::2/64
-      bandwidth: 2000
-      linkindex: 2
-      role: stub
-      type: lan
-      bridge: ml_17_2
-      name: h2 -> r
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.1.132/24
-        ipv6: 2001:db8:1:1::84/64
-        ifname: eth2
-        node: r
-    device: linux
-    module:
-    - routing
-    clab:
-      kind: linux
-      config_templates:
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: python:3.13-alpine
-    id: 2
-    role: host
-    mtu: 1500
-    af:
-      ipv4: true
-      ipv6: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:02:00:00
-      ipv4: 192.168.17.102
-    hostname: clab-ml_17-h2
-links:
-- _linkname: links[1]
-  bandwidth: 1000
-  interfaces:
-  - node: r
-    ra:
-      slaac: true
-    ipv4: 172.16.0.132/24
-    ipv6: 2001:db8:1::84/64
-    ifindex: 1
-    ifname: eth1
-  - node: h1
-    ipv4: 172.16.0.1/24
-    ipv6: 2001:db8:1::1/64
-    ifindex: 1
-    ifname: eth1
-  linkindex: 1
-  node_count: 2
-  role: stub
-  type: lan
-  bridge: ml_17_1
-  prefix:
-    ipv4: 172.16.0.0/24
-    ipv6: 2001:db8:1::/64
-- _linkname: links[2]
-  bandwidth: 2000
-  interfaces:
-  - node: r
-    ra:
-      slaac: true
-    ipv4: 172.16.1.132/24
-    ipv6: 2001:db8:1:1::84/64
-    ifindex: 2
-    ifname: eth2
-  - node: h2
-    ipv4: 172.16.1.2/24
-    ipv6: 2001:db8:1:1::2/64
-    ifindex: 1
-    ifname: eth1
-  linkindex: 2
-  node_count: 2
-  role: stub
-  type: lan
-  bridge: ml_17_2
-  prefix:
-    ipv4: 172.16.1.0/24
-    ipv6: 2001:db8:1:1::/64
-validate:
-- description: IPv4 ping H1,H2 => R
-  wait: 15
-  wait_msg: Wait for IPv4 interfaces to become operational
-  nodes:
-  - h1
-  - h2
-  plugin: ping(nodes.r.loopback.ipv4)
-  name: ping
-- description: IPv6 ping H1,H2 => R
-  wait: 5
-  wait_msg: Wait for IPv6 interfaces to become operational
-  nodes:
-  - h1
-  - h2
-  plugin: ping(nodes.r.loopback.ipv6)
-  name: ping6
-input:
-- /home/pipi/net101/tools/tests/integration/initial/01-interfaces.yml
-- /home/pipi/net101/tools/tests/integration/wait_times.yml
-- /home/pipi/net101/tools/tests/integration/warnings.yml
-- /home/pipi/.netlab.yml
-- package:topology-defaults.yml
-plugin:
-- multilab
-name: ml_17
-provider: clab
-module:
-- routing
-prefix:
-  any:
-    ipv4: 0.0.0.0/0
-    ipv6: ::/0
+provider: libvirt
+libvirt:
+  providers:
+    clab: true
+ospf:
+  area: 0.0.0.0
 _netlab_version: 25.11.01
