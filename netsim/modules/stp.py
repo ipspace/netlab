@@ -17,6 +17,7 @@ def supports_stp(intf: Box) -> bool:
     return False
   return True
 
+
 """
 configure_stub_port_type - for a L2 interface where all devices connected are hosts, sets the stp.port_type as <stub_port_type>
 """
@@ -34,20 +35,19 @@ class STP(_Module):
 
   # Check stp.supported_protocols, stp.priority, stp.port_priority, per VLAN support and stp.enable_per_port
   def node_post_transform(self, node: Box, topology: Box) -> None:
-    if not node.get("stp.enable", True):   # if STP is disabled, don't complain about feature support
+    if not node.get('stp.enable', True):   # if STP is disabled, don't complain about feature support
       return
     features = devices.get_device_features(node,topology.defaults)
 
-    protocol = topology.get("stp.protocol","stp")
     supported_protocols = features.get("stp.supported_protocols",[])
-    if protocol not in supported_protocols:
+    if node.stp.protocol not in supported_protocols:
       log.error(
-        f'node {node.name} (device {node.device}) does not support requested STP protocol ({protocol})',
+        f'node {node.name} (device {node.device}) does not support requested STP protocol ({node.stp.protocol})',
         log.IncorrectValue,
         'stp')
 
-    priority = node.get('stp.priority',0)
-    if priority and (priority % 4096):
+    priority = node.get('stp.priority',None)
+    if priority is not None and (priority % 4096):
         log.error(
             f'node {node.name} (device {node.device}) stp.priority: {priority} must be a multiple of 4096',
             log.IncorrectValue,
@@ -92,10 +92,9 @@ class STP(_Module):
     # Check if per-VLAN priority is being used
     for vname,vdata in node.get('vlans',{}).items():
       if vdata.get('stp.priority',None):
-        stp_proto = topology.get('stp.protocol','stp')
-        if stp_proto != 'pvrst':
+        if node.stp.protocol != 'pvrst':
           log.error(
-            f"Topology requires per-VLAN STP (pvrst) used on VLAN '{vname}' but global default is '{stp_proto}'",
+            f"Topology requires per-VLAN STP (pvrst) used on VLAN '{vname}' but global default is '{node.stp.protocol}'",
             log.IncorrectValue,
             'stp')
         elif not 'pvrst' in features.get('stp.supported_protocols',[]):
