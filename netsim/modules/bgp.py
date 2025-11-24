@@ -183,12 +183,17 @@ def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
   bgp_nhs  = node.bgp.get("next_hop_self",None)   # Do we have to set next hop on IBGP sessions?
   has_ibgp = False                                # Assume we have no IBGP sessions (yet)
   rrlist = [] if is_rr else find_bgp_rr(node_as,topology)
-
+  rr_mesh  = node.bgp.get("rr_mesh",True)         # Do we want to have a mesh between RRs (default: Yes)?
   if is_rr or not rrlist:                         # If the current node is RR or we have a full mesh
     ibgp_ngb_list = [                             # ... we need IBGP sessions to all nodes in the AS
       ngb for ngb in topology.nodes.values()      # ... but while building the node list
         if ngb.name != node.name and              # ... skip current node
            ngb.get('bgp.as',None) == node_as]     # ... and everyone not in the current AS (or not running BGP)
+    if is_rr and not rr_mesh:                     # Are we a RR and the user hates inter-RR sessions?
+      ibgp_ngb_list = [                           # ... Let's exclude other RRs from neighbor list
+        ngb for ngb in ibgp_ngb_list              # Iterate over IBGP neighbors we found so far
+          if not ngb.get('bgp.rr',False)          # ... and keep the neighbor if it's not an RR
+            or ngb.get('bgp.rr_mesh',True) ]     # ... or if it's rr_mesh is True (to keep symmetric sessions)
   else:
     ibgp_ngb_list = rrlist
 
