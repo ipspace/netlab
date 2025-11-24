@@ -123,12 +123,16 @@ All attributes defined with a dictionary (**mode** in the above example, but not
 * **_requires** -- a list of modules that must be enabled in global- or node context to allow the use of this attribute. See `vrfs` in `modules/vrf.yml` and `vlans` in `modules/vlan.yml` for more details.
 * **_required** (bool) -- the attribute must be present in the parent dictionary[^CRQ]
 * **_valid_with** -- a list or dictionary of attributes that can be used with this attribute ([example](inter-attribute-examples)).
-* **_invalid_with** -- a list or dictionary of attributes that this attribute cannot be used to. If an element in the **_invalid_with** dictionary has a list value, an error is reported only if the conflicting attribute has one of the values in the list ([example](inter-attribute-examples)).
+* **_invalid_with** -- specifies attributes that cannot be used together with this attribute. Can be:
+
+  - A list of attribute names (this attribute cannot be used when any of the listed attributes are present)
+  - A dictionary where keys are attribute names and values specify that the conflict occurs when the conflicting attribute has (one of the) the specified value(s)
+
 * **_alt_types** -- [alternate data types](validation-alt-types)
 
 [^CRQ]: This does not make the parent dictionary mandatory, but if it's present, it must have the required attribute. Use a chain of `_required` attributes if you want to enforce the presence of an attribute deep in the data structure.
 
-See [](validation-definition-examples) for more details.
+See [](validation-definition-examples) and [](inter-attribute-examples) for more details.
 
 ### Further Data Type Validation Options
 
@@ -293,7 +297,6 @@ The **delete.community.list** in a routing policy entry cannot be used with any 
             _valid_with: [ ]
 
 ```
-(validation-shortcut-type)=
 
 The **set** or **delete** attributes of a routing policy cannot be used when the **action** attribute is set to **deny** (because the route is dropped anyway):
 
@@ -312,6 +315,7 @@ The **set** or **delete** attributes of a routing policy cannot be used when the
         ...
 ```
 
+(validation-shortcut-type)=
 ## Shortcut Data Type Definitions
 
 _netlab_ supports several shortcuts that make type definitions easier to create and read:

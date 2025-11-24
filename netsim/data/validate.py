@@ -471,7 +471,7 @@ def check_valid_with(
           f"Attribute '{attr}' cannot be used together with '{inv_attr}' in {path}",
           category=log.IncorrectAttr,
           module=module)
-      elif data[inv_attr] in inv_values:
+      elif data[inv_attr] in inv_values if isinstance(inv_values,list) else data[inv_attr] == inv_values:
         log.error(
           f"Attribute '{attr}' cannot be used together with '{inv_attr}' set to '{data[inv_attr]}' in {path}",
           category=log.IncorrectAttr,
