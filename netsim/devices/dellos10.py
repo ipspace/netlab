@@ -83,9 +83,9 @@ check_expanded_communities - Check for unsupported 'expanded' communities or reg
 """
 def check_expanded_communities(node:Box, topology: Box) -> None:
   for c_name,c_value in node.get('routing.community',{}).items():
-    if c_value.get('type',None) != 'standard':
+    if c_value.get('cl_type',None) != 'standard':
       report_quirk(
-        f"Dell OS10 (node {node.name}) does not support communities of type '{c_value.type}'",
+        f"Dell OS10 (node {node.name}) does not support expanded BGP community lists",
         quirk='non-standard_communities',
         node=node)
 
