@@ -14,6 +14,7 @@ defaults:
       - cmd
       - dns
       - env
+      - exec
       - license
       - ports
       - startup-delay
@@ -74,6 +75,9 @@ defaults:
             startup-delay: int
             restart-policy: str
             network-mode: str
+            exec:
+              type: list
+              _subtype: str
         interface:
           name: str
         link:
@@ -251,8 +255,10 @@ defaults:
               prepend: true
               community:
                 standard: true
-                delete: true
                 append: true
+            delete:
+              community:
+                standard: true
             match:
             - prefix
             - nexthop
@@ -457,8 +463,8 @@ defaults:
               community:
                 standard: true
                 append: true
-                delete: clist
-                delete_list: true
+            delete:
+              community: clist
             match:
             - prefix
             - nexthop
@@ -753,8 +759,8 @@ defaults:
               community:
                 standard: true
                 append: true
-                delete: clist
-                delete_list: true
+            delete:
+              community: clist
             match:
             - prefix
             - nexthop
@@ -1144,7 +1150,8 @@ defaults:
                 large: false
                 extended: true
                 append: true
-                delete: false
+            delete:
+              community: false
           prefix: true
           static:
             vrf: true
@@ -1331,6 +1338,8 @@ defaults:
             - nexthop
             - aspath
             - community
+            delete:
+              community: true
           prefix: true
           aspath: true
           community:
@@ -1633,13 +1642,13 @@ defaults:
                 large: true
                 extended: true
                 append: true
-                delete: clist
-                delete_list: true
             match:
             - prefix
             - nexthop
             - aspath
             - community
+            delete:
+              community: clist
           prefix: true
           aspath: true
           community:
@@ -1829,8 +1838,8 @@ defaults:
               community:
                 standard: true
                 append: true
-                delete: clist
-                delete_list: true
+            delete:
+              community: clist
             match:
             - prefix
             - nexthop
@@ -2012,8 +2021,8 @@ defaults:
               community:
                 standard: true
                 append: true
-                delete: clist
-                delete_list: true
+            delete:
+              community: clist
             match:
             - prefix
             - nexthop
@@ -2206,8 +2215,8 @@ defaults:
               community:
                 standard: true
                 append: true
-                delete: clist
-                delete_list: true
+            delete:
+              community: clist
             match:
             - prefix
             - nexthop
@@ -2392,8 +2401,8 @@ defaults:
               community:
                 standard: true
                 append: true
-                delete: clist
-                delete_list: true
+            delete:
+              community: clist
             match:
             - prefix
             - nexthop
@@ -2766,6 +2775,8 @@ defaults:
             - nexthop
             - aspath
             - community
+            delete:
+              community: true
           prefix: true
           aspath: true
           community:
@@ -3564,7 +3575,8 @@ defaults:
                 large: true
                 extended: true
                 append: true
-                delete: true
+            delete:
+              community: true
           static:
             vrf: true
             discard: true
@@ -3660,7 +3672,8 @@ defaults:
                 large: true
                 extended: true
                 append: true
-                delete: true
+            delete:
+              community: true
           static:
             vrf: true
             discard: true
@@ -3766,7 +3779,8 @@ defaults:
                 large: true
                 extended: true
                 append: true
-                delete: true
+            delete:
+              community: true
           static:
             vrf: true
             discard: true
@@ -3859,7 +3873,8 @@ defaults:
                 large: true
                 extended: true
                 append: true
-                delete: true
+            delete:
+              community: true
           static:
             vrf: true
             discard: true
@@ -3959,7 +3974,8 @@ defaults:
                 large: true
                 extended: true
                 append: true
-                delete: true
+            delete:
+              community: true
           static:
             vrf: true
             discard: true
@@ -4085,7 +4101,8 @@ defaults:
                 large: true
                 extended: true
                 append: true
-                delete: false
+            delete:
+              community: false
             match:
             - prefix
             - nexthop
@@ -4991,6 +5008,7 @@ defaults:
       bandwidth: int
       bridge: id
       disable: bool
+      shutdown: bool
       name: str
       prefix:
         type: dict
@@ -5372,6 +5390,8 @@ defaults:
         min_value: 1
         max_value: 32767
       set:
+        _invalid_with:
+          action: deny
         locpref:
           type: int
           min_value: 0
@@ -5407,6 +5427,16 @@ defaults:
             - extended
             - large
           delete_list:
+            type: str
+            _valid_with: []
+      delete:
+        _invalid_with:
+          action: deny
+        community:
+          standard: list
+          extended: list
+          large: list
+          list:
             type: str
             _valid_with: []
       match:
@@ -5824,18 +5854,18 @@ defaults:
     create: {}
   paths:
     validate:
-    - /home/pipi/net101/tools/netsim/validate
+    - /home/pipi/netlab_gh/netsim/validate
     plugin:
     - /work/netlab_cicd
-    - /home/pipi/net101/tools/tests/integration/initial
+    - /home/pipi/netlab_gh/tests/integration/initial
     - /home/pipi/.netlab
-    - /home/pipi/net101/tools/netsim/extra
+    - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
-      - /home/pipi/net101/tools/tests/integration/initial
+      - /home/pipi/netlab_gh/tests/integration/initial
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/net101/tools/netsim/extra
+      - /home/pipi/netlab_gh/netsim/extra
       files:
       - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
         '-' + node_provider + '.j2' }}"
@@ -5866,7 +5896,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks
+      - /home/pipi/netlab_gh/netsim/ansible/tasks
       tasks_generic:
       - deploy-config/{{ netlab_device_type }}-{{ node_provider }}.yml
       - deploy-config/{{ netlab_device_type }}.yml
@@ -5887,8 +5917,8 @@ defaults:
       - deploy-config/{{ ansible_network_os }}.yml
     templates:
       dirs:
-      - /home/pipi/net101/tools/netsim/daemons
-      - /home/pipi/net101/tools/netsim/ansible/templates
+      - /home/pipi/netlab_gh/netsim/daemons
+      - /home/pipi/netlab_gh/netsim/ansible/templates
     t_files:
       files:
       - '{{config_module}}/{{netlab_device_type}}-{{provider|default(netlab_provider)}}.j2'
@@ -5900,7 +5930,7 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     ready:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -5908,7 +5938,7 @@ defaults:
       - '{{ansible_network_os}}.yml'
     collect:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
   ports:
     ssh: 22
     http: 80
@@ -5989,16 +6019,6 @@ defaults:
       vsrx: true
       vyos: true
   bgp:
-    ebgp_role: external
-    advertise_roles:
-    - stub
-    advertise_loopback: true
-    community:
-      ibgp:
-      - standard
-      - extended
-      ebgp:
-      - standard
     no_propagate:
       ebgp_role:
       advertise_roles:
@@ -6013,9 +6033,19 @@ defaults:
     - isis
     - eigrp
     - ripv2
-    next_hop_self: true
     hooks:
     - normalize
+    advertise_roles:
+    - stub
+    advertise_loopback: true
+    community:
+      ibgp:
+      - standard
+      - extended
+      ebgp:
+      - standard
+    ebgp_role: external
+    next_hop_self: true
     attributes:
       global:
         as: asn
@@ -6024,6 +6054,7 @@ defaults:
           type: ipv4
           use: id
         rr_list: list
+        rr_mesh: bool
         ebgp_role: str
         as_list: dict
         sessions:
@@ -6071,6 +6102,7 @@ defaults:
         rr_cluster_id:
           type: ipv4
           use: id
+        rr_mesh: bool
         originate:
           type: list
           _subtype:
@@ -7346,7 +7378,11 @@ defaults:
       policy:
         set: Route map SET attributes
         match: Route map MATCH attributes
+        delete: Route map DELETE attributes
       static: Static routes
+      prefix: Prefix lists
+      aspath: AS-path access lists
+      community: BGP community access lists
     supported_on:
       arubacx: true
       bird: true
@@ -7919,6 +7955,7 @@ groups:
     members:
     - h1
     - h2
+    - h3
     device: linux
     module:
     - routing
@@ -7985,6 +8022,24 @@ nodes:
         ipv6: 2001:db8:1:1::2/64
         ifname: eth1
         node: h2
+    - shutdown: true
+      ra:
+        slaac: true
+      ipv4: 172.16.2.132/24
+      ipv6: 2001:db8:1:2::84/64
+      linkindex: 3
+      type: lan
+      bridge: ml_17_3
+      role: stub
+      name: r -> h3
+      ifindex: 3
+      ifname: eth3
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.2.3/24
+        ipv6: 2001:db8:1:2::3/64
+        ifname: eth1
+        node: h3
     device: frr
     box: debian/bookworm64
     role: router
@@ -8107,6 +8162,60 @@ nodes:
       mac: ca:fe:00:02:00:00
       ipv4: 192.168.17.102
     hostname: clab-ml_17-h2
+  h3:
+    provider: clab
+    routing:
+      static:
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          ipv4: 172.16.2.132
+          intf: eth1
+          ipv6: 2001:db8:1:2::84
+          idx: 0
+      - ipv6: 2001:db8::/48
+        nexthop:
+          ipv4: 172.16.2.132
+          intf: eth1
+          ipv6: 2001:db8:1:2::84
+          idx: 0
+    name: h3
+    interfaces:
+    - ipv4: 172.16.2.3/24
+      ipv6: 2001:db8:1:2::3/64
+      linkindex: 3
+      type: lan
+      bridge: ml_17_3
+      role: stub
+      name: h3 -> r
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.2.132/24
+        ipv6: 2001:db8:1:2::84/64
+        ifname: eth3
+        node: r
+    device: linux
+    module:
+    - routing
+    clab:
+      kind: linux
+      config_templates:
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: python:3.13-alpine
+    id: 3
+    role: host
+    mtu: 1500
+    af:
+      ipv4: true
+      ipv6: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:03:00:00
+      ipv4: 192.168.17.103
+    hostname: clab-ml_17-h3
 links:
 - _linkname: links[1]
   bandwidth: 1000
@@ -8160,6 +8269,32 @@ links:
   prefix:
     ipv4: 172.16.1.0/24
     ipv6: 2001:db8:1:1::/64
+- _linkname: links[3]
+  interfaces:
+  - shutdown: true
+    node: r
+    ra:
+      slaac: true
+    ipv4: 172.16.2.132/24
+    ipv6: 2001:db8:1:2::84/64
+    ifindex: 3
+    ifname: eth3
+  - node: h3
+    ipv4: 172.16.2.3/24
+    ipv6: 2001:db8:1:2::3/64
+    ifindex: 1
+    ifname: eth1
+  linkindex: 3
+  libvirt:
+    provider:
+      clab: true
+  type: lan
+  bridge: ml_17_3
+  node_count: 2
+  role: stub
+  prefix:
+    ipv4: 172.16.2.0/24
+    ipv6: 2001:db8:1:2::/64
 validate:
 - description: IPv4 ping H1,H2 => R
   wait: 15
@@ -8177,10 +8312,16 @@ validate:
   - h2
   plugin: ping(nodes.r.loopback.ipv6)
   name: ping6
+- description: Check link shutdown (ping H3 => R)
+  nodes:
+  - h3
+  plugin: ping(nodes.r.loopback.ipv4,count=3,expect='fail')
+  level: warning
+  name: shutdown
 input:
-- /home/pipi/net101/tools/tests/integration/initial/01-interfaces.yml
-- /home/pipi/net101/tools/tests/integration/wait_times.yml
-- /home/pipi/net101/tools/tests/integration/warnings.yml
+- /home/pipi/netlab_gh/tests/integration/initial/01-interfaces.yml
+- /home/pipi/netlab_gh/tests/integration/wait_times.yml
+- /home/pipi/netlab_gh/tests/integration/warnings.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 plugin:
