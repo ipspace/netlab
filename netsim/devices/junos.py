@@ -211,10 +211,10 @@ def community_set_quirk(node: Box, topology: Box) -> None:
         for ct in ['standard','extended','large']:          # Do the same fixup for all three community types
           for comm in comm_struct.get(ct, []):
             comm_action = 'set'                             # Figure out the operation (set/add/del)
-            if comm_struct.get('append', False):
-              comm_action = 'add'
             if 'delete' in cmod_kw:
               comm_action = 'del'
+            elif comm_struct.get('append', False):
+              comm_action = 'add'
             # add this "fake" community to the community list
             comm_list_name = f"{comm_name_prefix}_{comm_action}_{comm}"
             comm_list_name = comm_list_name.replace(':', '_')
