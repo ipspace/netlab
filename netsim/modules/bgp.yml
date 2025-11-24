@@ -1,12 +1,6 @@
 # BGP default settings and attributes
 #
 ---
-ebgp_role: external
-advertise_roles: [ stub ]
-advertise_loopback: True
-community:
-  ibgp: [ standard, extended ]
-  ebgp: [ standard ]
 no_propagate:
   ebgp_role:
   advertise_roles:
@@ -15,9 +9,18 @@ no_propagate:
   confederation:
 transform_after: [ vlan ]
 config_after: [ routing, ospf, isis, eigrp, ripv2 ]
-next_hop_self: true
 hooks: [ normalize ]
 
+# Default BGP attribute settings
+advertise_roles: [ stub ]
+advertise_loopback: True
+community:
+  ibgp: [ standard, extended ]
+  ebgp: [ standard ]
+ebgp_role: external
+next_hop_self: true
+
+# Module attributes
 _top:                         # Define custom data types used by the BGP module
   attributes:
     bgp_session_type:
@@ -42,6 +45,7 @@ attributes:
     next_hop_self: bool
     rr_cluster_id: { type: ipv4, use: id }
     rr_list: list
+    rr_mesh: bool           # Rarely used, hard-coded default: True
     ebgp_role: str
     as_list: dict
     sessions:
@@ -73,15 +77,16 @@ attributes:
     as:
       type: asn
       _required: True
-    next_hop_self:
+    next_hop_self: { copy: global }
     rr: bool
-    rr_cluster_id:
+    rr_cluster_id: { copy: global }
+    rr_mesh: { copy: global }
     originate:
       type: list
       _subtype: { type: ipv4, use: subnet_prefix, named: True }
-    advertise_loopback:
-    sessions:
-    activate:
+    advertise_loopback: { copy: global }
+    sessions: { copy: global }
+    activate: { copy: global }
     community: { copy: global }
     router_id: { type: ipv4, use: id }
     local_as: asn
