@@ -141,6 +141,7 @@ It might also have these (optional) parameters:
 * **ipv6** -- IPv6 interface address
 * **_parent_intf** -- name of the parent interface of unnumbered IPv4 interfaces
 * **_parent_ipv4** -- IPv4 address of the parent interface of unnumbered IPv4 interfaces
+* **shutdown** -- the interface should be disabled when the lab is started
 
 ```{tip}
 You can use the **‌netlab_interfaces** instead of the **‌interfaces** list. **‌netlab_interfaces** list includes the loopback interface *‌on devices that are not hosts*, allowing you to configure all interfaces with the same code.
