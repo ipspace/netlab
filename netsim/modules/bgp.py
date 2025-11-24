@@ -193,7 +193,7 @@ def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       ibgp_ngb_list = [                           # ... Let's exclude other RRs from neighbor list
         ngb for ngb in ibgp_ngb_list              # Iterate over IBGP neighbors we found so far
           if not ngb.get('bgp.rr',False)          # ... and keep the neighbor if it's not an RR
-            or ngb.get('bgp.rr_mesh',True) ]     # ... or if it's rr_mesh is True (to keep symmetric sessions)
+            or ngb.get('bgp.rr_mesh',True) ]      # ... or if its rr_mesh is True (to keep symmetric sessions)
   else:
     ibgp_ngb_list = rrlist
 
