@@ -203,14 +203,17 @@ def community_set_quirk(node: Box, topology: Box) -> None:
     node.routing['community'] = {}
   for pl_name, pl_list in node.routing.get('policy', {}).items():
     for pl_item in pl_list:
-      comm_struct = pl_item.get('set.community', {})
-      if comm_struct:
-        for ct in ['standard','extended','large']:
+      for cmod_kw in ('set.community','delete.community'):  # Have to create policies for set/delete community
+        comm_struct = pl_item.get(cmod_kw, None)
+        if not comm_struct:                                 # Keyword not used in the RP entry, move on
+          continue
+
+        for ct in ['standard','extended','large']:          # Do the same fixup for all three community types
           for comm in comm_struct.get(ct, []):
-            comm_action = 'set'
+            comm_action = 'set'                             # Figure out the operation (set/add/del)
             if comm_struct.get('append', False):
               comm_action = 'add'
-            if comm_struct.get('delete', False):
+            if 'delete' in cmod_kw:
               comm_action = 'del'
             # add this "fake" community to the community list
             comm_list_name = f"{comm_name_prefix}_{comm_action}_{comm}"
@@ -225,6 +228,10 @@ def community_set_quirk(node: Box, topology: Box) -> None:
                 comm_list.append({ "action": "permit", "_value": "65535:0:65536" })
               else:
                 comm_list.append({ "action": "permit", "_value": "large:65535:0:65536" })
+
+            # Note that the Junos implementation incorrectly used 'type' attribute to save the
+            # community type that should be matched (standard/extended/large), not the type of
+            # match (standard/expanded). This mismatch will disappear once we implement #2243
             node.routing.community[comm_list_name] = {
               'type': ct,
               'value': comm_list,
