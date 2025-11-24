@@ -122,11 +122,17 @@ All attributes defined with a dictionary (**mode** in the above example, but not
 * **true_value** -- value to use when the parameter is set to *True*
 * **_requires** -- a list of modules that must be enabled in global- or node context to allow the use of this attribute. See `vrfs` in `modules/vrf.yml` and `vlans` in `modules/vlan.yml` for more details.
 * **_required** (bool) -- the attribute must be present in the parent dictionary[^CRQ]
+* **_valid_with** -- a list or dictionary of attributes that can be used with this attribute ([example](inter-attribute-examples)).
+* **_invalid_with** -- specifies attributes that cannot be used together with this attribute. Can be:
+
+  - A list of attribute names (this attribute cannot be used when any of the listed attributes are present)
+  - A dictionary where keys are attribute names and values specify that the conflict occurs when the conflicting attribute has (one of the) the specified value(s)
+
 * **_alt_types** -- [alternate data types](validation-alt-types)
 
 [^CRQ]: This does not make the parent dictionary mandatory, but if it's present, it must have the required attribute. Use a chain of `_required` attributes if you want to enforce the presence of an attribute deep in the data structure.
 
-See [](validation-definition-examples) for more details.
+See [](validation-definition-examples) and [](inter-attribute-examples) for more details.
 
 ### Further Data Type Validation Options
 
@@ -273,6 +279,40 @@ mpls:
   attributes:
     global:
       6pe: { type: list, true_value: [ ibgp ] }
+```
+
+(inter-attribute-examples)=
+### Attribute Dependency Validation Examples
+
+The **delete.community.list** in a routing policy entry cannot be used with any other **delete.community** attributes. **‌**
+
+```
+      delete:
+        community:
+          standard: list
+          extended: list
+          large: list
+          list:
+            type: str
+            _valid_with: [ ]
+
+```
+
+The **set** or **delete** attributes of a routing policy cannot be used when the **action** attribute is set to **deny** (because the route is dropped anyway):
+
+```
+  attributes:
+    rp_entry:                       # Define routing policy entry
+      _description: Routing policy entry
+      action:
+        type: str
+        valid_values: [ permit, deny ]
+      set:
+        _invalid_with: { action: deny }
+        ...
+      delete:
+        _invalid_with: { action: deny }
+        ...
 ```
 
 (validation-shortcut-type)=
