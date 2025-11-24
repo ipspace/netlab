@@ -51,11 +51,11 @@ def replace_community_delete(node: Box, p_name: str, p_entry: Box, topology: Box
         category=log.IncorrectType,
         module='routing')
     else:
-      clist += [ { 'type': 'standard', 'action': 'permit', '_value': i } for i in p_entry.delete.community[type] ]
+      clist += [ { 'action': 'permit', '_value': i } for i in p_entry.delete.community[type] ]
 
   if clist:
     cname = f"DEL_{p_name}_{p_entry.sequence}"
-    node.routing.community[cname] = { 'action': 'permit', 'type': 'standard', 'value': clist }
+    node.routing.community[cname] = { 'action': 'permit', 'cl_type': 'standard', 'value': clist }
     p_entry.delete.community.list = cname
   
   for kw in ['standard','large','extended']:
@@ -121,7 +121,7 @@ def expand_community_list(p_name: str,o_name: str,node: Box,topology: Box) -> ty
         module='routing')
     regexp = regexp or bool(p_clist.value[p_idx].get('regexp',False))
 
-  p_clist.type = 'expanded' if regexp else 'standard'       # Set clist type for devices that use standard/expanded
+  p_clist.cl_type = 'expanded' if regexp else 'standard'    # Set clist type for devices that use standard/expanded
   p_clist.regexp = 'regexp' if regexp else ''               # And regexp flag for devices that use something else
 
   return None                                               # Message to caller: no need to do additional checks
