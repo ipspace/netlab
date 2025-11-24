@@ -6,8 +6,24 @@
 # exp-topology*yml files (expected results)
 #
 set -e
-for file in topology/input/${1:-*}.yml; do
-  PYTHONPATH="../" python3 create-transformation-test-case.py -t $file
+XFORM_PATH="topology/input"
+
+# Check for "coverage" first
+if [[ "$1" == "coverage" ]]; then
+    echo "Creating code coverage transformation tests"
+    XFORM_PATH="coverage/input"
+    shift
+fi
+
+# If no args left, default to "*"
+if [[ $# -eq 0 ]]; then
+    set -- "*"
+fi
+
+for arg in "$@"; do
+  for file in ${XFORM_PATH}/${arg}.yml; do
+    PYTHONPATH="../" python3 create-transformation-test-case.py -t $file
+  done
 done
 #
 # Remove files unnecessarily created by various provider modules
