@@ -122,6 +122,8 @@ All attributes defined with a dictionary (**mode** in the above example, but not
 * **true_value** -- value to use when the parameter is set to *True*
 * **_requires** -- a list of modules that must be enabled in global- or node context to allow the use of this attribute. See `vrfs` in `modules/vrf.yml` and `vlans` in `modules/vlan.yml` for more details.
 * **_required** (bool) -- the attribute must be present in the parent dictionary[^CRQ]
+* **_valid_with** -- a list or dictionary of attributes that can be used with this attribute ([example](inter-attribute-examples)).
+* **_invalid_with** -- a list or dictionary of attributes that this attribute cannot be used to. If an element in the **_invalid_with** dictionary has a list value, an error is reported only if the conflicting attribute has one of the values in the list ([example](inter-attribute-examples)).
 * **_alt_types** -- [alternate data types](validation-alt-types)
 
 [^CRQ]: This does not make the parent dictionary mandatory, but if it's present, it must have the required attribute. Use a chain of `_required` attributes if you want to enforce the presence of an attribute deep in the data structure.
@@ -275,7 +277,41 @@ mpls:
       6pe: { type: list, true_value: [ ibgp ] }
 ```
 
+(inter-attribute-examples)=
+### Attribute Dependency Validation Examples
+
+The **delete.community.list** in a routing policy entry cannot be used with any other **delete.community** attributes. **‌**
+
+```
+      delete:
+        community:
+          standard: list
+          extended: list
+          large: list
+          list:
+            type: str
+            _valid_with: [ ]
+
+```
 (validation-shortcut-type)=
+
+The **set** or **delete** attributes of a routing policy cannot be used when the **action** attribute is set to **deny** (because the route is dropped anyway):
+
+```
+  attributes:
+    rp_entry:                       # Define routing policy entry
+      _description: Routing policy entry
+      action:
+        type: str
+        valid_values: [ permit, deny ]
+      set:
+        _invalid_with: { action: deny }
+        ...
+      delete:
+        _invalid_with: { action: deny }
+        ...
+```
+
 ## Shortcut Data Type Definitions
 
 _netlab_ supports several shortcuts that make type definitions easier to create and read:

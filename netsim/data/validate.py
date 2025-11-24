@@ -424,27 +424,58 @@ def check_valid_with(
   if log.debug_active('validate'):
     print(f'check_valid_with {path} {data} against {data_name} {data_type}')
 
-  attr_list = list(data.keys())                             # Get the list of data attributes
   _keys = data_type.get('_keys',data_type)                  # Get the definition of keys
   report_list: typing.List[str] = []                        # List of already-reported incompatibilities
 
-  for attr in attr_list:
-    if not isinstance(_keys.get(attr,None),Box):            # Skip invalid attributes or simple types
-      continue
+  # Get the list of data attributes with complex types
+  #
+  data_attr = [ k for k in data.keys() if not isinstance(k,str) or not k.startswith('_') ]
+  cplx_attr = [ k for k in data_attr if isinstance(_keys.get(k,None),Box) ]
+
+  # Check 'valid with' restrictions
+  #
+  for attr in cplx_attr:
     if '_valid_with' not in _keys[attr]:                    # Attribute has no restrictions
       continue
     if attr in report_list:                                 # Incompatibility has already been reported
       continue
-    inv_list = [ x for x in attr_list
+    inv_list = [ x for x in data_attr
                   if x != attr and
-                     x not in _keys[attr]._valid_with and
-                     not x.startswith('_') ]                # Build a list of incompatible attributes
+                     x not in _keys[attr]._valid_with ]     # Build a list of incompatible attributes
     if inv_list:                                            # ... and report them
       log.error(
         f'Attribute(s) {",".join(inv_list)} cannot be used with attribute {attr} in {path}',
         category=log.IncorrectAttr,
         module=module)
       report_list = report_list + inv_list
+
+  # Check 'invalid with' restrictions
+  #
+  for attr in cplx_attr:
+    if '_invalid_with' not in _keys[attr]:                  # Attribute has no incompatibility specs
+      continue
+    if attr in report_list:                                 # Incompatibility has already been reported
+      continue
+
+    invalid_with = _keys[attr]._invalid_with                # Get the incompatible attribute specs
+    cplx_invalid = isinstance(invalid_with,Box)             # And figure out whether it's a simple list or a box
+
+    for inv_attr in invalid_with:                           # Now iterate over potential incompatible attributes
+      if inv_attr not in data:                              # Incompatible attribute not in data structure
+        continue                                            # ... we're OK, move on
+    
+      # Get the optional list of incompatible values
+      inv_values = invalid_with[inv_attr] if cplx_invalid else None
+      if inv_values is None:
+        log.error(
+          f"Attribute '{attr}' cannot be used together with '{inv_attr}' in {path}",
+          category=log.IncorrectAttr,
+          module=module)
+      elif data[inv_attr] in inv_values:
+        log.error(
+          f"Attribute '{attr}' cannot be used together with '{inv_attr}' set to '{data[inv_attr]}' in {path}",
+          category=log.IncorrectAttr,
+          module=module)
 
 """
 validate_item -- validate a single item from an object:
