@@ -12,20 +12,6 @@ from box import Box
 
 from ...augment import devices
 from ...utils import log
-from .normalize import (
-  import_routing_object,
-)
-
-"""
-import_community_list -- has to check whether the target clist was already fixed, which means
-the transform_dispatch has already been called
-"""
-def import_community_list(pname: str,o_name: str,node: Box,topology: Box) -> typing.Optional[list]:
-  clist = node.get(f'routing.{o_name}.{pname}',None)
-  if isinstance(clist,Box):
-    return None
-
-  return import_routing_object(pname,o_name,node,topology)
 
 """
 replace_community_delete:
@@ -55,7 +41,7 @@ def replace_community_delete(node: Box, p_name: str, p_entry: Box, topology: Box
 
   if clist:
     cname = f"DEL_{p_name}_{p_entry.sequence}"
-    node.routing.community[cname] = { 'action': 'permit', 'cl_type': 'standard', 'value': clist }
+    node.routing.community[cname] = { 'type': 'standard', 'cl_type': 'standard', 'value': clist }
     p_entry.delete.community.list = cname
   
   for kw in ['standard','large','extended']:
@@ -73,6 +59,8 @@ class MissingQuotes(Exception):
   pass
 
 def fix_clist_entry(e_clist: Box, topology: Box) -> None:
+  if '_value' in e_clist:                                   # Is this entry already in the expected format?
+    return
   if 'regexp' in e_clist:                                   # Do we know we have a regexp?
     e_clist._value = e_clist.regexp                         # Copy regular expression into a common variable
     return
@@ -101,14 +89,8 @@ whether they use regular expressions or not
 """
 def expand_community_list(p_name: str,o_name: str,node: Box,topology: Box) -> typing.Optional[list]:
   p_clist = node.routing[o_name][p_name]                    # Shortcut pointer to current community list
-  if isinstance(p_clist,Box) and 'value' in p_clist:        # Have we already transformed this clist?
-    return None
-
-  node.routing[o_name][p_name] = {                          # Move the permit/deny list into 'value
-    'value': p_clist
-  }
-
-  p_clist = node.routing[o_name][p_name]                    # ... and fetch the new shortcut pointer
+  if 'type' not in p_clist:
+    p_clist.type = 'standard'                               # Assume the clist filter for standard communities
   regexp = False                                            # Figure out whether we need expanded clist
   for (p_idx,p_entry) in enumerate(p_clist.value):
     try:
