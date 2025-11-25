@@ -37,7 +37,7 @@ import_dispatch: typing.Dict[str,dict] = {
     'import' : import_routing_object,
     'check'  : check_routing_object },
   'community': {
-    'import' : clist.import_community_list,
+    'import' : import_routing_object,
     'check'  : check_routing_object },
   'static': {
     'start'  : static.include_global_static_routes
@@ -63,6 +63,7 @@ normalize_dispatch: typing.Dict[str,dict] = {
   'community':
     { 'namespace': 'routing.community',
       'object'   : 'BGP community filter',
+      'list_attr': 'value',
       'callback' : aspath.normalize_aspath_entry },
 }
 
@@ -85,6 +86,7 @@ def normalize_routing_data(r_object: Box, topo_object: bool = False, o_name: str
           o_dict=r_object.get(dp['namespace'],None),
           o_type=dp['object'],
           normalize_callback=dp['callback'],
+          list_attr=dp.get('list_attr',None),
           topo_object=topo_object)
   except Exception as ex:
     log.warning(

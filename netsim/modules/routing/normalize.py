@@ -36,6 +36,7 @@ def normalize_routing_objects(
       o_dict: typing.Optional[Box],
       o_type: str,
       normalize_callback: typing.Callable,
+      list_attr: typing.Optional[str] = None,
       topo_object: bool = False) -> None:
 
   if o_dict is None:                                        # Nothing to do, I'm OK with that ;)
@@ -53,10 +54,25 @@ def normalize_routing_objects(
           module='routing')
       continue
 
-    if not isinstance(o_dict[o_name],list):                 # Object not a list? Let's make it one ;)
-      o_dict[o_name] = [ o_dict[o_name] ]
+    o_value = o_dict[o_name]
 
-    normalize_routing_object(o_dict[o_name],normalize_callback)
+    # Convert a non-list value to list only if it's not a box with an attribute
+    # that is expected to contain a list
+    #
+    if not isinstance(o_value,Box) or list_attr is None or list_attr not in o_value:
+      if not isinstance(o_dict[o_name],list):                 # Object not a list? Let's make it one ;)
+        o_dict[o_name] = [ o_dict[o_name] ]
+
+    if list_attr:                                             # Are we expected to have a box with a list?
+      if isinstance(o_dict[o_name],list):                     # ... but only have a list (maybe created above)?
+        o_list = o_dict[o_name]                               # Save the list value for the next step
+        o_dict[o_name] = { list_attr: o_list }                # Convert it to the expected box format
+      else:                                                   # Otherwise the data structure must be a box with a
+        o_list = o_dict[o_name][list_attr]                    # ... list attribute or it would have been converted
+    else:                                                     # Or maybe this object is a simple list?
+      o_list = o_dict[o_name]                                 # ... so store the list value, I guess
+
+    normalize_routing_object(o_list,normalize_callback)       # Finally, normalize the list
 
 """
 check_routing_object: validate that a device supports the requested routing object
@@ -77,7 +93,13 @@ Import/merge a single global routing object into node routing object table
 
 Return merged routing object or None if the node routing object has not been modified or does not exist
 """
-def import_routing_object(pname: str,o_name: str,node: Box,topology: Box) -> typing.Optional[list]:
+def import_routing_object(
+      pname: str,
+      o_name: str,
+      node: Box,
+      topology: Box) -> typing.Optional[list]:
+
+  from . import normalize_dispatch
   topo_pdata = topology.get(f'routing.{o_name}',{})
 
   # First check whether the node routing object is missing or set to None (no value)
@@ -99,6 +121,11 @@ def import_routing_object(pname: str,o_name: str,node: Box,topology: Box) -> typ
 
   np_data = node.routing[o_name][pname]                     # Prepare for merge: get node- and global entries
   tp_data = topo_pdata[pname]
+  list_attr = normalize_dispatch[o_name].get('list_attr',None)
+  if list_attr:                                             # Are we storing the list value in a dict attribute?
+    np_data = np_data[list_attr]                            # ... if we do, work with those values
+    tp_data = tp_data[list_attr]
+
   sqlist  = [ pe.sequence for pe in np_data ]               # Get the list of sequence numbers from the local policy
 
   # Now get global entries that are missing in the local policy,
@@ -109,8 +136,12 @@ def import_routing_object(pname: str,o_name: str,node: Box,topology: Box) -> typ
     return None
 
   np_data = sorted(np_data + tp_add, key= lambda x: x.sequence)
-  node.routing[o_name][pname] = np_data
-  return np_data
+  if list_attr:                                             # Finally, the sorted list must be stored
+    node.routing[o_name][pname][list_attr] = np_data        # ... in the expected dict attribute
+  else:
+    node.routing[o_name][pname] = np_data                   # ... or replace the original list
+
+  return node.routing[o_name][pname]
 
 """
 Import or merge global routing policies into node routing policies

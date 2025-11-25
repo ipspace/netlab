@@ -192,6 +192,8 @@ def import_policy_filters(pname: str, o_name: str, node: Box, topology: Box) -> 
         f_import = import_routing_object(p_entry[kw],r_object,node,topology)
         if f_import:                                        # If we imported any new data...
           if r_object in normalize_dispatch:                # ... normalize the filter entries
+            if 'list_attr' in normalize_dispatch[r_object]: # Do we have list entries in a box?
+              f_import = f_import[normalize_dispatch[r_object]['list_attr']]
             normalize_routing_object(f_import,normalize_dispatch[r_object]['callback'])
           if r_object in import_dispatch and 'check' in import_dispatch[r_object]:
             import_dispatch[r_object]['check'](p_entry[kw],r_object,node,topology)
