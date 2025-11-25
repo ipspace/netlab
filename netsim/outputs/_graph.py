@@ -134,6 +134,8 @@ def append_edge(graph: Box, if_a: Box, if_b: Box, g_type: str) -> None:
   e_attr = get_empty_box()
   for intf in (if_a, if_b):
     addr = intf.ipv4 or intf.ipv6
+    if addr is True:
+      addr = "auto"
     if addr and 'prefix' not in intf:
       addr = addr.split('/')[0]
     intf_attr = get_graph_attributes(intf,g_type)
