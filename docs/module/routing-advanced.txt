@@ -1,0 +1,88 @@
+## Advanced Topics
+
+(routing-object-import)=
+### Using Global- and Node-Level Routing Objects
+
+A routing object (routing policy, prefix filter, BGP AS-path filter, or BGP community filter) will not be configured on a network device if it's not defined within the node **routing._object_** dictionary.
+
+That's usually not a problem as the users of routing policies (for example, the [**bgp.policy** plugin](plugin-bgp-policy)) copy global routing policies and all filters used by those routing policies into node data whenever the lab topology references a global routing policy, or when a local routing policy references a global filter. However, you might need a placeholder routing object that is later used in a custom template. To force a global routing object to be copied and configured on a node, mention its name in the corresponding node **routing** dictionary without giving it a value.
+
+For example, use the following code snippet if you want to have *route map* P1 defined on node R1 even though no _netlab_ configuration construct uses it:
+
+```
+routing.policy:
+  p1:
+  - set.locpref: 100
+  
+nodes:
+  r1:
+    routing.policy.p1:
+```
+
+The above lab topology will copy the contents of the P1 global routing policy into the R1 **routing.policy** dictionary, resulting in the corresponding route map configured on R1.
+
+(routing-object-merge)=
+### Merging Routing Objects
+
+When a routing object (routing policy, prefix filter, BGP AS-path filter, or BGP community filter) is defined globally as well as within a node, _netlab_ tries to merge the two definitions based on the sequence numbers attached to the routing object entries:
+
+* Global routing object entries with sequence numbers that do not exist in the node-level routing object are added to that object.
+* The resulting list is sorted based on the sequence numbers.
+
+For example, consider the following routing policy definitions:
+
+```
+routing.prefix:
+  loopbacks:
+  - pool: loopback
+
+routing.policy:
+  p1:
+  - match.prefix: loopbacks
+    set.locpref: 100
+  - set.med: 200
+  
+nodes:
+  r1:
+    routing.policy:
+      p1:
+      - match.prefix: loopbacks
+        set.locpref: 200
+      - sequence: 15
+        set.prepend.path: 65000
+```
+
+The entries in routing policies without sequence numbers get their sequence numbers assigned based on their position in the routing policy list. The above example is thus equivalent to:
+
+```
+routing.policy:
+  p1:
+  - sequence: 10
+    match.prefix: loopbacks
+    set.locpref: 100
+  - sequence: 20
+    set.med: 200
+  
+nodes:
+  r1:
+    routing.policy:
+      p1:
+      - sequence: 10
+        match.prefix: loopbacks
+        set.locpref: 200
+      - sequence: 15
+        set.prepend.path: 65000
+```
+
+The results of the merging process should now be self-explanatory. The sequence number 20 is missing from the node-level routing policy. That entry is added from the global routing policy, and the results are sorted, giving us the following routing policy on R1:
+
+```
+p1:
+- sequence: 10
+  match.prefix: loopbacks
+  set.locpref: 200
+- sequence: 15
+  set.prepend.path: 65000
+- sequence: 20
+  set.med: 200
+```

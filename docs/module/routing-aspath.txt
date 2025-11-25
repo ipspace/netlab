@@ -1,0 +1,67 @@
+(generic-routing-aspath)=
+## BGP AS-Path Filters
+
+AS-path filters are lists of conditions (usually known as *as-path access lists*) that permit or deny BGP AS paths (and consequently the routes carrying them). They match a list of AS numbers or a regular expression. You can use them in the **match.aspath** parameters of routing policies to match BGP routes. Each AS-path filter entry can have these attributes:
+
+* **action**: A prefix filter entry can **permit** or **deny** matched prefixes (default: **permit**)
+* **sequence**: Statement sequence number. When not specified, *netlab* sets a prefix filter entry's **sequence** number to ten times its list position.
+* **path**: A list of autonomous systems to match or a regular expression to match
+
+AS-path filters are specified in the global- or node-level **routing.aspath** dictionary (see [](routing-object-import) and  [](routing-object-merge) for more details).
+
+The keys of the **routing.aspath** dictionary are filter names (prefix-list names), and the values are AS-path filters (lists of AS-path filter entries).
+
+The following example specifies an AS-path access list that drops BGP prefixes originated in AS 65000 and permits everything else:
+
+```
+module: [ routing ]
+
+routing.aspath:
+  not_65000:
+  - action: deny
+    path: _65000$
+  - action: permit
+```
+
+### Shortcut BGP AS-Path Definitions
+
+Filters encoded in YAML tend to be verbose, and we tried to do as much as we could to reduce BGP AS-path filter verbosity:
+
+* You can skip the **action** and **sequence** attributes.
+* Each entry in a BGP AS-path filter could be a simple string or a list of AS numbers. Such entries are converted into dictionaries with the **path** element set to the entry's value.
+* A list of AS numbers in the **path** element is converted into a string of AS numbers separated by a blank
+* A BGP AS-path filter could be a single string. That string is first converted into a list and subsequently into a list containing a single dictionary.
+
+The following example lists various shortened definitions of BGP AS-path filters:
+
+```
+routing:
+  aspath:
+    ap1: 65000                      # AS-path ACL as int => single-entry ACL
+    ap2: [ 65000 ]                  # Single-entry AS-path ACL
+    ap3:                            # AS-path ACL
+    - action: deny
+      path: [ 65000, 65001 ]        # The first entry is a list of ASNs
+    - '6510.'                       # The second entry is a regexp
+```
+
+_netlab_ normalizes these AS-path filters into the following data structure:
+
+```
+aspath:
+  ap1:
+  - action: permit
+    path: 65000
+    sequence: 10
+  ap2:
+  - action: permit
+    path: 65000
+    sequence: 10
+  ap3:
+  - action: deny
+    path: 65000 65001
+    sequence: 10
+  - action: permit
+    path: '6510.'
+    sequence: 20
+```

@@ -42,7 +42,7 @@ def replace_community_delete(node: Box, p_name: str, p_entry: Box, topology: Box
   if clist:
     cname = f"DEL_{p_name}_{p_entry.sequence}"
     node.routing.community[cname] = { 'type': 'standard', 'cl_type': 'standard', 'value': clist }
-    p_entry.delete.community.list = cname
+    p_entry.delete.community.list.standard = cname
   
   for kw in ['standard','large','extended']:
     p_entry.delete.community.pop(kw, None)
@@ -105,3 +105,49 @@ def expand_community_list(p_name: str,o_name: str,node: Box,topology: Box) -> ty
   p_clist.regexp = 'regexp' if regexp else ''               # And regexp flag for devices that use something else
 
   return None                                               # Message to caller: no need to do additional checks
+
+"""
+check_match_clist_type: check that the community list type used in policy match.community matches the
+community list type
+"""
+def check_match_clist_type(node: Box, p_name: str, p_entry: Box, topology: Box) -> None:
+  m_clist = p_entry.get('match.community',None)
+  if not isinstance(m_clist,Box):
+    return 
+  for cl_type,cl_name in m_clist.items():
+    clist = node.get(f'routing.community.{cl_name}',None)
+    if clist is None:
+      continue
+    if clist.type != cl_type:
+      log.error(
+        f'Cannot use {clist.type} community list {cl_name} in match.community.{cl_type}',
+        more_data=f'node {node.name} routing policy {p_name} sequence #{p_entry.sequence}',
+        module='routing',
+        category=log.IncorrectType)
+
+"""
+check_community_support: check that the community lists defined on a node can be
+configured on that node
+"""
+def check_community_support(o_data: Box,o_type: str,node: Box,topology: Box) -> None:
+  features = devices.get_device_features(node,topology.defaults)
+  c_features = features.get('routing.community',None)
+  if not c_features or c_features is True:        # When set to True, all community list features are supported
+    return                                        # ... when falsy, an error was already generated
+
+  for cl_name,cl_def in o_data.items():           # Not sure yet, so let's iterate over all community lists
+    c_type = cl_def.type                          # ... get community type (standard/extended/large)
+    l_type = cl_def.cl_type                       # ... and filter type (standard/expanded)
+    if c_type not in c_features or not c_features[c_type]:
+      log.error(
+        f'Device {node.device}/node {node.name} does not support {c_type} BGP community lists: {cl_name}',
+        module='routing',
+        category=log.IncorrectType)
+      continue
+    if c_features[c_type] is True:                # Unconditional support (standard/extended)
+      continue
+    if l_type not in c_features[c_type]:
+      log.error(
+        f'Device {node.device}/node {node.name} does not support {l_type} {c_type} BGP community lists: {cl_name}',
+        module='routing',
+        category=log.IncorrectType)

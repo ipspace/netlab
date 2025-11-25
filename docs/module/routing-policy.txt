@@ -1,0 +1,160 @@
+(generic-routing-policies)=
+## Routing Policies
+
+Routing policies are lists of instructions that can **match** route parameters and **set** route attributes. Each routing policy entry can have these attributes:
+
+* **action**: A routing policy entry can **permit** or **deny** matched routes (default: **permit**)
+* **sequence**: Statement sequence number. When not specified, *netlab* sets a routing policy entry's **sequence** number to ten times its list position.
+* **match**: Conditions that must match for the routing policy entry to take effect. Entries without a **match** parameter match all routes
+* **set**: Parameters that are set on matched routes.
+* **delete**: Parameters that are deleted on matched routes.
+
+You can match these route parameters in a _netlab_ routing policy:
+
+* **prefix**: Match a [prefix filter](generic-routing-prefixes) defined in **routing.prefix** dictionary
+* **aspath**: Match a [BGP AS-path filter](generic-routing-aspath) defined in **routing.aspath** dictionary
+* **community**: Match a BGP [community filter](generic-routing-community) defined in **routing.community** dictionary.
+
+You can specify a standard BGP community list as the value of the **match.community**, or use attributes **match.community.standard**, **match.community.extended**, or **match.community.large** to match standard, extended, or large BGP community lists. You can match multiple BGP community types within a single routing policy entry.
+
+You can set these route parameters in a _netlab_ routing policy:
+
+* **locpref**: BGP local preference
+* **med**: Route metric (for example, BGP MED)
+* **prepend**: BGP AS-path prepending ([more details](plugin-bgp-policy-attributes))
+* **weight**: BGP weight
+* **community**: A dictionary that can be used to set or add standard, large, or extended communities.
+
+The **set.community** dictionary has these parameters:
+
+* **standard**: Standard BGP communities to set
+* **large**: Large BGP communities to set
+* **extended**: Extended BGP communities to set. The value is passed to the network device as-is (the same value might not work on all devices).
+* **append**: Add communities to existing BGP communities
+
+You can delete these route parameters:
+
+* **community**: A dictionary that can be used to delete standard, large, or extended communities. The dictionary can also contain **list** element to delete all communities matching a BGP [community filter](generic-routing-community).
+
+You can specify a standard community as the value of the **delete.community.list**, or use attributes **match.community.list.standard/extended/large** to delete standard, extended, or large communities matching a community list. You can use multiple delete lists (one per BGP community type) within a single routing policy entry.
+
+Routing policies are specified in the global- or node-level **routing.policy** dictionary (see [](routing-object-import) and  [](routing-object-merge) for more details).
+
+The dictionary keys in the **routing.policy** dictionary are policy names (route map names), and the dictionary values are routing policies (lists of routing policy entries).
+
+The following example specifies three routing policies: two global routing policies setting BGP local preference to different values and a node routing policy setting MED.
+
+```
+module: [ routing ]
+
+routing.policy:
+  lp_17:
+  - set.locpref: 17
+  lp_42:
+  - set.locpref: 42
+
+nodes:
+  r1:
+    routing.policy:
+      set_med:
+      - set.med: 100
+```
+
+### Platform Support
+
+You can use these routing policy **match** parameters on devices supported by the **routing** module. Matching extended or large BGP community lists is not implemented on all devices; check the [online integration test results](https://tests.netlab.tools/_html/coverage.r_filter) for more details.
+
+| Operating system    | IPv4/IPv6<br>prefix | IPv4/IPv6<br>next hop | BGP<br>AS-path | BGP<br>Community |
+|---------------------|:--:|:--:|:--:|:--:|
+| Arista EOS          | ✅ | ❌  | ✅ | ✅ |
+| Aruba AOS-CX        | ✅ | ❌  | ✅ | ✅ |
+| Cisco IOS/XE[^18v]  | ✅ | ❌  | ✅ | ✅ |
+| Cumulus Linux       | ✅ | ❌  | ✅ | ✅ |
+| Dell OS10           | ✅ | ❌  | ✅ | ✅ |
+| Junos               | ✅ | ❌  | [✅](caveats-junos) | ✅ |
+| FRR                 | ✅ | ❌  | ✅ | ✅ |
+| Nokia SR Linux      | ✅ |
+| VyOS                | ✅ | ❌  | ✅ | ✅ |
+
+You can use these routing policy **set** parameters on devices supported by the **routing** module:
+
+| Operating system    | AS-path<br>prepend | Local<br>preference | MED | Weight | Community |
+|---------------------|:--:|:--:|:--:|:--:| :--:|
+| Arista EOS          | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Aruba AOS-CX        | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Cisco IOS/XE[^18v]  | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Cumulus Linux       | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Dell OS10           | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Junos               | ✅ | ✅ | ✅ | ❌  | ✅ |
+| FRR                 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Nokia SR Linux      | ❌  | ✅ | ✅ | ❌  | ❌  |
+| Nokia SR OS[^SROS]  | ❌  | ✅ | ✅ | ❌  | ❌  |
+| VyOS                | ✅ | ✅ | ✅ | ❌  | ✅ |
+
+The **set.community** attribute can be used to set these BGP communities on supported devices:
+
+| Operating system    | Standard<br>community | Large<br>community | Extended<br>community |
+|---------------------|:--:|:--:|:--:|
+| Arista EOS          | ✅ | ✅ | ✅ |
+| Aruba AOS-CX        | ✅ | ❌  | ❌  |
+| Cisco IOS/XE[^18v]  | ✅ | ❌  | ❌  |
+| Cumulus Linux       | ✅ | ✅ | ✅ |
+| Dell OS10           | ✅ | ❌ | ✅ |
+| Junos               | ✅ | ✅ | ✅ |
+| FRR                 | ✅ | ✅ | ✅ |
+| VyOS                | ✅ | ✅ | ✅ |
+
+In addition to setting BGP communities on BGP routes, these devices can perform additional operations on BGP communities. Deleting extended or large BGP communities with a BGP community list is not implemented on all devices; check the [online integration test results](https://tests.netlab.tools/_html/coverage.r_policy) for more details.
+
+| Operating system    | Append | Delete | Delete list |
+|---------------------|:--:|:--:| :--:|
+| Arista EOS          | ✅ | ✅ | ✅ |
+| Aruba AOS-CX        | ✅ | ✅ | ❌  |
+| Cisco IOS/XE[^18v]  | ✅ | ✅❗️| ✅ |
+| Cumulus Linux       | ✅ | ❌  | ❌  |
+| Dell OS10           | ✅ | ❌  | ❌  |
+| Junos               | ✅ | ✅ | ✅ |
+| FRR                 | ✅ | ✅❗️ | ✅ |
+| VyOS                | ✅ | ❌  | ❌  |
+
+**Notes:**
+* _netlab_ is creating an internal BGP community list on FRR and Cisco IOS/XE to delete BGP communities specified with the **delete.community** routing policy parameter. This approach is currently limited to standard BGP communities.
+
+### Shortcut Routing Policy Definitions
+
+Routing policies tend to be verbose. You have to define *a list of* dictionaries with *set* and *match* attributes. *netlab* tries to reduce the verbosity with two shortcuts:
+
+* A routing policy with a single entry does not have to be a one-element list but could be a dictionary. For example, the following two routing policies are equivalent:
+
+```
+routing.policy:
+  p1:
+  - set.locpref: 100
+  p2:
+    set.locpref: 100
+```
+
+* Unambiguous keywords like **med** and **locpref** do not need to be within the **set** or **match** dictionary. *netlab* automatically moves them into the routing-policy-entry **set** dictionary. For example, the following two routing policies are equivalent:
+
+```
+routing.policy:
+  p1:
+  - set.locpref: 100
+    match.prefix: pfx-list
+  p2:
+    locpref: 100
+    prefix: pfx-list
+```
+
+(routing-policy-ds)=
+### Dual-Stack Routing Policies
+
+Most network operating systems cannot use **match ip** and **match ipv6** commands in the same route map entry and behave differently when testing an IPv6 route with a route map entry that contains only **match ip**.
+
+To avoid inconsistencies, _netlab_ usually generates a separate per-address-family *route map* for each routing policy configured on a network device. The address-family-specific route maps are then used in device configuration.
+
+For example:
+
+* If you create a routing policy **X**, and a node runs IPv4 and IPv6, _netlab_ configures two route maps: **X-ipv4** and **X-ipv6**.
+* When the same routing policy is used on a node that runs only IPv4, _netlab_ configures only **X-ipv4**.
+* When the routing policy **X** is used in **bgp.policy** attribute, _netlab_ uses route map **X-ipv4** for IPv4 EBGP sessions and **X-ipv6** for IPv6 EBGP sessions.

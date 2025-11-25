@@ -110,7 +110,8 @@ transform_dispatch: typing.Dict[str,dict] = {
     'import': aspath.number_aspath_acl
   },
   'community': {
-    'import': clist.expand_community_list
+    'import' : clist.expand_community_list,
+    'cleanup': clist.check_community_support
   },
   'static': {
     'start'  : static.process_static_route_includes,

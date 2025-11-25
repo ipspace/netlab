@@ -123,7 +123,19 @@ def import_routing_object(
   tp_data = topo_pdata[pname]
   list_attr = normalize_dispatch[o_name].get('list_attr',None)
   if list_attr:                                             # Are we storing the list value in a dict attribute?
-    np_data = np_data[list_attr]                            # ... if we do, work with those values
+    if 'type' in np_data and 'type' in tp_data:             # Can we compare type of two elements?
+      if np_data.type != tp_data.type:
+        if '_error' in np_data:                             # Already generated an error, move on
+          return None
+        np_data._error = True
+        log.error(
+          f'Cannot merge global {tp_data.type} {o_name} list {pname} into ' +\
+          f'node {node.name} {np_data.type} {o_name} list {pname}',
+          more_hints=['The type of the global and node object must match'],
+          module='routing',
+          category=log.IncorrectType)
+        return None
+    np_data = np_data[list_attr]                            # List values stored in a dict; work with them
     tp_data = tp_data[list_attr]
 
   sqlist  = [ pe.sequence for pe in np_data ]               # Get the list of sequence numbers from the local policy

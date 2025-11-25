@@ -78,17 +78,6 @@ def check_vrrp_on_virtual_networks(node:Box, topology: Box) -> None:
       more_data=err_data,
       node=node)
 
-"""
-check_expanded_communities - Check for unsupported 'expanded' communities or regex
-"""
-def check_expanded_communities(node:Box, topology: Box) -> None:
-  for c_name,c_value in node.get('routing.community',{}).items():
-    if c_value.get('cl_type',None) != 'standard':
-      report_quirk(
-        f"Dell OS10 (node {node.name}) does not support expanded BGP community lists",
-        quirk='non-standard_communities',
-        node=node)
-
 def check_nssa_area_limitations(node: Box) -> None:
   for (odata,_,_) in _rp_utils.rp_data(node,'ospf'):
     if 'areas' not in odata:
@@ -143,8 +132,6 @@ class OS10(_Quirks):
     if 'gateway' in mods:
       if 'anycast' in node.get('gateway',{}):
         check_anycast_gateways(node)
-    if 'routing' in mods:
-      check_expanded_communities(node,topology)
 
   def check_config_sw(self, node: Box, topology: Box) -> None:
     need_ansible_collection(node,'dellemc.os10')
