@@ -122,6 +122,7 @@ All attributes defined with a dictionary (**mode** in the above example, but not
 * **true_value** -- value to use when the parameter is set to *True*
 * **_requires** -- a list of modules that must be enabled in global- or node context to allow the use of this attribute. See `vrfs` in `modules/vrf.yml` and `vlans` in `modules/vlan.yml` for more details.
 * **_required** (bool) -- the attribute must be present in the parent dictionary[^CRQ]
+* **_default** -- the default value of the attribute. Added to the data structure when the attribute is not specified in the lab topology
 * **_valid_with** -- a list or dictionary of attributes that can be used with this attribute ([example](inter-attribute-examples)).
 * **_invalid_with** -- specifies attributes that cannot be used together with this attribute. Can be:
 

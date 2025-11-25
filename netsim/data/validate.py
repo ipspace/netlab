@@ -132,13 +132,18 @@ def validate_module_can_be_false(
   return bool(intersect)
 
 """
-check_required_keys -- checks that the required keys are present in the data structure
+check_required_keys -- checks that the required keys are present in the data structure and sets the default
+values for missing keys with _default attribute
 """
 
 def check_required_keys(data: Box, attributes: Box, path: str,module: str) -> bool:
   result = True
   for k,v in attributes.items():
-    if isinstance(v,Box) and '_required' in v and v._required:
+    if not isinstance(v,Box):
+      continue
+    if '_default' in v and k not in data:
+      data[k] = v._default
+    if '_required' in v and v._required:
       if k in data:
         continue
       log.error(
