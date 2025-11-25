@@ -89,8 +89,6 @@ whether they use regular expressions or not
 """
 def expand_community_list(p_name: str,o_name: str,node: Box,topology: Box) -> typing.Optional[list]:
   p_clist = node.routing[o_name][p_name]                    # Shortcut pointer to current community list
-  if 'type' not in p_clist:
-    p_clist.type = 'standard'                               # Assume the clist filter for standard communities
   regexp = False                                            # Figure out whether we need expanded clist
   for (p_idx,p_entry) in enumerate(p_clist.value):
     try:
