@@ -5,10 +5,19 @@
 {%     if p_entry.set.bandwidth is defined %}
   set extcommunity bandwidth {{ p_entry.set.bandwidth }}
 {%     endif %}
-{%     if p_entry.delete.community.list.standard is defined %}
-  set comm-list {{ p_entry.delete.community.list.standard }} delete
+{%     if p_entry.delete.community.list is defined %}
+{%       set cdel_kw = { 'standard': 'comm-list', 'extended': 'extended-comm-list', 'large': 'large-comm-list' } %}
+{%       for kw,val in p_entry.delete.community.list.items() %}
+  set {{ cdel_kw[kw] }} {{ val }} delete
+{%       endfor %}
 {%     endif %}
 {{     routemap.common_route_map_entry(p_entry,af_list) }}
+{%     if p_entry.match.community is defined %}
+{%       set cmatch_kw = { 'standard': 'community', 'extended': 'extcommunity', 'large': 'large-community' } %}
+{%       for kw,val in p_entry.match.community.items() %}
+  match {{ cmatch_kw[kw] }} {{ val }}
+{%       endfor %}
+{%     endif %}
 {%-   endcall %}
 {% endif %}
 {% if routing.prefix|default({}) %}
@@ -23,10 +32,11 @@ bgp as-path access-list {{ asp_name }} {{ asp_line.action }} {{ asp_line.path }}
 {%   endfor %}
 {% endif %}
 {% if routing.community|default({}) %}
+{%   set clist_kw = { 'standard': 'community-list', 'extended': 'extcommunity-list', 'large': 'large-community-list' } %}
 {%   for c_name,c_value in routing.community.items() %}
 !
 {%     for c_line in c_value.value %}
-bgp community-list {{ c_value.cl_type }} {{ c_name }} {{ c_line.action }} {{ c_line._value }}
+bgp {{ clist_kw[c_value.type] }} {{ c_value.cl_type }} {{ c_name }} {{ c_line.action }} {{ c_line._value }}
 {%     endfor %}
 {%   endfor %}
 {% endif %}

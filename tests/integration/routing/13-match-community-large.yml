@@ -1,0 +1,133 @@
+---
+message: |
+  Use this topology to test 'match.community' route-map option.
+
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
+plugin: [ bgp.policy ]
+module: [ bgp, routing ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ p1, p2, x1 ]
+
+prefix:
+  pf1: { pool: lan }
+  pf2: { pool: lan }
+
+nodes:
+  dut:
+    bgp.as: 65000
+    routing:
+      community:
+        c1:
+          type: large
+          value: [ '65101:101:17' ]
+        c2:
+          type: large
+          value:
+          - action: deny
+            regexp: _65101:101:4[23]_
+          - action: permit
+        cd:
+          type: large
+          value: [ '65101:101:42 ']
+      policy:
+        set_med:
+        - match.community.large: c1
+          set.med: 120
+        - match.community.large: c2
+          set.med: 200
+        - set.med: 72
+        del_lcomm:
+          delete.community.list.large: cd
+    id: 1
+  x1:
+    bgp.as: 65101
+    bgp.originate: [ pf1, pf2 ]
+    routing:
+      prefix:
+        pf1: { prefix: pf1 }
+        pf2: { prefix: pf2 }
+    routing.policy:
+      set_comm:
+      - match.prefix: pf1
+        set.community.large: '65101:101:17'
+      - match.prefix: pf2
+        set.community.large: [ '65101:101:42', '65101:101:43' ]
+      - set.community.large: '65101:101:1'
+  p1:
+    bgp.as: 65200
+  p2:
+    bgp.as: 65201
+
+links:
+- dut:
+    bgp.policy.out: set_med
+  p1:
+- dut:
+    bgp.policy.out: del_lcomm
+  p2:
+- dut:
+  x1:
+    bgp.policy.out: set_comm
+
+validate:
+  ebgp:
+    description: Check EBGP sessions with DUT (wait up to 10 seconds)
+    wait: ebgp_session
+    nodes: [ p1, p2, x1 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  pfx_lb:
+    description: Check for X1 loopback prefix on probes
+    wait: bgp_scan_long
+    nodes: [ p1, p2 ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv4)
+
+  pfx_1:
+    description: Check for pf1 prefix on probes
+    wait: bgp_scan_long
+    nodes: [ p1, p2 ]
+    plugin: bgp_prefix(prefix.pf1.ipv4)
+
+  pfx_2:
+    description: Check for pf2 prefix on probes
+    wait: bgp_scan_time
+    nodes: [ p1, p2 ]
+    plugin: bgp_prefix(prefix.pf2.ipv4)
+
+  med_lb:
+    description: Check MED of X1 loopback prefix
+    wait: bgp_scan_time
+    nodes: [ p1 ]
+    plugin: >
+      bgp_prefix(nodes.x1.loopback.ipv4,med=200)
+
+  med_pfx1:
+    description: Check MED of Prefix_1
+    nodes: [ p1 ]
+    plugin: >
+      bgp_prefix(prefix.pf1.ipv4,med=120)
+
+  med_pfx2:
+    description: Check MED of Prefix_2
+    nodes: [ p1 ]
+    plugin: >
+      bgp_prefix(prefix.pf2.ipv4,med=72)
+
+  lcomm_1:
+    description: Check for large community 65101:101:43 attached to pf2
+    wait: bgp_scan_time
+    nodes: [ p2 ]
+    plugin: >
+      bgp_prefix(prefix.pf2.ipv4,community={'largeCommunity': '65101:101:43'})
+
+  lcomm_2:
+    description: Check for large community 65101:101:42 deleted from pf2
+    wait: bgp_scan_time
+    nodes: [ p2 ]
+    plugin: >
+      bgp_prefix(prefix.pf2.ipv4,community={'largeCommunity': '65101:101:42'},state='missing')
