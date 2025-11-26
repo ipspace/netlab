@@ -32,8 +32,8 @@ ok: [dut] =>
   msg: Node dut is ready.
 
 TASK [Find device readiness script] ********************************************
-ok: [x1]
 ok: [probe]
+ok: [x1]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
@@ -384,16 +384,16 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for probe, x1
 
 TASK [template] ****************************************************************
-changed: [probe]
 changed: [x1]
+changed: [probe]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
 changed: [probe]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [probe]
@@ -447,14 +447,17 @@ ok: [x1] =>
       set community 65101:17
   
       match ip address prefix-list pf1-ipv4
+  
     !
     route-map set_comm-ipv4 permit 20
       set community 65101:42
   
       match ip address prefix-list pf2-ipv4
+  
     !
     route-map set_comm-ipv4 permit 30
       set community 65101:1
+  
   
     !
     ip prefix-list pf1-ipv4 seq 10 permit 172.16.0.0/24
@@ -470,13 +473,18 @@ ok: [dut] =>
     route-map set_med-ipv4 permit 10
       set metric 120
       match community c1
+  
+      match community c1
     !
     route-map set_med-ipv4 permit 20
       set metric 200
       match community c2
+  
+      match community c2
     !
     route-map set_med-ipv4 permit 30
       set metric 72
+  
     !
     ip community-list  c1 permit 65101:17
     !
@@ -503,8 +511,8 @@ skipping: [probe]
 skipping: [x1]
 
 TASK [run vtysh to import routing config from /home/pipi/netlab_gh/netsim/ansible/templates/routing/frr.j2] ***
-changed: [probe]
 changed: [x1]
+changed: [probe]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [probe]
@@ -527,6 +535,40 @@ ok: [x1]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [probe] => 
+  msg: |-
+    bgp configuration for probe
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+    ! Originate networks from connected subnets
+    !
+      network 10.0.0.2/32
+    !
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
+    !
+    !
+    !
+    do write
 ok: [x1] => 
   msg: |-
     bgp configuration for x1
@@ -566,40 +608,6 @@ ok: [x1] =>
     !
     ip route 172.16.0.0/24 Null0
     ip route 172.16.1.0/24 Null0
-    !
-    do write
-ok: [probe] => 
-  msg: |-
-    bgp configuration for probe
-    =========================================
-    !
-    router bgp 65100
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.2
-    !
-      neighbor 10.1.0.1 remote-as 65000
-      neighbor 10.1.0.1 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-    ! Originate networks from connected subnets
-    !
-      network 10.0.0.2/32
-    !
-      neighbor 10.1.0.1 activate
-      no neighbor 10.1.0.1 send-community all
-      neighbor 10.1.0.1 send-community standard
-      neighbor 10.1.0.1 send-community large
-    !
-    !
     !
     do write
 ok: [dut] => 
@@ -647,8 +655,8 @@ TASK [eos_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templat
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [probe]
 changed: [x1]
+changed: [probe]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
@@ -676,8 +684,8 @@ skipping: [dut]
 skipping: [x1]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [dut -> localhost]
 ok: [x1 -> localhost]
+ok: [dut -> localhost]
 
 TASK [fail] ********************************************************************
 skipping: [dut]

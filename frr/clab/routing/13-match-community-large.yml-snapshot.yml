@@ -1,13 +1,7 @@
 %YAML 1.1
 ---
 message: |
-  Use this topology to test 'set.community.standard' route-map option.
-plugin:
-- bgp.policy
-- multilab
-module:
-- routing
-- bgp
+  Use this topology to test 'match.community' route-map option.
 defaults:
   devices:
     eos:
@@ -6308,12 +6302,12 @@ defaults:
     - /home/pipi/netlab_gh/netsim/validate
     plugin:
     - /work/netlab_cicd
-    - /home/pipi/net101/tools/tests/integration/routing
+    - /home/pipi/netlab_gh/tests/integration/routing
     - /home/pipi/.netlab
     - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
-      - /home/pipi/net101/tools/tests/integration/routing
+      - /home/pipi/netlab_gh/tests/integration/routing
       - /work/netlab_cicd
       - /home/pipi/.netlab
       - /home/pipi/netlab_gh/netsim/extra
@@ -8195,11 +8189,19 @@ defaults:
   - routing
   - bgp
   name: ml_17
+plugin:
+- bgp.policy
+- multilab
+module:
+- routing
+- bgp
 groups:
   probes:
     device: frr
     members:
-    - probe
+    - p1
+    - p2
+    - x1
     node_data:
       provider: clab
   all:
@@ -8210,9 +8212,25 @@ groups:
   as65000:
     members:
     - dut
-  as65100:
+  as65101:
     members:
-    - probe
+    - x1
+  as65200:
+    members:
+    - p1
+  as65201:
+    members:
+    - p2
+prefix:
+  any:
+    ipv4: 0.0.0.0/0
+    ipv6: ::/0
+  pf1:
+    _name: pf1
+    ipv4: 172.16.0.0/24
+  pf2:
+    _name: pf2
+    ipv4: 172.16.1.0/24
 nodes:
   dut:
     bgp:
@@ -8234,25 +8252,91 @@ nodes:
       router_id: 10.0.0.1
       neighbors:
       - ifindex: 1
-        name: probe
-        as: 65100
+        name: p1
+        as: 65200
         type: ebgp
         ipv4: 10.1.0.2
         activate:
           ipv4: true
         policy:
-          out: set_comm
+          out: set_med
+      - ifindex: 2
+        name: p2
+        as: 65201
+        type: ebgp
+        ipv4: 10.1.0.6
+        activate:
+          ipv4: true
+        policy:
+          out: del_lcomm
+      - ifindex: 3
+        name: x1
+        as: 65101
+        type: ebgp
+        ipv4: 10.1.0.10
+        activate:
+          ipv4: true
       ipv4: true
       _session_clear:
       - 10.1.0.2
+      - 10.1.0.6
     routing:
       _rm_per_af: true
+      community:
+        c1:
+          type: large
+          value:
+          - action: permit
+            sequence: 10
+            _value: 65101:101:17
+          cl_type: standard
+          regexp: ''
+        c2:
+          type: large
+          value:
+          - action: deny
+            regexp: _65101:101:4[23]_
+            sequence: 10
+            _value: _65101:101:4[23]_
+          - action: permit
+            sequence: 20
+            _value: .*
+            regexp: .*
+          cl_type: expanded
+          regexp: regexp
+        cd:
+          type: large
+          value:
+          - action: permit
+            sequence: 10
+            _value: '65101:101:42 '
+          cl_type: standard
+          regexp: ''
       policy:
-        set_comm:
-        - set:
+        set_med:
+        - match:
             community:
-              standard:
-              - 65000:101
+              large: c1
+          set:
+            med: 120
+          action: permit
+          sequence: 10
+        - match:
+            community:
+              large: c2
+          set:
+            med: 200
+          action: permit
+          sequence: 20
+        - set:
+            med: 72
+          action: permit
+          sequence: 30
+        del_lcomm:
+        - delete:
+            community:
+              list:
+                large: cd
           action: permit
           sequence: 10
     id: 1
@@ -8260,19 +8344,49 @@ nodes:
     interfaces:
     - bgp:
         policy:
-          out: set_comm
+          out: set_med
       ipv4: 10.1.0.1/30
       linkindex: 1
       role: external
       type: p2p
-      name: dut -> probe
+      name: dut -> p1
       ifindex: 1
       ifname: eth1
       mtu: 1500
       neighbors:
       - ipv4: 10.1.0.2/30
         ifname: eth1
-        node: probe
+        node: p1
+    - bgp:
+        policy:
+          out: del_lcomm
+      ipv4: 10.1.0.5/30
+      linkindex: 2
+      role: external
+      type: p2p
+      name: dut -> p2
+      ifindex: 2
+      ifname: eth2
+      mtu: 1500
+      neighbors:
+      - ipv4: 10.1.0.6/30
+        ifname: eth1
+        node: p2
+    - ipv4: 10.1.0.9/30
+      linkindex: 3
+      role: external
+      type: p2p
+      name: dut -> x1
+      ifindex: 3
+      ifname: eth3
+      mtu: 1500
+      neighbors:
+      - bgp:
+          policy:
+            out: set_comm
+        ipv4: 10.1.0.10/30
+        ifname: eth1
+        node: x1
     device: frr
     clab:
       kind: linux
@@ -8307,7 +8421,7 @@ nodes:
         advertise: true
     config:
     - bgp.policy
-  probe:
+  x1:
     bgp:
       advertise_loopback: true
       community:
@@ -8323,33 +8437,95 @@ nodes:
         - large
         - extended
       next_hop_self: true
-      as: 65100
+      as: 65101
+      originate:
+      - 172.16.0.0/24
+      - 172.16.1.0/24
       router_id: 10.0.0.2
       neighbors:
       - ifindex: 1
         name: dut
         as: 65000
         type: ebgp
-        ipv4: 10.1.0.1
+        ipv4: 10.1.0.9
         activate:
           ipv4: true
+        policy:
+          out: set_comm
       ipv4: true
-    name: probe
+      _session_clear:
+      - 10.1.0.9
+    routing:
+      _rm_per_af: true
+      prefix:
+        pf1:
+        - action: permit
+          sequence: 10
+          ipv4: 172.16.0.0/24
+        pf2:
+        - action: permit
+          sequence: 10
+          ipv4: 172.16.1.0/24
+      policy:
+        set_comm:
+        - match:
+            prefix: pf1
+          set:
+            community:
+              large:
+              - 65101:101:17
+          action: permit
+          sequence: 10
+        - match:
+            prefix: pf2
+          set:
+            community:
+              large:
+              - 65101:101:42
+              - 65101:101:43
+          action: permit
+          sequence: 20
+        - set:
+            community:
+              large:
+              - 65101:101:1
+          action: permit
+          sequence: 30
+      _prefix:
+        ipv4:
+          pf1:
+          - action: permit
+            sequence: 10
+            ipv4: 172.16.0.0/24
+          pf2:
+          - action: permit
+            sequence: 10
+            ipv4: 172.16.1.0/24
+        ipv6:
+          pf1:
+          - sequence: 10
+            action: deny
+            ipv6: ::/0
+          pf2:
+          - sequence: 10
+            action: deny
+            ipv6: ::/0
+    name: x1
     interfaces:
-    - ipv4: 10.1.0.2/30
-      linkindex: 1
+    - bgp:
+        policy:
+          out: set_comm
+      ipv4: 10.1.0.10/30
+      linkindex: 3
       role: external
       type: p2p
-      name: probe -> dut
+      name: x1 -> dut
       ifindex: 1
       ifname: eth1
       mtu: 1500
       neighbors:
-      - bgp:
-          policy:
-            out: set_comm
-        ipv4: 10.1.0.1/30
-        ifname: eth1
+      - ipv4: 10.1.0.9/30
+        ifname: eth3
         node: dut
     device: frr
     clab:
@@ -8358,14 +8534,12 @@ nodes:
       - daemons:/etc/frr/daemons
       - hosts:/etc/hosts:shared
       binds:
-      - clab_files/probe/daemons:/etc/frr/daemons
+      - clab_files/x1/daemons:/etc/frr/daemons
       - clab_files/-shared-hosts:/etc/hosts:ro
     box: quay.io/frrouting/frr:10.5.0
     module:
     - routing
     - bgp
-    routing:
-      _rm_per_af: true
     id: 2
     role: router
     mtu: 1500
@@ -8376,7 +8550,7 @@ nodes:
       ifname: eth0
       mac: ca:fe:00:02:00:00
       ipv4: 192.168.17.102
-    hostname: clab-ml_17-probe
+    hostname: clab-ml_17-x1
     loopback:
       type: loopback
       neighbors: []
@@ -8386,17 +8560,177 @@ nodes:
       ipv4: 10.0.0.2/32
       bgp:
         advertise: true
+    config:
+    - bgp.policy
+  p1:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65200
+      router_id: 10.0.0.3
+      neighbors:
+      - ifindex: 1
+        name: dut
+        as: 65000
+        type: ebgp
+        ipv4: 10.1.0.1
+        activate:
+          ipv4: true
+      ipv4: true
+    name: p1
+    interfaces:
+    - ipv4: 10.1.0.2/30
+      linkindex: 1
+      role: external
+      type: p2p
+      name: p1 -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - bgp:
+          policy:
+            out: set_med
+        ipv4: 10.1.0.1/30
+        ifname: eth1
+        node: dut
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/p1/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.5.0
+    module:
+    - routing
+    - bgp
+    routing:
+      _rm_per_af: true
+    id: 3
+    role: router
+    mtu: 1500
+    provider: clab
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:03:00:00
+      ipv4: 192.168.17.103
+    hostname: clab-ml_17-p1
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.3/32
+      bgp:
+        advertise: true
+  p2:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65201
+      router_id: 10.0.0.4
+      neighbors:
+      - ifindex: 1
+        name: dut
+        as: 65000
+        type: ebgp
+        ipv4: 10.1.0.5
+        activate:
+          ipv4: true
+      ipv4: true
+    name: p2
+    interfaces:
+    - ipv4: 10.1.0.6/30
+      linkindex: 2
+      role: external
+      type: p2p
+      name: p2 -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - bgp:
+          policy:
+            out: del_lcomm
+        ipv4: 10.1.0.5/30
+        ifname: eth2
+        node: dut
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/p2/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.5.0
+    module:
+    - routing
+    - bgp
+    routing:
+      _rm_per_af: true
+    id: 4
+    role: router
+    mtu: 1500
+    provider: clab
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:04:00:00
+      ipv4: 192.168.17.104
+    hostname: clab-ml_17-p2
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.4/32
+      bgp:
+        advertise: true
 links:
 - _linkname: links[1]
   interfaces:
   - bgp:
       policy:
-        out: set_comm
+        out: set_med
     node: dut
     ipv4: 10.1.0.1/30
     ifindex: 1
     ifname: eth1
-  - node: probe
+  - node: p1
     ipv4: 10.1.0.2/30
     ifindex: 1
     ifname: eth1
@@ -8406,30 +8740,111 @@ links:
   type: p2p
   prefix:
     ipv4: 10.1.0.0/30
+- _linkname: links[2]
+  interfaces:
+  - bgp:
+      policy:
+        out: del_lcomm
+    node: dut
+    ipv4: 10.1.0.5/30
+    ifindex: 2
+    ifname: eth2
+  - node: p2
+    ipv4: 10.1.0.6/30
+    ifindex: 1
+    ifname: eth1
+  linkindex: 2
+  role: external
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.4/30
+- _linkname: links[3]
+  interfaces:
+  - node: dut
+    ipv4: 10.1.0.9/30
+    ifindex: 3
+    ifname: eth3
+  - bgp:
+      policy:
+        out: set_comm
+    node: x1
+    ipv4: 10.1.0.10/30
+    ifindex: 1
+    ifname: eth1
+  linkindex: 3
+  role: external
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.8/30
 validate:
 - description: Check EBGP sessions with DUT (wait up to 10 seconds)
   wait: 30
   nodes:
-  - probe
+  - p1
+  - p2
+  - x1
   plugin: bgp_neighbor(node.bgp.neighbors,'dut')
   name: ebgp
-- description: Check for DUT loopback prefix on Probe
+- description: Check for X1 loopback prefix on probes
   wait: 15
   nodes:
-  - probe
-  plugin: bgp_prefix(nodes.dut.loopback.ipv4)
+  - p1
+  - p2
+  plugin: bgp_prefix(nodes.x1.loopback.ipv4)
   name: pfx_lb
-- description: Check for communities attached to DUT loopback prefix
+- description: Check for pf1 prefix on probes
+  wait: 15
+  nodes:
+  - p1
+  - p2
+  plugin: bgp_prefix(prefix.pf1.ipv4)
+  name: pfx_1
+- description: Check for pf2 prefix on probes
   wait: 5
   nodes:
-  - probe
+  - p1
+  - p2
+  plugin: bgp_prefix(prefix.pf2.ipv4)
+  name: pfx_2
+- description: Check MED of X1 loopback prefix
+  wait: 5
+  nodes:
+  - p1
   plugin: >
-    bgp_prefix(nodes.dut.loopback.ipv4,community={'community': '65000:1'})
-  name: comm_lb
+    bgp_prefix(nodes.x1.loopback.ipv4,med=200)
+  name: med_lb
+- description: Check MED of Prefix_1
+  nodes:
+  - p1
+  plugin: >
+    bgp_prefix(prefix.pf1.ipv4,med=120)
+  name: med_pfx1
+- description: Check MED of Prefix_2
+  nodes:
+  - p1
+  plugin: >
+    bgp_prefix(prefix.pf2.ipv4,med=72)
+  name: med_pfx2
+- description: Check for large community 65101:101:43 attached to pf2
+  wait: 5
+  nodes:
+  - p2
+  plugin: >
+    bgp_prefix(prefix.pf2.ipv4,community={'largeCommunity': '65101:101:43'})
+  name: lcomm_1
+- description: Check for large community 65101:101:42 deleted from pf2
+  wait: 5
+  nodes:
+  - p2
+  plugin: >
+    bgp_prefix(prefix.pf2.ipv4,community={'largeCommunity': '65101:101:42'},state='missing')
+  name: lcomm_2
 input:
-- /home/pipi/net101/tools/tests/integration/routing/07-community.yml
-- /home/pipi/net101/tools/tests/integration/wait_times.yml
-- /home/pipi/net101/tools/tests/integration/warnings.yml
+- /home/pipi/netlab_gh/tests/integration/routing/13-match-community-large.yml
+- /home/pipi/netlab_gh/tests/integration/wait_times.yml
+- /home/pipi/netlab_gh/tests/integration/warnings.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 name: ml_17
@@ -8469,8 +8884,4 @@ bgp:
     ebgp:
     - standard
   next_hop_self: true
-prefix:
-  any:
-    ipv4: 0.0.0.0/0
-    ipv6: ::/0
 _netlab_version: 25.11.01
