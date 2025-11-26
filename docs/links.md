@@ -78,9 +78,12 @@ A dictionary describing an individual link contains *node names* and *additional
 * **prefix** -- [prefix (or a set of prefixes)](links-static-addressing) used on the link. Setting **prefix** to *false* will give you a link without any IP configuration[^NOIP]
 * **ra** -- IPv6 Router Advertisement parameters ([more details](links-ra))
 * **role** -- The link *role* influences the behavior of several configuration modules. Typical link roles include *stub*, *passive*, and *external*. Please read [](module/routing.md) for more details.
+* **shutdown** -- Disable the link/interface when configuring network devices[^NAI]. 
 * **type** -- [link type](links-types) (lan, p2p, stub, loopback, tunnel)
 
-[^CIN]: Disabled links are removed from lab topology, which might cause changes in interface names.
+[^CIN]: Disabled links are removed from the lab topology, which might cause changes in interface names.
+
+[^NAI]: We did not implement this attribute on a few rarely-used or no longer supported devices. Check the *interfaces* test in the [initial configuration feature coverage report](https://tests.netlab.tools/_html/coverage.initial).
 
 You can use most link attributes on individual node attachments (dictionary under *node name* key). You can also use these node attachment attributes:
 

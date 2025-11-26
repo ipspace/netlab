@@ -18,57 +18,61 @@ domain {{ h_af }} host {{ k }} {{ v.interfaces[0][h_af]|ipaddr('address') }}
 {% for l in netlab_interfaces %}
 interface {{ l.ifname }}{%
   if l.type == 'vlan_member' and l.vlan.mode|default('irb') != 'route' %} l2transport{% endif +%}
- no shutdown
-{% if l.name is defined %}
- description {{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}
-{% elif l.type|default("") == "stub" %}
- description Stub interface
-{% endif %}
-{% if l.type != 'loopback' %}
-{%   if l.bandwidth is defined %}
- bandwidth {{ l.bandwidth  }}
-{%   endif %}
-{% if l.mtu is defined %}
-{%   if l._use_ip_mtu|default(False) %}
-{%     for afm in ['ipv4','ipv6'] if afm in l %}
- {{ 'ip' if afm == 'ipv4' else afm }} mtu {{ l.mtu }}
-{%     endfor %}
+{%   if l.shutdown|default(False) %}
+ shutdown
 {%   else %}
+ no shutdown
+{%   endif %}
+{%   if l.name is defined %}
+ description {{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}
+{%   elif l.type|default("") == "stub" %}
+ description Stub interface
+{%   endif %}
+{%   if l.type != 'loopback' %}
+{%     if l.bandwidth is defined %}
+ bandwidth {{ l.bandwidth  }}
+{%     endif %}
+{%     if l.mtu is defined %}
+{%       if l._use_ip_mtu|default(False) %}
+{%         for afm in ['ipv4','ipv6'] if afm in l %}
+ {{ 'ip' if afm == 'ipv4' else afm }} mtu {{ l.mtu }}
+{%         endfor %}
+{%       else %}
 {# 
     WARNING: IOS XR uses layer-2 MTU in the MTU command. Adding 14 bytes is a kludge
     that needs to be fixed if we ever implement VLANs on IOS XR
 #}
  mtu {{ l.mtu + 14 }}
+{%       endif %}
+{%     endif %}
 {%   endif %}
-{% endif %}
-{% endif %}
 {#
     Set interface addresses: IPv4
 #}
-{% if 'ipv4' in l %}
-{%   if l.ipv4 == True %}
+{%   if 'ipv4' in l %}
+{%     if l.ipv4 == True %}
  ipv4 point-to-point
  ipv4 unnumbered {{ loopback_name|default(loopback.ifname) }}
-{%   elif l.ipv4|ipv4 %}
+{%     elif l.ipv4|ipv4 %}
  ipv4 address {{ l.ipv4|ipaddr('address') }} {{ l.ipv4|ipaddr('netmask') }}
-{%   else %}
+{%     else %}
 ! Invalid IPv4 address {{ l.ipv4 }}
+{%     endif %}
 {%   endif %}
-{% endif %}
 {#
     Set interface addresses: IPv6
 #}
-{% if 'ipv6' in l %}
-{%   if l.ipv6 == True %}
+{%   if 'ipv6' in l %}
+{%     if l.ipv6 == True %}
  ipv6 enable
-{%   elif l.ipv6|ipv6 %}
+{%     elif l.ipv6|ipv6 %}
  ipv6 address {{ l.ipv6 }}
-{%   else %}
+{%     else %}
 ! Invalid IPv6 address {{ l.ipv6 }}
-{%   endif %}
-{%   if l.type != 'loopback' %}
+{%     endif %}
+{%     if l.type != 'loopback' %}
  ipv6 nd ra-interval 5
+{%     endif %}
 {%   endif %}
-{% endif %}
 !
 {% endfor %}

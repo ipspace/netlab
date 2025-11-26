@@ -55,38 +55,41 @@ set interfaces dummy dum0 address {{ loopback.ipv6 }}
 {%     set ns.ifname = ifnamedata[0] + (' vif ' + ifnamedata[1] if ifnamedata[1] != '1' else '') %}
 {%   endif %}
 
-{% if l.name is defined %}
+{%   if l.name is defined %}
 set interfaces {{ ns.iface_level }} {{ ns.ifname }} description '{{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}'
-{% elif l.type|default("") == "stub" %}
+{%   elif l.type|default("") == "stub" %}
 set interfaces {{ ns.iface_level }} {{ ns.ifname }} description 'Stub interface'
-{% endif %}
-
-{% if l.mtu is defined %}
-{%   if netlab_provider != 'clab' or l.type != 'stub' %}
-set interfaces {{ ns.iface_level }} {{ ns.ifname }} mtu {{ l.mtu }}
 {%   endif %}
-{% endif %}
+{%   if l.shutdown|default(False) %}
+set interfaces {{ ns.iface_level }} {{ ns.ifname }} disable
+{%   endif %}
 
-{% if 'ipv4' in l %}
-{%   if l.ipv4 == True and 'ipv4' in loopback %}
+{%   if l.mtu is defined %}
+{%     if netlab_provider != 'clab' or l.type != 'stub' %}
+set interfaces {{ ns.iface_level }} {{ ns.ifname }} mtu {{ l.mtu }}
+{%     endif %}
+{%   endif %}
+
+{%   if 'ipv4' in l %}
+{%     if l.ipv4 == True and 'ipv4' in loopback %}
 # Need to set the same address as loopback (dum0) to make it behave as unnumbered
 set interfaces {{ ns.iface_level }} {{ ns.ifname }} address {{ loopback.ipv4 }}
-{%   elif l.ipv4|ipv4 %}
+{%     elif l.ipv4|ipv4 %}
 set interfaces {{ ns.iface_level }} {{ ns.ifname }} address {{ l.ipv4 }}
+{%     endif %}
 {%   endif %}
-{% endif %}
 
-{% if 'ipv6' in l %}
-{%   if l.ipv6 == True %}
+{%   if 'ipv6' in l %}
+{%     if l.ipv6 == True %}
 set interfaces {{ ns.iface_level }} {{ ns.ifname }} ipv6
-{%   elif l.ipv6|ipv6 %}
+{%     elif l.ipv6|ipv6 %}
 set interfaces {{ ns.iface_level }} {{ ns.ifname }} address {{ l.ipv6 }};
+{%     endif %}
 {%   endif %}
-{% endif %}
 
-{% if l.vrf is defined %}
+{%   if l.vrf is defined %}
 set interfaces {{ ns.iface_level }} {{ ns.ifname }} vrf {{ l.vrf }}
-{% endif %}
+{%   endif %}
 
 {% endfor %}
 
