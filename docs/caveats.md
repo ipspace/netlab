@@ -109,14 +109,17 @@ VLAN caveats:
 
 * You cannot use reserved VLANs (1002..1005) on Catalyst 8000v
 * _netlab_ uses new-style VLAN configuration (service instance configured as a **member** of the **bridge-domain**) on Catalyst 8000v nodes with the **premier** license, and old-style VLAN configuration (**bridge-domain** configured under **service instance**) on other Catalyst 8000v nodes.
-* Recent _vrnetlab_ code uses **virtio** NICs for Catalyst 8000v VMs ([GitHub issue](https://github.com/srl-labs/vrnetlab/issues/414)). Ethernet subinterfaces on Catalyst 8000v [do not work with **virtio** NICs](https://developer.cisco.com/docs/modeling-labs/cat-8000v/#limitations); scenarios such as router-on-a-stick thus fail when using recent _vrnetlab_-built Catalyst 8000v containers.
+
+Container caveats
+
+* _vrnetlab_ used **virtio** NICs for Catalyst 8000v VMs, causing problems with Ethernet subinterfaces. Use the latest *vrnetlab* code that [uses **vmxnet3** NICs](https://github.com/srl-labs/vrnetlab/pull/419).
 
 See also [CSR 1000v](caveats-csr) and [Cisco IOSv](caveats-iosv) caveats.
 
 (caveats-csr)=
 ## Cisco CSR 1000v
 
-* Cisco CSR 1000v does not support interface MTU lower than 1500 bytes or IP MTU higher than 1500 bytes.
+* Cisco CSR 1000v does not support an interface MTU lower than 1500 bytes or an IP MTU higher than 1500 bytes.
 * The minimum VXLAN VNI accepted by Cisco CSR 1000v is 4096. Using lower VNI values triggers a configuration error that is not caught by Ansible, resulting in a weird failure of the **netlab initial** command.
 
 See also [Cisco IOSv](caveats-iosv) SSH, OSPF, RIPng, and BGP caveats.
