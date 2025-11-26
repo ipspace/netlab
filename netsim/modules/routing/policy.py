@@ -58,6 +58,10 @@ def normalize_policy_entry(p_entry: typing.Any, p_idx: int) -> typing.Any:
   if match_kw:                                    # Normalize match keywords
     policy_shortcut(p_entry,'match',match_kw)
 
+  # Transform 'match.community' into 'match.community.standard'
+  if isinstance(p_entry.get('match.community',None),str):
+    p_entry.match.community = { 'standard': p_entry.match.community }
+
   prepend = p_entry.get('set.prepend',None)       # Normalize AS path prepending SET entry
   if prepend is not None and isinstance(prepend,(int,str)):
     p_entry.set.prepend = { 'path': str(prepend) }
@@ -85,7 +89,7 @@ def normalize_policy_entry(p_entry: typing.Any, p_idx: int) -> typing.Any:
         'Cannot use "set.community.delete_list" and "delete" attributes in the same routing policy entry',
         category=log.IncorrectAttr,
         module='routing')
-    p_entry.delete.community.list = p_entry.set.community.delete_list
+    p_entry.delete.community.standard.list = p_entry.set.community.delete_list
     p_entry.pop('set.community',None)
     log.warning(
       text='Replacing routing.policy.set.community.delete_list with routing.policy.delete.community.list',
@@ -95,6 +99,10 @@ def normalize_policy_entry(p_entry: typing.Any, p_idx: int) -> typing.Any:
 
   if 'set' in p_entry and not p_entry.set:        # If the policy 'set' operation is empty
     p_entry.pop('set')                            # ... remove it completely
+
+  if isinstance(p_entry.get('delete.community.list',None),str):
+    p_entry.delete.community.list = { 'standard': p_entry.delete.community.list }
+
   normalize_routing_entry(p_entry,p_idx)          # Finally, do generic normalization
 
   return p_entry
@@ -180,26 +188,38 @@ match_object_map: dict = {
   'delete.community.list': 'community'                      # Community delete list requires a 'community' object
 }
 
-def import_policy_filters(pname: str, o_name: str, node: Box, topology: Box) -> None:
+def import_match_filters(
+      filter: typing.Union[str,Box],                        # The filter spec (string or box of filters)
+      r_object: str,                                        # The object name (prefix/community/...)
+      node: Box,
+      topology: Box) -> None:
+
   from . import import_dispatch, normalize_dispatch, transform_dispatch
 
+  if isinstance(filter,Box):
+    for f_name in filter.values():
+      import_match_filters(f_name,r_object,node,topology)
+    return
+
+  f_import = import_routing_object(filter,r_object,node,topology)
+  if f_import:                                        # If we imported any new data...
+    if r_object in normalize_dispatch:                # ... normalize the filter entries
+      if 'list_attr' in normalize_dispatch[r_object]: # Do we have list entries in a box?
+        f_import = f_import[normalize_dispatch[r_object]['list_attr']]
+      if f_import:                                    # Is there anything to process?
+        normalize_routing_object(f_import,normalize_dispatch[r_object]['callback'])
+    if r_object in import_dispatch and 'check' in import_dispatch[r_object]:
+      import_dispatch[r_object]['check'](filter,r_object,node,topology)
+    if r_object in transform_dispatch:                # ... and transform the filter into its final form
+      transform_dispatch[r_object]['import'](filter,r_object,node,topology)
+
+def import_policy_filters(pname: str, o_name: str, node: Box, topology: Box) -> None:
   global match_object_map
 
   for p_entry in node.routing.policy[pname]:                # Iterate over routing policy entries
     for kw in match_object_map.keys():                      # Iterate over match keywords
       if kw in p_entry:                                     # A filter is used in the route-map ==> import it
-        r_object = match_object_map[kw]
-        f_import = import_routing_object(p_entry[kw],r_object,node,topology)
-        if f_import:                                        # If we imported any new data...
-          if r_object in normalize_dispatch:                # ... normalize the filter entries
-            if 'list_attr' in normalize_dispatch[r_object]: # Do we have list entries in a box?
-              f_import = f_import[normalize_dispatch[r_object]['list_attr']]
-            if f_import:                                    # Is there anything to process?
-              normalize_routing_object(f_import,normalize_dispatch[r_object]['callback'])
-          if r_object in import_dispatch and 'check' in import_dispatch[r_object]:
-            import_dispatch[r_object]['check'](p_entry[kw],r_object,node,topology)
-          if r_object in transform_dispatch:                # ... and transform the filter into its final form
-            transform_dispatch[r_object]['import'](p_entry[kw],r_object,node,topology)
+        import_match_filters(filter=p_entry[kw],r_object=match_object_map[kw],node=node,topology=topology)
 
 """
 Import/merge a single global routing policy into node routing policy table
@@ -224,5 +244,6 @@ adjust_routing_policy: Make routing policy adjustments
 def adjust_routing_policy(p_name: str,o_name: str,node: Box,topology: Box) -> typing.Optional[list]:
   for (_,p_entry) in enumerate(node.routing[o_name][p_name]):
     clist.replace_community_delete(node,p_name,p_entry,topology)
-  
+    clist.check_match_clist_type(node,p_name,p_entry,topology)
+
   return None

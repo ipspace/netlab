@@ -1,0 +1,138 @@
+(generic-routing-community)=
+## BGP Community Filters
+
+BGP community filters are lists of conditions (usually known as *community lists*) that permit or deny BGP routes based on standard BGP communities attached to them. They can match a list of communities or a regular expression. You can use them in the **match.community** parameters of routing policies to match BGP routes.
+
+You can specify a BGP community filter entry as a dictionary with two attributes:
+
+* **type**: The type of BGP communities the filter is matching (*standard*, *extended*, or *large*)
+* **value**: The list of community-matching entries.
+
+You can also create a standard BGP community filter with a shortcut syntax that specifies just the list of community-matching entries.
+
+Each community-matching entry can have these attributes:
+
+* **action**: An entry can **permit** or **deny** matched communities (default: **permit**)
+* **sequence**: Statement sequence number. When not specified, *netlab* sets a prefix filter entry's **sequence** number to ten times its list position.
+* **list**: A list of communities to match
+* **regexp**: A regular expression to match
+
+BGP community filters are specified in the global- or node-level **routing.community** dictionary. The dictionary keys are filter names (community-list names), and the dictionary values are BGP community filters (lists of BGP community filter entries).
+
+The following example specifies a BGP community filter that drops BGP routes carrying communities defined by AS 65000 and permits everything else:
+
+```
+module: [ routing ]
+
+routing.community:
+  not_65000:
+  - action: deny
+    regexp: _65000:[0-9]+_
+  - action: permit
+```
+
+### Shortcut BGP Community Filter Definitions
+
+Filters encoded in YAML tend to be verbose, and we tried to do as much as we could to reduce BGP community filter verbosity:
+
+* You can skip the **type**/**value** dictionary and specify a standard BGP community filter as a list of community-matching entries.
+* You can skip the **action** and **sequence** attributes in the community-matching entries. Such entries are auto-sequenced and accept matched communities (**action: permit**).
+* Each community-matching entry could be a simple string or a list of BGP communities to match. Such entries are converted into dictionaries with the **list** or **regexp** element set to the entry's value. _netlab_ automatically determines whether a value is a list of communities or a regular expression.
+* A list of BGP communities in the **list** element is converted into a string of BGP communities separated by a blank
+* A BGP community filter could be a single string. That string is first converted into a list, then into a standard BGP community with a single matching entry, and finally, the matching entry is expanded into a dictionary.
+* _netlab_ automatically generates an *expanded* community list if at least one entry contains a regular expression, and a *standard* community list if all entries contain community values or lists of them.
+
+The following example lists various shortened definitions of standard BGP community filters:
+
+```
+routing.community:
+  cl1: 65000:100                            # Single-entry ACL
+  cl2: [ 65000:100, 65000:101 ]             # Single-entry multivalue ACL
+  cl3: _65000:10[1-2]_                      # Regular expression
+  cl4:                                      # More complex standard ACL
+  - action: permit                          # Used to implement or-of-ands condition
+    path: [ 65000:100, 65001:100 ]
+  - action: permit
+    path: [ 65000:103, 65001:103 ]
+  cl5:                                      # A mix of standard and extended conditions ==> extended
+  - action: deny
+    path: [ 65000:100, 65001:100 ]          # first entry is a list of communities
+  - '_6510.:307_'                           # the second entry is a regexp
+  cl6:                                      # Permit any at the end forces an extended clist
+  - action: deny
+    path: [ 65000:100, 65001:100 ]
+  - action: permit
+```
+
+_netlab_ normalizes these BGP community filters into the following node **routing.community** data structure:
+
+```
+community:
+  cl1:
+    cl_type: standard
+    regexp: ''
+    type: standard
+    value:
+    - _value: 65000:100
+      action: permit
+      sequence: 10
+  cl2:
+    cl_type: standard
+    regexp: ''
+    type: standard
+    value:
+    - _value: 65000:100
+      action: permit
+      sequence: 10
+    - _value: 65000:101
+      action: permit
+      sequence: 20
+  cl3:
+    cl_type: expanded
+    regexp: regexp
+    type: standard
+    value:
+    - _value: _65000:10[1-2]_
+      action: permit
+      regexp: _65000:10[1-2]_
+      sequence: 10
+  cl4:
+    cl_type: standard
+    regexp: ''
+    type: standard
+    value:
+    - _value: 65000:100 65001:100
+      action: permit
+      sequence: 10
+    - _value: 65000:103 65001:103
+      action: permit
+      sequence: 20
+  cl5:
+    cl_type: expanded
+    regexp: regexp
+    type: standard
+    value:
+    - _value: 65000:100 65001:100
+      action: deny
+      sequence: 10
+    - _value: _6510.:307_
+      action: permit
+      regexp: _6510.:307_
+      sequence: 20
+  cl6:
+    cl_type: expanded
+    regexp: regexp
+    type: standard
+    value:
+    - _value: 65000:100 65001:100
+      action: deny
+      sequence: 10
+    - _value: .*
+      action: permit
+      regexp: .*
+      sequence: 20
+```
+
+```{tip}
+The data structure of the global **‌routing.community** entries is not fully transformed and is thus slightly different from the above printout.
+```
