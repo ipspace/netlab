@@ -30,7 +30,7 @@ def replace_community_delete(node: Box, p_name: str, p_entry: Box, topology: Box
   for type in ['standard','large','extended']:
     if type not in p_entry.delete.community:
       continue
-    elif type in ['large','extended']:
+    elif not features.get(f'routing.community.{type}'):
       log.error(
         f'Node {node.name} (device {node.device}) cannot delete {type} BGP communities in a routing policy',
         more_data=f'Policy {p_name} sequence# {p_entry.sequence}',
@@ -39,10 +39,10 @@ def replace_community_delete(node: Box, p_name: str, p_entry: Box, topology: Box
     else:
       clist += [ { 'action': 'permit', '_value': i } for i in p_entry.delete.community[type] ]
 
-  if clist:
-    cname = f"DEL_{p_name}_{p_entry.sequence}"
-    node.routing.community[cname] = { 'type': 'standard', 'cl_type': 'standard', 'value': clist }
-    p_entry.delete.community.list.standard = cname
+    if clist:
+      cname = f"DEL_{type}_{p_name}_{p_entry.sequence}"
+      node.routing.community[cname] = { 'type': type, 'cl_type': 'standard', 'value': clist }
+      p_entry.delete.community.list[type] = cname
   
   for kw in ['standard','large','extended']:
     p_entry.delete.community.pop(kw, None)
