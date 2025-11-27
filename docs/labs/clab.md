@@ -17,7 +17,7 @@
 
 ## Supported Versions
 
-The latest _netlab_ release was tested with _containerlab_ version 0.59.0. That's also the version the **netlab install containerlab** command installs.
+The latest _netlab_ release was tested with _containerlab_ version 0.71.1. That's also the version the **netlab install containerlab** command installs.
 
 If needed, use ```sudo containerlab version upgrade``` to upgrade to the latest _containerlab_ version.
 
