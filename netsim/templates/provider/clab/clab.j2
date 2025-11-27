@@ -17,9 +17,6 @@ topology:
 {% for name,n in nodes.items() if not (n.unmanaged|default(False)) %}
 {%   set clab = n.clab|default({}) %}
     {{ name }}:
-{%   if 'network-mode' in clab %}
-      network-mode: {{ clab['network-mode'] }}
-{%   endif %}
 {%   if 'network-mode' not in clab or clab['network-mode'] != 'none' %}
 {%     if n.mgmt.ipv4 is defined %}
       mgmt-ipv4: {{ n.mgmt.ipv4 }}
@@ -33,7 +30,8 @@ topology:
 {%   if kind == 'linux' and 'restart-policy' not in clab %}
       restart-policy: 'no'
 {%   endif %}
-{%   for cset in defaults.providers.clab.node_config_attributes if clab[cset] is defined %}
+{%   for cset in defaults.providers.clab.attributes.node._keys
+         if clab[cset] is defined and cset not in defaults.providers.clab.node_config_special %}
 {%     if clab[cset] is string %}
       {{ cset }}: '{{ clab[cset] }}'
 {%     else %}
@@ -43,8 +41,7 @@ topology:
       image: {{ clab.image|default(n.box) }}
       runtime: {{ clab.runtime|default(defaults.providers.clab.runtime) }}
 {%   if groups is defined %}
-      group: {% for g in groups if n.name in groups[g].members %}{{'' if loop.first else ','}}{{g}}{% endfor %}
-
+      group: {% for g in groups if n.name in groups[g].members %}{{'' if loop.first else ','}}{{g}}{% endfor +%}
 {%   endif %}
 {%   if 'srl-agents' in clab %}
       extras:
