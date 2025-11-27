@@ -191,6 +191,27 @@ def as_prepend_quirk(node: Box, topology: Box) -> None:
           )
           pl_item.set.prepend.path = new_path
 
+def community_list_quirk(node: Box, topology: Box) -> None:
+  for clist in node.get('routing.community',{}).values():
+    if clist.get('type','') != 'large':
+      continue
+    for cl_item in clist.get('value',[]):
+      cl_value = cl_item.get('_value')
+      if cl_value == '.*':
+        cl_value = '.*:.*:.*'
+      elif '_' in cl_value:
+        cl_value = cl_value.strip('_')
+        if '_' in cl_value:
+          report_quirk(
+            f'Junos cannot match more than one large community pattern with a single regexp.',
+            more_hints= [ 'Simplify your BGP community filter' ],
+            node=node,
+            category=log.IncorrectValue,
+            quirk='clist_large_regexp')
+          continue
+
+      cl_item._value = "large:"+cl_value
+
 def community_set_quirk(node: Box, topology: Box) -> None:
   mods = node.get('module',[])
   if 'routing' not in mods or 'bgp' not in mods:
@@ -359,6 +380,7 @@ class JUNOS(_Quirks):
     check_evpn_ebgp(node,topology)
     policy_aspath_quirks(node,topology)
     as_prepend_quirk(node,topology)
+    community_list_quirk(node,topology)
     community_set_quirk(node,topology)
     default_originate_check(node,topology)
     build_bgp_import_export_policy_chain(node,topology)
