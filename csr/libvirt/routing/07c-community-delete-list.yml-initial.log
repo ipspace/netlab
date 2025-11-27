@@ -1,3 +1,14 @@
+Warning in cli: Lab topology source file /home/pipi/.netlab.yml has been modified
+... after the snapshot netlab.snapshot.pickle has been created
+... Set defaults.warnings.snapshot.modified to False to hide this warning
+... netlab transforms lab topology into device- and platform data and stores the results
+    in a snapshot file that is used by most netlab commands. Changes to source files
+    (including lab topology or defaults) are not automatically reflected in the snapshot
+    file. Use 'netlab create' or 'netlab up' to create a new snapshot file.
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -186,6 +197,50 @@ ok: [probe] =>
     vtysh -f /tmp/config
     !
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    no ip domain lookup
+    logging buffered 256000
+  
+    !
+    lldp run
+    !
+    ip host probe 10.0.0.2 10.1.0.2
+    ip host x1 10.0.0.3 10.1.0.6
+    !
+    ip routing
+    !
+    no ipv6 unicast-routing
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.1 255.255.255.255
+    !
+    interface GigabitEthernet1
+     no lldp transmit
+     no lldp receive
+    !
+    interface GigabitEthernet2
+     description dut -> probe [external]
+     ip address 10.1.0.1 255.255.255.252
+     no shutdown
+    !
+    interface GigabitEthernet3
+     description dut -> x1 [external]
+     ip address 10.1.0.5 255.255.255.252
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -292,50 +347,6 @@ ok: [x1] =>
     vtysh -f /tmp/config
     !
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    hostname dut
-    !
-    no ip domain lookup
-    logging buffered 256000
-  
-    !
-    lldp run
-    !
-    ip host probe 10.0.0.2 10.1.0.2
-    ip host x1 10.0.0.3 10.1.0.6
-    !
-    ip routing
-    !
-    no ipv6 unicast-routing
-    !
-    !
-    interface Loopback0
-     ip address 10.0.0.1 255.255.255.255
-    !
-    interface GigabitEthernet1
-     no lldp transmit
-     no lldp receive
-    !
-    interface GigabitEthernet2
-     description dut -> probe [external]
-     ip address 10.1.0.1 255.255.255.252
-     no shutdown
-    !
-    interface GigabitEthernet3
-     description dut -> x1 [external]
-     ip address 10.1.0.5 255.255.255.252
-     no shutdown
-    !
-    !
-    line vty 0 4
-     exec-timeout 0 0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
@@ -419,6 +430,7 @@ ok: [x1] =>
     !
     route-map set_comm-ipv4 permit 10
       set community 65101:17 65101:42
+  
   
     !
 ok: [dut] => 
@@ -593,8 +605,8 @@ TASK [ios_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templat
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [probe]
 changed: [x1]
+changed: [probe]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
@@ -662,6 +674,9 @@ probe                      : ok=36   changed=7    unreachable=0    failed=0    s
 x1                         : ok=43   changed=8    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
 
 
+Warning: The following warnings were generated during the 'netlab initial' processing
+Warning: cli: Lab topology source file /home/pipi/.netlab.yml has been modified
 
-Use this topology to test 'set.community.delete' route-map option.
+
+Use this topology to test 'delete.community.list' route-map option.
 

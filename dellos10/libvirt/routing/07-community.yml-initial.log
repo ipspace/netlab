@@ -1,3 +1,10 @@
+Warning in cli: Lab topology source file /home/pipi/.netlab.yml has been modified
+... after the snapshot netlab.snapshot.pickle has been created
+... Set defaults.warnings.snapshot.modified to False to hide this warning
+... netlab transforms lab topology into device- and platform data and stores the results
+    in a snapshot file that is used by most netlab commands. Changes to source files
+    (including lab topology or defaults) are not automatically reflected in the snapshot
+    file. Use 'netlab create' or 'netlab up' to create a new snapshot file.
 /home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
   "cipher": algorithms.TripleDES,
 /home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
@@ -11,6 +18,10 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [probe]
 ok: [dut]
 
+TASK [Generic readiness tests] *************************************************
+skipping: [dut]
+skipping: [probe]
+
 TASK [Find device readiness script] ********************************************
 ok: [probe]
 ok: [dut]
@@ -20,7 +31,7 @@ skipping: [dut]
 skipping: [probe]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [probe]
@@ -47,7 +58,7 @@ skipping: [dut]
 skipping: [probe]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [probe]
@@ -149,6 +160,9 @@ ok: [probe] =>
     cat >/tmp/config <<CONFIG
     hostname probe
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -167,6 +181,7 @@ ok: [probe] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [dut] => 
   msg: |-
@@ -201,13 +216,13 @@ ok: [dut] =>
     !
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for probe
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for probe
 
 TASK [wait_for_connection] *****************************************************
 skipping: [dut]
 
-TASK [dellos10_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/dellos10.j2, save to startup=yes] ***
+TASK [dellos10_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/dellos10.j2, save to startup=yes] ***
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
@@ -217,7 +232,7 @@ TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [probe]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for probe
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for probe
 
 TASK [template] ****************************************************************
 changed: [probe]
@@ -225,10 +240,10 @@ changed: [probe]
 TASK [set_fact] ****************************************************************
 ok: [probe]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [probe]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [probe]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -238,8 +253,8 @@ ok: [probe]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe => (item=routing)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe => (item=bgp)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [probe]
@@ -272,22 +287,15 @@ ok: [dut] =>
     !
     route-map set_comm-ipv4 permit 10
       set community 65000:101
-  
-    !
-    ! AS-path access lists
-    !
-    !
-    ! Static routes (dual routes for each entry, in entry VRF and next hop VRF)
-    !
 
 TASK [Deploy routing configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for probe
 
 TASK [wait_for_connection] *****************************************************
 skipping: [dut]
 
-TASK [dellos10_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/templates/routing/dellos10.j2, save to startup=yes] ***
+TASK [dellos10_config: deploying routing from /home/pipi/netlab_gh/netsim/ansible/templates/routing/dellos10.j2, save to startup=yes] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
@@ -296,10 +304,10 @@ changed: [probe]
 TASK [set_fact] ****************************************************************
 ok: [probe]
 
-TASK [run /tmp/config.sh to deploy routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
+TASK [run /tmp/config.sh to deploy routing config from /home/pipi/netlab_gh/netsim/ansible/templates/routing/frr.j2] ***
 skipping: [probe]
 
-TASK [run vtysh to import routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
+TASK [run vtysh to import routing config from /home/pipi/netlab_gh/netsim/ansible/templates/routing/frr.j2] ***
 changed: [probe]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
@@ -341,9 +349,9 @@ ok: [probe] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.2/32
-    !
-    !
     !
       neighbor 10.1.0.1 activate
       no neighbor 10.1.0.1 send-community all
@@ -401,13 +409,13 @@ ok: [dut] =>
     !
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for probe
 
 TASK [wait_for_connection] *****************************************************
 skipping: [dut]
 
-TASK [dellos10_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/dellos10.j2, save to startup=yes] ***
+TASK [dellos10_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/dellos10.j2, save to startup=yes] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
@@ -416,16 +424,16 @@ changed: [probe]
 TASK [set_fact] ****************************************************************
 ok: [probe]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [probe]
 
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [probe]
 
 PLAY [Deploy custom deployment templates] **************************************
 
 TASK [Run custom configuration deployment scripts] *****************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=bgp.policy)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=bgp.policy)
 
 TASK [Find configuration template] *********************************************
 ok: [dut]
@@ -439,25 +447,28 @@ ok: [dut -> localhost]
 TASK [fail] ********************************************************************
 skipping: [dut]
 
-TASK [Process template /home/pipi/net101/tools/netsim/extra/bgp.policy/dellos10.j2 for dut] ***
+TASK [Process template /home/pipi/netlab_gh/netsim/extra/bgp.policy/dellos10.j2 for dut] ***
 skipping: [dut]
 
 TASK [Find custom configuration deployment script] *****************************
 ok: [dut]
 
 TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
 
 TASK [wait_for_connection] *****************************************************
 skipping: [dut]
 
-TASK [dellos10_config: deploying bgp.policy from /home/pipi/net101/tools/netsim/extra/bgp.policy/dellos10.j2, save to startup=yes] ***
+TASK [dellos10_config: deploying bgp.policy from /home/pipi/netlab_gh/netsim/extra/bgp.policy/dellos10.j2, save to startup=yes] ***
 changed: [dut]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=34   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-probe                      : ok=36   changed=7    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+dut                        : ok=34   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+probe                      : ok=36   changed=7    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
 
+
+Warning: The following warnings were generated during the 'netlab initial' processing
+Warning: cli: Lab topology source file /home/pipi/.netlab.yml has been modified
 
 
 Use this topology to test 'set.community.standard' route-map option.

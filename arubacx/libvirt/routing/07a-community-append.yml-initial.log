@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -80,6 +84,44 @@ ok: [x1]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    lldp
+    !
+  
+  
+  
+    interface mgmt
+        no lldp transmit
+        no lldp receive
+    !
+  
+  
+    interface loopback 0
+        ip address 10.0.0.1/32
+        no shutdown
+    !
+  
+    interface 1/1/1
+        shutdown
+        mtu 9198
+        description dut -> probe [external]
+        ip address 10.1.0.1/30
+        no shutdown
+    !
+  
+    interface 1/1/2
+        shutdown
+        mtu 9198
+        description dut -> x1 [external]
+        ip address 10.1.0.5/30
+        no shutdown
+    !
+    !
 ok: [probe] => 
   msg: |-
     initial configuration for probe
@@ -186,43 +228,6 @@ ok: [probe] =>
     vtysh -f /tmp/config
     !
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    hostname dut
-    !
-    lldp
-    !
-  
-  
-  
-    interface mgmt
-        no lldp transmit
-        no lldp receive
-    !
-  
-  
-    interface loopback 0
-        ip address 10.0.0.1/32
-    !
-  
-    interface 1/1/1
-        shutdown
-        mtu 9198
-        description dut -> probe [external]
-        ip address 10.1.0.1/30
-        no shutdown
-    !
-  
-    interface 1/1/2
-        shutdown
-        mtu 9198
-        description dut -> x1 [external]
-        ip address 10.1.0.5/30
-        no shutdown
-    !
-    !
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -357,8 +362,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for probe, x1
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [probe]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
@@ -418,6 +423,7 @@ ok: [x1] =>
     !
     route-map set_comm-ipv4 permit 10
       set community 65101:17
+  
   
     !
 ok: [dut] => 
@@ -490,40 +496,6 @@ ok: [x1]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65101
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.3
-    !
-      neighbor 10.1.0.5 remote-as 65000
-      neighbor 10.1.0.5 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-    ! Originate networks from connected subnets
-    !
-      network 10.0.0.3/32
-    !
-      neighbor 10.1.0.5 activate
-      no neighbor 10.1.0.5 send-community all
-      neighbor 10.1.0.5 send-community standard
-      neighbor 10.1.0.5 send-community large
-    !
-    !
-    !
-    do write
 ok: [probe] => 
   msg: |-
     bgp configuration for probe
@@ -554,6 +526,40 @@ ok: [probe] =>
       no neighbor 10.1.0.1 send-community all
       neighbor 10.1.0.1 send-community standard
       neighbor 10.1.0.1 send-community large
+    !
+    !
+    !
+    do write
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65101
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.3
+    !
+      neighbor 10.1.0.5 remote-as 65000
+      neighbor 10.1.0.5 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+    ! Originate networks from connected subnets
+    !
+      network 10.0.0.3/32
+    !
+      neighbor 10.1.0.5 activate
+      no neighbor 10.1.0.5 send-community all
+      neighbor 10.1.0.5 send-community standard
+      neighbor 10.1.0.5 send-community large
     !
     !
     !
@@ -620,8 +626,8 @@ skipping: [probe]
 skipping: [x1]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [x1]
 changed: [probe]
+changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 
