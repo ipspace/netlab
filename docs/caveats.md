@@ -110,7 +110,7 @@ nodes:
 * You cannot use reserved VLANs (1002..1005) on Catalyst 8000v
 * _netlab_ uses new-style VLAN configuration (service instance configured as a **member** of the **bridge-domain**) on Catalyst 8000v nodes with the **premier** license, and old-style VLAN configuration (**bridge-domain** configured under **service instance**) on other Catalyst 8000v nodes.
 
-**Container caveats**
+**Container caveats:**
 
 You should use the latest *vrnetlab* code to build (or rebuild) the Catalyst 8000v containers:
 
