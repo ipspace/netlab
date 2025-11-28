@@ -778,6 +778,7 @@ defaults:
         image: none
       graphite:
         icon: switch
+      provider: libvirt
     sros:
       features:
         bgp:
@@ -1231,7 +1232,6 @@ defaults:
         image: none
       graphite:
         icon: switch
-      provider: libvirt
     asav:
       description: Cisco ASAv
       support:
@@ -8167,7 +8167,7 @@ defaults:
     user: []
     system: []
   workdir: /work/netlab_cicd
-  device: arubacx
+  device: dellos10
   groups:
     all:
       vars:
@@ -8299,18 +8299,6 @@ nodes:
           type: standard
           cl_type: standard
           regexp: ''
-        c2:
-          value:
-          - action: deny
-            sequence: 10
-            _value: '65101:42'
-          - action: permit
-            sequence: 20
-            _value: .*
-            regexp: .*
-          type: standard
-          cl_type: expanded
-          regexp: regexp
       policy:
         set_med:
         - match:
@@ -8320,13 +8308,6 @@ nodes:
             med: 120
           action: permit
           sequence: 10
-        - match:
-            community:
-              standard: c2
-          set:
-            med: 200
-          action: permit
-          sequence: 20
         - set:
             med: 72
           action: permit
@@ -8344,7 +8325,7 @@ nodes:
       role: external
       name: dut -> probe
       ifindex: 1
-      ifname: 1/1/1
+      ifname: ethernet1/1/1
       neighbors:
       - ipv4: 10.1.0.2/30
         ifname: eth1
@@ -8356,7 +8337,7 @@ nodes:
       role: external
       name: dut -> x1
       ifindex: 2
-      ifname: 1/1/2
+      ifname: ethernet1/1/2
       neighbors:
       - bgp:
           policy:
@@ -8364,16 +8345,17 @@ nodes:
         ipv4: 10.1.0.6/30
         ifname: eth1
         node: x1
-    device: arubacx
-    box: aruba/cx
+    device: dellos10
+    box: dell/os10
     module:
     - routing
     - bgp
+    mtu: 1500
     provider: libvirt
     af:
       ipv4: true
     mgmt:
-      ifname: mgmt
+      ifname: mgmt1/1/1
       mac: ca:fe:00:01:00:00
       ipv4: 192.168.17.101
     loopback:
@@ -8381,7 +8363,7 @@ nodes:
       neighbors: []
       virtual_interface: true
       ifindex: 0
-      ifname: loopback 0
+      ifname: loopback0
       ipv4: 10.0.0.1/32
       bgp:
         advertise: true
@@ -8431,7 +8413,7 @@ nodes:
           policy:
             out: set_med
         ipv4: 10.1.0.1/30
-        ifname: 1/1/1
+        ifname: ethernet1/1/1
         node: dut
     device: frr
     clab:
@@ -8572,7 +8554,7 @@ nodes:
       mtu: 1500
       neighbors:
       - ipv4: 10.1.0.5/30
-        ifname: 1/1/2
+        ifname: ethernet1/1/2
         node: dut
     device: frr
     clab:
@@ -8617,7 +8599,7 @@ links:
     node: dut
     ipv4: 10.1.0.1/30
     ifindex: 1
-    ifname: 1/1/1
+    ifname: ethernet1/1/1
   - node: probe
     ipv4: 10.1.0.2/30
     ifindex: 1
@@ -8637,7 +8619,7 @@ links:
   - node: dut
     ipv4: 10.1.0.5/30
     ifindex: 2
-    ifname: 1/1/2
+    ifname: ethernet1/1/2
   - bgp:
       policy:
         out: set_comm
@@ -8681,13 +8663,6 @@ validate:
   - probe
   plugin: bgp_prefix(prefix.pf2.ipv4)
   name: pfx_2
-- description: Check MED of X1 loopback prefix
-  wait: 5
-  nodes:
-  - probe
-  plugin: >
-    bgp_prefix(nodes.x1.loopback.ipv4,med=200)
-  name: med_lb
 - description: Check MED of Prefix_1
   nodes:
   - probe
@@ -8700,6 +8675,11 @@ validate:
   plugin: >
     bgp_prefix(prefix.pf2.ipv4,med=72)
   name: med_pfx2
+- wait: 0
+  level: warning
+  fail: Standard BGP community lists using regular expressions are not 
+    implemented on device dellos10
+  name: f_warning
 input:
 - /home/pipi/netlab_gh/tests/integration/routing/12-match-community.yml
 - /home/pipi/netlab_gh/tests/integration/wait_times.yml

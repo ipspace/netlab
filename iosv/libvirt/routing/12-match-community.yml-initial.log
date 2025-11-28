@@ -31,8 +31,8 @@ TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [probe]
 ok: [x1]
+ok: [probe]
 ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
@@ -69,8 +69,8 @@ ok: [x1]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
-ok: [probe]
 ok: [x1]
+ok: [probe]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -79,8 +79,8 @@ skipping: [probe]
 skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [probe]
 ok: [x1]
+ok: [probe]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -190,6 +190,50 @@ ok: [probe] =>
     vtysh -f /tmp/config
     !
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    no ip domain lookup
+    logging buffered 256000
+  
+    !
+    lldp run
+    !
+    ip host probe 10.0.0.2 10.1.0.2
+    ip host x1 10.0.0.3 10.1.0.6
+    !
+    ip routing
+    !
+    no ipv6 unicast-routing
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.1 255.255.255.255
+    !
+    interface GigabitEthernet0/0
+     no lldp transmit
+     no lldp receive
+    !
+    interface GigabitEthernet0/1
+     description dut -> probe [external]
+     ip address 10.1.0.1 255.255.255.252
+     no shutdown
+    !
+    interface GigabitEthernet0/2
+     description dut -> x1 [external]
+     ip address 10.1.0.5 255.255.255.252
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -296,50 +340,6 @@ ok: [x1] =>
     vtysh -f /tmp/config
     !
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    hostname dut
-    !
-    no ip domain lookup
-    logging buffered 256000
-  
-    !
-    lldp run
-    !
-    ip host probe 10.0.0.2 10.1.0.2
-    ip host x1 10.0.0.3 10.1.0.6
-    !
-    ip routing
-    !
-    no ipv6 unicast-routing
-    !
-    !
-    interface Loopback0
-     ip address 10.0.0.1 255.255.255.255
-    !
-    interface GigabitEthernet0/0
-     no lldp transmit
-     no lldp receive
-    !
-    interface GigabitEthernet0/1
-     description dut -> probe [external]
-     ip address 10.1.0.1 255.255.255.252
-     no shutdown
-    !
-    interface GigabitEthernet0/2
-     description dut -> x1 [external]
-     ip address 10.1.0.5 255.255.255.252
-     no shutdown
-    !
-    !
-    line vty 0 4
-     exec-timeout 0 0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
@@ -362,8 +362,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for probe, x1
 
 TASK [template] ****************************************************************
-changed: [probe]
 changed: [x1]
+changed: [probe]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
@@ -409,12 +409,6 @@ ok: [x1]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [probe] => 
-  msg: |-
-    routing configuration for probe
-    =========================================
-    !
-    !
 ok: [x1] => 
   msg: |-
     routing configuration for x1
@@ -441,6 +435,12 @@ ok: [x1] =>
     ip prefix-list pf1-ipv4 seq 10 permit 172.16.0.0/24
     !
     ip prefix-list pf2-ipv4 seq 10 permit 172.16.1.0/24
+    !
+ok: [probe] => 
+  msg: |-
+    routing configuration for probe
+    =========================================
+    !
     !
 ok: [dut] => 
   msg: |-
@@ -473,8 +473,8 @@ TASK [ios_config: deploying routing from /home/pipi/netlab_gh/netsim/ansible/tem
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [probe]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
@@ -494,8 +494,8 @@ ok: [x1]
 ok: [dut]
 
 TASK [Find configuration template for bgp] *************************************
-ok: [probe]
 ok: [x1]
+ok: [probe]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -504,45 +504,11 @@ skipping: [probe]
 skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
-ok: [probe]
 ok: [x1]
+ok: [probe]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [probe] => 
-  msg: |-
-    bgp configuration for probe
-    =========================================
-    !
-    router bgp 65100
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.2
-    !
-      neighbor 10.1.0.1 remote-as 65000
-      neighbor 10.1.0.1 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-    ! Originate networks from connected subnets
-    !
-      network 10.0.0.2/32
-    !
-      neighbor 10.1.0.1 activate
-      no neighbor 10.1.0.1 send-community all
-      neighbor 10.1.0.1 send-community standard
-      neighbor 10.1.0.1 send-community large
-    !
-    !
-    !
-    do write
 ok: [x1] => 
   msg: |-
     bgp configuration for x1
@@ -622,6 +588,40 @@ ok: [dut] =>
       neighbor 10.1.0.6 send-community standard
   
     !
+ok: [probe] => 
+  msg: |-
+    bgp configuration for probe
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+    ! Originate networks from connected subnets
+    !
+      network 10.0.0.2/32
+    !
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
+    !
+    !
+    !
+    do write
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
