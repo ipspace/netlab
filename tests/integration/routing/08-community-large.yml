@@ -1,8 +1,9 @@
 ---
 message: |
-  Use this topology to test 'set.community.large' route-map option.
+  Use this topology to test 'set.community.large' and 'delete.community.large' route-map option.
 
 defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+defaults.paths.prepend.plugin: [ "topology:../plugin" ]
 
 plugin: [ bgp.policy ]
 module: [ bgp, routing ]
@@ -11,38 +12,77 @@ groups:
   probes:
     device: frr
     provider: clab
-    members: [ probe ]
+    members: [ p1, p2, x1 ]
 
 nodes:
   dut:
     bgp.as: 65000
     routing.policy.set_comm:
-      set.community.large: '65000:0:101'
+      set.community.large: [ '65000:0:101', '65000:2:202' ]
+    routing.policy.del_comm:
+      delete.community.large: [ '65200:2:202' ]
     id: 1
-  probe:
-    bgp.as: 65100
-
+  p1.bgp.as: 65100
+  p2.bgp.as: 65101
+  x1:
+    bgp.as: 65200
+    routing.policy.set_comm:
+      set.community.large: [ '65200:0:101', '65200:2:202' ]
 links:
 - dut:
+  x1:
     bgp.policy.out: set_comm
-  probe:
+- dut:
+    bgp.policy.out: set_comm
+  p1:
+- dut:
+    bgp.policy.out: del_comm
+  p2:
 
 validate:
   ebgp:
-    description: Check EBGP sessions with DUT (wait up to 10 seconds)
+    description: Check EBGP sessions with DUT
     wait: ebgp_session
-    nodes: [ probe ]
+    nodes: [ p1, p2, x1 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
 
   pfx_lb:
-    description: Check for DUT loopback prefix on Probe
+    description: Check for DUT loopback prefix on probes
     wait: bgp_scan_long
-    nodes: [ probe ]
+    nodes: [ p1, p2 ]
     plugin: bgp_prefix(nodes.dut.loopback.ipv4)
 
-  comm_lb:
-    description: Check for large communities attached to DUT loopback prefix
+  pfx_x1:
+    description: Check for X1 loopback prefix on probes
+    wait: bgp_scan_long
+    nodes: [ p1, p2 ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv4)
+
+  lcomm_1:
+    description: Check for large community 65000:0:101 attached to DUT loopback prefix
     wait: bgp_scan_time
-    nodes: [ probe ]
+    nodes: [ p1 ]
     plugin: >
       bgp_prefix(nodes.dut.loopback.ipv4,community={'largeCommunity': '65000:0:101'})
+
+  lcomm_2:
+    description: Check for large community 65000:2:202 attached to DUT loopback prefix
+    wait: bgp_scan_time
+    nodes: [ p1 ]
+    plugin: >
+      bgp_prefix(nodes.dut.loopback.ipv4,community={'largeCommunity': '65000:2:202'})
+
+  dcomm_1:
+    description: Check for large community 65200:0:101 attached to X1 loopback prefix
+    wait: bgp_scan_time
+    nodes: [ p2 ]
+    plugin: >
+      bgp_prefix(nodes.x1.loopback.ipv4,community={'largeCommunity': '65200:0:101'})
+
+  dcomm_2:
+    description: Check for large community 65200:2:202 missing from X1 loopback prefix
+    wait: bgp_scan_time
+    level: warning
+    nodes: [ p2 ]
+    plugin: >
+      bgp_prefix(nodes.x1.loopback.ipv4,community={'largeCommunity': '65200:2:202'},state='missing')
