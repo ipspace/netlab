@@ -3,8 +3,9 @@ message: |
   Use this topology to test 'match.community' route-map option.
 
 defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+defaults.paths.prepend.plugin: [ "topology:../plugin" ]
 
-plugin: [ bgp.policy ]
+plugin: [ bgp.policy, adjust_test ]
 module: [ bgp, routing ]
 
 groups:
@@ -12,6 +13,19 @@ groups:
     device: frr
     provider: clab
     members: [ probe, x1 ]
+
+_adjust:
+- nodes: [ dut ]              # Remove 'match expanded community list' test if the device does not support it
+  features:
+  - key: routing.community.standard
+    value: true
+  - key: routing.community.standard
+    value: expanded
+  warning: Standard BGP community lists using regular expressions are not implemented on device {device}
+  remove:
+  - nodes.dut.routing.community.c2
+  - nodes.dut.routing.policy.set_med[1]
+  - validate.med_lb
 
 prefix:
   pf1: { pool: lan }
