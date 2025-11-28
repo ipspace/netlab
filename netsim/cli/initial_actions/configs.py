@@ -58,10 +58,10 @@ def create_from_config_templates(topology: Box, nodeset: list, abs_path: Path, a
 
   for n_name in nodeset:
     n_data = topology.nodes[n_name]
-    p = _Provider(provider=devices.get_provider(n_data,topology.defaults),data=data.get_empty_box())
     if 'clab.config_templates' not in n_data:               # The node is not using config templates
       continue                                              # Move on
 
+    p = _Provider(provider=devices.get_provider(n_data,topology.defaults),data=data.get_empty_box())
     node_data = adjust_inventory_host(                      # Add group variables to node data
                               node=n_data,
                               defaults=topology.defaults,
@@ -69,8 +69,9 @@ def create_from_config_templates(topology: Box, nodeset: list, abs_path: Path, a
     for k,v in shared_data.items():                         # And copy shared data
       node_data[k] = v
 
+    node_data['node_provider'] = devices.get_provider(n_data,topology.defaults)
     for b_item in n_data.clab.config_templates:             # Now iterate over all config templates the node is using
-      b_template = b_item.split(':')[0]                     # Extract template name
+      b_template = b_item.split(':')[0].replace('@','.')    # Extract template name
       if not all_configs:                                   # Check whether the user wants us to generate this file
         skip = mod_list and b_template not in mod_list      # Skip modules that are not in mod_list
         skip = skip or args.custom and b_template not in n_data.get('config',[])
@@ -84,13 +85,15 @@ def create_from_config_templates(topology: Box, nodeset: list, abs_path: Path, a
         continue
 
       try:
+        node_paths = p.extra_template_paths(n_data,topology,b_template)
         o_fname = f'{n_name}.{b_template}.cfg'              # Try to render the template into
         templates.write_template(                           # ... node.template.cfg file in the output directory
           in_folder=os.path.dirname(b_path),
           j2=os.path.basename(b_path),
           data=node_data,
           out_folder=output_path,
-          filename=o_fname)
+          filename=o_fname,
+          extra_path=node_paths)
         log.info(f"Rendered {b_template} template for {n_name} into {o_fname}")
       except Exception as ex:                               # Gee, we failed
         log.error(                                          # Report an error and move on

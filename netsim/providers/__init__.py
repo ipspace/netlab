@@ -64,20 +64,30 @@ class _Provider(Callback):
   def get_full_template_path(self) -> str:
     return str(_files.get_moddir() / self.get_template_path())
 
-  def find_extra_template(self, node: Box, fname: str, topology: Box) -> typing.Optional[str]:
+  def extra_template_paths(self, node: Box, topology: Box, fname: str) -> list:
     if fname in node.get('config',[]):                    # Are we dealing with extra-config template?
       path_prefix = topology.defaults.paths.custom.dirs
       path_suffix = [ fname ]
-      fname = node.device
     else:
       path_suffix = [ node.device ]
-      path_prefix = topology.defaults.paths.templates.dirs + [ self.get_full_template_path() ]
+      path_prefix = [ self.get_full_template_path() ] + topology.defaults.paths.templates.dirs
 
       if node.get('_daemon',False):
         if '_daemon_parent' in node:
           path_suffix.append(node._daemon_parent)
 
-    path = [ os.path.join(pf, sf) for pf in path_prefix for sf in path_suffix ]
+    return [ os.path.join(pf, sf) for pf in path_prefix for sf in path_suffix ] + path_prefix
+
+  def find_extra_template(
+        self,
+        node: Box,
+        fname: str,
+        topology: Box) -> typing.Optional[str]:
+
+    path = self.extra_template_paths(node,topology,fname)
+    if fname in node.get('config',[]):                    # Are we dealing with extra-config template?
+      fname = node.device
+
     if log.debug_active('clab'):
       print(f'Searching for {fname}.j2 in {path}')
 
@@ -138,7 +148,6 @@ class _Provider(Callback):
     cur_binds = node.get(f'{self.provider}.{outkey}',[])
     bind_dict = filemaps.mapping_to_dict(cur_binds)
     base_path = pathlib.Path(f"{self.provider}_files")
-    
     for file,mapping in map_dict.items():
       file = file.replace('@','.')
       # Check if mapping ends with :shared - if so, put it in the root provider folder
@@ -180,6 +189,7 @@ class _Provider(Callback):
     
     node_data = {
         **node.to_dict(),
+        'node_provider': devices.get_provider(node,topology.defaults),
         'hostvars': topology.nodes.to_dict(),
         'hosts': get_host_addresses(topology),
         'addressing': topology.addressing.to_dict()
@@ -229,12 +239,14 @@ class _Provider(Callback):
 
         continue
       try:
+        node_paths = self.extra_template_paths(node,topology,template_fname)
         templates.write_template(
           in_folder=os.path.dirname(template_name),
           j2=os.path.basename(template_name),
           data=node_data,
           out_folder=str(full_out_path.parent),
-          filename=full_out_path.name)
+          filename=full_out_path.name,
+          extra_path=node_paths)
       except Exception as ex:
         log.error(
           text=f"Error rendering {template_name} into {file_rel}",
