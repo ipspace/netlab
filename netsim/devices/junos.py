@@ -191,7 +191,10 @@ def as_prepend_quirk(node: Box, topology: Box) -> None:
           )
           pl_item.set.prepend.path = new_path
 
-def community_list_quirk(node: Box, topology: Box) -> None:
+"""
+Append 'large' to community values in large community lists
+"""
+def large_community_list_quirk(node: Box, topology: Box) -> None:
   for clist in node.get('routing.community',{}).values():
     if clist.get('type','') != 'large':
       continue
@@ -230,8 +233,8 @@ def community_set_quirk(node: Box, topology: Box) -> None:
           continue
 
         for ct in ['standard','extended','large']:          # Do the same fixup for all three community types
+          comm_action = 'set'                               # Figure out the operation (set/add/del)
           for comm in comm_struct.get(ct, []):
-            comm_action = 'set'                             # Figure out the operation (set/add/del)
             if 'delete' in cmod_kw:
               comm_action = 'del'
             elif comm_struct.get('append', False):
@@ -240,15 +243,14 @@ def community_set_quirk(node: Box, topology: Box) -> None:
             comm_list_name = f"{comm_name_prefix}_{comm_action}_{comm}"
             comm_list_name = comm_list_name.replace(':', '_')
             comm_list_name = comm_list_name.replace('.', '_')
+            comm_value = 'large:' + comm if ct == 'large' and 'large:' not in comm else comm
+            print(f'ct: {ct} comm: {comm} comm_value: {comm_value} list: {comm_list_name}')
             if log.debug_active('quirks'):
               print(f" - Found community set {comm} in policy {pl_name}, creating list {comm_list_name}")
-            comm_list = [{ "action": "permit", "_value": comm }]
+            comm_list = [{ "action": "permit", "_value": comm_value }]
             # community set will overwrite the community used for flow control - let's add it here if needed
             if comm_action == 'set' and pl_item.get('action', 'permit') == 'permit':
-              if ct == 'large':
-                comm_list.append({ "action": "permit", "_value": "65535:0:65536" })
-              else:
-                comm_list.append({ "action": "permit", "_value": "large:65535:0:65536" })
+              comm_list.append({ "action": "permit", "_value": "large:65535:0:65536" })
 
             # Note that the Junos implementation incorrectly used 'type' attribute to save the
             # community type that should be matched (standard/extended/large), not the type of
@@ -257,6 +259,8 @@ def community_set_quirk(node: Box, topology: Box) -> None:
               'type': ct,
               'value': comm_list,
             }
+
+            comm_action = 'add'
 
 def _bgp_neigh_import_policy_chain_build(neigh: Box, node: Box, vrf_name: str) -> None:
   need_to_have_neigh_policy = False
@@ -380,7 +384,7 @@ class JUNOS(_Quirks):
     check_evpn_ebgp(node,topology)
     policy_aspath_quirks(node,topology)
     as_prepend_quirk(node,topology)
-    community_list_quirk(node,topology)
+    large_community_list_quirk(node,topology)
     community_set_quirk(node,topology)
     default_originate_check(node,topology)
     build_bgp_import_export_policy_chain(node,topology)
