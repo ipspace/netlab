@@ -89,10 +89,10 @@ def adjust_topology(a_entry: Box, topology: Box) -> None:
     rp_value = rp_item.get('value',None)
     if rp_key:
       log.print_verbose(f'Replacing {rp_key} with {rp_value}')
-      topology.pop(rp_key)
+      topology.pop(rp_key,None)
       topology[rp_key] = rp_value
     else:
-      log.warning(f'No replacement key defined in {rp_item}',module='adjust_test')
+      log.warning(text=f'No replacement key defined in {rp_item}',module='adjust_test')
 
 def pre_transform(topology: Box) -> None:
   for a_entry in topology.get('_adjust',[]):
