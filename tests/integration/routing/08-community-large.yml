@@ -5,7 +5,7 @@ message: |
 defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
 defaults.paths.prepend.plugin: [ "topology:../plugin" ]
 
-plugin: [ bgp.policy ]
+plugin: [ bgp.policy, adjust_test ]
 module: [ bgp, routing ]
 
 groups:
@@ -13,6 +13,15 @@ groups:
     device: frr
     provider: clab
     members: [ p1, p2, x1 ]
+
+_adjust:
+- nodes: [ dut ]              # Remove 'delete community' test if the device does not support it
+  features: [ routing.policy.delete.community.large, routing.policy.delete.community ]
+  warning: Deleting of large communities is not implemented on device {device}
+  remove:
+  - nodes.dut.routing.policy.del_comm
+  - links[2].interfaces[0].bgp
+  - validate.dcomm_2
 
 nodes:
   dut:
