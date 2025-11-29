@@ -1293,13 +1293,14 @@ def check_duplicate_address(
         dup_dict[if_ip] = intf.node
 
 '''
-expand_groups -- expand link groups (identified by 'group' and 'members' attributes) into individual links
-appended to the end of the link list
+expand_groups -- expand link groups (identified by 'group' and 'members' attributes) into individual links.
+Retain the order of the expanded link group in the overall list of links
 
 This function is called from init_links very early in the topology initialization process
 and must do its own data validation.
 '''
 def expand_groups(topology: Box) -> None:
+  expanded_links = []
   for link in list(topology.links):                 # Iterate over existing links (that's why we have to cast it as a list)
     if not 'group' in link:                         # Not a group link, move on
       if 'members' in link:
@@ -1307,6 +1308,7 @@ def expand_groups(topology: Box) -> None:
           f'Link {link._linkname} is not a group link, but has a "members" list',
           log.IncorrectValue,
           'links')
+      expanded_links.append(link)
       continue
 
     try:                                            # Check that the group ID is a valid identifier
@@ -1334,10 +1336,10 @@ def expand_groups(topology: Box) -> None:
       member = adjust_link_object(member,f'{link._linkname}[{idx+1}]',topology.nodes)
       if member is not None:
         member = copy_group_data + member           # Copy group data into member link
-        topology.links.append(member)
+        expanded_links.append(member)
 
   # Finally, remove group links from the link list
-  topology.links = [ link for link in topology.links if not 'group' in link ]
+  topology.links = expanded_links
 
 def links_init(topology: Box) -> None:
   topology.links = adjust_link_list(topology.links,topology.nodes)
