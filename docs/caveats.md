@@ -100,19 +100,22 @@ nodes:
 (caveats-cat8000v)=
 ## Cisco Catalyst 8000v
 
-Licensing:
+**Licensing:**
 
-* Catalyst 8000v uses a boot-level license to enable additional features. The _netlab_-built Vagrant box configures the **premier** license, while the _vrnetlab_-built container has no add-on license. You can specify the license available to your Catalyst 8000v nodes using the node **cat8000v.license** attribute (set by default to **premier** for Vagrant VMs).
+* Catalyst 8000v uses a boot-level license to enable additional features. The *netlab*-built Vagrant box configures the **premier** license, while the older versions of *vrnetlab* built containers without the add-on license. Set the default parameter **defaults.devices.cat8000v.clab.cat8000v.license** to *none* if you're using Catalyst 8000v containers without the **premier** license.
 * The **premier** license is required for new-style VLAN configuration (see below), VXLAN, MPLS, SR-MPLS, and SRv6.
 
-VLAN caveats:
+**VLAN caveats:**
 
 * You cannot use reserved VLANs (1002..1005) on Catalyst 8000v
 * _netlab_ uses new-style VLAN configuration (service instance configured as a **member** of the **bridge-domain**) on Catalyst 8000v nodes with the **premier** license, and old-style VLAN configuration (**bridge-domain** configured under **service instance**) on other Catalyst 8000v nodes.
 
-Container caveats
+**Container caveats:**
 
-* _vrnetlab_ used **virtio** NICs for Catalyst 8000v VMs, causing problems with Ethernet subinterfaces. Use the latest *vrnetlab* code that [uses **vmxnet3** NICs](https://github.com/srl-labs/vrnetlab/pull/419).
+You should use the latest *vrnetlab* code to build (or rebuild) the Catalyst 8000v containers:
+
+* Older _vrnetlab_ code used **virtio** NICs for Catalyst 8000v VMs, causing problems with Ethernet subinterfaces. The latest *vrnetlab* code [uses **vmxnet3** NICs](https://github.com/srl-labs/vrnetlab/pull/419).
+* Older _vrnetlab_ code did not apply the **network-premier** license to the Catalyst 8000v VM. The [latest code](https://github.com/srl-labs/vrnetlab/pull/421) starts the VM while building the container, applies the license, and saves the snapshot of the modified disk image into the container image.
 
 See also [CSR 1000v](caveats-csr) and [Cisco IOSv](caveats-iosv) caveats.
 
