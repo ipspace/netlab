@@ -318,7 +318,6 @@ diag debug application httpsd -1
 ### OSPF Caveats
 
 * Fortinet implementation of OSPF configuration module does not implement per-interface OSPF areas. All interfaces belong to the OSPF area defined in the node data.
-* Fortinet configuration templates set OSPF network type based on number of neighbors, not based on **ospf.network_type** link/interface parameter.
 
 (caveats-frr)=
 ## FRRouting
