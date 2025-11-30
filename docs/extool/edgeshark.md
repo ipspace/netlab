@@ -4,6 +4,10 @@
 Edgeshark discovers the virtual communication on container hosts and can provide live capture with Wireshark with a single click.
 The capture function requires the installation of the [cshargextcap](https://github.com/siemens/cshargextcap) Wireshark plugin. The [plugin repository](https://github.com/siemens/cshargextcap) provides detailed installation instructions for multiple platforms.
 
+```{warning}
+As of December 2025, the _cshargextcap_ plugin does not work with Wireshark release 4.6; use Wireshark 4.4 instead.
+```
+
 Add the following lines to a lab topology file to use Edgeshark with _netlab_:
 
 ```
