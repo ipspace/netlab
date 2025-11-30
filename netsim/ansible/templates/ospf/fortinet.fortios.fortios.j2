@@ -1,5 +1,5 @@
-{% set vdom_traffic = netlab_vdom if (netlab_vdom is defined and netlab_vdom != vdom) else vdom %}
-{% set multi_vdom = True if netlab_vdom is defined and netlab_vdom != vdom else False %}
+{% set vdom_traffic = netlab_vdom|default(vdom) %}
+{% set multi_vdom = vdom_traffic != vdom %}
 
 {% if multi_vdom %}
 config vdom
@@ -27,6 +27,19 @@ config router ospf
 {%          if intf.ospf.cost is defined %}
             set cost {{ intf.ospf.cost }}
 {%          endif %}
+{%          if intf.ospf.timers.hello is defined %}
+            set hello-interval {{ intf.ospf.timers.hello }}
+{%          endif %}
+{%          if intf.ospf.timers.dead is defined %}
+            set dead-interval {{ intf.ospf.timers.dead }}
+{%          endif %}
+{%          if intf.ospf.priority is defined %}
+            set priority {{ intf.ospf.priority }}
+{%          endif %}
+{%          if intf.ospf.password is defined %}
+            set authentication text
+            set authentication-key {{ intf.ospf.password }}
+{%          endif %}
             set status enable
         next
 {%  endfor %}
@@ -49,3 +62,7 @@ config router ospf
 {%  endfor %}
     end
 end
+
+{% if multi_vdom %}
+end
+{% endif %}
