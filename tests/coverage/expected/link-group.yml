@@ -1,18 +1,31 @@
 input:
-- topology/input/link-group.yml
+- coverage/input/link-group.yml
 - package:topology-defaults.yml
 links:
-- _linkname: links[core][1]
+- _linkname: links[1]
+  bridge: input_1
   interfaces:
   - ifindex: 1
     ifname: Ethernet1
+    ipv4: 172.16.0.1/24
+    node: r1
+  linkindex: 1
+  node_count: 1
+  prefix:
+    ipv4: 172.16.0.0/24
+  role: stub
+  type: stub
+- _linkname: links[core][1]
+  interfaces:
+  - ifindex: 2
+    ifname: Ethernet2
     ipv4: 10.1.0.1/30
     node: r1
   - ifindex: 1
     ifname: Ethernet1
     ipv4: 10.1.0.2/30
     node: r2
-  linkindex: 1
+  linkindex: 2
   node_count: 2
   ospf:
     cost: 22
@@ -29,7 +42,7 @@ links:
     ifname: Ethernet1
     ipv4: 10.1.0.6/30
     node: r3
-  linkindex: 2
+  linkindex: 3
   node_count: 2
   ospf:
     cost: 22
@@ -38,37 +51,22 @@ links:
   type: p2p
 - _linkname: links[core][3]
   interfaces:
-  - ifindex: 2
-    ifname: Ethernet2
+  - ifindex: 3
+    ifname: Ethernet3
     ipv4: 10.1.0.9/30
     node: r1
   - ifindex: 2
     ifname: Ethernet2
     ipv4: 10.1.0.10/30
     node: r3
-  linkindex: 3
+  linkindex: 4
   node_count: 2
   ospf:
     cost: 22
   prefix:
     ipv4: 10.1.0.8/30
   type: p2p
-- _linkname: links[stub][1]
-  bridge: input_4
-  interfaces:
-  - ifindex: 3
-    ifname: Ethernet3
-    ipv4: 172.16.0.1/24
-    node: r1
-  linkindex: 4
-  node_count: 1
-  ospf:
-    cost: 42
-  prefix:
-    ipv4: 172.16.0.0/24
-  role: stub
-  type: stub
-- _linkname: links[stub][2]
+- _linkname: links[3]
   bridge: input_5
   interfaces:
   - ifindex: 3
@@ -77,25 +75,66 @@ links:
     node: r2
   linkindex: 5
   node_count: 1
-  ospf:
-    cost: 17
   prefix:
     ipv4: 172.16.1.0/24
   role: stub
   type: stub
-- _linkname: links[stub][3]
+- _linkname: links[stub][1]
   bridge: input_6
   interfaces:
-  - ifindex: 3
-    ifname: Ethernet3
-    ipv4: 172.16.2.3/24
-    node: r3
+  - ifindex: 4
+    ifname: Ethernet4
+    ipv4: 172.16.2.1/24
+    node: r1
   linkindex: 6
+  node_count: 1
+  ospf:
+    cost: 42
+  prefix:
+    ipv4: 172.16.2.0/24
+  role: stub
+  type: stub
+- _linkname: links[stub][2]
+  bridge: input_7
+  interfaces:
+  - ifindex: 4
+    ifname: Ethernet4
+    ipv4: 172.16.3.2/24
+    node: r2
+  linkindex: 7
   node_count: 1
   ospf:
     cost: 17
   prefix:
-    ipv4: 172.16.2.0/24
+    ipv4: 172.16.3.0/24
+  role: stub
+  type: stub
+- _linkname: links[stub][3]
+  bridge: input_8
+  interfaces:
+  - ifindex: 3
+    ifname: Ethernet3
+    ipv4: 172.16.4.3/24
+    node: r3
+  linkindex: 8
+  node_count: 1
+  ospf:
+    cost: 17
+  prefix:
+    ipv4: 172.16.4.0/24
+  role: stub
+  type: stub
+- _linkname: links[5]
+  bridge: input_9
+  interfaces:
+  - ifindex: 4
+    ifname: Ethernet4
+    ipv4: 172.16.5.3/24
+    node: r3
+  linkindex: 9
+  node_count: 1
+  prefix:
+    ipv4: 172.16.5.0/24
   role: stub
   type: stub
 module:
@@ -109,11 +148,24 @@ nodes:
     device: eos
     id: 1
     interfaces:
-    - ifindex: 1
+    - bridge: input_1
+      ifindex: 1
       ifname: Ethernet1
-      ipv4: 10.1.0.1/30
+      ipv4: 172.16.0.1/24
       linkindex: 1
       mac_address: caf0.0001.0001
+      name: r1 -> stub
+      neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: true
+      role: stub
+      type: stub
+    - ifindex: 2
+      ifname: Ethernet2
+      ipv4: 10.1.0.1/30
+      linkindex: 2
+      mac_address: caf0.0001.0002
       name: r1 -> r2
       neighbors:
       - ifname: Ethernet1
@@ -125,11 +177,11 @@ nodes:
         network_type: point-to-point
         passive: false
       type: p2p
-    - ifindex: 2
-      ifname: Ethernet2
+    - ifindex: 3
+      ifname: Ethernet3
       ipv4: 10.1.0.9/30
-      linkindex: 3
-      mac_address: caf0.0001.0002
+      linkindex: 4
+      mac_address: caf0.0001.0003
       name: r1 -> r3
       neighbors:
       - ifname: Ethernet2
@@ -141,12 +193,12 @@ nodes:
         network_type: point-to-point
         passive: false
       type: p2p
-    - bridge: input_4
-      ifindex: 3
-      ifname: Ethernet3
-      ipv4: 172.16.0.1/24
-      linkindex: 4
-      mac_address: caf0.0001.0003
+    - bridge: input_6
+      ifindex: 4
+      ifname: Ethernet4
+      ipv4: 172.16.2.1/24
+      linkindex: 6
+      mac_address: caf0.0001.0004
       name: r1 -> stub
       neighbors: []
       ospf:
@@ -188,11 +240,11 @@ nodes:
     - ifindex: 1
       ifname: Ethernet1
       ipv4: 10.1.0.2/30
-      linkindex: 1
+      linkindex: 2
       mac_address: caf0.0002.0001
       name: r2 -> r1
       neighbors:
-      - ifname: Ethernet1
+      - ifname: Ethernet2
         ipv4: 10.1.0.1/30
         node: r1
       ospf:
@@ -204,7 +256,7 @@ nodes:
     - ifindex: 2
       ifname: Ethernet2
       ipv4: 10.1.0.5/30
-      linkindex: 2
+      linkindex: 3
       mac_address: caf0.0002.0002
       name: r2 -> r3
       neighbors:
@@ -223,6 +275,19 @@ nodes:
       ipv4: 172.16.1.2/24
       linkindex: 5
       mac_address: caf0.0002.0003
+      name: r2 -> stub
+      neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: true
+      role: stub
+      type: stub
+    - bridge: input_7
+      ifindex: 4
+      ifname: Ethernet4
+      ipv4: 172.16.3.2/24
+      linkindex: 7
+      mac_address: caf0.0002.0004
       name: r2 -> stub
       neighbors: []
       ospf:
@@ -264,7 +329,7 @@ nodes:
     - ifindex: 1
       ifname: Ethernet1
       ipv4: 10.1.0.6/30
-      linkindex: 2
+      linkindex: 3
       mac_address: caf0.0003.0001
       name: r3 -> r2
       neighbors:
@@ -280,11 +345,11 @@ nodes:
     - ifindex: 2
       ifname: Ethernet2
       ipv4: 10.1.0.10/30
-      linkindex: 3
+      linkindex: 4
       mac_address: caf0.0003.0002
       name: r3 -> r1
       neighbors:
-      - ifname: Ethernet2
+      - ifname: Ethernet3
         ipv4: 10.1.0.9/30
         node: r1
       ospf:
@@ -293,17 +358,30 @@ nodes:
         network_type: point-to-point
         passive: false
       type: p2p
-    - bridge: input_6
+    - bridge: input_8
       ifindex: 3
       ifname: Ethernet3
-      ipv4: 172.16.2.3/24
-      linkindex: 6
+      ipv4: 172.16.4.3/24
+      linkindex: 8
       mac_address: caf0.0003.0003
       name: r3 -> stub
       neighbors: []
       ospf:
         area: 0.0.0.0
         cost: 17
+        passive: true
+      role: stub
+      type: stub
+    - bridge: input_9
+      ifindex: 4
+      ifname: Ethernet4
+      ipv4: 172.16.5.3/24
+      linkindex: 9
+      mac_address: caf0.0003.0004
+      name: r3 -> stub
+      neighbors: []
+      ospf:
+        area: 0.0.0.0
         passive: true
       role: stub
       type: stub
