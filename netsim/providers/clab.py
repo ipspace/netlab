@@ -275,7 +275,12 @@ class Containerlab(_Provider):
 
   def capture_command(self, node: Box, topology: Box, args: argparse.Namespace) -> list:
     cmd = strings.string_to_list(topology.defaults.netlab.capture.command)
-    cmd = strings.eval_format_list(cmd,{'intf': args.intf})
+    #
+    # For some devices, containerlab uses the device interface names for container interface names.
+    # However, as Linux doesn't like '/' in device names (one has to wonder why ;), containerlab
+    # replaces '/' with '-', so we have to do the same
+    #
+    cmd = strings.eval_format_list(cmd,{'intf': args.intf.replace('/','-')})
     node_name = self.get_node_name(node.name,topology)
     return strings.string_to_list(f'sudo ip netns exec {node_name}') + cmd
 
