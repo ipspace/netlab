@@ -72,10 +72,17 @@ def render_template(
 #
 # write_template: Applies a custom template (in_folder/j2) and writes it to the given file path (out_folder/filename)
 #
-def write_template(in_folder: str, j2: str, data: typing.Dict, out_folder: str, filename: str) -> None:
+def write_template(
+        in_folder: str,
+        j2: str,
+        data: typing.Dict,
+        out_folder: str,
+        filename: str,
+        extra_path: typing.Optional[list] = None) -> None:
   if debug_active('template'):
     print(f"write_template {in_folder}/{j2} -> {out_folder}/{filename}")
-  r_text = render_template(data=data,j2_file=j2,path=in_folder)       # Make sure we fail before creating any file(s)
+  # Make sure we fail before creating any file(s)
+  r_text = render_template(data=data,j2_file=j2,path=in_folder,extra_path=extra_path)
 
   pathlib.Path(out_folder).mkdir(parents=True, exist_ok=True)
   out_file = f"{out_folder}/{filename}"
