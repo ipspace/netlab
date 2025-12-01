@@ -76,7 +76,6 @@ class _Provider(Callback):
       if node.get('_daemon',False):
         if '_daemon_parent' in node:
           path_suffix.append(node._daemon_parent)
-        path_prefix.append(str(_files.get_moddir() / 'daemons'))
 
     path = [ os.path.join(pf, sf) for pf in path_prefix for sf in path_suffix ]
     if log.debug_active('clab'):
@@ -237,8 +236,10 @@ class _Provider(Callback):
           out_folder=str(full_out_path.parent),
           filename=full_out_path.name)
       except Exception as ex:
-        log.fatal(
-          text=f"Error rendering {template_name} into {file_rel}\n{strings.extra_data_printout(str(ex))}",
+        log.error(
+          text=f"Error rendering {template_name} into {file_rel}",
+          more_data = [f'{type(ex).__name__}: {str(ex)}'],
+          category=log.FatalError,
           module=self.provider)
 
       if not log.QUIET:
