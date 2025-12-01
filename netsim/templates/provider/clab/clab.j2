@@ -16,6 +16,39 @@ topology:
   nodes:
 {% for name,n in nodes.items() if not (n.unmanaged|default(False)) %}
 {%   set clab = n.clab|default({}) %}
+{%   set kind = clab.kind | default(n.device) %}
+{%   if kind == 'k8s-control-plane' %}
+{%     set cluster_name = name.rsplit('-control-plane', 1)[0] %}
+    {{ cluster_name }}:
+      kind: k8s-kind
+{%    if clab.image %}
+      image: {{ clab.image }}
+{%    endif %}
+      startup-config: {{ cluster_name }}-config.yml
+      extras:
+        k8s_kind:
+          deploy:
+            wait: 0s
+    {{ name }}:
+      kind: ext-container
+{%     for cset in defaults.providers.clab.node_config_attributes if clab[cset] is defined %}
+{%       if clab[cset] is string %}
+      {{ cset }}: '{{ clab[cset] }}'
+{%       else %}
+      {{ cset }}: {{ clab[cset] }}
+{%       endif %}
+{%     endfor %}
+{%   elif kind == 'k8s-worker' %}
+    {{ name }}:
+      kind: ext-container
+{%     for cset in defaults.providers.clab.node_config_attributes if clab[cset] is defined %}
+{%       if clab[cset] is string %}
+      {{ cset }}: '{{ clab[cset] }}'
+{%       else %}
+      {{ cset }}: {{ clab[cset] }}
+{%       endif %}
+{%     endfor %}
+{%   else %}
     {{ name }}:
 {%   if 'network-mode' in clab %}
       network-mode: {{ clab['network-mode'] }}
@@ -28,37 +61,37 @@ topology:
       mgmt-ipv6: {{ n.mgmt.ipv6 }}
 {%     endif %}
 {%   endif %}
-{%   set kind = clab.kind | default(n.device) %}
       kind: {{ kind }}
-{%   if kind == 'linux' and 'restart-policy' not in clab %}
+{%     if kind == 'linux' and 'restart-policy' not in clab %}
       restart-policy: 'no'
-{%   endif %}
-{%   for cset in defaults.providers.clab.node_config_attributes if clab[cset] is defined %}
-{%     if clab[cset] is string %}
-      {{ cset }}: '{{ clab[cset] }}'
-{%     else %}
-      {{ cset }}: {{ clab[cset] }}
 {%     endif %}
-{%   endfor %}
+{%     for cset in defaults.providers.clab.node_config_attributes if clab[cset] is defined %}
+{%       if clab[cset] is string %}
+      {{ cset }}: '{{ clab[cset] }}'
+{%       else %}
+      {{ cset }}: {{ clab[cset] }}
+{%       endif %}
+{%     endfor %}
       image: {{ clab.image|default(n.box) }}
       runtime: {{ clab.runtime|default(defaults.providers.clab.runtime) }}
-{%   if groups is defined %}
+{%     if groups is defined %}
       group: {% for g in groups if n.name in groups[g].members %}{{'' if loop.first else ','}}{{g}}{% endfor %}
 
-{%   endif %}
-{%   if 'srl-agents' in clab %}
+{%     endif %}
+{%     if 'srl-agents' in clab %}
       extras:
         srl-agents: {{ clab['srl-agents'] }}
-{%   endif %}
-{%   if 'binds' in clab %}
+{%     endif %}
+{%     if 'binds' in clab %}
       binds:
-{%     for bind_item in clab.binds %}
+{%       for bind_item in clab.binds %}
       - {{ bind_item }}
-{%     endfor %}
-{%   endif %}
-{%   if 'startup-config' in clab %}
-{%     set cfg = clab['startup-config'] %}
+{%       endfor %}
+{%     endif %}
+{%     if 'startup-config' in clab %}
+{%       set cfg = clab['startup-config'] %}
       startup-config: {{ ("|\n" + cfg) | indent(8) if '\n' in cfg else cfg }}
+{%     endif %}
 {%   endif %}
 {% endfor %}
 
