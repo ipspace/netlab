@@ -525,7 +525,7 @@ def cleanup_daemon_config(n: Box) -> None:
 
     kn = k.replace('@','.')                                 # A workaround for aggressive de-dotting
     # Leave config mappings for device configuration, module configuration, or extra configs
-    if kn == n.device or kn in n.get('module',[]) or kn in n.get('config',[]):
+    if kn == n.device or kn in n.get('module',[]) or kn in n.get('config',[]) or kn == 'initial':
       continue
 
     n._daemon_config.pop(k,None)
