@@ -21,7 +21,7 @@ skipping: [ce2]
 skipping: [dut]
 skipping: [p1]
 skipping: [p2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ssh.yml for pe2 => (item=ssh)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/ssh.yml for pe2 => (item=ssh)
 
 TASK [Check if 'sshpass' is installed] *****************************************
 ok: [pe2 -> localhost]
@@ -41,8 +41,8 @@ TASK [Find device readiness script] ********************************************
 ok: [ce1]
 ok: [ce2]
 ok: [dut]
-ok: [p1]
 ok: [p2]
+ok: [p1]
 ok: [pe2]
 
 TASK [Wait for device to become ready] *****************************************
@@ -54,7 +54,7 @@ skipping: [p1]
 skipping: [p2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, pe2, p1, p2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, pe2, p1, p2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [ce1]
@@ -83,9 +83,9 @@ skipping: [p2]
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [ce1]
 ok: [ce2]
-ok: [p1]
 ok: [dut]
 ok: [p2]
+ok: [p1]
 ok: [pe2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -111,16 +111,16 @@ skipping: [ce2]
 skipping: [dut]
 skipping: [p1]
 skipping: [p2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for pe2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for pe2
 
-TASK [eos_config: deploying normalize from /home/pipi/netlab_gh/netsim/ansible/templates/normalize/eos.j2] ***
+TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/eos.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
 changed: [pe2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, pe2, p1, p2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, pe2, p1, p2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [ce1]
@@ -482,6 +482,57 @@ ok: [dut] =>
     vtysh -f /tmp/config
     !
     exit 0
+ok: [pe2] => 
+  msg: |-
+    initial configuration for pe2
+    =========================================
+    hostname pe2
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    no ipv6 unicast-routing
+    !
+    vrf instance tenant
+     rd 65000:1
+    !
+    ip routing vrf tenant
+    !
+    !
+    ip host ce1 10.0.0.1 10.1.0.13
+    ip host ce2 10.0.0.2 10.1.0.17
+    ip host dut 10.0.0.3 10.1.0.1
+    ip host dut-tenant 10.1.0.14
+    ip host pe2-tenant 10.1.0.18
+    ip host p1 10.0.0.5 10.1.0.2 10.1.0.5
+    ip host p2 10.0.0.6 10.1.0.6 10.1.0.9
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ip address 10.0.0.4/32
+    !
+    interface Ethernet1
+     no switchport
+     description pe2 -> p2
+     ip address 10.1.0.10/30
+     mac-address caf0.0004.0001
+    !
+     no shutdown
+    !
+    interface Ethernet2
+     no switchport
+     vrf tenant
+     description pe2 -> ce2 [external]
+     ip address 10.1.0.18/30
+     mac-address caf0.0004.0002
+    !
+     no shutdown
+    !
 ok: [p1] => 
   msg: |-
     initial configuration for p1
@@ -597,57 +648,6 @@ ok: [p1] =>
     vtysh -f /tmp/config
     !
     exit 0
-ok: [pe2] => 
-  msg: |-
-    initial configuration for pe2
-    =========================================
-    hostname pe2
-    !
-    logging monitor debugging
-    aaa authorization exec default local
-    !
-    lldp run
-    ip routing
-    no ipv6 unicast-routing
-    !
-    vrf instance tenant
-     rd 65000:1
-    !
-    ip routing vrf tenant
-    !
-    !
-    ip host ce1 10.0.0.1 10.1.0.13
-    ip host ce2 10.0.0.2 10.1.0.17
-    ip host dut 10.0.0.3 10.1.0.1
-    ip host dut-tenant 10.1.0.14
-    ip host pe2-tenant 10.1.0.18
-    ip host p1 10.0.0.5 10.1.0.2 10.1.0.5
-    ip host p2 10.0.0.6 10.1.0.6 10.1.0.9
-    !
-    interface Management0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Loopback0
-     ip address 10.0.0.4/32
-    !
-    interface Ethernet1
-     no switchport
-     description pe2 -> p2
-     ip address 10.1.0.10/30
-     mac-address caf0.0004.0001
-    !
-     no shutdown
-    !
-    interface Ethernet2
-     no switchport
-     vrf tenant
-     description pe2 -> ce2 [external]
-     ip address 10.1.0.18/30
-     mac-address caf0.0004.0002
-    !
-     no shutdown
-    !
 ok: [p2] => 
   msg: |-
     initial configuration for p2
@@ -765,8 +765,8 @@ ok: [p2] =>
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for ce1, ce2, dut, p1, p2
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for pe2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for ce1, ce2, dut, p1, p2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for pe2
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [ce1 -> localhost]
@@ -779,14 +779,14 @@ skipping: [p1]
 skipping: [p2]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for ce1, ce2, dut, p1, p2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for ce1, ce2, dut, p1, p2
 
 TASK [template] ****************************************************************
 changed: [p1]
 changed: [dut]
-changed: [ce2]
-changed: [p2]
 changed: [ce1]
+changed: [p2]
+changed: [ce2]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -795,43 +795,43 @@ ok: [dut]
 ok: [p2]
 ok: [p1]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [ce1]
 changed: [ce2]
-changed: [p2]
 changed: [dut]
+changed: [p2]
 changed: [p1]
 
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [ce1]
 skipping: [ce2]
 skipping: [dut]
 skipping: [p1]
 skipping: [p2]
 
-TASK [eos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/eos.j2] ***
+TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
 changed: [pe2]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [ce1]
-ok: [ce2]
 ok: [dut]
+ok: [ce2]
 ok: [p1]
 ok: [p2]
 ok: [pe2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, pe2, p1, p2 => (item=ospf)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, pe2, p1, p2 => (item=bgp)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, pe2, p1, p2 => (item=mpls)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, pe2, p1, p2 => (item=vrf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, pe2, p1, p2 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, pe2, p1, p2 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, pe2, p1, p2 => (item=mpls)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, pe2, p1, p2 => (item=vrf)
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [ce1]
-ok: [ce2]
 ok: [dut]
+ok: [ce2]
 ok: [p1]
 ok: [p2]
 ok: [pe2]
@@ -891,64 +891,6 @@ ok: [dut] =>
   
     !
     do write
-ok: [p1] => 
-  msg: |-
-    ospf configuration for p1
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.5
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! p1 -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-    interface eth2
-    ! p1 -> p2
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
-ok: [pe2] => 
-  msg: |-
-    ospf configuration for pe2
-    =========================================
-    !
-    ! OSPFv2 configuration
-    !
-    router ospf 1
-     router-id 10.0.0.4
-     interface unnumbered hello mask tx 0.0.0.0
-     timers spf delay initial 100 200 500
-     timers lsa rx min interval 100
-     timers lsa tx delay initial 100 200 500
-  
-  
-    !
-    interface Loopback0
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface Ethernet1
-    ! pe2 -> p2
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
 ok: [p2] => 
   msg: |-
     ospf configuration for p2
@@ -982,34 +924,92 @@ ok: [p2] =>
   
     !
     do write
+ok: [pe2] => 
+  msg: |-
+    ospf configuration for pe2
+    =========================================
+    !
+    ! OSPFv2 configuration
+    !
+    router ospf 1
+     router-id 10.0.0.4
+     interface unnumbered hello mask tx 0.0.0.0
+     timers spf delay initial 100 200 500
+     timers lsa rx min interval 100
+     timers lsa tx delay initial 100 200 500
+  
+  
+    !
+    interface Loopback0
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface Ethernet1
+    ! pe2 -> p2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+ok: [p1] => 
+  msg: |-
+    ospf configuration for p1
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.5
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! p1 -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface eth2
+    ! p1 -> p2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [ce1]
 skipping: [ce2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for dut, p1, p2
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for pe2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, p1, p2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for pe2
 
 TASK [template] ****************************************************************
-changed: [p2]
 changed: [p1]
 changed: [dut]
+changed: [p2]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
 ok: [p1]
 ok: [p2]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [dut]
 skipping: [p1]
 skipping: [p2]
 
-TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [dut]
 changed: [p1]
 changed: [p2]
 
-TASK [eos_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/eos.j2] ***
+TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/eos.j2] ***
 changed: [pe2]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
@@ -1022,10 +1022,10 @@ ok: [pe2]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [ce1]
-ok: [ce2]
 skipping: [p1]
-ok: [dut]
+ok: [ce2]
 skipping: [p2]
+ok: [dut]
 ok: [pe2]
 
 TASK [fail] ********************************************************************
@@ -1193,30 +1193,30 @@ ok: [pe2] =>
 TASK [Deploy bgp configuration] ************************************************
 skipping: [p1]
 skipping: [p2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for ce1, ce2, dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for pe2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for ce1, ce2, dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for pe2
 
 TASK [template] ****************************************************************
 changed: [dut]
-changed: [ce1]
 changed: [ce2]
+changed: [ce1]
 
 TASK [set_fact] ****************************************************************
-ok: [ce2]
 ok: [ce1]
+ok: [ce2]
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [ce1]
 skipping: [ce2]
 skipping: [dut]
 
-TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [ce1]
-changed: [ce2]
 changed: [dut]
+changed: [ce2]
 
-TASK [eos_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/eos.j2] ***
+TASK [eos_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/eos.j2] ***
 changed: [pe2]
 
 TASK [Figure out whether to deploy the module mpls on current device] **********
@@ -1247,8 +1247,8 @@ TASK [Find configuration deployment deploy_script for mpls] ********************
 skipping: [ce1]
 skipping: [ce2]
 ok: [dut]
-ok: [p1]
 ok: [p2]
+ok: [p1]
 ok: [pe2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -1321,36 +1321,6 @@ ok: [p2] =>
     vtysh -f /tmp/config
   
     exit 0
-ok: [pe2] => 
-  msg: |-
-    mpls configuration for pe2
-    =========================================
-    !
-    mpls ip
-    mpls icmp ttl-exceeded tunneling
-    !
-    mpls ldp
-      router-id 10.0.0.4
-      transport-address interface Loopback0
-      interface disabled default
-      no shutdown
-    !
-    interface Loopback0
-      mpls ldp interface
-    !
-    interface Ethernet1
-      mpls ip
-      mpls ldp interface
-    !
-    !
-    router bgp 65001
-  
-     neighbor 10.0.0.3 send-community add extended
-    !
-     address-family vpn-ipv4
-    !
-      neighbor 10.0.0.3 activate
-      exit
 ok: [p1] => 
   msg: |-
     mpls configuration for p1
@@ -1382,42 +1352,72 @@ ok: [p1] =>
     vtysh -f /tmp/config
   
     exit 0
+ok: [pe2] => 
+  msg: |-
+    mpls configuration for pe2
+    =========================================
+    !
+    mpls ip
+    mpls icmp ttl-exceeded tunneling
+    !
+    mpls ldp
+      router-id 10.0.0.4
+      transport-address interface Loopback0
+      interface disabled default
+      no shutdown
+    !
+    interface Loopback0
+      mpls ldp interface
+    !
+    interface Ethernet1
+      mpls ip
+      mpls ldp interface
+    !
+    !
+    router bgp 65001
+  
+     neighbor 10.0.0.3 send-community add extended
+    !
+     address-family vpn-ipv4
+    !
+      neighbor 10.0.0.3 activate
+      exit
 
 TASK [Deploy mpls configuration] ***********************************************
 skipping: [ce1]
 skipping: [ce2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for dut, p1, p2
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for pe2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, p1, p2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for pe2
 
 TASK [template] ****************************************************************
 changed: [p2]
-changed: [dut]
 changed: [p1]
+changed: [dut]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
 ok: [p1]
 ok: [p2]
 
-TASK [run /tmp/config.sh to deploy mpls config from /home/pipi/netlab_gh/netsim/ansible/templates/mpls/frr.j2] ***
-changed: [dut]
+TASK [run /tmp/config.sh to deploy mpls config from /home/pipi/net101/tools/netsim/ansible/templates/mpls/frr.j2] ***
 changed: [p2]
 changed: [p1]
+changed: [dut]
 
-TASK [run vtysh to import mpls config from /home/pipi/netlab_gh/netsim/ansible/templates/mpls/frr.j2] ***
+TASK [run vtysh to import mpls config from /home/pipi/net101/tools/netsim/ansible/templates/mpls/frr.j2] ***
 skipping: [dut]
 skipping: [p1]
 skipping: [p2]
 
-TASK [eos_config: deploying mpls from /home/pipi/netlab_gh/netsim/ansible/templates/mpls/eos.j2] ***
+TASK [eos_config: deploying mpls from /home/pipi/net101/tools/netsim/ansible/templates/mpls/eos.j2] ***
 changed: [pe2]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [ce1]
 ok: [ce2]
 ok: [dut]
-ok: [p1]
 ok: [p2]
+ok: [p1]
 ok: [pe2]
 
 TASK [Find configuration template for vrf] *************************************
@@ -1530,8 +1530,8 @@ skipping: [ce1]
 skipping: [ce2]
 skipping: [p1]
 skipping: [p2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for pe2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for pe2
 
 TASK [template] ****************************************************************
 changed: [dut]
@@ -1539,13 +1539,13 @@ changed: [dut]
 TASK [set_fact] ****************************************************************
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy vrf config from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/frr.j2] ***
 changed: [dut]
 
-TASK [run vtysh to import vrf config from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/frr.j2] ***
+TASK [run vtysh to import vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/frr.j2] ***
 skipping: [dut]
 
-TASK [eos_config: deploying vrf from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/eos.j2] ***
+TASK [eos_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/eos.j2] ***
 changed: [pe2]
 
 PLAY [Deploy custom deployment templates] **************************************

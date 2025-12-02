@@ -17,7 +17,7 @@ TASK [Generic readiness tests] *************************************************
 skipping: [t_1300]
 skipping: [t_1400]
 skipping: [dut]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ssh.yml for p1 => (item=ssh)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/ssh.yml for p1 => (item=ssh)
 
 TASK [Check if 'sshpass' is installed] *****************************************
 ok: [p1 -> localhost]
@@ -35,8 +35,8 @@ ok: [p1] =>
 
 TASK [Find device readiness script] ********************************************
 ok: [t_1300]
-ok: [t_1400]
 ok: [dut]
+ok: [t_1400]
 ok: [p1]
 
 TASK [Wait for device to become ready] *****************************************
@@ -46,7 +46,7 @@ skipping: [t_1400]
 skipping: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for p1, t_1300, t_1400, dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for p1, t_1300, t_1400, dut
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [t_1300]
@@ -56,8 +56,8 @@ ok: [p1]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [t_1300]
-ok: [t_1400]
 ok: [dut]
+ok: [t_1400]
 ok: [p1]
 
 TASK [fail] ********************************************************************
@@ -88,16 +88,16 @@ TASK [Deploy normalize configuration] ******************************************
 skipping: [t_1300]
 skipping: [t_1400]
 skipping: [dut]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for p1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for p1
 
-TASK [eos_config: deploying normalize from /home/pipi/netlab_gh/netsim/ansible/templates/normalize/eos.j2] ***
+TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/eos.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
 changed: [p1]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for p1, t_1300, t_1400, dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for p1, t_1300, t_1400, dut
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [t_1300]
@@ -202,6 +202,47 @@ ok: [t_1400] =>
     set -e
     ip -6 addr add 2001:db8:1:1::4/64 dev eth1
     ip link set dev eth1 mtu 1500
+ok: [p1] => 
+  msg: |-
+    initial configuration for p1
+    =========================================
+    hostname p1
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    ipv6 unicast-routing
+    !
+    !
+    ip host dut 10.0.0.1 172.16.0.1 172.16.1.1 172.16.2.1
+    ip host t1300 172.16.2.3
+    ip host t1400 172.16.1.4
+    ipv6 host dut 2001:db8:0:1::1
+    ipv6 host t1300 2001:db8:1:2::3
+    ipv6 host t1400 2001:db8:1:1::4
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ip address 10.0.0.2/32
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:0:2::1/64
+    !
+    interface Ethernet1
+     no switchport
+     mtu 1500
+     description p1 -> dut
+     ip address 172.16.0.2/24
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:1::2/64
+     mac-address caf0.0002.0001
+    !
+     no shutdown
+    !
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -341,54 +382,13 @@ ok: [dut] =>
     vtysh -f /tmp/config
     !
     exit 0
-ok: [p1] => 
-  msg: |-
-    initial configuration for p1
-    =========================================
-    hostname p1
-    !
-    logging monitor debugging
-    aaa authorization exec default local
-    !
-    lldp run
-    ip routing
-    ipv6 unicast-routing
-    !
-    !
-    ip host dut 10.0.0.1 172.16.0.1 172.16.1.1 172.16.2.1
-    ip host t1300 172.16.2.3
-    ip host t1400 172.16.1.4
-    ipv6 host dut 2001:db8:0:1::1
-    ipv6 host t1300 2001:db8:1:2::3
-    ipv6 host t1400 2001:db8:1:1::4
-    !
-    interface Management0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Loopback0
-     ip address 10.0.0.2/32
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:0:2::1/64
-    !
-    interface Ethernet1
-     no switchport
-     mtu 1500
-     description p1 -> dut
-     ip address 172.16.0.2/24
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:1::2/64
-     mac-address caf0.0002.0001
-    !
-     no shutdown
-    !
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for p1
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for t_1300, t_1400
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for p1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for t_1300, t_1400
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for dut
 
-TASK [eos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/eos.j2] ***
+TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
 changed: [p1]
 
 TASK [Define script filename and determine whether to execute in netns] ********
@@ -396,10 +396,10 @@ ok: [t_1300]
 ok: [t_1400]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [t_1400 -> localhost]
 changed: [t_1300 -> localhost]
+changed: [t_1400 -> localhost]
 
-TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [t_1300 -> localhost]
 changed: [t_1400 -> localhost]
 
@@ -407,17 +407,17 @@ TASK [Copy script into running container at /tmp/config-t_1300_initial.sh] *****
 skipping: [t_1300]
 skipping: [t_1400]
 
-TASK [Execute /tmp/config-t_1300_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Execute /tmp/config-t_1300_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 skipping: [t_1300]
 skipping: [t_1400]
 
-TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [t_1300 -> localhost]
+TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [t_1400 -> localhost]
+changed: [t_1300 -> localhost]
 
-TASK [Remove temporary file /tmp/t_1300_initial-m5u7ra33.sh] *******************
-changed: [t_1300 -> localhost]
+TASK [Remove temporary file /tmp/t_1300_initial-kqi3ujcv.sh] *******************
 changed: [t_1400 -> localhost]
+changed: [t_1300 -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [dut -> localhost]
@@ -426,7 +426,7 @@ TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [dut]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for dut
 
 TASK [template] ****************************************************************
 changed: [dut]
@@ -434,10 +434,10 @@ changed: [dut]
 TASK [set_fact] ****************************************************************
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [dut]
 
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -448,7 +448,7 @@ ok: [t_1400]
 ok: [p1]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for p1, t_1300, t_1400 => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for p1, t_1300, t_1400 => (item=routing)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [t_1300]
@@ -535,19 +535,16 @@ ok: [p1] =>
     =========================================
     !
     !
-    ! AS-path access lists
-    !
-    !
     ! Static routes
     !
     ip route 0.0.0.0/0 Ethernet1 172.16.0.1
     ipv6 route ::/0 Ethernet1 2001:db8:1::1
 
 TASK [Deploy routing configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for p1
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for t_1300, t_1400
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for p1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for t_1300, t_1400
 
-TASK [eos_config: deploying routing from /home/pipi/netlab_gh/netsim/ansible/templates/routing/eos.j2] ***
+TASK [eos_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/templates/routing/eos.j2] ***
 changed: [p1]
 
 TASK [Define script filename and determine whether to execute in netns] ********
@@ -558,7 +555,7 @@ TASK [Create a temporary file for the rendered script] *************************
 changed: [t_1300 -> localhost]
 changed: [t_1400 -> localhost]
 
-TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [t_1300 -> localhost]
 changed: [t_1400 -> localhost]
 
@@ -566,15 +563,15 @@ TASK [Copy script into running container at /tmp/config-t_1300_routing.sh] *****
 skipping: [t_1300]
 skipping: [t_1400]
 
-TASK [Execute /tmp/config-t_1300_routing.sh to deploy routing config based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
+TASK [Execute /tmp/config-t_1300_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
 skipping: [t_1300]
 skipping: [t_1400]
 
-TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
+TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
 changed: [t_1300 -> localhost]
 changed: [t_1400 -> localhost]
 
-TASK [Remove temporary file /tmp/t_1300_routing-4rjp1lul.sh] *******************
+TASK [Remove temporary file /tmp/t_1300_routing-55w167wy.sh] *******************
 changed: [t_1300 -> localhost]
 changed: [t_1400 -> localhost]
 
