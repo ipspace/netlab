@@ -34,8 +34,8 @@ Jinja2 templates are used together with **_device_\_config** Ansible modules to 
 
 ```text
 $ netlab initial -h
-usage: netlab initial [-h] [--log] [-v] [-q] [-i] [-m [MODULE]] [-c] [--ready] [--fast]
-                      [-o [OUTPUT]] [--instance INSTANCE]
+usage: netlab initial [-h] [--log] [-v] [-q] [-i] [-m [MODULE]] [-l LIMIT] [-c]
+                      [--ready] [--fast] [-o [OUTPUT]] [--clean] [--instance INSTANCE]
 
 Initial device configurations
 
@@ -45,17 +45,20 @@ options:
   -v, --verbose         Verbose logging (add multiple flags for increased verbosity)
   -q, --quiet           Report only major errors
   -i, --initial         Deploy just the initial configuration
-  -m [MODULE], --module [MODULE]
+  -m, --module [MODULE]
                         Deploy module-specific configuration (optionally including a
                         list of modules separated by commas)
+  -l, --limit LIMIT     Limit the operation to a subset of nodes
   -c, --custom          Deploy custom configuration templates (specified in "config"
                         group or node attribute)
   --ready               Wait for devices to become ready
   --fast                Use "free" strategy in Ansible playbook for faster configuration
                         deployment
-  -o [OUTPUT], --output [OUTPUT]
+  -o, --output [OUTPUT]
                         Create a directory with initial configurations instead of
                         deploying them (default output directory: config)
+  --clean               Clean up the output directory before creating the initial
+                        configuration
   --instance INSTANCE   Specify lab instance to configure
 
 All other arguments are passed directly to ansible-playbook
@@ -119,10 +122,10 @@ You'll find more details in _[](custom-config)_ and _[](dev-find-custom)_ docume
 
 The **netlab initial** command deploys all initial device configurations when started without additional parameters. To control the deployment of initial configurations:
 
-* use the `-i` flag to deploy initial device configurations. 
-* use the `-m` flag to deploy module-specific configurations. 
-* use the `-m` flag followed by a module name (example: `-m ospf -m bgp`) to deploy device configuration for specific modules. You can use the `-m` flag multiple times.
-* use the `-c` flag to deploy custom configuration templates. 
+* Use the `-i` flag to deploy initial device configurations.
+* Use the `-m` flag to deploy all module-specific configurations.
+* Use the `-m` flag followed by a module name (example: `-m ospf`) or a comma-separated list of module names (example: `-m ospf,bgp`) to deploy device configuration for specific module(s).
+* Use the `-c` flag to deploy custom configuration templates.
 
 All unrecognized parameters are passed to the internal `initial-config.ansible` Ansible playbook. You can use **ansible-playbook** CLI parameters to modify the configuration deployment, for example:
 

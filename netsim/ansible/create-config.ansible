@@ -7,19 +7,11 @@
     config_dir: "{{ lookup('env','PWD') }}/config"
     node_provider: "{{ provider|default(netlab_provider) }}"
   tasks:
-  - block:
-    - name: Set variables that cannot be set with vars
-      set_fact:
-        netlab_device_type: "{{ netlab_device_type|default(ansible_network_os) }}"
-        netlab_interfaces: "{{ ([ loopback ] if loopback is defined else []) + interfaces|default([]) }}"
-
-    - name: Create config directory in {{ config_dir }}
-      file:
-        path: "{{ config_dir }}"
-        state: directory
-      run_once: true
-
-    delegate_to: localhost
+  - name: Set variables that cannot be set with vars
+    set_fact:
+      netlab_device_type: "{{ netlab_device_type|default(ansible_network_os) }}"
+      netlab_interfaces: "{{ ([ loopback ] if loopback is defined else []) + interfaces|default([]) }}"
+    tags: [ always ]
 
   - name: Create initial device configuration
     include_tasks: "tasks/create-config.yml"
@@ -28,6 +20,8 @@
         vars:
           config_item: initial
           paths: "{{ paths_templates.dirs }}"
+        tags: [ always ]
+    tags: [ initial ]
 
 - name: Create module-specific configurations
   hosts: modules
@@ -50,9 +44,11 @@
         loop_var: config_item
       args:
         apply:
+          tags: [ always ]
           vars:
             paths: "{{ paths_templates.dirs }}"
 
+    tags: [ module ]
     delegate_to: localhost
 
 - name: Create custom deployment templates
@@ -68,27 +64,7 @@
       loop_var: custom_config
     args:
       apply:
+        tags: [ always ]
         vars:
           paths: "{{ paths_custom.dirs }}"
-
-- name: Create daemon configuration files
-  hosts: daemons
-  serial: 1
-  vars:
-    node_provider: "{{ provider|default(netlab_provider) }}"
-    extra_config: >
-      {{ _daemon_config|default({})
-            |list
-            |difference(modules|default([]))
-            |difference(config|default([])) }}
-  tasks:
-  - name: Create daemon configurations
-    include_tasks: "tasks/create-config.yml"
-    loop: "{{ extra_config }}"
-    when: "'@' not in config_item"
-    loop_control:
-      loop_var: config_item
-    args:
-      apply:
-        vars:
-          paths: "{{ paths_templates.dirs }}"
+    tags: [ custom ]
