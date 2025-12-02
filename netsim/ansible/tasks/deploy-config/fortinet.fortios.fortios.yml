@@ -1,0 +1,20 @@
+- block:
+  - name: "fortios_monitor: deploying {{ netsim_action }} from {{ config_template }}"
+    fortinet.fortios.fortios_monitor:
+      selector: upload.system.config-script
+      params:
+        filename: set_initial_config
+        file_content: "{{ lookup('template', config_template) | b64encode }}"
+    tags: [ print_action, always ]
+  rescue:
+  - name: "FortiOS CLI: deploying {{ netsim_action }} from {{ config_template }}"
+    delegate_to: localhost
+    ansible.builtin.expect:
+      command: >-
+        sshpass -p '{{ ansible_ssh_pass }}'
+        ssh -o UserKnownHostsFile=/dev/null
+            -o StrictHostKeyChecking=no
+            {{ ansible_user }}@{{ ansible_host }}
+      responses:
+        '.*#': "{{ lookup('template', config_template) }}\nexit\n"
+    tags: [ print_action, always ]

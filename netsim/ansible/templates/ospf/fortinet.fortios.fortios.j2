@@ -1,41 +1,68 @@
-{% macro ospf_intf(intf) %}
-- name: {{ intf.ifname }}
-  interface: {{ intf.ifname }}
-{%   if intf.ospf.network_type|default('') == 'point-to-point' %}
-  network_type: "point-to-point"
-{%   endif %}
-{%   if intf.ospf.cost is defined %}
-  cost: {{ intf.ospf.cost }}
-{%   endif %}
-{% endmacro %}
----
-router_id: "{{ ospf.router_id }}"
-{% if ospf.reference_bandwidth is defined %}
-auto_cost_ref_bandwidth: "{{ ospf.reference_bandwidth }}"
+{% set vdom_traffic = netlab_vdom|default(vdom) %}
+{% set multi_vdom = vdom_traffic != vdom %}
+
+{% if multi_vdom %}
+config vdom
+    edit {{ vdom_traffic }}
 {% endif %}
 
-{% for intf in netlab_interfaces if 'ospf' in intf and not ospf.passive|default(False) %}
-{%   if loop.first %}
-ospf_interface:
-{%   endif %}
-{{     ospf_intf(intf) }}
-{% endfor %}
+config router ospf
+    set router-id {{ ospf.router_id }}
+{%  if ospf.reference_bandwidth is defined %}
+    set auto-cost-ref-bandwidth {{ ospf.reference_bandwidth }}
+{%  endif %}
+{%  set passive_intfs = netlab_interfaces|selectattr('ospf', 'defined')|selectattr('ospf.passive', 'defined')|selectattr('ospf.passive')|map(attribute='ifname')|list %}
+{%  if passive_intfs|length > 0 %}
+    set passive-interface {{ passive_intfs|join(' ') }}
+{%  endif %}
+{%  if netlab_interfaces|selectattr('ospf', 'defined')|list|length > 0 %}
 
-{% for intf in netlab_interfaces if 'ospf' in intf and ospf.passive|default(False) %}
-{%   if loop.first %}
-passive_interface:
-{%   endif %}
-{{     ospf_intf(intf) }}
-{% endfor %}
+    config ospf-interface
+{%  for intf in netlab_interfaces if 'ospf' in intf %}
+        edit "{{ intf.ifname }}"
+            set interface "{{ intf.ifname }}"
+{%          if intf.ospf.network_type is defined %}
+            set network-type {{ intf.ospf.network_type }}
+{%          endif %}
+{%          if intf.ospf.cost is defined %}
+            set cost {{ intf.ospf.cost }}
+{%          endif %}
+{%          if intf.ospf.timers.hello is defined %}
+            set hello-interval {{ intf.ospf.timers.hello }}
+{%          endif %}
+{%          if intf.ospf.timers.dead is defined %}
+            set dead-interval {{ intf.ospf.timers.dead }}
+{%          endif %}
+{%          if intf.ospf.priority is defined %}
+            set priority {{ intf.ospf.priority }}
+{%          endif %}
+{%          if intf.ospf.password is defined %}
+            set authentication text
+            set authentication-key {{ intf.ospf.password }}
+{%          endif %}
+            set status enable
+        next
+{%  endfor %}
+    end
+{%  endif %}
 
-area:
-{% for area in netlab_interfaces|map(attribute='ospf.area',default='')|unique if area %}
-- id: "{{ area }}"
-{% endfor %}
+    config area
+{%  for area in netlab_interfaces|map(attribute='ospf.area',default='')|unique if area %}
+        edit {{ area }}
+        next
+{%  endfor %}
+    end
 
-network:
-{% for intf in netlab_interfaces if intf.ospf.area is defined %}
-- area: {{ intf.ospf.area }}
-  id: {{ intf.ifindex|default(0) }}
-  prefix: {{ intf.ipv4|ipaddr('subnet') }}
-{% endfor %}
+    config network
+{%  for intf in netlab_interfaces if intf.ospf.area is defined %}
+        edit {{ intf.ifindex }}
+            set prefix {{ intf.ipv4|ipaddr('subnet') }}
+            set area {{ intf.ospf.area }}
+        next
+{%  endfor %}
+    end
+end
+
+{% if multi_vdom %}
+end
+{% endif %}

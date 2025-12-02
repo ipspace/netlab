@@ -291,13 +291,12 @@ Netlab enables VRRPv3 by default on Dell OS10, overriding any platform defaults.
 * You have to build the *dnsmasq* container image with the **netlab clab build dnsmasq** command.
 
 (caveats-fortios)=
-## Fortinet FortiOS 6.x/7.0
+## Fortinet FortiOS 
 
-* FortiOS VM images have a default 15-day evaluation license. The VM has [limited capabilities](https://docs.fortinet.com/document/fortigate-private-cloud/7.2.0/kvm-administration-guide/504166/fortigate-vm-evaluation-license) without a license file. It will work for 15 days from the first boot, at which point you must install a license file or recreate the vagrant box completely from scratch.
-* The 15-day evaluation license only allows one single VDOM. Using the **netlab_vdom** node parameter will fail when using the built-in 15-day license.
-* _netlab_ configures Fortinet devices with API calls using username/password authentication. The last FortiGate images known to work with that restriction are software releases 7.0.x and 7.2.0. Later releases block API calls without a permanent evaluation license and require token-based authentication once API starts to work.
 * Use a recent version of Ansible and **fortinet.fortios** Ansible Galaxy collection (version 2.3.6 or later)
-* To troubleshoot API authentication, log into the FortiOS VM with **netlab connect** or **vagrant ssh** and enable HTTP debugging with the following commands:
+* _netlab_ tries to configure Fortinet devices with configuration scripts uploaded through the FortiOS Monitor API calls using username/password authentication.
+* If the API call fails, _netlab_ tries to push the configuration to a Fortinet device through a regular SSH session. Use **netlab initial -vvv --limit _fw_device_** to troubleshoot the configuration download (Ansible displays full contents of the SSH session at this level of verbosity).
+* To troubleshoot API authentication, log into the FortiOS VM with **netlab connect** and enable HTTP debugging with the following commands:
 
 ```
 diag debug enable
@@ -309,19 +308,19 @@ diag debug application httpsd -1
 * We're not testing Fortinet implementation as part of the regular integration tests; the configuration scripts might be outdated. If you encounter a problem, please open an issue.
 ```
 
-## Fortinet FortiOS 7.4.x/7.6.x
+### Fortinet FortiOS 6.x/7.0
+
+* FortiOS VM images have a default 15-day evaluation license. The VM has [limited capabilities](https://docs.fortinet.com/document/fortigate-private-cloud/7.2.0/kvm-administration-guide/504166/fortigate-vm-evaluation-license) without a license file. It will work for 15 days from the first boot, at which point you must install a license file or recreate the vagrant box completely from scratch.
+* The 15-day evaluation license only allows one single VDOM. Using the **netlab_vdom** node parameter will fail when using the built-in 15-day license.
+
+### Fortinet FortiOS 7.4.x/7.6.x
 
 * Starting from FortiOS 7.2, FortiGate devices do not come with a license out of the box. Users can link *one* device with a permanent evaluation license to an account on the Fortinet support portal.
 * The license needs to be added before creating the Vagrant box.
 * There are restrictions associated with the evaluation license, including a maximum of three interfaces, firewall policies, and routes... For more detailed information, refer to the [evaluation license restrictions](https://docs.fortinet.com/document/fortigate/7.6.3/administration-guide/441460).
 * The license is linked to the serial number of the device and the UUID. To ensure that the serial number remains consistent each time you start the lab, set the `libvirt.uuid` (or `clab.env.FORTIGATE_UUID`) node parameter to the appropriate value.
-* MTU can be defined on the interface level, default is forced to 1500 bytes due to a different behaviour between `7.4.8` and `7.6.3` releases.
-* If you want to use a multi-vdom configuration, you just need to set the `netlab_vdom: <name>` in the node data. `root` vdom will be used as the management with interface `port1`, everything else will be configured in the specified traffic vdom. Default is `netlab_vdom: root` vdom in a no-vdom configuration.
-
-### OSPF Caveats
-
-* Fortinet implementation of OSPF configuration module does not implement per-interface OSPF areas. All interfaces belong to the OSPF area defined in the node data.
-* Fortinet configuration templates set OSPF network type based on number of neighbors, not based on **ospf.network_type** link/interface parameter.
+* MTU can be defined on the interface level, the default is forced to 1500 bytes due to a different behaviour between `7.4.8` and `7.6.3` releases.
+* If you want to use a multi-vdom configuration, you just need to set the `netlab_vdom: <name>` in the node data. `root` vdom will be used as the management with interface `port1`, and everything else will be configured in the specified traffic vdom. Default is `netlab_vdom: root` vdom in a no-vdom configuration.
 
 (caveats-frr)=
 ## FRRouting

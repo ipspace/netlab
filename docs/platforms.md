@@ -187,7 +187,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Cisco Nexus OS        | ✅ | ✅ |
 | Cumulus Linux         | ✅ | ✅ |
 | Dell OS10             | ✅ | ✅ | ✅ |
-| Fortinet FortiOS      | ✅ | ❌  |
+| Fortinet FortiOS      | ✅ | ✅ |
 | FRR                   |  ✅[❗](caveats-frr)  | ✅[❗](caveats-frr) |
 | Generic Linux         | ✅ | ❌  |
 | Junos[^Junos]         | ✅ | ✅ |
