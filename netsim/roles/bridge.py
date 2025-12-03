@@ -124,7 +124,19 @@ def expand_multiaccess_links(topology: Box) -> None:
         module='bridge')
       continue
 
-    link_data = { k:v for k,v in link.items() if k in ok_phy_attr }
+    # Copy physical attributes and module/protocol settings from the original link
+    # Skip attributes that should not be propagated (link_module_no_propagate)
+    link_module_no_propagate = set(topology.defaults.attributes.get('link_module_no_propagate', []))
+    link_propagate_attrs = set(ok_phy_attr)
+    
+    # Also propagate module/protocol attributes (ospf, isis, bgp, etc.) but not those in link_module_no_propagate
+    for k in link.keys():
+      if k not in skip_linkattr and k not in del_linkattr and k not in link_module_no_propagate:
+        # Check if this could be a module attribute (typically a module name or protocol setting)
+        if k in topology.defaults or isinstance(link[k], (bool, dict)):
+          link_propagate_attrs.add(k)
+    
+    link_data = { k:v for k,v in link.items() if k in link_propagate_attrs }
     br_intf = get_box({'node': b_name })                    # Create the interface for the bridge node
     br_node = topology.nodes[b_name]                        # Get the node data
     int_vlan_id = get_next_internal_vlan(int_vlan_id,'multi-access link {link._linkname}')
