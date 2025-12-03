@@ -10,7 +10,7 @@ from box import Box
 
 from ..augment import links
 from ..data import append_to_list, get_box, global_vars
-from ..modules import _dataplane
+from ..modules import _dataplane, list_of_modules
 from ..utils import log
 from . import select_nodes_by_role
 
@@ -126,14 +126,17 @@ def expand_multiaccess_links(topology: Box) -> None:
 
     # Copy physical attributes and module/protocol settings from the original link
     # Skip attributes that should not be propagated (link_module_no_propagate)
-    link_module_no_propagate = set(topology.defaults.attributes.get('link_module_no_propagate', []))
+    link_module_no_propagate = set(topology.defaults.get('attributes', {}).get('link_module_no_propagate', []))
     link_propagate_attrs = set(ok_phy_attr)
+    
+    # Get list of valid module names to check if link attributes are module settings
+    valid_modules = set(list_of_modules(topology))
     
     # Also propagate module/protocol attributes (ospf, isis, bgp, etc.) but not those in link_module_no_propagate
     for k in link.keys():
       if k not in skip_linkattr and k not in del_linkattr and k not in link_module_no_propagate:
-        # Check if this could be a module attribute (typically a module name or protocol setting)
-        if k in topology.defaults or isinstance(link[k], (bool, dict)):
+        # Check if this is a valid module attribute
+        if k in valid_modules:
           link_propagate_attrs.add(k)
     
     link_data = { k:v for k,v in link.items() if k in link_propagate_attrs }
