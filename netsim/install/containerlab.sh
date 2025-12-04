@@ -1,7 +1,6 @@
 #!/bin/bash
 #
 # Install a specific version of Containerlab -- it's now set in 'netlab install' before calling this script
-# CONTAINERLAB_VERSION="0.62.2"
 #
 set -e
 REPLACE="--upgrade"
