@@ -1,0 +1,270 @@
+groups:
+  ospf:
+    members:
+    - r1
+    - r2
+    module:
+    - ospf
+input:
+- topology/input/bridge-module-attr.yml
+- package:topology-defaults.yml
+links:
+- _linkname: links[1].1
+  bridge: input_2
+  interfaces:
+  - _vlan_mode: bridge
+    ifindex: 1
+    ifname: eth1
+    node: br
+    vlan:
+      access: br_vlan_100
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 192.168.42.1/24
+    node: r1
+    ospf:
+      area: 0.0.0.42
+  linkindex: 2
+  node_count: 2
+  prefix:
+    allocation: id_based
+    ipv4: 192.168.42.0/24
+  type: lan
+- _linkname: links[1].2
+  bridge: input_3
+  interfaces:
+  - _vlan_mode: bridge
+    ifindex: 2
+    ifname: eth2
+    node: br
+    vlan:
+      access: br_vlan_100
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 192.168.42.2/24
+    node: r2
+    ospf:
+      area: 0.0.0.42
+  linkindex: 3
+  node_count: 2
+  prefix:
+    allocation: id_based
+    ipv4: 192.168.42.0/24
+  type: lan
+module:
+- vlan
+- ospf
+name: input
+nodes:
+  br:
+    af: {}
+    box: python:3.13-alpine
+    clab:
+      binds:
+      - clab_files/-shared-hosts:/etc/hosts:ro
+      config_templates:
+      - hosts:/etc/hosts:shared
+      kind: linux
+    device: linux
+    hostname: clab-input-br
+    id: 3
+    interfaces:
+    - bridge: input_2
+      ifindex: 1
+      ifname: eth1
+      linkindex: 2
+      mtu: 1500
+      name: '[Access VLAN br_vlan_100] br -> r1'
+      neighbors:
+      - ifname: eth1
+        ipv4: 192.168.42.1/24
+        node: r1
+      type: lan
+      vlan:
+        access: br_vlan_100
+        access_id: 100
+    - bridge: input_3
+      ifindex: 2
+      ifname: eth2
+      linkindex: 3
+      mtu: 1500
+      name: '[Access VLAN br_vlan_100] br -> r2'
+      neighbors:
+      - ifname: eth1
+        ipv4: 192.168.42.2/24
+        node: r2
+      type: lan
+      vlan:
+        access: br_vlan_100
+        access_id: 100
+    - _linkname: links[1]
+      bridge_group: 1
+      ifindex: 40000
+      ifname: vlan100
+      mac_address: caf4.0003.0000
+      name: VLAN br_vlan_100 (100) -> [r1,r2]
+      neighbors:
+      - ifname: eth1
+        ipv4: 192.168.42.1/24
+        node: r1
+      - ifname: eth1
+        ipv4: 192.168.42.2/24
+        node: r2
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: bridge
+        name: br_vlan_100
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.103
+      mac: ca:fe:00:03:00:00
+    module:
+    - vlan
+    mtu: 1500
+    name: br
+    role: bridge
+    vlan:
+      max_bridge_group: 1
+      mode: bridge
+    vlans:
+      br_default:
+        id: 1
+        mode: bridge
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.0.0/24
+      br_vlan_100:
+        _linkname: links[1]
+        bridge_group: 1
+        host_count: 0
+        id: 100
+        mode: bridge
+        prefix:
+          allocation: id_based
+          ipv4: 192.168.42.0/24
+  r1:
+    af:
+      ipv4: true
+    box: quay.io/frrouting/frr:10.5.0
+    clab:
+      binds:
+      - clab_files/r1/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      kind: linux
+    device: frr
+    hostname: clab-input-r1
+    id: 1
+    interfaces:
+    - bridge: input_2
+      ifindex: 1
+      ifname: eth1
+      ipv4: 192.168.42.1/24
+      linkindex: 2
+      mtu: 1500
+      name: r1 -> [r2,br]
+      neighbors:
+      - ifname: eth1
+        ipv4: 192.168.42.2/24
+        node: r2
+      - ifname: vlan100
+        node: br
+        vlan:
+          mode: bridge
+          name: br_vlan_100
+      ospf:
+        area: 0.0.0.42
+        passive: false
+      type: lan
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.101
+      mac: ca:fe:00:01:00:00
+    module:
+    - ospf
+    mtu: 1500
+    name: r1
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.1
+    role: router
+  r2:
+    af:
+      ipv4: true
+    box: quay.io/frrouting/frr:10.5.0
+    clab:
+      binds:
+      - clab_files/r2/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      kind: linux
+    device: frr
+    hostname: clab-input-r2
+    id: 2
+    interfaces:
+    - bridge: input_3
+      ifindex: 1
+      ifname: eth1
+      ipv4: 192.168.42.2/24
+      linkindex: 3
+      mtu: 1500
+      name: r2 -> [r1,br]
+      neighbors:
+      - ifname: eth1
+        ipv4: 192.168.42.1/24
+        node: r1
+      - ifname: vlan100
+        node: br
+        vlan:
+          mode: bridge
+          name: br_vlan_100
+      ospf:
+        area: 0.0.0.42
+        passive: false
+      type: lan
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.102
+      mac: ca:fe:00:02:00:00
+    module:
+    - ospf
+    mtu: 1500
+    name: r2
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.2
+    role: router
+ospf:
+  area: 0.0.0.0
+provider: clab
+vlans:
+  br_default: {}

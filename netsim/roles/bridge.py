@@ -9,7 +9,7 @@ Bridge-specific data transformation:
 from box import Box
 
 from ..augment import links
-from ..data import append_to_list, get_box, global_vars
+from ..data import append_to_list, get_box, global_vars, merge_with_removed_attributes
 from ..modules import _dataplane
 from ..utils import log
 from . import select_nodes_by_role
@@ -94,6 +94,7 @@ expanded into multiple P2P links with the bridge node.
 """
 def expand_multiaccess_links(topology: Box) -> None:
   skip_linkattr = list(topology.defaults.vlan.attributes.phy_ifattr)
+  skip_modules  = topology.defaults.attributes.link_module_no_propagate
   ok_phy_attr   = ['bandwidth', 'mtu', 'stp']
   del_linkattr  = ['linkindex', 'interfaces', 'bridge']
   int_vlan_id = global_vars.get_const('bridge.internal_vlan.start',100)
@@ -136,6 +137,12 @@ def expand_multiaccess_links(topology: Box) -> None:
     br_intf.vlan.access = vname                             # ... and use it on the bridge interface
 
     for link_cnt,intf in enumerate(link.interfaces,1):
+      att_node = topology.nodes[intf.node]                  # Get attached node data to copy link module attributes
+      mod_list = [ m for m in att_node.get('module',[]) if m not in skip_modules ]
+      merge_with_removed_attributes(                        # Merge relevant link module attributes into intf data
+        d_to = intf,                                        # ... as they will be removed from bridge node VLAN data
+        d_with = get_box({ k:v for k,v in link.items() if k in mod_list}))
+
       l_data = get_box(link_data)                           # Copy the link data
       l_data._linkname = f'{link._linkname}.{link_cnt}'     # Create unique link and and linkindex
       l_data.linkindex = links.get_next_linkindex(topology)
