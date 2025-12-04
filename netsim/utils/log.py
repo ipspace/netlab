@@ -298,7 +298,9 @@ def warning(*,
       once: bool = False,
       **kwargs: typing.Any) -> None:
 
-  global _HINTS_CACHE,_WARNING_CACHE
+  global _HINTS_CACHE,_WARNING_CACHE,QUIET
+  if QUIET:
+    return
 
   if text in _WARNING_CACHE:                      # Have we seen the exact same warning already?
     if once:                                      # Do we want to generate it more than once?
@@ -364,7 +366,9 @@ def info(
       more_data: typing.Optional[typing.Union[str,list]] = None,
       indent: int = 10) -> None:
 
-  global err_color_map
+  global err_color_map,QUIET
+  if QUIET:
+    return
 
   mod_txt = f'{module}: ' if module else ''                     # Skip module header if it's explicitly set to empty
   if strings.rich_err_color:
