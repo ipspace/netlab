@@ -32,7 +32,7 @@ def load_plugin(device: str) -> typing.Any:
   v_path = _files.absolute_search_path(v_path,v_base)                 # Get the absolute search path
   if log.VERBOSE >= 2:
     print(f'Searching for {device} plugin in {v_path}')
-  for v_entry in v_path:                                              # Iterate over the seach path
+  for v_entry in v_path:                                              # Iterate over the search path
     v_file = f'{v_entry}/{device}.py'                                 # ... trying to find the device-specific plugin
     if os.path.exists(v_file):                                        # Got it?
       return _files.load_python_module(f'validate_{device}',v_file)   # ... cool, try to load the Python module
