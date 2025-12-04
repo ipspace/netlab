@@ -41,7 +41,7 @@ def load_plugin(device: str) -> typing.Any:
   if err_key not in PLUGIN_ERROR:
     indent = (topology._v_len + 3) if topology else 10
     log.error(
-      'Cannot find validation plugin for device {device}',
+      f'Cannot find validation plugin for device {device}',
       category=log.MissingDependency,
       module='validate',
       indent=indent)
