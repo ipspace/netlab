@@ -88,7 +88,7 @@ def find_plugin_action(v_entry: Box, node: Box) -> typing.Optional[str]:
     if getattr(plugin,f'{kw}_{func_name}',None):
       return kw
 
-  err_key = 'action_{node.device}_{func_name}'
+  err_key = f'action_{node.device}_{func_name}'
 
   if err_key not in PLUGIN_ERROR:
     topology = global_vars.get_topology()
