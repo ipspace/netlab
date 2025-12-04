@@ -250,7 +250,7 @@ class _Provider(Callback):
       except Exception as ex:
         log.error(
           text=f"Error rendering {template_name} into {file_rel}",
-          more_data = [f'{type(ex).__name__}: {str(ex)}'],
+          more_data = [f'{type(ex).__name__}: {str(ex)}'] + templates.template_error_location(ex),
           category=log.FatalError,
           module=self.provider)
 

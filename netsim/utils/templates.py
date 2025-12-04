@@ -70,9 +70,9 @@ def render_template(
 
   return template.render(**data)
 
-#
-# write_template: Applies a custom template (in_folder/j2) and writes it to the given file path (out_folder/filename)
-#
+"""
+write_template: Applies a custom template (in_folder/j2) and writes it to the given file path (out_folder/filename)
+"""
 def write_template(
         in_folder: str,
         j2: str,
@@ -88,3 +88,20 @@ def write_template(
   pathlib.Path(out_folder).mkdir(parents=True, exist_ok=True)
   out_file = f"{out_folder}/{filename}"
   create_file_from_text(out_file,r_text)
+
+"""
+template_error_location: extract the exact location of the template error from the exception traceback
+"""
+def template_error_location(exc: Exception) -> list:
+  loc_list = []
+  tb = exc.__traceback__
+  while tb:
+    f = tb.tb_frame
+    if f.f_code.co_filename.endswith('.j2'):
+      loc_txt = f'Line {tb.tb_lineno} @ {f.f_code.co_filename}'
+      if loc_txt not in loc_list:
+        loc_list.append(loc_txt)
+    tb = tb.tb_next
+
+  loc_list.reverse()
+  return loc_list
