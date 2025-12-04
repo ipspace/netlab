@@ -490,14 +490,15 @@ def lab_commands(script: str) -> None:
     return
 
   NETLAB_COMMAND = cmd
-  mod_path = os.path.dirname(__file__) + f"/{cmd}.py"
-  if not os.path.isfile(mod_path):
-    print("Unknown netlab command '%s'\nUse 'netlab help' to get the list of valid commands" % cmd)
-    sys.exit(1)
-
   try:
     mod = importlib.import_module("."+cmd,__name__)
+  except ModuleNotFoundError:
+   error_and_exit(
+     f'Unknown command {cmd}',
+     module='netlab',
+     more_hints=[ "Use 'netlab help' to get the list of valid commands" ])
   except Exception as ex:
+    print(type(ex))
     log.fatal(f"Error importing {__name__}.{cmd}: {ex}")
 
   stats.stats_counter_update(f'cli.{cmd}.start')
