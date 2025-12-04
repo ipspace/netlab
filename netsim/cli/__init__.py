@@ -498,7 +498,6 @@ def lab_commands(script: str) -> None:
      module='netlab',
      more_hints=[ "Use 'netlab help' to get the list of valid commands" ])
   except Exception as ex:
-    print(type(ex))
     log.fatal(f"Error importing {__name__}.{cmd}: {ex}")
 
   stats.stats_counter_update(f'cli.{cmd}.start')
