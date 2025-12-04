@@ -1053,7 +1053,7 @@ def filter_by_tests(args: argparse.Namespace, topology: Box) -> None:
     return
   tests_to_execute = {}
   for t in args.tests:
-    find_test = { v_entry.name: v_entry for v_entry in topology.validate if re.match(t,v_entry.name) }
+    find_test = { v_entry.name: v_entry for v_entry in topology.validate if re.fullmatch(t,v_entry.name) }
     if not find_test:
       log.error(
         f'Invalid test name or regex expression {t}, use "netlab validate --list" to list test names',
