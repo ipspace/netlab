@@ -6,12 +6,12 @@
 ## Usage
 
 ```text
-$ netlab validate -h
-usage: netlab inspect [-h] [-v] [-q] [--list] [--node NODES] [--skip-wait] [-e]
-                      [--dump {result} [{result} ...]] [-i INSTANCE]
-                      [tests ...]
+usage: netlab validate [-h] [-v] [-q] [--list] [--node NODES] [--skip-wait] [-e]
+                       [--source TEST_SOURCE] [--dump {result} [{result} ...]]
+                       [-i INSTANCE]
+                       [tests ...]
 
-Inspect data structures in transformed lab topology
+Run lab validation tests specified in the lab topology
 
 positional arguments:
   tests                 Validation test(s) to execute (default: all)
@@ -24,10 +24,11 @@ options:
   --node NODES          Execute validation tests only on selected node(s)
   --skip-wait           Skip the waiting period
   -e, --error-only      Display only validation errors (on stderr)
+  --source TEST_SOURCE  Read tests from the specified YAML file
   --dump {result} [{result} ...]
-                        Dump additional information during validation process
-  -i INSTANCE, --instance INSTANCE
-                        Specify lab instance to validate
+                        Dump additional information during the validation process
+  -i, --instance INSTANCE
+                        Specify the lab instance to validate
 ```
 
 The **netlab validate** command returns the overall test results in its exit code:
@@ -48,3 +49,10 @@ The **netlab validate** command returns the overall test results in its exit cod
 ```{tip}
 * Use **‌netlab validate --error-only** to shorten the printout and display only the validation errors.
 ```
+
+## Developing Validation Tests
+
+Validation test development is usually an interactive process that requires several changes to the **validate** lab topology attribute before you get them just right. Restarting the lab every time you change the validation tests just to have them transformed and stored in the snapshot file is tedious; these changes to **netlab validate** (introduced in release 25.12) streamline the process:
+
+* The **netlab validate** command compares the timestamp of the lab topology file with the timestamp of the snapshot file. When necessary, it rereads the validation tests from the changed lab topology file.
+* You can develop the validation tests in a separate YAML file and run them with the **netlab validate --source** CLI option. After the validation tests are complete, copy them into the lab topology.

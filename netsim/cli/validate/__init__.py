@@ -14,7 +14,7 @@ from ...data import get_box
 from ...utils import log, strings
 from ...utils import status as _status
 from .. import load_snapshot
-from . import parse, report, tests
+from . import parse, report, source, tests
 
 # I'm cheating. Declaring a global variable is easier than passing 'args' argument around
 #
@@ -42,8 +42,17 @@ Main routine: run all tests, handle validation errors, print summary results
 def run(cli_args: typing.List[str]) -> None:
   global TEST_COUNT,ERROR_ONLY
   args = parse.validate_parse(cli_args)
+  if args.error_only:
+    args.quiet = True
   log.set_logging_flags(args)
-  topology = load_snapshot(args)
+  topology = load_snapshot(args,warn_modified=False)
+  if args.test_source:
+    source.update_validation_tests(topology,args.test_source)
+  elif topology.get('_input.modified'):
+    log.warning(
+      text=f'Topology source file(s) have changed since the lab has started',
+      module='-')
+    source.update_validation_tests(topology,topology.input[0])
 
   if 'validate' not in topology:
     if args.skip_missing:
