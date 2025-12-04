@@ -16,7 +16,7 @@ from .. import parser_add_debug, parser_add_verbose, parser_lab_location
 #
 def validate_parse(args: typing.List[str]) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
-    prog="netlab inspect",
+    prog="netlab validate",
     description='Inspect data structures in transformed lab topology')
   parser_add_debug(parser)                                # Add debugging options
   parser_add_verbose(parser)                              # ... and verbosity flag
