@@ -80,7 +80,7 @@ Most devices behave as routers (or layer-3 switches); the following devices can 
 | Bird                  | ✅ | ✅ | ❌  |
 | Cisco IOS/IOS XE[^18v]| ✅ | ✅ | ✅ |
 | dnsmasq               | ❌  | ✅ | ❌  |
-| FRRouting             | ✅ | ✅ | ❌  |
+| FRRouting             | ✅ | ✅ | ✅ |
 | Generic Linux         | ❌  | ✅ | ✅ |
 | Open BSD              | ✅ | ✅ | ❌  |
 
