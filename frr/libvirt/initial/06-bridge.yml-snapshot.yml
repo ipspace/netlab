@@ -1,8 +1,16 @@
 %YAML 1.1
 ---
-message: This scenario tests additional loopback interfaces
+message: |
+  This scenario tests the basic "bridge" functionality. As a "bridge" is nothing
+  more than a VLAN-capable node having all interfaces in VLAN 1, this test
+  effectively:
+
+  * Tests whether the device can take the role 'bridge'
+  * Whether the interfaces are all configured in the same VLAN
+  * Whether the device configuration template handles VLAN 1, or the device
+    quirks take extra efforts to work around that
 defaults:
-  provider: clab
+  provider: libvirt
   providers:
     clab:
       description: containerlab with Docker
@@ -1715,7 +1723,7 @@ defaults:
             daemons:
               type: list
               _subtype: str
-      provider: clab
+      provider: libvirt
     iol:
       description: Cisco IOL
       attributes:
@@ -7791,6 +7799,8 @@ defaults:
         ifname:
         type:
         virtual_interface:
+      vlan_svi_no_propagate: {}
+      node_copy: {}
     features:
       model: Conceptual device configuration model
       mixed_trunk: Supports trunk interfaces with mixed routed/bridged VLANs
@@ -7995,16 +8005,549 @@ defaults:
     - vxlan
   name: ml_17
   module:
+  - vlan
   - routing
+groups:
+  hosts:
+    members:
+    - h1
+    - h2
+    - h3
+    - h4
+    - h5
+    device: linux
+    node_data:
+      provider: clab
+  all:
+    vars:
+      netlab_show_config: true
+    members: []
+    _default_group: true
+nodes:
+  dut:
+    role: bridge
+    name: dut
+    interfaces:
+    - vlan:
+        access: br_default
+        access_id: 1
+      linkindex: 2
+      type: lan
+      bridge: ml_17_2
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.0.5/24
+        ifname: eth1
+        node: h4
+      name: '[Access VLAN br_default] dut -> h4'
+    - vlan:
+        access: br_default
+        access_id: 1
+      linkindex: 3
+      type: lan
+      bridge: ml_17_3
+      ifindex: 2
+      ifname: eth2
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.0.6/24
+        ifname: eth1
+        node: h5
+      name: '[Access VLAN br_default] dut -> h5'
+    - vlan:
+        access: br_vlan_100
+        access_id: 100
+      linkindex: 4
+      type: lan
+      bridge: ml_17_4
+      ifindex: 3
+      ifname: eth3
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.1.2/24
+        ifname: eth1
+        node: h1
+      name: '[Access VLAN br_vlan_100] dut -> h1'
+    - vlan:
+        access: br_vlan_100
+        access_id: 100
+      linkindex: 5
+      type: lan
+      bridge: ml_17_5
+      ifindex: 4
+      ifname: eth4
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.1.3/24
+        ifname: eth1
+        node: h2
+      name: '[Access VLAN br_vlan_100] dut -> h2'
+    - vlan:
+        access: br_vlan_100
+        access_id: 100
+      linkindex: 6
+      type: lan
+      bridge: ml_17_6
+      ifindex: 5
+      ifname: eth5
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.1.4/24
+        ifname: eth1
+        node: h3
+      name: '[Access VLAN br_vlan_100] dut -> h3'
+    - vlan:
+        mode: bridge
+        name: br_default
+      type: svi
+      ifindex: 40000
+      mac_address: caf4.0001.0000
+      ifname: vlan1
+      name: VLAN br_default (1) -> [h4,h5]
+      virtual_interface: true
+      neighbors:
+      - ipv4: 172.16.0.5/24
+        ifname: eth1
+        node: h4
+      - ipv4: 172.16.0.6/24
+        ifname: eth1
+        node: h5
+      bridge_group: 1
+      role: stub
+    - vlan:
+        mode: bridge
+        name: br_vlan_100
+      type: svi
+      ifindex: 40001
+      mac_address: caf4.0001.0001
+      ifname: vlan100
+      name: VLAN br_vlan_100 (100) -> [h1,h2,h3]
+      virtual_interface: true
+      neighbors:
+      - ipv4: 172.16.1.2/24
+        ifname: eth1
+        node: h1
+      - ipv4: 172.16.1.3/24
+        ifname: eth1
+        node: h2
+      - ipv4: 172.16.1.4/24
+        ifname: eth1
+        node: h3
+      _linkname: links[1]
+      bridge_group: 2
+      role: stub
+    device: frr
+    box: debian/bookworm64
+    vlan:
+      mode: bridge
+      max_bridge_group: 2
+    vlans:
+      br_default:
+        id: 1
+        mode: bridge
+        prefix:
+          ipv4: 172.16.0.0/24
+          allocation: id_based
+        bridge_group: 1
+        host_count: 2
+      br_vlan_100:
+        _linkname: links[1]
+        id: 100
+        mode: bridge
+        prefix:
+          ipv4: 172.16.1.0/24
+          allocation: id_based
+        bridge_group: 2
+        host_count: 3
+    module:
+    - vlan
+    id: 1
+    mtu: 1500
+    provider: libvirt
+    af: {}
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:01:00:00
+      ipv4: 192.168.17.101
+  h1:
+    provider: clab
+    name: h1
+    interfaces:
+    - ipv4: 172.16.1.2/24
+      linkindex: 4
+      type: lan
+      bridge: ml_17_4
+      name: h1 -> [h2,h3,dut]
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.1.3/24
+        ifname: eth1
+        node: h2
+      - ipv4: 172.16.1.4/24
+        ifname: eth1
+        node: h3
+      - ifname: vlan100
+        node: dut
+        vlan:
+          mode: bridge
+          name: br_vlan_100
+      role: stub
+    device: linux
+    clab:
+      kind: linux
+      config_templates:
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: python:3.13-alpine
+    id: 2
+    role: host
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:02:00:00
+      ipv4: 192.168.17.102
+    hostname: clab-ml_17-h1
+    routing:
+      static: []
+    module:
+    - routing
+  h2:
+    provider: clab
+    name: h2
+    interfaces:
+    - ipv4: 172.16.1.3/24
+      linkindex: 5
+      type: lan
+      bridge: ml_17_5
+      name: h2 -> [h1,h3,dut]
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.1.2/24
+        ifname: eth1
+        node: h1
+      - ipv4: 172.16.1.4/24
+        ifname: eth1
+        node: h3
+      - ifname: vlan100
+        node: dut
+        vlan:
+          mode: bridge
+          name: br_vlan_100
+      role: stub
+    device: linux
+    clab:
+      kind: linux
+      config_templates:
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: python:3.13-alpine
+    id: 3
+    role: host
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:03:00:00
+      ipv4: 192.168.17.103
+    hostname: clab-ml_17-h2
+    routing:
+      static: []
+    module:
+    - routing
+  h3:
+    provider: clab
+    name: h3
+    interfaces:
+    - ipv4: 172.16.1.4/24
+      linkindex: 6
+      type: lan
+      bridge: ml_17_6
+      name: h3 -> [h1,h2,dut]
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.1.2/24
+        ifname: eth1
+        node: h1
+      - ipv4: 172.16.1.3/24
+        ifname: eth1
+        node: h2
+      - ifname: vlan100
+        node: dut
+        vlan:
+          mode: bridge
+          name: br_vlan_100
+      role: stub
+    device: linux
+    clab:
+      kind: linux
+      config_templates:
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: python:3.13-alpine
+    id: 4
+    role: host
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:04:00:00
+      ipv4: 192.168.17.104
+    hostname: clab-ml_17-h3
+    routing:
+      static: []
+    module:
+    - routing
+  h4:
+    provider: clab
+    name: h4
+    interfaces:
+    - ipv4: 172.16.0.5/24
+      linkindex: 2
+      type: lan
+      bridge: ml_17_2
+      name: h4 -> [h5,dut]
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.0.6/24
+        ifname: eth1
+        node: h5
+      - ifname: vlan1
+        node: dut
+        vlan:
+          mode: bridge
+          name: br_default
+      role: stub
+    device: linux
+    clab:
+      kind: linux
+      config_templates:
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: python:3.13-alpine
+    id: 5
+    role: host
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:05:00:00
+      ipv4: 192.168.17.105
+    hostname: clab-ml_17-h4
+    routing:
+      static: []
+    module:
+    - routing
+  h5:
+    provider: clab
+    name: h5
+    interfaces:
+    - ipv4: 172.16.0.6/24
+      linkindex: 3
+      type: lan
+      bridge: ml_17_3
+      name: h5 -> [h4,dut]
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.0.5/24
+        ifname: eth1
+        node: h4
+      - ifname: vlan1
+        node: dut
+        vlan:
+          mode: bridge
+          name: br_default
+      role: stub
+    device: linux
+    clab:
+      kind: linux
+      config_templates:
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: python:3.13-alpine
+    id: 6
+    role: host
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:06:00:00
+      ipv4: 192.168.17.106
+    hostname: clab-ml_17-h5
+    routing:
+      static: []
+    module:
+    - routing
+links:
+- interfaces:
+  - node: h4
+    ipv4: 172.16.0.5/24
+    ifindex: 1
+    ifname: eth1
+  - node: dut
+    vlan:
+      access: br_default
+    _vlan_mode: bridge
+    ifindex: 1
+    ifname: eth1
+  _linkname: links[2]
+  linkindex: 2
+  prefix:
+    ipv4: 172.16.0.0/24
+    allocation: id_based
+  type: lan
+  libvirt:
+    provider:
+      clab: true
+  bridge: ml_17_2
+  node_count: 2
+- interfaces:
+  - node: h5
+    ipv4: 172.16.0.6/24
+    ifindex: 1
+    ifname: eth1
+  - node: dut
+    vlan:
+      access: br_default
+    _vlan_mode: bridge
+    ifindex: 2
+    ifname: eth2
+  _linkname: links[3]
+  linkindex: 3
+  prefix:
+    ipv4: 172.16.0.0/24
+    allocation: id_based
+  type: lan
+  libvirt:
+    provider:
+      clab: true
+  bridge: ml_17_3
+  node_count: 2
+- _linkname: links[1].1
+  linkindex: 4
+  interfaces:
+  - node: dut
+    vlan:
+      access: br_vlan_100
+    _vlan_mode: bridge
+    ifindex: 3
+    ifname: eth3
+  - node: h1
+    ipv4: 172.16.1.2/24
+    ifindex: 1
+    ifname: eth1
+  prefix:
+    ipv4: 172.16.1.0/24
+    allocation: id_based
+  type: lan
+  libvirt:
+    provider:
+      clab: true
+  bridge: ml_17_4
+  node_count: 2
+- _linkname: links[1].2
+  linkindex: 5
+  interfaces:
+  - node: dut
+    vlan:
+      access: br_vlan_100
+    _vlan_mode: bridge
+    ifindex: 4
+    ifname: eth4
+  - node: h2
+    ipv4: 172.16.1.3/24
+    ifindex: 1
+    ifname: eth1
+  prefix:
+    ipv4: 172.16.1.0/24
+    allocation: id_based
+  type: lan
+  libvirt:
+    provider:
+      clab: true
+  bridge: ml_17_5
+  node_count: 2
+- _linkname: links[1].3
+  linkindex: 6
+  interfaces:
+  - node: dut
+    vlan:
+      access: br_vlan_100
+    _vlan_mode: bridge
+    ifindex: 5
+    ifname: eth5
+  - node: h3
+    ipv4: 172.16.1.4/24
+    ifindex: 1
+    ifname: eth1
+  prefix:
+    ipv4: 172.16.1.0/24
+    allocation: id_based
+  type: lan
+  libvirt:
+    provider:
+      clab: true
+  bridge: ml_17_6
+  node_count: 2
+validate:
+- description: IPv4 ping H3 from H1/H2
+  wait: 40
+  wait_msg: Wait for STP to do its job
+  nodes:
+  - h1
+  - h2
+  plugin: ping('h3')
+  name: ping_h3
+- description: IPv4 ping H5 from H4
+  wait: 40
+  wait_msg: Wait for STP to do its job
+  nodes:
+  - h4
+  plugin: ping('h5')
+  name: ping_h5
+- description: Test inter-subnet ping
+  nodes:
+  - h1
+  plugin: ping('h5',expect='fail')
+  name: ping_xs
+input:
+- /home/pipi/net101/tools/tests/integration/initial/06-bridge.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
+- /home/pipi/.netlab.yml
+- package:topology-defaults.yml
+plugin:
+- multilab
+name: ml_17
 addressing:
   lan:
     ipv4: 172.16.0.0/16
     prefix: 24
-    ipv6: 2001:db8:1::/48
   loopback:
     ipv4: 10.0.0.0/24
     prefix: 32
-    ipv6: 2001:db8::/48
   p2p:
     ipv4: 10.1.0.0/16
     prefix: 30
@@ -8022,340 +8565,11 @@ addressing:
   vrf_loopback:
     ipv4: 10.2.0.0/24
     prefix: 32
-    ipv6: 2001:db8:cafe::/48
-groups:
-  hosts:
-    members:
-    - h1
-    - h2
-    device: linux
-    module:
-    - routing
-    node_data:
-      provider: clab
-      routing:
-        static:
-        - pool: loopback
-          nexthop:
-            node: r
-        - pool: vrf_loopback
-          nexthop:
-            node: r
-  all:
-    vars:
-      netlab_show_config: true
-    members: []
-    _default_group: true
-nodes:
-  r:
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.1/32
-      ipv6: 2001:db8:0:1::1/64
-    name: r
-    interfaces:
-    - ra:
-        slaac: true
-      ipv4: 172.16.0.1/24
-      ipv6: 2001:db8:1::1/64
-      linkindex: 1
-      role: stub
-      type: lan
-      bridge: ml_17_1
-      name: r -> h1
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.0.2/24
-        ipv6: 2001:db8:1::2/64
-        ifname: eth1
-        node: h1
-    - ra:
-        slaac: true
-      ipv4: 172.16.1.1/24
-      ipv6: 2001:db8:1:1::1/64
-      linkindex: 2
-      role: stub
-      type: lan
-      bridge: ml_17_2
-      name: r -> h2
-      ifindex: 2
-      ifname: eth2
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.1.3/24
-        ipv6: 2001:db8:1:1::3/64
-        ifname: eth1
-        node: h2
-    - ipv4: 10.2.0.1/32
-      ipv6: 2001:db8:cafe::1/64
-      type: loopback
-      pool: vrf_loopback
-      linkindex: 3
-      name: r -> stub
-      virtual_interface: true
-      ifindex: 10001
-      ifname: lo1
-      neighbors: []
-    device: frr
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/r/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.5.0
-    id: 1
-    role: router
-    mtu: 1500
-    provider: clab
-    af:
-      ipv4: true
-      ipv6: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:01:00:00
-      ipv4: 192.168.17.101
-    hostname: clab-ml_17-r
-  h1:
-    routing:
-      static:
-      - ipv4: 10.0.0.0/24
-        nexthop:
-          ipv4: 172.16.0.1
-          intf: eth1
-          ipv6: 2001:db8:1::1
-          idx: 0
-      - ipv6: 2001:db8::/48
-        nexthop:
-          ipv4: 172.16.0.1
-          intf: eth1
-          ipv6: 2001:db8:1::1
-          idx: 0
-      - ipv4: 10.2.0.0/24
-        nexthop:
-          ipv4: 172.16.0.1
-          intf: eth1
-          ipv6: 2001:db8:1::1
-          idx: 0
-      - ipv6: 2001:db8:cafe::/48
-        nexthop:
-          ipv4: 172.16.0.1
-          intf: eth1
-          ipv6: 2001:db8:1::1
-          idx: 0
-    name: h1
-    interfaces:
-    - ipv4: 172.16.0.2/24
-      ipv6: 2001:db8:1::2/64
-      linkindex: 1
-      role: stub
-      type: lan
-      bridge: ml_17_1
-      name: h1 -> r
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.0.1/24
-        ipv6: 2001:db8:1::1/64
-        ifname: eth1
-        node: r
-    device: linux
-    module:
-    - routing
-    clab:
-      kind: linux
-      config_templates:
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: python:3.13-alpine
-    id: 2
-    role: host
-    mtu: 1500
-    af:
-      ipv4: true
-      ipv6: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:02:00:00
-      ipv4: 192.168.17.102
-    hostname: clab-ml_17-h1
-  h2:
-    routing:
-      static:
-      - ipv4: 10.0.0.0/24
-        nexthop:
-          ipv4: 172.16.1.1
-          intf: eth1
-          ipv6: 2001:db8:1:1::1
-          idx: 0
-      - ipv6: 2001:db8::/48
-        nexthop:
-          ipv4: 172.16.1.1
-          intf: eth1
-          ipv6: 2001:db8:1:1::1
-          idx: 0
-      - ipv4: 10.2.0.0/24
-        nexthop:
-          ipv4: 172.16.1.1
-          intf: eth1
-          ipv6: 2001:db8:1:1::1
-          idx: 0
-      - ipv6: 2001:db8:cafe::/48
-        nexthop:
-          ipv4: 172.16.1.1
-          intf: eth1
-          ipv6: 2001:db8:1:1::1
-          idx: 0
-    name: h2
-    interfaces:
-    - ipv4: 172.16.1.3/24
-      ipv6: 2001:db8:1:1::3/64
-      linkindex: 2
-      role: stub
-      type: lan
-      bridge: ml_17_2
-      name: h2 -> r
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.1.1/24
-        ipv6: 2001:db8:1:1::1/64
-        ifname: eth2
-        node: r
-    device: linux
-    module:
-    - routing
-    clab:
-      kind: linux
-      config_templates:
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: python:3.13-alpine
-    id: 3
-    role: host
-    mtu: 1500
-    af:
-      ipv4: true
-      ipv6: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:03:00:00
-      ipv4: 192.168.17.103
-    hostname: clab-ml_17-h2
-links:
-- _linkname: links[1]
-  interfaces:
-  - node: r
-    ra:
-      slaac: true
-    ipv4: 172.16.0.1/24
-    ipv6: 2001:db8:1::1/64
-    ifindex: 1
-    ifname: eth1
-  - node: h1
-    ipv4: 172.16.0.2/24
-    ipv6: 2001:db8:1::2/64
-    ifindex: 1
-    ifname: eth1
-  linkindex: 1
-  node_count: 2
-  role: stub
-  type: lan
-  bridge: ml_17_1
-  prefix:
-    ipv4: 172.16.0.0/24
-    ipv6: 2001:db8:1::/64
-- _linkname: links[2]
-  interfaces:
-  - node: r
-    ra:
-      slaac: true
-    ipv4: 172.16.1.1/24
-    ipv6: 2001:db8:1:1::1/64
-    ifindex: 2
-    ifname: eth2
-  - node: h2
-    ipv4: 172.16.1.3/24
-    ipv6: 2001:db8:1:1::3/64
-    ifindex: 1
-    ifname: eth1
-  linkindex: 2
-  node_count: 2
-  role: stub
-  type: lan
-  bridge: ml_17_2
-  prefix:
-    ipv4: 172.16.1.0/24
-    ipv6: 2001:db8:1:1::/64
-- _linkname: links[3]
-  type: loopback
-  pool: vrf_loopback
-  interfaces:
-  - node: r
-    ipv4: 10.2.0.1/32
-    ipv6: 2001:db8:cafe::1/64
-    ifindex: 10001
-    ifname: lo1
-  linkindex: 3
-  node_count: 1
-  prefix:
-    ipv4: 10.2.0.1/32
-    ipv6: 2001:db8:cafe::/64
-validate:
-- description: IPv4 ping to device loopback
-  wait: 5
-  wait_msg: Waiting for IPv4 interfaces to become ready
-  nodes:
-  - h1
-  - h2
-  plugin: ping(nodes.r.loopback.ipv4)
-  name: ping4
-- description: IPv6 ping to device loopback
-  wait: 5
-  wait_msg: Waiting for IPv6 interfaces to become ready
-  nodes:
-  - h1
-  - h2
-  plugin: ping(nodes.r.loopback.ipv6,af='ipv6')
-  name: ping6
-- description: IPv4 ping to extra loopback
-  nodes:
-  - h1
-  - h2
-  plugin: ping(nodes.r.interfaces[2].ipv4)
-  name: ping_x4
-- description: IPv6 ping to extra loopback
-  nodes:
-  - h1
-  - h2
-  plugin: ping(nodes.r.interfaces[2].ipv6)
-  name: ping_x6
-input:
-- /home/pipi/net101/tools/tests/integration/initial/02-loopback.yml
-- /home/pipi/net101/tools/tests/integration/wait_times.yml
-- /home/pipi/net101/tools/tests/integration/warnings.yml
-- /home/pipi/.netlab.yml
-- package:topology-defaults.yml
-plugin:
-- multilab
-name: ml_17
-provider: clab
+provider: libvirt
+libvirt:
+  providers:
+    clab: true
 module:
+- vlan
 - routing
-prefix:
-  any:
-    ipv4: 0.0.0.0/0
-    ipv6: ::/0
 _netlab_version: 25.11.01
