@@ -9,10 +9,9 @@
 
 You can also mix and match the approaches. For example, you could have a generic *deploy configuration* task list but use a separate list of tasks for the initial configuration.
 
-However, if you want to use a configuration task list without related configuration templates, you must set these device group variables:
-
-* Set **netlab_skip_missing_template** to **False** to prevent "_missing template_" failures in Ansible playbooks.
-* Set **netlab_config_tasks** to **True** to execute deployment tasks even Ansible cannot find the configuration templates.
+```{warning}
+_netlab_ assumes you're using Jinja2-based device configuration templates. Add empty template files to the module-specific `netsim/ansible/templates` directory if you configure your device solely through an Ansible task list.
+```
 
 (dev-config-deploy-paths)=
 ## Configuration Deployment Search Paths

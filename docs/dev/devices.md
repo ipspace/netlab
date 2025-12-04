@@ -216,7 +216,7 @@ If you'll use a Vagrant box to start the network device as a VM, you have to add
 
 ## Using Your Device with Ansible Playbooks
 
-If you want to configure your device with **[netlab initial](../netlab/initial.md)** or **[netlab config](../netlab/config.md)**, or connect to your device with **[netlab connect](../netlab/connect.md)**, you'll have to add Ansible variables that will be copied into **group_vars** part of Ansible inventory. Add those variables into the **group_vars** part of your device parameter file.
+If you want to configure your device with **[netlab initial](../netlab/initial.md)** or **[netlab config](../netlab/config.md)**, or connect to your device with **[netlab connect](../netlab/connect.md)**, you'll have to add Ansible variables that will be copied into **group_vars** part of the Ansible inventory. Add those variables into the **group_vars** part of your device parameter file.
 
 The Ansible variables should include:
 
@@ -224,7 +224,7 @@ The Ansible variables should include:
 
 * `ansible_network_os` -- must be specified if your device uses **network_cli** connection. 
 
-* `netlab_device_type` or `ansible_network_os`[^DTP] is used to select the configuration task lists and templates used by **[netlab initial](../netlab/initial.md)**, **[netlab config](../netlab/config.md)** and **[netlab collect](../netlab/collect.md)** commands. Use `netlab_device_type` when you're creating different devices running the same operating system (example: Juniper vSRX and vMX both run Junos).
+* `netlab_device_type` or `ansible_network_os`[^DTP] is used to select the configuration task lists and templates used by **[netlab initial](../netlab/initial.md)**, **[netlab config](../netlab/config.md)**, and **[netlab collect](../netlab/collect.md)** commands. Use `netlab_device_type` when you're creating different devices running the same operating system (example: Juniper vSRX and vMX both run Junos).
 
 * `ansible_user` and `ansible_ssh_pass` must often be set to the default values included in the network device image.
 
@@ -270,12 +270,16 @@ clab:
 (dev-new-devices-configure)=
 ## Configuring the Device
 
-To configure your device (including initial device configuration), you'll have to create an Ansible task list that deploys configuration snippets onto your device. *netlab* merges configuration snippets with existing device configuration (instead of building a complete configuration and replacing it).
+To configure your device (including initial configuration), you'll need to create an Ansible task list that deploys configuration snippets to your device. *netlab* merges configuration snippets with existing device configuration (instead of building a complete configuration and replacing it).
 
-There are two ways to configure a devices:
+There are two ways to configure a device:
 
-* **Configuration templates**: you'll have to create a single Ansible *configuration deployment task list* that will deploy configuration templates. The configuration deployment task list has to be in the `netsim/ansible/tasks/deploy-config` and must match the `ansible_network_os` or `netlab_device_type` Ansible variable specified in device parameters file. [More details...](config/deploy.md)
-* **Ansible modules** (or REST API): you'll have to create an Ansible task list for initial configuration and any other configuration module supported by the device. The task list has to be in the device-specific subdirectory of `netsim/ansible/templates/` directory; the subdirectory name must match the `ansible_network_os` or `netlab_device_type` Ansible variable specified in device parameters file. The task list name has to be `initial.yml` for initial configuration deployment or `<module>.yml` for individual configuration modules. [More details...](config/deploy.md)
+* **Configuration templates**: you'll have to create a single Ansible *configuration deployment task list* that will deploy configuration templates. The configuration deployment task list must be in the `netsim/ansible/tasks/deploy-config` and must match the `ansible_network_os` or `netlab_device_type` Ansible variable specified in the device parameters file. [More details...](config/deploy.md)
+* **Ansible modules** (or REST API): you'll have to create an Ansible task list for initial configuration and any other configuration module supported by the device. The task list has to be in the device-specific subdirectory of `netsim/ansible/tasks/` directory; the subdirectory name must match the `ansible_network_os` or `netlab_device_type` Ansible variable specified in the device parameters file. The task list name has to be `initial.yml` for initial configuration deployment or `<module>.yml` for individual configuration modules. [More details...](config/deploy.md)
+
+```{warning}
+_netlab_ assumes you're using Jinja2-based device configuration templates. Add empty template files to the module-specific `netsim/ansible/templates` directory if you configure your device solely through an Ansible task list.
+```
 
 You might want to implement configuration download to allow the lab users to save final device configurations with **collect-configs.ansible** playbook used by **[netlab collect](../netlab/collect.md)** command -- add a task list collecting the device configuration into the `netsim/ansible/tasks/fetch-config` directory.
 
