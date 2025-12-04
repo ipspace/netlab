@@ -70,7 +70,7 @@ def find_plugin(device: str) -> typing.Any:
 '''
 find_plugin_action -- find the action (show/exec) from the plugin
 
-Figure out whether the validation plugin for the device under test providers the
+Figure out whether the validation plugin for the device under test provides the
 desired functionality (show_ or exec_ function). If not, the test is skipped.
 '''
 def find_plugin_action(v_entry: Box, node: Box) -> typing.Optional[str]:
