@@ -37,14 +37,13 @@ def p_status(txt: str, color: str, topology: Box, stderr: bool = False) -> None:
 # Print test header
 #
 def p_test_header(v_entry: Box,topology: Box) -> None:
-  from . import ERROR_ONLY, TEST_HEADER
+  import netsim.cli.validate as _validate
   h_text = v_entry.get('description','Starting test') + \
            (f' [ node(s): {",".join(v_entry.nodes)} ]' if v_entry.nodes else '')
 
-  if ERROR_ONLY:
-    TEST_HEADER = { 'name': v_entry.name, 'text': h_text }
-    if TEST_HEADER:                               # Facepalm: have to use TEST_HEADER to keep ruff happy
-      return                                      # We know it's truthy, so we'll return as before
+  if _validate.ERROR_ONLY:
+    _validate.TEST_HEADER = { 'name': v_entry.name, 'text': h_text }
+    return
 
   p_status(v_entry.name,"bright_cyan",topology)
   print(h_text)
@@ -58,18 +57,18 @@ def log_failure(
       f_color: str = 'bright_red',
       more_data: typing.Optional[str] = None) -> None:
 
-  from . import ERROR_ONLY, TEST_HEADER
-  if TEST_HEADER:
+  import netsim.cli.validate as _validate
+  if _validate.TEST_HEADER:
     print(file=sys.stderr)
-    p_status(TEST_HEADER['name'],'red',topology,stderr=True)
-    print(TEST_HEADER['text'],file=sys.stderr)
-    TEST_HEADER = {}
+    p_status(_validate.TEST_HEADER['name'],'red',topology,stderr=True)
+    print(_validate.TEST_HEADER['text'],file=sys.stderr)
+    _validate.TEST_HEADER = {}
 
-  o_file = sys.stderr if ERROR_ONLY else sys.stdout
-  p_status(f_status,f_color,topology,stderr=ERROR_ONLY)
+  o_file = sys.stderr if _validate.ERROR_ONLY else sys.stdout
+  p_status(f_status,f_color,topology,stderr=_validate.ERROR_ONLY)
   print(msg,file=o_file)
   if more_data:
-    p_status('MORE','bright_black',topology,stderr=ERROR_ONLY)
+    p_status('MORE','bright_black',topology,stderr=_validate.ERROR_ONLY)
     print(more_data,file=o_file)
 
 # Print generic "making progress" message
