@@ -78,7 +78,7 @@ def run(cli_args: typing.List[str]) -> None:
       log.fatal('Validation test interrupted')
     except SystemExit:
       sys.exit(1)
-    except:
+    except Exception:
       traceback.print_exc()
       log.fatal('Unhandled exception')
 
