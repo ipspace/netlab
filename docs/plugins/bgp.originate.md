@@ -1,3 +1,4 @@
+(plugin-bgp-originate)=
 # BGP Network Origination Plugin
 
 The **bgp.originate** modifies the way _netlab_ configures BGP network origination. The [](../module/bgp.md) configures static routes to the Null interface to originate additional IPv4 prefixes and does not support IPv6 prefixes.

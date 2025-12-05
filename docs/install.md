@@ -74,15 +74,11 @@ If you want to get the latest development code or if you want to participate in 
    install/ubuntu.md
    install/linux.md
    install/cloud.md
-   labs/libvirt.md
-   labs/clab.md
    install/clone.md
 ```
-```eval_rst
-.. toctree::
-   :caption: Deprecated
-   :maxdepth: 1
-   :hidden:
 
-   labs/virtualbox.md
-```
+## Installing Virtualization Providers
+
+* [](lab-clab)
+* [](lab-libvirt)
+* [](lab-virtualbox) (no longer supported or maintained)

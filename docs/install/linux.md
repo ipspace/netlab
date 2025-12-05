@@ -96,13 +96,7 @@ The easiest way to work around that problem is to turn off your distribution's f
 * Execute `nixos-rebuild switch` command to reach the new desired configuration state
 * Reboot into the new configuration
 
+## Installing Virtualization Providers
 
-```eval_rst
-.. toctree::
-   :caption: Next Steps
-   :maxdepth: 1
-   :titlesonly:
-
-   ../labs/libvirt.md
-   ../labs/clab.md
-```
+* [](lab-clab)
+* [](lab-libvirt)

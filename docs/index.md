@@ -81,11 +81,8 @@ Before shutting down your lab with the **[netlab down](netlab/down.md)** command
 
    netlab/cli.md
    topology-reference.md
-   modules.md
    module-reference.md
-   providers.md
    plugins.md
-   defaults.md
    outputs/index.md
    customize.md
 ..

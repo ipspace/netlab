@@ -53,12 +53,10 @@ You'll find sample topology files in the [tutorials](tutorials.md).
    modules.md
    custom-config-templates.md
    extools.md
-   plugins.md
    prefix.md
    providers.md
    components.md
    defaults.md
    topology/hierarchy.md
    topology/validate.md
-   customize.md
 ```

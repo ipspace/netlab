@@ -73,12 +73,7 @@ $ source mylab/bin/activate
 * Use the **groups** command to check that your user belongs **vagrant** and **libvirt** groups when using *libvirt*, or **docker** and **clab_admins** groups when using *containerlab*.
 * Test your installation with **netlab test libvirt** or **netlab test clab**.
 
-```eval_rst
-.. toctree::
-   :caption: Next Steps
-   :maxdepth: 1
-   :titlesonly:
+## Installing Virtualization Providers
 
-   ../labs/libvirt.md
-   ../labs/clab.md
-```
+* [](lab-clab)
+* [](lab-libvirt)

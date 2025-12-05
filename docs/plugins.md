@@ -58,11 +58,7 @@ links:
 
 Plugins providing support for additional networking features usually rely on Jinja2 templates to configure those features, limiting their use to a subset of supported platforms. Please check the plugin documentation for more details.
 
-```eval_rst
-.. toctree::
-   :maxdepth: 1
-   :caption: More information
+## More Information
 
-   dev/plugins.md
-   dev/transform.md
-```
+* [](dev-plugins)
+* [](dev-transform)

@@ -1,3 +1,4 @@
+(addressing-example)=
 # Addressing Tutorial
 
 IP Address Management (IPAM) is one of the most interesting *netlab* features -- it allows you to create full-blown fully configured networking labs without spending a millisecond  on IP addressing scheme, assigning IP addresses to nodes and interfaces, or configuring them on network devices.
