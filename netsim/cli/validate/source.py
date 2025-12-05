@@ -3,6 +3,8 @@
 #
 
 
+import os
+
 from box import Box
 
 from ...augment import validate as _validate
@@ -30,10 +32,14 @@ def validate_test_attributes(topology: Box) -> None:
   log.exit_on_error()
 
 def update_validation_tests(topology: Box, src: str) -> None:
+  if not os.path.exists(src):
+    error_and_exit(f'{src} does not exist')
   log.info(f'Reading validation tests from {src}')
   add_topo = read.read_yaml(filename=src)         # Read tests or whole topology from input file
+  if add_topo is None:
+    error_and_exit(f'The input file ({src}) is not a YAML file')
   if not isinstance(add_topo,Box):                # We have to redo most of the sanity checks done by 'netlab create'
-    error_and_exit('The input file is not a dictionary')
+    error_and_exit(f'The input file ({src}) is not a dictionary')
 
   if 'validate' in add_topo:                      # If we have a 'validate' element in the input dictionary
     v_tests = add_topo.validate                   # We're assuming we read a whole lab topology
