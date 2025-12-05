@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+**Release 25.11.02 (2025-12-05)**
+
+Release 25.12.01 fixes [a stupid bug](bug-fixes-25.12.01) that crashed **netlab install**.
+
 **Release 25.12 (2025-12-05)**
 
 * Large BGP community lists, implemented on Arista EOS, FRR, and Junos. You can use standard- or large community lists in [routing policies](generic-routing-policies)

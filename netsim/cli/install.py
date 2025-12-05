@@ -93,7 +93,7 @@ Adjust installation configuration:
 def adjust_setup(setup: Box, topology: Box, args: argparse.Namespace) -> None:
   for k,v in setup.env.items():
     if v in topology.defaults:
-      os.environ[k] = topology.defaults[v]
+      os.environ[k] = str(topology.defaults[v])
       if args.verbose:
         print(f'ENV: {k}={os.environ[k]}')
 
