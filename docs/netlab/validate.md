@@ -50,6 +50,7 @@ The **netlab validate** command returns the overall test results in its exit cod
 * Use **‌netlab validate --error-only** to shorten the printout and display only the validation errors.
 ```
 
+(netlab-validate-dev)=
 ## Developing Validation Tests
 
 Validation test development is usually an interactive process that requires several changes to the **validate** lab topology attribute before you get them just right. Restarting the lab every time you change the validation tests just to have them transformed and stored in the snapshot file is tedious; these changes to **netlab validate** (introduced in release 25.12) streamline the process:

@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+**Release 25.12 (2025-12-05)**
+
+* Large BGP community lists, implemented on Arista EOS, FRR, and Junos. You can use standard- or large community lists in [routing policies](generic-routing-policies)
+* Support Cisco ASAv in *vrnetlab* containers
+* [Reread validation tests](netlab-validate-dev) from the lab topology file (if it was modified since the lab was started) every time you run the **[netlab validate](netlab-validate)** command
+* The **shutdown** [link/interface attribute](link-attributes) can be used to start labs with interfaces turned off
+* The **bgp.rr_mesh** parameter [controls IBGP sessions between BGP route reflectors](bgp-ibgp-sessions)
+
+[More details](release-25.12) and [breaking changes](release-25.12-breaking)
+
 **Release 25.11.01 (2025-11-18)**
 
 Release 25.11.01 fixes [two bugs](bug-fixes-25.11.01) that could prevent the use of SR-OS/SR-SIM or some external tools.
@@ -166,6 +176,8 @@ For older releases, check the [release notes archive](release-archive.md).
    :caption: Individual release notes
    :maxdepth: 1
 
+   release/25.12.md
+   release/25.11.md
    release/25.10.md
    release/25.09.md
    release/25.07.md

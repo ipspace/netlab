@@ -11,13 +11,13 @@
 * Configure and manage (virtual) link impairment
 * Provide local- or remote traffic capture capabilities
 
-Instead of wasting time creating a lab topology in a GUI and configuring boring details, you'll start with a lab preconfigured according to your specifications.
+Instead of wasting time creating a lab topology in a GUI and configuring tedious details, you'll start with a preconfigured lab that meets your high-level specifications (aka _intent_).
 
 Interested? [Read the documentation](https://netlab.tools) (also available on [GitHub Pages](https://ipspace.github.io/netlab/)) and [installation guidelines](https://netlab.tools/install/).
 
 ## Releases
 
-The latest release is [release 25.11.01](https://github.com/ipspace/netlab/releases/tag/release_25.11.01). We had to do "a bit" of refactoring (resulting in a few breaking changes); if you encounter bugs, please report them as [GitHub issues](https://github.com/ipspace/netlab/issues/new/choose) and use [release 25.10](https://github.com/ipspace/netlab/releases/tag/release_25.10).
+The latest release is [release 25.12](https://github.com/ipspace/netlab/releases/tag/release_25.12). We had to do "a bit" of refactoring (resulting in a few breaking changes); if you encounter bugs, please report them as [GitHub issues](https://github.com/ipspace/netlab/issues/new/choose) and use [release 25.11.01](https://github.com/ipspace/netlab/releases/tag/release_25.11.01).
 
 <!--
 or [1.8.4-post2](https://github.com/ipspace/netlab/releases/tag/release_1.8.4-post2).
