@@ -1,9 +1,9 @@
 Release Notes
 =============
 
-**Release 25.11.02 (2025-12-05)**
+**Release 25.12.01/02 (2025-12-05)**
 
-Release 25.12.01 fixes [a stupid bug](bug-fixes-25.12.01) that crashed **netlab install**.
+Release 25.12.01 fixes [a stupid bug](bug-fixes-25.12.01) that crashed **netlab install**. Release 25.12.02 fixes the target containerlab release version (it wasn't one of my best days).
 
 **Release 25.12 (2025-12-05)**
 
