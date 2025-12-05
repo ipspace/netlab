@@ -38,6 +38,10 @@ def validate_parse(args: typing.List[str]) -> argparse.Namespace:
     dest='error_only', action='store_true',
     help='Display only validation errors (on stderr)')
   parser.add_argument(
+    '--source',
+    dest='test_source',action='store',
+    help='Read tests from the specified YAML file')
+  parser.add_argument(
     '--skip-missing',
     dest='skip_missing', action='store_true',
     help=argparse.SUPPRESS)
@@ -47,7 +51,7 @@ def validate_parse(args: typing.List[str]) -> argparse.Namespace:
     choices=['result'],
     nargs='+',
     default=[],
-    help='Dump additional information during validation process')
+    help='Dump additional information during the validation process')
   parser.add_argument(
     dest='tests', action='store',
     nargs='*',

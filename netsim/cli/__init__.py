@@ -76,7 +76,7 @@ def parser_lab_location(
       *i_flags,
       dest='instance',
       action='store',
-      help=argparse.SUPPRESS if hide else f'Specify lab instance to {action}')
+      help=argparse.SUPPRESS if hide else f'Specify the lab instance to {action}')
   if snapshot:
     parser.add_argument(
       '--snapshot',
@@ -240,7 +240,10 @@ def change_lab_instance(instance: typing.Union[int,str], quiet: bool = False) ->
 #
 # Snapshot loading code -- loads the specified snapshot file and checks its modification date
 #
-def load_snapshot(args: typing.Union[argparse.Namespace,Box],ghosts: bool = True) -> Box:
+def load_snapshot(
+      args: typing.Union[argparse.Namespace,Box],
+      ghosts: bool = True,
+      warn_modified: bool = True) -> Box:
   if 'instance' in args and args.instance:
     change_lab_instance(args.instance,args.quiet if 'quiet' in args else False)
   
@@ -265,6 +268,8 @@ def load_snapshot(args: typing.Union[argparse.Namespace,Box],ghosts: bool = True
       log.fatal(f"Cannot read the topology snapshot file {args.snapshot}")
     topology = yaml_topology
 
+  topology._input.snapshot = snapshot
+
   if '_netlab_version' not in topology:
     log.fatal(f"{args.snapshot} is either not a netlab snapshot file or was created with an older netlab version")
 
@@ -272,7 +277,7 @@ def load_snapshot(args: typing.Union[argparse.Namespace,Box],ghosts: bool = True
     topology = augment.nodes.ghost_buster(topology)
 
   global_vars.init(topology)
-  check_modified_source(snapshot,topology)
+  check_modified_source(snapshot,topology,warn_modified)
   return topology
 
 """
@@ -316,9 +321,13 @@ def load_data_source(args: argparse.Namespace, ghosts: bool = True) -> Box:
     f'Could not get the data from {args.snapshot} or lab topology {args.topology}',
     more_hints='Start the lab or specify an alternate topology file with the --topology flag')
 
-def check_modified_source(snapshot: str, topology: typing.Optional[Box] = None) -> None:
+def check_modified_source(
+      snapshot: str,
+      topology: typing.Optional[Box] = None,
+      warning: bool = True) -> typing.Optional[str]:
+
   if topology is None:
-    return
+    return None
 
   snap_time = os.path.getmtime(snapshot)
 
@@ -329,12 +338,18 @@ def check_modified_source(snapshot: str, topology: typing.Optional[Box] = None) 
     if in_time <= snap_time:
       continue
 
-    log.warning(
-      text=f'Lab topology source file {infile} has been modified',
-      module='cli',
-      flag='snapshot.modified',
-      more_data=f'after the snapshot {snapshot} has been created',
-      hint='recreate')
+    if warning:
+      log.warning(
+        text=f'Lab topology source file {infile} has been modified',
+        module='cli',
+        flag='snapshot.modified',
+        more_data=f'after the snapshot {snapshot} has been created',
+        hint='recreate')
+
+    topology._input.modified = infile
+    return infile
+
+  return None
 
 # get_message: get action-specific message from topology file
 #
