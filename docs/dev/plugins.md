@@ -1,3 +1,4 @@
+(dev-plugins)=
 # Developing Plugins
 
 Plugins are either Python files or directories containing Python code plus configuration templates. *netlab* tries to locate them in the *plugin search path* (specified in the **defaults.paths.plugin** setting), which usually includes the user search path and the `netsim/extra` _networklab_ package directory.

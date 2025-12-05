@@ -481,16 +481,11 @@ The current _netlab_ implementation of BGP confederations does not support[^CWP]
 
 ## Related Plugins
 
-```eval_rst
-.. toctree::
-   :maxdepth: 1
-
-   ../plugins/bgp.domain.md
-   ../plugins/bgp.originate.md
-   ../plugins/bgp.policy.md
-   ../plugins/bgp.session.md
-   ../plugins/ebgp.multihop.md
-```
+* [](plugin-bgp-domain)
+* [](plugin-bgp-originate)
+* [](plugin-bgp-policy)
+* [](plugin-bgp-session)
+* [](plugin-ebgp-multihop)
 
 ## More Examples
 

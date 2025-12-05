@@ -108,12 +108,7 @@ netlab install -y ubuntu ansible libvirt containerlab
 
 * After completing the software installation, log out from the VM, log back in, and test your installation with the **[netlab test](netlab-test)** command. If those tests fail, you might have to use **usermod** to add your user to the *libvirt* and *docker* groups.
 
-```eval_rst
-.. toctree::
-   :caption: Next Steps
-   :maxdepth: 1
-   :titlesonly:
+## Installing Virtualization Providers
 
-   ../labs/libvirt.md
-   ../labs/clab.md
-```
+* [](lab-clab)
+* [](lab-libvirt)

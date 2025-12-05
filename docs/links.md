@@ -786,11 +786,7 @@ r1:
 ...
 ```
 
-```eval_rst
-.. toctree::
-   :caption: Detailed Examples
-   :maxdepth: 1
+## Detailed Examples
 
-   example/link-definition.md
-   example/addressing-tutorial.md
-```
+* [](link-example)
+* [](addressing-example)

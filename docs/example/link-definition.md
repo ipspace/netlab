@@ -1,3 +1,4 @@
+(link-example)=
 # Link Definition Examples
 
 This document contains way too many link definition examples, ranging from simple links to complex topologies emulating bridging loops.

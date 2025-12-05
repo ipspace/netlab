@@ -311,7 +311,6 @@ providers.libvirt.probe: []
    dellos10.md
    vsrx.md
    vptx.md
-   linux.md
    openbsd.md
    routeros7.md
    sonic.md

@@ -24,8 +24,8 @@ These instructions and tutorials cover some of the usual early hurdles:
 
 Once you want to know more, check out these lab topology tutorials:
 
-* [Link definitions](example/link-definition.md)
-* [](example/addressing-tutorial.md)
+* [](link-example)
+* [](addressing-example)
 * [netlab Custom Groups and Deployment Templates](https://blog.ipspace.net/2021/11/netsim-groups-deployment-templates/)
 * [Simplify netlab Topologies with Link Groups](https://blog.ipspace.net/2023/05/netlab-link-groups/)
 * [Mix Containers and VMs in the Same Lab Topology](https://blog.ipspace.net/2023/02/netlab-vm-containers/)
@@ -108,6 +108,7 @@ Documentation of individual configuration modules includes sample lab topology f
 
    example/github.md
    example/release.md
+   example/link-definition.md
    example/linux.md
    example/bridge.md
    example/vlan-addressing.md
