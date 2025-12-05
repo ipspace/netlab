@@ -9,18 +9,16 @@ defaults:
       description: containerlab with Docker
       config: clab.yml
       lab_prefix: clab
-      node_config_attributes:
-      - type
-      - cmd
-      - dns
-      - env
-      - exec
-      - license
-      - ports
-      - startup-delay
-      - restart-policy
+      node_config_special:
+      - binds
+      - config_templates
+      - image
+      - kind
+      - startup-config
+      - srl-agents
+      - runtime
       template: clab.j2
-      version: 0.69.3
+      version: 0.72
       start: sudo -E containerlab deploy --reconfigure -t clab.yml
       stop: sudo -E containerlab destroy --cleanup -t clab.yml
       act_probe: docker ps
@@ -31,9 +29,9 @@ defaults:
       - cmd:
         - bash
         - -c
-        - "[[ `containerlab version|awk '/version/ {print $2}'` > '0.69.2' ]] && echo
-          OK"
-        err: Containerlab version is too old, please upgrade to 0.69.3 or later 
+        - "[[ `containerlab version|awk '/version/ {print $2}'` > '0.71.999' ]] &&
+          echo OK"
+        err: Containerlab version is too old, please upgrade to 0.72 or later 
           with 'sudo containerlab version upgrade'
       cleanup:
       - clab.yml
@@ -260,14 +258,15 @@ defaults:
               community:
                 standard: true
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -334,6 +333,7 @@ defaults:
             license:
               type: str
               valid_values:
+              - none
               - essential
               - advantage
               - premier
@@ -364,6 +364,8 @@ defaults:
         interface:
           name: eth{ifindex-1}
         build: https://containerlab.dev/manual/kinds/vr-c8000v/
+        cat8000v:
+          license: premier
       role: router
       routing:
         _rm_per_af: true
@@ -466,14 +468,15 @@ defaults:
             delete:
               community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -762,14 +765,15 @@ defaults:
             delete:
               community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -938,14 +942,15 @@ defaults:
                 extended: true
                 append: true
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -1133,13 +1138,15 @@ defaults:
         routing:
           aspath: true
           community:
-            expanded: false
+            standard:
+            - standard
           policy:
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
             set:
               locpref: true
               med: true
@@ -1334,16 +1341,19 @@ defaults:
             - prepend
             - community
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             delete:
               community: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
           static:
             vrf: true
             inter_vrf: true
@@ -1452,12 +1462,13 @@ defaults:
         ansible_httpapi_validate_certs: 'no'
         ansible_httpapi_port: 80
         netlab_console_connection: ssh
-        netlab_skip_missing_template: true
-        netlab_config_tasks: true
       external:
         image: none
       features:
-        ospf: {}
+        ospf:
+          password: true
+          priority: true
+          timers: true
       graphite:
         icon: firewall
     frr:
@@ -1551,6 +1562,7 @@ defaults:
           roles:
           - host
           - router
+          - bridge
           generate_mac:
           - svi
         bfd: {}
@@ -1643,16 +1655,19 @@ defaults:
                 extended: true
                 append: true
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             delete:
               community: clist
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
           static:
             vrf: true
             inter_vrf: true
@@ -1840,14 +1855,15 @@ defaults:
             delete:
               community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -2024,14 +2040,15 @@ defaults:
             delete:
               community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -2113,7 +2130,7 @@ defaults:
           - ssh
         image: vrnetlab/cisco_vios:15.9.3
         node:
-          kind: linux
+          kind: cisco_vios
         interface:
           name: eth{ifindex}
         build: https://github.com/srl-labs/vrnetlab/tree/master/vios
@@ -2219,14 +2236,15 @@ defaults:
             delete:
               community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -2295,7 +2313,7 @@ defaults:
           - ssh
         image: vrnetlab/cisco_viosl2:15.2
         node:
-          kind: linux
+          kind: cisco_vios
         interface:
           name: eth{ifindex}
         build: https://github.com/srl-labs/vrnetlab/tree/master/viosl2
@@ -2405,14 +2423,15 @@ defaults:
             delete:
               community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -2772,16 +2791,19 @@ defaults:
               prepend: true
               community: true
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             delete:
               community: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
           static:
             vrf: true
             inter_vrf: true
@@ -3564,9 +3586,11 @@ defaults:
         routing:
           policy:
             match:
-            - prefix
-            - aspath
-            - community
+              prefix: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             set:
               locpref: true
               med: true
@@ -3584,7 +3608,8 @@ defaults:
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
         sr: {}
         vrf:
           ospfv2: true
@@ -3661,9 +3686,11 @@ defaults:
         routing:
           policy:
             match:
-            - prefix
-            - aspath
-            - community
+              prefix: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             set:
               locpref: true
               med: true
@@ -3681,7 +3708,8 @@ defaults:
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
         sr: {}
         vrf:
           ospfv2: true
@@ -3768,9 +3796,11 @@ defaults:
         routing:
           policy:
             match:
-            - prefix
-            - aspath
-            - community
+              prefix: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             set:
               locpref: true
               med: true
@@ -3788,7 +3818,8 @@ defaults:
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
         sr: {}
         vrf:
           ospfv2: true
@@ -3862,9 +3893,11 @@ defaults:
         routing:
           policy:
             match:
-            - prefix
-            - aspath
-            - community
+              prefix: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             set:
               locpref: true
               med: true
@@ -3882,7 +3915,8 @@ defaults:
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
         sr: {}
         vrf:
           ospfv2: true
@@ -3963,9 +3997,11 @@ defaults:
         routing:
           policy:
             match:
-            - prefix
-            - aspath
-            - community
+              prefix: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             set:
               locpref: true
               med: true
@@ -3983,7 +4019,8 @@ defaults:
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
         sr: {}
         vrf:
           ospfv2: true
@@ -4105,14 +4142,15 @@ defaults:
             delete:
               community: false
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -4248,6 +4286,9 @@ defaults:
           kind: linux
           config_templates:
             hosts: /etc/hosts:shared
+            config: /etc/config/startup.sh
+          exec:
+          - sh /etc/config/startup.sh
         group_vars:
           ansible_connection: docker
           ansible_user: root
@@ -4265,6 +4306,9 @@ defaults:
         bird: bird
       daemon_config:
         bird: /etc/bird/bird.conf
+        initial: /etc/config/01-initial.sh
+        lag: /etc/config/10-lag.sh
+        vlan: /etc/config/20-vlan.sh
         bgp: /etc/bird/bgp.mod.conf
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
@@ -4378,6 +4422,9 @@ defaults:
         bird: bird
       daemon_config:
         bird: /etc/bird/bird.conf
+        initial: /etc/config/01-initial.sh
+        lag: /etc/config/10-lag.sh
+        vlan: /etc/config/20-vlan.sh
         bgp: /etc/bird/bgp.mod.conf
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
@@ -4394,6 +4441,11 @@ defaults:
             roles:
             - host
             - router
+        node:
+          config_templates:
+            config: /etc/config/startup.sh
+          exec:
+          - sh /etc/config/startup.sh
       libvirt:
         image:
       virtualbox:
@@ -5169,6 +5221,7 @@ defaults:
         license:
           type: str
           valid_values:
+          - none
           - essential
           - advantage
           - premier
@@ -5438,13 +5491,18 @@ defaults:
           extended: list
           large: list
           list:
-            type: str
             _valid_with: []
+            standard: str
+            extended: str
+            large: str
       match:
         prefix: str
         nexthop: str
         aspath: str
-        community: str
+        community:
+          standard: str
+          extended: str
+          large: str
     pfx_entry:
       action:
         type: str
@@ -5858,12 +5916,12 @@ defaults:
     - /home/pipi/netlab_gh/netsim/validate
     plugin:
     - /work/netlab_cicd
-    - /home/pipi/netlab_gh/tests/integration/initial
+    - /home/pipi/net101/tools/tests/integration/initial
     - /home/pipi/.netlab
     - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
-      - /home/pipi/netlab_gh/tests/integration/initial
+      - /home/pipi/net101/tools/tests/integration/initial
       - /work/netlab_cicd
       - /home/pipi/.netlab
       - /home/pipi/netlab_gh/netsim/extra
@@ -7314,9 +7372,20 @@ defaults:
           type: dict
           _keytype: id
           _subtype:
-            type: list
-            make_list: true
-            _subtype: community_entry
+            type: dict
+            _keys:
+              type:
+                type: str
+                valid_values:
+                - standard
+                - extended
+                - large
+                _required: true
+                _default: standard
+              value:
+                type: list
+                make_list: true
+                _subtype: community_entry
         static:
           type: dict
           _keytype: id
@@ -7356,9 +7425,20 @@ defaults:
           type: dict
           _keytype: id
           _subtype:
-            type: list
-            make_list: true
-            _subtype: community_entry
+            type: dict
+            _keys:
+              type:
+                type: str
+                valid_values:
+                - standard
+                - extended
+                - large
+                _required: true
+                _default: standard
+              value:
+                type: list
+                make_list: true
+                _subtype: community_entry
             _alt_types:
             - NoneType
         static:
@@ -8313,9 +8393,9 @@ validate:
   level: warning
   name: shutdown
 input:
-- /home/pipi/netlab_gh/tests/integration/initial/01-interfaces.yml
-- /home/pipi/netlab_gh/tests/integration/wait_times.yml
-- /home/pipi/netlab_gh/tests/integration/warnings.yml
+- /home/pipi/net101/tools/tests/integration/initial/01-interfaces.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 plugin:
