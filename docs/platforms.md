@@ -109,7 +109,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Arista vEOS        | [✅](build-eos)  | ✅  | [✅](build-ceos)  |
 | Aruba AOS-CX       | [✅](build-arubacx)  |  ❌  |  ✅[❗](clab-vrnetlab)  |
 | Cisco 8000v        |  ❌  |  ❌  | ✅ |
-| Cisco ASAv         | [✅](build-asav)  |  ❌  |  ❌  |
+| Cisco ASAv         | [✅](build-asav)  |  ❌  | ✅ [❗](clab-vrnetlab) |
 | Cisco Catalyst 8000v | [✅](build-cat8000v) |  ❌  |  ✅[❗](clab-vrnetlab)  |
 | Cisco CSR 1000v    | [✅](build-csr)  | ✅  |  ✅[❗](clab-vrnetlab) |
 | Cisco IOL          |  ❌ | ❌  |  ✅[❗](clab-vrnetlab) |

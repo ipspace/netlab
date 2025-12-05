@@ -17,7 +17,7 @@
 
 ## Supported Versions
 
-The latest _netlab_ release was tested with _containerlab_ version 0.71.1. That's also the version the **netlab install containerlab** command installs.
+The latest _netlab_ release was tested with _containerlab_ version 0.72. That's also the version the **netlab install containerlab** command installs.
 
 If needed, use ```sudo containerlab version upgrade``` to upgrade to the latest _containerlab_ version.
 
@@ -32,6 +32,7 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | Aruba CX               | vrnetlab/aruba_arubaos-cx:20240731173624 |
 | BIRD                   | netlab/bird:latest           |
 | Cisco 8000v            | cisco/cisco-8201-32fh:24.4.1 |
+| Cisco ASAv             | vrnetlab/cisco_asav:9-16-4-57 |
 | Cisco Catalyst 8000v   | vrnetlab/vr-c8000v:17.13.01a |
 | Cisco CSR 1000v        | vrnetlab/vr-csr:17.03.04     |
 | Cisco IOL [❗](caveats-iol)    | vrnetlab/cisco_iol:17.12.01 |
