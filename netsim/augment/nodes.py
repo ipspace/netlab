@@ -455,11 +455,19 @@ def augment_node_device_data(n: Box, topology: Box) -> None:
     if 'daemon_config' in dev_data:               # Does the daemon need special configuration files?
       n._daemon_config = dev_data.daemon_config   # Yes, save it for later (clab binds or Ansible playbooks)
 
-  # Do a sanity check on _daemon_config dictionary. Remove faulty value to prevent downstream crashes
+  if 'node_config' in dev_data:                   # Do we have a node with non-Ansible configuration templates?
+    n._node_config = dev_data.node_config         # Remember the templates
+
+  # Do a sanity check on non-Ansible config dictionaries. Remove faulty values to prevent downstream crashes
   #
-  if '_daemon_config' in n and not isinstance(n._daemon_config,Box):
-    log.error(f"Daemon configuration files for node {n} must be a dictionary")
-    n.pop('_daemon_config',None)
+  for kw in ('daemon','node'):
+    attr_kw = f'_{kw}_config'
+    if attr_kw in n and not isinstance(n[attr_kw],Box):
+      log.error(
+        f"{attr_kw} node attribute for node {n} must be a dictionary",
+        module='nodes',
+        category=log.IncorrectType)
+      n.pop(attr_kw,None)
 
   role = n.get('role',None)
   if role:
@@ -515,20 +523,26 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
   check_duplicate_mgmt_addr(topology)
 
 '''
-Cleanup daemon configuration file data -- remove all daemon config mappings that
+Cleanup non-Ansible configuration file data -- remove all daemon/node config mappings that
 are not used by a module, a plugin (based on "config" data) or a device itself
 '''
-def cleanup_daemon_config(n: Box) -> None:
-  for k in list(n._daemon_config.keys()):
-    if k.startswith('_'):                                   # Skip internal mappings (will have to be redone later)
+def cleanup_non_ansible_config(n: Box) -> None:
+  for kw in ('_daemon_config','_node_config'):
+    if kw not in n:
       continue
+    for k in list(n[kw].keys()):
+      if k.startswith('_'):                                   # Skip internal mappings (will have to be redone later)
+        continue
 
-    kn = k.replace('@','.')                                 # A workaround for aggressive de-dotting
-    # Leave config mappings for device configuration, module configuration, or extra configs
-    if kn == n.device or kn in n.get('module',[]) or kn in n.get('config',[]) or kn == 'initial':
-      continue
-
-    n._daemon_config.pop(k,None)
+      kn = k.replace('@','.')                                 # A workaround for aggressive de-dotting
+      # Leave config mappings for device configuration, module configuration, or extra configs
+      # ... also, build netlab_ansible_skip_module list because the module will be configured
+      # ... in another way
+      #
+      if kn == n.device or kn in n.get('module',[]) or kn in n.get('config',[]) or kn == 'initial':
+        data.append_to_list(n,'netlab_ansible_skip_module',kn)
+      else:
+        n[kw].pop(k,None)                                     # Config template not used, remove it
 
 '''
 Check uniqueness of interface names
@@ -614,8 +628,7 @@ def cleanup(topology: Box) -> None:
   for name,n in topology.nodes.items():
     check_unique_ifnames(n)
     cleanup_mtu(n,topology)
-    if '_daemon_config' in n:
-      cleanup_daemon_config(n)
+    cleanup_non_ansible_config(n)
 
     # Put plugin configs in front of node custom configs
     if 'config' in n:

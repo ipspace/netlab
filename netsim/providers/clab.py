@@ -98,14 +98,14 @@ def normalize_clab_filemaps(node: Box) -> None:
     filemaps.normalize_file_mapping(node,f'nodes.{node.name}',undot_key,'clab')
 
 '''
-add_daemon_filemaps: add device-level daemon_config dictionary to clab.config_templates dictionary
+add_config_filemaps: add device-level node/daemon_config dictionary to clab.config_templates dictionary
 '''
 
-def add_daemon_filemaps(node: Box, topology: Box) -> None:
-  if '_daemon_config' not in node:                # Does the current node need daemon-specific binds?
-    return                                        # ... nope, get out of here
-
-  node.clab.config_templates = node.clab.config_templates + node._daemon_config
+def add_config_filemaps(node: Box, topology: Box) -> None:
+  for kw in ('_daemon_config','_node_config'):
+    if kw not in node:                            # Does the current node need non-ansible binds?
+      continue
+    node.clab.config_templates += node[kw]        # Add them to clab config templates
 
 '''
 get_loaded_kernel_modules: Get the list of loaded kernel modules from '/proc/modules'
@@ -172,7 +172,7 @@ class Containerlab(_Provider):
       node_add_forwarded_ports(node,node_fp,topology)
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
-    add_daemon_filemaps(node,topology)
+    add_config_filemaps(node,topology)
     normalize_clab_filemaps(node)
     validate_mgmt_ip(node,required=True,provider='clab',mgmt=topology.addressing.mgmt)
 
