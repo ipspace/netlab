@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -7,6 +11,11 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [probe]
 ok: [x1]
 ok: [dut]
+
+TASK [Generic readiness tests] *************************************************
+skipping: [dut]
+skipping: [probe]
+skipping: [x1]
 
 TASK [Find device readiness script] ********************************************
 ok: [probe]
@@ -361,8 +370,8 @@ ok: [probe]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [probe]
 changed: [x1]
+changed: [probe]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [probe]
@@ -414,6 +423,8 @@ ok: [x1] =>
     !
     route-map set_comm-ipv4 permit 10
       set community 65101:17 65101:42
+  
+  
     !
 ok: [dut] => 
   msg: |-
@@ -422,16 +433,11 @@ ok: [dut] =>
     !
     !
     route-map set_comm-ipv4 permit 10
-      set comm-list DEL_set_comm_10 delete
+      set comm-list DEL_standard_set_comm_10 delete
+  
   
     !
-    ! AS-path access lists
-    !
-    !
-    ip community-list standard DEL_set_comm_10 permit 65101:42
-    !
-    ! Static routes
-    !
+    ip community-list standard DEL_standard_set_comm_10 permit 65101:42
 
 TASK [Deploy routing configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
@@ -499,9 +505,9 @@ ok: [probe] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.2/32
-    !
-    !
     !
       neighbor 10.1.0.1 activate
       no neighbor 10.1.0.1 send-community all
@@ -533,9 +539,9 @@ ok: [x1] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.3/32
-    !
-    !
     !
       neighbor 10.1.0.5 activate
       no neighbor 10.1.0.5 send-community all
@@ -567,11 +573,12 @@ ok: [dut] =>
     !
      address-family ipv4
       bgp scan-time 5
-  
+    !
+    !
+    ! Originate networks from connected subnets
     !
       network 10.0.0.1 mask 255.255.255.255
   
-    !
     !
       neighbor 10.1.0.2 activate
       neighbor 10.1.0.2 advertisement-interval 0
@@ -655,11 +662,11 @@ TASK [run vtysh to import bgp.policy config from /home/pipi/netlab_gh/netsim/ext
 changed: [x1]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=34   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
-probe                      : ok=36   changed=7    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
-x1                         : ok=43   changed=8    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+dut                        : ok=34   changed=4    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+probe                      : ok=36   changed=7    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+x1                         : ok=43   changed=8    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
 
 
 
-Use this topology to test 'set.community.delete' route-map option.
+Use this topology to test 'delete.community' route-map option.
 

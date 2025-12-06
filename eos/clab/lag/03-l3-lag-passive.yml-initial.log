@@ -9,8 +9,8 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 
 TASK [Generic readiness tests] *************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ssh.yml for dut, x1, x2 => (item=ssh)
@@ -24,12 +24,13 @@ ok: [x1 -> localhost]
 ok: [x2 -> localhost]
 
 TASK [Execute local ssh command to check ssh readiness] ************************
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
-FAILED - RETRYING: [x2 -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
 FAILED - RETRYING: [x1 -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
+FAILED - RETRYING: [x2 -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (19 retries left).
+ok: [x1 -> localhost]
 ok: [x2 -> localhost]
 ok: [dut -> localhost]
-ok: [x1 -> localhost]
 
 TASK [Confirm dut SSH server works] ********************************************
 ok: [dut] => 
@@ -310,8 +311,8 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for dut, x1, x2
 
 TASK [eos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/eos.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 changed: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -347,6 +348,25 @@ ok: [x1]
 ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x1] => 
+  msg: |-
+    lag configuration for x1
+    =========================================
+  
+    interface port-channel1
+     description [Access VLAN red] x1 -> dut
+    !
+    !
+    !
+    interface Ethernet1
+     description x1 -> dut in channel-group 1
+     channel-group 1 mode active
+     lacp timer fast
+    !
+    interface Ethernet2
+     description x1 -> dut in channel-group 1
+     channel-group 1 mode active
+     lacp timer fast
 ok: [dut] => 
   msg: |-
     lag configuration for dut
@@ -379,25 +399,6 @@ ok: [dut] =>
     interface Ethernet4
      description dut -> x2 in channel-group 2
      channel-group 2 mode passive
-     lacp timer fast
-ok: [x1] => 
-  msg: |-
-    lag configuration for x1
-    =========================================
-  
-    interface port-channel1
-     description [Access VLAN red] x1 -> dut
-    !
-    !
-    !
-    interface Ethernet1
-     description x1 -> dut in channel-group 1
-     channel-group 1 mode active
-     lacp timer fast
-    !
-    interface Ethernet2
-     description x1 -> dut in channel-group 1
-     channel-group 1 mode active
      lacp timer fast
 ok: [x2] => 
   msg: |-
@@ -471,20 +472,6 @@ ok: [dut] =>
     interface Vlan1000
     !
     interface Vlan1001
-ok: [x2] => 
-  msg: |-
-    vlan configuration for x2
-    =========================================
-    vlan 1001
-     name blue
-    !
-  
-    !
-    interface port-channel1
-     switchport
-     switchport access vlan 1001
-    !
-    interface Vlan1001
 ok: [x1] => 
   msg: |-
     vlan configuration for x1
@@ -499,13 +486,27 @@ ok: [x1] =>
      switchport access vlan 1000
     !
     interface Vlan1000
+ok: [x2] => 
+  msg: |-
+    vlan configuration for x2
+    =========================================
+    vlan 1001
+     name blue
+    !
+  
+    !
+    interface port-channel1
+     switchport
+     switchport access vlan 1001
+    !
+    interface Vlan1001
 
 TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for dut, x1, x2
 
 TASK [eos_config: deploying vlan from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/eos.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 changed: [dut]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
@@ -529,15 +530,15 @@ ok: [x1]
 ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [x1] => 
+ok: [x2] => 
   msg: |-
-    ospf configuration for x1
+    ospf configuration for x2
     =========================================
     !
     ! OSPFv2 configuration
     !
     router ospf 1
-     router-id 10.0.0.2
+     router-id 10.0.0.3
      interface unnumbered hello mask tx 0.0.0.0
      timers spf delay initial 100 200 500
      timers lsa rx min interval 100
@@ -549,8 +550,8 @@ ok: [x1] =>
     !
      ip ospf area 0.0.0.0
     !
-    interface Vlan1000
-    ! VLAN red (1000) -> [dut]
+    interface Vlan1001
+    ! VLAN blue (1001) -> [dut]
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
@@ -584,15 +585,15 @@ ok: [dut] =>
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
-ok: [x2] => 
+ok: [x1] => 
   msg: |-
-    ospf configuration for x2
+    ospf configuration for x1
     =========================================
     !
     ! OSPFv2 configuration
     !
     router ospf 1
-     router-id 10.0.0.3
+     router-id 10.0.0.2
      interface unnumbered hello mask tx 0.0.0.0
      timers spf delay initial 100 200 500
      timers lsa rx min interval 100
@@ -604,8 +605,8 @@ ok: [x2] =>
     !
      ip ospf area 0.0.0.0
     !
-    interface Vlan1001
-    ! VLAN blue (1001) -> [dut]
+    interface Vlan1000
+    ! VLAN red (1000) -> [dut]
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
@@ -614,8 +615,8 @@ TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for dut, x1, x2
 
 TASK [eos_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/eos.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 changed: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************

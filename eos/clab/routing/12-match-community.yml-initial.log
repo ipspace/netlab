@@ -8,8 +8,8 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [probe]
 ok: [x1]
+ok: [probe]
 ok: [dut]
 
 TASK [Generic readiness tests] *************************************************
@@ -32,8 +32,8 @@ ok: [dut] =>
   msg: Node dut is ready.
 
 TASK [Find device readiness script] ********************************************
-ok: [probe]
 ok: [x1]
+ok: [probe]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
@@ -45,8 +45,8 @@ TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [probe]
 ok: [x1]
+ok: [probe]
 ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
@@ -108,8 +108,8 @@ skipping: [probe]
 skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [probe]
 ok: [x1]
+ok: [probe]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -392,8 +392,8 @@ ok: [probe]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [probe]
 changed: [x1]
+changed: [probe]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [probe]
@@ -411,8 +411,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, p
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1 => (item=bgp)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
-ok: [probe]
 ok: [x1]
+ok: [probe]
 ok: [dut]
 
 TASK [Find configuration template for routing] *********************************
@@ -445,14 +445,20 @@ ok: [x1] =>
     !
     route-map set_comm-ipv4 permit 10
       set community 65101:17
+  
       match ip address prefix-list pf1-ipv4
+  
     !
     route-map set_comm-ipv4 permit 20
       set community 65101:42
+  
       match ip address prefix-list pf2-ipv4
+  
     !
     route-map set_comm-ipv4 permit 30
       set community 65101:1
+  
+  
     !
     ip prefix-list pf1-ipv4 seq 10 permit 172.16.0.0/24
     !
@@ -467,24 +473,23 @@ ok: [dut] =>
     route-map set_med-ipv4 permit 10
       set metric 120
       match community c1
+  
+      match community c1
     !
     route-map set_med-ipv4 permit 20
       set metric 200
       match community c2
+  
+      match community c2
     !
     route-map set_med-ipv4 permit 30
       set metric 72
-    !
-    ! AS-path access lists
-    !
+  
     !
     ip community-list  c1 permit 65101:17
     !
     ip community-list regexp c2 deny 65101:42
     ip community-list regexp c2 permit .*
-    !
-    ! Static routes
-    !
 
 TASK [Deploy routing configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for dut
@@ -506,8 +511,8 @@ skipping: [probe]
 skipping: [x1]
 
 TASK [run vtysh to import routing config from /home/pipi/netlab_gh/netsim/ansible/templates/routing/frr.j2] ***
-changed: [x1]
 changed: [probe]
+changed: [x1]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [probe]
@@ -515,8 +520,8 @@ ok: [x1]
 ok: [dut]
 
 TASK [Find configuration template for bgp] *************************************
-ok: [probe]
 ok: [x1]
+ok: [probe]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -525,8 +530,8 @@ skipping: [probe]
 skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
-ok: [probe]
 ok: [x1]
+ok: [probe]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -564,6 +569,42 @@ ok: [probe] =>
     !
     !
     do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    !
+    !
+    router bgp 65000
+      bgp advertise-inactive
+      bgp log-neighbor-changes
+      no bgp default ipv4-unicast
+      no bgp default ipv6-unicast
+      router-id 10.0.0.1
+    !
+      neighbor 10.1.0.2 remote-as 65100
+      neighbor 10.1.0.2 description probe
+      neighbor 10.1.0.2 send-community standard large
+    !
+      neighbor 10.1.0.6 remote-as 65101
+      neighbor 10.1.0.6 description x1
+      neighbor 10.1.0.6 send-community standard large
+    !
+    !
+     address-family ipv4
+  
+    !
+    !
+    ! Originate networks from connected subnets
+    !
+      network 10.0.0.1/32
+    !
+    !
+      neighbor 10.1.0.2 activate
+      neighbor 10.1.0.2 next-hop-self
+      neighbor 10.1.0.6 activate
+      neighbor 10.1.0.6 next-hop-self
+    !
 ok: [x1] => 
   msg: |-
     bgp configuration for x1
@@ -605,42 +646,6 @@ ok: [x1] =>
     ip route 172.16.1.0/24 Null0
     !
     do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    !
-    !
-    router bgp 65000
-      bgp advertise-inactive
-      bgp log-neighbor-changes
-      no bgp default ipv4-unicast
-      no bgp default ipv6-unicast
-      router-id 10.0.0.1
-    !
-      neighbor 10.1.0.2 remote-as 65100
-      neighbor 10.1.0.2 description probe
-      neighbor 10.1.0.2 send-community standard large
-    !
-      neighbor 10.1.0.6 remote-as 65101
-      neighbor 10.1.0.6 description x1
-      neighbor 10.1.0.6 send-community standard large
-    !
-    !
-     address-family ipv4
-  
-    !
-    !
-    ! Originate networks from connected subnets
-    !
-      network 10.0.0.1/32
-    !
-    !
-      neighbor 10.1.0.2 activate
-      neighbor 10.1.0.2 next-hop-self
-      neighbor 10.1.0.6 activate
-      neighbor 10.1.0.6 next-hop-self
-    !
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for dut
@@ -650,8 +655,8 @@ TASK [eos_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templat
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [probe]
 changed: [x1]
+changed: [probe]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
@@ -679,8 +684,8 @@ skipping: [dut]
 skipping: [x1]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [dut -> localhost]
 ok: [x1 -> localhost]
+ok: [dut -> localhost]
 
 TASK [fail] ********************************************************************
 skipping: [dut]

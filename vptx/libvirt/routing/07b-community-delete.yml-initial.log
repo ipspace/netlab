@@ -12,6 +12,11 @@ ok: [probe]
 ok: [x1]
 ok: [dut]
 
+TASK [Generic readiness tests] *************************************************
+skipping: [dut]
+skipping: [probe]
+skipping: [x1]
+
 TASK [Find device readiness script] ********************************************
 ok: [probe]
 ok: [x1]
@@ -20,13 +25,16 @@ ok: [dut]
 TASK [Wait for device to become ready] *****************************************
 skipping: [probe]
 skipping: [x1]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vptx.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/junos.yml for dut
 
-TASK [Wait for et-0/0/0 to appear] *********************************************
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [Wait for first interface (et-0/0/0)] *************************************
 ok: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [probe]
@@ -59,7 +67,7 @@ skipping: [probe]
 skipping: [x1]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [probe]
@@ -165,6 +173,9 @@ ok: [probe] =>
     cat >/tmp/config <<CONFIG
     hostname probe
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -183,7 +194,55 @@ ok: [probe] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    system {
+      host-name dut;
+      static-host-mapping {
+        probe inet 10.0.0.2;
+        x1 inet 10.0.0.3;
+      }
+    }
+  
+  
+    interfaces {
+  
+      lo0.0 {
+  
+          family inet {
+            address 10.0.0.1/32;
+          }
+  
+      }
+      et-0/0/0.0 {
+        description "dut -> probe [external]";
+  
+          family inet {
+            address 10.1.0.1/30;
+          }
+  
+      }
+      et-0/0/1.0 {
+        description "dut -> x1 [external]";
+  
+          family inet {
+            address 10.1.0.5/30;
+          }
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface re0:mgmt-0 {
+          disable;
+        }
+        interface all;
+      }
+    }
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -267,6 +326,9 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -285,60 +347,14 @@ ok: [x1] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    system {
-      host-name dut;
-      static-host-mapping {
-        probe inet 10.0.0.2;
-        x1 inet 10.0.0.3;
-      }
-    }
-  
-  
-    interfaces {
-  
-      lo0.0 {
-  
-          family inet {
-            address 10.0.0.1/32;
-          }
-  
-      }
-      et-0/0/0.0 {
-        description "dut -> probe [external]";
-  
-          family inet {
-            address 10.1.0.1/30;
-          }
-  
-      }
-      et-0/0/1.0 {
-        description "dut -> x1 [external]";
-  
-          family inet {
-            address 10.1.0.5/30;
-          }
-  
-      }
-    }
-    protocols {
-      lldp {
-        interface re0:mgmt-0 {
-          disable;
-        }
-        interface all;
-      }
-    }
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for probe, x1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for probe, x1
 
-TASK [junos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/junos.j2] ***
+TASK [junos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/junos.j2] ***
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
@@ -349,21 +365,21 @@ skipping: [probe]
 skipping: [x1]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for probe, x1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for probe, x1
 
 TASK [template] ****************************************************************
-changed: [probe]
 changed: [x1]
+changed: [probe]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
 ok: [x1]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [x1]
 changed: [probe]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [probe]
 skipping: [x1]
 
@@ -375,8 +391,8 @@ ok: [x1]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1 => (item=routing)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1 => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1 => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1 => (item=bgp)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [probe]
@@ -413,6 +429,8 @@ ok: [x1] =>
     !
     route-map set_comm-ipv4 permit 10
       set community 65101:17 65101:42
+  
+  
     !
 ok: [dut] => 
   msg: |-
@@ -454,7 +472,6 @@ ok: [dut] =>
           then community delete x_comm_del_65101_42;
   
   
-  
           then {
             community add x-route-permit-mark;
             next policy;
@@ -472,26 +489,26 @@ ok: [dut] =>
     }
 
 TASK [Deploy routing configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe, x1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for probe, x1
 
-TASK [junos_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/templates/routing/junos.j2] ***
+TASK [junos_config: deploying routing from /home/pipi/netlab_gh/netsim/ansible/templates/routing/junos.j2] ***
 [WARNING]:  statement not found
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [probe]
 changed: [x1]
+changed: [probe]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
 ok: [x1]
 
-TASK [run /tmp/config.sh to deploy routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
+TASK [run /tmp/config.sh to deploy routing config from /home/pipi/netlab_gh/netsim/ansible/templates/routing/frr.j2] ***
 skipping: [probe]
 skipping: [x1]
 
-TASK [run vtysh to import routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
+TASK [run vtysh to import routing config from /home/pipi/netlab_gh/netsim/ansible/templates/routing/frr.j2] ***
 changed: [x1]
 changed: [probe]
 
@@ -538,9 +555,9 @@ ok: [probe] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.2/32
-    !
-    !
     !
       neighbor 10.1.0.1 activate
       no neighbor 10.1.0.1 send-community all
@@ -572,9 +589,9 @@ ok: [x1] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.3/32
-    !
-    !
     !
       neighbor 10.1.0.5 activate
       no neighbor 10.1.0.5 send-community all
@@ -600,6 +617,10 @@ ok: [dut] =>
     policy-options {
       delete: policy-statement bgp-advertise;
       delete: policy-statement bgp-redistribute;
+      delete: policy-statement next-hop-ebgp-ipv4;
+      delete: policy-statement next-hop-all-ipv4;
+      delete: policy-statement next-hop-ebgp-ipv6;
+      delete: policy-statement next-hop-all-ipv6;
       delete: route-filter-list bgp-announce;
     }
   
@@ -608,9 +629,10 @@ ok: [dut] =>
       route-filter-list bgp-announce {
       }
   
-      policy-statement next-hop-self {
-        term next-hop-self {
+      policy-statement next-hop-ebgp-ipv4 {
+        term next-hop-self-ipv4 {
           from {
+            family inet;
             route-type external;
           }
           then {
@@ -618,6 +640,41 @@ ok: [dut] =>
           }
         }
       }
+  
+      policy-statement next-hop-all-ipv4 {
+        term next-hop-self-ipv4 {
+          from {
+            family inet;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
+      policy-statement next-hop-ebgp-ipv6 {
+        term next-hop-self-ipv6 {
+          from {
+            family inet6;
+            route-type external;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
+      policy-statement next-hop-all-ipv6 {
+        term next-hop-self-ipv6 {
+          from {
+            family inet6;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
   
       policy-statement bgp-advertise {
         term advertise {
@@ -687,8 +744,7 @@ ok: [dut] =>
         group ibgp-peers-ipv4 {
           type internal;
           export [
-              next-hop-self
-              bgp-advertise bgp-redistribute bgp-final
+              next-hop-ebgp-ipv4 bgp-advertise bgp-redistribute bgp-final
             ];
           advertise-inactive;
         }
@@ -719,10 +775,10 @@ ok: [dut] =>
     }
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe, x1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for probe, x1
 
-TASK [junos_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/junos.j2] ***
+TASK [junos_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/junos.j2] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
@@ -733,18 +789,18 @@ TASK [set_fact] ****************************************************************
 ok: [probe]
 ok: [x1]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [probe]
 skipping: [x1]
 
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [probe]
 changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 
 TASK [Run custom configuration deployment scripts] *****************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for dut, x1 => (item=bgp.policy)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for dut, x1 => (item=bgp.policy)
 
 TASK [Find configuration template] *********************************************
 ok: [x1]
@@ -762,7 +818,7 @@ TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [x1]
 
-TASK [Process template /home/pipi/net101/tools/netsim/extra/bgp.policy/junos.j2 for dut] ***
+TASK [Process template /home/pipi/netlab_gh/netsim/extra/bgp.policy/junos.j2 for dut] ***
 skipping: [dut]
 skipping: [x1]
 
@@ -771,10 +827,10 @@ ok: [x1]
 ok: [dut]
 
 TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1
 
-TASK [junos_config: deploying bgp.policy from /home/pipi/net101/tools/netsim/extra/bgp.policy/junos.j2] ***
+TASK [junos_config: deploying bgp.policy from /home/pipi/netlab_gh/netsim/extra/bgp.policy/junos.j2] ***
 ok: [dut]
 
 TASK [template] ****************************************************************
@@ -783,18 +839,18 @@ changed: [x1]
 TASK [set_fact] ****************************************************************
 ok: [x1]
 
-TASK [run /tmp/config.sh to deploy bgp.policy config from /home/pipi/net101/tools/netsim/extra/bgp.policy/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp.policy config from /home/pipi/netlab_gh/netsim/extra/bgp.policy/frr.j2] ***
 skipping: [x1]
 
-TASK [run vtysh to import bgp.policy config from /home/pipi/net101/tools/netsim/extra/bgp.policy/frr.j2] ***
+TASK [run vtysh to import bgp.policy config from /home/pipi/netlab_gh/netsim/extra/bgp.policy/frr.j2] ***
 changed: [x1]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=36   changed=3    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-probe                      : ok=36   changed=7    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
-x1                         : ok=43   changed=8    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+dut                        : ok=37   changed=3    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+probe                      : ok=36   changed=7    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+x1                         : ok=43   changed=8    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
 
 
 
-Use this topology to test 'set.community.delete' route-map option.
+Use this topology to test 'delete.community' route-map option.
 

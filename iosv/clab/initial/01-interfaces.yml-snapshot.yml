@@ -9,17 +9,16 @@ defaults:
       description: containerlab with Docker
       config: clab.yml
       lab_prefix: clab
-      node_config_attributes:
-      - type
-      - cmd
-      - dns
-      - env
-      - license
-      - ports
-      - startup-delay
-      - restart-policy
+      node_config_special:
+      - binds
+      - config_templates
+      - image
+      - kind
+      - startup-config
+      - srl-agents
+      - runtime
       template: clab.j2
-      version: 0.69.3
+      version: 0.72
       start: sudo -E containerlab deploy --reconfigure -t clab.yml
       stop: sudo -E containerlab destroy --cleanup -t clab.yml
       act_probe: docker ps
@@ -30,9 +29,9 @@ defaults:
       - cmd:
         - bash
         - -c
-        - "[[ `containerlab version|awk '/version/ {print $2}'` > '0.69.2' ]] && echo
-          OK"
-        err: Containerlab version is too old, please upgrade to 0.69.3 or later 
+        - "[[ `containerlab version|awk '/version/ {print $2}'` > '0.71.999' ]] &&
+          echo OK"
+        err: Containerlab version is too old, please upgrade to 0.72 or later 
           with 'sudo containerlab version upgrade'
       cleanup:
       - clab.yml
@@ -74,6 +73,9 @@ defaults:
             startup-delay: int
             restart-policy: str
             network-mode: str
+            exec:
+              type: list
+              _subtype: str
         interface:
           name: str
         link:
@@ -251,17 +253,20 @@ defaults:
               prepend: true
               community:
                 standard: true
-                delete: true
                 append: true
+            delete:
+              community:
+                standard: true
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -312,7 +317,7 @@ defaults:
         build: https://netlab.tools/labs/asav/
         create_iso: asav
     cat8000v:
-      description: Cisco CSR 1000v
+      description: Cisco Catalyst 8000v
       attributes:
         global:
           ios:
@@ -324,6 +329,14 @@ defaults:
             debug:
               type: list
               split_lines: true
+          cat8000v:
+            license:
+              type: str
+              valid_values:
+              - none
+              - essential
+              - advantage
+              - premier
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -345,12 +358,14 @@ defaults:
           netlab_check_retries: 50
           netlab_ready:
           - ssh
-        image: vrnetlab/cisco_c8000v:17.13.01a
+        image: vrnetlab/cisco_c8000v:17.16.01a
         node:
           kind: cisco_c8000v
         interface:
           name: eth{ifindex-1}
         build: https://containerlab.dev/manual/kinds/vr-c8000v/
+        cat8000v:
+          license: premier
       role: router
       routing:
         _rm_per_af: true
@@ -450,17 +465,18 @@ defaults:
               community:
                 standard: true
                 append: true
-                delete: clist
-                delete_list: true
+            delete:
+              community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -481,6 +497,7 @@ defaults:
           protocol:
           - vrrp
         sr: {}
+        vxlan: {}
         srv6:
           bgp: false
           isis: true
@@ -502,13 +519,15 @@ defaults:
           --ram=4096 --disk path=vm.qcow2,bus=ide,format=qcow2 
           --network=network:vagrant-libvirt,model=virtio --graphics none 
           --import
+        cat8000v:
+          license: premier
         create_template: cat8000v.xml.j2
         create_iso: cat8000v
       _parents:
       - ios
       - csr
     cisco8000v:
-      description: Cisco 8000v
+      description: Cisco 8000v (IOS/XR)
       mgmt_if: MgmtEth0/RP0/CPU0/0
       interface_name: FourHundredGigE0/0/0/{ifindex}
       loopback_interface_name: Loopback{ifindex}
@@ -530,19 +549,58 @@ defaults:
           min_mtu: 68
           min_phy_mtu: 1500
           max_mtu: 9216
-        ospf:
-          unnumbered: true
-          password: true
-          priority: true
-          timers: true
+        bgp:
+          activate_af: true
+          import:
+          - ospf
+          - isis
+          - connected
+          - static
+          - vrf
+          local_as: true
+          local_as_ibgp: true
+          vrf_local_as: true
+          confederation: true
         isis:
           circuit_type: true
           unnumbered:
             ipv4: true
             ipv6: true
             network: true
-        bgp:
-          activate_af: true
+          import:
+          - ospf
+          - bgp
+          - connected
+          - static
+          - vrf
+        ospf:
+          unnumbered: true
+          password: true
+          priority: true
+          timers: true
+          default: true
+          import:
+          - bgp
+          - isis
+          - connected
+          - static
+          - vrf
+        routing:
+          static:
+            vrf: true
+            inter_vrf: true
+            discard: true
+        vrf:
+          bgp: true
+          isis: true
+          ospfv2: true
+          ospfv3: true
+        vlan:
+          model: router
+          subif_name: '{ifname}.{vlan.access_id}'
+          svi_interface_name: BVI{vlan}
+          mixed_trunk: true
+          native_routed: false
       external:
         image: none
       support:
@@ -704,17 +762,18 @@ defaults:
               community:
                 standard: true
                 append: true
-                delete: clist
-                delete_list: true
+            delete:
+              community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -883,14 +942,15 @@ defaults:
                 extended: true
                 append: true
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -1078,13 +1138,15 @@ defaults:
         routing:
           aspath: true
           community:
-            expanded: false
+            standard:
+            - standard
           policy:
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
             set:
               locpref: true
               med: true
@@ -1095,7 +1157,8 @@ defaults:
                 large: false
                 extended: true
                 append: true
-                delete: false
+            delete:
+              community: false
           prefix: true
           static:
             vrf: true
@@ -1278,14 +1341,19 @@ defaults:
             - prepend
             - community
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
+                large: true
+            delete:
+              community: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
           static:
             vrf: true
             inter_vrf: true
@@ -1309,7 +1377,8 @@ defaults:
           ospfv3: true
           bgp: true
           isis: true
-        vxlan: {}
+        vxlan:
+          vtep6: true
       clab:
         build: https://netlab.tools/labs/ceos/
         features:
@@ -1393,12 +1462,13 @@ defaults:
         ansible_httpapi_validate_certs: 'no'
         ansible_httpapi_port: 80
         netlab_console_connection: ssh
-        netlab_skip_missing_template: true
-        netlab_config_tasks: true
       external:
         image: none
       features:
-        ospf: {}
+        ospf:
+          password: true
+          priority: true
+          timers: true
       graphite:
         icon: firewall
     frr:
@@ -1419,6 +1489,25 @@ defaults:
           gnupg: gpg
           curl: curl
           iproute2: bridge
+        netlab_frr_daemons:
+          bfd:
+          - bfdd
+          bgp:
+          - bgpd
+          ospf:
+          - ospfd
+          - ospf6d
+          ripv2:
+          - ripd
+          - ripngd
+          isis:
+          - isisd
+          vrf:
+          - bgpd
+          gateway:
+          - vrrpd
+          mpls:
+          - ldpd
       mtu: 1500
       clab:
         group_vars:
@@ -1429,7 +1518,7 @@ defaults:
           - -c
           - show $@
           netlab_mgmt_vrf: true
-        image: quay.io/frrouting/frr:10.4.1
+        image: quay.io/frrouting/frr:10.5.0
         kmods:
         node:
           kind: linux
@@ -1473,6 +1562,7 @@ defaults:
           roles:
           - host
           - router
+          - bridge
           generate_mac:
           - svi
         bfd: {}
@@ -1564,17 +1654,20 @@ defaults:
                 large: true
                 extended: true
                 append: true
-                delete: clist
-                delete_list: true
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
+                large: true
+            delete:
+              community: clist
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
           static:
             vrf: true
             inter_vrf: true
@@ -1612,11 +1705,17 @@ defaults:
             debug:
               type: list
               split_lines: true
+            daemons:
+              type: list
+              _subtype: str
         node:
           frr:
             debug:
               type: list
               split_lines: true
+            daemons:
+              type: list
+              _subtype: str
     iol:
       description: Cisco IOL
       attributes:
@@ -1753,17 +1852,18 @@ defaults:
               community:
                 standard: true
                 append: true
-                delete: clist
-                delete_list: true
+            delete:
+              community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -1936,17 +2036,18 @@ defaults:
               community:
                 standard: true
                 append: true
-                delete: clist
-                delete_list: true
+            delete:
+              community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -2027,7 +2128,7 @@ defaults:
           - ssh
         image: vrnetlab/cisco_vios:15.9.3
         node:
-          kind: linux
+          kind: cisco_vios
         interface:
           name: eth{ifindex}
         build: https://github.com/srl-labs/vrnetlab/tree/master/vios
@@ -2130,17 +2231,18 @@ defaults:
               community:
                 standard: true
                 append: true
-                delete: clist
-                delete_list: true
+            delete:
+              community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -2210,7 +2312,7 @@ defaults:
           - ssh
         image: vrnetlab/cisco_viosl2:15.2
         node:
-          kind: linux
+          kind: cisco_vios
         interface:
           name: eth{ifindex}
         build: https://github.com/srl-labs/vrnetlab/tree/master/viosl2
@@ -2317,17 +2419,18 @@ defaults:
               community:
                 standard: true
                 append: true
-                delete: clist
-                delete_list: true
+            delete:
+              community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -2387,6 +2490,10 @@ defaults:
         ansible_user: vagrant
         ansible_ssh_pass: vagrant
         ansible_become_password: vagrant
+        group_vars:
+          netlab_check_retries: 120
+          netlab_ready:
+          - ssh
       features:
         initial:
           ipv4:
@@ -2396,19 +2503,52 @@ defaults:
           min_mtu: 68
           min_phy_mtu: 1500
           max_mtu: 9216
-        ospf:
-          unnumbered: true
-          password: true
-          priority: true
-          timers: true
+        bgp:
+          activate_af: true
+          import:
+          - ospf
+          - isis
+          - connected
+          - static
+          - vrf
+          local_as: true
+          local_as_ibgp: true
+          vrf_local_as: true
+          confederation: true
         isis:
           circuit_type: true
           unnumbered:
             ipv4: true
             ipv6: true
             network: true
-        bgp:
-          activate_af: true
+          import:
+          - ospf
+          - bgp
+          - connected
+          - static
+          - vrf
+        ospf:
+          unnumbered: true
+          password: true
+          priority: true
+          timers: true
+          default: true
+          import:
+          - bgp
+          - isis
+          - connected
+          - static
+          - vrf
+        routing:
+          static:
+            vrf: true
+            inter_vrf: true
+            discard: true
+        vrf:
+          bgp: true
+          isis: true
+          ospfv2: true
+          ospfv3: true
       external:
         image: none
       support:
@@ -2651,14 +2791,19 @@ defaults:
               prepend: true
               community: true
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
+                large: true
+            delete:
+              community: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
           static:
             vrf: true
             inter_vrf: true
@@ -2910,6 +3055,11 @@ defaults:
           kind: vr-ros
         interface:
           name: eth{ifindex-1}
+        group_vars:
+          netlab_check_retries: 50
+          netlab_ready:
+          - ssh
+          netlab_check_command: /system/resource/print
       external:
         image: none
       graphite:
@@ -3436,9 +3586,11 @@ defaults:
         routing:
           policy:
             match:
-            - prefix
-            - aspath
-            - community
+              prefix: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             set:
               locpref: true
               med: true
@@ -3448,14 +3600,16 @@ defaults:
                 large: true
                 extended: true
                 append: true
-                delete: true
+            delete:
+              community: true
           static:
             vrf: true
             discard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
         sr: {}
         vrf:
           ospfv2: true
@@ -3532,9 +3686,11 @@ defaults:
         routing:
           policy:
             match:
-            - prefix
-            - aspath
-            - community
+              prefix: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             set:
               locpref: true
               med: true
@@ -3544,14 +3700,16 @@ defaults:
                 large: true
                 extended: true
                 append: true
-                delete: true
+            delete:
+              community: true
           static:
             vrf: true
             discard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
         sr: {}
         vrf:
           ospfv2: true
@@ -3638,9 +3796,11 @@ defaults:
         routing:
           policy:
             match:
-            - prefix
-            - aspath
-            - community
+              prefix: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             set:
               locpref: true
               med: true
@@ -3650,14 +3810,16 @@ defaults:
                 large: true
                 extended: true
                 append: true
-                delete: true
+            delete:
+              community: true
           static:
             vrf: true
             discard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
         sr: {}
         vrf:
           ospfv2: true
@@ -3731,9 +3893,11 @@ defaults:
         routing:
           policy:
             match:
-            - prefix
-            - aspath
-            - community
+              prefix: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             set:
               locpref: true
               med: true
@@ -3743,14 +3907,16 @@ defaults:
                 large: true
                 extended: true
                 append: true
-                delete: true
+            delete:
+              community: true
           static:
             vrf: true
             discard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
         sr: {}
         vrf:
           ospfv2: true
@@ -3831,9 +3997,11 @@ defaults:
         routing:
           policy:
             match:
-            - prefix
-            - aspath
-            - community
+              prefix: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             set:
               locpref: true
               med: true
@@ -3843,14 +4011,16 @@ defaults:
                 large: true
                 extended: true
                 append: true
-                delete: true
+            delete:
+              community: true
           static:
             vrf: true
             discard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
         sr: {}
         vrf:
           ospfv2: true
@@ -3969,16 +4139,18 @@ defaults:
                 large: true
                 extended: true
                 append: true
-                delete: false
+            delete:
+              community: false
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -4114,6 +4286,9 @@ defaults:
           kind: linux
           config_templates:
             hosts: /etc/hosts:shared
+            config: /etc/config/startup.sh
+          exec:
+          - sh /etc/config/startup.sh
         group_vars:
           ansible_connection: docker
           ansible_user: root
@@ -4131,6 +4306,9 @@ defaults:
         bird: bird
       daemon_config:
         bird: /etc/bird/bird.conf
+        initial: /etc/config/01-initial.sh
+        lag: /etc/config/10-lag.sh
+        vlan: /etc/config/20-vlan.sh
         bgp: /etc/bird/bgp.mod.conf
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
@@ -4244,6 +4422,9 @@ defaults:
         bird: bird
       daemon_config:
         bird: /etc/bird/bird.conf
+        initial: /etc/config/01-initial.sh
+        lag: /etc/config/10-lag.sh
+        vlan: /etc/config/20-vlan.sh
         bgp: /etc/bird/bgp.mod.conf
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
@@ -4260,6 +4441,11 @@ defaults:
             roles:
             - host
             - router
+        node:
+          config_templates:
+            config: /etc/config/startup.sh
+          exec:
+          - sh /etc/config/startup.sh
       libvirt:
         image:
       virtualbox:
@@ -4851,6 +5037,9 @@ defaults:
         debug:
           type: list
           split_lines: true
+        daemons:
+          type: list
+          _subtype: str
       ios:
         debug:
           type: list
@@ -4872,6 +5061,7 @@ defaults:
       bandwidth: int
       bridge: id
       disable: bool
+      shutdown: bool
       name: str
       prefix:
         type: dict
@@ -5027,6 +5217,14 @@ defaults:
         _keytype: id
         _requires:
         - vrf
+      cat8000v:
+        license:
+          type: str
+          valid_values:
+          - none
+          - essential
+          - advantage
+          - premier
       eos:
         serialnumber: str
         systemmacaddr: mac
@@ -5034,6 +5232,9 @@ defaults:
         debug:
           type: list
           split_lines: true
+        daemons:
+          type: list
+          _subtype: str
       ios:
         debug:
           type: list
@@ -5243,6 +5444,8 @@ defaults:
         min_value: 1
         max_value: 32767
       set:
+        _invalid_with:
+          action: deny
         locpref:
           type: int
           min_value: 0
@@ -5280,11 +5483,26 @@ defaults:
           delete_list:
             type: str
             _valid_with: []
+      delete:
+        _invalid_with:
+          action: deny
+        community:
+          standard: list
+          extended: list
+          large: list
+          list:
+            _valid_with: []
+            standard: str
+            extended: str
+            large: str
       match:
         prefix: str
         nexthop: str
         aspath: str
-        community: str
+        community:
+          standard: str
+          extended: str
+          large: str
     pfx_entry:
       action:
         type: str
@@ -5529,16 +5747,22 @@ defaults:
     MAX_NODE_ID: 150
     validate:
       ping: 5
+      ping_vrf: 5
       ping_long: 15
       vxlan_ping: 20
-      ping_xx_long: 40
+      ping_stp: 45
+      ping_irb: 10
       ra_send: 30
       ospfv2_adj_p2p: 30
       ospfv2_adj_lan: 50
+      ospfv2_adj_stp: 120
       ospfv2_spf: 10
+      ospfv2_spf_long: 30
       ospfv3_adj_p2p: 30
       ospfv3_adj_lan: 50
+      ospfv3_adj_stp: 120
       ospfv3_spf: 10
+      ospfv3_spf_long: 30
       ospf_import: 20
       ebgp_session: 30
       ibgp_session: 30
@@ -5552,6 +5776,7 @@ defaults:
       isis_adj_lan: 50
       isis_spf: 15
       isis_spf_long: 45
+      isis_redist: 30
       rip_start: 60
       rip_update: 20
       ldp_adj: 30
@@ -5560,8 +5785,18 @@ defaults:
       xr:
         bgp_v4_originate: 80
         bgp_v6_originate: 80
+        bgp_v4_redist: 90
+        isis_redist: 60
+        ebgp_session: 90
+        ping_vrf: 20
+        bgp_scan_long: 30
       ios:
         bgp_v6_redist: 60
+      cisco8000v:
+        ping_irb: 90
+        ping_long: 15
+      vjunos-router:
+        ping_irb: 90
   hints:
     evpn:
       irb_group: >
@@ -5843,16 +6078,6 @@ defaults:
       vsrx: true
       vyos: true
   bgp:
-    ebgp_role: external
-    advertise_roles:
-    - stub
-    advertise_loopback: true
-    community:
-      ibgp:
-      - standard
-      - extended
-      ebgp:
-      - standard
     no_propagate:
       ebgp_role:
       advertise_roles:
@@ -5867,9 +6092,19 @@ defaults:
     - isis
     - eigrp
     - ripv2
-    next_hop_self: true
     hooks:
     - normalize
+    advertise_roles:
+    - stub
+    advertise_loopback: true
+    community:
+      ibgp:
+      - standard
+      - extended
+      ebgp:
+      - standard
+    ebgp_role: external
+    next_hop_self: true
     attributes:
       global:
         as: asn
@@ -5878,6 +6113,7 @@ defaults:
           type: ipv4
           use: id
         rr_list: list
+        rr_mesh: bool
         ebgp_role: str
         as_list: dict
         sessions:
@@ -5925,6 +6161,7 @@ defaults:
         rr_cluster_id:
           type: ipv4
           use: id
+        rr_mesh: bool
         originate:
           type: list
           _subtype:
@@ -7135,9 +7372,20 @@ defaults:
           type: dict
           _keytype: id
           _subtype:
-            type: list
-            make_list: true
-            _subtype: community_entry
+            type: dict
+            _keys:
+              type:
+                type: str
+                valid_values:
+                - standard
+                - extended
+                - large
+                _required: true
+                _default: standard
+              value:
+                type: list
+                make_list: true
+                _subtype: community_entry
         static:
           type: dict
           _keytype: id
@@ -7177,9 +7425,20 @@ defaults:
           type: dict
           _keytype: id
           _subtype:
-            type: list
-            make_list: true
-            _subtype: community_entry
+            type: dict
+            _keys:
+              type:
+                type: str
+                valid_values:
+                - standard
+                - extended
+                - large
+                _required: true
+                _default: standard
+              value:
+                type: list
+                make_list: true
+                _subtype: community_entry
             _alt_types:
             - NoneType
         static:
@@ -7200,11 +7459,16 @@ defaults:
       policy:
         set: Route map SET attributes
         match: Route map MATCH attributes
+        delete: Route map DELETE attributes
       static: Static routes
+      prefix: Prefix lists
+      aspath: AS-path access lists
+      community: BGP community access lists
     supported_on:
       arubacx: true
       bird: true
       cat8000v: true
+      cisco8000v: true
       csr: true
       cumulus: true
       cumulus_nvue: true
@@ -7217,6 +7481,7 @@ defaults:
       ios: true
       iosv: true
       iosvl2: true
+      iosxr: true
       junos: true
       linux: true
       none: true
@@ -7230,6 +7495,7 @@ defaults:
       vptx: true
       vsrx: true
       vyos: true
+      xr: true
   sr:
     requires:
     - isis
@@ -7545,6 +7811,7 @@ defaults:
       bird:
         clab: true
       cat8000v: true
+      cisco8000v: true
       csr: true
       cumulus: true
       cumulus_nvue: true
@@ -7614,6 +7881,7 @@ defaults:
     supported_on:
       arubacx: true
       cat8000v: true
+      cisco8000v: true
       csr: true
       cumulus: true
       cumulus_nvue: true
@@ -7625,6 +7893,7 @@ defaults:
       ios: true
       iosv: true
       iosvl2: true
+      iosxr: true
       junos: true
       none: true
       nxos: true
@@ -7640,6 +7909,7 @@ defaults:
       vptx: true
       vsrx: true
       vyos: true
+      xr: true
   vxlan:
     requires:
     - vlan
@@ -7680,6 +7950,7 @@ defaults:
       vtep6: VXLAN over IPv6
     supported_on:
       arubacx: true
+      cat8000v: true
       csr: true
       cumulus: true
       cumulus_nvue: true
@@ -7765,6 +8036,7 @@ groups:
     members:
     - h1
     - h2
+    - h3
     device: linux
     module:
     - routing
@@ -7833,9 +8105,28 @@ nodes:
         ipv6: 2001:db8:1:1::2/64
         ifname: eth1
         node: h2
+    - shutdown: true
+      ra:
+        slaac: true
+      ipv4: 172.16.2.132/24
+      ipv6: 2001:db8:1:2::84/64
+      linkindex: 3
+      role: stub
+      type: lan
+      bridge: ml_17_3
+      name: r -> h3
+      ifindex: 3
+      ifname: GigabitEthernet0/3
+      clab:
+        name: eth3
+      neighbors:
+      - ipv4: 172.16.2.3/24
+        ipv6: 2001:db8:1:2::3/64
+        ifname: eth1
+        node: h3
     device: iosv
     clab:
-      kind: linux
+      kind: cisco_vios
     box: vrnetlab/cisco_vios:15.9.3
     role: router
     provider: clab
@@ -7955,6 +8246,59 @@ nodes:
       mac: ca:fe:00:02:00:00
       ipv4: 192.168.17.102
     hostname: clab-ml_17-h2
+  h3:
+    routing:
+      static:
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          ipv4: 172.16.2.132
+          intf: eth1
+          ipv6: 2001:db8:1:2::84
+          idx: 0
+      - ipv6: 2001:db8::/48
+        nexthop:
+          ipv4: 172.16.2.132
+          intf: eth1
+          ipv6: 2001:db8:1:2::84
+          idx: 0
+    name: h3
+    interfaces:
+    - ipv4: 172.16.2.3/24
+      ipv6: 2001:db8:1:2::3/64
+      linkindex: 3
+      role: stub
+      type: lan
+      bridge: ml_17_3
+      name: h3 -> r
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.2.132/24
+        ipv6: 2001:db8:1:2::84/64
+        ifname: GigabitEthernet0/3
+        node: r
+    device: linux
+    module:
+    - routing
+    clab:
+      kind: linux
+      config_templates:
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: python:3.13-alpine
+    id: 3
+    role: host
+    mtu: 1500
+    af:
+      ipv4: true
+      ipv6: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:03:00:00
+      ipv4: 192.168.17.103
+    hostname: clab-ml_17-h3
 links:
 - _linkname: links[1]
   bandwidth: 1000
@@ -8002,9 +8346,32 @@ links:
   prefix:
     ipv4: 172.16.1.0/24
     ipv6: 2001:db8:1:1::/64
+- _linkname: links[3]
+  interfaces:
+  - shutdown: true
+    node: r
+    ra:
+      slaac: true
+    ipv4: 172.16.2.132/24
+    ipv6: 2001:db8:1:2::84/64
+    ifindex: 3
+    ifname: GigabitEthernet0/3
+  - node: h3
+    ipv4: 172.16.2.3/24
+    ipv6: 2001:db8:1:2::3/64
+    ifindex: 1
+    ifname: eth1
+  linkindex: 3
+  node_count: 2
+  role: stub
+  type: lan
+  bridge: ml_17_3
+  prefix:
+    ipv4: 172.16.2.0/24
+    ipv6: 2001:db8:1:2::/64
 validate:
 - description: IPv4 ping H1,H2 => R
-  wait: 5
+  wait: 15
   wait_msg: Wait for IPv4 interfaces to become operational
   nodes:
   - h1
@@ -8019,6 +8386,12 @@ validate:
   - h2
   plugin: ping(nodes.r.loopback.ipv6)
   name: ping6
+- description: Check link shutdown (ping H3 => R)
+  nodes:
+  - h3
+  plugin: ping(nodes.r.loopback.ipv4,count=3,expect='fail')
+  level: warning
+  name: shutdown
 input:
 - /home/pipi/net101/tools/tests/integration/initial/01-interfaces.yml
 - /home/pipi/net101/tools/tests/integration/wait_times.yml
@@ -8035,4 +8408,4 @@ prefix:
   any:
     ipv4: 0.0.0.0/0
     ipv6: ::/0
-_netlab_version: 25.11-dev
+_netlab_version: 25.11.01

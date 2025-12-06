@@ -51,8 +51,8 @@ ok: [x1]
 ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
-ok: [probe]
 ok: [x1]
+ok: [probe]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -94,8 +94,8 @@ skipping: [probe]
 skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [probe]
 ok: [x1]
+ok: [probe]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -377,8 +377,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for probe, x1
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [probe]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
@@ -438,14 +438,20 @@ ok: [x1] =>
     !
     route-map set_comm-ipv4 permit 10
       set community 65101:17
+  
       match ip address prefix-list pf1-ipv4
+  
     !
     route-map set_comm-ipv4 permit 20
       set community 65101:42
+  
       match ip address prefix-list pf2-ipv4
+  
     !
     route-map set_comm-ipv4 permit 30
       set community 65101:1
+  
+  
     !
     ip prefix-list pf1-ipv4 seq 10 permit 172.16.0.0/24
     !
@@ -469,16 +475,10 @@ ok: [dut] =>
       set metric 72
   
     !
-    ! AS-path access lists
-    !
-    !
     ip community-list standard c1 permit 65101:17
     !
     ip community-list expanded c2 deny 65101:42
     ip community-list expanded c2 permit .*
-    !
-    ! Static routes
-    !
 
 TASK [Deploy routing configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
@@ -488,8 +488,8 @@ TASK [ios_config: deploying routing from /home/pipi/netlab_gh/netsim/ansible/tem
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [probe]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
@@ -509,8 +509,8 @@ ok: [x1]
 ok: [dut]
 
 TASK [Find configuration template for bgp] *************************************
-ok: [probe]
 ok: [x1]
+ok: [probe]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -519,8 +519,8 @@ skipping: [probe]
 skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
-ok: [probe]
 ok: [x1]
+ok: [probe]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -558,6 +558,44 @@ ok: [probe] =>
     !
     !
     do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    !
+    ip bgp-community new-format
+    !
+    router bgp 65000
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.1
+      neighbor 10.1.0.2 remote-as 65100
+      neighbor 10.1.0.2 description probe
+  
+      neighbor 10.1.0.6 remote-as 65101
+      neighbor 10.1.0.6 description x1
+  
+    !
+     address-family ipv4
+      bgp scan-time 5
+    !
+    !
+    ! Originate networks from connected subnets
+    !
+      network 10.0.0.1 mask 255.255.255.255
+  
+    !
+      neighbor 10.1.0.2 activate
+      neighbor 10.1.0.2 advertisement-interval 0
+      neighbor 10.1.0.2 send-community standard
+  
+      neighbor 10.1.0.6 activate
+      neighbor 10.1.0.6 advertisement-interval 0
+      neighbor 10.1.0.6 send-community standard
+  
+    !
 ok: [x1] => 
   msg: |-
     bgp configuration for x1
@@ -599,44 +637,6 @@ ok: [x1] =>
     ip route 172.16.1.0/24 Null0
     !
     do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    !
-    ip bgp-community new-format
-    !
-    router bgp 65000
-     no bgp default ipv4-unicast
-     bgp update-delay 5
-     bgp nopeerup-delay cold-boot 1
-     bgp nopeerup-delay user-initiated 1
-     bgp router-id 10.0.0.1
-      neighbor 10.1.0.2 remote-as 65100
-      neighbor 10.1.0.2 description probe
-  
-      neighbor 10.1.0.6 remote-as 65101
-      neighbor 10.1.0.6 description x1
-  
-    !
-     address-family ipv4
-      bgp scan-time 5
-    !
-    !
-    ! Originate networks from connected subnets
-    !
-      network 10.0.0.1 mask 255.255.255.255
-  
-    !
-      neighbor 10.1.0.2 activate
-      neighbor 10.1.0.2 advertisement-interval 0
-      neighbor 10.1.0.2 send-community standard
-  
-      neighbor 10.1.0.6 activate
-      neighbor 10.1.0.6 advertisement-interval 0
-      neighbor 10.1.0.6 send-community standard
-  
-    !
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
@@ -658,8 +658,8 @@ skipping: [probe]
 skipping: [x1]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [probe]
 changed: [x1]
+changed: [probe]
 
 PLAY [Deploy custom deployment templates] **************************************
 

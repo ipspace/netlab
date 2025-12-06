@@ -13,7 +13,7 @@ def parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace,typing.List
   parser.add_argument(
     dest='action',
     action='store',
-    choices=['html','yaml','errors','release'],
+    choices=['html','yaml','errors','recent','release'],
     help='Specify the report type')
 
   parser_add_verbose(parser)
