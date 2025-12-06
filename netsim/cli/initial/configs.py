@@ -41,7 +41,7 @@ def cleanup_config_dir(output_path: Path, args: argparse.Namespace) -> None:
 Create files that are usually created for clab.binds from clab.config_templates
 in the config directory to have everything in one place
 """
-def create_from_config_templates(topology: Box, nodeset: list, abs_path: Path, args: argparse.Namespace) -> None:
+def create_from_config_templates(topology: Box, nodeset: list, abs_path: Path, args: argparse.Namespace) -> bool:
   shared_data = {                                           # Create the shared data we need for config templates
     'hostvars': topology.nodes.to_dict(),
     'hosts': get_host_addresses(topology),
@@ -57,12 +57,27 @@ def create_from_config_templates(topology: Box, nodeset: list, abs_path: Path, a
   if args.initial:
     mod_list = mod_list + [ 'initial' ]
 
+  ansible_skip_nodes = []
   for n_name in nodeset:
     n_data = topology.nodes[n_name]
-    if 'clab.config_templates' not in n_data:               # The node is not using config templates
+    n_provider = devices.get_provider(n_data,topology.defaults)
+    if f'{n_provider}.config_templates' not in n_data:      # The node is not using config templates
       continue                                              # Move on
 
-    p = _Provider(provider=devices.get_provider(n_data,topology.defaults),data=data.get_empty_box())
+    # Let's do a bit of paperwork first and figure out whether we need to call
+    # Ansible for this node at all. We'll take all modules, add 'initial', then
+    # add all custom configs and subtract netlab_ansible_skip_modules (which
+    # controls what Ansible playbook does). If there's nothing left, we don't need
+    # Ansible for this node
+    #
+    node_configs = set(n_data.get('module',[]) + ['initial']) | set(n_data.get('config',[]))
+    ansible_config = node_configs - set(n_data.get('netlab_ansible_skip_module',[]))
+    if not ansible_config:
+      ansible_skip_nodes.extend(n_name)
+
+    # And now back to the regular programming...
+    #
+    p = _Provider(provider=n_provider,data=data.get_empty_box())
     node_data = adjust_inventory_host(                      # Add group variables to node data
                               node=n_data,
                               defaults=topology.defaults,
@@ -70,8 +85,8 @@ def create_from_config_templates(topology: Box, nodeset: list, abs_path: Path, a
     for k,v in shared_data.items():                         # And copy shared data
       node_data[k] = v
 
-    node_data['node_provider'] = devices.get_provider(n_data,topology.defaults)
-    for b_item in n_data.clab.config_templates:             # Now iterate over all config templates the node is using
+    node_data['node_provider'] = n_provider
+    for b_item in n_data[n_provider].config_templates:      # Now iterate over all config templates the node is using
       b_template = b_item.split(':')[0].replace('@','.')    # Extract template name
       if not all_configs:                                   # Check whether the user wants us to generate this file
         skip = mod_list and b_template not in mod_list      # Skip modules that are not in mod_list
@@ -111,6 +126,8 @@ def create_from_config_templates(topology: Box, nodeset: list, abs_path: Path, a
           module='initial',
           category=log.IncorrectValue)
 
+  return ansible_skip_nodes != nodeset                      # Return whether we need to run Ansible at all
+
 """
 Create node configurations
 
@@ -129,11 +146,13 @@ def run(topology: Box, args: argparse.Namespace, rest: list) -> None:
     log.info(f'Creating directory: {args.output}')
     abs_path.mkdir(parents=True,exist_ok=True)
 
-  rest = ['-e',f'config_dir="{abs_path}"' ] + rest          # Add output directory path to Ansible variables
-
   # Create files specified in clab.config_templates directly in the Python code (so they use our
   # internal versions of Jinja2 filters), and run an Ansible playbook to create the rest
   #
-  create_from_config_templates(topology,nodeset,abs_path,args)
-  ansible.playbook('create-config.ansible',rest)
+  run_ansible = create_from_config_templates(topology,nodeset,abs_path,args)
+
+  if run_ansible:
+    rest = ['-e',f'config_dir="{abs_path}"' ] + rest        # Add output directory path to Ansible variables
+    ansible.playbook('create-config.ansible',rest)
+
   log.info(f"Initial configurations have been created in the '{args.output}' directory")
