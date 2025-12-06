@@ -67,13 +67,17 @@ This is particularly useful for integration test suites where you want to cache 
 
 ### Using the JSON Cache
 
-After creating a consolidated JSON file, use it with `netlab create`:
+After creating a consolidated JSON file, use it with `netlab create` or `netlab up`:
 
 ```bash
+# Use with netlab create
 netlab create --json-cache cache.json topology.yml
+
+# Use with netlab up
+netlab up --json-cache cache.json topology.yml
 ```
 
-The `--json-cache` flag tells `netlab create` to:
+The `--json-cache` flag tells `netlab create` or `netlab up` to:
 1. Load the consolidated JSON file instead of reading individual YAML files
 2. Use the pre-parsed content directly
 3. Skip YAML parsing and file I/O operations
@@ -245,6 +249,9 @@ netlab consolidate my-topology.yml -o my-cache.json
 
 # Use the cache for faster creation
 netlab create --json-cache my-cache.json my-topology.yml
+
+# Or use the cache when starting the lab
+netlab up --json-cache my-cache.json my-topology.yml
 ```
 
 ### Example 2: CI/CD Pipeline
@@ -267,7 +274,7 @@ netlab consolidate -o dev-cache.json
 
 # During development: use cache for quick iterations
 netlab create --json-cache dev-cache.json topology.yml
-netlab create --json-cache dev-cache.json topology.yml  # Much faster!
+netlab up --json-cache dev-cache.json topology.yml  # Much faster!
 ```
 
 ## Related Commands
