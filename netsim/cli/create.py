@@ -63,6 +63,9 @@ def create_topology_parse(
   if cmd == 'create':
     parser.add_argument('-o','--output',dest='output', action='append',help='Output format(s): format:option=filename')
     parser.add_argument('--devices',dest='devices', action='store_true',help='Create provider configuration file and netlab-devices.yml')
+  
+  # Add json-cache option for both 'create' and 'up' commands
+  if cmd in ['create', 'up']:
     parser.add_argument('--json-cache',dest='json_cache', action='store',help='Use consolidated JSON cache file instead of reading YAML files')
 
   return parser.parse_args(args)
