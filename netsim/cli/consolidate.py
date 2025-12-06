@@ -72,7 +72,10 @@ def run(cli_args: typing.List[str]) -> None:
       print(f'Use --json-cache {args.output} with netlab create to use this cache')
     else:
       # Consolidate all system/package YAML files
-      consolidate.consolidate_all_system_files(output_file=args.output)
+      consolidate.consolidate_to_json(
+        topology_file=None,
+        output_file=args.output
+      )
       log.status_green('CONSOLIDATED', '')
       print(f'All system/package YAML files consolidated into {args.output}')
       print(f'Use --json-cache {args.output} with netlab create to use this cache')

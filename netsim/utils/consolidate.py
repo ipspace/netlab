@@ -150,8 +150,8 @@ def _collect_yaml_files(
   return collected
 
 def consolidate_to_json(
-      topology_file: str,
-      output_file: str,
+      topology_file: typing.Optional[str] = None,
+      output_file: str = 'netlab.consolidated.json',
       user_defaults: typing.Optional[list] = None,
       system_defaults: typing.Optional[list] = None) -> None:
   """
@@ -160,13 +160,20 @@ def consolidate_to_json(
   This works by actually loading the topology (which loads all files)
   and tracking all files that get read during the process.
 
+  If topology_file is None, consolidates all system/package YAML files.
+  This is useful for integration test suites where you want to cache all default
+  files, modules, devices, and providers that would be used across multiple labs.
+
   Args:
-    topology_file: Path to the topology YAML file
+    topology_file: Path to the topology YAML file (optional: if None, consolidates all system/package files)
     output_file: Path where the JSON file should be written
     user_defaults: Optional list of user defaults files
     system_defaults: Optional list of system defaults files
   """
-  log.info(f'Consolidating YAML files for {topology_file}...')
+  if topology_file:
+    log.info(f'Consolidating YAML files for {topology_file}...')
+  else:
+    log.info('Consolidating all system/package YAML files...')
 
   # Track all files that get read
   files_tracked = {}
@@ -211,13 +218,89 @@ def consolidate_to_json(
   _read.read_yaml = tracking_read_yaml
 
   try:
-    # Actually load the topology - this will read all files
-    from ..utils.read import load
-    load(
-      topology_file,
-      user_defaults=user_defaults,
-      system_defaults=system_defaults
-    )
+    if topology_file:
+      # Actually load the topology - this will read all files
+      from ..utils.read import load
+      load(
+        topology_file,
+        user_defaults=user_defaults,
+        system_defaults=system_defaults
+      )
+    else:
+      # Load all system defaults
+      from ..utils.read import SYSTEM_DEFAULTS
+      
+      # Try to load system defaults
+      for default_file in SYSTEM_DEFAULTS:
+        try:
+          _read.read_yaml(filename=default_file)
+        except:
+          pass  # Some defaults may not exist, that's OK
+      
+      # Load package defaults
+      try:
+        _read.read_yaml(filename='package:topology-defaults.yml')
+      except:
+        pass
+      
+      # Load all defaults from netsim/defaults
+      defaults_dir = Path(__file__).parent.parent / 'defaults'
+      if defaults_dir.exists():
+        for yaml_file in defaults_dir.rglob('*.yml'):
+          try:
+            result = _read.read_yaml(filename=str(yaml_file))
+            # Some files might be sequences, skip those that fail
+            if result is None:
+              continue
+          except Exception:
+            pass  # Skip files that can't be read as dicts (e.g., sequences)
+      
+      # Load all modules
+      modules_dir = Path(__file__).parent.parent / 'modules'
+      if modules_dir.exists():
+        for yaml_file in modules_dir.rglob('*.yml'):
+          try:
+            result = _read.read_yaml(filename=str(yaml_file))
+            if result is None:
+              continue
+          except Exception:
+            pass  # Skip files that can't be read as dicts
+      
+      # Load all devices
+      devices_dir = Path(__file__).parent.parent / 'devices'
+      if devices_dir.exists():
+        for yaml_file in devices_dir.rglob('*.yml'):
+          try:
+            result = _read.read_yaml(filename=str(yaml_file))
+            if result is None:
+              continue
+          except Exception:
+            pass  # Skip files that can't be read as dicts
+      
+      # Load all providers
+      providers_dir = Path(__file__).parent.parent / 'providers'
+      if providers_dir.exists():
+        for yaml_file in providers_dir.rglob('*.yml'):
+          try:
+            result = _read.read_yaml(filename=str(yaml_file))
+            if result is None:
+              continue
+          except Exception:
+            pass  # Skip files that can't be read as dicts
+      
+      # Load extra modules (skip deploy files which are often sequences)
+      extra_dir = Path(__file__).parent.parent / 'extra'
+      if extra_dir.exists():
+        for yaml_file in extra_dir.rglob('*.yml'):
+          # Skip deploy files which are typically sequences
+          if 'deploy' in str(yaml_file):
+            continue
+          try:
+            result = _read.read_yaml(filename=str(yaml_file))
+            if result is None:
+              continue
+          except Exception:
+            pass  # Skip files that can't be read as dicts
   finally:
     # Restore original read_yaml
     _read.read_yaml = original_read_yaml
@@ -245,158 +328,10 @@ def consolidate_to_json(
   with open(output_path, 'w') as f:
     json.dump(consolidated, f, indent=2, default=str)
 
-  log.info(f'Consolidated {len(files_tracked)} files into {output_file}')
-
-def consolidate_all_system_files(output_file: str = 'netlab.consolidated.json') -> None:
-  """
-  Consolidate all system and package YAML files without requiring a topology file.
-  
-  This is useful for integration test suites where you want to cache all default
-  files, modules, devices, and providers that would be used across multiple labs.
-  
-  Args:
-    output_file: Path where the JSON file should be written
-  """
-  log.info('Consolidating all system/package YAML files...')
-  
-  # Track all files that get read
-  files_tracked = {}
-  original_read_yaml = _read.read_yaml
-  
-  def tracking_read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str] = None) -> typing.Optional[Box]:
-    """Wrapper around read_yaml that tracks all files read"""
-    if filename and not string:
-      # Normalize the filename for tracking
-      if filename.startswith('package:'):
-        cache_key = filename
-      else:
-        try:
-          cache_key = str(_files.absolute_path(filename))
-        except:
-          cache_key = filename
-      
-      # Call original read_yaml
-      result = original_read_yaml(filename=filename, string=string)
-      
-      # Track this file if we haven't seen it yet
-      if result and cache_key not in files_tracked:
-        files_tracked[cache_key] = {
-          'content': result.to_dict(),
-          'source': filename,
-          'package': filename.startswith('package:')
-        }
-      
-      return result
-    else:
-      return original_read_yaml(filename=filename, string=string)
-  
-  # Temporarily replace read_yaml with our tracking version
-  _read.read_yaml = tracking_read_yaml
-  
-  try:
-    # Load all system defaults
-    from ..utils.read import SYSTEM_DEFAULTS
-    
-    # Try to load system defaults
-    for default_file in SYSTEM_DEFAULTS:
-      try:
-        _read.read_yaml(filename=default_file)
-      except:
-        pass  # Some defaults may not exist, that's OK
-    
-    # Load package defaults
-    try:
-      _read.read_yaml(filename='package:topology-defaults.yml')
-    except:
-      pass
-    
-    # Load all defaults from netsim/defaults
-    defaults_dir = Path(__file__).parent.parent / 'defaults'
-    if defaults_dir.exists():
-      for yaml_file in defaults_dir.rglob('*.yml'):
-        try:
-          result = _read.read_yaml(filename=str(yaml_file))
-          # Some files might be sequences, skip those that fail
-          if result is None:
-            continue
-        except Exception:
-          pass  # Skip files that can't be read as dicts (e.g., sequences)
-    
-    # Load all modules
-    modules_dir = Path(__file__).parent.parent / 'modules'
-    if modules_dir.exists():
-      for yaml_file in modules_dir.rglob('*.yml'):
-        try:
-          result = _read.read_yaml(filename=str(yaml_file))
-          if result is None:
-            continue
-        except Exception:
-          pass  # Skip files that can't be read as dicts
-    
-    # Load all devices
-    devices_dir = Path(__file__).parent.parent / 'devices'
-    if devices_dir.exists():
-      for yaml_file in devices_dir.rglob('*.yml'):
-        try:
-          result = _read.read_yaml(filename=str(yaml_file))
-          if result is None:
-            continue
-        except Exception:
-          pass  # Skip files that can't be read as dicts
-    
-    # Load all providers
-    providers_dir = Path(__file__).parent.parent / 'providers'
-    if providers_dir.exists():
-      for yaml_file in providers_dir.rglob('*.yml'):
-        try:
-          result = _read.read_yaml(filename=str(yaml_file))
-          if result is None:
-            continue
-        except Exception:
-          pass  # Skip files that can't be read as dicts
-    
-    # Load extra modules (skip deploy files which are often sequences)
-    extra_dir = Path(__file__).parent.parent / 'extra'
-    if extra_dir.exists():
-      for yaml_file in extra_dir.rglob('*.yml'):
-        # Skip deploy files which are typically sequences
-        if 'deploy' in str(yaml_file):
-          continue
-        try:
-          result = _read.read_yaml(filename=str(yaml_file))
-          if result is None:
-            continue
-        except Exception:
-          pass  # Skip files that can't be read as dicts
-    
-  finally:
-    # Restore original read_yaml
-    _read.read_yaml = original_read_yaml
-  
-  # Create the consolidated structure
-  consolidated = {
-    'version': '1.0',
-    'netlab_version': netlab_version,
-    'topology_file': None,  # No specific topology
-    'files': files_tracked,
-    'file_count': len(files_tracked)
-  }
-  
-  # Validate against schema before writing
-  schema = _load_schema()
-  if schema:
-    if not _validate_json_cache(consolidated, schema):
-      log.error('Generated JSON cache does not match schema, but writing anyway', module='consolidate')
-    # Schema validation passed if we get here
-  
-  # Write to JSON file
-  output_path = Path(output_file)
-  output_path.parent.mkdir(parents=True, exist_ok=True)
-  
-  with open(output_path, 'w') as f:
-    json.dump(consolidated, f, indent=2, default=str)
-  
-  log.info(f'Consolidated {len(files_tracked)} system/package files into {output_file}')
+  if topology_file:
+    log.info(f'Consolidated {len(files_tracked)} files into {output_file}')
+  else:
+    log.info(f'Consolidated {len(files_tracked)} system/package files into {output_file}')
 
 def load_from_json(json_file: str, validate: bool = True) -> typing.Optional[dict]:
   """
