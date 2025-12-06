@@ -12,6 +12,7 @@ from box import Box
 from ..utils import consolidate, log
 from . import common_parse_args, error_and_exit, topology_parse_args
 
+
 def consolidate_parse(args: typing.List[str]) -> argparse.Namespace:
   """Parse arguments for consolidate command"""
   parents = [common_parse_args(True), topology_parse_args()]

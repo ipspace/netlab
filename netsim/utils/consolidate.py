@@ -11,7 +11,9 @@ from box import Box
 
 from .. import __version__ as netlab_version
 from . import files as _files
-from . import log, read as _read
+from . import log
+from . import read as _read
+
 
 def _get_schema_path() -> Path:
   """Get the path to the JSON schema file"""
