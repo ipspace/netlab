@@ -73,7 +73,7 @@ def create_from_config_templates(topology: Box, nodeset: list, abs_path: Path, a
     node_configs = set(n_data.get('module',[]) + ['initial']) | set(n_data.get('config',[]))
     ansible_config = node_configs - set(n_data.get('netlab_ansible_skip_module',[]))
     if not ansible_config:
-      ansible_skip_nodes.extend(n_name)
+      ansible_skip_nodes.append(n_name)
 
     # And now back to the regular programming...
     #
