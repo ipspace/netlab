@@ -14,7 +14,6 @@ from ...augment import devices
 from ...outputs.ansible import get_host_addresses
 from ...outputs.common import adjust_inventory_host
 from ...providers import _Provider
-from ...utils import files as _files
 from ...utils import log, templates
 from .. import _nodeset, ansible, error_and_exit
 
@@ -93,11 +92,11 @@ def create_from_config_templates(topology: Box, nodeset: list, abs_path: Path, a
         skip = skip or args.custom and b_template not in n_data.get('config',[])
         if skip:                                            # ... or custom configs not in 'config' list
           continue
-      b_path = _files.find_provider_template(
-                        node=n_data,
-                        fname=b_template,
-                        topology=topology,
-                        provider_path=p.get_full_template_path())
+      b_path = templates.find_provider_template(
+                  node=n_data,
+                  fname=b_template,
+                  topology=topology,
+                  provider_path=p.get_full_template_path())
       if not b_path:                                        # Try to find the configuration template
         log.warning(                                        # Houston, we have a problem...
           text=f'Cannot find template {b_template} for node {n_name}/device {n_data.device}',
@@ -105,11 +104,11 @@ def create_from_config_templates(topology: Box, nodeset: list, abs_path: Path, a
         continue
 
       try:
-        node_paths = _files.config_template_paths(
-                              node=n_data,
-                              fname=b_template,
-                              topology=topology,
-                              provider_path=p.get_full_template_path())
+        node_paths = templates.config_template_paths(
+                        node=n_data,
+                        fname=b_template,
+                        topology=topology,
+                        provider_path=p.get_full_template_path())
         o_fname = f'{n_name}.{b_template}.cfg'              # Try to render the template into
         templates.write_template(                           # ... node.template.cfg file in the output directory
           in_folder=os.path.dirname(b_path),
