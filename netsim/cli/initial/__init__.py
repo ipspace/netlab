@@ -5,32 +5,32 @@
 #
 import typing
 
-from .. import devices
-from ..utils import log
-from ..utils import status as _status
-from . import (
+from ... import devices
+from ...utils import log
+from ...utils import status as _status
+from .. import (
   ansible,
   external_commands,
   get_message,
-  initial_actions,
   lab_status_change,
   load_snapshot,
 )
+from . import configs, utils
 
 
 def run_initial(cli_args: typing.List[str]) -> None:
-  (args,rest) = initial_actions.initial_config_parse(cli_args)
+  (args,rest) = utils.initial_config_parse(cli_args)
   topology = load_snapshot(args)
 
-  rest = rest + initial_actions.ansible_args(args)
-  deploy_parts = initial_actions.get_deploy_parts(args)
+  rest = rest + utils.ansible_args(args)
+  deploy_parts = utils.get_deploy_parts(args)
 
   if args.logging or args.verbose:
     print("Ansible playbook args: %s" % rest)
 
   ansible.check_version()
   if args.output:
-    initial_actions.configs.run(topology,args,rest)
+    configs.run(topology,args,rest)
     return
   elif args.ready:
     ansible.playbook('device-ready.ansible',rest)
