@@ -58,7 +58,10 @@ def render_template(
     template_path += [ p for p in extra_path if p not in template_path ]
 
   if debug_active('template'):
-    print(f"TEMPLATE PATH for {j2_file or 'text'}: {template_path}")
+    print(f"Template path for {j2_file or 'text'}:")
+    for item in template_path:
+      print(f"- {item}")
+
   ENV = get_jinja2_env_for_path(tuple(template_path))
   if j2_file is not None:
     template = ENV.get_template(j2_file)

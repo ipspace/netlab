@@ -64,39 +64,6 @@ class _Provider(Callback):
   def get_full_template_path(self) -> str:
     return str(_files.get_moddir() / self.get_template_path())
 
-  def extra_template_paths(self, node: Box, topology: Box, fname: str) -> list:
-    if fname in node.get('config',[]):                    # Are we dealing with extra-config template?
-      path_prefix = topology.defaults.paths.custom.dirs
-      path_suffix = [ fname ]
-    else:
-      path_suffix = [ node.device ]
-      path_prefix = [ self.get_full_template_path() ] + topology.defaults.paths.templates.dirs
-
-      if node.get('_daemon',False):
-        if '_daemon_parent' in node:
-          path_suffix.append(node._daemon_parent)
-
-    return [ os.path.join(pf, sf) for pf in path_prefix for sf in path_suffix ] + path_prefix
-
-  def find_extra_template(
-        self,
-        node: Box,
-        fname: str,
-        topology: Box) -> typing.Optional[str]:
-
-    path = self.extra_template_paths(node,topology,fname)
-    if fname in node.get('config',[]):                    # Are we dealing with extra-config template?
-      fname = node.device
-
-    if log.debug_active('clab'):
-      print(f'Searching for {fname}.j2 in {path}')
-
-    found_file = _files.find_file(f'{fname}.j2', path)
-    if log.debug_active('clab'):
-      print(f'Found file: {found_file}')
-
-    return found_file
-
   def get_output_name(self, fname: typing.Optional[str], topology: Box) -> str:
     if fname:
       return fname
@@ -162,7 +129,8 @@ class _Provider(Callback):
       if out_key in bind_dict:
         continue
 
-      if not self.find_extra_template(node,file,topology):
+      template_path = _files.find_provider_template(node,file,topology,self.get_full_template_path())
+      if not template_path:
         log.error(
           f"Cannot find template {file}.j2 for extra file {self.provider}.{inkey}.{file} on node {node.name}",
           category=log.IncorrectValue,
@@ -170,6 +138,7 @@ class _Provider(Callback):
         continue
 
       bind_dict[out_key] = mapping
+      append_to_list(node[self.provider],'_template_cache',{ 'fname': file, 'fpath': template_path})
 
     node[self.provider][outkey] = filemaps.dict_to_mapping(bind_dict)
 
@@ -186,7 +155,16 @@ class _Provider(Callback):
     sys_folder = str(_files.get_moddir())+"/"
 
     bind_dict = filemaps.mapping_to_dict(binds)
-    
+
+    # Recreate the cached template paths as a dict for easier lookup
+    #
+    template_cache = { item['fname']: item['fpath'] for item in node[self.provider].get('_template_cache',[]) }
+
+    if log.debug_active('template'):
+      print(f"Template cache for {node.name}:")
+      for k,v in template_cache.items():
+        print(f"  {k}: {v}")
+
     node_data = {
         **node.to_dict(),
         'node_provider': devices.get_provider(node,topology.defaults),
@@ -223,40 +201,48 @@ class _Provider(Callback):
       # For shared files, extract the original file name (remove 'shared-' prefix)
       template_fname = strings.removeprefix(file_rel,self.SHARED_PREFIX)
 
-      template_name = self.find_extra_template(node, template_fname, topology)
-      if not template_name:
-        log.error(f"Cannot find template for {file_rel} on node {node.name}",log.MissingValue,'provider')
+      if template_fname not in template_cache:
+        log.error(
+          f"The path to template {template_fname} on node {node.name} is not in its template cache",
+          module='provider',
+          category=log.MissingValue)
         continue
 
+      template_path = template_cache[template_fname]
+      short_path = template_path.replace(sys_folder,'package:')
       # Create parent dirs if needed
       full_out_path.parent.mkdir(parents=True,exist_ok=True)
 
       # If the file already exists (either shared or node-specific), skip re-rendering
-      if full_out_path.exists():
+      if full_out_path.exists() and '-shared-' in str(full_out_path):
         if not log.QUIET:
-          strings.print_colored_text('[MAPPED]  ','bright_cyan','Mapped ')
-          print(f"{str(full_out_path)} to {node.name}:{mapping} (from {template_name.replace(sys_folder,'')})")
-
+          strings.print_colored_text('[REUSED]  ','bright_cyan','Mapped existing ')
+          print(f"{str(full_out_path)} to {node.name}:{mapping} (from {short_path})")
         continue
+
       try:
-        node_paths = self.extra_template_paths(node,topology,template_fname)
+        node_paths = _files.config_template_paths(
+                        node=node,
+                        topology=topology,
+                        fname=template_fname,
+                        provider_path=self.get_full_template_path())
         templates.write_template(
-          in_folder=os.path.dirname(template_name),
-          j2=os.path.basename(template_name),
+          in_folder=os.path.dirname(template_path),
+          j2=os.path.basename(template_path),
           data=node_data,
           out_folder=str(full_out_path.parent),
           filename=full_out_path.name,
           extra_path=node_paths)
       except Exception as ex:
         log.error(
-          text=f"Error rendering {template_name} into {file_rel}",
+          text=f"Error rendering {short_path} into {file_rel}",
           more_data = [f'{type(ex).__name__}: {str(ex)}'] + templates.template_error_location(ex),
           category=log.FatalError,
           module=self.provider)
 
       if not log.QUIET:
         strings.print_colored_text('[MAPPED]  ','bright_cyan','Mapped ')
-        print(f"{str(full_out_path)} to {node.name}:{mapping} (from {template_name.replace(sys_folder,'')})")
+        print(f"{str(full_out_path)} to {node.name}:{mapping} (from {short_path})")
 
   def create(self, topology: Box, fname: typing.Optional[str]) -> None:
     self.transform(topology)
