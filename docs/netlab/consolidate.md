@@ -168,7 +168,9 @@ ERROR: Please run "netlab consolidate" again to create a new cache
 The consolidated JSON cache is validated against a JSON schema to ensure data integrity. The schema validates:
 - Overall structure (version, netlab_version, files, file_count)
 - File entry structure (content, source, package)
-- Content properties (nodes, links, modules, devices, providers, etc.)
+- Content type (must be an object/dictionary)
+
+The schema uses `additionalProperties: true` for content objects, allowing any YAML structure to be stored. This provides flexibility while still ensuring the cache has the correct overall structure.
 
 Schema validation is **optional** and requires the `jsonschema` package. If `jsonschema` is not installed, consolidation will still work, but validation will be skipped.
 
