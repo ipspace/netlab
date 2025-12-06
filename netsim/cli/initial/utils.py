@@ -7,7 +7,6 @@ import os
 import typing
 
 from .. import common_parse_args, parser_lab_location
-from . import configs
 
 
 #
