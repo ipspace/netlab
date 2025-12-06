@@ -185,6 +185,7 @@ def make_paths_absolute(p_top: Box, parents: str = 'defaults.paths') -> None:
   for k in list(p_top.keys()):
     if k.startswith('files') or k.startswith('tasks'):
       p_top[k] = [ fn.replace('\n','') for fn in p_top[k] ]
+      p_top[f'f_{k}'] = [ fn.replace('{{','{').replace('}}','}') for fn in p_top[k] ]
       continue
     v = p_top[k]
     if isinstance(v,str):
