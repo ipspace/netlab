@@ -16,7 +16,7 @@ from box import Box
 
 from .. import augment
 from ..outputs import _TopologyOutput
-from ..utils import log, strings
+from ..utils import log, strings, profile
 from . import common_parse_args, error_and_exit, lab_status_log, load_topology, topology_parse_args
 
 
@@ -62,6 +62,7 @@ def create_topology_parse(
   if cmd == 'create':
     parser.add_argument('-o','--output',dest='output', action='append',help='Output format(s): format:option=filename')
     parser.add_argument('--devices',dest='devices', action='store_true',help='Create provider configuration file and netlab-devices.yml')
+    parser.add_argument('--profile',dest='profile', action='store',nargs='?',const='netlab.profile',help='Enable profiling and save results to file (default: netlab.profile)')
 
   return parser.parse_args(args)
 
@@ -71,7 +72,7 @@ Fix URLs to YAML files hosted on public Git repositories. Currently, only Github
 def fix_git_repo_url(url: str) -> str:
   if 'github.com' in url and '?' not in url:
     return url + '?raw=true'
-  
+
   return url
 
 """
@@ -122,6 +123,13 @@ def run(cli_args: typing.List[str],
   if not 'devices' in args:
     args.devices = None
 
+  # Start profiling if requested
+  profile_file = None
+  if hasattr(args, 'profile') and args.profile:
+    profile_file = args.profile
+    profile.start_profiling(profile_file)
+    log.info(f'Profiling enabled, results will be saved to {profile_file}')
+
   if '://' in args.topology:
     args.topology = http_fetch_content(args.topology,args)
 
@@ -137,9 +145,14 @@ def run(cli_args: typing.List[str],
   if not tpath.is_file():
     log.fatal(f'The specified lab topology ({args.topology}) is not a file',module='create')
 
-  topology = load_topology(args)
-  augment.main.transform(topology)
-  log.exit_on_error()
+  try:
+    topology = load_topology(args)
+    augment.main.transform(topology)
+    log.exit_on_error()
+  finally:
+    # Stop profiling if it was started
+    if profile_file:
+      profile.stop_profiling()
 
   if args.unlock and os.path.exists('netlab.lock'):
     strings.print_colored_text("WARNING: ","bright_red",stderr=True)
