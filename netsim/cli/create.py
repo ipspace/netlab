@@ -16,7 +16,7 @@ from box import Box
 
 from .. import augment
 from ..outputs import _TopologyOutput
-from ..utils import log, strings
+from ..utils import log, strings, read as _read
 from . import common_parse_args, error_and_exit, lab_status_log, load_topology, topology_parse_args
 
 
@@ -62,6 +62,7 @@ def create_topology_parse(
   if cmd == 'create':
     parser.add_argument('-o','--output',dest='output', action='append',help='Output format(s): format:option=filename')
     parser.add_argument('--devices',dest='devices', action='store_true',help='Create provider configuration file and netlab-devices.yml')
+    parser.add_argument('--json-cache',dest='json_cache', action='store',help='Use consolidated JSON cache file instead of reading YAML files')
 
   return parser.parse_args(args)
 
@@ -136,6 +137,10 @@ def run(cli_args: typing.List[str],
     log.fatal(f'Topology file {args.topology} does not exist',module='create')
   if not tpath.is_file():
     log.fatal(f'The specified lab topology ({args.topology}) is not a file',module='create')
+
+  # Set JSON cache if requested
+  if hasattr(args, 'json_cache') and args.json_cache:
+    _read.set_json_cache(args.json_cache)
 
   topology = load_topology(args)
   augment.main.transform(topology)

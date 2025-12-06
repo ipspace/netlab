@@ -83,6 +83,26 @@ def include_yaml(data: Box, source_file: str) -> None:
 #
 read_cache: dict = {}
 
+# JSON cache support
+_json_cache: typing.Optional[dict] = None
+
+def set_json_cache(json_file: str) -> None:
+  """
+  Set the JSON cache file to use for loading YAML files.
+  This will cause read_yaml() to check the JSON cache before reading YAML files.
+  
+  Args:
+    json_file: Path to the consolidated JSON cache file
+  """
+  global _json_cache
+  from . import consolidate as _consolidate
+  
+  _json_cache = _consolidate.load_from_json(json_file, validate=True)
+  if _json_cache is None:
+    log.warning(f'Failed to load JSON cache from {json_file}, falling back to YAML files', module='read')
+  else:
+    log.info(f'Using JSON cache from {json_file} ({len(_json_cache)} files)', module='read')
+
 class UniqueKeyLoader(yaml.SafeLoader):
   def construct_mapping(self, node : yaml.MappingNode, deep : bool = False) -> dict:
     mapping = []
@@ -95,7 +115,7 @@ class UniqueKeyLoader(yaml.SafeLoader):
     return super().construct_mapping(node, deep)
 
 def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str] = None) -> typing.Optional[Box]:
-  global read_cache
+  global read_cache, _json_cache
 
   if string is not None:
     try:
@@ -111,6 +131,31 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
   if log.debug_active('defaults'):
     print(f"Reading {filename}")
 
+  # Check JSON cache first if it's available
+  if _json_cache is not None:
+    # Normalize the filename to match cache keys
+    cache_key = None
+    if filename.startswith('package:'):
+      cache_key = filename
+    else:
+      try:
+        cache_key = str(_files.absolute_path(filename))
+      except:
+        cache_key = filename
+    
+    # Try exact match first
+    if cache_key in _json_cache:
+      file_data = _json_cache[cache_key]
+      content = file_data.get('content', {})
+      return Box(content, default_box=True, box_dots=True, default_box_none_transform=False)
+    
+    # Try to find by source filename (for package: files or relative paths)
+    for key, file_data in _json_cache.items():
+      if file_data.get('source') == filename:
+        content = file_data.get('content', {})
+        return Box(content, default_box=True, box_dots=True, default_box_none_transform=False)
+
+  # Fall back to normal cache
   if filename in read_cache:
     return Box(read_cache[filename],default_box=True,box_dots=True,default_box_none_transform=False)
 
