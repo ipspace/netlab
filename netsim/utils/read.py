@@ -123,6 +123,10 @@ def _read_from_json_cache(filename: str) -> typing.Optional[Box]:
   """
   global _json_cache
   
+  # Type guard: ensure _json_cache is not None (caller should check, but mypy needs this)
+  if _json_cache is None:
+    return None
+  
   # Normalize the filename to match cache keys
   if filename.startswith('package:'):
     cache_key = filename
