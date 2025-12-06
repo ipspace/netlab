@@ -3,10 +3,7 @@
 #
 import cProfile
 import pstats
-import io
-import sys
 from contextlib import contextmanager
-from pathlib import Path
 from typing import Optional
 
 _profiler: Optional[cProfile.Profile] = None

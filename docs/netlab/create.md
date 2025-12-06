@@ -12,6 +12,10 @@ The **netlab create** command reads network topology description in YAML format,
 * Network topology in YAML format (default: `topology.yml`, but see also [](../dev/versioning.md))
 * [Default settings](../defaults.md) that can be specified in [project-, user- or system default files](defaults-locations)
 
+```{tip}
+For faster execution, especially in CI/CD pipelines or when running multiple `netlab create` operations, you can use the `--json-cache` flag with a consolidated JSON cache file created by **[netlab consolidate](netlab-consolidate)**. This can improve performance by 40-50% by eliminating YAML parsing and reducing file I/O operations.
+```
+
 ## Data Model Transformation
 
 After reading the network topology, **netlab create** performs a complex data transformation to create device- and link-level data structures fully describing network topology, IP addressing and (optional) routing protocols.
@@ -46,7 +50,7 @@ The _[](netlab-create-output-formats)_ section describes how you can control the
 ```text
 usage: netlab create [-h] [--log] [-q] [-v] [--defaults DEFAULTS] [-d DEVICE]
                      [-p PROVIDER] [-s SETTINGS] [--plugin PLUGIN]
-                     [-o OUTPUT] [topology]
+                     [-o OUTPUT] [--json-cache JSON_CACHE] [--devices] [topology]
 
 Create provider- and automation configuration files
 
@@ -68,6 +72,9 @@ optional arguments:
                         Additional parameters added to topology file
   -o OUTPUT, --output OUTPUT
                         Output format(s): format:option=filename
+  --json-cache JSON_CACHE
+                        Use consolidated JSON cache file instead of reading
+                        YAML files (see [netlab consolidate](netlab-consolidate))
   --devices             Create provider configuration file and netlab-devices.yml
 
 output files created when no output is specified:
