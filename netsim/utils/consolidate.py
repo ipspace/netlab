@@ -8,6 +8,7 @@ from pathlib import Path
 
 from box import Box
 
+from .. import __version__ as netlab_version
 from . import files as _files
 from . import log, read as _read
 
@@ -223,6 +224,7 @@ def consolidate_to_json(
   # Create the consolidated structure
   consolidated = {
     'version': '1.0',
+    'netlab_version': netlab_version,
     'topology_file': topology_file,
     'files': files_tracked,
     'file_count': len(files_tracked)
@@ -373,6 +375,7 @@ def consolidate_all_system_files(output_file: str = 'netlab.consolidated.json') 
   # Create the consolidated structure
   consolidated = {
     'version': '1.0',
+    'netlab_version': netlab_version,
     'topology_file': None,  # No specific topology
     'files': files_tracked,
     'file_count': len(files_tracked)
@@ -403,7 +406,7 @@ def load_from_json(json_file: str, validate: bool = True) -> typing.Optional[dic
     validate: Whether to validate against schema (default: True)
 
   Returns:
-    Dictionary mapping file paths to their content, or None if file doesn't exist or is invalid
+    Full consolidated dictionary (with version, files, etc.) or None if file doesn't exist or is invalid
   """
   if not os.path.isfile(json_file):
     return None
@@ -411,6 +414,15 @@ def load_from_json(json_file: str, validate: bool = True) -> typing.Optional[dic
   try:
     with open(json_file, 'r') as f:
       consolidated = json.load(f)
+
+    # Check netlab version compatibility
+    cache_version = consolidated.get('netlab_version')
+    if cache_version != netlab_version:
+      log.error(f'JSON cache {json_file} was created with netlab version {cache_version}', module='consolidate')
+      log.error(f'Current netlab version is {netlab_version}', module='consolidate')
+      log.error('Cache file is incompatible and must be regenerated', module='consolidate')
+      log.error('Please run "netlab consolidate" again to create a new cache', module='consolidate')
+      return None
 
     # Validate against schema if requested
     if validate:
@@ -425,7 +437,7 @@ def load_from_json(json_file: str, validate: bool = True) -> typing.Optional[dic
         # Schema validation requested but schema not found (jsonschema may not be available)
         pass
 
-    return consolidated.get('files', {})
+    return consolidated
   except json.JSONDecodeError as ex:
     log.error(f'Invalid JSON in cache file {json_file}: {ex}', module='consolidate')
     return None

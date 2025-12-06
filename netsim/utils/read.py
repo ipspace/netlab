@@ -97,11 +97,16 @@ def set_json_cache(json_file: str) -> None:
   global _json_cache
   from . import consolidate as _consolidate
   
-  _json_cache = _consolidate.load_from_json(json_file, validate=True)
-  if _json_cache is None:
+  consolidated = _consolidate.load_from_json(json_file, validate=True)
+  if consolidated is None:
     log.warning(f'Failed to load JSON cache from {json_file}, falling back to YAML files', module='read')
+    _json_cache = None
   else:
-    log.info(f'Using JSON cache from {json_file} ({len(_json_cache)} files)', module='read')
+    # Extract just the files dictionary for use in read_yaml
+    _json_cache = consolidated.get('files', {})
+    file_count = len(_json_cache)
+    cache_version = consolidated.get('netlab_version', 'unknown')
+    log.info(f'Using JSON cache from {json_file} (netlab {cache_version}, {file_count} files)', module='read')
 
 class UniqueKeyLoader(yaml.SafeLoader):
   def construct_mapping(self, node : yaml.MappingNode, deep : bool = False) -> dict:
