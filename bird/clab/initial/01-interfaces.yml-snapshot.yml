@@ -18,7 +18,7 @@ defaults:
       - srl-agents
       - runtime
       template: clab.j2
-      version: 0.72
+      version: 0.72.0
       start: sudo -E containerlab deploy --reconfigure -t clab.yml
       stop: sudo -E containerlab destroy --cleanup -t clab.yml
       act_probe: docker ps
@@ -31,7 +31,7 @@ defaults:
         - -c
         - "[[ `containerlab version|awk '/version/ {print $2}'` > '0.71.999' ]] &&
           echo OK"
-        err: Containerlab version is too old, please upgrade to 0.72 or later 
+        err: Containerlab version is too old, please upgrade to 0.72.0 or later 
           with 'sudo containerlab version upgrade'
       cleanup:
       - clab.yml
@@ -305,6 +305,7 @@ defaults:
         ansible_connection: network_cli
         netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group14-sha1 -o 
           PubkeyAcceptedKeyTypes=+ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
+        netlab_check_retries: 50
       external:
         image: none
       features:
@@ -316,6 +317,19 @@ defaults:
         create_template: asav.xml.j2
         build: https://netlab.tools/labs/asav/
         create_iso: asav
+      clab:
+        image: vrnetlab/cisco_asav:9-16-4-57
+        node:
+          kind: cisco_asav
+        build: https://containerlab.dev/manual/kinds/cisco_asav/
+        group_vars:
+          ansible_ssh_pass: CiscoAsa1!
+          ansible_become_password: CiscoAsa1!
+          ansible_user: admin
+          netlab_ready:
+          - ssh
+          netlab_check_command: |
+            exit
     cat8000v:
       description: Cisco Catalyst 8000v
       attributes:
@@ -5951,6 +5965,34 @@ defaults:
       - '{{ custom_config }}/deploy.{{ ansible_network_os }}-{{ node_provider }}.yml'
       - '{{ custom_config }}/deploy.{{ ansible_network_os }}.yml'
       - '{{ custom_config }}/deploy.yml'
+      f_files:
+      - "{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type + '-'
+        + node_provider + '.j2' }"
+      - "{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type + '.j2'
+        }"
+      - "{ custom_config + '/' + inventory_hostname + '.j2' }"
+      - "{ custom_config + '/' + inventory_hostname + '.cfg' }"
+      - "{ custom_config + '/' + netlab_device_type + '-' + node_provider + '.j2'
+        }"
+      - "{ custom_config + '/' + netlab_device_type + '.j2' }"
+      - "{ custom_config + '/' + ansible_network_os + '-' + node_provider + '.j2'
+        }"
+      - "{ custom_config + '/' + ansible_network_os + '.j2' }"
+      - "{ custom_config + '.' + inventory_hostname + '.' + netlab_device_type + '.j2'
+        }"
+      - "{ custom_config + '.' + inventory_hostname + '.' + ansible_network_os + '.j2'
+        }"
+      - "{ custom_config + '.' + inventory_hostname + '.j2' }"
+      - "{ custom_config + '.' + netlab_device_type + '.j2' }"
+      - "{ custom_config + '.' + ansible_network_os + '.j2' }"
+      - "{ custom_config + '.j2' }"
+      f_tasks:
+      - '{ custom_config }/deploy-{ inventory_hostname }.yml'
+      - '{ custom_config }/deploy.{ netlab_device_type }-{ node_provider }.yml'
+      - '{ custom_config }/deploy.{ netlab_device_type }.yml'
+      - '{ custom_config }/deploy.{ ansible_network_os }-{ node_provider }.yml'
+      - '{ custom_config }/deploy.{ ansible_network_os }.yml'
+      - '{ custom_config }/deploy.yml'
     deploy:
       dirs:
       - /home/pipi/netlab_gh/netsim/ansible/tasks
@@ -5960,39 +6002,62 @@ defaults:
       - deploy-config/{{ ansible_network_os }}-{{ node_provider }}.yml
       - deploy-config/{{ ansible_network_os }}.yml
       files:
-      - '{{ netlab_device_type }}/{{ config_module }}-{{ provider|default(netlab_provider)
-        }}.yml'
+      - '{{ netlab_device_type }}/{{ config_module }}-{{ node_provider }}.yml'
       - '{{ netlab_device_type }}/{{ config_module }}.yml'
-      - deploy-config/{{ netlab_device_type }}-{{ 
-        provider|default(netlab_provider) }}.yml
+      - deploy-config/{{ netlab_device_type }}-{{ node_provider }}.yml
       - deploy-config/{{ netlab_device_type }}.yml
-      - '{{ ansible_network_os }}/{{ config_module }}-{{ provider|default(netlab_provider)
-        }}.yml'
+      - '{{ ansible_network_os }}/{{ config_module }}-{{ node_provider }}.yml'
       - '{{ ansible_network_os }}/{{ config_module }}.yml'
-      - deploy-config/{{ ansible_network_os }}-{{ 
-        provider|default(netlab_provider) }}.yml
+      - deploy-config/{{ ansible_network_os }}-{{ node_provider }}.yml
       - deploy-config/{{ ansible_network_os }}.yml
+      f_tasks_generic:
+      - deploy-config/{ netlab_device_type }-{ node_provider }.yml
+      - deploy-config/{ netlab_device_type }.yml
+      - deploy-config/{ ansible_network_os }-{ node_provider }.yml
+      - deploy-config/{ ansible_network_os }.yml
+      f_files:
+      - '{ netlab_device_type }/{ config_module }-{ node_provider }.yml'
+      - '{ netlab_device_type }/{ config_module }.yml'
+      - deploy-config/{ netlab_device_type }-{ node_provider }.yml
+      - deploy-config/{ netlab_device_type }.yml
+      - '{ ansible_network_os }/{ config_module }-{ node_provider }.yml'
+      - '{ ansible_network_os }/{ config_module }.yml'
+      - deploy-config/{ ansible_network_os }-{ node_provider }.yml
+      - deploy-config/{ ansible_network_os }.yml
     templates:
       dirs:
       - /home/pipi/netlab_gh/netsim/daemons
       - /home/pipi/netlab_gh/netsim/ansible/templates
     t_files:
       files:
-      - '{{config_module}}/{{netlab_device_type}}-{{provider|default(netlab_provider)}}.j2'
+      - '{{config_module}}/{{netlab_device_type}}-{{node_provider}}.j2'
       - '{{config_module}}/{{netlab_device_type}}.j2'
       - '{{config_module}}.{{netlab_device_type}}.j2'
-      - '{{config_module}}/{{ansible_network_os}}-{{provider|default(netlab_provider)}}.j2'
+      - '{{config_module}}/{{ansible_network_os}}-{{node_provider}}.j2'
       - '{{config_module}}/{{ansible_network_os}}.j2'
       - '{{config_module}}.{{ansible_network_os}}.j2'
       - '{{netlab_device_type}}/{{config_module}}.j2'
+      f_files:
+      - '{config_module}/{netlab_device_type}-{node_provider}.j2'
+      - '{config_module}/{netlab_device_type}.j2'
+      - '{config_module}.{netlab_device_type}.j2'
+      - '{config_module}/{ansible_network_os}-{node_provider}.j2'
+      - '{config_module}/{ansible_network_os}.j2'
+      - '{config_module}.{ansible_network_os}.j2'
+      - '{netlab_device_type}/{config_module}.j2'
     ready:
       dirs:
       - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
       files:
-      - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
+      - '{{netlab_device_type}}-{{node_provider}}.yml'
       - '{{netlab_device_type}}.yml'
-      - '{{ansible_network_os}}-{{provider|default(netlab_provider)}}.yml'
+      - '{{ansible_network_os}}-{{node_provider}}.yml'
       - '{{ansible_network_os}}.yml'
+      f_files:
+      - '{netlab_device_type}-{node_provider}.yml'
+      - '{netlab_device_type}.yml'
+      - '{ansible_network_os}-{node_provider}.yml'
+      - '{ansible_network_os}.yml'
     collect:
       dirs:
       - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
@@ -8124,6 +8189,19 @@ nodes:
       - routing:/etc/bird/routing.mod.conf
       exec:
       - sh /etc/config/startup.sh
+      _template_cache:
+      - fname: hosts
+        fpath: 
+          /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
+      - fname: config
+        fpath: /home/pipi/netlab_gh/netsim/daemons/bird/config.j2
+      - fname: bird
+        fpath: /home/pipi/netlab_gh/netsim/daemons/bird/bird.j2
+      - fname: initial
+        fpath: 
+          /home/pipi/netlab_gh/netsim/ansible/templates/initial/bird-clab.j2
+      - fname: routing
+        fpath: /home/pipi/netlab_gh/netsim/daemons/bird/routing.j2
       binds:
       - clab_files/-shared-hosts:/etc/hosts:ro
       - clab_files/r/config:/etc/config/startup.sh
@@ -8150,6 +8228,10 @@ nodes:
     routing:
       static: []
     module:
+    - routing
+    netlab_ansible_skip_module:
+    - bird
+    - initial
     - routing
   h1:
     routing:
@@ -8191,6 +8273,10 @@ nodes:
       kind: linux
       config_templates:
       - hosts:/etc/hosts:shared
+      _template_cache:
+      - fname: hosts
+        fpath: 
+          /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
       binds:
       - clab_files/-shared-hosts:/etc/hosts:ro
     box: python:3.13-alpine
@@ -8245,6 +8331,10 @@ nodes:
       kind: linux
       config_templates:
       - hosts:/etc/hosts:shared
+      _template_cache:
+      - fname: hosts
+        fpath: 
+          /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
       binds:
       - clab_files/-shared-hosts:/etc/hosts:ro
     box: python:3.13-alpine
@@ -8298,6 +8388,10 @@ nodes:
       kind: linux
       config_templates:
       - hosts:/etc/hosts:shared
+      _template_cache:
+      - fname: hosts
+        fpath: 
+          /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
       binds:
       - clab_files/-shared-hosts:/etc/hosts:ro
     box: python:3.13-alpine
@@ -8386,7 +8480,7 @@ validate:
   plugin: ping(nodes.r.loopback.ipv4)
   name: ping
 - description: IPv6 ping H1,H2 => R
-  wait: 5
+  wait: 15
   wait_msg: Wait for IPv6 interfaces to become operational
   nodes:
   - h1
@@ -8415,4 +8509,4 @@ prefix:
   any:
     ipv4: 0.0.0.0/0
     ipv6: ::/0
-_netlab_version: 25.11.01
+_netlab_version: 25.12.02
