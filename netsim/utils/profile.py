@@ -4,7 +4,7 @@
 import cProfile
 import pstats
 from contextlib import contextmanager
-from typing import Optional
+from typing import Generator, Optional
 
 _profiler: Optional[cProfile.Profile] = None
 _profile_output: Optional[str] = None
@@ -52,7 +52,7 @@ def print_summary(profile_file: str, lines: int = 30) -> None:
     stats.print_stats(lines)
 
 @contextmanager
-def profile_context(output_file: str = "netlab.profile"):
+def profile_context(output_file: str = "netlab.profile") -> Generator[None, None, None]:
     """Context manager for profiling a code block"""
     start_profiling(output_file)
     try:
@@ -62,5 +62,7 @@ def profile_context(output_file: str = "netlab.profile"):
 
 def is_profiling() -> bool:
     """Check if profiling is currently active"""
-    return _profiler is not None and _profiler.is_running()
+    # cProfile.Profile doesn't have is_running(), so we check if profiler exists
+    # and assume it's running if it's been created (since we enable it immediately)
+    return _profiler is not None
 
