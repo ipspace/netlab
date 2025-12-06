@@ -103,8 +103,11 @@ def set_json_cache(json_file: str) -> None:
     _json_cache = None
   else:
     # Extract just the files dictionary for use in read_yaml
-    _json_cache = consolidated.get('files', {})
-    file_count = len(_json_cache)
+    files_dict = consolidated.get('files', {})
+    if files_dict is None:
+      files_dict = {}
+    _json_cache = files_dict
+    file_count = len(files_dict)
     cache_version = consolidated.get('netlab_version', 'unknown')
     log.info(f'Using JSON cache from {json_file} (netlab {cache_version}, {file_count} files)', module='read')
 
