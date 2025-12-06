@@ -66,7 +66,7 @@ def create_from_config_templates(topology: Box, nodeset: list, abs_path: Path, a
 
     # Let's do a bit of paperwork first and figure out whether we need to call
     # Ansible for this node at all. We'll take all modules, add 'initial', then
-    # add all custom configs and subtract netlab_ansible_skip_modules (which
+    # add all custom configs and subtract netlab_ansible_skip_module (which
     # controls what Ansible playbook does). If there's nothing left, we don't need
     # Ansible for this node
     #
