@@ -92,8 +92,8 @@ def create_from_config_templates(topology: Box, nodeset: list, abs_path: Path, a
       try:
         node_paths = _files.config_template_paths(
                               node=n_data,
-                              topology=topology,
                               fname=b_template,
+                              topology=topology,
                               provider_path=p.get_full_template_path())
         o_fname = f'{n_name}.{b_template}.cfg'              # Try to render the template into
         templates.write_template(                           # ... node.template.cfg file in the output directory

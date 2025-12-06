@@ -142,8 +142,8 @@ them with provider- and device-specific information
 """
 def config_template_paths(
       node: Box,
-      topology: Box,
       fname: str,
+      topology: Box,
       provider_path: typing.Optional[str] = None) -> list:
   if fname in node.get('config',[]):                    # Are we dealing with extra-config template?
     path_prefix = topology.defaults.paths.custom.dirs
@@ -168,15 +168,17 @@ def find_provider_template(
       topology: Box,
       provider_path: typing.Optional[str] = None) -> typing.Optional[str]:
 
-  path = config_template_paths(node,topology,fname,provider_path=provider_path)
+  path = config_template_paths(node,fname,topology,provider_path=provider_path)
+  if log.debug_active('template'):
+    print(f'Searching for {fname} template for {node.name}/{node.device} in:')
+    for p in path:
+      print(f'- {p}')
+
   if fname in node.get('config',[]):                    # Are we dealing with extra-config template?
     fname = node.device
 
-  if log.debug_active('clab'):
-    print(f'Searching for {fname}.j2 in {path}')
-
   found_file = find_file(f'{fname}.j2', path)
-  if log.debug_active('clab'):
+  if log.debug_active('template'):
     print(f'Found file: {found_file}')
 
   return found_file

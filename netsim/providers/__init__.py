@@ -203,7 +203,7 @@ class _Provider(Callback):
 
       if template_fname not in template_cache:
         log.error(
-          f"The path to template {template_fname} on node {node.name} is not in its template cache",
+          f"Internal error: the path to template {template_fname} on node {node.name} is not in its template cache",
           module='provider',
           category=log.MissingValue)
         continue
@@ -223,8 +223,8 @@ class _Provider(Callback):
       try:
         node_paths = _files.config_template_paths(
                         node=node,
-                        topology=topology,
                         fname=template_fname,
+                        topology=topology,
                         provider_path=self.get_full_template_path())
         templates.write_template(
           in_folder=os.path.dirname(template_path),

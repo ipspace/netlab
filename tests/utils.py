@@ -17,7 +17,7 @@ def transformation_results_yaml(topology):
   for n_data in topology.nodes.values():
     for p in topology.defaults.providers:
       if p in n_data:
-        n_data.pop(f'{p}._template_cache')
+        n_data[p].pop('_template_cache',None)
 
   ignore:list = topology.defaults.tests.ignore or ['addressing','defaults','nodes_map','includes']
   for k in ignore:
