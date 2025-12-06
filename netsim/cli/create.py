@@ -16,7 +16,7 @@ from box import Box
 
 from .. import augment
 from ..outputs import _TopologyOutput
-from ..utils import log, strings, read as _read
+from ..utils import log, read as _read, strings
 from . import common_parse_args, error_and_exit, lab_status_log, load_topology, topology_parse_args
 
 

@@ -99,7 +99,7 @@ def set_json_cache(json_file: str) -> None:
   
   consolidated = _consolidate.load_from_json(json_file, validate=True)
   if consolidated is None:
-    log.warning(f'Failed to load JSON cache from {json_file}, falling back to YAML files', module='read')
+    log.warning(text=f'Failed to load JSON cache from {json_file}, falling back to YAML files', module='read')
     _json_cache = None
   else:
     # Extract just the files dictionary for use in read_yaml

@@ -1,6 +1,7 @@
 #
 # Consolidate all Netlab YAML files into a single JSON file
 #
+import importlib.util
 import json
 import os
 import typing
@@ -18,33 +19,31 @@ def _get_schema_path() -> Path:
 
 def _load_schema() -> typing.Optional[dict]:
   """Load the JSON schema for validation"""
-  # Import jsonschema on demand
-  try:
-    import jsonschema
-  except ImportError:
+  # Check if jsonschema is available
+  if importlib.util.find_spec('jsonschema') is None:
     # jsonschema not available, skip validation
     return None
 
   schema_path = _get_schema_path()
   if not schema_path.exists():
-    log.warning(f'JSON schema not found at {schema_path}', module='consolidate')
+    log.warning(text=f'JSON schema not found at {schema_path}', module='consolidate')
     return None
 
   try:
     with open(schema_path, 'r') as f:
       return json.load(f)
   except Exception as ex:
-    log.warning(f'Error loading JSON schema: {ex}', module='consolidate')
+    log.warning(text=f'Error loading JSON schema: {ex}', module='consolidate')
     return None
 
 def _validate_json_cache(data: dict, schema: dict) -> bool:
   """Validate JSON cache data against schema"""
-  # Import jsonschema on demand
-  try:
-    import jsonschema
-  except ImportError:
+  # Check if jsonschema is available
+  if importlib.util.find_spec('jsonschema') is None:
     # jsonschema not available, skip validation
     return True  # Don't fail if jsonschema is not available
+  
+  import jsonschema  # type: ignore[import-untyped]
 
   try:
     jsonschema.validate(instance=data, schema=schema)
@@ -55,7 +54,7 @@ def _validate_json_cache(data: dict, schema: dict) -> bool:
       log.error(f'  Path: {".".join(str(p) for p in ex.path)}', module='consolidate')
     return False
   except Exception as ex:
-    log.warning(f'Error during JSON cache validation: {ex}', module='consolidate')
+    log.warning(text=f'Error during JSON cache validation: {ex}', module='consolidate')
     return True  # Don't fail on validation errors, just warn
 
 def _collect_yaml_files(
@@ -102,7 +101,7 @@ def _collect_yaml_files(
         'package': fname.startswith('package:')
       }
     except Exception as ex:
-      log.warning(f'Error collecting file {fname}: {ex}', module='consolidate')
+      log.warning(text=f'Error collecting file {fname}: {ex}', module='consolidate')
 
   # Normalize topology file path
   if not topology_file.startswith('package:'):
@@ -134,9 +133,9 @@ def _collect_yaml_files(
         else:
           collect_file(dfname)
   except Exception as ex:
-    log.warning(f'Error collecting defaults files: {ex}', module='consolidate')
+    log.warning(text=f'Error collecting defaults files: {ex}', module='consolidate')
     # Fallback: try to collect common defaults
-    from ..utils.read import USER_DEFAULTS, SYSTEM_DEFAULTS
+    from ..utils.read import SYSTEM_DEFAULTS, USER_DEFAULTS
     all_defaults = (user_defaults or USER_DEFAULTS) + (system_defaults or SYSTEM_DEFAULTS)
     for dfname in all_defaults:
       if dfname.find('package:') != 0:
@@ -171,7 +170,7 @@ def consolidate_to_json(
   files_tracked = {}
   original_read_yaml = _read.read_yaml
 
-  def tracking_read_yaml(filename=None, string=None):
+  def tracking_read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str] = None) -> typing.Optional[Box]:
     """Wrapper around read_yaml that tracks all files read"""
     if filename and not string:
       # Normalize the filename for tracking
@@ -262,7 +261,7 @@ def consolidate_all_system_files(output_file: str = 'netlab.consolidated.json') 
   files_tracked = {}
   original_read_yaml = _read.read_yaml
   
-  def tracking_read_yaml(filename=None, string=None):
+  def tracking_read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str] = None) -> typing.Optional[Box]:
     """Wrapper around read_yaml that tracks all files read"""
     if filename and not string:
       # Normalize the filename for tracking
@@ -294,7 +293,7 @@ def consolidate_all_system_files(output_file: str = 'netlab.consolidated.json') 
   
   try:
     # Load all system defaults
-    from ..utils.read import SYSTEM_DEFAULTS, USER_DEFAULTS
+    from ..utils.read import SYSTEM_DEFAULTS
     
     # Try to load system defaults
     for default_file in SYSTEM_DEFAULTS:
@@ -442,6 +441,6 @@ def load_from_json(json_file: str, validate: bool = True) -> typing.Optional[dic
     log.error(f'Invalid JSON in cache file {json_file}: {ex}', module='consolidate')
     return None
   except Exception as ex:
-    log.warning(f'Error loading JSON cache {json_file}: {ex}', module='consolidate')
+    log.warning(text=f'Error loading JSON cache {json_file}: {ex}', module='consolidate')
     return None
 
