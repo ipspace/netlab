@@ -73,6 +73,9 @@ def log_command(cmd: typing.Union[str,list], status: str) -> None:
   cmd_text = cmd if isinstance(cmd,str) else ' '.join(cmd)
   lab_status_log(topology,f'{status}: {cmd_text}')
 
+CAPTURED_STDOUT: str = ''
+CAPTURED_STDERR: str = ''
+
 def run_command(
     cmd : typing.Union[str,list],
     check_result : bool = False,
@@ -80,6 +83,10 @@ def run_command(
     return_stdout: bool = False,
     return_exitcode: bool = False,
     run_always: bool = False) -> typing.Union[bool,int,str]:
+
+  global CAPTURED_STDOUT, CAPTURED_STDERR
+  CAPTURED_STDOUT = ''
+  CAPTURED_STDERR = ''
 
   if log.debug_active('cli'):
     print(f"Not running: {cmd}")
@@ -103,9 +110,16 @@ def run_command(
     return True
 
   try:
-    result = subprocess.run(cmd,capture_output=check_result,check=not return_exitcode,text=True)
+    result = subprocess.run(
+                cmd,
+                capture_output=check_result,
+                check=not return_exitcode,
+                text=True)
     if log.debug_active('external') or log.VERBOSE >= 3:
       print(f'... run result: {result}')
+    if check_result:
+      CAPTURED_STDOUT = result.stdout
+      CAPTURED_STDERR = result.stderr
     if return_exitcode:
       log_command(cmd,f'FAIL(result.returncode)' if result.returncode else 'OK')
       return result.returncode
