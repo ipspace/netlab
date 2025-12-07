@@ -58,7 +58,7 @@ def inventory(name: str) -> typing.Optional[dict]:
 
     log.fatal('Cannot get Ansible inventory data for %s with ansible-inventory. Is the host name correct?' % name,'inventory')
 
-def playbook(name: str, args: typing.List[str]) -> None:
+def playbook(name: str, args: typing.List[str], abort_on_error: bool = True) -> bool:
   pbname = find_playbook(name)
   if not pbname:
     log.fatal("Cannot find Ansible playbook %s, aborting" % name)
@@ -70,5 +70,7 @@ def playbook(name: str, args: typing.List[str]) -> None:
   cmd.extend(args)
 
   OK = external_commands.run_command(cmd)
-  if not OK:
+  if not OK and abort_on_error:
     log.fatal(f"Executing Ansible playbook {pbname} failed")
+
+  return OK is True
