@@ -10,7 +10,9 @@ You can skip this step and reuse existing configuration files with the `--snapsh
 ```
 
 ```{tip}
-For faster execution, especially in CI/CD pipelines or when running multiple `netlab up` operations, you can use the `--json-cache` flag with a consolidated JSON cache file created by **[netlab consolidate](netlab-consolidate)**. This can improve performance by 40-50% by eliminating YAML parsing and reducing file I/O operations.
+For faster execution, especially in CI/CD pipelines or when running multiple `netlab up` operations, you can use the `--json-cache` flag or `NETLAB_JSON_CACHE` environment variable with a consolidated JSON cache file created by **[netlab consolidate](netlab-consolidate)**. This can improve performance by 40-50% by eliminating YAML parsing and reducing file I/O operations.
+
+The CLI argument takes precedence over the environment variable.
 ```
 
 * Checks the [virtualization provider](../providers.md) installation;

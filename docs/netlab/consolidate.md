@@ -69,6 +69,7 @@ This is particularly useful for integration test suites where you want to cache 
 
 After creating a consolidated JSON file, use it with `netlab create` or `netlab up`:
 
+**Option 1: Using CLI argument**
 ```bash
 # Use with netlab create
 netlab create --json-cache cache.json topology.yml
@@ -77,7 +78,19 @@ netlab create --json-cache cache.json topology.yml
 netlab up --json-cache cache.json topology.yml
 ```
 
-The `--json-cache` flag tells `netlab create` or `netlab up` to:
+**Option 2: Using environment variable**
+```bash
+# Set environment variable
+export NETLAB_JSON_CACHE=cache.json
+
+# Use with netlab create or netlab up
+netlab create topology.yml
+netlab up topology.yml
+```
+
+The CLI argument `--json-cache` takes precedence over the `NETLAB_JSON_CACHE` environment variable (same precedence pattern as `NETLAB_PROVIDER`).
+
+The JSON cache tells `netlab create` or `netlab up` to:
 1. Load the consolidated JSON file instead of reading individual YAML files
 2. Use the pre-parsed content directly
 3. Skip YAML parsing and file I/O operations
@@ -249,8 +262,12 @@ This can reduce test execution time by 40-50%.
 # Consolidate topology and all dependencies
 netlab consolidate my-topology.yml -o my-cache.json
 
-# Use the cache for faster creation
+# Use the cache for faster creation (CLI argument)
 netlab create --json-cache my-cache.json my-topology.yml
+
+# Or use the cache via environment variable
+export NETLAB_JSON_CACHE=my-cache.json
+netlab create my-topology.yml
 
 # Or use the cache when starting the lab
 netlab up --json-cache my-cache.json my-topology.yml
@@ -262,7 +279,13 @@ netlab up --json-cache my-cache.json my-topology.yml
 # Pre-consolidate system files (run once)
 netlab consolidate -o system-cache.json
 
-# Use cache for all tests
+# Use cache for all tests (via environment variable)
+export NETLAB_JSON_CACHE=system-cache.json
+for test in tests/integration/**/*.yml; do
+  netlab create "$test" -p clab -d frr
+done
+
+# Or use CLI argument
 for test in tests/integration/**/*.yml; do
   netlab create --json-cache system-cache.json "$test" -p clab -d frr
 done
@@ -274,7 +297,12 @@ done
 # Start of session: consolidate system files
 netlab consolidate -o dev-cache.json
 
-# During development: use cache for quick iterations
+# During development: use cache for quick iterations (via environment variable)
+export NETLAB_JSON_CACHE=dev-cache.json
+netlab create topology.yml
+netlab up topology.yml  # Much faster!
+
+# Or use CLI argument
 netlab create --json-cache dev-cache.json topology.yml
 netlab up --json-cache dev-cache.json topology.yml  # Much faster!
 ```
