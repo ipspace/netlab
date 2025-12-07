@@ -111,7 +111,7 @@ def get_deploy_parts(args: argparse.Namespace) -> list:
   return deploy_parts
 
 """
-node_deploy_list -- FIgure out what needs to be deployed on the node
+node_deploy_list -- Figure out what needs to be deployed on the node
 based on CLI arguments
 """
 def node_deploy_list(node: Box, args: argparse.Namespace) -> list:
@@ -141,7 +141,7 @@ def node_requires_ansible(node: Box, args: argparse.Namespace) -> bool:
   return bool(set(n_deploy) - set(n_skip))
 
 """
-nodeset_requires_ansible: Does any node in the nodeseet need deployment through
+nodeset_requires_ansible: Does any node in the nodeset need deployment through
 an Ansible playbook?
 """
 def nodeset_requires_ansible(nodeset: list, topology: Box, args: argparse.Namespace) -> bool:
