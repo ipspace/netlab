@@ -21,6 +21,33 @@ from ..utils import read as _read
 from . import common_parse_args, error_and_exit, lab_status_log, load_topology, topology_parse_args
 
 
+def get_json_cache_path(args: typing.Union[argparse.Namespace, Box]) -> typing.Optional[str]:
+  """
+  Get JSON cache path from CLI argument or environment variable.
+  
+  Precedence:
+  1. CLI argument (--json-cache)
+  2. Environment variable (NETLAB_JSON_CACHE)
+  
+  Args:
+    args: Parsed command-line arguments
+    
+  Returns:
+    JSON cache file path if found, None otherwise
+  """
+  # Check CLI argument first (highest precedence)
+  if hasattr(args, 'json_cache') and args.json_cache:
+    return args.json_cache
+  
+  # Fall back to environment variable
+  json_cache_path = os.environ.get('NETLAB_JSON_CACHE')
+  if json_cache_path:
+    return json_cache_path
+  
+  return None
+
+
+
 #
 # CLI parser for create-topology script
 #
@@ -142,9 +169,10 @@ def run(cli_args: typing.List[str],
   if not tpath.is_file():
     log.fatal(f'The specified lab topology ({args.topology}) is not a file',module='create')
 
-  # Set JSON cache if requested
-  if hasattr(args, 'json_cache') and args.json_cache:
-    _read.set_json_cache(args.json_cache)
+  # Set JSON cache if requested (from CLI argument or environment variable)
+  json_cache_path = get_json_cache_path(args)
+  if json_cache_path:
+    _read.set_json_cache(json_cache_path)
 
   topology = load_topology(args)
   augment.main.transform(topology)
