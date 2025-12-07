@@ -10,8 +10,6 @@ import sys
 import textwrap
 import typing
 
-from box import Box
-
 from ..data import global_vars
 from . import log
 
@@ -133,55 +131,6 @@ def find_file(path: str, search_path: typing.List[str]) -> typing.Optional[str]:
     log.info(f'Failed to find {path} in:',more_data=textwrap.indent('\n'.join(search_path),'  - '))
 
   return None
-
-"""
-Build a list of potential directories in which we might find a configuration template
-
-The function uses default search paths for custom- or configuration templates and augments
-them with provider- and device-specific information
-"""
-def config_template_paths(
-      node: Box,
-      fname: str,
-      topology: Box,
-      provider_path: typing.Optional[str] = None) -> list:
-  if fname in node.get('config',[]):                    # Are we dealing with extra-config template?
-    path_prefix = topology.defaults.paths.custom.dirs
-    path_suffix = [ fname ]
-  else:
-    path_suffix = [ node.device ]
-    path_prefix = [ provider_path ] if provider_path else []
-    path_prefix += topology.defaults.paths.templates.dirs
-
-    if node.get('_daemon',False):
-      if '_daemon_parent' in node:
-        path_suffix.append(node._daemon_parent)
-
-  return [ os.path.join(pf, sf) for pf in path_prefix for sf in path_suffix ] + path_prefix
-
-"""
-Find a provider/daemon configuration template
-"""
-def find_provider_template(
-      node: Box,
-      fname: str,
-      topology: Box,
-      provider_path: typing.Optional[str] = None) -> typing.Optional[str]:
-
-  path = config_template_paths(node,fname,topology,provider_path=provider_path)
-  if log.debug_active('template'):
-    print(f'Searching for {fname} template for {node.name}/{node.device} in:')
-    for p in path:
-      print(f'- {p}')
-
-  if fname in node.get('config',[]):                    # Are we dealing with extra-config template?
-    fname = node.device
-
-  found_file = find_file(f'{fname}.j2', path)
-  if log.debug_active('template'):
-    print(f'Found file: {found_file}')
-
-  return found_file
 
 #
 # Get a list of files matching a glob pattern

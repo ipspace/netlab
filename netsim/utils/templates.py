@@ -2,14 +2,19 @@
 # Common routines for create-topology script
 #
 import functools
+import os
 import pathlib
 import typing
 
+from box import Box
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, make_logging_undefined
 
+from ..augment import devices
+from ..outputs import common as outputs_common
 from . import filters
-from .files import create_file_from_text, get_moddir
-from .log import debug_active, fatal
+from . import strings as _strings
+from .files import create_file_from_text, find_file, get_moddir
+from .log import debug_active, error, fatal
 
 
 def add_j2_filters(ENV: Environment) -> None:
@@ -108,3 +113,89 @@ def template_error_location(exc: Exception) -> list:
 
   loc_list.reverse()
   return loc_list
+
+"""
+Build a list of potential directories in which we might find a configuration template
+
+The function uses default search paths for custom- or configuration templates and augments
+them with provider- and device-specific information
+"""
+def config_template_paths(
+      node: Box,
+      fname: str,
+      topology: Box,
+      provider_path: typing.Optional[str] = None) -> list:
+  if fname in node.get('config',[]):                    # Are we dealing with extra-config template?
+    path_prefix = topology.defaults.paths.custom.dirs
+    path_suffix = [ fname ]
+  else:
+    path_suffix = [ node.device ]
+    path_prefix = [ provider_path ] if provider_path else []
+    path_prefix += topology.defaults.paths.templates.dirs
+
+    if node.get('_daemon',False):
+      if '_daemon_parent' in node:
+        path_suffix.append(node._daemon_parent)
+
+  return [ os.path.join(pf, sf) for pf in path_prefix for sf in path_suffix ] + path_prefix
+
+"""
+Evaluate file names used during the template lookup
+"""
+def template_lookup_name(f_name: str, cfg_name: str, node: Box, topology: Box) -> str:
+  if '_template_vars' not in node:
+    host = outputs_common.adjust_inventory_host(node,topology.defaults,translate={},ignore=[],group_vars=True)
+
+    node._template_vars = {
+      'ansible_network_os': host.ansible_network_os,
+      'inventory_hostname': node.name,
+      'netlab_device_type': host.get('netlab_device_type',host.get('ansible_network_os','none')),
+      'node_provider': devices.get_provider(node,topology.defaults),
+    }
+
+  node._template_vars.config_module = cfg_name
+  try:
+    return _strings.eval_format(f_name,node._template_vars)
+  except Exception as ex:
+    error(
+      f'Internal error: Cannot render template name for node {node.name} from {f_name}',
+      more_data = [ str(ex) ],
+      module='templates')
+    return f_name
+
+"""
+Find a provider/daemon configuration template
+"""
+def find_provider_template(
+      node: Box,
+      fname: str,
+      topology: Box,
+      provider_path: typing.Optional[str] = None) -> typing.Optional[str]:
+
+  path = config_template_paths(node,fname,topology,provider_path=provider_path)
+  if debug_active('template'):
+    print(f'Searching for {fname} template for {node.name}/{node.device} in:')
+    for p in path:
+      print(f'- {p}')
+
+  if fname in node.get('config',[]):                    # Are we dealing with extra-config template?
+    n_list = [ node.device + '.j2' ]
+  else:
+    n_list = [ fname + '.j2'] + topology.defaults.paths.t_files.f_files
+
+  if debug_active('template'):
+    print(f'Candidate file names:')
+    for n_c in n_list:
+      print(f'- {n_c}')
+
+  for n_candidate in n_list:
+    n_eval = template_lookup_name(n_candidate,fname,node,topology)
+    if debug_active('template'):
+      print(f'{n_candidate} -> {n_eval}')
+    found_file = find_file(n_eval,path)
+    if found_file:
+      if debug_active('template'):
+        print(f'Found file: {found_file}')
+      return found_file
+
+  return None

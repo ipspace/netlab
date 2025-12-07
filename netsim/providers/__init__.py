@@ -129,7 +129,7 @@ class _Provider(Callback):
       if out_key in bind_dict:
         continue
 
-      template_path = _files.find_provider_template(node,file,topology,self.get_full_template_path())
+      template_path = templates.find_provider_template(node,file,topology,self.get_full_template_path())
       if not template_path:
         log.error(
           f"Cannot find template {file}.j2 for extra file {self.provider}.{inkey}.{file} on node {node.name}",
@@ -141,6 +141,10 @@ class _Provider(Callback):
       append_to_list(node[self.provider],'_template_cache',{ 'fname': file, 'fpath': template_path})
 
     node[self.provider][outkey] = filemaps.dict_to_mapping(bind_dict)
+
+    # Finally, remove the cached data we used to generate template file names. We won't need it any longer
+    #
+    node.pop('_template_vars',None)
 
   def create_extra_files(
       self,
@@ -221,7 +225,7 @@ class _Provider(Callback):
         continue
 
       try:
-        node_paths = _files.config_template_paths(
+        node_paths = templates.config_template_paths(
                         node=node,
                         fname=template_fname,
                         topology=topology,

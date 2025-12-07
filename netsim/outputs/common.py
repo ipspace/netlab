@@ -3,9 +3,11 @@
 #
 
 import typing
+
 from box import Box
+
 from ..augment import devices
-from ..data import get_empty_box,get_box
+from ..data import get_box, get_empty_box
 
 topo_to_host = { 'mgmt.ipv4': 'ansible_host', 'hostname': 'ansible_host', 'id': 'id' }
 topo_to_host_skip = [ 'name','device' ]
@@ -32,7 +34,8 @@ def add_group_vars(
   group_vars = devices.get_device_attribute(node,'group_vars',defaults)
   if isinstance(group_vars,dict):
     for (k,v) in group_vars.items():
-      host[k] = v
+      if k not in host:
+        host[k] = v
 
 def adjust_inventory_host(
       node: Box,
