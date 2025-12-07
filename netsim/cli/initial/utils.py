@@ -6,6 +6,8 @@ import argparse
 import os
 import typing
 
+from box import Box
+
 from .. import common_parse_args, parser_lab_location
 
 
@@ -89,6 +91,9 @@ def ansible_args(args: argparse.Namespace) -> list:
 
   return rest
 
+"""
+Get the list of modules deployed
+"""
 def get_deploy_parts(args: argparse.Namespace) -> list:
   deploy_parts = []
   if args.initial:
@@ -104,3 +109,45 @@ def get_deploy_parts(args: argparse.Namespace) -> list:
     deploy_parts.append("custom")
 
   return deploy_parts
+
+"""
+node_deploy_list -- FIgure out what needs to be deployed on the node
+based on CLI arguments
+"""
+def node_deploy_list(node: Box, args: argparse.Namespace) -> list:
+  all_config = not args.module and not args.initial and not args.custom
+
+  node_configs = []
+  if args.module or all_config:
+    node_modules = node.get('module',[])
+    if args.module == '*' or all_config:
+      node_configs = node_modules
+    else:
+      node_configs = [ m for m in args.module.split(',') if m in node_modules ]
+  if args.initial or all_config:
+    node_configs = ['initial'] + node_configs
+  if args.custom or all_config:
+    node_configs += node.get('config',[])
+
+  return node_configs
+
+"""
+node_requires_ansible: Figure out whether the node needs deployment through
+an Ansible playbook based on what the user wants configured
+"""
+def node_requires_ansible(node: Box, args: argparse.Namespace) -> bool:
+  n_deploy = node_deploy_list(node,args)
+  n_skip   = node.get('netlab_ansible_skip_module',[])
+  return bool(set(n_deploy) - set(n_skip))
+
+"""
+nodeset_requires_ansible: Does any node in the nodeseet need deployment through
+an Ansible playbook?
+"""
+def nodeset_requires_ansible(nodeset: list, topology: Box, args: argparse.Namespace) -> bool:
+  for n_name in nodeset:
+    n_data = topology.nodes.get(n_name,{})
+    if node_requires_ansible(n_data,args):
+      return True
+
+  return False

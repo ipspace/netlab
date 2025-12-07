@@ -3,6 +3,7 @@
 #
 import argparse
 import json
+import os
 import pathlib
 import typing
 
@@ -105,7 +106,12 @@ def add_config_filemaps(node: Box, topology: Box) -> None:
   for kw in ('_daemon_config','_node_config'):
     if kw not in node:                            # Does the current node need non-ansible binds?
       continue
-    node.clab.config_templates += node[kw]        # Add them to clab config templates
+
+    # Add the config templates in the correct priority: node config_templates
+    # are preferred over _daemon_config which is preferred over _node_config
+    # to allow Linux-based daemons to override Linux configuration (for example, routing)
+    #
+    node.clab.config_templates = node[kw] + node.clab.config_templates
 
 '''
 get_loaded_kernel_modules: Get the list of loaded kernel modules from '/proc/modules'
@@ -272,6 +278,45 @@ class Containerlab(_Provider):
         f"If you're using a private Docker repository, use the 'docker image pull {node.box}'",
         f"command to pull the image from it or build/install it using this recipe:",
         dp_data.build ])
+
+  def deploy_node_config(self, node: Box, topology: Box, deploy_list: list) -> None:
+    binds = node.get('clab.binds',[])
+    if not binds:                                               # No binds => no config to deploy here
+      return
+    node_name = self.get_node_name(node.name,topology)          # ... get container/namespace name
+    for bind in binds:                                          # Go through node binds
+      b_local, b_container, *_ = bind.split(':')                # Get local and mapped filename
+      mod_name = os.path.basename(b_local)                      # ... and module name for printouts
+      if mod_name not in deploy_list:
+        continue
+      config_cmd = None                                         # Command to execute
+      if b_container.endswith('.ns-sh'):                        # Is this a (mapped) host-side script?
+        config_cmd = f'sudo ip netns exec {node_name} sh {b_local}' 
+        log.info(f'Executing {mod_name} configuration for node {node.name} (namespace {node_name})')
+      elif 'config' in b_container and b_container.endswith('.sh'):
+        config_cmd = f'docker exec {node_name} sh {b_container}' # Container-side script
+        log.info(f'Executing {mod_name} configuration for node {node.name}')
+      if not config_cmd:                                        # Not an executable file?
+        continue
+
+      status = external_commands.run_command(
+                  config_cmd,                                   # Execute config command
+                  ignore_errors=True,
+                  check_result=True,                            # Capture stdout
+                  return_exitcode=True)                         # and return exit code
+      if status == 0:                                           # Everything OK?
+        node._deploy.success = node.get('_deploy.success',0) + 1
+      else:                                                     # Otherwise we failed
+        if external_commands.CAPTURED_STDERR:                   # Did we get some printout?
+          printout='  '+strings.wrap_error_message(external_commands.CAPTURED_STDERR,indent=2)
+          strings.print_colored_text(txt=printout,color='bright_black')
+        log.error(
+          f'{mod_name} configuration in namespace {node_name} failed for node {node.name}',
+          category=log.FatalError,
+          more_data=f'Executed command: {config_cmd}',
+          skip_header=True,
+          module='initial')
+        append_to_list(node._deploy,'failed',mod_name)
 
   def capture_command(self, node: Box, topology: Box, args: argparse.Namespace) -> list:
     cmd = strings.string_to_list(topology.defaults.netlab.capture.command)
