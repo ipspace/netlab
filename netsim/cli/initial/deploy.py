@@ -60,9 +60,9 @@ def deploy_ansible_playbook(rest: list) -> bool:
 def run(topology: Box, args: argparse.Namespace, rest: list) -> None:
   deploy_parts = utils.get_deploy_parts(args)
   deploy_text = ', '.join(deploy_parts) or 'complete configuration'
-  if topology is not None:
-    devices.process_config_sw_check(topology)
-    lab_status_change(topology,f'deploying configuration: {deploy_text}')
+
+  devices.process_config_sw_check(topology)
+  lab_status_change(topology,f'deploying configuration: {deploy_text}')
 
   nodeset = _nodeset.parse_nodeset(args.limit,topology) if args.limit else list(topology.nodes.keys())
   (used_internal, status_internal) = deploy_provider_config(nodeset,topology,args)
@@ -82,8 +82,10 @@ def run(topology: Box, args: argparse.Namespace, rest: list) -> None:
   if not status_internal or not status_ansible:
     error_and_exit('Configuration deployment failed')
 
-  if topology and not args.no_message:
-    message = get_message(topology,'initial',True)
-    if message:
-      print(f"\n\n{message}")
-    lab_status_change(topology,f'configuration deployment complete')
+  message = get_message(topology,'initial',True)
+  if message and not args.no_message:
+    print(f"\n{message}")
+  elif used_internal:
+    print()                   # An empty line after internal stats is needed only when there's no lab message
+
+  lab_status_change(topology,f'configuration deployment complete')

@@ -169,6 +169,46 @@ def load_kmods(topology: Box) -> None:
 
   log.exit_on_error()
 
+'''
+Add node files mapped through 'config_templates' to clab.binds
+'''
+def add_templates_to_binds(node: Box) -> None:
+  if 'clab._template_cache' not in node:
+    return
+  
+  bind_dict = filemaps.mapping_to_dict(node.get('clab.binds',[]))
+  bind_rev  = { v.split(':')[0]:k for k,v in bind_dict.items() }
+  for t_item in node.clab._template_cache:
+    if 'mapping' not in t_item:
+      continue
+    map_fname = t_item.mapping.split(':')[0]
+    if map_fname in bind_rev:
+      log.error(
+        f'Cannot map {t_item.output} into {map_fname} on node {node.name}',
+        more_data = [ 'The output path is already mapped to {bind_rev[map_fname]}'],
+        category=log.IncorrectValue,
+        module='clab')
+      continue
+
+    append_to_list(node.clab,'binds',f'{t_item.output}:{t_item.mapping}')
+
+'''
+check_node_binds: ensure all files mapped into a container exist
+'''
+def check_node_binds(node: Box) -> None:
+  binds = node.get('clab.binds',[])
+  if not binds:
+    return
+
+  bind_dict = filemaps.mapping_to_dict(binds)
+  for local_file,mapped_file in bind_dict.items():
+    if os.path.exists(local_file):
+      continue
+    log.error(
+      f'File {local_file} mapped to {mapped_file} on node {node.name} does not exist',
+      category=log.IncorrectValue,
+      module='clab')
+
 class Containerlab(_Provider):
   
   def augment_node_data(self, node: Box, topology: Box) -> None:
@@ -182,15 +222,16 @@ class Containerlab(_Provider):
     normalize_clab_filemaps(node)
     validate_mgmt_ip(node,required=True,provider='clab',mgmt=topology.addressing.mgmt)
 
-    self.create_extra_files_mappings(node,topology)
+    self.find_node_file_templates(node,topology)
+    add_templates_to_binds(node)
 
   def post_configuration_create(self, topology: Box) -> None:
     if use_ovs_bridge(topology):
       check_ovs_installation()
 
     for n in topology.nodes.values():
-      if n.get('clab.binds',None):
-        self.create_extra_files(n,topology)
+      self.create_node_files(n,topology)
+      check_node_binds(n)
 
   def pre_start_lab(self, topology: Box) -> None:
     log.print_verbose('pre-start hook for Containerlab - create any bridges and load kernel modules')
@@ -280,21 +321,28 @@ class Containerlab(_Provider):
         dp_data.build ])
 
   def deploy_node_config(self, node: Box, topology: Box, deploy_list: list) -> None:
-    binds = node.get('clab.binds',[])
-    if not binds:                                               # No binds => no config to deploy here
+    node_files = node.get('clab._template_cache',{})
+    if not node_files:                                          # No node files => no config to deploy here
       return
     node_name = self.get_node_name(node.name,topology)          # ... get container/namespace name
-    for bind in binds:                                          # Go through node binds
-      b_local, b_container, *_ = bind.split(':')                # Get local and mapped filename
-      mod_name = os.path.basename(b_local)                      # ... and module name for printouts
-      if mod_name not in deploy_list:
+    for n_file in node_files:                                   # Go through node files
+      mod_name = n_file.fname                                   # Get module name
+      f_type = n_file.get('mode',None)
+      if mod_name not in deploy_list:                           # ... and skip it if we're not deploying it
         continue
       config_cmd = None                                         # Command to execute
-      if b_container.endswith('.ns-sh'):                        # Is this a (mapped) host-side script?
-        config_cmd = f'sudo ip netns exec {node_name} sh {b_local}' 
+      if f_type == 'ns':                                        # Is this a host-side script?
+        config_cmd = f'sudo ip netns exec {node_name} sh {n_file.output}' 
         log.info(f'Executing {mod_name} configuration for node {node.name} (namespace {node_name})')
-      elif 'config' in b_container and b_container.endswith('.sh'):
-        config_cmd = f'docker exec {node_name} sh {b_container}' # Container-side script
+      elif f_type == 'sh':
+        if not n_file.mapping:
+          log.error(
+            f'Internal error: bash script for module {mod_name} is not mapped into a container file',
+            more_data = ['node: {node.name} / device: {node.device}'],
+            category=log.FatalError,
+            module='clab')
+          continue
+        config_cmd = f'docker exec {node_name} sh {n_file.mapping}' # Container-side script
         log.info(f'Executing {mod_name} configuration for node {node.name}')
       if not config_cmd:                                        # Not an executable file?
         continue
