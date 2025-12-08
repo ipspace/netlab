@@ -2637,6 +2637,11 @@ defaults:
         netlab_lldp_enable: false
         netlab_net_tools: false
       clab:
+        node_config:
+          initial: /etc/config/01-initial.ns-sh
+          lag: /etc/config/10-lag.ns-sh
+          vlan: /etc/config/20-vlan.ns-sh
+          routing: /etc/config/30-routing.ns-sh
         features:
           initial:
             roles:
@@ -4277,6 +4282,11 @@ defaults:
           static: RTS_STATIC_DEVICE,RTS_STATIC
         netlab_device_type: bird
       clab:
+        node_config:
+          initial: /etc/config/01-initial.ns-sh
+          lag: /etc/config/10-lag.ns-sh
+          vlan: /etc/config/20-vlan.ns-sh
+          routing: /etc/config/30-routing.ns-sh
         features:
           initial:
             roles:
@@ -4297,9 +4307,6 @@ defaults:
           kind: linux
           config_templates:
             hosts: /etc/hosts:shared
-            config: /etc/config/startup.sh
-          exec:
-          - sh /etc/config/startup.sh
         group_vars:
           ansible_connection: docker
           ansible_user: root
@@ -4375,6 +4382,11 @@ defaults:
         netlab_net_tools: false
         netlab_device_type: dnsmasq
       clab:
+        node_config:
+          initial: /etc/config/01-initial.ns-sh
+          lag: /etc/config/10-lag.ns-sh
+          vlan: /etc/config/20-vlan.ns-sh
+          routing: /etc/config/30-routing.ns-sh
         features:
           initial:
             roles:
@@ -4409,6 +4421,8 @@ defaults:
       daemon_config:
         dnsmasq: /etc/dnsmasq.conf
         dhcp: /etc/dhcp.ignore
+        initial: /etc/config/01-initial.ns-sh
+        routing: /etc/config/02-routing.ns-sh
       node:
         module:
         - dhcp
@@ -4452,11 +4466,6 @@ defaults:
             roles:
             - host
             - router
-        node:
-          config_templates:
-            config: /etc/config/startup.sh
-          exec:
-          - sh /etc/config/startup.sh
       libvirt:
         image:
       virtualbox:
@@ -4511,6 +4520,8 @@ defaults:
       daemon_config:
         dnsmasq: /etc/dnsmasq.conf
         dhcp: /etc/dhcp.ignore
+        initial: /etc/config/01-initial.ns-sh
+        routing: /etc/config/02-routing.ns-sh
       node:
         module:
         - dhcp
@@ -8173,32 +8184,26 @@ nodes:
     clab:
       kind: linux
       config_templates:
-      - hosts:/etc/hosts:shared
-      - config:/etc/config/startup.sh
-      - bird:/etc/bird/bird.conf
       - initial:/etc/config/01-initial.sh
       - routing:/etc/bird/routing.mod.conf
-      exec:
-      - sh /etc/config/startup.sh
+      - bird:/etc/bird/bird.conf
+      - hosts:/etc/hosts:shared
       _template_cache:
-      - fname: hosts
-        fpath: 
-          /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
-      - fname: config
-        fpath: /home/pipi/netlab_gh/netsim/daemons/bird/config.j2
-      - fname: bird
-        fpath: /home/pipi/netlab_gh/netsim/daemons/bird/bird.j2
       - fname: initial
         fpath: 
           /home/pipi/netlab_gh/netsim/ansible/templates/initial/bird-clab.j2
       - fname: routing
         fpath: /home/pipi/netlab_gh/netsim/daemons/bird/routing.j2
+      - fname: bird
+        fpath: /home/pipi/netlab_gh/netsim/daemons/bird/bird.j2
+      - fname: hosts
+        fpath: 
+          /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
       binds:
-      - clab_files/-shared-hosts:/etc/hosts:ro
-      - clab_files/r/config:/etc/config/startup.sh
-      - clab_files/r/bird:/etc/bird/bird.conf
       - clab_files/r/initial:/etc/config/01-initial.sh
       - clab_files/r/routing:/etc/bird/routing.mod.conf
+      - clab_files/r/bird:/etc/bird/bird.conf
+      - clab_files/-shared-hosts:/etc/hosts:ro
     box: netlab/bird:latest
     id: 1
     role: host
@@ -8209,6 +8214,9 @@ nodes:
       bird: /etc/bird/bird.conf
       initial: /etc/config/01-initial.sh
       routing: /etc/bird/routing.mod.conf
+    _node_config:
+      initial: /etc/config/01-initial.ns-sh
+      routing: /etc/config/30-routing.ns-sh
     af:
       ipv4: true
       ipv6: true
@@ -8275,17 +8283,30 @@ nodes:
     clab:
       kind: linux
       config_templates:
+      - initial:/etc/config/01-initial.ns-sh
+      - routing:/etc/config/30-routing.ns-sh
       - hosts:/etc/hosts:shared
       _template_cache:
+      - fname: initial
+        fpath: 
+          /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
+      - fname: routing
+        fpath: 
+          /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
       - fname: hosts
         fpath: 
           /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
       binds:
+      - clab_files/h1/initial:/etc/config/01-initial.ns-sh
+      - clab_files/h1/routing:/etc/config/30-routing.ns-sh
       - clab_files/-shared-hosts:/etc/hosts:ro
     box: python:3.13-alpine
     id: 2
     role: host
     mtu: 1500
+    _node_config:
+      initial: /etc/config/01-initial.ns-sh
+      routing: /etc/config/30-routing.ns-sh
     af:
       ipv4: true
       ipv6: true
@@ -8294,6 +8315,9 @@ nodes:
       mac: ca:fe:00:02:00:00
       ipv4: 192.168.17.102
     hostname: clab-ml_17-h1
+    netlab_ansible_skip_module:
+    - initial
+    - routing
   h2:
     routing:
       static:
@@ -8344,17 +8368,30 @@ nodes:
     clab:
       kind: linux
       config_templates:
+      - initial:/etc/config/01-initial.ns-sh
+      - routing:/etc/config/30-routing.ns-sh
       - hosts:/etc/hosts:shared
       _template_cache:
+      - fname: initial
+        fpath: 
+          /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
+      - fname: routing
+        fpath: 
+          /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
       - fname: hosts
         fpath: 
           /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
       binds:
+      - clab_files/h2/initial:/etc/config/01-initial.ns-sh
+      - clab_files/h2/routing:/etc/config/30-routing.ns-sh
       - clab_files/-shared-hosts:/etc/hosts:ro
     box: python:3.13-alpine
     id: 3
     role: host
     mtu: 1500
+    _node_config:
+      initial: /etc/config/01-initial.ns-sh
+      routing: /etc/config/30-routing.ns-sh
     af:
       ipv4: true
       ipv6: true
@@ -8363,6 +8400,9 @@ nodes:
       mac: ca:fe:00:03:00:00
       ipv4: 192.168.17.103
     hostname: clab-ml_17-h2
+    netlab_ansible_skip_module:
+    - initial
+    - routing
 links:
 - _linkname: links[1]
   interfaces:

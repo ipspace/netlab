@@ -8,9 +8,9 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
+ok: [server]
 ok: [c1]
 ok: [c2]
-ok: [server]
 
 TASK [Generic readiness tests] *************************************************
 skipping: [server]
@@ -26,10 +26,10 @@ ok: [c2 -> localhost]
 TASK [Execute local ssh command to check ssh readiness] ************************
 FAILED - RETRYING: [c2 -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
 FAILED - RETRYING: [c1 -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
-FAILED - RETRYING: [c2 -> localhost]: Execute local ssh command to check ssh readiness (19 retries left).
 FAILED - RETRYING: [c1 -> localhost]: Execute local ssh command to check ssh readiness (19 retries left).
-ok: [c2 -> localhost]
+FAILED - RETRYING: [c2 -> localhost]: Execute local ssh command to check ssh readiness (19 retries left).
 ok: [c1 -> localhost]
+ok: [c2 -> localhost]
 
 TASK [Confirm c1 SSH server works] *********************************************
 ok: [c1] => 
@@ -116,44 +116,39 @@ ok: [c2]
 ok: [server]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [c1] => 
+ok: [server] => 
   msg: |-
-    initial configuration for c1
+    initial configuration for server
     =========================================
-    hostname c1
+    hostname server
     !
-    no ip domain lookup
-    logging buffered 256000
-  
+    logging monitor debugging
+    aaa authorization exec default local
     !
     lldp run
-    !
-    ip host c2 10.0.0.2
-    ip host server 10.0.0.3 2001:db8:cafe::3
-    !
     ip routing
-    !
     ipv6 unicast-routing
     !
     !
-    interface Loopback0
-     ip address 10.0.0.1 255.255.255.255
+    ip host c1 10.0.0.1
+    ip host c2 10.0.0.2
     !
-    interface Ethernet0/0
+    interface Management1
      no lldp transmit
      no lldp receive
     !
-    interface Ethernet0/1
-     description c1 -> [c2,server]
+    interface Loopback0
+     ip address 10.0.0.3/32
+    !
+    interface Ethernet1
+     no switchport
+     description server -> [c1,c2]
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:cafe::3/64
+     mac-address caf0.0003.0001
+    !
      no shutdown
     !
-    !
-    line vty 0 4
-     exec-timeout 0 0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
 ok: [c2] => 
   msg: |-
     initial configuration for c2
@@ -192,39 +187,44 @@ ok: [c2] =>
     no banner exec
     no banner login
     no banner incoming
-ok: [server] => 
+ok: [c1] => 
   msg: |-
-    initial configuration for server
+    initial configuration for c1
     =========================================
-    hostname server
+    hostname c1
     !
-    logging monitor debugging
-    aaa authorization exec default local
+    no ip domain lookup
+    logging buffered 256000
+  
     !
     lldp run
+    !
+    ip host c2 10.0.0.2
+    ip host server 10.0.0.3 2001:db8:cafe::3
+    !
     ip routing
+    !
     ipv6 unicast-routing
     !
     !
-    ip host c1 10.0.0.1
-    ip host c2 10.0.0.2
+    interface Loopback0
+     ip address 10.0.0.1 255.255.255.255
     !
-    interface Management1
+    interface Ethernet0/0
      no lldp transmit
      no lldp receive
     !
-    interface Loopback0
-     ip address 10.0.0.3/32
-    !
-    interface Ethernet1
-     no switchport
-     description server -> [c1,c2]
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:cafe::3/64
-     mac-address caf0.0003.0001
-    !
+    interface Ethernet0/1
+     description c1 -> [c2,server]
      no shutdown
     !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for c1, c2
@@ -268,16 +268,16 @@ ok: [c2]
 ok: [server]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [c1] => 
+ok: [c2] => 
   msg: |-
-    dhcp configuration for c1
+    dhcp configuration for c2
     =========================================
     interface Ethernet0/1
       ipv6 enable
       ipv6 address dhcp
-ok: [c2] => 
+ok: [c1] => 
   msg: |-
-    dhcp configuration for c2
+    dhcp configuration for c1
     =========================================
     interface Ethernet0/1
       ipv6 enable
@@ -303,8 +303,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for c1
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for server
 
 TASK [ios_config: deploying dhcp from /home/pipi/netlab_gh/netsim/ansible/templates/dhcp/ios.j2] ***
-changed: [c1]
 changed: [c2]
+changed: [c1]
 
 TASK [eos_config: deploying dhcp from /home/pipi/netlab_gh/netsim/ansible/templates/dhcp/eos.j2] ***
 changed: [server]
