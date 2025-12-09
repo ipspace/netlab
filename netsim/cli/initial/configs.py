@@ -16,6 +16,7 @@ from ...outputs.common import adjust_inventory_host
 from ...providers import _Provider
 from ...utils import log, templates
 from .. import _nodeset, ansible, error_and_exit
+from . import utils
 
 
 def cleanup_config_dir(output_path: Path, args: argparse.Namespace) -> None:
@@ -40,7 +41,7 @@ def cleanup_config_dir(output_path: Path, args: argparse.Namespace) -> None:
 Create files that are usually created for clab.binds from clab.config_templates
 in the config directory to have everything in one place
 """
-def create_from_config_templates(topology: Box, nodeset: list, abs_path: Path, args: argparse.Namespace) -> bool:
+def create_from_config_templates(topology: Box, nodeset: list, abs_path: Path, args: argparse.Namespace) -> int:
   shared_data = {                                           # Create the shared data we need for config templates
     'hostvars': topology.nodes.to_dict(),
     'hosts': get_host_addresses(topology),
@@ -48,34 +49,14 @@ def create_from_config_templates(topology: Box, nodeset: list, abs_path: Path, a
   }
 
   output_path = str(abs_path)
-  all_configs = not args.module and not args.initial and not args.custom
-
-  # Get the (optional) list of modules for which we're rendering the configs
-  #
-  mod_list = topology.get('module',[]) if args.module == '*' or not args.module else args.module.split(',')
-  if args.initial:
-    mod_list = mod_list + [ 'initial' ]
-
-  ansible_skip_nodes = []
+  output_count = 0
   for n_name in nodeset:
     n_data = topology.nodes[n_name]
     n_provider = devices.get_provider(n_data,topology.defaults)
+    n_deploy = utils.node_deploy_list(n_data,args)
     if f'{n_provider}.config_templates' not in n_data:      # The node is not using config templates
       continue                                              # Move on
 
-    # Let's do a bit of paperwork first and figure out whether we need to call
-    # Ansible for this node at all. We'll take all modules, add 'initial', then
-    # add all custom configs and subtract netlab_ansible_skip_module (which
-    # controls what Ansible playbook does). If there's nothing left, we don't need
-    # Ansible for this node
-    #
-    node_configs = set(n_data.get('module',[]) + ['initial']) | set(n_data.get('config',[]))
-    ansible_config = node_configs - set(n_data.get('netlab_ansible_skip_module',[]))
-    if not ansible_config:
-      ansible_skip_nodes.append(n_name)
-
-    # And now back to the regular programming...
-    #
     p = _Provider(provider=n_provider,data=data.get_empty_box())
     node_data = adjust_inventory_host(                      # Add group variables to node data
                               node=n_data,
@@ -87,22 +68,20 @@ def create_from_config_templates(topology: Box, nodeset: list, abs_path: Path, a
     node_data['node_provider'] = n_provider
     for b_item in n_data[n_provider].config_templates:      # Now iterate over all config templates the node is using
       b_template = b_item.split(':')[0].replace('@','.')    # Extract template name
-      if not all_configs:                                   # Check whether the user wants us to generate this file
-        skip = mod_list and b_template not in mod_list      # Skip modules that are not in mod_list
-        skip = skip or args.custom and b_template not in n_data.get('config',[])
-        if skip:                                            # ... or custom configs not in 'config' list
-          continue
+      if b_template not in n_deploy:                        # Was this requested by the user?
+        continue
       b_path = templates.find_provider_template(
-                  node=n_data,
-                  fname=b_template,
-                  topology=topology,
-                  provider_path=p.get_full_template_path())
+                        node=n_data,
+                        fname=b_template,
+                        topology=topology,
+                        provider_path=p.get_full_template_path())
       if not b_path:                                        # Try to find the configuration template
         log.warning(                                        # Houston, we have a problem...
           text=f'Cannot find template {b_template} for node {n_name}/device {n_data.device}',
           module='initial')
         continue
 
+      output_count += 1
       try:
         node_paths = templates.config_template_paths(
                         node=n_data,
@@ -125,7 +104,7 @@ def create_from_config_templates(topology: Box, nodeset: list, abs_path: Path, a
           module='initial',
           category=log.IncorrectValue)
 
-  return ansible_skip_nodes != nodeset                      # Return whether we need to run Ansible at all
+  return output_count
 
 """
 Create node configurations
@@ -148,9 +127,12 @@ def run(topology: Box, args: argparse.Namespace, rest: list) -> None:
   # Create files specified in clab.config_templates directly in the Python code (so they use our
   # internal versions of Jinja2 filters), and run an Ansible playbook to create the rest
   #
-  run_ansible = create_from_config_templates(topology,nodeset,abs_path,args)
+  output_count = create_from_config_templates(topology,nodeset,abs_path,args)
 
-  if run_ansible:
+  if utils.nodeset_requires_ansible(nodeset,topology,args):
+    if output_count:
+      print()
+      log.info('Starting Ansible to render the rest of the configurations')
     rest = ['-e',f'config_dir="{abs_path}"' ] + rest        # Add output directory path to Ansible variables
     ansible.playbook('create-config.ansible',rest)
 

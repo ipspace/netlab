@@ -3,7 +3,6 @@
 #
 from box import Box
 
-from .. import data
 from ..augment import devices
 from ..modules import _routing
 from ..utils import log
@@ -82,8 +81,7 @@ def configure_ceos_attributes(node: Box, topology: Box) -> None:
         category=Warning)
       return
 
-  data.append_to_list(node.clab,'binds',f'clab_files/{node.name}/ceos-config:{mnt_config}')
-  data.append_to_list(node.clab,'config_templates',f'ceos-config:{mnt_config}')
+  node.clab.config_templates['ceos-config'] = mnt_config
 
 def passive_stub_interfaces(node: Box, topology: Box) -> None:
   if devices.get_provider(node,topology) != 'clab':

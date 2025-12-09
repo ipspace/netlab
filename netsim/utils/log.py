@@ -100,9 +100,9 @@ def print_error_header(indent: int = 10) -> None:
       toponame = os.path.basename(topology.input[0])
       if strings.rich_err_color:                # Error is going to terminal with color capabilities
         strings.print_colored_text(strings.pad_err_code('ERRORS',indent),'red',stderr=True)
-        print(f'Errors found in {toponame}',file=sys.stderr)
+        print(f'Errors found in {toponame}',file=sys.stderr,flush=True)
       else:                                     # Plain old teletype (or file), print error message
-        print(f'Errors encountered while processing {toponame}',file=sys.stderr)
+        print(f'Errors encountered while processing {toponame}',file=sys.stderr,flush=True)
       _error_header_printed = True
   except:
     pass
@@ -128,9 +128,9 @@ def fatal(text: str, module: str = 'netlab', header: bool = False, indent: int =
         strings.print_colored_text(strings.pad_err_code('FATAL',indent),'red',stderr=True)
         if module != 'netlab':
           print(f'{module}: ',end='',file=sys.stderr)
-        print(text,file=sys.stderr)
+        print(text,file=sys.stderr,flush=True)
       else:                                       # ... or teletype/file
-        print(err_line,file=sys.stderr)
+        print(err_line,file=sys.stderr,flush=True)
     sys.exit(1)
 
 """
@@ -170,14 +170,14 @@ def print_more_hints(
     if strings.rich_err_color:
       if h_first:                                           # First hint line on color-capable TTY: print hint header
         strings.print_colored_text(strings.pad_err_code(h_name,indent),h_color,stderr=True)
-        print(strings.wrap_error_message(line,indent),file=sys.stderr)
+        print(strings.wrap_error_message(line,indent),file=sys.stderr,flush=True)
         h_first = False
       else:
         print(
           " "*indent+strings.wrap_error_message(line,indent),
-          file=sys.stderr)                                  # Otherwise print another line indented to align with the previous one
+          file=sys.stderr,flush=True)                       # Otherwise print another line indented to align with the previous one
     else:
-      print(f"... {line}",file=sys.stderr)                  # Teletype/file, just print the line
+      print(f"... {line}",file=sys.stderr,flush=True)       # Teletype/file, just print the line
 
 """
 If needed, get the module name that called an error function. Return whatever the caller
@@ -240,9 +240,9 @@ def error(
         err_color_map.get(err_code,'yellow'),
         stderr=True)
       mod_txt = f'{module}: ' if module else ''                     # Skip module header if it's explicitly set to empty
-      print(strings.wrap_error_message(f'{mod_txt}{text}',indent),file=sys.stderr)
+      print(strings.wrap_error_message(f'{mod_txt}{text}',indent),file=sys.stderr,flush=True)
     else:
-      print(err_line,file=sys.stderr)
+      print(err_line,file=sys.stderr,flush=True)
 
   if more_data is not None:                                         # Caller supplied data, print it with DATA label
     print_more_hints(more_data,'DATA','bright_black',h_warning=category is Warning,indent=indent)
@@ -276,7 +276,7 @@ def error(
       hint_lines = strings.wrap_text_into_lines(mod_hints[hint],width=l_width)
       print_more_hints(hint_lines,'HINT','green',h_warning=category is Warning)
     else:
-      print(hint_printout,file=sys.stderr)
+      print(hint_printout,file=sys.stderr,flush=True)
 
     mod_hints[hint] = ''
 
@@ -377,7 +377,7 @@ def info(
   else:
     mod_txt += ' [INFO] '
 
-  print(strings.wrap_error_message(f'{mod_txt}{text}',indent))
+  print(strings.wrap_error_message(f'{mod_txt}{text}',indent),flush=True)
   if more_hints is not None:                                        # Caller supplied hints, print them with HINT label
     print_more_hints(more_hints,h_warning=True,indent=indent)
 

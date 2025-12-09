@@ -3,6 +3,7 @@
 #
 import argparse
 import json
+import os
 import pathlib
 import typing
 
@@ -105,7 +106,12 @@ def add_config_filemaps(node: Box, topology: Box) -> None:
   for kw in ('_daemon_config','_node_config'):
     if kw not in node:                            # Does the current node need non-ansible binds?
       continue
-    node.clab.config_templates += node[kw]        # Add them to clab config templates
+
+    # Add the config templates in the correct priority: node config_templates
+    # are preferred over _daemon_config which is preferred over _node_config
+    # to allow Linux-based daemons to override Linux configuration (for example, routing)
+    #
+    node.clab.config_templates = node[kw] + node.clab.config_templates
 
 '''
 get_loaded_kernel_modules: Get the list of loaded kernel modules from '/proc/modules'
@@ -163,6 +169,46 @@ def load_kmods(topology: Box) -> None:
 
   log.exit_on_error()
 
+'''
+Add node files mapped through 'config_templates' to clab.binds
+'''
+def add_templates_to_binds(node: Box) -> None:
+  if 'clab._template_cache' not in node:
+    return
+  
+  bind_dict = filemaps.mapping_to_dict(node.get('clab.binds',[]))
+  bind_rev  = { v.split(':')[0]:k for k,v in bind_dict.items() }
+  for t_item in node.clab._template_cache:
+    if 'mapping' not in t_item:
+      continue
+    map_fname = t_item.mapping.split(':')[0]
+    if map_fname in bind_rev:
+      log.error(
+        f'Cannot map {t_item.output} into {map_fname} on node {node.name}',
+        more_data = [f'The output path is already mapped to {bind_rev[map_fname]}'],
+        category=log.IncorrectValue,
+        module='clab')
+      continue
+
+    append_to_list(node.clab,'binds',f'{t_item.output}:{t_item.mapping}')
+
+'''
+check_node_binds: ensure all files mapped into a container exist
+'''
+def check_node_binds(node: Box) -> None:
+  binds = node.get('clab.binds',[])
+  if not binds:
+    return
+
+  bind_dict = filemaps.mapping_to_dict(binds)
+  for local_file,mapped_file in bind_dict.items():
+    if os.path.exists(local_file):
+      continue
+    log.error(
+      f'File {local_file} mapped to {mapped_file} on node {node.name} does not exist',
+      category=log.IncorrectValue,
+      module='clab')
+
 class Containerlab(_Provider):
   
   def augment_node_data(self, node: Box, topology: Box) -> None:
@@ -176,15 +222,16 @@ class Containerlab(_Provider):
     normalize_clab_filemaps(node)
     validate_mgmt_ip(node,required=True,provider='clab',mgmt=topology.addressing.mgmt)
 
-    self.create_extra_files_mappings(node,topology)
+    self.find_node_file_templates(node,topology)
+    add_templates_to_binds(node)
 
   def post_configuration_create(self, topology: Box) -> None:
     if use_ovs_bridge(topology):
       check_ovs_installation()
 
     for n in topology.nodes.values():
-      if n.get('clab.binds',None):
-        self.create_extra_files(n,topology)
+      self.create_node_files(n,topology)
+      check_node_binds(n)
 
   def pre_start_lab(self, topology: Box) -> None:
     log.print_verbose('pre-start hook for Containerlab - create any bridges and load kernel modules')
@@ -272,6 +319,52 @@ class Containerlab(_Provider):
         f"If you're using a private Docker repository, use the 'docker image pull {node.box}'",
         f"command to pull the image from it or build/install it using this recipe:",
         dp_data.build ])
+
+  def deploy_node_config(self, node: Box, topology: Box, deploy_list: list) -> None:
+    node_files = node.get('clab._template_cache',{})
+    if not node_files:                                          # No node files => no config to deploy here
+      return
+    node_name = self.get_node_name(node.name,topology)          # ... get container/namespace name
+    for n_file in node_files:                                   # Go through node files
+      mod_name = n_file.fname                                   # Get module name
+      f_type = n_file.get('mode',None)
+      if mod_name not in deploy_list:                           # ... and skip it if we're not deploying it
+        continue
+      config_cmd = None                                         # Command to execute
+      if f_type == 'ns':                                        # Is this a host-side script?
+        config_cmd = f'sudo ip netns exec {node_name} sh {n_file.output}' 
+        log.info(f'Executing {mod_name} configuration for node {node.name} (namespace {node_name})')
+      elif f_type == 'sh':
+        if not n_file.mapping:
+          log.error(
+            f'Internal error: bash script for module {mod_name} is not mapped into a container file',
+            more_data = [f'node: {node.name} / device: {node.device}'],
+            category=log.FatalError,
+            module='clab')
+          continue
+        config_cmd = f'docker exec {node_name} sh {n_file.mapping}' # Container-side script
+        log.info(f'Executing {mod_name} configuration for node {node.name}')
+      if not config_cmd:                                        # Not an executable file?
+        continue
+
+      status = external_commands.run_command(
+                  config_cmd,                                   # Execute config command
+                  ignore_errors=True,
+                  check_result=True,                            # Capture stdout
+                  return_exitcode=True)                         # and return exit code
+      if status == 0:                                           # Everything OK?
+        node._deploy.success = node.get('_deploy.success',0) + 1
+      else:                                                     # Otherwise we failed
+        if external_commands.CAPTURED_STDERR:                   # Did we get some printout?
+          printout='  '+strings.wrap_error_message(external_commands.CAPTURED_STDERR,indent=2)
+          strings.print_colored_text(txt=printout,color='bright_black')
+        log.error(
+          f'{mod_name} configuration in namespace {node_name} failed for node {node.name}',
+          category=log.FatalError,
+          more_data=f'Executed command: {config_cmd}',
+          skip_header=True,
+          module='initial')
+        append_to_list(node._deploy,'failed',mod_name)
 
   def capture_command(self, node: Box, topology: Box, args: argparse.Namespace) -> list:
     cmd = strings.string_to_list(topology.defaults.netlab.capture.command)

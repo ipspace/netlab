@@ -41,8 +41,8 @@ The generic provider class. Used as a super class of all other providers
 """
 class _Provider(Callback):
   SHARED_PREFIX = '-shared-'
-  SHARED_SUFFIX = ':shared'
-  READ_ONLY_SUFFIX = ':ro'
+  SHARED_SUFFIX = 'shared'
+  READ_ONLY_SUFFIX = 'ro'
 
   def __init__(self, provider: str, data: Box) -> None:
     self.provider = provider
@@ -100,34 +100,30 @@ class _Provider(Callback):
     else:
       topology.defaults.processor = get_cpu_model()
 
-  def create_extra_files_mappings(
+  def find_node_file_templates(
       self,
       node: Box,
       topology: Box,
-      inkey: str = 'config_templates',
-      outkey: str = 'binds') -> None:
+      inkey: str = 'config_templates') -> None:
 
     mappings = node.get(f'{self.provider}.{inkey}',None)
     if not mappings:
       return
     
     map_dict = filemaps.mapping_to_dict(mappings)
-    cur_binds = node.get(f'{self.provider}.{outkey}',[])
-    bind_dict = filemaps.mapping_to_dict(cur_binds)
     base_path = pathlib.Path(f"{self.provider}_files")
     for file,mapping in map_dict.items():
       file = file.replace('@','.')
-      # Check if mapping ends with :shared - if so, put it in the root provider folder
-      if mapping.endswith(self.SHARED_SUFFIX):
-        mapping = mapping.rsplit(self.SHARED_SUFFIX, 1)[0] + self.READ_ONLY_SUFFIX
-        # Prefix shared files to avoid node name conflicts
-        out_path = base_path / f"{self.SHARED_PREFIX}{file}" 
-      else:
-        out_path = base_path / node.name / file
-
-      out_key = out_path.as_posix()
-      if out_key in bind_dict:
-        continue
+      out_path = base_path / node.name / file
+      f_mode = None
+      map_file = mapping
+      if ':' in mapping:
+        map_file,f_mode,*_ = mapping.split(':')
+        if f_mode == self.SHARED_SUFFIX:
+          map_file = map_file + ':' + self.READ_ONLY_SUFFIX
+          out_path = base_path / f"{self.SHARED_PREFIX}{file}" 
+        elif f_mode == self.READ_ONLY_SUFFIX:
+          map_file = mapping
 
       template_path = templates.find_provider_template(node,file,topology,self.get_full_template_path())
       if not template_path:
@@ -137,37 +133,33 @@ class _Provider(Callback):
           module=self.provider)
         continue
 
-      bind_dict[out_key] = mapping
-      append_to_list(node[self.provider],'_template_cache',{ 'fname': file, 'fpath': template_path})
+      template_entry = { 'fname': file, 'fpath': template_path, 'output': str(out_path) }
+      if f_mode:
+        template_entry['mode'] = f_mode
+      if map_file:
+        template_entry['mapping'] = map_file
 
-    node[self.provider][outkey] = filemaps.dict_to_mapping(bind_dict)
+      append_to_list(node[self.provider],'_template_cache',template_entry)
 
     # Finally, remove the cached data we used to generate template file names. We won't need it any longer
     #
     node.pop('_template_vars',None)
 
-  def create_extra_files(
+  def create_node_files(
       self,
       node: Box,
-      topology: Box,
-      outkey: str = 'binds') -> None:
+      topology: Box) -> None:
 
-    binds = node.get(f'{self.provider}.{outkey}',None)
-    if not binds:
+    template_cache = node.get(f'{self.provider}._template_cache',None)
+    if not template_cache:
       return
 
     sys_folder = str(_files.get_moddir())+"/"
 
-    bind_dict = filemaps.mapping_to_dict(binds)
-
-    # Recreate the cached template paths as a dict for easier lookup
-    #
-    template_cache = { item['fname']: item['fpath'] for item in node[self.provider].get('_template_cache',[]) }
-
     if log.debug_active('template'):
       print(f"Template cache for {node.name}:")
-      for k,v in template_cache.items():
-        print(f"  {k}: {v}")
+      for item in template_cache:
+        print(f"- {item}")
 
     node_data = {
         **node.to_dict(),
@@ -177,57 +169,24 @@ class _Provider(Callback):
         'addressing': topology.addressing.to_dict()
     }
 
-    base_path = pathlib.Path(f"{self.provider}_files")
-
-    for file_str,mapping in bind_dict.items():
-      full_out_path = pathlib.Path(file_str)
-
-      # Only handle files placed under the provider's file directory
-      try:
-        full_out_path.relative_to(base_path)
-      except ValueError:
-        continue
-
-      # We have to recover the template name from the final (local) file name
-      # If the final file name is within the provider/node directory, the template
-      # name is the rest of the path (which might be a file name or a relative path)
-      # otherwise the template name is just the file name (used for shared files)
-      #
-      try:
-        file_rel = str(full_out_path.relative_to(base_path / node.name))
-      except ValueError:
-        file_rel = full_out_path.name
-
-      if not file_rel:
-        # nothing to render
-        continue
-
-      # For shared files, extract the original file name (remove 'shared-' prefix)
-      template_fname = strings.removeprefix(file_rel,self.SHARED_PREFIX)
-
-      if template_fname not in template_cache:
-        log.error(
-          f"Internal error: the path to template {template_fname} on node {node.name} is not in its template cache",
-          module='provider',
-          category=log.MissingValue)
-        continue
-
-      template_path = template_cache[template_fname]
+    for t_item in template_cache:
+      template_path = t_item.fpath
       short_path = template_path.replace(sys_folder,'package:')
+      full_out_path = pathlib.Path(t_item.output)
       # Create parent dirs if needed
       full_out_path.parent.mkdir(parents=True,exist_ok=True)
 
       # If the file already exists (either shared or node-specific), skip re-rendering
       if full_out_path.exists() and '-shared-' in str(full_out_path):
-        if not log.QUIET:
+        if not log.QUIET and 'mapping' in t_item:
           strings.print_colored_text('[REUSED]  ','bright_cyan','Mapped existing ')
-          print(f"{str(full_out_path)} to {node.name}:{mapping} (from {short_path})")
+          print(f"{str(full_out_path)} to {node.name}:{t_item.mapping} (from {short_path})")
         continue
 
       try:
         node_paths = templates.config_template_paths(
                         node=node,
-                        fname=template_fname,
+                        fname=t_item.fname,
                         topology=topology,
                         provider_path=self.get_full_template_path())
         templates.write_template(
@@ -239,14 +198,18 @@ class _Provider(Callback):
           extra_path=node_paths)
       except Exception as ex:
         log.error(
-          text=f"Error rendering {short_path} into {file_rel}",
+          text=f"Error rendering {short_path} into {t_item.output}",
           more_data = [f'{type(ex).__name__}: {str(ex)}'] + templates.template_error_location(ex),
           category=log.FatalError,
           module=self.provider)
 
       if not log.QUIET:
-        strings.print_colored_text('[MAPPED]  ','bright_cyan','Mapped ')
-        print(f"{str(full_out_path)} to {node.name}:{mapping} (from {short_path})")
+        if t_item.mapping:
+          strings.print_colored_text('[MAPPED]  ','bright_cyan','Mapped ')
+          print(f"{str(full_out_path)} to {node.name}:{t_item.mapping} (from {short_path})")
+        else:
+          strings.print_colored_text('[CREATED] ','bright_cyan','Created ')
+          print(f"{str(full_out_path)} for {node.name} (from {short_path})")
 
   def create(self, topology: Box, fname: typing.Optional[str]) -> None:
     self.transform(topology)
