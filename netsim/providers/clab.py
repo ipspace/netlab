@@ -185,7 +185,7 @@ def add_templates_to_binds(node: Box) -> None:
     if map_fname in bind_rev:
       log.error(
         f'Cannot map {t_item.output} into {map_fname} on node {node.name}',
-        more_data = [ 'The output path is already mapped to {bind_rev[map_fname]}'],
+        more_data = [f'The output path is already mapped to {bind_rev[map_fname]}'],
         category=log.IncorrectValue,
         module='clab')
       continue
