@@ -338,7 +338,7 @@ class Containerlab(_Provider):
         if not n_file.mapping:
           log.error(
             f'Internal error: bash script for module {mod_name} is not mapped into a container file',
-            more_data = ['node: {node.name} / device: {node.device}'],
+            more_data = [f'node: {node.name} / device: {node.device}'],
             category=log.FatalError,
             module='clab')
           continue
