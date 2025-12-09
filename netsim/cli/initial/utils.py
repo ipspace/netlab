@@ -57,6 +57,10 @@ def initial_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namesp
     '--no-message',
     dest='no_message', action='store_true',
     help=argparse.SUPPRESS)
+  parser.add_argument(
+    '--no-refresh',
+    dest='no_refresh', action='store_true',
+    help=argparse.SUPPRESS)
   parser_lab_location(parser,instance=True,i_used=True,action='configure')
 
   return parser.parse_known_args(args)

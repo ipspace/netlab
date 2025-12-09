@@ -9,17 +9,52 @@ import typing
 from box import Box
 
 from ... import devices
-from ...providers import execute_node
+from ...augment import devices as a_devices
+from ...providers import execute_node, get_provider_module
 from ...utils import log, strings
 from .. import _nodeset, ansible, error_and_exit, external_commands, get_message, lab_status_change
+from . import templates as i_templates
 from . import utils
 
+
+def update_config_files(n_data: Box, topology: Box, args: argparse.Namespace) -> None:
+  if args.no_refresh:
+    return
+  n_provider = a_devices.get_provider(n_data,topology.defaults)
+  p = get_provider_module(topology,n_provider)
+  provider_path = p.get_full_template_path()
+
+  # Next, update template cache and iterate over it
+  i_templates.update_template_cache(n_data,n_provider,provider_path,topology)
+  node_dict = None
+
+  for t_item in n_data[n_provider].get('_template_cache',[]):
+    if not t_item.get('modified',False):
+      continue
+    if not t_item.fpath:
+      log.warning(
+        text=f'Cannot find {t_item.fname} configuration template for node {n_data.name}/device {n_data.device}',
+        module='initial')
+      continue
+    if node_dict is None:                                 # Create node data in template-friendly format if needed
+      node_dict = i_templates.template_node_data(n_data,topology)
+    if i_templates.render_config_template(                # Recreate configuration file
+          node=n_data,
+          node_dict=node_dict,
+          template_id=t_item.fname,
+          template_path=t_item.fpath,
+          output_file=t_item.output,
+          provider_path=provider_path,
+          topology=topology):
+      log.warning(
+        text=f"{t_item.fname} template for node {n_data.name} changed. Recreated the configuration file")
 
 def deploy_provider_config(nodeset: list, topology: Box, args: argparse.Namespace) -> typing.Tuple[bool,bool]:
   OK = True
   Used = False
   for n_name in nodeset:
     n_data = topology.nodes[n_name]
+    update_config_files(n_data,topology,args)
     n_deploy = utils.node_deploy_list(n_data,args)
     execute_node('deploy_node_config',n_data,topology,deploy_list=n_deploy)
     Used = Used or '_deploy' in n_data
