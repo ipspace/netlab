@@ -191,7 +191,7 @@ The keys of the **daemon_config** dictionary can (but don't have to) match _netl
 
 The daemon configuration templates are usually stored in the `netsim/daemons/_daemon_` directory, but could be anywhere in the template search path. These templates can also include other templates in the template search path.
 
-The **daemon_config** templates are copied into the **clab.config_templates** node parameter, which is then used to create **clab.binds** mapping between files within the `clab_files` directory structure and container files. The templates are rendered (within the `clab_files` structure) during the **netlab create**/**netlab_up** process and are thus available to processes running inside the containers when the containers start.
+The **daemon_config** templates are copied into the **clab.config_templates** node parameter, which is then used to create **clab.binds** mapping between files within the `clab_files` directory structure and container files. The templates are rendered (within the `clab_files` structure) during the **netlab create**/**netlab up** process and are thus available to processes running inside the containers when the containers start.
 
 (dev-config-script)=
 ## Linux Configuration Scripts
