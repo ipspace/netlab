@@ -211,7 +211,7 @@ The scripts specified in the **clab.node_config** dictionary are executed in the
 
 The **clab.node_config** dictionary is copied into the **clab.config_templates** dictionary (**daemon_config** dictionary takes precedence). The templates specified in the **node_config** dictionary are thus rendered into `clab_files` during the **netlab up**/**netlab create** process (using the standard template search process) and mapped into the container file system through **clab.binds**.
 
-**netlab initial** (also invoked as the last step in **netlab up** process) executes scripts specified in the **clab.node_config** dictionary:
+**netlab initial** (also invoked as the last step in the **netlab up** process) executes scripts specified in the **clab.node_config** dictionary:
 
 * Scripts with `:sh` suffix are executed with **docker exec _container_ sh _script_**
 * Scripts with `:ns` suffix are executed with **sudo ip netns exec _namespace_ sh _script_**
