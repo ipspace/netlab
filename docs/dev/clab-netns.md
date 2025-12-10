@@ -1,3 +1,4 @@
+(dev-clab-ns)=
 # Linux Containers and Network Namespaces
 
 Containers provide a relatively new mechanism to execute self-contained network device logic on a host, and *Netlab* supports them through [Containerlab](lab-clab).
