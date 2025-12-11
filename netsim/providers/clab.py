@@ -229,6 +229,10 @@ class Containerlab(_Provider):
     if use_ovs_bridge(topology):
       check_ovs_installation()
 
+    create_node_files = topology.get('_create_node_files',False)
+    if not create_node_files:
+      return
+
     for n in topology.nodes.values():
       self.create_node_files(n,topology)
       check_node_binds(n)
