@@ -43,7 +43,7 @@ def package_version(package: str) -> None:
   except Exception as ex:
     print(f'  Cannot figure out {package} version: {str(ex)}')
 
-def module_version(module: str, package: str) -> None:
+def module_version(module: str, package: str, missing_ok: bool = False) -> None:
   try:
     py_mod = importlib.import_module(module)
     try:
@@ -52,7 +52,9 @@ def module_version(module: str, package: str) -> None:
     except Exception as ex:
       print(f'  Cannot find {package} version: {str(ex)}')
   except Exception as ex:
-    if package not in MISSING_OK:
+    if missing_ok:
+      print(f'  {package}: not installed')
+    else:
       print(f'  {package}: not installed {str(ex)}')
 
 def run(args: typing.List[str]) -> None:
@@ -65,9 +67,15 @@ def run(args: typing.List[str]) -> None:
 
   print("\nRequired packages:")
   for module,package in MODULES.items():
-    module_version(module,package)
+    if package not in MISSING_OK:
+      module_version(module,package)
   for package in PACKAGES:
     package_version(package)
+
+  print("\nOptional packages:")
+  for module,package in MODULES.items():
+    if package in MISSING_OK:
+      module_version(module,package,missing_ok=True)
 
   print("\nAnsible components:")
   for package in ANSIBLE_PACKAGES:
