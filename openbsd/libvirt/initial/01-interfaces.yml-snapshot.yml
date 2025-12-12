@@ -9,18 +9,16 @@ defaults:
       description: containerlab with Docker
       config: clab.yml
       lab_prefix: clab
-      node_config_attributes:
-      - type
-      - cmd
-      - dns
-      - env
-      - exec
-      - license
-      - ports
-      - startup-delay
-      - restart-policy
+      node_config_special:
+      - binds
+      - config_templates
+      - image
+      - kind
+      - startup-config
+      - srl-agents
+      - runtime
       template: clab.j2
-      version: 0.69.3
+      version: 0.72.0
       start: sudo -E containerlab deploy --reconfigure -t clab.yml
       stop: sudo -E containerlab destroy --cleanup -t clab.yml
       act_probe: docker ps
@@ -31,9 +29,9 @@ defaults:
       - cmd:
         - bash
         - -c
-        - "[[ `containerlab version|awk '/version/ {print $2}'` > '0.69.2' ]] && echo
-          OK"
-        err: Containerlab version is too old, please upgrade to 0.69.3 or later 
+        - "[[ `containerlab version|awk '/version/ {print $2}'` > '0.71.999' ]] &&
+          echo OK"
+        err: Containerlab version is too old, please upgrade to 0.72.0 or later 
           with 'sudo containerlab version upgrade'
       cleanup:
       - clab.yml
@@ -260,14 +258,15 @@ defaults:
               community:
                 standard: true
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -306,6 +305,7 @@ defaults:
         ansible_connection: network_cli
         netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group14-sha1 -o 
           PubkeyAcceptedKeyTypes=+ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
+        netlab_check_retries: 50
       external:
         image: none
       features:
@@ -317,6 +317,19 @@ defaults:
         create_template: asav.xml.j2
         build: https://netlab.tools/labs/asav/
         create_iso: asav
+      clab:
+        image: vrnetlab/cisco_asav:9-16-4-57
+        node:
+          kind: cisco_asav
+        build: https://containerlab.dev/manual/kinds/cisco_asav/
+        group_vars:
+          ansible_ssh_pass: CiscoAsa1!
+          ansible_become_password: CiscoAsa1!
+          ansible_user: admin
+          netlab_ready:
+          - ssh
+          netlab_check_command: |
+            exit
     cat8000v:
       description: Cisco Catalyst 8000v
       attributes:
@@ -334,6 +347,7 @@ defaults:
             license:
               type: str
               valid_values:
+              - none
               - essential
               - advantage
               - premier
@@ -364,6 +378,8 @@ defaults:
         interface:
           name: eth{ifindex-1}
         build: https://containerlab.dev/manual/kinds/vr-c8000v/
+        cat8000v:
+          license: premier
       role: router
       routing:
         _rm_per_af: true
@@ -466,14 +482,15 @@ defaults:
             delete:
               community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -762,14 +779,15 @@ defaults:
             delete:
               community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -938,14 +956,15 @@ defaults:
                 extended: true
                 append: true
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -1133,13 +1152,15 @@ defaults:
         routing:
           aspath: true
           community:
-            expanded: false
+            standard:
+            - standard
           policy:
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
             set:
               locpref: true
               med: true
@@ -1334,16 +1355,19 @@ defaults:
             - prepend
             - community
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             delete:
               community: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
           static:
             vrf: true
             inter_vrf: true
@@ -1385,7 +1409,7 @@ defaults:
             INTFTYPE: et
             CLAB_MGMT_VRF: management
         mgmt_if: Management0
-        image: ceos:4.34.2F
+        image: ceos:4.35.0.1F
         group_vars:
           ansible_user: admin
           ansible_ssh_pass: admin
@@ -1452,12 +1476,13 @@ defaults:
         ansible_httpapi_validate_certs: 'no'
         ansible_httpapi_port: 80
         netlab_console_connection: ssh
-        netlab_skip_missing_template: true
-        netlab_config_tasks: true
       external:
         image: none
       features:
-        ospf: {}
+        ospf:
+          password: true
+          priority: true
+          timers: true
       graphite:
         icon: firewall
     frr:
@@ -1551,6 +1576,7 @@ defaults:
           roles:
           - host
           - router
+          - bridge
           generate_mac:
           - svi
         bfd: {}
@@ -1643,16 +1669,19 @@ defaults:
                 extended: true
                 append: true
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             delete:
               community: clist
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
           static:
             vrf: true
             inter_vrf: true
@@ -1840,14 +1869,15 @@ defaults:
             delete:
               community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -2023,14 +2053,15 @@ defaults:
             delete:
               community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -2111,7 +2142,7 @@ defaults:
           - ssh
         image: vrnetlab/cisco_vios:15.9.3
         node:
-          kind: linux
+          kind: cisco_vios
         interface:
           name: eth{ifindex}
         build: https://github.com/srl-labs/vrnetlab/tree/master/vios
@@ -2217,14 +2248,15 @@ defaults:
             delete:
               community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -2293,7 +2325,7 @@ defaults:
           - ssh
         image: vrnetlab/cisco_viosl2:15.2
         node:
-          kind: linux
+          kind: cisco_vios
         interface:
           name: eth{ifindex}
         build: https://github.com/srl-labs/vrnetlab/tree/master/viosl2
@@ -2403,14 +2435,15 @@ defaults:
             delete:
               community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -2605,6 +2638,11 @@ defaults:
         netlab_lldp_enable: false
         netlab_net_tools: false
       clab:
+        node_config:
+          initial: :ns
+          lag: :ns
+          vlan: :ns
+          routing: :ns
         features:
           initial:
             roles:
@@ -2770,16 +2808,19 @@ defaults:
               prepend: true
               community: true
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             delete:
               community: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
           static:
             vrf: true
             inter_vrf: true
@@ -3563,9 +3604,11 @@ defaults:
         routing:
           policy:
             match:
-            - prefix
-            - aspath
-            - community
+              prefix: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             set:
               locpref: true
               med: true
@@ -3583,7 +3626,8 @@ defaults:
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
         sr: {}
         vrf:
           ospfv2: true
@@ -3660,9 +3704,11 @@ defaults:
         routing:
           policy:
             match:
-            - prefix
-            - aspath
-            - community
+              prefix: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             set:
               locpref: true
               med: true
@@ -3680,7 +3726,8 @@ defaults:
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
         sr: {}
         vrf:
           ospfv2: true
@@ -3767,9 +3814,11 @@ defaults:
         routing:
           policy:
             match:
-            - prefix
-            - aspath
-            - community
+              prefix: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             set:
               locpref: true
               med: true
@@ -3787,7 +3836,8 @@ defaults:
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
         sr: {}
         vrf:
           ospfv2: true
@@ -3861,9 +3911,11 @@ defaults:
         routing:
           policy:
             match:
-            - prefix
-            - aspath
-            - community
+              prefix: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             set:
               locpref: true
               med: true
@@ -3881,7 +3933,8 @@ defaults:
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
         sr: {}
         vrf:
           ospfv2: true
@@ -3962,9 +4015,11 @@ defaults:
         routing:
           policy:
             match:
-            - prefix
-            - aspath
-            - community
+              prefix: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             set:
               locpref: true
               med: true
@@ -3982,7 +4037,8 @@ defaults:
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
         sr: {}
         vrf:
           ospfv2: true
@@ -4104,14 +4160,15 @@ defaults:
             delete:
               community: false
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -4227,6 +4284,11 @@ defaults:
           static: RTS_STATIC_DEVICE,RTS_STATIC
         netlab_device_type: bird
       clab:
+        node_config:
+          initial: /etc/config/01-initial.sh:sh
+          lag: /etc/config/10-lag.sh:sh
+          vlan: /etc/config/20-vlan.sh:sh
+          routing: :ns
         features:
           initial:
             roles:
@@ -4319,6 +4381,11 @@ defaults:
         netlab_net_tools: false
         netlab_device_type: dnsmasq
       clab:
+        node_config:
+          initial: :ns
+          lag: :ns
+          vlan: :ns
+          routing: :ns
         features:
           initial:
             roles:
@@ -4381,6 +4448,10 @@ defaults:
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
       clab:
+        node_config:
+          initial: /etc/config/01-initial.sh:sh
+          lag: /etc/config/10-lag.sh:sh
+          vlan: /etc/config/20-vlan.sh:sh
         group_vars:
           netlab_show_command:
           - birdc
@@ -5168,6 +5239,7 @@ defaults:
         license:
           type: str
           valid_values:
+          - none
           - essential
           - advantage
           - premier
@@ -5437,13 +5509,18 @@ defaults:
           extended: list
           large: list
           list:
-            type: str
             _valid_with: []
+            standard: str
+            extended: str
+            large: str
       match:
         prefix: str
         nexthop: str
         aspath: str
-        community: str
+        community:
+          standard: str
+          extended: str
+          large: str
     pfx_entry:
       action:
         type: str
@@ -5857,12 +5934,12 @@ defaults:
     - /home/pipi/netlab_gh/netsim/validate
     plugin:
     - /work/netlab_cicd
-    - /home/pipi/netlab_gh/tests/integration/initial
+    - /home/pipi/net101/tools/tests/integration/initial
     - /home/pipi/.netlab
     - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
-      - /home/pipi/netlab_gh/tests/integration/initial
+      - /home/pipi/net101/tools/tests/integration/initial
       - /work/netlab_cicd
       - /home/pipi/.netlab
       - /home/pipi/netlab_gh/netsim/extra
@@ -5894,6 +5971,34 @@ defaults:
       - '{{ custom_config }}/deploy.{{ ansible_network_os }}-{{ node_provider }}.yml'
       - '{{ custom_config }}/deploy.{{ ansible_network_os }}.yml'
       - '{{ custom_config }}/deploy.yml'
+      f_files:
+      - "{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type + '-'
+        + node_provider + '.j2' }"
+      - "{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type + '.j2'
+        }"
+      - "{ custom_config + '/' + inventory_hostname + '.j2' }"
+      - "{ custom_config + '/' + inventory_hostname + '.cfg' }"
+      - "{ custom_config + '/' + netlab_device_type + '-' + node_provider + '.j2'
+        }"
+      - "{ custom_config + '/' + netlab_device_type + '.j2' }"
+      - "{ custom_config + '/' + ansible_network_os + '-' + node_provider + '.j2'
+        }"
+      - "{ custom_config + '/' + ansible_network_os + '.j2' }"
+      - "{ custom_config + '.' + inventory_hostname + '.' + netlab_device_type + '.j2'
+        }"
+      - "{ custom_config + '.' + inventory_hostname + '.' + ansible_network_os + '.j2'
+        }"
+      - "{ custom_config + '.' + inventory_hostname + '.j2' }"
+      - "{ custom_config + '.' + netlab_device_type + '.j2' }"
+      - "{ custom_config + '.' + ansible_network_os + '.j2' }"
+      - "{ custom_config + '.j2' }"
+      f_tasks:
+      - '{ custom_config }/deploy-{ inventory_hostname }.yml'
+      - '{ custom_config }/deploy.{ netlab_device_type }-{ node_provider }.yml'
+      - '{ custom_config }/deploy.{ netlab_device_type }.yml'
+      - '{ custom_config }/deploy.{ ansible_network_os }-{ node_provider }.yml'
+      - '{ custom_config }/deploy.{ ansible_network_os }.yml'
+      - '{ custom_config }/deploy.yml'
     deploy:
       dirs:
       - /home/pipi/netlab_gh/netsim/ansible/tasks
@@ -5903,39 +6008,62 @@ defaults:
       - deploy-config/{{ ansible_network_os }}-{{ node_provider }}.yml
       - deploy-config/{{ ansible_network_os }}.yml
       files:
-      - '{{ netlab_device_type }}/{{ config_module }}-{{ provider|default(netlab_provider)
-        }}.yml'
+      - '{{ netlab_device_type }}/{{ config_module }}-{{ node_provider }}.yml'
       - '{{ netlab_device_type }}/{{ config_module }}.yml'
-      - deploy-config/{{ netlab_device_type }}-{{ 
-        provider|default(netlab_provider) }}.yml
+      - deploy-config/{{ netlab_device_type }}-{{ node_provider }}.yml
       - deploy-config/{{ netlab_device_type }}.yml
-      - '{{ ansible_network_os }}/{{ config_module }}-{{ provider|default(netlab_provider)
-        }}.yml'
+      - '{{ ansible_network_os }}/{{ config_module }}-{{ node_provider }}.yml'
       - '{{ ansible_network_os }}/{{ config_module }}.yml'
-      - deploy-config/{{ ansible_network_os }}-{{ 
-        provider|default(netlab_provider) }}.yml
+      - deploy-config/{{ ansible_network_os }}-{{ node_provider }}.yml
       - deploy-config/{{ ansible_network_os }}.yml
+      f_tasks_generic:
+      - deploy-config/{ netlab_device_type }-{ node_provider }.yml
+      - deploy-config/{ netlab_device_type }.yml
+      - deploy-config/{ ansible_network_os }-{ node_provider }.yml
+      - deploy-config/{ ansible_network_os }.yml
+      f_files:
+      - '{ netlab_device_type }/{ config_module }-{ node_provider }.yml'
+      - '{ netlab_device_type }/{ config_module }.yml'
+      - deploy-config/{ netlab_device_type }-{ node_provider }.yml
+      - deploy-config/{ netlab_device_type }.yml
+      - '{ ansible_network_os }/{ config_module }-{ node_provider }.yml'
+      - '{ ansible_network_os }/{ config_module }.yml'
+      - deploy-config/{ ansible_network_os }-{ node_provider }.yml
+      - deploy-config/{ ansible_network_os }.yml
     templates:
       dirs:
       - /home/pipi/netlab_gh/netsim/daemons
       - /home/pipi/netlab_gh/netsim/ansible/templates
     t_files:
       files:
-      - '{{config_module}}/{{netlab_device_type}}-{{provider|default(netlab_provider)}}.j2'
+      - '{{config_module}}/{{netlab_device_type}}-{{node_provider}}.j2'
       - '{{config_module}}/{{netlab_device_type}}.j2'
       - '{{config_module}}.{{netlab_device_type}}.j2'
-      - '{{config_module}}/{{ansible_network_os}}-{{provider|default(netlab_provider)}}.j2'
+      - '{{config_module}}/{{ansible_network_os}}-{{node_provider}}.j2'
       - '{{config_module}}/{{ansible_network_os}}.j2'
       - '{{config_module}}.{{ansible_network_os}}.j2'
       - '{{netlab_device_type}}/{{config_module}}.j2'
+      f_files:
+      - '{config_module}/{netlab_device_type}-{node_provider}.j2'
+      - '{config_module}/{netlab_device_type}.j2'
+      - '{config_module}.{netlab_device_type}.j2'
+      - '{config_module}/{ansible_network_os}-{node_provider}.j2'
+      - '{config_module}/{ansible_network_os}.j2'
+      - '{config_module}.{ansible_network_os}.j2'
+      - '{netlab_device_type}/{config_module}.j2'
     ready:
       dirs:
       - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
       files:
-      - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
+      - '{{netlab_device_type}}-{{node_provider}}.yml'
       - '{{netlab_device_type}}.yml'
-      - '{{ansible_network_os}}-{{provider|default(netlab_provider)}}.yml'
+      - '{{ansible_network_os}}-{{node_provider}}.yml'
       - '{{ansible_network_os}}.yml'
+      f_files:
+      - '{netlab_device_type}-{node_provider}.yml'
+      - '{netlab_device_type}.yml'
+      - '{ansible_network_os}-{node_provider}.yml'
+      - '{ansible_network_os}.yml'
     collect:
       dirs:
       - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
@@ -7313,9 +7441,20 @@ defaults:
           type: dict
           _keytype: id
           _subtype:
-            type: list
-            make_list: true
-            _subtype: community_entry
+            type: dict
+            _keys:
+              type:
+                type: str
+                valid_values:
+                - standard
+                - extended
+                - large
+                _required: true
+                _default: standard
+              value:
+                type: list
+                make_list: true
+                _subtype: community_entry
         static:
           type: dict
           _keytype: id
@@ -7355,9 +7494,20 @@ defaults:
           type: dict
           _keytype: id
           _subtype:
-            type: list
-            make_list: true
-            _subtype: community_entry
+            type: dict
+            _keys:
+              type:
+                type: str
+                valid_values:
+                - standard
+                - extended
+                - large
+                _required: true
+                _default: standard
+              value:
+                type: list
+                make_list: true
+                _subtype: community_entry
             _alt_types:
             - NoneType
         static:
@@ -8082,13 +8232,35 @@ nodes:
     clab:
       kind: linux
       config_templates:
+      - initial::ns
+      - routing::ns
       - hosts:/etc/hosts:shared
+      _template_cache:
+      - fname: initial
+        fpath: 
+          /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
+        output: clab_files/h1/initial
+        mode: ns
+      - fname: routing
+        fpath: 
+          /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
+        output: clab_files/h1/routing
+        mode: ns
+      - fname: hosts
+        fpath: 
+          /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
+        output: clab_files/-shared-hosts
+        mode: shared
+        mapping: /etc/hosts:ro
       binds:
       - clab_files/-shared-hosts:/etc/hosts:ro
     box: python:3.13-alpine
     id: 1
     role: host
     mtu: 1500
+    _node_config:
+      initial: :ns
+      routing: :ns
     af:
       ipv4: true
       ipv6: true
@@ -8097,6 +8269,9 @@ nodes:
       mac: ca:fe:00:01:00:00
       ipv4: 192.168.17.101
     hostname: clab-ml_17-h1
+    netlab_ansible_skip_module:
+    - initial
+    - routing
   h2:
     provider: clab
     routing:
@@ -8137,13 +8312,35 @@ nodes:
     clab:
       kind: linux
       config_templates:
+      - initial::ns
+      - routing::ns
       - hosts:/etc/hosts:shared
+      _template_cache:
+      - fname: initial
+        fpath: 
+          /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
+        output: clab_files/h2/initial
+        mode: ns
+      - fname: routing
+        fpath: 
+          /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
+        output: clab_files/h2/routing
+        mode: ns
+      - fname: hosts
+        fpath: 
+          /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
+        output: clab_files/-shared-hosts
+        mode: shared
+        mapping: /etc/hosts:ro
       binds:
       - clab_files/-shared-hosts:/etc/hosts:ro
     box: python:3.13-alpine
     id: 2
     role: host
     mtu: 1500
+    _node_config:
+      initial: :ns
+      routing: :ns
     af:
       ipv4: true
       ipv6: true
@@ -8152,6 +8349,9 @@ nodes:
       mac: ca:fe:00:02:00:00
       ipv4: 192.168.17.102
     hostname: clab-ml_17-h2
+    netlab_ansible_skip_module:
+    - initial
+    - routing
   h3:
     provider: clab
     routing:
@@ -8191,13 +8391,35 @@ nodes:
     clab:
       kind: linux
       config_templates:
+      - initial::ns
+      - routing::ns
       - hosts:/etc/hosts:shared
+      _template_cache:
+      - fname: initial
+        fpath: 
+          /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
+        output: clab_files/h3/initial
+        mode: ns
+      - fname: routing
+        fpath: 
+          /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
+        output: clab_files/h3/routing
+        mode: ns
+      - fname: hosts
+        fpath: 
+          /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
+        output: clab_files/-shared-hosts
+        mode: shared
+        mapping: /etc/hosts:ro
       binds:
       - clab_files/-shared-hosts:/etc/hosts:ro
     box: python:3.13-alpine
     id: 3
     role: host
     mtu: 1500
+    _node_config:
+      initial: :ns
+      routing: :ns
     af:
       ipv4: true
       ipv6: true
@@ -8206,6 +8428,9 @@ nodes:
       mac: ca:fe:00:03:00:00
       ipv4: 192.168.17.103
     hostname: clab-ml_17-h3
+    netlab_ansible_skip_module:
+    - initial
+    - routing
 links:
 - _linkname: links[1]
   bandwidth: 1000
@@ -8289,7 +8514,7 @@ validate:
   plugin: ping(nodes.r.loopback.ipv4)
   name: ping
 - description: IPv6 ping H1,H2 => R
-  wait: 5
+  wait: 15
   wait_msg: Wait for IPv6 interfaces to become operational
   nodes:
   - h1
@@ -8303,9 +8528,9 @@ validate:
   level: warning
   name: shutdown
 input:
-- /home/pipi/netlab_gh/tests/integration/initial/01-interfaces.yml
-- /home/pipi/netlab_gh/tests/integration/wait_times.yml
-- /home/pipi/netlab_gh/tests/integration/warnings.yml
+- /home/pipi/net101/tools/tests/integration/initial/01-interfaces.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 plugin:
@@ -8321,4 +8546,4 @@ prefix:
   any:
     ipv4: 0.0.0.0/0
     ipv6: ::/0
-_netlab_version: 25.11.01
+_netlab_version: 25.12.02
