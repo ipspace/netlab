@@ -54,6 +54,7 @@ The following table describes the per-platform support of individual router-leve
 | ------------------------ |:-:|:-:|:-:|:-:|:-:|
 | Arista EOS               | ✅| ✅| ✅| ✅| ✅|
 | Aruba AOS-CX             | ✅| ✅| ✅| ✅| ✅|
+| Cisco ASAv               | ✅| ✅| ❌ | ❌ | ✅|
 | Cisco IOSv/IOSvL2        | ✅| ✅| ✅| ✅| ✅|
 | Cisco IOS XE[^18v]       | ✅| ✅| ✅| ✅| ✅|
 | Cisco IOS XR[^XR]        | ✅| ✅| ✅| ✅| ✅|
@@ -121,6 +122,7 @@ The following table documents the common interface-level OSPF features:
 | ------------------------ |:--:|:--:|:--:|:--:|
 | Arista EOS               | ✅ | ✅ | ✅ | ✅ |
 | Aruba AOS-CX             | ✅ | ✅ | ✅  | ✅ |
+| Cisco ASAv               | ✅ | [❗](caveats-asav) | ❌  | ✅ |
 | Cisco IOS                | ✅ | ✅ | ❌  | ✅ |
 | Cisco IOS XE[^18v]       | ✅ | ✅ | ✅ | ✅ |
 | Cisco IOS XR[^XR]        | ✅ | ✅ | ✅ | ✅ |
@@ -159,6 +161,7 @@ These devices also support optional OSPF interface attributes:
 | ------------------------ |:--:|:--:|:--:|:--:|
 | Arista EOS               | ✅ | ✅ | ✅ | ❌  |
 | Aruba AOS-CX             | ✅ | ✅ | ✅ | ❌  |
+| Cisco ASAv               | ✅ | ✅ | ✅ | ❌  |
 | Cisco IOSv/IOSvL2        | ✅ | ✅ | ✅ | ❌  |
 | Cisco IOS XE[^18v]       | ✅ | ✅ | ✅ | ❌  |
 | Cisco IOS XR[^XR]        | ✅ | ✅ | ✅ | ❌  |

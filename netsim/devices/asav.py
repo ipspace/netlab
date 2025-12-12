@@ -7,24 +7,30 @@ from ..utils import log
 from . import _Quirks, report_quirk
 
 
-def check_isis_p2p_interfaces(node: Box, topology: Box) -> None:
+def check_isis_p2p_interfaces(node: Box, topology: Box, igp: str = 'isis') -> None:
   for intf in node.interfaces:
-    if not 'isis' in intf:
+    if not igp in intf:
       continue
-    if intf.get('isis.network_type',None) != "point-to-point":
+    if intf[igp].get('network_type',None) != "point-to-point":
       continue
 
-    for neighbor in intf.neighbors:
-      report_quirk(
-        text=f'Cisco ASA does not support P2P IS-IS links',
-        node=node,
-        more_data=[ f'Node {node.name} {intf.ifname} connected to {neighbor.node} {neighbor.ifname}' ],
-        category=log.IncorrectType)
+    report_quirk(
+      text=f'Cisco ASA does not support P2P {igp} links',
+      node=node,
+      more_data=[ f'Node {node.name} {intf.ifname} ({intf.name})' ],
+      category=log.IncorrectType)
 
 class ASA(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
     mods = node.get('module', [])
-    if 'isis' in mods:
-      check_isis_p2p_interfaces(node, topology)
+    for igp in ('isis','ospf'):
+      if igp in mods:
+        check_isis_p2p_interfaces(node, topology,igp=igp)
+
+    if node.get('ospf.af.ipv6',False):
+      report_quirk(
+        text=f"netlab cannot configure OSPFv3 on ASAv node '{node.name}'",
+        node=node,
+        category=log.IncorrectType)

@@ -316,7 +316,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | --------------------- | :--: | :--: | :--: | :--: | :--: |
 | Arista EOS            | ✅   |  ✅  |   ❌  |  ✅  |  ✅  |
 | Aruba AOS-CX          | ✅   |  ❌   |   ❌  |  ✅  |   ❌  |
-| Cisco ASAv            | ❌    |  ✅  |   ❌  |  ✅  |   ❌  |
+| Cisco ASAv            | ✅ [❗](caveats-asav) | ✅ [❗](caveats-asav) | ❌ | ✅ | ❌ |
 | Cisco IOSv/IOSvL2     | ✅   |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco IOS XE[^18v]    | ✅   |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco IOS XR[^XR]     | ✅   |  ✅  |   ❌  |  ✅  |   ❌  |
