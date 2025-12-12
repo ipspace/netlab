@@ -3,6 +3,8 @@
 # Run transformation code on integration tests for an additional
 # verification before merging pull requests
 #
+
+err_cnt=0
 for file in integration/**/[0-9]*.yml platform-integration/**/[0-9]*.yml; do
   ../netlab create -o none -d none $file 2>/dev/null || (
     echo "Errors found in $file"
