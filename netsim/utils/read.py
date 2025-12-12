@@ -106,11 +106,10 @@ def read_from_pickle(path: str) -> typing.Optional[Box]:
       print(f'RFP: {str(pickle_path)} does not exist, exiting')
     return None
   try:
-    pfile = open(str(pickle_path),'rb')           # Try to read the pickled data
-    data = pickle.load(pfile)
-    pfile.close()
-    if not isinstance(data,Box):                  # Not a Box? Not useful...
-      return None
+    with pickle_path.open(mode='rb') as pfile:
+      data = pickle.load(pfile)
+      if not isinstance(data,Box):                  # Not a Box? Not useful...
+        return None
   except Exception as ex:                         # Failed to unpickle? Too bad...
     if log.VERBOSE or log.debug_active('defaults'):
       log.warning(text=f'Cannot load pickled topology defaults {str(pickle_path)}: {str(ex)}')
@@ -128,7 +127,7 @@ def read_from_pickle(path: str) -> typing.Optional[Box]:
     src_file = _files.absolute_path(path)         # Try to find the absolute path of the source file
     if src_file != data._cache.source:            # Not the same, cannot pickle
       if log.debug_active('defaults'):
-        print(f'RFP: source file {src_file} != pickled source {data.defaults._cache.source} from {pickle_path}')
+        print(f'RFP: source file {src_file} != pickled source {data._cache.source} from {pickle_path}')
       return None
   except Exception as ex:                         # Obviously cannot use the pickled data if we don't know
     if log.debug_active('defaults'):
@@ -171,7 +170,6 @@ def save_to_pickle(path: str, data: Box) -> None:
     pickle_path.parent.mkdir(parents = True, exist_ok=True)
     with pickle_path.open(mode='wb') as ofile:
       pickle.dump(data,ofile)
-      ofile.close()
     if log.debug_active('defaults'):
       print(f'RFP: Saved YAML data from {path} into {str(pickle_path)}')
   except Exception as ex:
