@@ -1,0 +1,52 @@
+!
+{# Macro to convert OSPF area from dotted-decimal (0.0.0.0) to integer (0) for ASA #}
+{% macro area_to_int(area) -%}
+{%- set parts = area.split('.') -%}
+{{ (parts[0]|int * 16777216) + (parts[1]|int * 65536) + (parts[2]|int * 256) + (parts[3]|int) }}
+{%- endmacro -%}
+!
+{% macro config(ospf_pid,ospf_vrf,ospf_data,intf_data,bgp={}) %}
+router ospf {{ ospf_pid }}
+{% if ospf_data.router_id|ipv4 %}
+  router-id {{ ospf_data.router_id }}
+{% endif %}
+{% if ospf_data.reference_bandwidth is defined %}
+  auto-cost reference-bandwidth {{ ospf_data.reference_bandwidth }}
+{% endif %}
+{% if ospf_data.default is defined %}
+{%   set dfd = ospf_data.default %}
+  default-information originate{%
+    if dfd.always|default(False) %} always{% endif %}{%
+    if dfd.type|default('') %} metric-type {{ dfd.type.replace('e','') }}{% endif %}{%
+    if dfd.cost|default(0) %} metric {{ dfd.cost }}{% endif +%}
+{% endif %}
+{# Use network statements for ASA OSPF - more compatible than interface commands #}
+{% for l in intf_data if 'ospf' in l and 'ipv4' in l %}
+{%   if l.ospf.passive|default(False) %}
+  passive-interface {{ l.ifname }}
+{%   endif %}
+  network {{ l.ipv4|ipaddr('network') }} {{ l.ipv4|ipaddr('netmask') }} area {{ area_to_int(l.ospf.area) }}
+{% endfor %}
+!
+{% for l in intf_data if 'ospf' in l and 'ipv4' in l %}
+interface {{ l.ifname }}
+! {{ l.name|default("") }} - OSPF interface parameters
+{%   if l.ospf.cost is defined %}
+  ospf cost {{ l.ospf.cost }}
+{%   endif %}
+{%   if l.ospf.timers.hello is defined %}
+  ospf hello-interval {{ l.ospf.timers.hello }}
+{%   endif %}
+{%   if l.ospf.timers.dead is defined %}
+  ospf dead-interval {{ l.ospf.timers.dead }}
+{%   endif %}
+{%   if l.ospf.priority is defined %}
+  ospf priority {{ l.ospf.priority }}
+{%   endif %}
+{%   if l.ospf.password is defined %}
+  ospf authentication-key {{ l.ospf.password }}
+  ospf authentication
+{%   endif %}
+!
+{% endfor %}
+{% endmacro %}
