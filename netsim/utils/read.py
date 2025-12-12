@@ -5,6 +5,7 @@ import argparse
 import os
 import pickle
 import sys
+import time
 import typing
 
 import yaml
@@ -78,6 +79,108 @@ def include_yaml(data: Box, source_file: str) -> None:
 
   data.pop('_include',None)
 
+"""
+read_from_pickle -- if the YAML file name is in the list of pickled files, try to read it from the pickle
+"""
+
+PICKLED_YAML_FILES: dict = {
+  'package:topology-defaults.yml': {
+    'directory': 'package:',
+    'glob':      '**/*yml',
+    'pickle':    'topology-defaults.pickle'
+  }
+}
+
+def read_from_pickle(path: str) -> typing.Optional[Box]:
+  global PICKLED_YAML_FILES
+
+  if path not in PICKLED_YAML_FILES:              # We're not pickling this file, exit
+    return None
+  
+  pickle_info = PICKLED_YAML_FILES[path]
+  pickle_path = _files.get_userdir() / pickle_info['pickle']
+  if log.debug_active('defaults'):
+    print(f'RFP: Trying to read pickled data for {path} from {str(pickle_path)}')
+  if not pickle_path.exists():                    # No pickled file, exit
+    if log.debug_active('defaults'):
+      print(f'RFP: {str(pickle_path)} does not exist, exiting')
+    return None
+  try:
+    pfile = open(str(pickle_path),'rb')           # Try to read the pickled data
+    data = pickle.load(pfile)
+    pfile.close()
+    if not isinstance(data,Box):                  # Not a Box? Not useful...
+      return None
+  except Exception as ex:                         # Failed to unpickle? Too bad...
+    if log.VERBOSE or log.debug_active('defaults'):
+      log.warning(text=f'Cannot load pickled topology defaults {str(pickle_path)}: {str(ex)}')
+    return None
+
+  if 'directory' not in pickle_info:              # Do we have to check the freshness of pickled data?
+    return data                                   # Nope, that's it
+
+  if '_cache.source' not in data:                 # Do we have the path to the original source file in pickled data?
+    if log.debug_active('defaults'):
+      print(f'RFP: no source file in pickled data {pickle_path}')
+    return None                                   # Nope, can't do the freshness check
+
+  try:
+    src_file = _files.absolute_path(path)         # Try to find the absolute path of the source file
+    if src_file != data._cache.source:            # Not the same, cannot pickle
+      if log.debug_active('defaults'):
+        print(f'RFP: source file {src_file} != pickled source {data.defaults._cache.source} from {pickle_path}')
+      return None
+  except Exception as ex:                         # Obviously cannot use the pickled data if we don't know
+    if log.debug_active('defaults'):
+      print(f'RFP: cannot get the path for pickle source {path}: {str(ex)}')
+    return None                                   # where it's coming from
+
+  if '_cache.timestamp' not in data:              # Do we know when the pickled data was created?
+    if log.debug_active('defaults'):
+      print(f'RFP: no cache timestamp in pickle file {pickle_path}')
+    return None                                   # Nope, not useful
+
+  # Get the last-modified date of the source files and return pickled data only
+  # if it's fresher than the source files
+  try:
+    src_timestamp = _files.get_glob_mtime(pickle_info['directory'],pickle_info['glob'])
+    if not src_timestamp:
+      if log.debug_active('defaults'):
+        print(f'RFP: no last modified time for pickle source {path}')
+      return None
+    return data if src_timestamp < data.get('_cache.timestamp',0) else None
+  except Exception as ex:
+    if log.debug_active('defaults'):
+      print(f'RFP: cannot get the last modified time for pickle source {path}: {str(ex)}')
+    return None
+
+"""
+Save YAML data into a pickle file
+"""
+def save_to_pickle(path: str, data: Box) -> None:
+  global PICKLED_YAML_FILES
+  if path not in PICKLED_YAML_FILES:
+    return
+  pickle_info = PICKLED_YAML_FILES[path]
+  try:
+    pickle_path = _files.get_userdir() / pickle_info['pickle']
+    if log.debug_active('defaults'):
+      print(f'RFP: Trying to save data from {path} into {pickle_path}')
+    data._cache.timestamp = time.time()
+    data._cache.source = _files.absolute_path(path)
+    pickle_path.parent.mkdir(parents = True, exist_ok=True)
+    with pickle_path.open(mode='wb') as ofile:
+      pickle.dump(data,ofile)
+      ofile.close()
+    if log.debug_active('defaults'):
+      print(f'RFP: Saved YAML data from {path} into {str(pickle_path)}')
+  except Exception as ex:
+    if log.VERBOSE or log.debug_active('defaults'):
+      log.warning(
+        text=f'Cannot save pickled data for {path} into {str(pickle_path)})',
+        more_data=[ str(ex) ],
+        module='read')
+
 #
 # Read YAML from file, package file, or string
 #
@@ -114,6 +217,10 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
   if filename in read_cache:
     return Box(read_cache[filename],default_box=True,box_dots=True,default_box_none_transform=False)
 
+  pickle_data = read_from_pickle(filename)
+  if pickle_data:
+    return pickle_data
+
   if "package:" in filename:
     pkg_files = _files.get_traversable_path('package:')
     with pkg_files.joinpath(filename.replace("package:","")).open('r') as fid:
@@ -121,6 +228,7 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
       if not pkg_data is None:
         include_yaml(pkg_data,filename)
         read_cache[filename] = Box(pkg_data)
+        save_to_pickle(filename,pkg_data)
       return pkg_data
   else:
     if not os.path.isfile(filename):

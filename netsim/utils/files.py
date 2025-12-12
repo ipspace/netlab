@@ -23,11 +23,24 @@ except ImportError:
 #
 # Find paths to module, user and system directory (needed for various templates)
 #
+
+FILES_MODDIR: typing.Optional[pathlib.Path] = None
+
 def get_moddir() -> pathlib.Path:
-  return pathlib.Path(__file__).resolve().parent.parent
+  global FILES_MODDIR
+  if FILES_MODDIR is None:
+    FILES_MODDIR = pathlib.Path(__file__).resolve().parent.parent
+
+  return FILES_MODDIR
+
+FILES_USERDIR: typing.Optional[pathlib.Path] = None
 
 def get_userdir() -> pathlib.Path:
-  return pathlib.Path(os.path.expanduser("~/.netlab")).resolve()
+  global FILES_USERDIR
+  if FILES_USERDIR is None:
+    FILES_USERDIR = pathlib.Path(os.path.expanduser("~/.netlab")).resolve()
+
+  return FILES_USERDIR
 
 def get_sysdir() -> pathlib.Path:
   return pathlib.Path("/etc/netlab").resolve()
@@ -61,6 +74,9 @@ def get_search_path(
 def absolute_path(fname: str, base: typing.Optional[str] = None) -> pathlib.Path:
   if fname.find('~') == 0:                                  # Resolve home directory into an absolute path
     fname = os.path.expanduser(fname)
+
+  if fname.startswith('package:'):
+    fname = str(get_moddir() / fname.replace('package:',''))
 
   if os.path.isabs(fname):                                  # If we're dealing with an absolute path
     return pathlib.Path(fname).resolve()                    # ... return the fully-resolved path
@@ -142,6 +158,22 @@ def get_globbed_files(path: typing.Any, glob: str) -> list:
     return [ str(fname) for fname in list(path.glob(glob)) ]
   else:
     log.fatal(f'Internal error: invalid argument to get_globbed_files: {path}')
+
+#
+# Get the last modified time from a glob of files
+#
+def get_glob_mtime(dir: str, glob: str) -> typing.Optional[float]:
+  dir_path = get_traversable_path(dir)            # Get traversable path for the source files
+  if not isinstance(dir_path,pathlib.Path):       # If it's not a Path object we cannot get stat data
+    return None
+
+  latest_time = None
+  for f in dir_path.glob(glob):
+    mtime = f.stat().st_mtime
+    if latest_time is None or mtime > latest_time:
+      latest_time = mtime
+
+  return latest_time
 
 #
 # Get a path object that can be used to find files in a file system or in the package
