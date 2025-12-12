@@ -25,7 +25,7 @@ def topology_to_json(topology: Box) -> dict:
   
   # Remove all internal/private keys starting with '_' before YANG validation
   # Recursively remove underscore-prefixed keys from nested structures
-  def remove_underscore_keys(obj, depth=0):
+  def remove_underscore_keys(obj: typing.Any, depth: int = 0) -> None:
     if depth > 10:  # Prevent infinite recursion
       return
     if isinstance(obj, dict):
@@ -136,9 +136,9 @@ def validate_topology_yang(topology: Box, yang_model_path: str) -> typing.List[s
   
   # Check if yangson is available
   try:
-    from yangson import DataModel
-    from yangson.enumerations import ContentType, ValidationScope
-    from yangson.exceptions import SchemaError, SemanticError, YangTypeError
+    from yangson import DataModel  # type: ignore[import-untyped]
+    from yangson.enumerations import ContentType, ValidationScope  # type: ignore[import-untyped]
+    from yangson.exceptions import SchemaError, SemanticError, YangTypeError  # type: ignore[import-untyped]
   except ImportError as ex:
     log.fatal(
       f'yangson library not found: {ex}. Install it with: pip install yangson',
