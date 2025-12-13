@@ -166,7 +166,7 @@ def save_to_pickle(path: str, data: Box) -> None:
     if log.debug_active('defaults'):
       print(f'RFP: Trying to save data from {path} into {pickle_path}')
     data._cache.timestamp = time.time()
-    data._cache.source = _files.absolute_path(path)
+    data._cache.source = str(_files.absolute_path(path))
     pickle_path.parent.mkdir(parents = True, exist_ok=True)
     with pickle_path.open(mode='wb') as ofile:
       pickle.dump(data,ofile)
