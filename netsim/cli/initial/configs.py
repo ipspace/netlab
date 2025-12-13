@@ -3,19 +3,16 @@ Building device configurations in the specified output directory
 """
 
 import argparse
-import os
 import shutil
 from pathlib import Path
 
 from box import Box
 
-from ... import data
 from ...augment import devices
-from ...outputs.ansible import get_host_addresses
-from ...outputs.common import adjust_inventory_host
-from ...providers import _Provider
-from ...utils import log, templates
+from ...providers import get_provider_module
+from ...utils import log
 from .. import _nodeset, ansible, error_and_exit
+from . import templates as i_templates
 from . import utils
 
 
@@ -42,67 +39,50 @@ Create files that are usually created for clab.binds from clab.config_templates
 in the config directory to have everything in one place
 """
 def create_from_config_templates(topology: Box, nodeset: list, abs_path: Path, args: argparse.Namespace) -> int:
-  shared_data = {                                           # Create the shared data we need for config templates
-    'hostvars': topology.nodes.to_dict(),
-    'hosts': get_host_addresses(topology),
-    'addressing': topology.addressing.to_dict()
-  }
-
-  output_path = str(abs_path)
   output_count = 0
   for n_name in nodeset:
     n_data = topology.nodes[n_name]
     n_provider = devices.get_provider(n_data,topology.defaults)
-    n_deploy = utils.node_deploy_list(n_data,args)
-    if f'{n_provider}.config_templates' not in n_data:      # The node is not using config templates
+    if f'{n_provider}._template_cache' not in n_data:       # The node is not using config templates
       continue                                              # Move on
 
-    p = _Provider(provider=n_provider,data=data.get_empty_box())
-    node_data = adjust_inventory_host(                      # Add group variables to node data
-                              node=n_data,
-                              defaults=topology.defaults,
-                              group_vars=True).to_dict()
-    for k,v in shared_data.items():                         # And copy shared data
-      node_data[k] = v
+    p = get_provider_module(topology,n_provider)
+    provider_path = p.get_full_template_path()
 
-    node_data['node_provider'] = n_provider
-    for b_item in n_data[n_provider].config_templates:      # Now iterate over all config templates the node is using
-      b_template = b_item.split(':')[0].replace('@','.')    # Extract template name
-      if b_template not in n_deploy:                        # Was this requested by the user?
+    # Next, update template cache and iterate over it
+    i_templates.update_template_cache(n_data,n_provider,provider_path,topology)
+    node_dict = None
+    node_deploy = utils.node_deploy_list(n_data,args)
+    node_module = n_data.get('module',[])
+    node_config = n_data.get('config',[])
+    for t_item in n_data[n_provider].get('_template_cache',[]):
+      if not t_item.fpath:
         continue
-      b_path = templates.find_provider_template(
-                        node=n_data,
-                        fname=b_template,
-                        topology=topology,
-                        provider_path=p.get_full_template_path())
-      if not b_path:                                        # Try to find the configuration template
-        log.warning(                                        # Houston, we have a problem...
-          text=f'Cannot find template {b_template} for node {n_name}/device {n_data.device}',
-          module='initial')
+
+      module = t_item.fname
+
+      OK = module in node_deploy
+      OK |= module not in node_module and module not in node_config and 'initial' in node_deploy
+      if not OK:
         continue
+
+      if node_dict is None:                                 # Create node data in template-friendly format if needed
+        node_dict = i_templates.template_node_data(n_data,topology)
+
+      f_mode = t_item.get('mode','')                        # Figure out the output file name
+      o_suffix = '.sh' if f_mode in ('ns','sh') else '.cfg'
+      o_fname = f'{n_name}.{t_item.fname}{o_suffix}'        # Try to render the template into
+      if i_templates.render_config_template(                # ... node.template.cfg/sh file in the output directory
+            node=n_data,
+            node_dict=node_dict,
+            template_id=module,
+            template_path=t_item.fpath,
+            output_file=str(abs_path / o_fname),
+            provider_path=provider_path,
+            topology=topology):
+        log.info(f"Rendered {t_item.fname} template for {n_data.name} into {o_fname}")
 
       output_count += 1
-      try:
-        node_paths = templates.config_template_paths(
-                        node=n_data,
-                        fname=b_template,
-                        topology=topology,
-                        provider_path=p.get_full_template_path())
-        o_fname = f'{n_name}.{b_template}.cfg'              # Try to render the template into
-        templates.write_template(                           # ... node.template.cfg file in the output directory
-          in_folder=os.path.dirname(b_path),
-          j2=os.path.basename(b_path),
-          data=node_data,
-          out_folder=output_path,
-          filename=o_fname,
-          extra_path=node_paths)
-        log.info(f"Rendered {b_template} template for {n_name} into {o_fname}")
-      except Exception as ex:                               # Gee, we failed
-        log.error(                                          # Report an error and move on
-          text=f"Error rendering template {b_template} for node {n_name}/device {n_data.device}",
-          more_data=[f'Template source: {b_path}',f'error: {str(ex)}'],
-          module='initial',
-          category=log.IncorrectValue)
 
   return output_count
 
