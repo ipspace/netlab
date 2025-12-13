@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+**Release 25.12.03 (25-12-13)**
+
+Release 25.12.03 changes the **ansible_host** inventory parameter from hostname to IPv4 address for containers with SSH servers to address a change in *ansible-pylibssh* version 1.3.0 that prevented underscores in SSH hostnames.
+
+[Bug fixes in release 25.12.03](bug-fixes-25.12.03)
+
 **Release 25.12.01/02 (2025-12-05)**
 
 Release 25.12.01 fixes [a stupid bug](bug-fixes-25.12.01) that crashed **netlab install**. Release 25.12.02 fixes the target containerlab release version (it wasn't one of my best days).
