@@ -7,7 +7,7 @@ import pathlib
 import typing
 
 from box import Box
-from jinja2 import Environment, FileSystemLoader, StrictUndefined, make_logging_undefined
+from jinja2 import Environment, FileSystemLoader
 
 from ..augment import devices
 from ..outputs import common as outputs_common
@@ -18,11 +18,13 @@ from .log import debug_active, error, fatal
 
 
 def add_j2_filters(ENV: Environment) -> None:
-  for fname in dir(filters):                      # Get all attributes of the "filters" module
-    if not fname.startswith('j2_'):               # Filters have to start with 'j2_' prefix
-      continue
-    fcode = getattr(filters,fname)                # Get a pointer to filter function
-    ENV.filters[fname.replace('j2_','')] = fcode  # And define a new Jinja2 filter
+  for fname,fcode in filters.UTILS_FILTERS.items():         # Iterate over internal filter definitions
+    ENV.filters[fname] = fcode                              # ... emulating the ansible.utils filters we use
+    ENV.filters[f'ansible.utils.{fname}'] = fcode           # ... define simple filter name and its Ansible FQFN
+
+  for fname,fcode in filters.BUILTIN_FILTERS.items():       # Do the same for ansible.builtin filters we use
+    ENV.filters[fname] = fcode
+    ENV.filters[f'ansible.builtin.{fname}'] = fcode
 
 """
 Render a Jinja2 template
@@ -41,7 +43,7 @@ Path parameters:
 def get_jinja2_env_for_path(template_path: tuple) -> Environment:
   ENV = Environment(loader=FileSystemLoader(template_path), \
           trim_blocks=True,lstrip_blocks=True, \
-          undefined=make_logging_undefined(base=StrictUndefined))
+          undefined=filters.j2_Undefined)
   add_j2_filters(ENV)
   return ENV
 

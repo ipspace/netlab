@@ -14,6 +14,7 @@
 import typing
 
 import netaddr
+from jinja2.runtime import StrictUndefined
 
 
 def ipaddr_filter(
@@ -49,7 +50,7 @@ def j2_ipaddr(
 
   addr = netaddr.IPNetwork(value)
   if isinstance(arg,int):
-    return str(addr[arg])
+    return str(addr[arg]) + "/" + str(addr.prefixlen)
   
   if arg in MAP_IPADDR:
     arg = MAP_IPADDR[arg]
@@ -62,10 +63,10 @@ def j2_ipaddr(
 
   raise ValueError(f'Invalid argument {arg} passed to built-in ipaddr filter')
 
-def j2_ipv4(value: typing.Any, arg: typing.Union[int,str]) -> typing.Union[list,str]:
+def j2_ipv4(value: typing.Any, arg: typing.Union[int,str] = '') -> typing.Union[list,str]:
   return j2_ipaddr(value,arg,4)
 
-def j2_ipv6(value: typing.Any, arg: typing.Union[int,str]) -> typing.Union[list,str]:
+def j2_ipv6(value: typing.Any, arg: typing.Union[int,str] = '') -> typing.Union[list,str]:
   return j2_ipaddr(value,arg,6)
 
 # Format MAC addresses in Cisco/Unix/... format
@@ -85,3 +86,58 @@ def j2_hwaddr(value: typing.Any, format: str = '') -> str:
       raise ValueError(f'{value} is not a valid MAC address and cannot be formatted as {format}')
     else:                                         # Otherwise it was a filter query, return empty string
       return ''
+
+class j2_Undefined(StrictUndefined):
+  """
+  Mimics Ansible's undefined variable handling in Jinja2 templates.
+  Accessing attributes or items of an undefined variable returns another undefined,
+  and expressions like 'x.y is defined' return False when x is undefined,
+  rather than raising an error.
+  """
+
+  # Override attribute access
+  def __getattr__(self, name: typing.Any) -> typing.Any:
+      return j2_Undefined(name=name, hint=self._undefined_hint)
+
+  # Override item access
+  def __getitem__(self, key: typing.Any) -> typing.Any:
+      return j2_Undefined(name=key, hint=self._undefined_hint)
+
+  # Override boolean evaluation
+  def __bool__(self) -> bool:
+      return False
+
+  # Override is defined
+  @property
+  def defined(self) -> bool:
+      return False
+
+UTILS_FILTERS: dict = {
+  'ipaddr': j2_ipaddr,
+  'ipv4': j2_ipv4,
+  'ipv6': j2_ipv6,
+  'hwaddr': j2_hwaddr
+}
+
+"""
+Simplified 'flatten' filter -- returns a flattened list
+"""
+def bi_flatten(mylist: typing.Any, levels: typing.Optional[int] = None) -> list:
+  if not isinstance(mylist,list):
+    return [ mylist ]
+
+  result = []
+  for value in mylist:
+    if isinstance(value,list):
+      if (levels is None or levels >= 1):
+        result.extend(bi_flatten(value,None if levels is None else levels - 1))
+      else:
+        result.extend(value)
+    else:
+      result.append(value)
+
+  return result      
+
+BUILTIN_FILTERS: dict = {
+  'flatten': bi_flatten
+}
