@@ -6,63 +6,15 @@ import typing
 
 from box import Box
 
-from ..augment import devices, nodes, plugin
+from ..augment import nodes, plugin
 from ..data import append_to_list, global_vars
 from ..utils import files as _files
 from ..utils import log, strings, templates
 from ..utils import routing as _rp_utils
 from . import _TopologyOutput, check_writeable
+from .common import adjust_inventory_host
 
 forwarded_port_name = { 'ssh': 'ansible_port', }
-
-def copy_provider_inventory(host: Box, p_data: Box) -> None:
-  if 'inventory' in p_data:
-    for k,v in p_data.inventory.items():
-      host[k] = v
-
-  if 'inventory_port_map' in p_data and 'forwarded' in p_data:
-    for k,v in p_data.inventory_port_map.items():
-      if k in p_data.forwarded:
-        host[v] = p_data.forwarded[k] + host.id
-
-def copy_device_provider_group_vars(host: Box, node: Box, topology: Box) -> None:
-  p_data = devices.get_provider_data(node,topology.defaults)
-  if not 'group_vars' in p_data:
-    return
-
-  for k,v in p_data.group_vars.items():
-    if not k in host:
-      host[k] = v
-
-def provider_inventory_settings(host: Box, node: Box, topology: Box) -> None:
-  defaults = topology.defaults
-  node_provider = devices.get_provider(node,topology)
-  p_data = defaults.providers[node_provider]
-  if p_data:
-    copy_provider_inventory(host,p_data)
-
-  if 'provider' in node:                                              # Is the node using a secondary provider?
-    copy_device_provider_group_vars(host,node,topology)
-
-topo_to_host = { 'mgmt.ipv4': 'ansible_host', 'hostname': 'ansible_host', 'id': 'id' }
-topo_to_host_skip = [ 'name','device' ]
-
-def ansible_inventory_host(node: Box, topology: Box) -> Box:
-  host = Box({})
-  for (node_key,inv_key) in topo_to_host.items():
-    if "." in node_key:
-      value = node[node_key]
-    else:
-      value = node.get(node_key,None)
-    if value:
-      host[inv_key] = value
-
-  for (k,v) in node.items():
-    if not k in topo_to_host_skip:
-      host[k] = v
-
-  provider_inventory_settings(host,node,topology)
-  return host
 
 """
 Create a 'hosts' dictionary listing usable IPv4 and IPv6 addresses of all lab devices.
@@ -157,7 +109,7 @@ def create(topology: Box) -> Box:
 
   for name,node in topology.nodes.items():
     group = node.get('device','all')
-    inventory[group].hosts[name] = ansible_inventory_host(node,topology)
+    inventory[group].hosts[name] = adjust_inventory_host(node,defaults=topology.defaults,group_vars=False)
 
     for xg in extra_groups.keys():
       if node.get(xg,False):                # Add device to the extra group if it has the corresponding attribute set
