@@ -102,3 +102,24 @@ class STP(_Module):
             f"node {node.name} (device {node.device}) does not support per-VLAN STP (pvrst) used on VLAN '{vname}'",
             log.IncorrectValue,
             'stp')
+
+    # Normalize STP data model: mark interfaces that need STP configuration
+    # This makes templates easier to consume by avoiding complex Jinja2 filters like:
+    #   ifdata.vlan.trunk|default({})|dict2items|map(attribute='value')|selectattr('stp','defined')
+    #
+    # An interface needs STP config if it has:
+    #   - Direct STP settings (ifdata.stp), OR
+    #   - STP configuration in any trunk VLAN (ifdata.vlan.trunk[vname].stp)
+    #
+    # Templates can now simply check: ifdata._has_stp_config|default(False)
+    # This applies to all devices, not just NVUE/OS10, making the data model consistent
+    for intf in node.get('interfaces',[]):
+      # Check for direct STP configuration
+      if 'stp' in intf:
+        intf._has_stp_config = True
+        continue
+
+      # Check for STP configuration in trunk VLANs
+      trunk = intf.get('vlan.trunk',{})
+      if trunk and any('stp' in vdata for vdata in trunk.values()):
+        intf._has_stp_config = True
