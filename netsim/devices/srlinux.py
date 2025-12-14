@@ -86,12 +86,32 @@ def check_nssa_default_cost(node: Box) -> None:
           category=Warning,
           quirk='ospf_nssa_default_cost')
 
+"""
+Normalize interface descriptions for SR Linux:
+- Replace '->' with '~'
+- Remove square brackets '[' and ']'
+"""
+def normalize_interface_descriptions(node: Box) -> None:
+  # Normalize loopback interface description
+  if node.get('loopback',{}).get('name'):
+    desc = node.loopback.name
+    desc = desc.replace('->','~').replace('[','').replace(']','')
+    node.loopback.name = desc
+
+  # Normalize regular interface descriptions
+  for intf in node.get('interfaces',[]):
+    if intf.get('name'):
+      desc = intf.name
+      desc = desc.replace('->','~').replace('[','').replace(']','')
+      intf.name = desc
+
 class SRLINUX(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
     dt = node.clab.type
     set_api_version(node)
+    normalize_interface_descriptions(node)
     if dt in ['ixr6','ixr10','ixr6e','ixr10e'] and not node.clab.get('license',None):
       report_quirk(
         text=f'You need a valid SR Linux license to run {dt} container on node {node.name}',
