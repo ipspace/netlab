@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -8,15 +12,23 @@ ok: [dut]
 ok: [x1]
 ok: [x2]
 
+TASK [Generic readiness tests] *************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
 TASK [Find device readiness script] ********************************************
 ok: [dut]
 ok: [x1]
 ok: [x2]
 
 TASK [Wait for device to become ready] *****************************************
-skipping: [dut]
 skipping: [x1]
 skipping: [x2]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/cumulus_nvue.yml for dut
+
+TASK [Wait for nvued to start] *************************************************
+ok: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
@@ -83,6 +95,8 @@ ok: [dut] =>
     - set:
         system:
           hostname: dut
+          global:
+            system-mac: ca:fe:00:01:00:00
           config:
             snippet:
               system-mtu:
@@ -214,6 +228,9 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -232,6 +249,7 @@ ok: [x1] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [x2] => 
   msg: |-
@@ -316,6 +334,9 @@ ok: [x2] =>
     cat >/tmp/config <<CONFIG
     hostname x2
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -334,6 +355,7 @@ ok: [x2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
@@ -345,12 +367,6 @@ ok: [dut]
 
 TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
 changed: [dut]
-
-TASK [Wait for nvued to start] *************************************************
-ok: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
 
 TASK [execute on cumulus: 'nv config patch' for initial config] ****************
 changed: [dut]
@@ -369,8 +385,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -425,7 +441,6 @@ ok: [x1] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -438,9 +453,9 @@ ok: [x1] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.2/32
-    !
-    !
     !
       neighbor 10.1.0.1 activate
       no neighbor 10.1.0.1 send-community all
@@ -460,7 +475,6 @@ ok: [x2] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -473,9 +487,9 @@ ok: [x2] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 172.42.42.0/24
-    !
-    !
     !
       neighbor 10.1.0.5 activate
       no neighbor 10.1.0.5 send-community all
@@ -506,7 +520,6 @@ ok: [dut] =>
                 address-family:
                   ipv4-unicast:
                     enable: on
-  
                     network:
                       10.0.0.1/32: {}
                 neighbor:
@@ -542,12 +555,6 @@ ok: [dut]
 TASK [copy the cumulus nvue YAML bgp config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/cumulus_nvue.j2)] ***
 changed: [dut]
 
-TASK [Wait for nvued to start] *************************************************
-skipping: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
 TASK [execute on cumulus: 'nv config patch' for bgp config] ********************
 changed: [dut]
 
@@ -567,17 +574,16 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=30   changed=6    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-x1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-x2                         : ok=26   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-
+dut                        : ok=29   changed=6    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+x1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+x2                         : ok=26   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
 
 
 Use this topology to test the baseline IPv4 EBGP implementation and

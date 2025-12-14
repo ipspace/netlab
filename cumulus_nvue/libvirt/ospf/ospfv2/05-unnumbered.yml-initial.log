@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -7,13 +11,20 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 ok: [x1]
 
+TASK [Generic readiness tests] *************************************************
+skipping: [dut]
+skipping: [x1]
+
 TASK [Find device readiness script] ********************************************
 ok: [dut]
 ok: [x1]
 
 TASK [Wait for device to become ready] *****************************************
-skipping: [dut]
 skipping: [x1]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/cumulus_nvue.yml for dut
+
+TASK [Wait for nvued to start] *************************************************
+ok: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1
@@ -70,6 +81,8 @@ ok: [dut] =>
     - set:
         system:
           hostname: dut
+          global:
+            system-mac: ca:fe:00:01:00:00
           config:
             snippet:
               system-mtu:
@@ -189,6 +202,9 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -207,6 +223,7 @@ ok: [x1] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
@@ -218,12 +235,6 @@ ok: [dut]
 
 TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
 changed: [dut]
-
-TASK [Wait for nvued to start] *************************************************
-ok: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
 
 TASK [execute on cumulus: 'nv config patch' for initial config] ****************
 changed: [dut]
@@ -296,7 +307,6 @@ ok: [dut] =>
                 enable: on
                 area:
                   0.0.0.0: {}
-  
                 router-id: 10.0.0.1
   
         interface:
@@ -349,12 +359,6 @@ ok: [dut]
 TASK [copy the cumulus nvue YAML ospf config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/cumulus_nvue.j2)] ***
 changed: [dut]
 
-TASK [Wait for nvued to start] *************************************************
-skipping: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
 TASK [execute on cumulus: 'nv config patch' for ospf config] *******************
 changed: [dut]
 
@@ -377,9 +381,8 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=30   changed=6    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-x1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-
+dut                        : ok=29   changed=6    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+x1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
 
 
 This lab tests OSPF running over unnumbered IPv4 interfaces.

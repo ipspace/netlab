@@ -1,3 +1,18 @@
+ [INFO] Executing initial configuration for node h1 (namespace clab-
+          ml_17-h1)
+ [INFO] Executing routing configuration for node h1 (namespace clab-
+          ml_17-h1)
+ [INFO] Executing initial configuration for node h2 (namespace clab-
+          ml_17-h2)
+ [INFO] Executing routing configuration for node h2 (namespace clab-
+          ml_17-h2)
+
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -10,6 +25,13 @@ ok: [l2]
 ok: [h1]
 ok: [h2]
 
+TASK [Generic readiness tests] *************************************************
+skipping: [spine]
+skipping: [l1]
+skipping: [l2]
+skipping: [h1]
+skipping: [h2]
+
 TASK [Find device readiness script] ********************************************
 ok: [spine]
 ok: [l1]
@@ -18,11 +40,14 @@ ok: [h1]
 ok: [h2]
 
 TASK [Wait for device to become ready] *****************************************
-skipping: [spine]
-skipping: [l1]
 skipping: [l2]
 skipping: [h1]
 skipping: [h2]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/cumulus_nvue.yml for l1, spine
+
+TASK [Wait for nvued to start] *************************************************
+ok: [spine]
+ok: [l1]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2
@@ -52,8 +77,8 @@ TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [spine]
@@ -81,10 +106,10 @@ ok: [h2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [spine]
+skipping: [h1]
 ok: [l1]
+skipping: [h2]
 ok: [l2]
-ok: [h2]
-ok: [h1]
 
 TASK [fail] ********************************************************************
 skipping: [spine]
@@ -94,48 +119,15 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
+skipping: [h1]
 ok: [spine]
+skipping: [h2]
 ok: [l1]
 ok: [l2]
-ok: [h2]
-ok: [h1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.4/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
+skipping: [h1]
+skipping: [h2]
 ok: [spine] => 
   msg: |-
     initial configuration for spine
@@ -144,6 +136,8 @@ ok: [spine] =>
     - set:
         system:
           hostname: spine
+          global:
+            system-mac: ca:fe:00:01:00:00
           config:
             snippet:
               system-mtu:
@@ -202,6 +196,8 @@ ok: [l1] =>
     - set:
         system:
           hostname: l1
+          global:
+            system-mac: ca:fe:00:02:00:00
           config:
             snippet:
               system-mtu:
@@ -259,41 +255,6 @@ ok: [l1] =>
                 10.0.0.2/32: {}
               ipv6:
                 enable: off
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.5/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
 ok: [l2] => 
   msg: |-
     initial configuration for l2
@@ -381,6 +342,9 @@ ok: [l2] =>
     cat >/tmp/config <<CONFIG
     hostname l2
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -409,32 +373,26 @@ ok: [l2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
+skipping: [h1]
+skipping: [h2]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for spine, l1
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for l2
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 
 TASK [set_fact] ****************************************************************
 ok: [spine]
 ok: [l1]
 
 TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
-changed: [spine]
 changed: [l1]
-
-TASK [Wait for nvued to start] *************************************************
-ok: [spine]
-ok: [l1]
-
-TASK [set_fact] ****************************************************************
-ok: [spine]
-ok: [l1]
+changed: [spine]
 
 TASK [execute on cumulus: 'nv config patch' for initial config] ****************
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [execute on cumulus: 'nv config apply -y' for initial config] *************
 changed: [l1]
@@ -461,82 +419,54 @@ changed: [l2]
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [l2]
 
-TASK [Define script filename and determine whether to execute in netns] ********
-ok: [h1]
-ok: [h2]
-
-TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-
-TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-
-TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
-skipping: [h1]
-skipping: [h2]
-
-TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-skipping: [h1]
-skipping: [h2]
-
-TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-
-TASK [Remove temporary file /tmp/h1_initial-upy9wb3q.sh] ***********************
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [h1]
-ok: [h2]
+ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [spine]
+ok: [h1]
+ok: [h2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=vlan)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=routing)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=bgp)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=vxlan)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=evpn)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2 => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2 => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2 => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2 => (item=vxlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2 => (item=evpn)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
-ok: [h1]
-ok: [h2]
+ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [spine]
+ok: [h1]
+ok: [h2]
 
 TASK [Find configuration template for vlan] ************************************
-skipping: [h1]
-skipping: [h2]
-ok: [l1]
 skipping: [spine]
+skipping: [h1]
+ok: [l1]
+skipping: [h2]
 ok: [l2]
 
 TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
-
-TASK [Find configuration deployment deploy_script for vlan] ********************
 skipping: [h1]
 skipping: [h2]
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
 skipping: [spine]
+skipping: [h1]
+skipping: [h2]
 ok: [l1]
 ok: [l2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-skipping: [spine]
 ok: [l1] => 
   msg: |-
     vlan configuration for l1
@@ -567,7 +497,7 @@ ok: [l2] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       ip link add vlan1000 type bridge
-      ip link set dev vlan1000 address 52:dc:ca:fd:03:00
+      ip link set dev vlan1000 address ca:f4:00:03:00:00
   
       ip addr flush dev vlan1000
     fi
@@ -577,9 +507,9 @@ ok: [l2] =>
     ip link set dev vlan1000 up
 
 TASK [Deploy vlan configuration] ***********************************************
+skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-skipping: [spine]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for l1
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
@@ -588,12 +518,6 @@ ok: [l1]
 
 TASK [copy the cumulus nvue YAML vlan config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/cumulus_nvue.j2)] ***
 changed: [l1]
-
-TASK [Wait for nvued to start] *************************************************
-skipping: [l1]
-
-TASK [set_fact] ****************************************************************
-ok: [l1]
 
 TASK [execute on cumulus: 'nv config patch' for vlan config] *******************
 changed: [l1]
@@ -614,180 +538,78 @@ TASK [run vtysh to import vlan config from /home/pipi/netlab_gh/netsim/ansible/t
 skipping: [l2]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
-ok: [h1]
-ok: [h2]
+ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [spine]
+ok: [h1]
+ok: [h2]
 
 TASK [Find configuration template for routing] *********************************
-skipping: [l1]
-ok: [h1]
-ok: [h2]
-skipping: [l2]
 skipping: [spine]
-
-TASK [fail] ********************************************************************
+skipping: [l1]
+skipping: [l2]
 skipping: [h1]
 skipping: [h2]
+
+TASK [fail] ********************************************************************
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
+skipping: [h1]
+skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-ok: [h1]
-ok: [h2]
-skipping: [spine]
+skipping: [h1]
+skipping: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-ok: [h1] => 
-  msg: |-
-    routing configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
-skipping: [spine]
-ok: [h2] => 
-  msg: |-
-    routing configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
+skipping: [h1]
+skipping: [h2]
 
 TASK [Deploy routing configuration] ********************************************
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
-
-TASK [Define script filename and determine whether to execute in netns] ********
-ok: [h1]
-ok: [h2]
-
-TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-
-TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-
-TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
 skipping: [h2]
-
-TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
-skipping: [h1]
-skipping: [h2]
-
-TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-
-TASK [Remove temporary file /tmp/h1_routing-xvl_br0q.sh] ***********************
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [spine]
+ok: [l1]
+ok: [l2]
 ok: [h1]
 ok: [h2]
-ok: [l1]
-ok: [l2]
-ok: [spine]
 
 TASK [Find configuration template for bgp] *************************************
-skipping: [h1]
-skipping: [h2]
-ok: [l1]
-ok: [l2]
 ok: [spine]
+skipping: [h1]
+ok: [l1]
+skipping: [h2]
+ok: [l2]
 
 TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
+skipping: [h1]
+skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 skipping: [h1]
+ok: [spine]
 skipping: [h2]
 ok: [l1]
 ok: [l2]
-ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
-ok: [l1] => 
-  msg: |-
-    bgp configuration for l1
-    =========================================
-    - set:
-        router:
-          bgp:
-            enable: on
-            autonomous-system: 65200
-            router-id: 10.0.0.2
-    - set:
-        vrf:
-          default:
-            router:
-              bgp:
-                enable: on
-                autonomous-system: 65200
-                router-id: 10.0.0.2
-                address-family:
-                  ipv4-unicast:
-                    enable: on
-  
-                    network:
-                      10.0.0.2/32: {}
-                neighbor:
-                  10.1.0.2:
-                    description: "spine"
-                    remote-as: 65100
-                    address-family:
-                      ipv4-unicast:
-                        enable: on
-                        community-advertise:
-                          regular: on
-                          extended: on
-                          large: off
-  
-                  10.0.0.1:
-                    description: "spine"
-                    update-source: lo
-                    remote-as: 65100
-                    address-family:
-                      ipv4-unicast:
-                        enable: off
-                        community-advertise:
-                          regular: on
-                          extended: on
-                          large: off
 ok: [l2] => 
   msg: |-
     bgp configuration for l2
@@ -798,7 +620,6 @@ ok: [l2] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -815,9 +636,9 @@ ok: [l2] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.3/32
-    !
-    !
     !
       neighbor 10.1.0.6 activate
       no neighbor 10.1.0.6 send-community all
@@ -855,7 +676,6 @@ ok: [spine] =>
                 address-family:
                   ipv4-unicast:
                     enable: on
-  
                     network:
                       10.0.0.1/32: {}
                 neighbor:
@@ -904,28 +724,66 @@ ok: [spine] =>
                           regular: on
                           extended: on
                           large: off
+ok: [l1] => 
+  msg: |-
+    bgp configuration for l1
+    =========================================
+    - set:
+        router:
+          bgp:
+            enable: on
+            autonomous-system: 65200
+            router-id: 10.0.0.2
+    - set:
+        vrf:
+          default:
+            router:
+              bgp:
+                enable: on
+                autonomous-system: 65200
+                router-id: 10.0.0.2
+                address-family:
+                  ipv4-unicast:
+                    enable: on
+                    network:
+                      10.0.0.2/32: {}
+                neighbor:
+                  10.1.0.2:
+                    description: "spine"
+                    remote-as: 65100
+                    address-family:
+                      ipv4-unicast:
+                        enable: on
+                        community-advertise:
+                          regular: on
+                          extended: on
+                          large: off
+  
+                  10.0.0.1:
+                    description: "spine"
+                    update-source: lo
+                    remote-as: 65100
+                    address-family:
+                      ipv4-unicast:
+                        enable: off
+                        community-advertise:
+                          regular: on
+                          extended: on
+                          large: off
 
 TASK [Deploy bgp configuration] ************************************************
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for spine, l1
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [set_fact] ****************************************************************
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [copy the cumulus nvue YAML bgp config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/cumulus_nvue.j2)] ***
 changed: [spine]
 changed: [l1]
-
-TASK [Wait for nvued to start] *************************************************
-skipping: [l1]
-skipping: [spine]
-
-TASK [set_fact] ****************************************************************
-ok: [l1]
-ok: [spine]
 
 TASK [execute on cumulus: 'nv config patch' for bgp config] ********************
 changed: [l1]
@@ -948,37 +806,37 @@ TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/te
 changed: [l2]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
-ok: [h1]
-ok: [h2]
+ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [spine]
+ok: [h1]
+ok: [h2]
 
 TASK [Find configuration template for vxlan] ***********************************
-skipping: [h1]
-skipping: [h2]
-ok: [l1]
 skipping: [spine]
+skipping: [h1]
+ok: [l1]
+skipping: [h2]
 ok: [l2]
 
 TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
-
-TASK [Find configuration deployment deploy_script for vxlan] *******************
 skipping: [h1]
 skipping: [h2]
+
+TASK [Find configuration deployment deploy_script for vxlan] *******************
 skipping: [spine]
+skipping: [h1]
+skipping: [h2]
 ok: [l1]
 ok: [l2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-skipping: [spine]
 ok: [l1] => 
   msg: |-
     vxlan configuration for l1
@@ -1036,9 +894,9 @@ ok: [l2] =>
     exit $?
 
 TASK [Deploy vxlan configuration] **********************************************
+skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-skipping: [spine]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for l1
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
@@ -1047,12 +905,6 @@ ok: [l1]
 
 TASK [copy the cumulus nvue YAML vxlan config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/vxlan/cumulus_nvue.j2)] ***
 changed: [l1]
-
-TASK [Wait for nvued to start] *************************************************
-skipping: [l1]
-
-TASK [set_fact] ****************************************************************
-ok: [l1]
 
 TASK [execute on cumulus: 'nv config patch' for vxlan config] ******************
 changed: [l1]
@@ -1073,31 +925,31 @@ TASK [run vtysh to import vxlan config from /home/pipi/netlab_gh/netsim/ansible/
 skipping: [l2]
 
 TASK [Figure out whether to deploy the module evpn on current device] **********
+ok: [spine]
+ok: [l1]
+ok: [l2]
 ok: [h1]
 ok: [h2]
-ok: [l1]
-ok: [l2]
-ok: [spine]
 
 TASK [Find configuration template for evpn] ************************************
-skipping: [h1]
-skipping: [h2]
-ok: [l1]
-ok: [l2]
 ok: [spine]
+skipping: [h1]
+ok: [l1]
+skipping: [h2]
+ok: [l2]
 
 TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
+skipping: [h1]
+skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for evpn] ********************
+ok: [spine]
 skipping: [h1]
 skipping: [h2]
 ok: [l1]
-ok: [spine]
 ok: [l2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -1138,6 +990,55 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/evpn_config
     vtysh -c 'clear bgp *'
+ok: [spine] => 
+  msg: |-
+    evpn configuration for spine
+    =========================================
+    ---
+    - set:
+        vrf:
+          default:
+            router:
+              bgp:
+                address-family:
+                  l2vpn-evpn:
+                    enable: on
+                  ipv4-unicast:
+                    route-export:
+                      to-evpn:
+                        enable: on
+                neighbor:
+                  10.0.0.2:
+                    address-family:
+                      l2vpn-evpn:
+                        enable: on
+                        soft-reconfiguration: on
+                  10.0.0.3:
+                    address-family:
+                      l2vpn-evpn:
+                        enable: on
+                        soft-reconfiguration: on
+  
+    - set:
+        system:
+          config:
+            snippet:
+              frr.conf: |
+                router bgp 65100
+                  address-family l2vpn evpn
+                    advertise ipv4 unicast
+  
+    - set:
+        evpn:
+          enable: on
+          # dad                    Duplicate Address Detection (DAD) configuration parameters
+          # mac-vrf-soo            EVPN MAC VRF Site-of-Origin VPN extended community in ASN:NN or IP-ADDRESS:NN format.
+          # multihoming            Multihoming global configuration parameters
+          # route-advertise        Route advertising
+          route-advertise:
+            nexthop-setting: system-ip-mac
+            svi-ip: on
+          # vni                    VNI
 ok: [l1] => 
   msg: |-
     evpn configuration for l1
@@ -1200,81 +1101,24 @@ ok: [l1] =>
               enable: on
               head-end-replication:
                 evpn: {}
-ok: [spine] => 
-  msg: |-
-    evpn configuration for spine
-    =========================================
-    ---
-    - set:
-        vrf:
-          default:
-            router:
-              bgp:
-                address-family:
-                  l2vpn-evpn:
-                    enable: on
-                  ipv4-unicast:
-                    route-export:
-                      to-evpn:
-                        enable: on
-                neighbor:
-                  10.0.0.2:
-                    address-family:
-                      l2vpn-evpn:
-                        enable: on
-                        soft-reconfiguration: on
-                  10.0.0.3:
-                    address-family:
-                      l2vpn-evpn:
-                        enable: on
-                        soft-reconfiguration: on
-  
-    - set:
-        system:
-          config:
-            snippet:
-              frr.conf: |
-                router bgp 65100
-                  address-family l2vpn evpn
-                    advertise ipv4 unicast
-  
-    - set:
-        evpn:
-          enable: on
-          # dad                    Duplicate Address Detection (DAD) configuration parameters
-          # mac-vrf-soo            EVPN MAC VRF Site-of-Origin VPN extended community in ASN:NN or IP-ADDRESS:NN format.
-          # multihoming            Multihoming global configuration parameters
-          # route-advertise        Route advertising
-          route-advertise:
-            nexthop-setting: system-ip-mac
-            svi-ip: on
-          # vni                    VNI
 
 TASK [Deploy evpn configuration] ***********************************************
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for spine, l1
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [set_fact] ****************************************************************
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [copy the cumulus nvue YAML evpn config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/evpn/cumulus_nvue.j2)] ***
 changed: [spine]
 changed: [l1]
 
-TASK [Wait for nvued to start] *************************************************
-skipping: [l1]
-skipping: [spine]
-
-TASK [set_fact] ****************************************************************
-ok: [l1]
-ok: [spine]
-
 TASK [execute on cumulus: 'nv config patch' for evpn config] *******************
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [execute on cumulus: 'nv config apply -y' for evpn config] ****************
 changed: [l1]
@@ -1295,65 +1139,57 @@ skipping: [l2]
 PLAY [Deploy custom deployment templates] **************************************
 
 TASK [Run custom configuration deployment scripts] *****************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for l1, l2, spine => (item=ebgp.multihop)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for spine, l1, l2 => (item=ebgp.multihop)
 
 TASK [Find configuration template] *********************************************
+ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [spine]
 
 TASK [fail] ********************************************************************
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
 
 TASK [Check is the configuration template is a file] ***************************
 ok: [l1 -> localhost]
-ok: [l2 -> localhost]
 ok: [spine -> localhost]
+ok: [l2 -> localhost]
 
 TASK [fail] ********************************************************************
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
 
-TASK [Process template /home/pipi/netlab_gh/netsim/extra/ebgp.multihop/cumulus_nvue.j2 for l1] ***
+TASK [Process template /home/pipi/netlab_gh/netsim/extra/ebgp.multihop/cumulus_nvue.j2 for spine] ***
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
 
 TASK [Find custom configuration deployment script] *****************************
+ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [spine]
 
 TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for spine, l1
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [set_fact] ****************************************************************
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [copy the cumulus nvue YAML ebgp.multihop config file to switch (generated from /home/pipi/netlab_gh/netsim/extra/ebgp.multihop/cumulus_nvue.j2)] ***
 changed: [spine]
 changed: [l1]
 
-TASK [Wait for nvued to start] *************************************************
-skipping: [l1]
-skipping: [spine]
-
-TASK [set_fact] ****************************************************************
-ok: [l1]
-ok: [spine]
-
 TASK [execute on cumulus: 'nv config patch' for ebgp.multihop config] **********
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
 TASK [execute on cumulus: 'nv config apply -y' for ebgp.multihop config] *******
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -1368,13 +1204,16 @@ TASK [run vtysh to import ebgp.multihop config from /home/pipi/netlab_gh/netsim/
 changed: [l2]
 
 PLAY RECAP *********************************************************************
-h1                         : ok=37   changed=8    unreachable=0    failed=0    skipped=30   rescued=0    ignored=0   
-h2                         : ok=37   changed=8    unreachable=0    failed=0    skipped=30   rescued=0    ignored=0   
-l1                         : ok=75   changed=18   unreachable=0    failed=0    skipped=22   rescued=0    ignored=0   
-l2                         : ok=64   changed=13   unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
-spine                      : ok=57   changed=12   unreachable=0    failed=0    skipped=28   rescued=0    ignored=0   
+h1                         : ok=19   changed=0    unreachable=0    failed=0    skipped=35   rescued=0    ignored=0   
+h2                         : ok=19   changed=0    unreachable=0    failed=0    skipped=35   rescued=0    ignored=0   
+l1                         : ok=70   changed=18   unreachable=0    failed=0    skipped=17   rescued=0    ignored=0   
+l2                         : ok=64   changed=13   unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
+spine                      : ok=54   changed=12   unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
 
-
+Results of configuration script deployments
+================================================================================
+h1                           OK=2    
+h2                           OK=2    
 
 The devices under test are EVPN switches (leaf and spine) using
 EVPN-over-multihop-EBGP. The leaf switch should generate and accept EVPN AF

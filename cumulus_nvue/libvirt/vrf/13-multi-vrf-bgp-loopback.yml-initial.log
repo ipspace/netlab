@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -10,6 +14,13 @@ ok: [r2]
 ok: [r3]
 ok: [r4]
 
+TASK [Generic readiness tests] *************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
+
 TASK [Find device readiness script] ********************************************
 ok: [dut]
 ok: [r1]
@@ -18,11 +29,14 @@ ok: [r3]
 ok: [r4]
 
 TASK [Wait for device to become ready] *****************************************
-skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 skipping: [r4]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/cumulus_nvue.yml for dut
+
+TASK [Wait for nvued to start] *************************************************
+ok: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4
@@ -52,8 +66,8 @@ TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -97,8 +111,8 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [r3]
 ok: [r4]
+ok: [r3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -109,6 +123,8 @@ ok: [dut] =>
     - set:
         system:
           hostname: dut
+          global:
+            system-mac: ca:fe:00:01:00:00
           config:
             snippet:
               system-mtu:
@@ -264,6 +280,9 @@ ok: [r1] =>
     cat >/tmp/config <<CONFIG
     hostname r1
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -282,6 +301,7 @@ ok: [r1] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [r2] => 
   msg: |-
@@ -366,6 +386,9 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -384,6 +407,7 @@ ok: [r2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [r3] => 
   msg: |-
@@ -468,6 +492,9 @@ ok: [r3] =>
     cat >/tmp/config <<CONFIG
     hostname r3
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -486,6 +513,7 @@ ok: [r3] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [r4] => 
   msg: |-
@@ -570,6 +598,9 @@ ok: [r4] =>
     cat >/tmp/config <<CONFIG
     hostname r4
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -588,6 +619,7 @@ ok: [r4] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
@@ -600,12 +632,6 @@ ok: [dut]
 TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
 changed: [dut]
 
-TASK [Wait for nvued to start] *************************************************
-ok: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
 TASK [execute on cumulus: 'nv config patch' for initial config] ****************
 changed: [dut]
 
@@ -616,8 +642,8 @@ TASK [Attempt to load VRF kernel module] ***************************************
 changed: [r1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
-skipping: [r2]
 skipping: [r1]
+skipping: [r2]
 skipping: [r3]
 skipping: [r4]
 
@@ -625,8 +651,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4
 
 TASK [template] ****************************************************************
-changed: [r3]
 changed: [r2]
+changed: [r3]
 changed: [r1]
 changed: [r4]
 
@@ -638,8 +664,8 @@ ok: [r4]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r1]
-changed: [r2]
 changed: [r3]
+changed: [r2]
 changed: [r4]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
@@ -653,8 +679,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 ok: [r1]
-ok: [r3]
 ok: [r2]
+ok: [r3]
 ok: [r4]
 
 TASK [Deploy individual configuration modules] *********************************
@@ -700,7 +726,6 @@ ok: [r1] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -713,9 +738,9 @@ ok: [r1] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.2/32
-    !
-    !
     !
       neighbor 10.1.0.1 activate
       no neighbor 10.1.0.1 send-community all
@@ -735,7 +760,6 @@ ok: [r2] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -748,9 +772,9 @@ ok: [r2] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.3/32
-    !
-    !
     !
       neighbor 10.1.0.5 activate
       no neighbor 10.1.0.5 send-community all
@@ -781,7 +805,6 @@ ok: [dut] =>
                 address-family:
                   ipv4-unicast:
                     enable: on
-  
                     network:
                       10.0.0.1/32: {}
 ok: [r4] => 
@@ -794,7 +817,6 @@ ok: [r4] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -807,9 +829,9 @@ ok: [r4] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.5/32
-    !
-    !
     !
       neighbor 10.1.0.13 activate
       no neighbor 10.1.0.13 send-community all
@@ -829,7 +851,6 @@ ok: [r3] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -842,9 +863,9 @@ ok: [r3] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.4/32
-    !
-    !
     !
       neighbor 10.1.0.9 activate
       no neighbor 10.1.0.9 send-community all
@@ -865,12 +886,6 @@ ok: [dut]
 TASK [copy the cumulus nvue YAML bgp config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/cumulus_nvue.j2)] ***
 changed: [dut]
 
-TASK [Wait for nvued to start] *************************************************
-skipping: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
 TASK [execute on cumulus: 'nv config patch' for bgp config] ********************
 changed: [dut]
 
@@ -879,9 +894,9 @@ changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [r1]
+changed: [r2]
 changed: [r3]
 changed: [r4]
-changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -896,8 +911,8 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r2]
 changed: [r1]
+changed: [r2]
 changed: [r3]
 changed: [r4]
 
@@ -926,8 +941,8 @@ TASK [Find configuration deployment deploy_script for vrf] *********************
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
-skipping: [r4]
 ok: [dut]
+skipping: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
@@ -941,43 +956,11 @@ ok: [dut] =>
     ---
     - set:
         vrf:
-          blue:
-            table: auto
           red:
             table: auto
-  
-  
-    - set:
-        vrf:
           blue:
-            router:
-              bgp:
-                enable: on
-                autonomous-system: 65000
-                router-id: 10.0.0.1
-                rd: 65000:2
-                address-family:
-                  ipv4-unicast:
-                    enable: on
-                    redistribute:
-                      connected:
-                        enable: on
+            table: auto
   
-                    network:
-                      10.0.0.43/32: {}
-                neighbor:
-                  10.1.0.10:
-                    description: "r3"
-                    remote-as: 65103
-                    address-family:
-                      ipv4-unicast:
-                        enable: on
-                  10.1.0.14:
-                    description: "r4"
-                    remote-as: 65104
-                    address-family:
-                      ipv4-unicast:
-                        enable: on
   
     - set:
         vrf:
@@ -1007,6 +990,38 @@ ok: [dut] =>
                   10.1.0.6:
                     description: "r2"
                     remote-as: 65102
+                    address-family:
+                      ipv4-unicast:
+                        enable: on
+  
+    - set:
+        vrf:
+          blue:
+            router:
+              bgp:
+                enable: on
+                autonomous-system: 65000
+                router-id: 10.0.0.1
+                rd: 65000:2
+                address-family:
+                  ipv4-unicast:
+                    enable: on
+                    redistribute:
+                      connected:
+                        enable: on
+  
+                    network:
+                      10.0.0.43/32: {}
+                neighbor:
+                  10.1.0.10:
+                    description: "r3"
+                    remote-as: 65103
+                    address-family:
+                      ipv4-unicast:
+                        enable: on
+                  10.1.0.14:
+                    description: "r4"
+                    remote-as: 65104
                     address-family:
                       ipv4-unicast:
                         enable: on
@@ -1067,12 +1082,6 @@ ok: [dut]
 TASK [copy the cumulus nvue YAML vrf config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/cumulus_nvue.j2)] ***
 changed: [dut]
 
-TASK [Wait for nvued to start] *************************************************
-skipping: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
 TASK [execute on cumulus: 'nv config patch' for vrf config] ********************
 changed: [dut]
 
@@ -1083,12 +1092,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=41   changed=9    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-r1                         : ok=29   changed=5    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-r2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-r3                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-r4                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-
+dut                        : ok=39   changed=9    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+r1                         : ok=29   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+r2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+r3                         : ok=28   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+r4                         : ok=28   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 The device under test has two VRFs with two interfaces in each VRF.

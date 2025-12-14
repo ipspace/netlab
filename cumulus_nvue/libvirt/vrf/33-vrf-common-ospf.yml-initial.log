@@ -1,93 +1,176 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
 ok: [r1]
 ok: [r2]
 ok: [srv]
-ok: [dut]
+
+TASK [Generic readiness tests] *************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [srv]
 
 TASK [Find device readiness script] ********************************************
+ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [dut]
 ok: [srv]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
-skipping: [dut]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/cumulus_nvue.yml for dut
+
+TASK [Wait for nvued to start] *************************************************
+ok: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2, srv, dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut]
 ok: [r1]
 ok: [r2]
 ok: [srv]
-ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
+ok: [dut]
 ok: [r1]
 ok: [r2]
 ok: [srv]
-ok: [dut]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
-skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [dut]
 ok: [r1]
 ok: [r2]
 ok: [srv]
-ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
-skipping: [dut]
 
 TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
-skipping: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2, srv, dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv
 
 TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
 ok: [r1]
 ok: [r2]
 ok: [srv]
-ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
-ok: [r2]
-ok: [r1]
-ok: [srv]
 ok: [dut]
+ok: [r1]
+ok: [r2]
+ok: [srv]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
-skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
 ok: [r1]
 ok: [r2]
 ok: [srv]
-ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+  
+    - set:
+        system:
+          hostname: dut
+          global:
+            system-mac: ca:fe:00:01:00:00
+          config:
+            snippet:
+              system-mtu:
+                file: /etc/network/ifupdown2/policy.d/mtu.json
+                content: |
+                  { "address": { "defaults": { "mtu": "1500" } } }
+  
+        interface:
+          eth0:
+            ip:
+              vrf: mgmt
+              address:
+                dhcp: {}
+            type: eth
+          swp1:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "dut -> r1"
+            ip:
+              address:
+                10.1.0.1/30: {}
+              ipv6:
+                enable: off
+  
+          swp2:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "dut -> r2"
+            ip:
+              address:
+                10.1.0.5/30: {}
+              ipv6:
+                enable: off
+  
+          swp3:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "dut -> srv"
+            ip:
+              address:
+                10.1.0.9/30: {}
+              ipv6:
+                enable: off
+  
+  
+    - set:
+        interface:
+          lo:
+            type: loopback
+            ip:
+              address:
+                10.0.0.1/32: {}
+              ipv6:
+                enable: off
 ok: [r1] => 
   msg: |-
     initial configuration for r1
@@ -171,6 +254,9 @@ ok: [r1] =>
     cat >/tmp/config <<CONFIG
     hostname r1
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -189,75 +275,8 @@ ok: [r1] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-  
-    - set:
-        system:
-          hostname: dut
-          config:
-            snippet:
-              system-mtu:
-                file: /etc/network/ifupdown2/policy.d/mtu.json
-                content: |
-                  { "address": { "defaults": { "mtu": "1500" } } }
-  
-        interface:
-          eth0:
-            ip:
-              vrf: mgmt
-              address:
-                dhcp: {}
-            type: eth
-          swp1:
-            type: swp
-            link:
-              state:
-                up : {}
-            description: "dut -> r1"
-            ip:
-              address:
-                10.1.0.1/30: {}
-              ipv6:
-                enable: off
-  
-          swp2:
-            type: swp
-            link:
-              state:
-                up : {}
-            description: "dut -> r2"
-            ip:
-              address:
-                10.1.0.5/30: {}
-              ipv6:
-                enable: off
-  
-          swp3:
-            type: swp
-            link:
-              state:
-                up : {}
-            description: "dut -> srv"
-            ip:
-              address:
-                10.1.0.9/30: {}
-              ipv6:
-                enable: off
-  
-  
-    - set:
-        interface:
-          lo:
-            type: loopback
-            ip:
-              address:
-                10.0.0.1/32: {}
-              ipv6:
-                enable: off
 ok: [r2] => 
   msg: |-
     initial configuration for r2
@@ -341,6 +360,9 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -359,6 +381,7 @@ ok: [r2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [srv] => 
   msg: |-
@@ -443,6 +466,9 @@ ok: [srv] =>
     cat >/tmp/config <<CONFIG
     hostname srv
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -461,11 +487,24 @@ ok: [srv] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, srv
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, srv
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
+changed: [dut]
+
+TASK [execute on cumulus: 'nv config patch' for initial config] ****************
+changed: [dut]
+
+TASK [execute on cumulus: 'nv config apply -y' for initial config] *************
+changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [r1 -> localhost]
@@ -489,32 +528,14 @@ ok: [r2]
 ok: [srv]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r1]
 changed: [r2]
+changed: [r1]
 changed: [srv]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
-TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
-changed: [dut]
-
-TASK [Wait for nvued to start] *************************************************
-ok: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
-TASK [execute on cumulus: 'nv config patch' for initial config] ****************
-changed: [dut]
-
-TASK [execute on cumulus: 'nv config apply -y' for initial config] *************
-changed: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -656,12 +677,6 @@ ok: [dut]
 TASK [copy the cumulus nvue YAML ospf config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/cumulus_nvue.j2)] ***
 changed: [dut]
 
-TASK [Wait for nvued to start] *************************************************
-skipping: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
 TASK [execute on cumulus: 'nv config patch' for ospf config] *******************
 changed: [dut]
 
@@ -669,8 +684,8 @@ TASK [execute on cumulus: 'nv config apply -y' for ospf config] ****************
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r1]
 changed: [r2]
+changed: [r1]
 changed: [srv]
 
 TASK [set_fact] ****************************************************************
@@ -684,9 +699,9 @@ skipping: [r2]
 skipping: [srv]
 
 TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [r2]
 changed: [srv]
 changed: [r1]
-changed: [r2]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [dut]
@@ -723,12 +738,37 @@ ok: [dut] =>
     ---
     - set:
         vrf:
+          red:
+            table: auto
           blue:
             table: auto
           common:
             table: auto
+  
+    - set:
+        vrf:
           red:
-            table: auto
+            router:
+              ospf:
+                enable: on
+                area:
+                  0.0.0.0: {}
+                redistribute:
+                  bgp:
+                    enable: on
+                  connected:
+                    enable: on
+  
+                router-id: 10.100.0.100
+  
+        interface:
+          swp1:
+            router:
+              ospf:
+                area: 0.0.0.0
+                network-type: point-to-point
+  
+  
   
     - set:
         vrf:
@@ -780,31 +820,6 @@ ok: [dut] =>
   
   
   
-    - set:
-        vrf:
-          red:
-            router:
-              ospf:
-                enable: on
-                area:
-                  0.0.0.0: {}
-                redistribute:
-                  bgp:
-                    enable: on
-                  connected:
-                    enable: on
-  
-                router-id: 10.100.0.100
-  
-        interface:
-          swp1:
-            router:
-              ospf:
-                area: 0.0.0.0
-                network-type: point-to-point
-  
-  
-  
   
     - set:
         router:
@@ -823,9 +838,27 @@ ok: [dut] =>
                 address-family:
                   ipv4-unicast:
                     enable: on
-  
                     network:
                       10.0.0.1/32: {}
+    - set:
+        vrf:
+          red:
+            router:
+              bgp:
+                enable: on
+                autonomous-system: 65000
+                router-id: 10.0.0.1
+                rd: 65000:1
+                address-family:
+                  ipv4-unicast:
+                    enable: on
+                    redistribute:
+                      connected:
+                        enable: on
+                      ospf:
+                        enable: on
+  
+  
     - set:
         vrf:
           blue:
@@ -864,31 +897,22 @@ ok: [dut] =>
                         enable: on
   
   
-    - set:
-        vrf:
-          red:
-            router:
-              bgp:
-                enable: on
-                autonomous-system: 65000
-                router-id: 10.0.0.1
-                rd: 65000:1
-                address-family:
-                  ipv4-unicast:
-                    enable: on
-                    redistribute:
-                      connected:
-                        enable: on
-                      ospf:
-                        enable: on
-  
-  
   
     - set:
         system:
           config:
             snippet:
               frr.conf: |
+                router bgp 65000 vrf red
+                  address-family ipv4 unicast
+                    label vpn export auto
+                    export vpn
+                    import vpn
+                    rd vpn export 65000:1
+                    rt vpn import 65000:1 65000:3
+                    rt vpn export 65000:1
+                    exit-address-family
+                !
                 router bgp 65000 vrf blue
                   address-family ipv4 unicast
                     label vpn export auto
@@ -907,16 +931,6 @@ ok: [dut] =>
                     rd vpn export 65000:3
                     rt vpn import 65000:1 65000:2 65000:3
                     rt vpn export 65000:3
-                    exit-address-family
-                !
-                router bgp 65000 vrf red
-                  address-family ipv4 unicast
-                    label vpn export auto
-                    export vpn
-                    import vpn
-                    rd vpn export 65000:1
-                    rt vpn import 65000:1 65000:3
-                    rt vpn export 65000:1
                     exit-address-family
                 !
   
@@ -948,12 +962,6 @@ ok: [dut]
 TASK [copy the cumulus nvue YAML vrf config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/cumulus_nvue.j2)] ***
 changed: [dut]
 
-TASK [Wait for nvued to start] *************************************************
-skipping: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
 TASK [execute on cumulus: 'nv config patch' for vrf config] ********************
 changed: [dut]
 
@@ -964,11 +972,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=41   changed=9    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-r1                         : ok=29   changed=5    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-r2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-srv                        : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-
+dut                        : ok=39   changed=9    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+r1                         : ok=29   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+r2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+srv                        : ok=28   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 The device under test has two user VRFs and a common services VRF.
