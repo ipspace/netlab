@@ -9,9 +9,15 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [x1]
-ok: [x3]
 ok: [x2]
+ok: [x3]
 ok: [dut]
+
+TASK [Generic readiness tests] *************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+skipping: [x3]
 
 TASK [Find device readiness script] ********************************************
 ok: [x1]
@@ -23,18 +29,18 @@ TASK [Wait for device to become ready] *****************************************
 skipping: [x1]
 skipping: [x2]
 skipping: [x3]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/nxos.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/nxos.yml for dut
 
 TASK [Wait for Eth1/1 to appear] ***********************************************
 ok: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [x1]
-ok: [x3]
 ok: [x2]
+ok: [x3]
 ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
@@ -50,10 +56,10 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [x3]
 ok: [x1]
 ok: [x2]
 ok: [dut]
+ok: [x3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -68,7 +74,7 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [x1]
@@ -78,8 +84,8 @@ ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
 ok: [x1]
-ok: [x2]
 ok: [x3]
+ok: [x2]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -90,14 +96,73 @@ skipping: [x3]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [x1]
-ok: [x3]
 ok: [x2]
+ok: [x3]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [x1] => 
+ok: [dut] => 
   msg: |-
-    initial configuration for x1
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    no ip domain-lookup
+    !
+    feature lldp
+    !
+    username vagrant password vagrant
+    !
+    !
+    !
+    interface mgmt0
+     no lldp transmit
+     no lldp receive
+    !
+    interface loopback0
+     no shutdown
+     ipv6 address 2001:db8:1:1::1/64
+     ipv6 nd ra-interval 5 min 3
+    !
+    interface Ethernet1/1
+     no shutdown
+     no switchport
+     mac-address caf0.0001.0001
+     description dut -> x1
+     mtu 1500
+     ipv6 address 2001:db8:3::1/64
+     ipv6 nd ra-interval 5 min 3
+    !
+    interface Ethernet1/2
+     no shutdown
+     no switchport
+     mac-address caf0.0001.0002
+     description dut -> x2
+     mtu 1500
+     ipv6 address 2001:db8:3:1::1/64
+     ipv6 nd ra-interval 5 min 3
+    !
+    interface Ethernet1/3
+     no shutdown
+     no switchport
+     mac-address caf0.0001.0003
+     description dut -> x3
+     mtu 1500
+     ipv6 address 2001:db8:3:2::1/64
+     ipv6 nd ra-interval 5 min 3
+    !
+    interface Ethernet1/4
+     no shutdown
+     no switchport
+     mac-address caf0.0001.0004
+     description dut -> stub [stub]
+     mtu 1500
+     ipv6 address 2001:db8:bad:cafe::1/64
+     ipv6 nd ra-interval 5 min 3
+    !
+ok: [x3] => 
+  msg: |-
+    initial configuration for x3
     =========================================
     #!/bin/bash
     #
@@ -177,7 +242,10 @@ ok: [x1] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname x1
+    hostname x3
+    !
+    log file /tmp/logging
+  
     !
     ipv6 forwarding
     vrf mgmt
@@ -188,19 +256,20 @@ ok: [x1] =>
     interface lo
      no shutdown
      ! no ip address
-     ipv6 address 2001:db8:1:2::1/64
+     ipv6 address 2001:db8:1:4::1/64
     !
     interface eth1
      no shutdown
-     description x1 -> dut
+     description x3 -> dut
      ! no ip address
-     ipv6 address 2001:db8:3::2/64
+     ipv6 address 2001:db8:3:2::4/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [x2] => 
   msg: |-
@@ -286,6 +355,9 @@ ok: [x2] =>
     cat >/tmp/config <<CONFIG
     hostname x2
     !
+    log file /tmp/logging
+  
+    !
     ipv6 forwarding
     vrf mgmt
      exit-vrf
@@ -308,10 +380,11 @@ ok: [x2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
-ok: [x3] => 
+ok: [x1] => 
   msg: |-
-    initial configuration for x3
+    initial configuration for x1
     =========================================
     #!/bin/bash
     #
@@ -391,7 +464,10 @@ ok: [x3] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname x3
+    hostname x1
+    !
+    log file /tmp/logging
+  
     !
     ipv6 forwarding
     vrf mgmt
@@ -402,85 +478,27 @@ ok: [x3] =>
     interface lo
      no shutdown
      ! no ip address
-     ipv6 address 2001:db8:1:4::1/64
+     ipv6 address 2001:db8:1:2::1/64
     !
     interface eth1
      no shutdown
-     description x3 -> dut
+     description x1 -> dut
      ! no ip address
-     ipv6 address 2001:db8:3:2::4/64
+     ipv6 address 2001:db8:3::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    hostname dut
-    !
-    no ip domain-lookup
-    !
-    feature lldp
-    !
-    username vagrant password vagrant
-    !
-    !
-    !
-    interface mgmt0
-     no lldp transmit
-     no lldp receive
-    !
-    interface loopback0
-     no shutdown
-     ipv6 address 2001:db8:1:1::1/64
-     ipv6 nd ra-interval 5 min 3
-    !
-    interface Ethernet1/1
-     no shutdown
-     no switchport
-     mac-address 52dc.cafe.0101
-     description dut -> x1
-     mtu 1500
-     ipv6 address 2001:db8:3::1/64
-     ipv6 nd ra-interval 5 min 3
-    !
-    interface Ethernet1/2
-     no shutdown
-     no switchport
-     mac-address 52dc.cafe.0102
-     description dut -> x2
-     mtu 1500
-     ipv6 address 2001:db8:3:1::1/64
-     ipv6 nd ra-interval 5 min 3
-    !
-    interface Ethernet1/3
-     no shutdown
-     no switchport
-     mac-address 52dc.cafe.0103
-     description dut -> x3
-     mtu 1500
-     ipv6 address 2001:db8:3:2::1/64
-     ipv6 nd ra-interval 5 min 3
-    !
-    interface Ethernet1/4
-     no shutdown
-     no switchport
-     mac-address 52dc.cafe.0104
-     description dut -> stub [stub]
-     mtu 1500
-     ipv6 address 2001:db8:bad:cafe::1/64
-     ipv6 nd ra-interval 5 min 3
-    !
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/nxos.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2, x3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/nxos.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2, x3
 
-TASK [nxos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/nxos.j2] ***
+TASK [nxos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/nxos.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
@@ -495,24 +513,24 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2, x3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2, x3
 
 TASK [template] ****************************************************************
 changed: [x3]
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 ok: [x3]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [x2]
 changed: [x1]
 changed: [x3]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 skipping: [x3]
@@ -526,7 +544,7 @@ ok: [x3]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3 => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3 => (item=ospf)
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [x1]
@@ -548,8 +566,8 @@ skipping: [x3]
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [x1]
-ok: [x2]
 ok: [x3]
+ok: [x2]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -586,33 +604,6 @@ ok: [dut] =>
      ipv6 router ospfv3 1 area 0.0.0.2
      ospfv3 passive-interface
     !
-ok: [x1] => 
-  msg: |-
-    ospf configuration for x1
-    =========================================
-    !
-    ! OSPFv3 FRR configuration
-    !
-    interface lo
-    !
-     ipv6 ospf6 area 0.0.0.0
-    !
-    interface eth1
-    ! x1 -> dut
-     ipv6 ospf6 area 0.0.0.0
-     ipv6 ospf6 network point-to-point
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.2
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-  
-  
-    exit
-  
-    !
-    do write
 ok: [x2] => 
   msg: |-
     ospf configuration for x2
@@ -632,6 +623,33 @@ ok: [x2] =>
     !
     router ospf6
      ospf6 router-id 10.0.0.3
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
+  
+    !
+    do write
+ok: [x1] => 
+  msg: |-
+    ospf configuration for x1
+    =========================================
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.0
+    !
+    interface eth1
+    ! x1 -> dut
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.2
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
@@ -669,15 +687,15 @@ ok: [x3] =>
     do write
 
 TASK [Deploy ospf configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/nxos.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2, x3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/nxos.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2, x3
 
-TASK [nxos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/nxos.j2] ***
+TASK [nxos_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/nxos.j2] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 changed: [x3]
 
 TASK [set_fact] ****************************************************************
@@ -685,25 +703,24 @@ ok: [x1]
 ok: [x2]
 ok: [x3]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 skipping: [x3]
 
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [x2]
-changed: [x1]
 changed: [x3]
+changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=23   changed=2    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-x1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-x2                         : ok=26   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-x3                         : ok=26   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-
+dut                        : ok=23   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+x1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+x2                         : ok=26   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+x3                         : ok=26   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
 
 
 This lab tests the OSPFv3 areas. The device under test has three interfaces
