@@ -55,9 +55,11 @@ def adjust_inventory_host(
       defaults: Box,
       translate: typing.Optional[dict] = None,
       ignore: typing.Optional[list] = None,
-      group_vars: typing.Optional[bool] = False) -> Box:
+      group_vars: typing.Optional[bool] = False,
+      template_vars: typing.Optional[bool] = False) -> Box:
   host = get_empty_box()
 
+  n_provider = devices.get_provider(node,defaults)
   if group_vars:                                  # Add group variables before doing netlab-to-ansible
     g_vars = add_group_vars(host,node,defaults)   # ... attribute conversion because we need 'ansible_connection'
   else:
@@ -66,13 +68,19 @@ def adjust_inventory_host(
     # different ansible_connection
     #
     g_vars = devices.get_device_attribute(node,'group_vars',defaults)
-    n_provider = devices.get_provider(node,defaults)
     if n_provider != defaults.provider:
       add_device_provider_group_vars(host,node,defaults)
 
   translate = translate or topo_to_host
   if ignore is None:
     ignore = topo_to_host_skip
+
+  if template_vars:
+    node.inventory_hostname = node.name
+    node.netlab_device_type = node.get('netlab_device_type',node.get('ansible_network_os','none'))
+    node.node_provider = n_provider
+    node.netlab_interfaces = ([ node.get('loopback')] if 'loopback' in node else []) + \
+                             node.get('interfaces',[])
 
   # For Docker nodes, do not use mgmt.X attributes (to set ansible_host)
   # Everywhere else, 'mgmt.ipv4' will overwrite 'hostname' (set by clab)

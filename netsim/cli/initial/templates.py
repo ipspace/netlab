@@ -36,7 +36,8 @@ def template_node_data(n_data: Box, topology: Box) -> dict:
   node_data = adjust_inventory_host(                        # Add group variables to node data
                             node=n_data,
                             defaults=topology.defaults,
-                            group_vars=True).to_dict()
+                            group_vars=True,
+                            template_vars=True).to_dict()
   shared_data = template_shared_data(topology)
   for k,v in shared_data.items():                           # ...copy shared data
     node_data[k] = v
