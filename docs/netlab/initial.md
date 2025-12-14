@@ -21,7 +21,7 @@ The Ansible playbook invoked by the **netlab initial** command deploys device co
 [^mtag]: Controlled by `-m` flag or **module** Ansible tag
 [^ctag]: Controlled by `-c` flag or **custom** Ansible tag
 
-Jinja2 templates are used together with **_device_\_config** Ansible modules to configure most devices. Sometimes, the configuration task list includes additional tasks[^init]. Some devices (for example, Fortinet firewall) are configured through calls to device-specific Ansible modules. See _[](../caveats.md)_ for more details.
+Jinja2 templates are used together with **_device_\_config** Ansible modules to configure most devices. Sometimes, the configuration task list includes additional tasks[^init]. Some Linux-based containers are configured with shell scripts that run before **netlab initial** starts the Ansible playbook.
 
 [^init]: For example, Juniper vMX requires an evaluation license to be applied after the device boots.
 

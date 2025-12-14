@@ -272,7 +272,7 @@ clab:
 
 To configure your device (including initial configuration), you'll need to create an Ansible task list that deploys configuration snippets to your device. *netlab* merges configuration snippets with existing device configuration (instead of building a complete configuration and replacing it).
 
-There are two ways to configure a device:
+There are four ways to configure a device:
 
 * **Configuration templates**: you'll have to create a single Ansible *configuration deployment task list* that will deploy configuration templates. The configuration deployment task list must be in the `netsim/ansible/tasks/deploy-config` and must match the `ansible_network_os` or `netlab_device_type` Ansible variable specified in the device parameters file. [More details...](config/deploy.md)
 * **Ansible modules** (or REST API): you'll have to create an Ansible task list for initial configuration and any other configuration module supported by the device. The task list has to be in the device-specific subdirectory of `netsim/ansible/tasks/` directory; the subdirectory name must match the `ansible_network_os` or `netlab_device_type` Ansible variable specified in the device parameters file. The task list name has to be `initial.yml` for initial configuration deployment or `<module>.yml` for individual configuration modules. [More details...](config/deploy.md)
@@ -281,13 +281,16 @@ There are two ways to configure a device:
 _netlab_ assumes you're using Jinja2-based device configuration templates. Add empty template files to the module-specific `netsim/ansible/templates` directory if you configure your device solely through an Ansible task list.
 ```
 
-You might want to implement configuration download to allow the lab users to save final device configurations with **collect-configs.ansible** playbook used by **[netlab collect](../netlab/collect.md)** command -- add a task list collecting the device configuration into the `netsim/ansible/tasks/fetch-config` directory.
+* **Daemon configuration files** (Linux-based containers): you'll have to create Jinja2 templates that will generate configuration files for your Linux-based daemon. Those files will be mapped into the target container and available when the container starts. [More details...](dev-config-daemon)
+* **Linux configuration scripts** (Linux-based containers): you'll have to create Jinja2 templates that will generate `sh` scripts that will configure your device. Those files will be mapped into the target container and executed during the **netlab initial** process. [More details...](dev-config-script)
+
+You might also want to implement configuration download to allow the lab users to save final device configurations with **collect-configs.ansible** playbook used by **[netlab collect](../netlab/collect.md)** command -- add a task list collecting the device configuration into the `netsim/ansible/tasks/fetch-config` directory.
 
 ## Initial Device Configuration
 
-Most lab users will want to use **netlab initial** or **netlab up** command to build and deploy initial device configurations, from IP addressing to routing protocol configuration.
+Most lab users will want to use the **netlab initial** or **netlab up** command to build and deploy initial device configurations, from IP addressing to routing protocol configuration.
 
-If decided to configure your devices with configuration templates, you have to create Jinja2 templates for initial device configuration and any configuration module you want to support.
+If you decide to configure your devices using configuration templates, you must create Jinja2 templates for initial device configuration and for any configuration modules you want to support.
 
 Jinja2 templates that will generate IP addressing and LLDP configuration have to be within the `netsim/ansible/templates/initial` directory. The name of your template must match the `netlab_device_type` or `ansible_network_os` Ansible variable specified in device parameters file.
 
