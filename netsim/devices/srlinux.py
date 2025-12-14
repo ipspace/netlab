@@ -92,18 +92,11 @@ Normalize interface descriptions for SR Linux:
 - Remove square brackets '[' and ']'
 """
 def normalize_interface_descriptions(node: Box) -> None:
-  # Normalize loopback interface description
-  if node.get('loopback',{}).get('name'):
-    desc = node.loopback.name
-    desc = desc.replace('->','~').replace('[','').replace(']','')
-    node.loopback.name = desc
 
   # Normalize regular interface descriptions
   for intf in node.get('interfaces',[]):
     if intf.get('name'):
-      desc = intf.name
-      desc = desc.replace('->','~').replace('[','').replace(']','')
-      intf.name = desc
+      intf.name = intf.name.replace('->','~').replace('[','').replace(']','')
 
 class SRLINUX(_Quirks):
 
