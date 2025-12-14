@@ -94,7 +94,7 @@ def normalize_ospf_area(area: typing.Union[int, str]) -> typing.Tuple[str, int]:
 """
 Add an OSPF area to the area_set and area_map if it's not already present.
 """
-def add_ospf_area(area: typing.Union[int, str], area_set: set[int], area_map: dict[int, str]) -> None:
+def add_ospf_area(area: typing.Union[int, str], area_set: typing.Set[int], area_map: typing.Dict[int, str]) -> None:
   area_str, area_int = normalize_ospf_area(area)
   if area_int not in area_set:
     area_set.add(area_int)
@@ -112,8 +112,8 @@ def collect_ospf_areas(node: Box) -> None:
       continue
     
     # Collect unique areas from interfaces
-    area_set: set[int] = set()
-    area_map: dict[int, str] = {}  # Map area_int -> area string
+    area_set: typing.Set[int] = set()
+    area_map: typing.Dict[int, str] = {}  # Map area_int -> area string
     
     # Collect areas from regular interfaces
     for intf in o_intf:
