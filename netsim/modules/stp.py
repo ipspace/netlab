@@ -123,10 +123,3 @@ class STP(_Module):
       trunk = intf.get('vlan.trunk',{})
       if trunk and any('stp' in vdata for vdata in trunk.values()):
         intf._has_stp_config = True
-
-  """
-  Cleanup helper attributes that shouldn't appear in final topology output
-  """
-  def node_cleanup(self, node: Box, topology: Box) -> None:
-    for intf in node.get('interfaces',[]):
-      intf.pop('_has_stp_config',None)
