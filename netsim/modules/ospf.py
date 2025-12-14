@@ -2,10 +2,14 @@
 # OSPF transformation module
 #
 
+import ipaddress
+import typing
+
 from box import Box
 
 from ..augment import devices
 from ..utils import log
+from ..utils import routing as _ospf
 from . import _Module, _routing, bfd
 
 
@@ -77,6 +81,71 @@ def propagate_node_attributes(node: Box, topology: Box) -> None:
         vdata.ospf[kw] = node.ospf[kw]
 
 """
+Normalize OSPF area to both string and integer formats.
+Returns tuple (area_str, area_int) where area_str is IPv4 address string
+and area_int is the integer representation.
+"""
+def normalize_ospf_area(area) -> typing.Tuple[str, int]:
+  if isinstance(area, int):
+    return (str(ipaddress.IPv4Address(area)), area)
+  area_str = str(area)
+  return (area_str, int(ipaddress.IPv4Address(area_str)))
+
+"""
+Add an OSPF area to the area_set and area_map if it's not already present.
+"""
+def add_ospf_area(area: typing.Union[int, str], area_set: set, area_map: dict) -> None:
+  area_str, area_int = normalize_ospf_area(area)
+  if area_int not in area_set:
+    area_set.add(area_int)
+    area_map[area_int] = area_str
+
+"""
+Collect OSPF areas from interfaces and create a simplified area list.
+This uses the same data structure as the ospf.areas plugin (area and _area_int)
+but without the extra attributes (kind, range, etc.).
+This simplifies templates for devices that use area/interface configuration structure.
+"""
+def collect_ospf_areas(node: Box) -> None:
+  for (o_data,o_intf,vrf) in _ospf.rp_data(node,'ospf'):
+    if 'areas' in o_data:  # If areas already exist (from plugin), skip
+      continue
+    
+    # Collect unique areas from interfaces
+    area_set = set()
+    area_map = {}  # Map area_int -> area string
+    
+    # Collect areas from regular interfaces
+    for intf in o_intf:
+      if 'ospf' not in intf or 'area' not in intf.ospf:
+        continue
+      add_ospf_area(intf.ospf.area, area_set, area_map)
+    
+    # Also check loopback interface if it exists and has OSPF area
+    # For global OSPF, check node.loopback; for VRF, check vrf.loopback
+    if vrf:
+      vrf_data = node.vrfs.get(vrf, {})
+      loopback = vrf_data.get('loopback', {})
+    else:
+      loopback = node.get('loopback', {})
+    
+    if loopback and 'ospf' in loopback and 'area' in loopback.ospf:
+      add_ospf_area(loopback.ospf.area, area_set, area_map)
+    
+    # Create area list with area and _area_int attributes
+    if area_set:
+      o_data.areas = []
+      for area_int in sorted(area_set):
+        o_data.areas.append(Box({
+          'area': area_map[area_int],
+          '_area_int': area_int
+        }))
+      
+      # Mark as ABR if multiple areas
+      if len(area_set) > 1:
+        o_data._abr = True
+
+"""
 Adjust interface hello/dead timers -- if only one of them is specified, the other one is
 set to be four times higher/lower.
 """
@@ -145,3 +214,6 @@ class OSPF(_Module):
     _routing.check_vrf_protocol_support(node,'ospf','ipv4','ospfv2',topology)
     _routing.check_vrf_protocol_support(node,'ospf','ipv6','ospfv3',topology)
     _routing.check_intf_support(node,'ospf',topology)
+    
+    # Collect OSPF areas from interfaces (similar to ospf.areas plugin but without extra attributes)
+    collect_ospf_areas(node)

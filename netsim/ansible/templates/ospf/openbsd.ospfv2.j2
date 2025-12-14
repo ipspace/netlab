@@ -1,5 +1,4 @@
 {% macro config(ospf_vrf,ospf_data,intf_data) %}
-{%- set areas = intf_data|selectattr('ipv4', 'defined')|map(attribute='ospf.area', default='')|reject('eq', '')|sort|unique %}
 cat <<OSPFD_CONF >/etc/ospfd.conf
 {% if ospf_data.router_id|ipv4 %}
 router-id {{ ospf_data.router_id }}
@@ -16,9 +15,10 @@ redistribute {{ proto }}
 {%   endfor %}
 {% endif %}
 
-{% for a in areas %}
+{% for area_data in ospf_data.areas|default([]) %}
+{%   set a = area_data.area %}
 area {{ a }} {
-{%   for l in intf_data if l.ospf.area is defined and l.ospf.area is eq a and 'ipv4' in l %}
+{%   for l in intf_data if l.ospf.area is defined and l.ospf.area == a and 'ipv4' in l %}
 {%     if l.ifname == "lo0" %}
     interface {{ l.ifname }}:{{ l.ipv4 | ipaddr('address') }} {
 {%     else %}
