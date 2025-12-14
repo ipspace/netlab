@@ -1,0 +1,84 @@
+---
+# Comprehensive test topology for router_id inconsistencies
+# Tests all problematic devices with various router_id scenarios
+
+name: router-id-test
+
+module: [ bgp, ospf, vrf ]
+
+defaults:
+  device: eos
+  provider: external
+
+nodes:
+  # BGP VRF test nodes
+  bgp_ros7:
+    device: routeros7
+    bgp:
+      as: 65000
+      router_id: 1.1.1.1
+  bgp_iosxr:
+    device: eos
+    bgp:
+      as: 65000
+      router_id: 2.2.2.2
+  bgp_nxos:
+    device: nxos
+    bgp:
+      as: 65000
+      router_id: 3.3.3.3
+  bgp_junos:
+    device: vjunos-router
+    bgp:
+      as: 65000
+      router_id: 4.4.4.4
+
+  # OSPF VRF test nodes
+  ospf_nxos:
+    device: nxos
+    bgp:
+      as: 65000
+    ospf:
+      router_id: 10.10.10.10
+  ospf_junos:
+    device: vjunos-router
+    bgp:
+      as: 65000
+    ospf:
+      router_id: 20.20.20.20
+  ospf_vyos:
+    device: vyos
+    bgp:
+      as: 65000
+    ospf:
+      router_id: 30.30.30.30
+
+vrfs:
+  # VRF with VRF-specific router_id
+  vrf_with_rid:
+    bgp:
+      router_id: 100.100.100.100
+    ospf:
+      router_id: 200.200.200.200
+    links: [ bgp_ros7-bgp_iosxr, ospf_nxos-ospf_junos ]
+  # VRF without VRF-specific router_id (should use global)
+  vrf_no_rid:
+    # No router_id specified
+    links: [ bgp_iosxr-bgp_nxos ]
+  # VRF with only BGP router_id
+  vrf_bgp_only:
+    bgp:
+      router_id: 101.101.101.101
+    links: [ bgp_nxos-bgp_junos ]
+  # VRF with only OSPF router_id
+  vrf_ospf_only:
+    ospf:
+      router_id: 201.201.201.201
+    links: [ ospf_junos-ospf_vyos ]
+
+links:
+- bgp_ros7-bgp_iosxr
+  - bgp_iosxr-bgp_nxos
+  - bgp_nxos-bgp_junos
+  - ospf_nxos-ospf_junos
+  - ospf_junos-ospf_vyos

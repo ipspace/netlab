@@ -1,0 +1,44 @@
+---
+# Test topology to verify OSPF VRF router_id handling inconsistencies
+# This topology tests scenarios where:
+# 1. Only global ospf.router_id is set
+# 2. Only VRF-specific router_id is set
+# 3. Both are set (VRF-specific should take precedence)
+
+name: ospf-vrf-test
+
+module: [ ospf, vrf ]
+
+defaults:
+  device: eos
+  provider: external
+
+nodes:
+  r1:
+    device: nxos
+    ospf:
+      router_id: 1.1.1.1  # Global router_id
+  r2:
+    device: vjunos-router
+    ospf:
+      router_id: 2.2.2.2
+  r3:
+    device: vyos
+    ospf:
+      router_id: 3.3.3.3
+
+vrfs:
+  vrf1:
+    ospf:
+      router_id: 10.10.10.10  # VRF-specific router_id
+    links: [ r1-r2 ]
+  vrf2:
+    # No VRF-specific router_id - should fall back to global
+    links: [ r2-r3 ]
+  vrf3:
+    ospf:
+      router_id: 30.30.30.30  # VRF-specific router_id
+
+links:
+- r1-r2
+  - r2-r3
