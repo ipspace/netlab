@@ -129,7 +129,8 @@ def collect_ospf_areas(node: Box) -> None:
     else:
       loopback = node.get('loopback', {})
     
-    if loopback and 'ospf' in loopback and 'area' in loopback.ospf:
+    # Check if loopback is a dictionary (not a boolean) and has OSPF area
+    if isinstance(loopback, Box) and 'ospf' in loopback and 'area' in loopback.ospf:
       add_ospf_area(loopback.ospf.area, area_set, area_map)
     
     # Create area list with area and _area_int attributes
