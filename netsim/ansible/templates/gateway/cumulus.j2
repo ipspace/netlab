@@ -7,7 +7,7 @@ cat >/etc/network/interfaces.d/80-gateway.intf <<CONFIG
 auto {{ intf.ifname }}
 iface {{ intf.ifname }}
 {%   if intf.gateway.protocol == 'anycast' %}
-    address-virtual {{ intf.gateway.anycast.mac|hwaddr('linux') }} {{ intf.gateway.ipv4 }}
+    address-virtual {{ intf.gateway.anycast.mac|ansible.utils.hwaddr('linux') }} {{ intf.gateway.ipv4 }}
 {%   endif %}
 {%   if intf.gateway.protocol == 'vrrp' %}
 {%     set v6_ll = " fe80::200:5eff:fe00:2%02x/64"|format(intf.gateway.vrrp.group) if 'ipv6' in intf.gateway else "" %} 
@@ -24,7 +24,7 @@ interface {{ intf.ifname }}
   vrrp {{ intf.gateway.vrrp.group }} ipv6 fe80::200:5eff:fe00:2{{ '%02x' | format(intf.gateway.vrrp.group) }}
 {%   endif %}
 {%   for af in 'ipv4','ipv6' if af in intf.gateway %}
-  vrrp {{ intf.gateway.vrrp.group }} {{ af|replace('ipv4','ip') }} {{ intf.gateway[af]|ipaddr('address') }}
+  vrrp {{ intf.gateway.vrrp.group }} {{ af|replace('ipv4','ip') }} {{ intf.gateway[af]|ansible.utils.ipaddr('address') }}
 {%   endfor %}
 {%     if 'priority' in intf.gateway.vrrp %}
   vrrp {{ intf.gateway.vrrp.group }} priority {{ intf.gateway.vrrp.priority }}
