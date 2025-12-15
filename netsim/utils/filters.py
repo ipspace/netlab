@@ -32,7 +32,11 @@ def ipaddr_filter(
     addr = netaddr.IPAddress(value)
     return str(addr) if version is None or version == addr.version else ''
   except:
-    return ''
+    try:
+      addr = netaddr.IPNetwork(value)
+      return str(addr) if version is None or version == addr.version else ''
+    except:
+      return ''
 
 MAP_IPADDR: dict = {
   'address': 'ip',
@@ -49,6 +53,11 @@ def j2_ipaddr(
     return ipaddr_filter(value,version)
 
   addr = netaddr.IPNetwork(value)
+  try:                                            # It's unclear whether to pass 0 or '0' to Ansible filter to
+    arg = int(arg)                                # get the first address in a subnet, so we're accepting both
+  except:                                         # and taking a brute-force approach to figuring out if the
+    pass                                          # argument is an int cloaked as a string
+
   if isinstance(arg,int):
     return str(addr[arg]) + "/" + str(addr.prefixlen)
   
