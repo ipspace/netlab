@@ -2,10 +2,14 @@
 # OSPF transformation module
 #
 
+import ipaddress
+
 from box import Box
 
 from ..augment import devices
+from ..data import append_to_list
 from ..utils import log
+from ..utils import routing as _ospf
 from . import _Module, _routing, bfd
 
 
@@ -77,6 +81,39 @@ def propagate_node_attributes(node: Box, topology: Box) -> None:
         vdata.ospf[kw] = node.ospf[kw]
 
 """
+Collect OSPF areas from interfaces and adjust or create a simplified area list.
+This uses the same data structure as the ospf.areas plugin (area and _area_int)
+but without the extra attributes (kind, range, etc.).
+This simplifies templates for devices that use area/interface configuration structure.
+"""
+def collect_ospf_areas(node: Box) -> None:
+  for (o_data,o_interfaces,vrf) in _ospf.rp_data(node,'ospf'):
+    # Collect areas already-defined in ospf.areas (global or VRF OSPF area definitions)
+    #
+    def_areas = { a_data.area for a_data in o_data.get('areas',[]) }
+
+    # Adjust global interface list (add loopback interface) and collect interface areas
+    # into another set
+    intf_list = o_interfaces
+    if not vrf and 'loopback' in node:
+      intf_list += [ node.loopback ]
+    intf_areas = { intf.ospf.area for intf in o_interfaces if 'ospf.area' in intf }
+
+    # Create new area definitions from the difference between interface areas and
+    # already-defined areas. Also sort the missing areas to have nicer device configs
+    #
+    for missing_area in sorted(list(intf_areas - def_areas)):
+      a_definition = {
+        'area':      missing_area,
+        '_area_int': int(ipaddress.IPv4Address(missing_area)),
+        'kind':      'regular'                    # An area not defined in ospf.areas is by definition a regular one
+      }
+      append_to_list(o_data,'areas',a_definition)
+
+    if len(intf_areas) > 1:                       # A node is an ABR only when it has interfaces in
+      o_data._abr = True                          # more than one area
+
+"""
 Adjust interface hello/dead timers -- if only one of them is specified, the other one is
 set to be four times higher/lower.
 """
@@ -145,3 +182,6 @@ class OSPF(_Module):
     _routing.check_vrf_protocol_support(node,'ospf','ipv4','ospfv2',topology)
     _routing.check_vrf_protocol_support(node,'ospf','ipv6','ospfv3',topology)
     _routing.check_intf_support(node,'ospf',topology)
+    
+    # Collect OSPF areas from interfaces (similar to ospf.areas plugin but without extra attributes)
+    collect_ospf_areas(node)
