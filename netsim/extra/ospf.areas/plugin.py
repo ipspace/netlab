@@ -146,23 +146,30 @@ def check_node_support(ndata: Box,topology: Box) -> bool:
   return OK == devices.FC_MODE.OK
 
 '''
-post_transform hook
+pre_transform hook:
 
 * Normalize ospf.areas parameters in topology and all OSPF instances
 * Merge topology/node ospf.areas with node/vrf instances
-* Prune the information to include only relevant (used) areas
 '''
-
-def post_transform(topology: Box) -> None:
+def pre_transform(topology: Box) -> None:
   normalize_area_data(topology.ospf,'topology')
-
   for ndata in topology.nodes.values():
     if not 'ospf' in ndata.get('module',[]):                # Skip nodes not running OSPF
       continue
     for (o_data,_,vrf) in _ospf.rp_data(ndata,'ospf'):
       normalize_area_data(o_data,f'nodes.{ndata.name}'+(f'vrfs.{vrf}' if vrf else ''))
-
     merge_ospf_areas(ndata,topology)                        # Now merge topology => node => vrf data
+
+'''
+post_transform hook
+
+* Prune the information to include only relevant (used) areas
+* Check device support
+'''
+def post_transform(topology: Box) -> None:
+  for ndata in topology.nodes.values():
+    if not 'ospf' in ndata.get('module',[]):                # Skip nodes not running OSPF
+      continue
     if prune_ospf_areas(ndata):                             # ... prune that data based on what areas an OSPF instance has
       d_features = devices.get_device_features(ndata,topology.defaults)
       if not d_features.ospf.areas:                         # ... check whether we'll be able to configure the stuff

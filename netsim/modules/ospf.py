@@ -3,11 +3,11 @@
 #
 
 import ipaddress
-import typing
 
 from box import Box
 
 from ..augment import devices
+from ..data import append_to_list
 from ..utils import log
 from ..utils import routing as _ospf
 from . import _Module, _routing, bfd
@@ -81,70 +81,37 @@ def propagate_node_attributes(node: Box, topology: Box) -> None:
         vdata.ospf[kw] = node.ospf[kw]
 
 """
-Normalize OSPF area to both string and integer formats.
-Returns tuple (area_str, area_int) where area_str is IPv4 address string
-and area_int is the integer representation.
-"""
-def normalize_ospf_area(area: typing.Union[int, str]) -> typing.Tuple[str, int]:
-  if isinstance(area, int):
-    return (str(ipaddress.IPv4Address(area)), area)
-  area_str = str(area)
-  return (area_str, int(ipaddress.IPv4Address(area_str)))
-
-"""
-Add an OSPF area to the area_set and area_map if it's not already present.
-"""
-def add_ospf_area(area: typing.Union[int, str], area_set: typing.Set[int], area_map: typing.Dict[int, str]) -> None:
-  area_str, area_int = normalize_ospf_area(area)
-  if area_int not in area_set:
-    area_set.add(area_int)
-    area_map[area_int] = area_str
-
-"""
-Collect OSPF areas from interfaces and create a simplified area list.
+Collect OSPF areas from interfaces and adjust or create a simplified area list.
 This uses the same data structure as the ospf.areas plugin (area and _area_int)
 but without the extra attributes (kind, range, etc.).
 This simplifies templates for devices that use area/interface configuration structure.
 """
 def collect_ospf_areas(node: Box) -> None:
-  for (o_data,o_intf,vrf) in _ospf.rp_data(node,'ospf'):
-    if 'areas' in o_data:  # If areas already exist (from plugin), skip
-      continue
-    
-    # Collect unique areas from interfaces
-    area_set: typing.Set[int] = set()
-    area_map: typing.Dict[int, str] = {}  # Map area_int -> area string
-    
-    # Collect areas from regular interfaces
-    for intf in o_intf:
-      if 'ospf' not in intf or 'area' not in intf.ospf:
-        continue
-      add_ospf_area(intf.ospf.area, area_set, area_map)
-    
-    # Also check loopback interface if it exists and has OSPF area
-    # For global OSPF, check node.loopback; for VRF, check vrf.loopback
-    if vrf:
-      vrf_data = node.vrfs.get(vrf, {})
-      loopback = vrf_data.get('loopback', {})
-    else:
-      loopback = node.get('loopback', {})
-    
-    # Check if loopback is a dictionary (not a boolean) and has OSPF area
-    if isinstance(loopback, Box) and 'ospf' in loopback and 'area' in loopback.ospf:
-      add_ospf_area(loopback.ospf.area, area_set, area_map)
-    
-    # Create area list with area and _area_int attributes
-    if area_set:
-      o_data.areas = []
-      for area_int in sorted(area_set):
-        o_data.areas.append(Box({
-          'area': area_map[area_int],
-          '_area_int': area_int
-        }))
-      
-      # Mark as ABR if multiple areas
-      if len(area_set) > 1:
-        o_data._abr = True
+  for (o_data,o_interfaces,vrf) in _ospf.rp_data(node,'ospf'):
+    # Collect areas already-defined in ospf.areas (global or VRF OSPF area definitions)
+    #
+    def_areas = { a_data.area for a_data in o_data.get('areas',[]) }
+
+    # Adjust global interface list (add loopback interface) and collect interface areas
+    # into another set
+    intf_list = o_interfaces
+    if not vrf and 'loopback' in node:
+      intf_list += [ node.loopback ]
+    intf_areas = { intf.ospf.area for intf in o_interfaces if 'ospf.area' in intf }
+
+    # Create new area definitions from the difference between interface areas and
+    # already-defined areas. Also sort the missing areas to have nicer device configs
+    #
+    for missing_area in sorted(list(intf_areas - def_areas)):
+      a_definition = {
+        'area':      missing_area,
+        '_area_int': int(ipaddress.IPv4Address(missing_area)),
+        'kind':      'regular'                    # An area not defined in ospf.areas is by definition a regular one
+      }
+      append_to_list(o_data,'areas',a_definition)
+
+    if len(intf_areas) > 1:                       # A node is an ABR only when it has interfaces in
+      o_data._abr = True                          # more than one area
 
 """
 Adjust interface hello/dead timers -- if only one of them is specified, the other one is
