@@ -343,6 +343,8 @@ def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
     bk_ip = peer.get(mlag_peer.backup_ip,None)
     if bk_ip:
       _target.mlag.peer_backup_ip = str(netaddr.IPNetwork(bk_ip).ip)
+      if mlag_peer.backup_ip.startswith('mgmt.'):
+        _target.mlag.peer_backup_vrf = 'mgmt'
     else:
       log.error(f'Node {peer.name} must have "{mlag_peer.backup_ip}" defined to support backup MLAG peerlink',
                 category=log.IncorrectValue,
