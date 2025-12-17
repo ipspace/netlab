@@ -16,6 +16,9 @@ import typing
 import netaddr
 from jinja2.runtime import StrictUndefined
 
+from ..data import get_a_list, get_box
+from ..utils import strings
+
 
 def ipaddr_filter(
       value: typing.Any,
@@ -49,6 +52,9 @@ def j2_ipaddr(
       version: typing.Optional[int] = None) -> typing.Union[list,str]:
   global MAP_IPADDR
 
+  if isinstance(value,bool):
+    raise ValueError(f'Value passed to ipaddr filter cannot be a bool')
+
   if arg == '':
     return ipaddr_filter(value,version)
 
@@ -64,7 +70,7 @@ def j2_ipaddr(
   if arg in MAP_IPADDR:
     arg = MAP_IPADDR[arg]
 
-  if arg in ['subnet']:
+  if arg in ['subnet','host']:
     return str(addr.network) + "/" + str(addr.prefixlen)
 
   if arg in dir(addr):
@@ -131,10 +137,8 @@ UTILS_FILTERS: dict = {
 """
 Simplified 'flatten' filter -- returns a flattened list
 """
-def bi_flatten(mylist: typing.Any, levels: typing.Optional[int] = None) -> list:
-  if not isinstance(mylist,list):
-    return [ mylist ]
-
+def bi_flatten(value: typing.Any, levels: typing.Optional[int] = None) -> list:
+  mylist = get_a_list(value)
   result = []
   for value in mylist:
     if isinstance(value,list):
@@ -147,6 +151,41 @@ def bi_flatten(mylist: typing.Any, levels: typing.Optional[int] = None) -> list:
 
   return result      
 
+"""
+Simplified 'difference' filter -- returns a difference between two lists
+"""
+def bi_difference(src: typing.Any, diff: typing.Any) -> list:
+  diff_list = get_a_list(diff)
+  src_list = get_a_list(src)
+  return [ x for x in src_list if x not in diff_list ]
+
+"""
+Render value into YAML
+"""
+def bi_yaml(src: typing.Any, **kwargs: typing.Any) -> str:
+  if isinstance(src,dict):                            # Ensure the input dictionary is sorted by keys
+    src = { k:src[k] for k in sorted(src.keys()) }    # ... to keep 1:1 compatibility with Ansible configs
+                                                      # ... that get their data from sorted inventory files
+  yaml = strings.get_yaml_string(src)
+  if '---\n' in yaml:
+    yaml = yaml.split('---\n')[1]
+
+  return yaml
+
+"""
+Merge two dictionaries
+"""
+def bi_merge(d1: typing.Any, d2: typing.Any) -> dict:
+  if not isinstance(d1,dict) or not isinstance(d2,dict):
+    raise ValueError('Parameters to combine/merge filter must be dictionaries')
+
+  result = get_box(d1) + get_box(d2)
+  return result.to_dict()
+
 BUILTIN_FILTERS: dict = {
-  'flatten': bi_flatten
+  'combine': bi_merge,
+  'difference': bi_difference,
+  'flatten': bi_flatten,
+  'to_yaml': bi_yaml,
+  'to_nice_yaml': bi_yaml
 }
