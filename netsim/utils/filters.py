@@ -137,8 +137,8 @@ UTILS_FILTERS: dict = {
 """
 Simplified 'flatten' filter -- returns a flattened list
 """
-def bi_flatten(value: typing.Any, levels: typing.Optional[int] = None) -> list:
-  mylist = get_a_list(value)
+def bi_flatten(f_list: typing.Any, levels: typing.Optional[int] = None) -> list:
+  mylist = get_a_list(f_list)
   result = []
   for value in mylist:
     if isinstance(value,list):
@@ -160,7 +160,7 @@ def bi_difference(src: typing.Any, diff: typing.Any) -> list:
   return [ x for x in src_list if x not in diff_list ]
 
 """
-Render value into YAML
+Render value into YAML. The additional arguments accepted by the Ansible version of the filter are ignored
 """
 def bi_yaml(src: typing.Any, **kwargs: typing.Any) -> str:
   if isinstance(src,dict):                            # Ensure the input dictionary is sorted by keys
