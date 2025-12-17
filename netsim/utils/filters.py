@@ -84,7 +84,7 @@ def j2_hwaddr(value: typing.Any, format: str = '') -> str:
   try:
     mac = netaddr.EUI(value)                      # Try to parse the value as MAC address
     if format == 'linux':                         # linux format is a synonym for unix
-      format = 'unix'
+      format = 'unix_expanded'
     fmt = getattr(netaddr,f'mac_{format}')        # Try to get formatting constant
     if not fmt:                                   # ... unknown constant?
       raise ValueError(f'Invalid format {format} used in built-in hwaddr filter')
