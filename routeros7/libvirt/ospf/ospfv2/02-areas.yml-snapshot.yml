@@ -879,6 +879,25 @@ defaults:
         - -c
         - show $@
         netlab_initial: always
+        netlab_frr_daemons:
+          bfd:
+          - bfdd
+          bgp:
+          - bgpd
+          ospf:
+          - ospfd
+          - ospf6d
+          ripv2:
+          - ripd
+          - ripngd
+          isis:
+          - isisd
+          vrf:
+          - bgpd
+          gateway:
+          - vrrpd
+          mpls:
+          - ldpd
       evpn:
         _start_transit_vlan: 3900
       features:
@@ -2596,6 +2615,8 @@ defaults:
           ansible_user: clab
           ansible_ssh_pass: clab@123
           ansible_become_password: clab@123
+          netlab_ready:
+          - ssh
       _parents:
       - xr
     linux:
@@ -3040,7 +3061,7 @@ defaults:
         level: minimal
       interface_name: ether{ifindex}
       mgmt_if: ether1
-      loopback_interface_name: loopback{ifindex}
+      loopback_interface_name: loopback{ifindex if ifindex else ""}
       ifindex_offset: 2
       libvirt:
         image: mikrotik/chr7
@@ -5951,26 +5972,20 @@ defaults:
       - /home/pipi/.netlab
       - /home/pipi/netlab_gh/netsim/extra
       files:
-      - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
-        '-' + node_provider + '.j2' }}"
-      - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
-        '.j2' }}"
-      - "{{ custom_config + '/' + inventory_hostname + '.j2' }}"
-      - "{{ custom_config + '/' + inventory_hostname + '.cfg' }}"
-      - "{{ custom_config + '/' + netlab_device_type + '-' + node_provider + '.j2'
-        }}"
-      - "{{ custom_config + '/' + netlab_device_type + '.j2' }}"
-      - "{{ custom_config + '/' + ansible_network_os + '-' + node_provider + '.j2'
-        }}"
-      - "{{ custom_config + '/' + ansible_network_os + '.j2' }}"
-      - "{{ custom_config + '.' + inventory_hostname + '.' + netlab_device_type +
-        '.j2' }}"
-      - "{{ custom_config + '.' + inventory_hostname + '.' + ansible_network_os +
-        '.j2' }}"
-      - "{{ custom_config + '.' + inventory_hostname + '.j2' }}"
-      - "{{ custom_config + '.' + netlab_device_type + '.j2' }}"
-      - "{{ custom_config + '.' + ansible_network_os + '.j2' }}"
-      - "{{ custom_config + '.j2' }}"
+      - '{{custom_config}}/{{inventory_hostname}}.{{netlab_device_type}}-{{node_provider}}.j2'
+      - '{{custom_config}}/{{inventory_hostname}}.{{netlab_device_type}}.j2'
+      - '{{custom_config}}/{{inventory_hostname}}.j2'
+      - '{{custom_config}}/{{inventory_hostname}}.cfg'
+      - '{{custom_config}}/{{netlab_device_type}}-{{node_provider}}.j2'
+      - '{{custom_config}}/{{netlab_device_type}}.j2'
+      - '{{custom_config}}/{{ansible_network_os}}-{{node_provider}}.j2'
+      - '{{custom_config}}/{{ansible_network_os}}.j2'
+      - '{{custom_config}}.{{inventory_hostname}}.{{netlab_device_type}}.j2'
+      - '{{custom_config}}.{{inventory_hostname}}.{{ansible_network_os}}.j2'
+      - '{{custom_config}}.{{inventory_hostname}}.j2'
+      - '{{custom_config}}.{{netlab_device_type}}.j2'
+      - '{{custom_config}}.{{ansible_network_os}}.j2'
+      - '{{custom_config}}.j2'
       tasks:
       - '{{ custom_config }}/deploy-{{ inventory_hostname }}.yml'
       - '{{ custom_config }}/deploy.{{ netlab_device_type }}-{{ node_provider }}.yml'
@@ -5979,26 +5994,20 @@ defaults:
       - '{{ custom_config }}/deploy.{{ ansible_network_os }}.yml'
       - '{{ custom_config }}/deploy.yml'
       f_files:
-      - "{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type + '-'
-        + node_provider + '.j2' }"
-      - "{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type + '.j2'
-        }"
-      - "{ custom_config + '/' + inventory_hostname + '.j2' }"
-      - "{ custom_config + '/' + inventory_hostname + '.cfg' }"
-      - "{ custom_config + '/' + netlab_device_type + '-' + node_provider + '.j2'
-        }"
-      - "{ custom_config + '/' + netlab_device_type + '.j2' }"
-      - "{ custom_config + '/' + ansible_network_os + '-' + node_provider + '.j2'
-        }"
-      - "{ custom_config + '/' + ansible_network_os + '.j2' }"
-      - "{ custom_config + '.' + inventory_hostname + '.' + netlab_device_type + '.j2'
-        }"
-      - "{ custom_config + '.' + inventory_hostname + '.' + ansible_network_os + '.j2'
-        }"
-      - "{ custom_config + '.' + inventory_hostname + '.j2' }"
-      - "{ custom_config + '.' + netlab_device_type + '.j2' }"
-      - "{ custom_config + '.' + ansible_network_os + '.j2' }"
-      - "{ custom_config + '.j2' }"
+      - '{custom_config}/{inventory_hostname}.{netlab_device_type}-{node_provider}.j2'
+      - '{custom_config}/{inventory_hostname}.{netlab_device_type}.j2'
+      - '{custom_config}/{inventory_hostname}.j2'
+      - '{custom_config}/{inventory_hostname}.cfg'
+      - '{custom_config}/{netlab_device_type}-{node_provider}.j2'
+      - '{custom_config}/{netlab_device_type}.j2'
+      - '{custom_config}/{ansible_network_os}-{node_provider}.j2'
+      - '{custom_config}/{ansible_network_os}.j2'
+      - '{custom_config}.{inventory_hostname}.{netlab_device_type}.j2'
+      - '{custom_config}.{inventory_hostname}.{ansible_network_os}.j2'
+      - '{custom_config}.{inventory_hostname}.j2'
+      - '{custom_config}.{netlab_device_type}.j2'
+      - '{custom_config}.{ansible_network_os}.j2'
+      - '{custom_config}.j2'
       f_tasks:
       - '{ custom_config }/deploy-{ inventory_hostname }.yml'
       - '{ custom_config }/deploy.{ netlab_device_type }-{ node_provider }.yml'
@@ -8042,7 +8051,7 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1765733764.428472
+    timestamp: 1765989431.4096038
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
@@ -8107,6 +8116,17 @@ nodes:
       router_id: 10.0.0.1
       af:
         ipv4: true
+      areas:
+      - area: 0.0.0.0
+        _area_int: 0
+        kind: regular
+      - area: 0.0.0.2
+        _area_int: 2
+        kind: regular
+      - area: 0.0.0.3
+        _area_int: 3
+        kind: regular
+      _abr: true
     role: router
     id: 1
     name: dut
@@ -8175,7 +8195,7 @@ nodes:
       neighbors: []
       virtual_interface: true
       ifindex: 0
-      ifname: loopback0
+      ifname: loopback
       ipv4: 10.0.0.1/32
       ospf:
         area: 0.0.0.2
@@ -8187,6 +8207,10 @@ nodes:
       router_id: 10.0.0.2
       af:
         ipv4: true
+      areas:
+      - area: 0.0.0.0
+        _area_int: 0
+        kind: regular
     name: x1
     interfaces:
     - ipv4: 10.1.0.2/30
@@ -8255,6 +8279,10 @@ nodes:
       router_id: 10.0.0.3
       af:
         ipv4: true
+      areas:
+      - area: 0.0.0.2
+        _area_int: 2
+        kind: regular
     name: x2
     interfaces:
     - ipv4: 10.1.0.6/30
@@ -8323,6 +8351,10 @@ nodes:
       router_id: 10.0.0.4
       af:
         ipv4: true
+      areas:
+      - area: 0.0.0.3
+        _area_int: 3
+        kind: regular
     name: x3
     interfaces:
     - ipv4: 10.1.0.10/30
