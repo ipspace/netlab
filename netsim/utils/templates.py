@@ -134,6 +134,7 @@ def config_template_paths(
     path_suffix = [ node.device ]
     path_prefix = [ provider_path ] if provider_path else []
     path_prefix += topology.defaults.paths.templates.dirs
+    path_prefix += [ str(get_moddir() / 'ansible') ]
 
     if node.get('_daemon',False):
       if '_daemon_parent' in node:
@@ -156,6 +157,7 @@ def template_lookup_name(f_name: str, cfg_name: str, node: Box, topology: Box) -
     }
 
   node._template_vars.config_module = cfg_name
+  node._template_vars.custom_config = cfg_name
   try:
     return _strings.eval_format(f_name,node._template_vars)
   except Exception as ex:
@@ -181,7 +183,7 @@ def find_provider_template(
       print(f'- {p}')
 
   if fname in node.get('config',[]):                    # Are we dealing with extra-config template?
-    n_list = [ node.device + '.j2' ]
+    n_list = topology.defaults.paths.custom.f_files
   else:
     n_list = [ fname + '.j2'] + topology.defaults.paths.t_files.f_files
 
