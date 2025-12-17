@@ -125,6 +125,11 @@ def create(topology: Box) -> Box:
         group_vars.features = devdata.features
         if group_vars:
           inventory[group]['vars'] = group_vars
+    for group in list(inventory.keys()):          # Ansible is unhappy with hyphens in group names
+      if '-' in group:                            # So we have to recreate those group entries
+        g_correct = group.replace('-','_')        # ... replacing hyphens with underscores
+        inventory[g_correct] = inventory[group]
+        inventory.pop(group,None)
 
   if (inventory.custom_configs.hosts):
     try:
