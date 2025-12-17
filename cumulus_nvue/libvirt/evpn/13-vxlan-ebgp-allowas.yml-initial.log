@@ -33,11 +33,11 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Find device readiness script] ********************************************
-ok: [spine]
 ok: [l1]
+ok: [spine]
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [spine]
@@ -56,15 +56,15 @@ TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [fail] ********************************************************************
 skipping: [spine]
@@ -128,308 +128,15 @@ ok: [l2]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
-ok: [l1] => 
-  msg: |-
-    initial configuration for l1
-    =========================================
-  
-    - set:
-        system:
-          hostname: l1
-          global:
-            system-mac: ca:fe:00:02:00:00
-          config:
-            snippet:
-              system-mtu:
-                file: /etc/network/ifupdown2/policy.d/mtu.json
-                content: |
-                  { "address": { "defaults": { "mtu": "1500" } } }
-  
-        interface:
-          eth0:
-            ip:
-              vrf: mgmt
-              address:
-                dhcp: {}
-            type: eth
-          swp1:
-            type: swp
-            link:
-              mtu: 1600
-              state:
-                up : {}
-            description: "l1 -> spine [external]"
-            ip:
-              address:
-                10.1.0.2/30: {}
-              ipv6:
-                enable: off
-  
-          swp2:
-            type: swp
-            link:
-              state:
-                up : {}
-            description: "[Access VLAN red] l1 -> h1"
-            ip:
-              ipv6:
-                enable: off
-  
-          vlan1000:
-            type: svi
-            link:
-              state:
-                up : {}
-            description: "VLAN red (1000) -> [h1,h2,l2]"
-            ip:
-              ipv6:
-                enable: off
-  
-  
-    - set:
-        interface:
-          lo:
-            type: loopback
-            ip:
-              address:
-                10.0.0.2/32: {}
-              ipv6:
-                enable: off
-ok: [spine] => 
-  msg: |-
-    initial configuration for spine
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1600
-    ip link set eth1 up
-    ip link set eth2 down
-    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
-    ip link set dev eth2 mtu 1600
-    ip link set eth2 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname spine
-    !
-    log file /tmp/logging
-  
-    !
-    ip forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.1/32
-    !
-    interface eth1
-     no shutdown
-     description spine -> l1 [external]
-     ip address 10.1.0.1/30
-    !
-    interface eth2
-     no shutdown
-     description spine -> l2 [external]
-     ip address 10.1.0.6/30
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    !
-    exit 0
-ok: [l2] => 
-  msg: |-
-    initial configuration for l2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1600
-    ip link set eth1 up
-    ip link set eth2 down
-    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
-    ip link set dev eth2 mtu 1500
-    ip link set eth2 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname l2
-    !
-    log file /tmp/logging
-  
-    !
-    ip forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.3/32
-    !
-    interface eth1
-     no shutdown
-     description l2 -> spine [external]
-     ip address 10.1.0.5/30
-    !
-    interface eth2
-     no shutdown
-     description [Access VLAN red] l2 -> h2
-     ! no ip address
-    !
-    interface vlan1000
-     no shutdown
-     description VLAN red (1000) -> [h1,l1,h2]
-     ! no ip address
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    !
-    exit 0
+ok: [l1] => {
+    "msg": "initial configuration for l1\n=========================================\n\n- set:\n    system:\n      hostname: l1\n      global:\n        system-mac: ca:fe:00:02:00:00\n      config:\n        snippet:\n          system-mtu:\n            file: /etc/network/ifupdown2/policy.d/mtu.json\n            content: |\n              { \"address\": { \"defaults\": { \"mtu\": \"1500\" } } }\n\n    interface:\n      eth0:\n        ip:\n          vrf: mgmt\n          address:\n            dhcp: {}\n        type: eth\n      swp1:\n        type: swp\n        link:\n          mtu: 1600\n          state:\n            up : {}\n        description: \"l1 -> spine [external]\"\n        ip:\n          address:\n            10.1.0.2/30: {}\n          ipv6:\n            enable: off\n\n      swp2:\n        type: swp\n        link:\n          state:\n            up : {}\n        description: \"[Access VLAN red] l1 -> h1\"\n        ip:\n          ipv6:\n            enable: off\n\n      vlan1000:\n        type: svi\n        link:\n          state:\n            up : {}\n        description: \"VLAN red (1000) -> [h1,h2,l2]\"\n        ip:\n          ipv6:\n            enable: off\n\n\n- set:\n    interface:\n      lo:\n        type: loopback\n        ip:\n          address:\n            10.0.0.2/32: {}\n          ipv6:\n            enable: off\n"
+}
+ok: [spine] => {
+    "msg": "initial configuration for spine\n=========================================\n#!/bin/bash\n#\nset -e\nset -x\n#\n# Create bash profile script\n#\ncat <<SCRIPT >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)# \"\necho\necho \"Use vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)\n#\n# FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands\n#\nsysctl -w net.ipv4.ip_forward=1\nsysctl -w net.ipv6.conf.all.forwarding=0\n#\n#\n# Get the current next hop for the default route\n#\ndef_nh=$(ip route list default|awk '{ print $3 }')\n#\n# Create the management VRF and add eth0 to it\n#\nif [ ! -e /sys/devices/virtual/net/mgmt ]; then\n  ip link add mgmt type vrf table 42\nfi\nip link set mgmt up\nsysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1\nip link set eth0 master mgmt\n#\n# Reinstall the default route if we had it before\n#\nif [[ -n \"$def_nh\" ]]; then\n  ip route add 0.0.0.0/0 vrf mgmt via $def_nh\nfi\n#\n# Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)\n#\n\n# Set system defaults\n#\n# Send ARP requests from a sane source IP address\n#\nsysctl -w net.ipv4.conf.all.arp_announce=2\n\n#\n# Create loopbacks, stub and lag/bond devices\n#\nif [ ! -e /sys/class/net/lo ]; then\n  if [ ! -e /sys/devices/virtual/net/lo ]; then\n    ip link add lo type dummy\n    ip link set dev lo up\n  fi\nfi\n\n# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)\n#\nip link set eth1 down\nsysctl -qw net.ipv6.conf.eth1.disable_ipv6=1\nip link set dev eth1 mtu 1600\nip link set eth1 up\nip link set eth2 down\nsysctl -qw net.ipv6.conf.eth2.disable_ipv6=1\nip link set dev eth2 mtu 1600\nip link set eth2 up\n\n#\n# Add vtysh.conf file\necho \"service integrated-vtysh-config\" >/etc/frr/vtysh.conf\n\n#\n# Rest of initial configuration done through VTYSH\n#\ncat >/tmp/config <<CONFIG\nhostname spine\n!\nlog file /tmp/logging\n\n!\nip forwarding\nvrf mgmt\n exit-vrf\n!\nfrr defaults datacenter\n!\ninterface lo\n no shutdown\n ip address 10.0.0.1/32\n!\ninterface eth1\n no shutdown\n description spine -> l1 [external]\n ip address 10.1.0.1/30\n!\ninterface eth2\n no shutdown\n description spine -> l2 [external]\n ip address 10.1.0.6/30\n!\ndo write\nCONFIG\nvtysh -f /tmp/config\n!\nexit 0\n"
+}
+ok: [l2] => {
+    "msg": "initial configuration for l2\n=========================================\n#!/bin/bash\n#\nset -e\nset -x\n#\n# Create bash profile script\n#\ncat <<SCRIPT >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)# \"\necho\necho \"Use vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)\n#\n# FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands\n#\nsysctl -w net.ipv4.ip_forward=1\nsysctl -w net.ipv6.conf.all.forwarding=0\n#\n#\n# Get the current next hop for the default route\n#\ndef_nh=$(ip route list default|awk '{ print $3 }')\n#\n# Create the management VRF and add eth0 to it\n#\nif [ ! -e /sys/devices/virtual/net/mgmt ]; then\n  ip link add mgmt type vrf table 42\nfi\nip link set mgmt up\nsysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1\nip link set eth0 master mgmt\n#\n# Reinstall the default route if we had it before\n#\nif [[ -n \"$def_nh\" ]]; then\n  ip route add 0.0.0.0/0 vrf mgmt via $def_nh\nfi\n#\n# Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)\n#\n\n# Set system defaults\n#\n# Send ARP requests from a sane source IP address\n#\nsysctl -w net.ipv4.conf.all.arp_announce=2\n\n#\n# Create loopbacks, stub and lag/bond devices\n#\nif [ ! -e /sys/class/net/lo ]; then\n  if [ ! -e /sys/devices/virtual/net/lo ]; then\n    ip link add lo type dummy\n    ip link set dev lo up\n  fi\nfi\n\n# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)\n#\nip link set eth1 down\nsysctl -qw net.ipv6.conf.eth1.disable_ipv6=1\nip link set dev eth1 mtu 1600\nip link set eth1 up\nip link set eth2 down\nsysctl -qw net.ipv6.conf.eth2.disable_ipv6=1\nip link set dev eth2 mtu 1500\nip link set eth2 up\n\n#\n# Add vtysh.conf file\necho \"service integrated-vtysh-config\" >/etc/frr/vtysh.conf\n\n#\n# Rest of initial configuration done through VTYSH\n#\ncat >/tmp/config <<CONFIG\nhostname l2\n!\nlog file /tmp/logging\n\n!\nip forwarding\nvrf mgmt\n exit-vrf\n!\nfrr defaults datacenter\n!\ninterface lo\n no shutdown\n ip address 10.0.0.3/32\n!\ninterface eth1\n no shutdown\n description l2 -> spine [external]\n ip address 10.1.0.5/30\n!\ninterface eth2\n no shutdown\n description [Access VLAN red] l2 -> h2\n ! no ip address\n!\ninterface vlan1000\n no shutdown\n description VLAN red (1000) -> [h1,l1,h2]\n ! no ip address\n!\ndo write\nCONFIG\nvtysh -f /tmp/config\n!\nexit 0\n"
+}
 
 TASK [Deploy initial configuration] ********************************************
 skipping: [h1]
@@ -456,8 +163,8 @@ ok: [spine]
 ok: [l2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [spine]
 changed: [l2]
+changed: [spine]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [spine]
@@ -481,8 +188,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2 => (item=vlan)
@@ -523,44 +230,12 @@ TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-ok: [l1] => 
-  msg: |-
-    vlan configuration for l1
-    =========================================
-    - set:
-        bridge:
-          domain:
-            br_default:
-              type: vlan-aware
-              vlan:
-                '1000': {}
-  
-  
-    - set:
-        interface:
-         swp2:
-           bridge:
-             domain:
-               br_default:
-                 access: 1000
-ok: [l2] => 
-  msg: |-
-    vlan configuration for l2
-    =========================================
-    #!/bin/bash
-    #
-    set -e # Exit immediately when any command fails
-    #
-    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-      ip link add vlan1000 type bridge
-      ip link set dev vlan1000 address ca:f4:00:03:00:00
-  
-      ip addr flush dev vlan1000
-    fi
-  
-    ip link set dev eth2 master vlan1000
-  
-    ip link set dev vlan1000 up
+ok: [l1] => {
+    "msg": "vlan configuration for l1\n=========================================\n- set:\n    bridge:\n      domain:\n        br_default:\n          type: vlan-aware\n          vlan:\n            '1000': {}\n\n\n- set:\n    interface:\n     swp2:\n       bridge:\n         domain:\n           br_default:\n             access: 1000\n"
+}
+ok: [l2] => {
+    "msg": "vlan configuration for l2\n=========================================\n#!/bin/bash\n#\nset -e # Exit immediately when any command fails\n#\nif [ ! -e /sys/devices/virtual/net/vlan1000 ]; then\n  ip link add vlan1000 type bridge\n  ip link set dev vlan1000 address ca:f4:00:03:00:00\n\n  ip addr flush dev vlan1000\nfi\n\nip link set dev eth2 master vlan1000\n\nip link set dev vlan1000 up\n"
+}
 
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [spine]
@@ -658,127 +333,23 @@ skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 skipping: [h1]
-skipping: [h2]
 ok: [spine]
+skipping: [h2]
 ok: [l1]
 ok: [l2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
-ok: [spine] => 
-  msg: |-
-    bgp configuration for spine
-    =========================================
-    !
-    router bgp 65100
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.1
-    !
-      neighbor 10.1.0.2 remote-as 65200
-      neighbor 10.1.0.2 description l1
-    !
-      neighbor 10.1.0.5 remote-as 65200
-      neighbor 10.1.0.5 description l2
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-    ! Originate networks from connected subnets
-    !
-      network 10.0.0.1/32
-    !
-      neighbor 10.1.0.2 activate
-      no neighbor 10.1.0.2 send-community all
-      neighbor 10.1.0.2 send-community standard
-      neighbor 10.1.0.2 send-community large
-      neighbor 10.1.0.2 send-community extended
-    !
-      neighbor 10.1.0.5 activate
-      no neighbor 10.1.0.5 send-community all
-      neighbor 10.1.0.5 send-community standard
-      neighbor 10.1.0.5 send-community large
-      neighbor 10.1.0.5 send-community extended
-    !
-    !
-    !
-    do write
-ok: [l2] => 
-  msg: |-
-    bgp configuration for l2
-    =========================================
-    !
-    router bgp 65200
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.3
-    !
-      neighbor 10.1.0.6 remote-as 65100
-      neighbor 10.1.0.6 description spine
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-    ! Originate networks from connected subnets
-    !
-      network 10.0.0.3/32
-    !
-      neighbor 10.1.0.6 activate
-      no neighbor 10.1.0.6 send-community all
-      neighbor 10.1.0.6 send-community standard
-      neighbor 10.1.0.6 send-community large
-      neighbor 10.1.0.6 send-community extended
-    !
-    !
-    !
-    do write
-ok: [l1] => 
-  msg: |-
-    bgp configuration for l1
-    =========================================
-    - set:
-        router:
-          bgp:
-            enable: on
-            autonomous-system: 65200
-            router-id: 10.0.0.2
-    - set:
-        vrf:
-          default:
-            router:
-              bgp:
-                enable: on
-                autonomous-system: 65200
-                router-id: 10.0.0.2
-                address-family:
-                  ipv4-unicast:
-                    enable: on
-                    network:
-                      10.0.0.2/32: {}
-                neighbor:
-                  10.1.0.1:
-                    description: "spine"
-                    remote-as: 65100
-                    address-family:
-                      ipv4-unicast:
-                        enable: on
-                        community-advertise:
-                          regular: on
-                          extended: on
-                          large: off
+ok: [spine] => {
+    "msg": "bgp configuration for spine\n=========================================\n!\nrouter bgp 65100\n  no bgp ebgp-requires-policy\n  no bgp default ipv4-unicast\n  bgp default show-hostname\n  bgp default show-nexthop-hostname\n  ! Consider AS paths of same length but with different AS as ECMP candidates\n  bgp bestpath as-path multipath-relax\n\n  bgp router-id 10.0.0.1\n!\n  neighbor 10.1.0.2 remote-as 65200\n  neighbor 10.1.0.2 description l1\n!\n  neighbor 10.1.0.5 remote-as 65200\n  neighbor 10.1.0.5 description l2\n!\n address-family ipv4 unicast\n!\n\n!\n! Originate networks from connected subnets\n!\n  network 10.0.0.1/32\n!\n  neighbor 10.1.0.2 activate\n  no neighbor 10.1.0.2 send-community all\n  neighbor 10.1.0.2 send-community standard\n  neighbor 10.1.0.2 send-community large\n  neighbor 10.1.0.2 send-community extended\n!\n  neighbor 10.1.0.5 activate\n  no neighbor 10.1.0.5 send-community all\n  neighbor 10.1.0.5 send-community standard\n  neighbor 10.1.0.5 send-community large\n  neighbor 10.1.0.5 send-community extended\n!\n!\n!\ndo write\n"
+}
+ok: [l2] => {
+    "msg": "bgp configuration for l2\n=========================================\n!\nrouter bgp 65200\n  no bgp ebgp-requires-policy\n  no bgp default ipv4-unicast\n  bgp default show-hostname\n  bgp default show-nexthop-hostname\n  ! Consider AS paths of same length but with different AS as ECMP candidates\n  bgp bestpath as-path multipath-relax\n\n  bgp router-id 10.0.0.3\n!\n  neighbor 10.1.0.6 remote-as 65100\n  neighbor 10.1.0.6 description spine\n!\n address-family ipv4 unicast\n!\n\n!\n! Originate networks from connected subnets\n!\n  network 10.0.0.3/32\n!\n  neighbor 10.1.0.6 activate\n  no neighbor 10.1.0.6 send-community all\n  neighbor 10.1.0.6 send-community standard\n  neighbor 10.1.0.6 send-community large\n  neighbor 10.1.0.6 send-community extended\n!\n!\n!\ndo write\n"
+}
+ok: [l1] => {
+    "msg": "bgp configuration for l1\n=========================================\n- set:\n    router:\n      bgp:\n        enable: on\n        autonomous-system: 65200\n        router-id: 10.0.0.2\n- set:\n    vrf:\n      default:\n        router:\n          bgp:\n            enable: on\n            autonomous-system: 65200\n            router-id: 10.0.0.2\n            address-family:\n              ipv4-unicast:\n                enable: on\n                network:\n                  10.0.0.2/32: {}\n            neighbor:\n              10.1.0.1:\n                description: \"spine\"\n                remote-as: 65100\n                address-family:\n                  ipv4-unicast:\n                    enable: on\n                    community-advertise:\n                      regular: on\n                      extended: on\n                      large: off\n\n"
+}
 
 TASK [Deploy bgp configuration] ************************************************
 skipping: [h1]
@@ -846,61 +417,12 @@ TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-ok: [l1] => 
-  msg: |-
-    vxlan configuration for l1
-    =========================================
-    - set:
-        nve:
-          vxlan:
-            enable: on
-            mac-learning: off
-            source:
-              address: 10.0.0.2
-  
-    - set:
-        bridge:
-          domain:
-            br_default:
-              vlan:
-                '1000':
-                  vni:
-                    '1000': {}
-ok: [l2] => 
-  msg: |-
-    vxlan configuration for l2
-    =========================================
-    #!/bin/bash
-    #
-    set -e # Exit immediately when any command fails
-    #
-  
-  
-  
-    # Create L3 VNIs with bridges and add to correct vrf table
-  
-    # Create VXLAN L2 interface per vni
-    ip link add vxlan1000 type vxlan \
-      id 1000 \
-      dstport 4789 \
-      local 10.0.0.3 nolearning
-    #
-    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
-    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-    ip link add vlan1000 type bridge
-    ip link set up dev vlan1000
-    fi
-    ip link set dev vxlan1000 master vlan1000
-    ip link set vlan1000 type bridge stp_state 0
-  
-    # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1500 addrgenmode none dev vxlan1000
-    # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
-    bridge link set dev vxlan1000 learning off
-    ip link set up dev vxlan1000
-  
-  
-    exit $?
+ok: [l1] => {
+    "msg": "vxlan configuration for l1\n=========================================\n- set:\n    nve:\n      vxlan:\n        enable: on\n        mac-learning: off\n        source:\n          address: 10.0.0.2\n\n- set:\n    bridge:\n      domain:\n        br_default:\n          vlan:\n            '1000':\n              vni:\n                '1000': {}\n"
+}
+ok: [l2] => {
+    "msg": "vxlan configuration for l2\n=========================================\n#!/bin/bash\n#\nset -e # Exit immediately when any command fails\n#\n\n\n\n# Create L3 VNIs with bridges and add to correct vrf table\n\n# Create VXLAN L2 interface per vni\nip link add vxlan1000 type vxlan \\\n  id 1000 \\\n  dstport 4789 \\\n  local 10.0.0.3 nolearning\n#\n# Add it to the VLAN bridge (create if needed for l3 vnis); disable STP\nif [ ! -e /sys/devices/virtual/net/vlan1000 ]; then\nip link add vlan1000 type bridge\nip link set up dev vlan1000\nfi\nip link set dev vxlan1000 master vlan1000\nip link set vlan1000 type bridge stp_state 0\n\n# Do not generate ipv6 link-local address for VXLAN devices\nip link set mtu 1500 addrgenmode none dev vxlan1000\n# Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html\nbridge link set dev vxlan1000 learning off\nip link set up dev vxlan1000\n\n\nexit $?\n"
+}
 
 TASK [Deploy vxlan configuration] **********************************************
 skipping: [spine]
@@ -956,143 +478,23 @@ skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for evpn] ********************
 skipping: [h1]
-ok: [spine]
 skipping: [h2]
+ok: [spine]
 ok: [l1]
 ok: [l2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
-ok: [spine] => 
-  msg: |-
-    evpn configuration for spine
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    cat >/tmp/evpn_config <<CONFIG
-    router bgp 65100
-     address-family l2vpn evpn
-      advertise-all-vni
-      advertise-svi-ip
-      advertise ipv4 unicast
-  
-    ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
-  
-      neighbor 10.1.0.2 activate
-    #  neighbor 10.1.0.2 soft-reconfiguration inbound
-      neighbor 10.1.0.5 activate
-    #  neighbor 10.1.0.5 soft-reconfiguration inbound
-  
-     exit-address-family
-    !
-  
-    exit
-  
-    ! L3 VRF EVPN handling
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/evpn_config
-    vtysh -c 'clear bgp *'
-ok: [l2] => 
-  msg: |-
-    evpn configuration for l2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    cat >/tmp/evpn_config <<CONFIG
-    router bgp 65200
-     address-family l2vpn evpn
-      advertise-all-vni
-      advertise-svi-ip
-      advertise ipv4 unicast
-  
-    ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
-      vni 1000
-       rd 10.0.0.3:1000
-       route-target import 65000:1000
-       route-target export 65000:1000
-      exit-vni
-  
-      neighbor 10.1.0.6 activate
-    #  neighbor 10.1.0.6 soft-reconfiguration inbound
-  
-     exit-address-family
-    !
-  
-    exit
-  
-    ! L3 VRF EVPN handling
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/evpn_config
-    vtysh -c 'clear bgp *'
-ok: [l1] => 
-  msg: |-
-    evpn configuration for l1
-    =========================================
-    ---
-    - set:
-        vrf:
-          default:
-            router:
-              bgp:
-                address-family:
-                  l2vpn-evpn:
-                    enable: on
-                  ipv4-unicast:
-                    route-export:
-                      to-evpn:
-                        enable: on
-                neighbor:
-                  10.1.0.1:
-                    address-family:
-                      l2vpn-evpn:
-                        enable: on
-                        soft-reconfiguration: on
-  
-    - set:
-        system:
-          config:
-            snippet:
-              frr.conf: |
-                router bgp 65200
-                  address-family l2vpn evpn
-                    advertise ipv4 unicast
-  
-    - set:
-        evpn:
-          enable: on
-          # dad                    Duplicate Address Detection (DAD) configuration parameters
-          # mac-vrf-soo            EVPN MAC VRF Site-of-Origin VPN extended community in ASN:NN or IP-ADDRESS:NN format.
-          # multihoming            Multihoming global configuration parameters
-          # route-advertise        Route advertising
-          route-advertise:
-            nexthop-setting: system-ip-mac
-            svi-ip: on
-          # vni                    VNI
-  
-          vni:
-            '1000':
-              rd: 10.0.0.2:1000 # not 'auto'
-              route-target:
-                export:
-                  '65000:1000': {}
-                import:
-                  '65000:1000': {}
-  
-    - set:
-        nve:
-          vxlan:
-            mac-learning: off
-            flooding:
-              enable: on
-              head-end-replication:
-                evpn: {}
+ok: [spine] => {
+    "msg": "evpn configuration for spine\n=========================================\n#!/bin/bash\n#\nset -e\ncat >/tmp/evpn_config <<CONFIG\nrouter bgp 65100\n address-family l2vpn evpn\n  advertise-all-vni\n  advertise-svi-ip\n  advertise ipv4 unicast\n\n! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs\n\n  neighbor 10.1.0.2 activate\n#  neighbor 10.1.0.2 soft-reconfiguration inbound\n  neighbor 10.1.0.5 activate\n#  neighbor 10.1.0.5 soft-reconfiguration inbound\n\n exit-address-family\n!\n \nexit\n\n! L3 VRF EVPN handling\n!\ndo write\nCONFIG\nvtysh -f /tmp/evpn_config\nvtysh -c 'clear bgp *'\n"
+}
+ok: [l2] => {
+    "msg": "evpn configuration for l2\n=========================================\n#!/bin/bash\n#\nset -e\ncat >/tmp/evpn_config <<CONFIG\nrouter bgp 65200\n address-family l2vpn evpn\n  advertise-all-vni\n  advertise-svi-ip\n  advertise ipv4 unicast\n\n! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs\n  vni 1000\n   rd 10.0.0.3:1000\n   route-target import 65000:1000\n   route-target export 65000:1000\n  exit-vni\n\n  neighbor 10.1.0.6 activate\n#  neighbor 10.1.0.6 soft-reconfiguration inbound\n\n exit-address-family\n!\n \nexit\n\n! L3 VRF EVPN handling\n!\ndo write\nCONFIG\nvtysh -f /tmp/evpn_config\nvtysh -c 'clear bgp *'\n"
+}
+ok: [l1] => {
+    "msg": "evpn configuration for l1\n=========================================\n---\n- set:\n    vrf:\n      default:\n        router:\n          bgp:\n            address-family:\n              l2vpn-evpn:\n                enable: on\n              ipv4-unicast:\n                route-export:\n                  to-evpn:\n                    enable: on\n            neighbor:\n              10.1.0.1:\n                address-family:\n                  l2vpn-evpn:\n                    enable: on\n                    soft-reconfiguration: on\n\n- set:\n    system:\n      config:\n        snippet:\n          frr.conf: |\n            router bgp 65200\n              address-family l2vpn evpn\n                advertise ipv4 unicast\n\n- set:\n    evpn:\n      enable: on\n      # dad                    Duplicate Address Detection (DAD) configuration parameters\n      # mac-vrf-soo            EVPN MAC VRF Site-of-Origin VPN extended community in ASN:NN or IP-ADDRESS:NN format.\n      # multihoming            Multihoming global configuration parameters\n      # route-advertise        Route advertising\n      route-advertise:\n        nexthop-setting: system-ip-mac\n        svi-ip: on\n      # vni                    VNI\n\n      vni:\n        '1000':\n          rd: 10.0.0.2:1000 # not 'auto'\n          route-target:\n            export:\n              '65000:1000': {}\n            import:\n              '65000:1000': {}\n\n- set:\n    nve:\n      vxlan:\n        mac-learning: off\n        flooding:\n          enable: on\n          head-end-replication: \n            evpn: {}\n\n"
+}
 
 TASK [Deploy evpn configuration] ***********************************************
 skipping: [h1]
@@ -1101,16 +503,16 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for sp
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for l1
 
 TASK [template] ****************************************************************
-changed: [l2]
 changed: [spine]
+changed: [l2]
 
 TASK [set_fact] ****************************************************************
 ok: [spine]
 ok: [l2]
 
 TASK [run /tmp/config.sh to deploy evpn config from /home/pipi/netlab_gh/netsim/ansible/templates/evpn/frr.j2] ***
-changed: [spine]
 changed: [l2]
+changed: [spine]
 
 TASK [run vtysh to import evpn config from /home/pipi/netlab_gh/netsim/ansible/templates/evpn/frr.j2] ***
 skipping: [spine]
