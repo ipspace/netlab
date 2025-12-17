@@ -23,7 +23,7 @@ def template_shared_data(topology: Box) -> dict:
   if TEMPLATE_SHARED_DATA is None:
     TEMPLATE_SHARED_DATA = {                      # Create the shared data we need for config templates
       'hostvars': topology.nodes.to_dict(),
-      'hosts': get_host_addresses(topology),
+      'hosts': get_host_addresses(topology).to_dict(),
       'addressing': topology.addressing.to_dict()
     }
 

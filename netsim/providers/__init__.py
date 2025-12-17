@@ -165,7 +165,7 @@ class _Provider(Callback):
         **node.to_dict(),
         'node_provider': devices.get_provider(node,topology.defaults),
         'hostvars': topology.nodes.to_dict(),
-        'hosts': get_host_addresses(topology),
+        'hosts': get_host_addresses(topology).to_dict(),
         'addressing': topology.addressing.to_dict()
     }
 
