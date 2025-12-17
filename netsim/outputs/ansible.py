@@ -24,7 +24,8 @@ def get_host_addresses(topology: Box) -> Box:
   if hosts:
     return hosts
 
-  for name,node in topology.nodes.items():
+  for name in sorted(topology.nodes):
+    node = topology.nodes[name]
     intf_list = node.interfaces
     if 'loopback' in node:                                  # Create a list of all usable interfaces
       intf_list = [ node.loopback ] + node.interfaces       # ... starting with loopback
