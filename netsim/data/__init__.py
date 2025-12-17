@@ -3,6 +3,7 @@
 #
 
 import typing
+from collections.abc import Iterable
 
 import typing_extensions
 from box import Box
@@ -20,13 +21,17 @@ def get_empty_box() -> Box:
 # Another thingy we need all the time: make something a list
 
 def get_a_list(x: typing.Any, ctx: typing.Optional[str] = None) -> list:
-  if isinstance(x,list):
+  if isinstance(x,list):                # Already a list. Cool ;)
     return x
-  if isinstance(x,dict):
+  elif isinstance(x, str):              # String is a scalar for us even though Python things it's an iterator
+    return [ x ]
+  elif isinstance(x,dict):              # Trying to convert dict into list is a clear sign of a troubled mind ;)
     from ..utils import log
     log.fatal(f'Internal error: expected something that could be made into a list, got {x}')
-
-  return [ x ]
+  elif isinstance(x,Iterable):          # All other iterators are evaluated and turned into lists
+    return list(x)
+  else:                                 # Must be something that cannot be iterated
+    return [ x ]                        # ... so the only solution is to return a one-element list
 
 """
 append_to_list: Given a box, a list name, and an item:
