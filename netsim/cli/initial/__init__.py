@@ -20,7 +20,7 @@ def run_initial(cli_args: typing.List[str]) -> None:
 
   log.set_logging_flags(args)
   if args.logging or args.verbose:
-    print("Ansible playbook args: %s" % rest)
+    print(f"Unrecognized Ansible playbook args: {rest}")
 
   if args.output:
     if rest:

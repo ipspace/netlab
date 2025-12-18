@@ -83,8 +83,8 @@ def create_config_file(
   return OK
 
 """
-Create files that are usually created for clab.binds from clab.config_templates
-in the config directory to have everything in one place
+Create all node configuration files, either those specified in the _template_cache
+or in the node 'module' or 'config' lists
 """
 def create_node_configs(topology: Box, nodeset: list, abs_path: Path, args: argparse.Namespace) -> None:
   all_configs = utils.deploy_all_configs(args)
@@ -103,15 +103,15 @@ def create_node_configs(topology: Box, nodeset: list, abs_path: Path, args: argp
     node_deploy = utils.node_deploy_list(n_data,args)                 # Subset of modules to deploy
     node_module = ['initial'] + n_data.get('module',[])               # All modules used on the node
     node_config = n_data.get('config',[])                             # ...plus the extra configs
-    tpt_cache   = n_data[n_provider].get('_template_cache',[])        # Template cache
+    template_cache = n_data[n_provider].get('_template_cache',[])     # Template cache
 
-    tpt_mode: dict = {}
+    template_mode: dict = {}
     if args.generate != 'compare':                                    # Collect config modes for template items
-      tpt_mode = { t_item.fname: t_item.mode for t_item in tpt_cache if 'mode' in t_item }
+      template_mode = { t_item.fname: t_item.mode for t_item in template_cache if 'mode' in t_item }
     created_list = []
 
     # Now build the list of items to create
-    item_list = [ t_item.fname for t_item in tpt_cache ]              # Start with template cache
+    item_list = [ t_item.fname for t_item in template_cache ]         # Start with template cache
     item_list += [ item for item in node_module + node_config         # Next, add other modules
                           if item not in item_list ]                  # and custom config items
     if not all_configs:                                               # ... and filter the list if needed
@@ -125,7 +125,7 @@ def create_node_configs(topology: Box, nodeset: list, abs_path: Path, args: argp
             module=module,
             provider_path=provider_path,
             output_path=abs_path,
-            config_mode=tpt_mode.get(module,'cfg')):
+            config_mode=template_mode.get(module,'cfg')):
         created_list.append(module)
 
     if not log.VERBOSE and created_list:
@@ -147,9 +147,9 @@ def remove_extra_templates(topology: Box, nodeset: list) -> None:
     n_data[t_cache_key] = [ item for item in n_data[t_cache_key] if item.fname in n_modules ]
 
 """
-Create node configurations
-
-The Ansible parameters are already parsed/augmented and received in the 'rest' list
+Create node configurations. The CLI arguments are in 'args' argument, the original
+directory in 'cwd' variable (needed to ensure the files are created in a directory
+relative to the original cwd)
 """
 def run(topology: Box, args: argparse.Namespace, cwd: str) -> None:
   # Find the subset of nodes we should work on
@@ -166,7 +166,7 @@ def run(topology: Box, args: argparse.Namespace, cwd: str) -> None:
     log.info(f'Creating directory: {args.output}')
     abs_path.mkdir(parents=True,exist_ok=True)
 
-  if args.generate != 'ansible':                            # Did the user asked for Ansible-generated configs?
+  if args.generate != 'ansible':                            # Did the user ask for Ansible-generated configs?
     if args.generate == 'compare':                          # Do we have to adjust the output to be directly
       remove_extra_templates(topology,nodeset)              # ... comparable with Ansible?
     create_node_configs(topology,nodeset,abs_path,args)

@@ -1,8 +1,10 @@
+#!/bin/bash
+#
 export NETLAB_PROVIDER=clab
 d_list=`netlab show devices --format yaml|yq -r '. | keys | .[]'`
 t_pattern=integration/**/[0-9]*.yml
 #t_pattern=integration/initial/03*.yml
-d_list="nxos routeros7 dnsmasq asav"
+#d_list="nxos routeros7 dnsmasq asav"
 for device in $d_list; do
   echo "Testing device: $device"
   for test in $t_pattern; do
