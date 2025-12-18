@@ -9,6 +9,7 @@ import importlib
 import os
 import shutil
 import sys
+import time
 import typing
 from pathlib import Path
 
@@ -276,6 +277,7 @@ def load_snapshot(
   if not ghosts:
     topology = augment.nodes.ghost_buster(topology)
 
+  topology.defaults._cache.timestamp = time.time()
   global_vars.init(topology)
   check_modified_source(snapshot,topology,warn_modified)
   return topology
