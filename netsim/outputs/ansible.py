@@ -7,46 +7,13 @@ import typing
 from box import Box
 
 from ..augment import nodes, plugin
-from ..data import append_to_list, global_vars
 from ..utils import files as _files
 from ..utils import log, strings, templates
-from ..utils import routing as _rp_utils
 from . import _TopologyOutput, check_writeable
-from .common import adjust_inventory_host
+from .common import adjust_inventory_host, get_host_addresses
 
 forwarded_port_name = { 'ssh': 'ansible_port', }
 
-"""
-Create a 'hosts' dictionary listing usable IPv4 and IPv6 addresses of all lab devices.
-"""
-def get_host_addresses(topology: Box) -> Box:
-  hosts = global_vars.get('hosts')                          # Try to use a cached version
-  if hosts:
-    return hosts
-
-  for name in sorted(topology.nodes):
-    node = topology.nodes[name]
-    intf_list = node.interfaces
-    if 'loopback' in node:                                  # Create a list of all usable interfaces
-      intf_list = [ node.loopback ] + node.interfaces       # ... starting with loopback
-      for af in ['ipv4','ipv6']:
-        # If the loopback interface has the desired address, extract IP address from the CIDR prefix
-        #
-        if af in node.loopback and isinstance(node.loopback[af],str):
-          lb = _rp_utils.get_intf_address(node.loopback[af])
-          append_to_list(hosts[name],'loopback',lb)
-
-    for intf in intf_list:                                  # Now iterate over interfaces
-      h_name = f'{name}-{intf.vrf}' if 'vrf' in intf else name
-      for af in ('ipv4','ipv6'):                            # ... and collect IPv4 and IPv6 addresses
-        if not isinstance(intf.get(af,False),str):          # Is the IP address a string (= usable IP address)?
-          continue
-      
-        addr = _rp_utils.get_intf_address(intf[af])         # Extract IP address from the CIDR prefix
-        append_to_list(hosts[h_name],af,addr)               # ... and append it to the list of usable IP addresses
-
-  global_vars.set('hosts',hosts)                            # Cache the hosts dictionary
-  return hosts
 
 """
 Add the hosts dictionary to Ansible inventory as an 'all' group variable 

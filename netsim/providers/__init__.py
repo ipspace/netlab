@@ -161,13 +161,8 @@ class _Provider(Callback):
       for item in template_cache:
         print(f"- {item}")
 
-    node_data = {
-        **node.to_dict(),
-        'node_provider': devices.get_provider(node,topology.defaults),
-        'hostvars': topology.nodes.to_dict(),
-        'hosts': get_host_addresses(topology).to_dict(),
-        'addressing': topology.addressing.to_dict()
-    }
+    node_dict = templates.template_node_data(node,topology)
+    create_list = []
 
     for t_item in template_cache:
       template_path = t_item.fpath
@@ -178,38 +173,38 @@ class _Provider(Callback):
 
       # If the file already exists (either shared or node-specific), skip re-rendering
       if full_out_path.exists() and '-shared-' in str(full_out_path):
-        if not log.QUIET and 'mapping' in t_item:
-          strings.print_colored_text('[REUSED]  ','bright_cyan','Mapped existing ')
-          print(f"{str(full_out_path)} to {node.name}:{t_item.mapping} (from {short_path})")
+        if log.VERBOSE:
+          if 'mapping' in t_item:
+            strings.print_colored_text('[REUSED]  ','bright_cyan','Mapped existing ')
+            print(f"{str(full_out_path)} to {node.name}:{t_item.mapping} (from {short_path})")
+        else:
+          create_list.append(f'{t_item.fname} (shared)')
         continue
 
-      try:
-        node_paths = templates.config_template_paths(
-                        node=node,
-                        fname=t_item.fname,
-                        topology=topology,
-                        provider_path=self.get_full_template_path())
-        templates.write_template(
-          in_folder=os.path.dirname(template_path),
-          j2=os.path.basename(template_path),
-          data=node_data,
-          out_folder=str(full_out_path.parent),
-          filename=full_out_path.name,
-          extra_path=node_paths)
-      except Exception as ex:
-        log.error(
-          text=f"Error rendering {short_path} into {t_item.output}",
-          more_data = [f'{type(ex).__name__}: {str(ex)}'] + templates.template_error_location(ex),
-          category=log.FatalError,
-          module=self.provider)
+      if not templates.render_config_template(
+                node=node,
+                node_dict=node_dict,
+                template_id=t_item.fname,
+                template_path=t_item.fpath,
+                output_file=str(full_out_path),
+                provider_path=self.get_full_template_path(),
+                topology=topology,
+                module=self.provider):
+        continue
 
-      if not log.QUIET:
+      if log.VERBOSE:
         if t_item.mapping:
           strings.print_colored_text('[MAPPED]  ','bright_cyan','Mapped ')
           print(f"{str(full_out_path)} to {node.name}:{t_item.mapping} (from {short_path})")
         else:
           strings.print_colored_text('[CREATED] ','bright_cyan','Created ')
           print(f"{str(full_out_path)} for {node.name} (from {short_path})")
+      elif not log.QUIET:
+        create_list.append(t_item.fname)
+
+    if create_list:
+      strings.print_colored_text('[CREATED] ','bright_cyan','Created ')
+      print(f"{node.name}: {','.join(create_list)}")
 
   def create(self, topology: Box, fname: typing.Optional[str]) -> None:
     self.transform(topology)

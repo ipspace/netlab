@@ -194,7 +194,7 @@ def deploy_configs(command: str = "test", fast: typing.Optional[bool] = False) -
   if os.environ.get('NETLAB_FAST_CONFIG',None) or fast:
     cmd.append("--fast")
 
-  if not run_command(set_ansible_flags(cmd)):
+  if not run_command(set_ansible_flags(cmd),ignore_errors=not log.VERBOSE):
     log.fatal("netlab initial failed, aborting...",command)
 
   log.status_success()

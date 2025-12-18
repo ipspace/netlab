@@ -69,7 +69,7 @@ def playbook(name: str, args: typing.List[str], abort_on_error: bool = True) -> 
   cmd = ['ansible-playbook',pbname]
   cmd.extend(args)
 
-  OK = external_commands.run_command(cmd)
+  OK = external_commands.run_command(cmd,ignore_errors=not abort_on_error and not log.VERBOSE)
   if not OK and abort_on_error:
     log.fatal(f"Executing Ansible playbook {pbname} failed")
 
