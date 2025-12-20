@@ -125,7 +125,7 @@ def read_from_pickle(path: str) -> typing.Optional[Box]:
 
   try:
     src_file = _files.absolute_path(path)         # Try to find the absolute path of the source file
-    if src_file != data._cache.source:            # Not the same, cannot pickle
+    if str(src_file) != str(data._cache.source):  # Not the same, cannot pickle
       if log.debug_active('defaults'):
         print(f'RFP: source file {src_file} != pickled source {data._cache.source} from {pickle_path}')
       return None
