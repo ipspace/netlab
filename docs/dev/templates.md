@@ -1,9 +1,9 @@
 (dev-templates)=
-# Jinja2 Filters in netlab Configuration Templates
+# Jinja2 Extensions in netlab Configuration Templates
 
 Starting with release 26.01, _netlab_ generates all configuration files internally using the standard Jinja2 Python library. This approach makes _netlab_ more stable and independent of Ansible whims (and associated headaches), but also makes most Ansible-specific Jinja2 filters unavailable in _netlab_ configuration templates.
 
-## Additional Jinja2 Templates
+## Additional Jinja2 Filters
 
 However, to make it easier to write configuration templates for network devices, _netlab_ includes an independent implementation of these Ansible filters:
 
@@ -44,7 +44,7 @@ For example:
 * You can use the **default** filter on elements in nested dictionaries. For example, `loopback.ipv4|default('10.0.0.1')` will return `10.0.0.1` if the loopback interface has no IPv4 address, or if the device has no loopback interface.
 
 ```{warning}
-Do not use undefined values with the **‌ipaddr** filter. If you think you have to check the input data against the **‌ipaddr** filter, use `some_input is defined and some_input|ipaddr`
+Do not use undefined values with the **‌ipaddr** filter. If you think you have to check the input data against the **‌ipaddr** filter, use `some_input is defined and some_input|ipaddr`. Alternatively, use `some_input|default('')|ipaddr`
 ```
 
 For consistency with built-in configuration templates, use `is defined` instead of `"key" in dictionary`. For example, use `loopback.ipv4 is defined` instead of `"ipv4" in loopback`. Unless you can safely assume that the **loopback** is a dictionary, a safer test using the "a in b" paradigm is `loopback is defined and "ipv4" in loopback`.
