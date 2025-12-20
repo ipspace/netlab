@@ -3,14 +3,17 @@ Building device configurations in the specified output directory
 """
 
 import argparse
+import os
 import shutil
+import typing
 from pathlib import Path
 
 from box import Box
 
 from ...augment import devices
 from ...providers import get_provider_module
-from ...utils import log
+from ...utils import log, strings
+from ...utils import templates as u_templates
 from .. import _nodeset, ansible, error_and_exit
 from . import templates as i_templates
 from . import utils
@@ -32,88 +35,145 @@ def cleanup_config_dir(output_path: Path, args: argparse.Namespace) -> None:
     except Exception as ex:
       log.error(f"Failed to remove directory '{args.output}'",more_data=[ str(ex) ])
   except ValueError:
-    log.info(f'Cannot clean a directory outside of the current directory')
+    log.info(f'Cannot clean a directory outside of the lab directory')
 
 """
-Create files that are usually created for clab.binds from clab.config_templates
-in the config directory to have everything in one place
+Given the node data and module/template name, create a node config file
 """
-def create_from_config_templates(topology: Box, nodeset: list, abs_path: Path, args: argparse.Namespace) -> int:
-  output_count = 0
+def create_config_file(
+      node: Box,
+      node_dict: dict,
+      topology: Box,
+      module: str,
+      provider_path: str,
+      output_path: Path,
+      template_path: typing.Optional[str] = None,
+      config_mode: str = '') -> bool:
+
+  o_suffix = '.sh' if (config_mode in ('ns','sh')) else '.cfg'
+  o_fname = f'{node.name}.{module}{o_suffix}'           # Generate output filename
+  if not template_path:
+    t_path = u_templates.find_provider_template(        # Find the template path if not specified
+              node=node,
+              fname=module,
+              topology=topology,
+              provider_path=provider_path)
+  else:
+    t_path = template_path
+
+  if not t_path:
+    log.error(
+      f'Cannot find {module} configuration template for {node.name}/device {node.device}',
+      module='configs',
+      more_hints=["Use the '--debug template' option if you're troubleshooting custom configuration templates"])
+    return False
+
+  OK = i_templates.render_config_template(              # ... node.template.cfg/sh file in the output directory
+          node=node,
+          node_dict=node_dict,
+          template_id=module,
+          template_path=t_path,
+          output_file=str(output_path / o_fname),
+          provider_path=provider_path,
+          topology=topology)
+  
+  if OK and log.VERBOSE:
+    log.info(f"Rendered {module} template for {node.name} into {o_fname}")
+
+  return OK
+
+"""
+Create all node configuration files, either those specified in the _template_cache
+or in the node 'module' or 'config' lists
+"""
+def create_node_configs(topology: Box, nodeset: list, abs_path: Path, args: argparse.Namespace) -> None:
+  all_configs = utils.deploy_all_configs(args)
   for n_name in nodeset:
     n_data = topology.nodes[n_name]
-    n_provider = devices.get_provider(n_data,topology.defaults)
-    if f'{n_provider}._template_cache' not in n_data:       # The node is not using config templates
-      continue                                              # Move on
 
+    # Get provider-related node information
+    #
+    n_provider = devices.get_provider(n_data,topology.defaults)
     p = get_provider_module(topology,n_provider)
     provider_path = p.get_full_template_path()
 
-    # Next, update template cache and iterate over it
-    i_templates.update_template_cache(n_data,n_provider,provider_path,topology)
-    node_dict = None
-    node_deploy = utils.node_deploy_list(n_data,args)
-    node_module = n_data.get('module',[])
-    node_config = n_data.get('config',[])
-    for t_item in n_data[n_provider].get('_template_cache',[]):
-      if not t_item.fpath:
-        continue
+    # Get other node information
+    #
+    node_dict = i_templates.template_node_data(n_data,topology)       # The dictionary used in templates
+    node_deploy = utils.node_deploy_list(n_data,args)                 # Subset of modules to deploy
+    node_module = ['initial'] + n_data.get('module',[])               # All modules used on the node
+    node_config = n_data.get('config',[])                             # ...plus the extra configs
+    template_cache = n_data[n_provider].get('_template_cache',[])     # Template cache
 
-      module = t_item.fname
+    template_mode: dict = {}
+    if args.generate != 'compare':                                    # Collect config modes for template items
+      template_mode = { t_item.fname: t_item.mode for t_item in template_cache if 'mode' in t_item }
+    created_list = []
 
-      OK = module in node_deploy
-      OK |= module not in node_module and module not in node_config and 'initial' in node_deploy
-      if not OK:
-        continue
+    # Now build the list of items to create
+    item_list = [ t_item.fname for t_item in template_cache ]         # Start with template cache
+    item_list += [ item for item in node_module + node_config         # Next, add other modules
+                          if item not in item_list ]                  # and custom config items
+    if not all_configs:                                               # ... and filter the list if needed
+      item_list = [ item for item in item_list if item in node_deploy ]
 
-      if node_dict is None:                                 # Create node data in template-friendly format if needed
-        node_dict = i_templates.template_node_data(n_data,topology)
-
-      f_mode = t_item.get('mode','')                        # Figure out the output file name
-      o_suffix = '.sh' if f_mode in ('ns','sh') else '.cfg'
-      o_fname = f'{n_name}.{t_item.fname}{o_suffix}'        # Try to render the template into
-      if i_templates.render_config_template(                # ... node.template.cfg/sh file in the output directory
+    for module in item_list:
+      if create_config_file(
             node=n_data,
             node_dict=node_dict,
-            template_id=module,
-            template_path=t_item.fpath,
-            output_file=str(abs_path / o_fname),
+            topology=topology,
+            module=module,
             provider_path=provider_path,
-            topology=topology):
-        log.info(f"Rendered {t_item.fname} template for {n_data.name} into {o_fname}")
+            output_path=abs_path,
+            config_mode=template_mode.get(module,'cfg')):
+        created_list.append(module)
 
-      output_count += 1
-
-  return output_count
+    if not log.VERBOSE and created_list:
+      strings.print_colored_text(strings.pad_err_code('CREATED',10),'green')
+      print(f"{n_name}: {','.join(created_list)}")
 
 """
-Create node configurations
-
-The Ansible parameters are already parsed/augmented and received in the 'rest' list
+Do not generate configuration files that are not module- or custom configs
 """
-def run(topology: Box, args: argparse.Namespace, rest: list) -> None:
+def remove_extra_templates(topology: Box, nodeset: list) -> None:
+  for n_name in nodeset:
+    n_data = topology.nodes[n_name]
+    n_provider = devices.get_provider(n_data,topology.defaults)
+    t_cache_key = f'{n_provider}._template_cache' 
+    if t_cache_key not in n_data:
+      continue
+
+    n_modules = n_data.get('module',[]) + n_data.get('config',[]) + ['initial']
+    n_data[t_cache_key] = [ item for item in n_data[t_cache_key] if item.fname in n_modules ]
+
+"""
+Create node configurations. The CLI arguments are in 'args' argument, the original
+directory in 'cwd' variable (needed to ensure the files are created in a directory
+relative to the original cwd)
+"""
+def run(topology: Box, args: argparse.Namespace, cwd: str) -> None:
   # Find the subset of nodes we should work on
   #
   nodeset = _nodeset.parse_nodeset(args.limit,topology) if args.limit else list(topology.nodes.keys())
 
-  abs_path = Path(args.output).resolve()                    # Output directory could be outside lab directory
+  abs_path = Path(cwd,args.output).resolve()                # Output directory is relative to starting directory
   if args.clean:                                            # Try to clean it up if asked to do so
     cleanup_config_dir(abs_path, args)
 
+  if cwd != os.getcwd():
+    log.info(f'Configuration files will be created in {str(abs_path)}')
   if not abs_path.exists():                                 # Create the output directory if needed
     log.info(f'Creating directory: {args.output}')
     abs_path.mkdir(parents=True,exist_ok=True)
 
-  # Create files specified in clab.config_templates directly in the Python code (so they use our
-  # internal versions of Jinja2 filters), and run an Ansible playbook to create the rest
-  #
-  output_count = create_from_config_templates(topology,nodeset,abs_path,args)
-
-  if utils.nodeset_requires_ansible(nodeset,topology,args):
-    if output_count:
-      print()
-      log.info('Starting Ansible to render the rest of the configurations')
-    rest = ['-e',f'config_dir="{abs_path}"' ] + rest        # Add output directory path to Ansible variables
+  if args.generate != 'ansible':                            # Did the user ask for Ansible-generated configs?
+    if args.generate == 'compare':                          # Do we have to adjust the output to be directly
+      remove_extra_templates(topology,nodeset)              # ... comparable with Ansible?
+    create_node_configs(topology,nodeset,abs_path,args)
+  else:
+    ansible.check_version()
+    rest = utils.ansible_args(args)
+    rest += ['-e',f'config_dir="{abs_path}"' ]              # Add output directory path to Ansible variables
     ansible.playbook('create-config.ansible',rest)
 
   log.info(f"Initial configurations have been created in the '{args.output}' directory")

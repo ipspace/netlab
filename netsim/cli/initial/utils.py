@@ -61,6 +61,14 @@ def initial_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namesp
     '--no-refresh',
     dest='no_refresh', action='store_true',
     help=argparse.SUPPRESS)
+  parser.add_argument(
+    '--generate',
+    dest='generate', action='store',choices=['ansible','internal','compare'],
+    help=argparse.SUPPRESS)
+  parser.add_argument(
+    '--debug', dest='debug', action='store',nargs='*',
+    choices=sorted(['template','paths','defaults']),
+    help=argparse.SUPPRESS)
   parser_lab_location(parser,instance=True,i_used=True,action='configure')
 
   return parser.parse_known_args(args)
@@ -86,6 +94,9 @@ def ansible_args(args: argparse.Namespace) -> list:
     if args.module != "*":
       rest = ['-e','modlist='+args.module] + rest
     rest = ['-t','module'] + rest
+
+  if args.generate == 'ansible':
+    rest += ['-e','netlab_ansible_skip_module=[]']
 
   if args.custom:
     rest = ['-t','custom'] + rest
@@ -115,11 +126,17 @@ def get_deploy_parts(args: argparse.Namespace) -> list:
   return deploy_parts
 
 """
+Do we need to deploy/create all node configuration snippets?
+"""
+def deploy_all_configs(args: argparse.Namespace) -> bool:
+  return not args.module and not args.initial and not args.custom
+
+"""
 node_deploy_list -- Figure out what needs to be deployed on the node
 based on CLI arguments
 """
 def node_deploy_list(node: Box, args: argparse.Namespace) -> list:
-  all_config = not args.module and not args.initial and not args.custom
+  all_config = deploy_all_configs(args)
 
   node_configs = []
   if args.module or all_config:
@@ -140,6 +157,9 @@ node_requires_ansible: Figure out whether the node needs deployment through
 an Ansible playbook based on what the user wants configured
 """
 def node_requires_ansible(node: Box, args: argparse.Namespace) -> bool:
+  if args.generate in ['compare','internal']:
+    return False
+
   n_deploy = node_deploy_list(node,args)
   n_skip   = node.get('netlab_ansible_skip_module',[])
   return bool(set(n_deploy) - set(n_skip))
