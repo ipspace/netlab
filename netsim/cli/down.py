@@ -73,6 +73,7 @@ def down_cleanup(topology: Box, verbose: bool = False) -> None:
       cleanup_list.append(s_filename)
 
   cleanup_list.extend(topology.defaults.automation.ansible.cleanup)
+  cleanup_list.extend(topology.defaults.automation.configs.cleanup)
   for v in topology.get('_cleanup',{}).values():
     cleanup_list += v if isinstance(v,list) else [ v ]
 

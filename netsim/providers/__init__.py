@@ -111,7 +111,7 @@ class _Provider(Callback):
       return
     
     map_dict = filemaps.mapping_to_dict(mappings)
-    base_path = pathlib.Path(f"{self.provider}_files")
+    base_path = pathlib.Path(f"node_files")
     for file,mapping in map_dict.items():
       file = file.replace('@','.')
       out_path = base_path / node.name / file
@@ -139,7 +139,7 @@ class _Provider(Callback):
       if map_file:
         template_entry['mapping'] = map_file
 
-      append_to_list(node[self.provider],'_template_cache',template_entry)
+      append_to_list(node,'_template_cache',template_entry)
 
     # Finally, remove the cached data we used to generate template file names. We won't need it any longer
     #
@@ -150,7 +150,7 @@ class _Provider(Callback):
       node: Box,
       topology: Box) -> None:
 
-    template_cache = node.get(f'{self.provider}._template_cache',None)
+    template_cache = node.get(f'_template_cache',None)
     if not template_cache:
       return
 
