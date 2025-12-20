@@ -28,7 +28,7 @@ def update_config_files(n_data: Box, topology: Box, args: argparse.Namespace) ->
   i_templates.update_template_cache(n_data,n_provider,provider_path,topology)
   node_dict = None
 
-  for t_item in n_data[n_provider].get('_template_cache',[]):
+  for t_item in n_data.get('_template_cache',[]):
     if not t_item.get('modified',False):
       continue
     if not t_item.fpath:

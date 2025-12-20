@@ -1,5 +1,5 @@
 #
-# Common routines for create-topology script
+# Common routines for Jinja2 templating operations
 #
 import functools
 import os

@@ -103,7 +103,7 @@ def create_node_configs(topology: Box, nodeset: list, abs_path: Path, args: argp
     node_deploy = utils.node_deploy_list(n_data,args)                 # Subset of modules to deploy
     node_module = ['initial'] + n_data.get('module',[])               # All modules used on the node
     node_config = n_data.get('config',[])                             # ...plus the extra configs
-    template_cache = n_data[n_provider].get('_template_cache',[])     # Template cache
+    template_cache = n_data.get('_template_cache',[])                 # Template cache
 
     template_mode: dict = {}
     if args.generate != 'compare':                                    # Collect config modes for template items
@@ -138,8 +138,7 @@ Do not generate configuration files that are not module- or custom configs
 def remove_extra_templates(topology: Box, nodeset: list) -> None:
   for n_name in nodeset:
     n_data = topology.nodes[n_name]
-    n_provider = devices.get_provider(n_data,topology.defaults)
-    t_cache_key = f'{n_provider}._template_cache' 
+    t_cache_key = f'_template_cache'
     if t_cache_key not in n_data:
       continue
 

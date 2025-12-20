@@ -87,8 +87,6 @@ def destroy_ovs_bridge( brname: str ) -> bool:
   log.print_verbose( f"Delete OVS bridge '{brname}': {status}" )
   return True
 
-GENERATED_CONFIG_PATH = "clab_files"
-
 '''
 normalize_clab_filemaps: convert clab templates and file binds into host:target lists
 '''
@@ -173,12 +171,12 @@ def load_kmods(topology: Box) -> None:
 Add node files mapped through 'config_templates' to clab.binds
 '''
 def add_templates_to_binds(node: Box) -> None:
-  if 'clab._template_cache' not in node:
+  if '_template_cache' not in node:
     return
   
   bind_dict = filemaps.mapping_to_dict(node.get('clab.binds',[]))
   bind_rev  = { v.split(':')[0]:k for k,v in bind_dict.items() }
-  for t_item in node.clab._template_cache:
+  for t_item in node._template_cache:
     if 'mapping' not in t_item:
       continue
     map_fname = t_item.mapping.split(':')[0]
@@ -325,7 +323,7 @@ class Containerlab(_Provider):
         dp_data.build ])
 
   def deploy_node_config(self, node: Box, topology: Box, deploy_list: list) -> None:
-    node_files = node.get('clab._template_cache',{})
+    node_files = node.get('_template_cache',{})
     if not node_files:                                          # No node files => no config to deploy here
       return
     node_name = self.get_node_name(node.name,topology)          # ... get container/namespace name

@@ -50,7 +50,7 @@ def template_node_data(n_data: Box, topology: Box) -> dict:
 update_template_cache: refresh the node template and check the timestamps on input and output files
 """
 def update_template_cache(node: Box, n_provider: str, provider_path: str, topology: Box) -> None:
-  t_cache = node.get(f'{n_provider}._template_cache')
+  t_cache = node.get(f'_template_cache')
   if not t_cache:
     return
   for t_item in t_cache:
