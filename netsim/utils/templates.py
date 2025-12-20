@@ -21,6 +21,8 @@ def add_j2_filters(ENV: Environment) -> None:
   for fname,fcode in filters.UTILS_FILTERS.items():         # Iterate over internal filter definitions
     ENV.filters[fname] = fcode                              # ... emulating the ansible.utils filters we use
     ENV.filters[f'ansible.utils.{fname}'] = fcode           # ... define simple filter name and its Ansible FQFN
+    ENV.filters[f'ansible.netcommon.{fname}'] = fcode       # ... plus the obsolete FQFN
+
 
   for fname,fcode in filters.BUILTIN_FILTERS.items():       # Do the same for ansible.builtin filters we use
     ENV.filters[fname] = fcode
