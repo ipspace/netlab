@@ -383,6 +383,7 @@ def load(
   if user_defaults or user_defaults is None:                # User defaults missing or specified?
     include_environment_defaults(topology)                  # ... we care about user defaults, add environment vars
 
+  topology.defaults._cache.timestamp = time.time()          # Add a unique topology timestamp
   return topology
 
 #
