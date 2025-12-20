@@ -12,7 +12,7 @@ Return the results of topology transformation YAML format
 * Remove elements that are not relevant for comparison
 * Create YAML text out of the remaining dictionary
 """
-def transformation_results_yaml(topology: Box) -> None:
+def transformation_results_yaml(topology: Box) -> str:
   # Remove template caches, which are specific to the directory in which the
   # tests were executed, from the test results
   #
