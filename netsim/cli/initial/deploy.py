@@ -89,8 +89,12 @@ def print_internal_stats(topology: Box) -> None:
 
     failed_list = n_data.get('_deploy.failed',[])
     strings.print_colored_text(f'{n_name:29}','red' if failed_list else 'green')
-    if n_data.get('_deploy.success',0):
-      ok_txt = f'OK={n_data._deploy.success}'
+    n_success = n_data.get('_deploy.success',[])
+    if len(n_success):
+      if failed_list:
+        ok_txt = f'OK: {",".join(n_success)} '
+      else:
+        ok_txt = f'OK: {len(n_data._deploy.success)} '
       strings.print_colored_text(f'{ok_txt:8}','green')
     else:
       print(' ' * 8,end='')

@@ -343,7 +343,7 @@ class Containerlab(_Provider):
             more_data = [f'node: {node.name} / device: {node.device}'],
             category=log.FatalError,
             module='clab')
-          continue
+          break
         config_cmd = f'docker exec {node_name} sh {n_file.mapping}' # Container-side script
         log.info(f'Executing {mod_name} configuration for node {node.name}')
       if not config_cmd:                                        # Not an executable file?
@@ -355,7 +355,7 @@ class Containerlab(_Provider):
                   check_result=True,                            # Capture stdout
                   return_exitcode=True)                         # and return exit code
       if status == 0:                                           # Everything OK?
-        node._deploy.success = node.get('_deploy.success',0) + 1
+        append_to_list(node._deploy,'success',mod_name)
       else:                                                     # Otherwise we failed
         if external_commands.CAPTURED_STDERR:                   # Did we get some printout?
           printout='  '+strings.wrap_error_message(external_commands.CAPTURED_STDERR,indent=2)
@@ -367,6 +367,7 @@ class Containerlab(_Provider):
           skip_header=True,
           module='initial')
         append_to_list(node._deploy,'failed',mod_name)
+        break
 
   def capture_command(self, node: Box, topology: Box, args: argparse.Namespace) -> list:
     cmd = strings.string_to_list(topology.defaults.netlab.capture.command)
