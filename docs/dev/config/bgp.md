@@ -56,7 +56,7 @@ _netlab_ assumes the IPv4 BGP session carries the IPv4 address family (plus othe
 * **bgp.neighbors** -- A list of IBGP and EBGP neighbors
 * **bgp.next_hop_self** -- When set to *True*, the BGP process should set itself as the next hop on EBGP routes propagated as IBGP routes. This attribute is propagated to the neighbor **next_hop_self** attribute and can be ignored if you configure **next-hop-self** on individual neighbors.
 * **bgp.originate** (optional) -- A list of additional IPv4 prefixes that should be advertised by the BGP process. You'll probably have to create static routes to support these prefixes.
-* **bgp.router_id** -- The BGP router ID
+* **bgp.router_id** -- The BGP router ID (always set). Always configure the BGP router ID to ensure your BGP configuration works in IPv6-only deployments.
 * **bgp.rr** (optional) -- When set to *True*, the device is a BGP route reflector. This attribute is propagated to the **rr_client** neighbor attribute and can be ignored if you configure **route-reflector-client** on individual neighbors.
 * **bgp.rr_cluster_id** (optional) -- user-configured BGP route-reflector cluster ID. If you need a cluster ID, use `bgp.rr_cluster_id|default(bgp.router_id)`
 
