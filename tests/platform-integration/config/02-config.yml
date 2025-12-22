@@ -1,0 +1,58 @@
+message: |
+  This topology tests various device configuration mechanisms for non-daemon devices
+
+defaults.sources.extra: [ ../../integration/wait_times.yml ]
+
+plugin: [ files ]
+module: [ ospf ]
+
+nodes:
+  h1:
+    device: linux
+    provider: clab        # Linux container, configured through namespace scripts
+  h2:
+    device: linux
+    provider: libvirt     # Linux VM, configured through Ansible
+  r1:
+    device: eos
+    provider: clab        # Arista EOS container, configured through Ansible
+  r2:
+    device: frr
+    provider: clab        # FRR container, configured through Ansible
+  r3:
+    device: frr
+    provider: libvirt     # FRR VM, configured through Ansible
+
+links:
+- r2:
+  r3:
+  shutdown: True
+- r1-h1
+- r1:
+    shutdown: True
+  r2:
+- r3-h2
+
+validate:
+  up_r1:
+    nodes: [ r1 ]
+    config.inline.eos: |
+      interface {{ interfaces[1].ifname }}
+        no shutdown
+  o_r1:
+    nodes: [ r2 ]
+    wait: ospfv2_adj_p2p
+    plugin: ospf_neighbor(nodes.r1.ospf.router_id)
+  up_r2_r3:
+    nodes: [ r2, r3 ]
+    config.inline.frr: |
+      #!/bin/bash
+      ip link set {{ interfaces[0].ifname }} up
+  o_r3:
+    nodes: [ r2 ]
+    wait: ospfv2_adj_p2p
+    plugin: ospf_neighbor(nodes.r3.ospf.router_id)
+  ping:
+    nodes: [ h1 ]
+    wait: ospfv2_spf
+    plugin: ping('h2')
