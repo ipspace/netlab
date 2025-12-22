@@ -1,5 +1,5 @@
 #
-# netlab show attributes -- display supported attributes
+# netlab show defaults -- display system defaults
 #
 
 import argparse

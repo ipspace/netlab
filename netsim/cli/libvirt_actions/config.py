@@ -1,7 +1,7 @@
 #
-# netlab config command
+# netlab libvirt config command
 #
-# Deploy custom configuration template to network devices
+# Display vagrant box build recipe for the specified device
 #
 import argparse
 import glob

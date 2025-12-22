@@ -1,7 +1,7 @@
 #
-# netlab config command
+# netlab clab build command
 #
-# Deploy custom configuration template to network devices
+# Build custom container images
 #
 import argparse
 import os

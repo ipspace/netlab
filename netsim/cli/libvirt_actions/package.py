@@ -1,7 +1,7 @@
 #
-# netlab config command
+# netlab libvirt package command
 #
-# Deploy custom configuration template to network devices
+# Build a Vagrant box for a network device
 #
 import argparse
 import os

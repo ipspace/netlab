@@ -1,7 +1,7 @@
 #
-# netlab config command
+# netlab libvirt remove command
 #
-# Deploy custom configuration template to network devices
+# Delete a Vagrant box an the associated libvirt volume
 #
 import argparse
 import typing

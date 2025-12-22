@@ -1,7 +1,5 @@
 #
-# netlab validate command
-#
-# Perform lab validation tests
+# Plugin functions for the "netlab validate" command
 #
 import os
 import typing

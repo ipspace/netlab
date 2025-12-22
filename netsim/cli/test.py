@@ -1,7 +1,7 @@
 #
-# netlab config command
+# netlab test command
 #
-# Deploy custom configuration template to network devices
+# Start a test topology to validate a netlab installation
 #
 import argparse
 import os

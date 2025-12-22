@@ -1,7 +1,5 @@
 #
-# netlab validate command
-#
-# Perform lab validation tests
+# The main test-execution code of the "netlab validate" command
 #
 import argparse
 import math

@@ -1,7 +1,5 @@
 #
-# netlab validate command
-#
-# Perform lab validation tests
+# SuzieQ functions for the netlab validate command
 #
 import typing
 

@@ -1,7 +1,8 @@
 #
 # netlab graph command
 #
-# Connect a graph description for Graphviz or D2
+# Create a graph description for Graphviz or D2. Optionally, use these tools
+# (when installed) to create the final graph image
 #
 import argparse
 import textwrap

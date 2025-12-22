@@ -1,7 +1,7 @@
 #
-# netlab validate command
+# Device-handling functions for the "netlab validate"
 #
-# Perform lab validation tests
+# Execute a command or deploy a custom config on the specified node
 #
 import argparse
 import typing

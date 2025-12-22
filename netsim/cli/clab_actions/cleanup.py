@@ -1,7 +1,7 @@
 #
-# netlab config command
+# netlab clab cleanup command
 #
-# Deploy custom configuration template to network devices
+# Cleanup the Docker environment after a nasty containerlab-related failure
 #
 import argparse
 import sys

@@ -1,5 +1,5 @@
 #
-# netlab read command
+# netlab read command (obsolete)
 #
 # Read network topology, add default settings, and dump the results
 #

@@ -1,5 +1,5 @@
 #
-# Common validation utility functions
+# Read an alternate validation file specified in the 'netlab validate --source' parameter
 #
 
 

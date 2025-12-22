@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
 #
-# Print netlab usage
+# Display netlab version and the information about installed libraries
 #
 
 import importlib

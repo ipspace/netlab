@@ -1,7 +1,7 @@
 #
-# netlab config command
+# netlab clab command
 #
-# Deploy custom configuration template to network devices
+# Containerlab-specific functions
 #
 import argparse
 import typing

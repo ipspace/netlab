@@ -1,7 +1,7 @@
 #
-# netlab config command
+# netlab install command
 #
-# Deploy custom configuration template to network devices
+# Run netlab installation scripts
 #
 import argparse
 import csv

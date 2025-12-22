@@ -1,7 +1,7 @@
 #
-# netlab config command
+# netlab show command
 #
-# Deploy custom configuration template to network devices
+# Show numerous netlab system parameters
 #
 import argparse
 import sys

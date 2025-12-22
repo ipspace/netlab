@@ -1,7 +1,7 @@
 #
-# netlab config command
+# netlab libvirt command
 #
-# Deploy custom configuration template to network devices
+# Execute vagrant/libvirt-related functions
 #
 import typing
 

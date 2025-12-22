@@ -1,7 +1,7 @@
 #
 # netlab down command
 #
-# * Transform lab topology or read transformed lab topology from snapshot file
+# * Read transformed lab topology from snapshot file
 # * Stop the lab, including provider-specific pre- and post-stop hooks
 # * Clean up the working directory (optional)
 #

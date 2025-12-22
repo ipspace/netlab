@@ -1,7 +1,7 @@
 #
-# netlab config command
+# netlab clab tarball command
 #
-# Deploy custom configuration template to network devices
+# Package containerlab configuration and device configs into a tarball
 #
 import argparse
 import os

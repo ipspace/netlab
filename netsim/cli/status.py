@@ -1,7 +1,7 @@
 #
-# netlab config command
+# netlab status command
 #
-# Deploy custom configuration template to network devices
+# Display the status of the specified lab or system-wide status
 #
 import argparse
 import os
