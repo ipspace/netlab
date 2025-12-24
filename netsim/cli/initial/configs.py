@@ -15,7 +15,6 @@ from ...providers import get_provider_module
 from ...utils import log, strings
 from ...utils import templates as u_templates
 from .. import _nodeset, ansible, error_and_exit
-from . import templates as i_templates
 from . import utils
 
 
@@ -50,8 +49,12 @@ def create_config_file(
       template_path: typing.Optional[str] = None,
       config_mode: str = '') -> bool:
 
-  o_suffix = '.sh' if (config_mode in ('ns','sh')) else '.cfg'
-  o_fname = f'{node.name}.{module}{o_suffix}'           # Generate output filename
+  o_suffix = '' if config_mode == 'none' else '.sh' if (config_mode in ('ns','sh')) else '.cfg'
+  if str(output_path).endswith('/'+node.name):          # Per-node directories?
+    o_fname = module + o_suffix                         # No need to have the node name in output file
+  else:
+    o_fname = f'{node.name}.{module}{o_suffix}'         # Single output directory ==> generate output filename
+
   if not template_path:
     t_path = u_templates.find_provider_template(        # Find the template path if not specified
               node=node,
@@ -68,7 +71,7 @@ def create_config_file(
       more_hints=["Use the '--debug template' option if you're troubleshooting custom configuration templates"])
     return False
 
-  OK = i_templates.render_config_template(              # ... node.template.cfg/sh file in the output directory
+  OK = u_templates.render_config_template(              # ... node.template.cfg/sh file in the output directory
           node=node,
           node_dict=node_dict,
           template_id=module,
@@ -86,7 +89,15 @@ def create_config_file(
 Create all node configuration files, either those specified in the _template_cache
 or in the node 'module' or 'config' lists
 """
-def create_node_configs(topology: Box, nodeset: list, abs_path: Path, args: argparse.Namespace) -> None:
+def create_node_configs(
+      topology: Box,
+      nodeset: list,
+      abs_path: Path,
+      args: argparse.Namespace,
+      no_refresh: bool = False,
+      skip_extra_config: bool = False,
+      node_directory: bool = False,
+      default_suffix: typing.Optional[str] = None) -> None:
   all_configs = utils.deploy_all_configs(args)
   for n_name in nodeset:
     n_data = topology.nodes[n_name]
@@ -99,11 +110,16 @@ def create_node_configs(topology: Box, nodeset: list, abs_path: Path, args: argp
 
     # Get other node information
     #
-    node_dict = i_templates.template_node_data(n_data,topology)       # The dictionary used in templates
+    node_dict = u_templates.template_node_data(n_data,topology)       # The dictionary used in templates
     node_deploy = utils.node_deploy_list(n_data,args)                 # Subset of modules to deploy
     node_module = ['initial'] + n_data.get('module',[])               # All modules used on the node
     node_config = n_data.get('config',[])                             # ...plus the extra configs
     template_cache = n_data.get('_template_cache',[])                 # Template cache
+
+    if no_refresh:                                                    # Skip existing files that are not outdated
+      skip_items = [ item.fname for item in template_cache if not item.get('modified',False) ]
+    else:
+      skip_items = []
 
     template_mode: dict = {}
     if args.generate != 'compare':                                    # Collect config modes for template items
@@ -111,11 +127,26 @@ def create_node_configs(topology: Box, nodeset: list, abs_path: Path, args: argp
     created_list = []
 
     # Now build the list of items to create
-    item_list = [ t_item.fname for t_item in template_cache ]         # Start with template cache
+    if not skip_extra_config and args.generate != 'compare':          # Create all files?
+      item_list = [ t_item.fname for t_item in template_cache ]       # Start with template cache
+    else:
+      item_list = []
+
     item_list += [ item for item in node_module + node_config         # Next, add other modules
                           if item not in item_list ]                  # and custom config items
     if not all_configs:                                               # ... and filter the list if needed
       item_list = [ item for item in item_list if item in node_deploy ]
+
+    if skip_items:                                                    # Skip files that have already been created
+      item_list = [ item for item in item_list if item not in skip_items ]
+
+    # And just like our life wouldn't be complex enough, we have devices that must do
+    # a "normalize" step before initial config, so if 'initial' is in the list of files
+    # to create, and we're dealing with such a device, we must prepend 'normalize' to the
+    # list of files to create
+    if 'initial' in item_list:
+      if devices.get_device_attribute(n_data,'features.initial.normalize',topology.defaults):
+        item_list = ['normalize'] + item_list
 
     for module in item_list:
       if create_config_file(
@@ -124,8 +155,8 @@ def create_node_configs(topology: Box, nodeset: list, abs_path: Path, args: argp
             topology=topology,
             module=module,
             provider_path=provider_path,
-            output_path=abs_path,
-            config_mode=template_mode.get(module,'cfg')):
+            output_path=abs_path / n_data.name if node_directory else abs_path,
+            config_mode=default_suffix or template_mode.get(module,'cfg')):
         created_list.append(module)
 
     if not log.VERBOSE and created_list:

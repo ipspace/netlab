@@ -7,9 +7,11 @@ import typing
 from box import Box
 
 from ..augment import devices
-from ..data import get_box, get_empty_box
+from ..data import append_to_list, get_box, get_empty_box, global_vars
 
-
+"""
+Copy provider-specific inventory settings into node data. Used primarily to set up port forwarding
+"""
 def provider_inventory_settings(node: Box, defaults: Box) -> None:
   n_provider = devices.get_provider(node,defaults)
   p_data = defaults.providers[n_provider]
@@ -25,27 +27,26 @@ def provider_inventory_settings(node: Box, defaults: Box) -> None:
       if k in p_data['forwarded']:
         node[v] = p_data['forwarded'][k] + node['id']
 
+"""
+Add group variables (generic device variables and/or device/provider variables) to a copy of node data
+"""
 def add_group_vars(
       host: Box,
       node: Box,
-      defaults: Box) -> typing.Optional[Box]:
+      defaults: Box,
+      provider_only: bool = False) -> typing.Optional[Box]:
 
-  group_vars = devices.get_device_attribute(node,'group_vars',defaults)
+  if provider_only:
+    group_vars = devices.get_provider_data(node,defaults).get('group_vars',{})
+  else:
+    group_vars = devices.get_device_attribute(node,'group_vars',defaults)
+
   if isinstance(group_vars,dict):
-    for (k,v) in group_vars.items():
+    for k,v in group_vars.items():
       if k not in host:
         host[k] = v
 
   return group_vars
-
-def add_device_provider_group_vars(host: Box, node: Box, defaults: Box) -> None:
-  p_data = devices.get_provider_data(node,defaults)
-  if not 'group_vars' in p_data:
-    return
-
-  for k,v in p_data.group_vars.items():
-    if k not in host:
-      host[k] = v
 
 topo_to_host = { 'hostname': 'ansible_host', 'mgmt.ipv4': 'ansible_host', 'id': 'id' }
 topo_to_host_skip = [ 'name','device' ]
@@ -69,7 +70,7 @@ def adjust_inventory_host(
     #
     g_vars = devices.get_device_attribute(node,'group_vars',defaults)
     if n_provider != defaults.provider:
-      add_device_provider_group_vars(host,node,defaults)
+      add_group_vars(host,node,defaults,provider_only=True)
 
   translate = translate or topo_to_host
   if ignore is None:
@@ -117,3 +118,36 @@ def create_adjusted_topology(
                               group_vars=True,
                               template_vars=template_vars)
   return topo_copy
+
+"""
+Create a 'hosts' dictionary listing usable IPv4 and IPv6 addresses of all lab devices.
+"""
+def get_host_addresses(topology: Box) -> Box:
+  hosts = global_vars.get('hosts')                          # Try to use a cached version
+  if hosts:
+    return hosts
+
+  from ..utils import routing as _rp_utils
+  for name in sorted(topology.nodes):
+    node = topology.nodes[name]
+    intf_list = node.interfaces
+    if 'loopback' in node:                                  # Create a list of all usable interfaces
+      intf_list = [ node.loopback ] + node.interfaces       # ... starting with loopback
+      for af in ['ipv4','ipv6']:
+        # If the loopback interface has the desired address, extract IP address from the CIDR prefix
+        #
+        if af in node.loopback and isinstance(node.loopback[af],str):
+          lb = _rp_utils.get_intf_address(node.loopback[af])
+          append_to_list(hosts[name],'loopback',lb)
+
+    for intf in intf_list:                                  # Now iterate over interfaces
+      h_name = f'{name}-{intf.vrf}' if 'vrf' in intf else name
+      for af in ('ipv4','ipv6'):                            # ... and collect IPv4 and IPv6 addresses
+        if not isinstance(intf.get(af,False),str):          # Is the IP address a string (= usable IP address)?
+          continue
+
+        addr = _rp_utils.get_intf_address(intf[af])         # Extract IP address from the CIDR prefix
+        append_to_list(hosts[h_name],af,addr)               # ... and append it to the list of usable IP addresses
+
+  global_vars.set('hosts',hosts)                            # Cache the hosts dictionary
+  return hosts
