@@ -18,7 +18,7 @@ def validate_parse(args: typing.List[str]) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
     prog="netlab validate",
     description='Run lab validation tests specified in the lab topology')
-  parser_add_debug(parser)                                # Add debugging options
+  parser_add_debug(parser)                                # Add debugging/test options
   parser_add_verbose(parser)                              # ... and verbosity flag
   parser.add_argument(
     '--list',
