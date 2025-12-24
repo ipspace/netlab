@@ -25,6 +25,7 @@ The **netlab** command is the *netlab* CLI interface. It includes data model tra
 * **‌[netlab validate](validate.md)** executes tests defined in the lab topology on the lab devices
 * **[netlab down](down.md)** destroys the virtual lab.
 * **[netlab exec](exec.md)** executes a command on one or more network devices.
+* **[netlab api](api.md)** starts a lightweight HTTP API server for automation.
 
 ## Reports and Graphs
 
@@ -64,6 +65,7 @@ The **netlab** command is the *netlab* CLI interface. It includes data model tra
    netlab config <config.md>
    netlab connect <connect.md>
    netlab create <create.md>
+   netlab api <api.md>
    netlab defaults <defaults.md>
    netlab down <down.md>
    netlab exec <exec.md>
