@@ -1,6 +1,8 @@
 #
 # Cisco IOSv quirks
 #
+import typing
+
 from box import Box
 
 from ..modules import _routing
@@ -51,6 +53,29 @@ def vlan_1_subinterface(node: Box, topology: Box) -> None:
       quirk='vlan.trunk_1',
       category=log.IncorrectValue)
 
+ANSIBLE_USE_PARAMIKO: typing.Optional[bool] = None
+
+def use_paramiko(node: Box, topology: Box) -> None:
+  global ANSIBLE_USE_PARAMIKO
+  if ANSIBLE_USE_PARAMIKO is None:
+    try:
+      import pylibsshext  # type: ignore
+      ANSIBLE_USE_PARAMIKO = pylibsshext.__version__ >= '1.3.0'
+    except:
+      ANSIBLE_USE_PARAMIKO = False
+
+  if ANSIBLE_USE_PARAMIKO:
+    device = node.device
+    dev_vars = topology.defaults.devices[device].group_vars
+    if 'ansible_network_cli_ssh_type' not in dev_vars:
+      dev_vars.ansible_network_cli_ssh_type = 'paramiko'    # Force Paramiko connection
+      report_quirk(
+        f"Changing Ansible network_cli connection SSH type to 'paramiko'",
+        node,
+        quirk='paramiko',
+        category=Warning,
+        more_hints=[ 'The installed version of ansible-pylibssh might not work with Cisco IOS devices' ])
+
 def common_ios_quirks(node: Box, topology: Box) -> None:
   mods = node.get('module',[])
   if 'ospf' in mods:
@@ -58,6 +83,8 @@ def common_ios_quirks(node: Box, topology: Box) -> None:
 
   if 'ripv2' in mods:
     check_ripng_passive(node,topology)
+
+  use_paramiko(node,topology)
 
 class IOS(_Quirks):
 

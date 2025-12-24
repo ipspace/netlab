@@ -6,6 +6,7 @@ from box import Box
 from ..utils import log
 from . import report_quirk
 from .iol import IOSXE as _IOSXE
+from .iosv import use_paramiko
 from .iosvl2 import check_reserved_vlans
 
 
@@ -23,9 +24,10 @@ def check_premier_license(node: Box) -> None:
         quirk='license',
         category=log.MissingDependency)
 
-class IOSL2(_IOSXE):
+class C8KV(_IOSXE):
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
     super().device_quirks(node,topology)
     check_reserved_vlans(node,topology)
     check_premier_license(node)
+    use_paramiko(node,topology)
