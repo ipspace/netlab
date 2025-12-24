@@ -149,14 +149,17 @@ These caveats apply only to Cisco IOSv and IOSvL2
 * Cisco IOSvL2 cannot configure tagged VLAN 1 in a trunk. Internal VLAN 1002 is used as a fake native VLAN on interfaces that have tagged VLAN 1 in a trunk.
 
 (cisco-iosv-ssh)=
-### SSH Access to Cisco IOSv
+### SSH Access to Cisco IOS/IOS-XE
 
-Cisco IOSv SSH implementation uses RSA keys and older encryption algorithms that might not be allowed on newer Linux distributions.
+The Cisco IOS/IOS-XE SSH implementation uses RSA keys and older encryption algorithms that may not be enabled by default on newer Linux distributions.
 
-Most users running recent Ansible versions won't notice the problem; Ansible uses the `ansible-pylibssh` package (installed together with Ansible) as its interface to `libssh` and adjusts the SSH algorithms as needed. If [that fails](https://github.com/ipspace/netlab/discussions/2759), try setting the ANSIBLE_NETWORK_CLI_SSH_TYPE environment variable to force Ansible to use the **paramiko** SSH library:
+That wasn't a problem for Ansible users until October 2025, when the new version of the `ansible-pylibssh` package (installed with Ansible) was released. `ansible-pylibssh` release 1.3.0 uses `libssh` release 0.11.0, which [no longer supports legacy SSH algorithms](https://github.com/ipspace/netlab/discussions/2759).
+
+You could downgrade `ansible-pylibssh` to release 1.2.2 with a command similar to `pip3 install --upgrade ansible-pylibssh==1.2.2` (you might have to prefix the command with `sudo` or add the `--break-system-packages` argument to the **pip3** command). Alternatively, you can tell Ansible to use the **paramiko** SSH library with:
 
 ```
 $ export ANSIBLE_NETWORK_CLI_SSH_TYPE=paramiko
+$ export ANSIBLE_PARAMIKO_LOOK_FOR_KEYS=False
 ```
 
 We added a similar mechanism to _netlab_ commands that use SSH to connect to network devices. These commands append group variable `netlab_ssh_args` (when defined) to the **ssh** command; the value of that variable for Cisco IOS/IOS-XE devices is set to:
