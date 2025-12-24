@@ -64,7 +64,7 @@ Use something similar to the following example as the stub template:
 
 These parameters are set in the node or VRF **ospf** dictionary:
 
-* **ospf.router_id** -- OSPF router ID (always present, should be an IPv4 address)
+* **ospf.router_id** -- OSPF router ID (always present, should be an IPv4 address). Always set the OSPF router ID for OSPFv3 routing processes to ensure we have a usable router ID in IPv6-only deployments
 * **ospf.reference_bandwidth** -- reference bandwidth (optional)
 * **ospf.unnumbered** -- OSPF is ran on at least one unnumbered IPV4 interface (optional)
 * **ospf.area** -- default OSPF area (always present)

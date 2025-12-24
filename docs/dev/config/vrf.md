@@ -31,8 +31,8 @@ VRFs used on a device are defined in the **vrfs** dictionary. Dictionary keys ar
 
 Other parameters:
 
-* VRF interfaces have **vrf** interface parameter that contains VRF name.
-* OSPF parameters within the **vrfs._vrf-name_.ospf** dictionary are identical to global OSPF parameters
+* VRF interfaces have **vrf** interface parameter that contains the VRF name.
+* IGP (OSPF, RIP, IS-IS, EIGRP)  parameters within the **vrfs._vrf-name_._igp_** dictionaries are (mostly) identical to the global IGP parameters
 * BGP parameters within the **vrfs._vrf-name_.bgp** dictionary are a subset of global BGP parameters ([more details](dev-bgp-vrf)).
 
 ## Device Features
@@ -124,7 +124,7 @@ interface {{ l.ifname }}
 
 ## Configuring Other VRF Features
 
-Depending on the VRF-aware routing protocols supported by your platform you might have to configure per-VRF OSPF routing processes or VRF BGP address families.
+Depending on the VRF-aware routing protocols supported by your platform, you might have to configure per-VRF OSPF routing processes or VRF BGP address families.
 
 You can configure all of these features in `netsim/templates/vrf/<nos>.j2` template, or use a more structured approach:
 
@@ -150,6 +150,12 @@ Cisco IOS example:
 
 In the BGP configuration process, configure VRF address families, OSPF-to-BGP redistribution, redistribution of connected interfaces, and advertise VRF-specific networks.
 
+```{warning}
+Some devices don't inherit the VRF BGP router ID from the global router ID and may fail to function correctly in IPv6-only deployments.
+
+As the VRF BGP router ID is not always defined, use the `vdata.bgp.router_id|default(bgp.router_id)` expression when you have to configure a VRF BGP router ID.
+```
+
 Cisco IOS has different address families for IPv4-in-VRF and IPv6-in-VRF.
 
 ```
@@ -174,7 +180,7 @@ router bgp {{ bgp.as }}
 
 **Note:** Cisco IOS template uses a macro to configure BGP network advertisement. See [](dev-vrf-bgp) for more details.
 
-Arista EOS has VRF BGP configuration mode where you specify both IPv4 and IPv6 route targets. You have to enable individual address families within that configuration mode:
+In the Arista EOS VRF BGP configuration, you must specify both IPv4 and IPv6 route targets. You must also enable individual address families within that configuration mode:
 
 ```
 mpls ip
@@ -265,14 +271,17 @@ It's best to use the same _[shared macro](dev-ospf-macro)_ approach to configure
 
 * The main VRF template uses **vdata** variable to refer to the VRF parameters -- OSPF parameters are available within **vdata.ospf** dictionary.
 * Use **vdata.vrfidx** as the OSPF process ID
-* Use **vdata.ospf.router_id** (or **ospf.router_id**) to set the router ID
+* Use **vdata.ospf.router_id** to set the router ID. Fallback to **ospf.router_id** is optional as the VRF OSPF router ID should always be defined.
+* Use the global **ospf.reference_bandwidth**
+
+If you didn't implement configurable route redistribution:
+
 * Redistribute BGP into OSPF if the **bgp.as** parameter is set (the device is running BGP)
-* You don't have to redistribute connected subnets into OSPF -- interfaces that should be included in the OSPF process will be listed in the **vdata.ospf.interfaces** list.
-* Use global **ospf.reference_bandwidth**
+* Redistribute connected subnets into OSPF
 
 The list of OSPF-enabled VRF interfaces is in **vdata.ospf.interfaces** list. Use that list in the same way you'd use the global **ospf.interfaces** list.
 
-Cisco IOS example (Arista EOS example is almost identical):
+Cisco IOS example (prior to the route redistribution support):
 
 ```
 !
@@ -284,6 +293,7 @@ router ospf {{ vdata.vrfidx }} vrf {{ vname }}
 {% for l in vdata.ospf.interfaces|default([]) if l.ospf.passive|default(False) %}
  passive-interface {{ l.ifname }}
 {% endfor %}
+ redistribute connected subnets
 {% if bgp.as is defined %}
  redistribute bgp {{ bgp.as }} subnets
 {% endif %}
