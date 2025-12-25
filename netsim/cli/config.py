@@ -9,7 +9,7 @@ from pathlib import Path
 
 from box import Box
 
-from ..data import get_empty_box
+from ..data import get_box
 from ..utils import log
 from . import (
   _nodeset,
@@ -22,6 +22,7 @@ from . import (
   parser_lab_location,
 )
 from .initial import configs as i_configs
+from .initial import utils as i_utils
 
 
 #
@@ -42,6 +43,10 @@ def custom_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespa
     dest='limit', action='store',
     help='Limit the operation to a subset of nodes')
   parser.add_argument(
+    '-e','--extra-vars',
+    dest='extra_vars',action='append',
+    help='Specify extra variables for the configuration template')
+  parser.add_argument(
     dest='template', action='store',
     help='Configuration template or a directory with templates')
   parser_add_verbose(parser)
@@ -57,14 +62,22 @@ def set_initial_args(args: argparse.Namespace, initial: bool = False) -> None:
   setattr(args,'no_refresh',False)                # ... mandatory refresh
   setattr(args,'generate',None)                   # ... and internally-generated configs
 
-def set_custom_config(topology: Box, nodeset: list, cfg_name: str) -> None:
-  for n_name in nodeset:
-    topology.nodes[n_name].config = [ cfg_name ]
+def set_custom_config(
+      topology: Box,
+      nodeset: list,
+      cfg_name: str,
+      extra_vars: dict = {}) -> None:
 
-def ansible_extra_vars(topology: Box, reload: bool = False) -> Box:
+  for n_name in nodeset:
+    n_data = topology.nodes[n_name]
+    n_data.config = [ cfg_name ]
+    for k,v in extra_vars.items():
+      n_data[k] = v
+
+def ansible_extra_vars(topology: Box, reload: bool = False, extra_vars: dict = {}) -> Box:
   cfg_sfx = '.cfg' if reload else ''
 
-  ev = get_empty_box()
+  ev = get_box(extra_vars)
   ev.node_files = str(Path("./node_files").resolve().absolute())
 
   ev.paths_t_files.files = "{{ config_module }}" + cfg_sfx    # Take only module file from node_files
@@ -76,6 +89,29 @@ def ansible_extra_vars(topology: Box, reload: bool = False) -> Box:
   ev.paths_custom.tasks = topology.defaults.paths.custom.tasks
   return ev
 
+def get_ansible_args(ans_vars: Box,nodeset: list,cfg_name: str) -> list:
+  args = i_utils.common_ansible_args()
+  args += ["-e",ans_vars.to_json(),"-e",f'config={cfg_name}']
+  args += ["-l",','.join(nodeset)]
+  return args
+
+def parse_extra_vars(ev_list: typing.Optional[list]) -> dict:
+  ev: dict = {}
+  if not ev_list:
+    return ev
+
+  for v_item in ev_list:
+    if '=' not in v_item:
+      error_and_exit('Extra variables have to be specified in name=value format')
+    (n,v)  = v_item.split('=',maxsplit=1)
+    try:
+      value = eval(v)
+    except:
+      value = v
+    ev[n] = value
+
+  return ev
+
 """
 Create the required configs in node_files
 """
@@ -84,11 +120,12 @@ def create_node_files(
       nodeset: list,
       args: argparse.Namespace,
       cfg_name: str,
+      extra_vars: dict = {},
       initial: bool = False,
       cfg_suffix: str = 'none') -> None:
 
   set_initial_args(args,initial=initial)              # Adjust args for 'netlab initial' processing
-  set_custom_config(topology,nodeset,cfg_name)
+  set_custom_config(topology,nodeset,cfg_name,extra_vars)
 
   i_configs.create_node_configs(                      # Create the necessary files in node_files directory
     topology=topology,
@@ -109,6 +146,9 @@ def reload_node_configs(topology: Box,nodeset: list,args: argparse.Namespace, re
   if not cfg_path.is_dir():                           # Sanity check: are we reloading from a directory?
     error_and_exit('The argument specified with the --reload option must be a directory')
   
+  if args.extra_vars:
+    error_and_exit('You cannot specify extra vars while reloading configuration')
+
   no_config = []
   for n_name in nodeset:                              # Identify nodes that have no configs
     if not list(cfg_path.glob(n_name+'.*')):          # ... in the specified directory
@@ -136,8 +176,7 @@ def reload_node_configs(topology: Box,nodeset: list,args: argparse.Namespace, re
   # Run the Ansible playbook with modified path variables and an adjusted nodeset
   #
   ans_vars = ansible_extra_vars(topology,reload=True)
-  rest_args = rest + ["-e",ans_vars.to_json(),"-e",f'config={str(cfg_path.name)}']
-  rest_args += ["-l",','.join(nodeset)]
+  rest_args = rest + get_ansible_args(ans_vars,nodeset,str(cfg_path.name))
   if not ansible.playbook('reload-config.ansible',rest_args,abort_on_error=False):
     error_and_exit('Cannot reload initial device configurations')
 
@@ -153,14 +192,13 @@ def deploy_custom_config(topology: Box,nodeset: list,args: argparse.Namespace, r
     if cfg_name.endswith('.j2'):
       cfg_name = cfg_name[:-3]
 
-  set_custom_config(topology,nodeset,cfg_name)
-  create_node_files(topology,nodeset,args,cfg_name)
+  extra_vars=parse_extra_vars(args.extra_vars)
+  create_node_files(topology,nodeset,args,cfg_name,extra_vars)
 
   # Run the Ansible playbook with modified path variables and an adjusted nodeset
   #
-  ans_vars = ansible_extra_vars(topology,reload=False)
-  rest_args = rest + ["-e",ans_vars.to_json(),"-e",f'config={cfg_name}']
-  rest_args += ["-l",','.join(nodeset)]
+  ans_vars = ansible_extra_vars(topology,reload=False,extra_vars=extra_vars)
+  rest_args = rest + get_ansible_args(ans_vars,nodeset,cfg_name)
   if not ansible.playbook('config.ansible',rest_args,abort_on_error=False):
     error_and_exit('Cannot deploy custom configuration template')
 
