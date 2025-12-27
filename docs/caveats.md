@@ -228,6 +228,7 @@ Cisco 8000v is a VM-in-container emulator of the Cisco 8000 platform. It's runni
 * To change the default amount of memory used by a **nxos** device, set the **defaults.devices.nxos.memory** parameter (in MB)[^DD]
 * Nexus OS cannot use VLANs above 3966[^NXOM]
 * Nexus OS cannot configure tagged VLAN 1 in a trunk. VLAN 3967 is used as a fake native VLAN on interfaces that have tagged VLAN 1 in a trunk.
+* _netlab_ starts Nexus OS devices with an old version of OVMF UEFI firmware that is no longer available on recent Ubuntu releases. Use [*vrnetlab*-based container](clab-vrnetlab) if the Nexus OS VM fails to start.
 
 [^DD]: See [](topology/hierarchy.md) for an in-depth explanation of why attributes with hierarchical names work in *netlab*
 
