@@ -183,10 +183,11 @@ nodes:
 
 [_vrnetlab_](https://containerlab.dev/manual/vrnetlab/) is an open-source project that packages network device virtual machines into containers. The resulting containers have a launch process that starts **qemu** (KVM) to spin up a virtual machine. Running *vrnetlab* containers on a VM, therefore, requires nested virtualization.
 
+Follow the [containerlab instructions](https://containerlab.dev/manual/vrnetlab/) to [build containers](https://containerlab.dev/manual/vrnetlab/#building-vrnetlab-images) from virtual machine images.
+
 ```{warning}
-* _vrnetlab_ has to add another layer of abstraction and [spaghetti networking](vrnetlab-internal-net). If you can choose between a _vrnetlab_ container and a Vagrant box supported by _netlab_, use the Vagrant box.
 * Do not create device containers using the original _vrnetlab_ project. _netlab_ has been tested with the [vrnetlab fork](https://github.com/srl-labs/vrnetlab) supported by _containerlab_ (see [containerlab documentation](https://containerlab.dev/manual/vrnetlab/) for more details).
-* Finally, _vrnetlab_ is an independent open-source project. If it fails to produce a working container image ([example](https://github.com/srl-labs/vrnetlab/issues/231)), please contact them.
+* _vrnetlab_ is an independent open-source project. If it fails to produce a working container image ([example](https://github.com/srl-labs/vrnetlab/issues/231)), please contact them.
 ```
 
 (vrnetlab-images)=
