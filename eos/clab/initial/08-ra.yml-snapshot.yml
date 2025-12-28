@@ -311,6 +311,12 @@ defaults:
         bgp: {}
         isis:
           circuit_type: true
+        ospf:
+          unnumbered: false
+          import: false
+          password: true
+          priority: true
+          timers: true
       libvirt:
         image: cisco/asav
         create_template: asav.xml.j2
@@ -553,6 +559,20 @@ defaults:
         ansible_ssh_pass: cisco123
         ansible_become_password: cisco123
         netlab_device_type: cisco8000v
+      clab:
+        group_vars:
+          netlab_ready:
+          - ssh
+          netlab_check_retries: 50
+        kmods:
+          initial:
+          - openvswitch
+        node:
+          kind: cisco_c8000
+        interface:
+          name: FH0_0_0_{ifindex}
+        image: cisco/cisco-8201-32fh:24.4.1
+        build: https://containerlab.dev/manual/kinds/c8000/
       features:
         initial:
           ipv4:
@@ -620,20 +640,6 @@ defaults:
         level: minimal
       node:
         min_mtu: 1500
-      clab:
-        group_vars:
-          netlab_check_retries: 50
-          netlab_ready:
-          - ssh
-        kmods:
-          initial:
-          - openvswitch
-        node:
-          kind: cisco_c8000
-        interface:
-          name: FH0_0_0_{ifindex}
-        image: cisco/cisco-8201-32fh:24.4.1
-        build: https://containerlab.dev/manual/kinds/c8000/
       _parents:
       - xr
     csr:
@@ -871,6 +877,25 @@ defaults:
         - -c
         - show $@
         netlab_initial: always
+        netlab_frr_daemons:
+          bfd:
+          - bfdd
+          bgp:
+          - bgpd
+          ospf:
+          - ospfd
+          - ospf6d
+          ripv2:
+          - ripd
+          - ripngd
+          isis:
+          - isisd
+          vrf:
+          - bgpd
+          gateway:
+          - vrrpd
+          mpls:
+          - ldpd
       evpn:
         _start_transit_vlan: 3900
       features:
@@ -1194,7 +1219,7 @@ defaults:
         vxlan: {}
       mtu: 1500
       clab:
-        image: vrnetlab/dell_ftos10v:10.5.6.6
+        image: vrnetlab/vr-ftosv
         build: https://containerlab.dev/manual/kinds/vr-ftosv/
         node:
           kind: vr-ftosv
@@ -1262,6 +1287,7 @@ defaults:
           mgmt_vrf: true
           generate_mac:
           - ethernet
+          normalize: true
         bfd: {}
         bgp:
           activate_af: true
@@ -1764,7 +1790,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:17.16.01a
+        image: vrnetlab/cisco_iol:17.12.01
         node:
           kind: cisco_iol
       role: router
@@ -1943,7 +1969,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:L2-17.16.01a
+        image: vrnetlab/cisco_iol:L2-17.12.01
         node:
           kind: cisco_iol
           type: l2
@@ -1998,6 +2024,7 @@ defaults:
           generate_mac:
           - ethernet
           - svi
+          normalize: true
         isis:
           circuit_type: true
           import:
@@ -2474,6 +2501,7 @@ defaults:
         lag:
           mlag: false
           passive: true
+        normalize: {}
       external:
         image: none
       graphite:
@@ -2506,6 +2534,21 @@ defaults:
           netlab_check_retries: 120
           netlab_ready:
           - ssh
+      clab:
+        group_vars:
+          netlab_ready:
+          - ssh
+          ansible_user: clab
+          ansible_ssh_pass: clab@123
+          ansible_become_password: clab@123
+        node:
+          kind: cisco_xrd
+          runtime: docker
+        mgmt_if: MgmtEth0/RP0/CPU0/0
+        interface:
+          name: Gi0-0-0-{ifindex}
+        image: ios-xr/xrd-control-plane:7.11.1
+        build: https://containerlab.dev/manual/kinds/xrd/
       features:
         initial:
           ipv4:
@@ -2576,19 +2619,6 @@ defaults:
           --arch=x86_64 --vcpus=2 --ram=8192 --virt-type=kvm --disk 
           path=vm.qcow2,format=qcow2,device=disk,bus=ide --graphics none 
           --import
-      clab:
-        node:
-          kind: cisco_xrd
-          runtime: docker
-        mgmt_if: MgmtEth0/RP0/CPU0/0
-        interface:
-          name: Gi0-0-0-{ifindex}
-        image: ios-xr/xrd-control-plane:7.11.1
-        build: https://containerlab.dev/manual/kinds/xrd/
-        group_vars:
-          ansible_user: clab
-          ansible_ssh_pass: clab@123
-          ansible_become_password: clab@123
       _parents:
       - xr
     linux:
@@ -3033,7 +3063,7 @@ defaults:
         level: minimal
       interface_name: ether{ifindex}
       mgmt_if: ether1
-      loopback_interface_name: loopback{ifindex}
+      loopback_interface_name: loopback{ifindex if ifindex else ""}
       ifindex_offset: 2
       libvirt:
         image: mikrotik/chr7
@@ -3162,7 +3192,7 @@ defaults:
         min_tx: 100
         min_rx: 100
       clab:
-        image: ghcr.io/nokia/srlinux:25.10.1
+        image: ghcr.io/nokia/srlinux:25.3.2
         node:
           kind: srl
           type: ixr-d2
@@ -3954,7 +3984,7 @@ defaults:
         pre_install: vptx
         create_template: vptx.xml.j2
       clab:
-        image: vrnetlab/juniper_vjunosevolved:23.2R2.21-EVO
+        image: vrnetlab/juniper_vjunosevolved:25.2R1.8-EVO
         build: https://containerlab.dev/manual/kinds/vr-vjunosevolved/
         mtu: 1500
         node:
@@ -5741,6 +5771,9 @@ defaults:
       - group_vars
       - host_vars
       - config
+    configs:
+      cleanup:
+      - node_files
   const:
     routing_protocols:
     - bgp
@@ -5943,26 +5976,20 @@ defaults:
       - /home/pipi/.netlab
       - /home/pipi/netlab_gh/netsim/extra
       files:
-      - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
-        '-' + node_provider + '.j2' }}"
-      - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
-        '.j2' }}"
-      - "{{ custom_config + '/' + inventory_hostname + '.j2' }}"
-      - "{{ custom_config + '/' + inventory_hostname + '.cfg' }}"
-      - "{{ custom_config + '/' + netlab_device_type + '-' + node_provider + '.j2'
-        }}"
-      - "{{ custom_config + '/' + netlab_device_type + '.j2' }}"
-      - "{{ custom_config + '/' + ansible_network_os + '-' + node_provider + '.j2'
-        }}"
-      - "{{ custom_config + '/' + ansible_network_os + '.j2' }}"
-      - "{{ custom_config + '.' + inventory_hostname + '.' + netlab_device_type +
-        '.j2' }}"
-      - "{{ custom_config + '.' + inventory_hostname + '.' + ansible_network_os +
-        '.j2' }}"
-      - "{{ custom_config + '.' + inventory_hostname + '.j2' }}"
-      - "{{ custom_config + '.' + netlab_device_type + '.j2' }}"
-      - "{{ custom_config + '.' + ansible_network_os + '.j2' }}"
-      - "{{ custom_config + '.j2' }}"
+      - '{{custom_config}}/{{inventory_hostname}}.{{netlab_device_type}}-{{node_provider}}.j2'
+      - '{{custom_config}}/{{inventory_hostname}}.{{netlab_device_type}}.j2'
+      - '{{custom_config}}/{{inventory_hostname}}.j2'
+      - '{{custom_config}}/{{inventory_hostname}}.cfg'
+      - '{{custom_config}}/{{netlab_device_type}}-{{node_provider}}.j2'
+      - '{{custom_config}}/{{netlab_device_type}}.j2'
+      - '{{custom_config}}/{{ansible_network_os}}-{{node_provider}}.j2'
+      - '{{custom_config}}/{{ansible_network_os}}.j2'
+      - '{{custom_config}}.{{inventory_hostname}}.{{netlab_device_type}}.j2'
+      - '{{custom_config}}.{{inventory_hostname}}.{{ansible_network_os}}.j2'
+      - '{{custom_config}}.{{inventory_hostname}}.j2'
+      - '{{custom_config}}.{{netlab_device_type}}.j2'
+      - '{{custom_config}}.{{ansible_network_os}}.j2'
+      - '{{custom_config}}.j2'
       tasks:
       - '{{ custom_config }}/deploy-{{ inventory_hostname }}.yml'
       - '{{ custom_config }}/deploy.{{ netlab_device_type }}-{{ node_provider }}.yml'
@@ -5971,26 +5998,20 @@ defaults:
       - '{{ custom_config }}/deploy.{{ ansible_network_os }}.yml'
       - '{{ custom_config }}/deploy.yml'
       f_files:
-      - "{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type + '-'
-        + node_provider + '.j2' }"
-      - "{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type + '.j2'
-        }"
-      - "{ custom_config + '/' + inventory_hostname + '.j2' }"
-      - "{ custom_config + '/' + inventory_hostname + '.cfg' }"
-      - "{ custom_config + '/' + netlab_device_type + '-' + node_provider + '.j2'
-        }"
-      - "{ custom_config + '/' + netlab_device_type + '.j2' }"
-      - "{ custom_config + '/' + ansible_network_os + '-' + node_provider + '.j2'
-        }"
-      - "{ custom_config + '/' + ansible_network_os + '.j2' }"
-      - "{ custom_config + '.' + inventory_hostname + '.' + netlab_device_type + '.j2'
-        }"
-      - "{ custom_config + '.' + inventory_hostname + '.' + ansible_network_os + '.j2'
-        }"
-      - "{ custom_config + '.' + inventory_hostname + '.j2' }"
-      - "{ custom_config + '.' + netlab_device_type + '.j2' }"
-      - "{ custom_config + '.' + ansible_network_os + '.j2' }"
-      - "{ custom_config + '.j2' }"
+      - '{custom_config}/{inventory_hostname}.{netlab_device_type}-{node_provider}.j2'
+      - '{custom_config}/{inventory_hostname}.{netlab_device_type}.j2'
+      - '{custom_config}/{inventory_hostname}.j2'
+      - '{custom_config}/{inventory_hostname}.cfg'
+      - '{custom_config}/{netlab_device_type}-{node_provider}.j2'
+      - '{custom_config}/{netlab_device_type}.j2'
+      - '{custom_config}/{ansible_network_os}-{node_provider}.j2'
+      - '{custom_config}/{ansible_network_os}.j2'
+      - '{custom_config}.{inventory_hostname}.{netlab_device_type}.j2'
+      - '{custom_config}.{inventory_hostname}.{ansible_network_os}.j2'
+      - '{custom_config}.{inventory_hostname}.j2'
+      - '{custom_config}.{netlab_device_type}.j2'
+      - '{custom_config}.{ansible_network_os}.j2'
+      - '{custom_config}.j2'
       f_tasks:
       - '{ custom_config }/deploy-{ inventory_hostname }.yml'
       - '{ custom_config }/deploy.{ netlab_device_type }-{ node_provider }.yml'
@@ -7252,6 +7273,7 @@ defaults:
       inactive: true
     supported_on:
       arubacx: true
+      asav: true
       bird: true
       cat8000v: true
       cisco8000v: true
@@ -8033,6 +8055,9 @@ defaults:
       unknown: true
       vjunos-switch: true
       vyos: true
+  _cache:
+    timestamp: 1766569349.093893
+    source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
     - ../wait_times.yml
@@ -8316,30 +8341,10 @@ nodes:
       - dnsmasq:/etc/dnsmasq.conf
       - dhcp:/etc/dhcp.ignore
       - hosts:/etc/hosts:shared
-      _template_cache:
-      - fname: initial
-        fpath: 
-          /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
-        output: clab_files/dhsrv/initial
-        mode: ns
-      - fname: dnsmasq
-        fpath: /home/pipi/netlab_gh/netsim/daemons/dnsmasq/dnsmasq.j2
-        output: clab_files/dhsrv/dnsmasq
-        mapping: /etc/dnsmasq.conf
-      - fname: dhcp
-        fpath: /home/pipi/netlab_gh/netsim/daemons/dnsmasq/dhcp.j2
-        output: clab_files/dhsrv/dhcp
-        mapping: /etc/dhcp.ignore
-      - fname: hosts
-        fpath: 
-          /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
-        output: clab_files/-shared-hosts
-        mode: shared
-        mapping: /etc/hosts:ro
       binds:
-      - clab_files/dhsrv/dnsmasq:/etc/dnsmasq.conf
-      - clab_files/dhsrv/dhcp:/etc/dhcp.ignore
-      - clab_files/-shared-hosts:/etc/hosts:ro
+      - node_files/dhsrv/dnsmasq:/etc/dnsmasq.conf
+      - node_files/dhsrv/dhcp:/etc/dhcp.ignore
+      - node_files/-shared-hosts:/etc/hosts:ro
     box: netlab/dnsmasq:latest
     id: 2
     role: host
@@ -8362,6 +8367,24 @@ nodes:
     - dnsmasq
     - dhcp
     - initial
+    _template_cache:
+    - fname: initial
+      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
+      output: node_files/dhsrv/initial
+      mode: ns
+    - fname: dnsmasq
+      fpath: /home/pipi/netlab_gh/netsim/daemons/dnsmasq/dnsmasq.j2
+      output: node_files/dhsrv/dnsmasq
+      mapping: /etc/dnsmasq.conf
+    - fname: dhcp
+      fpath: /home/pipi/netlab_gh/netsim/daemons/dnsmasq/dhcp.j2
+      output: node_files/dhsrv/dhcp
+      mapping: /etc/dhcp.ignore
+    - fname: hosts
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
+      output: node_files/-shared-hosts
+      mode: shared
+      mapping: /etc/hosts:ro
   h0:
     role: host
     provider: clab
@@ -8386,20 +8409,9 @@ nodes:
       config_templates:
       - daemons:/etc/frr/daemons
       - hosts:/etc/hosts:shared
-      _template_cache:
-      - fname: daemons
-        fpath: 
-          /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
-        output: clab_files/h0/daemons
-        mapping: /etc/frr/daemons
-      - fname: hosts
-        fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
-        output: clab_files/-shared-hosts
-        mode: shared
-        mapping: /etc/hosts:ro
       binds:
-      - clab_files/h0/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
+      - node_files/h0/daemons:/etc/frr/daemons
+      - node_files/-shared-hosts:/etc/hosts:ro
     box: quay.io/frrouting/frr:10.5.0
     id: 3
     mtu: 1500
@@ -8410,6 +8422,16 @@ nodes:
       mac: ca:fe:00:03:00:00
       ipv4: 192.168.17.103
     hostname: clab-ml_17-h0
+    _template_cache:
+    - fname: daemons
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
+      output: node_files/h0/daemons
+      mapping: /etc/frr/daemons
+    - fname: hosts
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
+      output: node_files/-shared-hosts
+      mode: shared
+      mapping: /etc/hosts:ro
   h1:
     role: host
     provider: clab
@@ -8436,20 +8458,9 @@ nodes:
       config_templates:
       - daemons:/etc/frr/daemons
       - hosts:/etc/hosts:shared
-      _template_cache:
-      - fname: daemons
-        fpath: 
-          /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
-        output: clab_files/h1/daemons
-        mapping: /etc/frr/daemons
-      - fname: hosts
-        fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
-        output: clab_files/-shared-hosts
-        mode: shared
-        mapping: /etc/hosts:ro
       binds:
-      - clab_files/h1/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
+      - node_files/h1/daemons:/etc/frr/daemons
+      - node_files/-shared-hosts:/etc/hosts:ro
     box: quay.io/frrouting/frr:10.5.0
     id: 4
     mtu: 1500
@@ -8460,6 +8471,16 @@ nodes:
       mac: ca:fe:00:04:00:00
       ipv4: 192.168.17.104
     hostname: clab-ml_17-h1
+    _template_cache:
+    - fname: daemons
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
+      output: node_files/h1/daemons
+      mapping: /etc/frr/daemons
+    - fname: hosts
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
+      output: node_files/-shared-hosts
+      mode: shared
+      mapping: /etc/hosts:ro
   h2:
     role: host
     provider: clab
@@ -8486,20 +8507,9 @@ nodes:
       config_templates:
       - daemons:/etc/frr/daemons
       - hosts:/etc/hosts:shared
-      _template_cache:
-      - fname: daemons
-        fpath: 
-          /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
-        output: clab_files/h2/daemons
-        mapping: /etc/frr/daemons
-      - fname: hosts
-        fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
-        output: clab_files/-shared-hosts
-        mode: shared
-        mapping: /etc/hosts:ro
       binds:
-      - clab_files/h2/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
+      - node_files/h2/daemons:/etc/frr/daemons
+      - node_files/-shared-hosts:/etc/hosts:ro
     box: quay.io/frrouting/frr:10.5.0
     id: 5
     mtu: 1500
@@ -8510,6 +8520,16 @@ nodes:
       mac: ca:fe:00:05:00:00
       ipv4: 192.168.17.105
     hostname: clab-ml_17-h2
+    _template_cache:
+    - fname: daemons
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
+      output: node_files/h2/daemons
+      mapping: /etc/frr/daemons
+    - fname: hosts
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
+      output: node_files/-shared-hosts
+      mode: shared
+      mapping: /etc/hosts:ro
   h3:
     role: host
     provider: clab
@@ -8536,20 +8556,9 @@ nodes:
       config_templates:
       - daemons:/etc/frr/daemons
       - hosts:/etc/hosts:shared
-      _template_cache:
-      - fname: daemons
-        fpath: 
-          /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
-        output: clab_files/h3/daemons
-        mapping: /etc/frr/daemons
-      - fname: hosts
-        fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
-        output: clab_files/-shared-hosts
-        mode: shared
-        mapping: /etc/hosts:ro
       binds:
-      - clab_files/h3/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
+      - node_files/h3/daemons:/etc/frr/daemons
+      - node_files/-shared-hosts:/etc/hosts:ro
     box: quay.io/frrouting/frr:10.5.0
     id: 6
     mtu: 1500
@@ -8560,6 +8569,16 @@ nodes:
       mac: ca:fe:00:06:00:00
       ipv4: 192.168.17.106
     hostname: clab-ml_17-h3
+    _template_cache:
+    - fname: daemons
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
+      output: node_files/h3/daemons
+      mapping: /etc/frr/daemons
+    - fname: hosts
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
+      output: node_files/-shared-hosts
+      mode: shared
+      mapping: /etc/hosts:ro
 links:
 - _linkname: links[1]
   name: Regular link (default RA behavior)
@@ -8795,4 +8814,4 @@ dhcp:
       - 2001:db8:1:4::84
       - 2001:db8:1:4::2
     clean_name: DHCPv6_managed_config
-_netlab_version: 25.12.02
+_netlab_version: 25.12.03

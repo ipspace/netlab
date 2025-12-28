@@ -580,8 +580,8 @@ nodes:
       - daemons:/etc/frr/daemons
       - hosts:/etc/hosts:shared
       binds:
-      - clab_files/l2/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
+      - node_files/l2/daemons:/etc/frr/daemons
+      - node_files/-shared-hosts:/etc/hosts:ro
     box: quay.io/frrouting/frr:10.5.0
     vxlan:
       domain: global
@@ -634,6 +634,16 @@ nodes:
       max_bridge_group: 1
     config:
     - ebgp.multihop
+    _template_cache:
+    - fname: daemons
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
+      output: node_files/l2/daemons
+      mapping: /etc/frr/daemons
+    - fname: hosts
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
+      output: node_files/-shared-hosts
+      mode: shared
+      mapping: /etc/hosts:ro
   h1:
     name: h1
     interfaces:
@@ -663,13 +673,18 @@ nodes:
     clab:
       kind: linux
       config_templates:
+      - initial::ns
+      - routing::ns
       - hosts:/etc/hosts:shared
       binds:
-      - clab_files/-shared-hosts:/etc/hosts:ro
+      - node_files/-shared-hosts:/etc/hosts:ro
     box: python:3.13-alpine
     id: 4
     role: host
     mtu: 1500
+    _node_config:
+      initial: :ns
+      routing: :ns
     af:
       ipv4: true
     mgmt:
@@ -681,6 +696,23 @@ nodes:
       static: []
     module:
     - routing
+    netlab_ansible_skip_module:
+    - initial
+    - routing
+    _template_cache:
+    - fname: initial
+      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
+      output: node_files/h1/initial
+      mode: ns
+    - fname: routing
+      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
+      output: node_files/h1/routing
+      mode: ns
+    - fname: hosts
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
+      output: node_files/-shared-hosts
+      mode: shared
+      mapping: /etc/hosts:ro
   h2:
     name: h2
     interfaces:
@@ -710,13 +742,18 @@ nodes:
     clab:
       kind: linux
       config_templates:
+      - initial::ns
+      - routing::ns
       - hosts:/etc/hosts:shared
       binds:
-      - clab_files/-shared-hosts:/etc/hosts:ro
+      - node_files/-shared-hosts:/etc/hosts:ro
     box: python:3.13-alpine
     id: 5
     role: host
     mtu: 1500
+    _node_config:
+      initial: :ns
+      routing: :ns
     af:
       ipv4: true
     mgmt:
@@ -728,6 +765,23 @@ nodes:
       static: []
     module:
     - routing
+    netlab_ansible_skip_module:
+    - initial
+    - routing
+    _template_cache:
+    - fname: initial
+      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
+      output: node_files/h2/initial
+      mode: ns
+    - fname: routing
+      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
+      output: node_files/h2/routing
+      mode: ns
+    - fname: hosts
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
+      output: node_files/-shared-hosts
+      mode: shared
+      mapping: /etc/hosts:ro
 links:
 - _linkname: links[1]
   mtu: 1600
@@ -896,6 +950,7 @@ defaults:
           mgmt_vrf: true
           generate_mac:
           - ethernet
+          normalize: true
         bfd: {}
         dhcp:
           client:
@@ -964,14 +1019,19 @@ defaults:
             - prepend
             - community
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
+                large: true
+            delete:
+              community: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
           static:
             vrf: true
             inter_vrf: true
@@ -995,7 +1055,8 @@ defaults:
           ospfv3: true
           bgp: true
           isis: true
-        vxlan: {}
+        vxlan:
+          vtep6: true
       description: Arista vEOS VM or cEOS container
       interface_name: Ethernet{ifindex}
       mgmt_if: Management1
@@ -1095,6 +1156,7 @@ defaults:
           roles:
           - host
           - router
+          - bridge
           generate_mac:
           - svi
         bfd: {}
@@ -1161,17 +1223,20 @@ defaults:
                 large: true
                 extended: true
                 append: true
-                delete: clist
-                delete_list: true
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
+                large: true
+            delete:
+              community: clist
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
           static:
             vrf: true
             inter_vrf: true
@@ -1218,6 +1283,25 @@ defaults:
           gnupg: gpg
           curl: curl
           iproute2: bridge
+        netlab_frr_daemons:
+          bfd:
+          - bfdd
+          bgp:
+          - bgpd
+          ospf:
+          - ospfd
+          - ospf6d
+          ripv2:
+          - ripd
+          - ripngd
+          isis:
+          - isisd
+          vrf:
+          - bgpd
+          gateway:
+          - vrrpd
+          mpls:
+          - ldpd
       mtu: 1500
       clab:
         group_vars:
@@ -1269,11 +1353,17 @@ defaults:
             debug:
               type: list
               split_lines: true
+            daemons:
+              type: list
+              _subtype: str
         node:
           frr:
             debug:
               type: list
               split_lines: true
+            daemons:
+              type: list
+              _subtype: str
     cumulus:
       features:
         bgp:
@@ -1359,14 +1449,15 @@ defaults:
                 extended: true
                 append: true
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -1428,6 +1519,25 @@ defaults:
         - -c
         - show $@
         netlab_initial: always
+        netlab_frr_daemons:
+          bfd:
+          - bfdd
+          bgp:
+          - bgpd
+          ospf:
+          - ospfd
+          - ospf6d
+          ripv2:
+          - ripd
+          - ripngd
+          isis:
+          - isisd
+          vrf:
+          - bgpd
+          gateway:
+          - vrrpd
+          mpls:
+          - ldpd
       evpn:
         _start_transit_vlan: 3900
       graphite:
@@ -1596,13 +1706,15 @@ defaults:
         routing:
           aspath: true
           community:
-            expanded: false
+            standard:
+            - standard
           policy:
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
             set:
               locpref: true
               med: true
@@ -1613,7 +1725,8 @@ defaults:
                 large: false
                 extended: true
                 append: true
-                delete: false
+            delete:
+              community: false
           prefix: true
           static:
             vrf: true
@@ -1641,7 +1754,7 @@ defaults:
       lag_interface_name: port-channel{lag.ifindex}
       mtu: 1500
       clab:
-        image: vrnetlab/dell_ftos10v:10.5.6.6
+        image: vrnetlab/vr-ftosv
         build: https://containerlab.dev/manual/kinds/vr-ftosv/
         node:
           kind: vr-ftosv
@@ -1731,17 +1844,20 @@ defaults:
               prepend: true
               community:
                 standard: true
-                delete: true
                 append: true
+            delete:
+              community:
+                standard: true
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -1913,7 +2029,7 @@ defaults:
         min_tx: 100
         min_rx: 100
       clab:
-        image: ghcr.io/nokia/srlinux:25.10.1
+        image: ghcr.io/nokia/srlinux:25.3.2
         node:
           kind: srl
           type: ixr-d2
@@ -2075,17 +2191,37 @@ defaults:
         ansible_connection: network_cli
         netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group14-sha1 -o 
           PubkeyAcceptedKeyTypes=+ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
+        netlab_check_retries: 50
       external:
         image: none
       features:
         bgp: {}
         isis:
           circuit_type: true
+        ospf:
+          unnumbered: false
+          import: false
+          password: true
+          priority: true
+          timers: true
       libvirt:
         image: cisco/asav
         create_template: asav.xml.j2
         build: https://netlab.tools/labs/asav/
         create_iso: asav
+      clab:
+        image: vrnetlab/cisco_asav:9-16-4-57
+        node:
+          kind: cisco_asav
+        build: https://containerlab.dev/manual/kinds/cisco_asav/
+        group_vars:
+          ansible_ssh_pass: CiscoAsa1!
+          ansible_become_password: CiscoAsa1!
+          ansible_user: admin
+          netlab_ready:
+          - ssh
+          netlab_check_command: |
+            exit
     cat8000v:
       features:
         bgp:
@@ -2185,17 +2321,18 @@ defaults:
               community:
                 standard: true
                 append: true
-                delete: clist
-                delete_list: true
+            delete:
+              community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -2216,11 +2353,12 @@ defaults:
           protocol:
           - vrrp
         sr: {}
+        vxlan: {}
         srv6:
           bgp: false
           isis: true
           vpn: true
-      description: Cisco CSR 1000v
+      description: Cisco Catalyst 8000v
       attributes:
         global:
           ios:
@@ -2232,6 +2370,14 @@ defaults:
             debug:
               type: list
               split_lines: true
+          cat8000v:
+            license:
+              type: str
+              valid_values:
+              - none
+              - essential
+              - advantage
+              - premier
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -2253,12 +2399,14 @@ defaults:
           netlab_check_retries: 50
           netlab_ready:
           - ssh
-        image: vrnetlab/cisco_c8000v:17.13.01a
+        image: vrnetlab/cisco_c8000v:17.16.01a
         node:
           kind: cisco_c8000v
         interface:
           name: eth{ifindex-1}
         build: https://containerlab.dev/manual/kinds/vr-c8000v/
+        cat8000v:
+          license: premier
       role: router
       routing:
         _rm_per_af: true
@@ -2279,13 +2427,15 @@ defaults:
           --ram=4096 --disk path=vm.qcow2,bus=ide,format=qcow2 
           --network=network:vagrant-libvirt,model=virtio --graphics none 
           --import
+        cat8000v:
+          license: premier
         create_template: cat8000v.xml.j2
         create_iso: cat8000v
       _parents:
       - ios
       - csr
     cisco8000v:
-      description: Cisco 8000v
+      description: Cisco 8000v (IOS/XR)
       mgmt_if: MgmtEth0/RP0/CPU0/0
       interface_name: FourHundredGigE0/0/0/{ifindex}
       loopback_interface_name: Loopback{ifindex}
@@ -2298,39 +2448,11 @@ defaults:
         ansible_ssh_pass: cisco123
         ansible_become_password: cisco123
         netlab_device_type: cisco8000v
-      features:
-        initial:
-          ipv4:
-            unnumbered: true
-          ipv6:
-            lla: true
-          min_mtu: 68
-          min_phy_mtu: 1500
-          max_mtu: 9216
-        ospf:
-          unnumbered: true
-          password: true
-          priority: true
-          timers: true
-        isis:
-          circuit_type: true
-          unnumbered:
-            ipv4: true
-            ipv6: true
-            network: true
-        bgp:
-          activate_af: true
-      external:
-        image: none
-      support:
-        level: minimal
-      node:
-        min_mtu: 1500
       clab:
         group_vars:
-          netlab_check_retries: 50
           netlab_ready:
           - ssh
+          netlab_check_retries: 50
         kmods:
           initial:
           - openvswitch
@@ -2340,6 +2462,73 @@ defaults:
           name: FH0_0_0_{ifindex}
         image: cisco/cisco-8201-32fh:24.4.1
         build: https://containerlab.dev/manual/kinds/c8000/
+      features:
+        initial:
+          ipv4:
+            unnumbered: true
+          ipv6:
+            lla: true
+          min_mtu: 68
+          min_phy_mtu: 1500
+          max_mtu: 9216
+        bgp:
+          activate_af: true
+          import:
+          - ospf
+          - isis
+          - connected
+          - static
+          - vrf
+          local_as: true
+          local_as_ibgp: true
+          vrf_local_as: true
+          confederation: true
+        isis:
+          circuit_type: true
+          unnumbered:
+            ipv4: true
+            ipv6: true
+            network: true
+          import:
+          - ospf
+          - bgp
+          - connected
+          - static
+          - vrf
+        ospf:
+          unnumbered: true
+          password: true
+          priority: true
+          timers: true
+          default: true
+          import:
+          - bgp
+          - isis
+          - connected
+          - static
+          - vrf
+        routing:
+          static:
+            vrf: true
+            inter_vrf: true
+            discard: true
+        vrf:
+          bgp: true
+          isis: true
+          ospfv2: true
+          ospfv3: true
+        vlan:
+          model: router
+          subif_name: '{ifname}.{vlan.access_id}'
+          svi_interface_name: BVI{vlan}
+          mixed_trunk: true
+          native_routed: false
+      external:
+        image: none
+      support:
+        level: minimal
+      node:
+        min_mtu: 1500
       _parents:
       - xr
     csr:
@@ -2441,17 +2630,18 @@ defaults:
               community:
                 standard: true
                 append: true
-                delete: clist
-                delete_list: true
+            delete:
+              community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -2573,12 +2763,13 @@ defaults:
         ansible_httpapi_validate_certs: 'no'
         ansible_httpapi_port: 80
         netlab_console_connection: ssh
-        netlab_skip_missing_template: true
-        netlab_config_tasks: true
       external:
         image: none
       features:
-        ospf: {}
+        ospf:
+          password: true
+          priority: true
+          timers: true
       graphite:
         icon: firewall
     iol:
@@ -2680,17 +2871,18 @@ defaults:
               community:
                 standard: true
                 append: true
-                delete: clist
-                delete_list: true
+            delete:
+              community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -2748,7 +2940,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:17.16.01a
+        image: vrnetlab/cisco_iol:17.12.01
         node:
           kind: cisco_iol
       role: router
@@ -2811,6 +3003,7 @@ defaults:
           generate_mac:
           - ethernet
           - svi
+          normalize: true
         isis:
           circuit_type: true
           import:
@@ -2863,17 +3056,18 @@ defaults:
               community:
                 standard: true
                 append: true
-                delete: clist
-                delete_list: true
+            delete:
+              community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -2942,7 +3136,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:L2-17.16.01a
+        image: vrnetlab/cisco_iol:L2-17.12.01
         node:
           kind: cisco_iol
           type: l2
@@ -3058,17 +3252,18 @@ defaults:
               community:
                 standard: true
                 append: true
-                delete: clist
-                delete_list: true
+            delete:
+              community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -3123,7 +3318,7 @@ defaults:
           - ssh
         image: vrnetlab/cisco_vios:15.9.3
         node:
-          kind: linux
+          kind: cisco_vios
         interface:
           name: eth{ifindex}
         build: https://github.com/srl-labs/vrnetlab/tree/master/vios
@@ -3246,17 +3441,18 @@ defaults:
               community:
                 standard: true
                 append: true
-                delete: clist
-                delete_list: true
+            delete:
+              community: clist
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -3287,6 +3483,7 @@ defaults:
         lag:
           mlag: false
           passive: true
+        normalize: {}
       description: IOSv L2 image
       attributes:
         global:
@@ -3322,7 +3519,7 @@ defaults:
           - ssh
         image: vrnetlab/cisco_viosl2:15.2
         node:
-          kind: linux
+          kind: cisco_vios
         interface:
           name: eth{ifindex}
         build: https://github.com/srl-labs/vrnetlab/tree/master/viosl2
@@ -3357,6 +3554,25 @@ defaults:
         ansible_user: vagrant
         ansible_ssh_pass: vagrant
         ansible_become_password: vagrant
+        group_vars:
+          netlab_check_retries: 120
+          netlab_ready:
+          - ssh
+      clab:
+        group_vars:
+          netlab_ready:
+          - ssh
+          ansible_user: clab
+          ansible_ssh_pass: clab@123
+          ansible_become_password: clab@123
+        node:
+          kind: cisco_xrd
+          runtime: docker
+        mgmt_if: MgmtEth0/RP0/CPU0/0
+        interface:
+          name: Gi0-0-0-{ifindex}
+        image: ios-xr/xrd-control-plane:7.11.1
+        build: https://containerlab.dev/manual/kinds/xrd/
       features:
         initial:
           ipv4:
@@ -3366,19 +3582,52 @@ defaults:
           min_mtu: 68
           min_phy_mtu: 1500
           max_mtu: 9216
-        ospf:
-          unnumbered: true
-          password: true
-          priority: true
-          timers: true
+        bgp:
+          activate_af: true
+          import:
+          - ospf
+          - isis
+          - connected
+          - static
+          - vrf
+          local_as: true
+          local_as_ibgp: true
+          vrf_local_as: true
+          confederation: true
         isis:
           circuit_type: true
           unnumbered:
             ipv4: true
             ipv6: true
             network: true
-        bgp:
-          activate_af: true
+          import:
+          - ospf
+          - bgp
+          - connected
+          - static
+          - vrf
+        ospf:
+          unnumbered: true
+          password: true
+          priority: true
+          timers: true
+          default: true
+          import:
+          - bgp
+          - isis
+          - connected
+          - static
+          - vrf
+        routing:
+          static:
+            vrf: true
+            inter_vrf: true
+            discard: true
+        vrf:
+          bgp: true
+          isis: true
+          ospfv2: true
+          ospfv3: true
       external:
         image: none
       support:
@@ -3394,19 +3643,6 @@ defaults:
           --arch=x86_64 --vcpus=2 --ram=8192 --virt-type=kvm --disk 
           path=vm.qcow2,format=qcow2,device=disk,bus=ide --graphics none 
           --import
-      clab:
-        node:
-          kind: cisco_xrd
-          runtime: docker
-        mgmt_if: MgmtEth0/RP0/CPU0/0
-        interface:
-          name: Gi0-0-0-{ifindex}
-        image: ios-xr/xrd-control-plane:7.11.1
-        build: https://containerlab.dev/manual/kinds/xrd/
-        group_vars:
-          ansible_user: clab
-          ansible_ssh_pass: clab@123
-          ansible_become_password: clab@123
       _parents:
       - xr
     linux:
@@ -3456,6 +3692,11 @@ defaults:
         netlab_lldp_enable: false
         netlab_net_tools: false
       clab:
+        node_config:
+          initial: :ns
+          lag: :ns
+          vlan: :ns
+          routing: :ns
         features:
           initial:
             roles:
@@ -3621,14 +3862,19 @@ defaults:
               prepend: true
               community: true
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
+                large: true
+            delete:
+              community: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
           static:
             vrf: true
             inter_vrf: true
@@ -3841,7 +4087,7 @@ defaults:
         level: minimal
       interface_name: ether{ifindex}
       mgmt_if: ether1
-      loopback_interface_name: loopback{ifindex}
+      loopback_interface_name: loopback{ifindex if ifindex else ""}
       ifindex_offset: 2
       libvirt:
         image: mikrotik/chr7
@@ -4138,9 +4384,11 @@ defaults:
         routing:
           policy:
             match:
-            - prefix
-            - aspath
-            - community
+              prefix: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             set:
               locpref: true
               med: true
@@ -4150,14 +4398,16 @@ defaults:
                 large: true
                 extended: true
                 append: true
-                delete: true
+            delete:
+              community: true
           static:
             vrf: true
             discard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
         sr: {}
         vrf:
           ospfv2: true
@@ -4239,9 +4489,11 @@ defaults:
         routing:
           policy:
             match:
-            - prefix
-            - aspath
-            - community
+              prefix: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             set:
               locpref: true
               med: true
@@ -4251,14 +4503,16 @@ defaults:
                 large: true
                 extended: true
                 append: true
-                delete: true
+            delete:
+              community: true
           static:
             vrf: true
             discard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
         sr: {}
         vrf:
           ospfv2: true
@@ -4344,9 +4598,11 @@ defaults:
         routing:
           policy:
             match:
-            - prefix
-            - aspath
-            - community
+              prefix: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             set:
               locpref: true
               med: true
@@ -4356,14 +4612,16 @@ defaults:
                 large: true
                 extended: true
                 append: true
-                delete: true
+            delete:
+              community: true
           static:
             vrf: true
             discard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
         sr: {}
         vrf:
           ospfv2: true
@@ -4442,9 +4700,11 @@ defaults:
         routing:
           policy:
             match:
-            - prefix
-            - aspath
-            - community
+              prefix: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             set:
               locpref: true
               med: true
@@ -4454,14 +4714,16 @@ defaults:
                 large: true
                 extended: true
                 append: true
-                delete: true
+            delete:
+              community: true
           static:
             vrf: true
             discard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
         sr: {}
         vrf:
           ospfv2: true
@@ -4495,7 +4757,7 @@ defaults:
         pre_install: vptx
         create_template: vptx.xml.j2
       clab:
-        image: vrnetlab/juniper_vjunosevolved:23.2R2.21-EVO
+        image: vrnetlab/juniper_vjunosevolved:25.2R1.8-EVO
         build: https://containerlab.dev/manual/kinds/vr-vjunosevolved/
         mtu: 1500
         node:
@@ -4544,9 +4806,11 @@ defaults:
         routing:
           policy:
             match:
-            - prefix
-            - aspath
-            - community
+              prefix: true
+              aspath: true
+              community:
+                standard: true
+                large: true
             set:
               locpref: true
               med: true
@@ -4556,14 +4820,16 @@ defaults:
                 large: true
                 extended: true
                 append: true
-                delete: true
+            delete:
+              community: true
           static:
             vrf: true
             discard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
+            large: true
         sr: {}
         vrf:
           ospfv2: true
@@ -4695,16 +4961,18 @@ defaults:
                 large: true
                 extended: true
                 append: true
-                delete: false
+            delete:
+              community: false
             match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
+              prefix: true
+              nexthop: true
+              aspath: true
+              community:
+                standard: true
           prefix: true
           aspath: true
           community:
-            expanded: true
+            standard: true
           static:
             vrf: true
             inter_vrf: true
@@ -4820,6 +5088,11 @@ defaults:
           static: RTS_STATIC_DEVICE,RTS_STATIC
         netlab_device_type: bird
       clab:
+        node_config:
+          initial: /etc/config/01-initial.sh:sh
+          lag: /etc/config/10-lag.sh:sh
+          vlan: /etc/config/20-vlan.sh:sh
+          routing: :ns
         features:
           initial:
             roles:
@@ -4912,6 +5185,11 @@ defaults:
         netlab_net_tools: false
         netlab_device_type: dnsmasq
       clab:
+        node_config:
+          initial: :ns
+          lag: :ns
+          vlan: :ns
+          routing: :ns
         features:
           initial:
             roles:
@@ -4991,6 +5269,7 @@ defaults:
           type: ipv4
           use: id
         rr_list: list
+        rr_mesh: bool
         ebgp_role: str
         as_list: dict
         sessions:
@@ -5061,6 +5340,7 @@ defaults:
         rr_cluster_id:
           type: ipv4
           use: id
+        rr_mesh: bool
         originate:
           type: list
           _subtype:
@@ -5137,7 +5417,16 @@ defaults:
       rr_list:
       as_list:
       confederation:
-    ebgp_role: external
+    transform_after:
+    - vlan
+    config_after:
+    - routing
+    - ospf
+    - isis
+    - eigrp
+    - ripv2
+    hooks:
+    - normalize
     advertise_roles:
     - stub
     advertise_loopback: true
@@ -5147,17 +5436,8 @@ defaults:
       - extended
       ebgp:
       - standard
-    transform_after:
-    - vlan
-    config_after:
-    - routing
-    - ospf
-    - isis
-    - eigrp
-    - ripv2
+    ebgp_role: external
     next_hop_self: true
-    hooks:
-    - normalize
     features:
       local_as: Supports local-as functionality
       vrf_local_as: Supports local-as within a VRF
@@ -5216,17 +5496,16 @@ defaults:
       description: containerlab with Docker
       config: clab.yml
       lab_prefix: clab
-      node_config_attributes:
-      - type
-      - cmd
-      - dns
-      - env
-      - license
-      - ports
-      - startup-delay
-      - restart-policy
+      node_config_special:
+      - binds
+      - config_templates
+      - image
+      - kind
+      - startup-config
+      - srl-agents
+      - runtime
       template: clab.j2
-      version: 0.69.3
+      version: 0.72.0
       start: sudo -E containerlab deploy --reconfigure -t clab.yml
       stop: sudo -E containerlab destroy --cleanup -t clab.yml
       act_probe: docker ps
@@ -5237,9 +5516,9 @@ defaults:
       - cmd:
         - bash
         - -c
-        - "[[ `containerlab version|awk '/version/ {print $2}'` > '0.69.2' ]] && echo
-          OK"
-        err: Containerlab version is too old, please upgrade to 0.69.3 or later 
+        - "[[ `containerlab version|awk '/version/ {print $2}'` > '0.71.999' ]] &&
+          echo OK"
+        err: Containerlab version is too old, please upgrade to 0.72.0 or later 
           with 'sudo containerlab version upgrade'
       cleanup:
       - clab.yml
@@ -5281,6 +5560,9 @@ defaults:
             startup-delay: int
             restart-policy: str
             network-mode: str
+            exec:
+              type: list
+              _subtype: str
         interface:
           name: str
         link:
@@ -5385,6 +5667,10 @@ defaults:
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
       clab:
+        node_config:
+          initial: /etc/config/01-initial.sh:sh
+          lag: /etc/config/10-lag.sh:sh
+          vlan: /etc/config/20-vlan.sh:sh
         group_vars:
           netlab_show_command:
           - birdc
@@ -5988,6 +6274,9 @@ defaults:
         debug:
           type: list
           split_lines: true
+        daemons:
+          type: list
+          _subtype: str
       ios:
         debug:
           type: list
@@ -6011,6 +6300,7 @@ defaults:
       bandwidth: int
       bridge: id
       disable: bool
+      shutdown: bool
       name: str
       prefix:
         type: dict
@@ -6173,10 +6463,21 @@ defaults:
         debug:
           type: list
           split_lines: true
+        daemons:
+          type: list
+          _subtype: str
       ios:
         debug:
           type: list
           split_lines: true
+      cat8000v:
+        license:
+          type: str
+          valid_values:
+          - none
+          - essential
+          - advantage
+          - premier
     loopback:
       ipv4:
         type: ipv4
@@ -6382,6 +6683,8 @@ defaults:
         min_value: 1
         max_value: 32767
       set:
+        _invalid_with:
+          action: deny
         locpref:
           type: int
           min_value: 0
@@ -6419,11 +6722,26 @@ defaults:
           delete_list:
             type: str
             _valid_with: []
+      delete:
+        _invalid_with:
+          action: deny
+        community:
+          standard: list
+          extended: list
+          large: list
+          list:
+            _valid_with: []
+            standard: str
+            extended: str
+            large: str
       match:
         prefix: str
         nexthop: str
         aspath: str
-        community: str
+        community:
+          standard: str
+          extended: str
+          large: str
     pfx_entry:
       action:
         type: str
@@ -6645,6 +6963,9 @@ defaults:
       - group_vars
       - host_vars
       - config
+    configs:
+      cleanup:
+      - node_files
   const:
     routing_protocols:
     - bgp
@@ -6795,26 +7116,20 @@ defaults:
       - /home/pipi/.netlab
       - /home/pipi/netlab_gh/netsim/extra
       files:
-      - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
-        '-' + node_provider + '.j2' }}"
-      - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
-        '.j2' }}"
-      - "{{ custom_config + '/' + inventory_hostname + '.j2' }}"
-      - "{{ custom_config + '/' + inventory_hostname + '.cfg' }}"
-      - "{{ custom_config + '/' + netlab_device_type + '-' + node_provider + '.j2'
-        }}"
-      - "{{ custom_config + '/' + netlab_device_type + '.j2' }}"
-      - "{{ custom_config + '/' + ansible_network_os + '-' + node_provider + '.j2'
-        }}"
-      - "{{ custom_config + '/' + ansible_network_os + '.j2' }}"
-      - "{{ custom_config + '.' + inventory_hostname + '.' + netlab_device_type +
-        '.j2' }}"
-      - "{{ custom_config + '.' + inventory_hostname + '.' + ansible_network_os +
-        '.j2' }}"
-      - "{{ custom_config + '.' + inventory_hostname + '.j2' }}"
-      - "{{ custom_config + '.' + netlab_device_type + '.j2' }}"
-      - "{{ custom_config + '.' + ansible_network_os + '.j2' }}"
-      - "{{ custom_config + '.j2' }}"
+      - '{{custom_config}}/{{inventory_hostname}}.{{netlab_device_type}}-{{node_provider}}.j2'
+      - '{{custom_config}}/{{inventory_hostname}}.{{netlab_device_type}}.j2'
+      - '{{custom_config}}/{{inventory_hostname}}.j2'
+      - '{{custom_config}}/{{inventory_hostname}}.cfg'
+      - '{{custom_config}}/{{netlab_device_type}}-{{node_provider}}.j2'
+      - '{{custom_config}}/{{netlab_device_type}}.j2'
+      - '{{custom_config}}/{{ansible_network_os}}-{{node_provider}}.j2'
+      - '{{custom_config}}/{{ansible_network_os}}.j2'
+      - '{{custom_config}}.{{inventory_hostname}}.{{netlab_device_type}}.j2'
+      - '{{custom_config}}.{{inventory_hostname}}.{{ansible_network_os}}.j2'
+      - '{{custom_config}}.{{inventory_hostname}}.j2'
+      - '{{custom_config}}.{{netlab_device_type}}.j2'
+      - '{{custom_config}}.{{ansible_network_os}}.j2'
+      - '{{custom_config}}.j2'
       tasks:
       - '{{ custom_config }}/deploy-{{ inventory_hostname }}.yml'
       - '{{ custom_config }}/deploy.{{ netlab_device_type }}-{{ node_provider }}.yml'
@@ -6822,6 +7137,28 @@ defaults:
       - '{{ custom_config }}/deploy.{{ ansible_network_os }}-{{ node_provider }}.yml'
       - '{{ custom_config }}/deploy.{{ ansible_network_os }}.yml'
       - '{{ custom_config }}/deploy.yml'
+      f_files:
+      - '{custom_config}/{inventory_hostname}.{netlab_device_type}-{node_provider}.j2'
+      - '{custom_config}/{inventory_hostname}.{netlab_device_type}.j2'
+      - '{custom_config}/{inventory_hostname}.j2'
+      - '{custom_config}/{inventory_hostname}.cfg'
+      - '{custom_config}/{netlab_device_type}-{node_provider}.j2'
+      - '{custom_config}/{netlab_device_type}.j2'
+      - '{custom_config}/{ansible_network_os}-{node_provider}.j2'
+      - '{custom_config}/{ansible_network_os}.j2'
+      - '{custom_config}.{inventory_hostname}.{netlab_device_type}.j2'
+      - '{custom_config}.{inventory_hostname}.{ansible_network_os}.j2'
+      - '{custom_config}.{inventory_hostname}.j2'
+      - '{custom_config}.{netlab_device_type}.j2'
+      - '{custom_config}.{ansible_network_os}.j2'
+      - '{custom_config}.j2'
+      f_tasks:
+      - '{ custom_config }/deploy-{ inventory_hostname }.yml'
+      - '{ custom_config }/deploy.{ netlab_device_type }-{ node_provider }.yml'
+      - '{ custom_config }/deploy.{ netlab_device_type }.yml'
+      - '{ custom_config }/deploy.{ ansible_network_os }-{ node_provider }.yml'
+      - '{ custom_config }/deploy.{ ansible_network_os }.yml'
+      - '{ custom_config }/deploy.yml'
     deploy:
       dirs:
       - /home/pipi/netlab_gh/netsim/ansible/tasks
@@ -6831,39 +7168,62 @@ defaults:
       - deploy-config/{{ ansible_network_os }}-{{ node_provider }}.yml
       - deploy-config/{{ ansible_network_os }}.yml
       files:
-      - '{{ netlab_device_type }}/{{ config_module }}-{{ provider|default(netlab_provider)
-        }}.yml'
+      - '{{ netlab_device_type }}/{{ config_module }}-{{ node_provider }}.yml'
       - '{{ netlab_device_type }}/{{ config_module }}.yml'
-      - deploy-config/{{ netlab_device_type }}-{{ 
-        provider|default(netlab_provider) }}.yml
+      - deploy-config/{{ netlab_device_type }}-{{ node_provider }}.yml
       - deploy-config/{{ netlab_device_type }}.yml
-      - '{{ ansible_network_os }}/{{ config_module }}-{{ provider|default(netlab_provider)
-        }}.yml'
+      - '{{ ansible_network_os }}/{{ config_module }}-{{ node_provider }}.yml'
       - '{{ ansible_network_os }}/{{ config_module }}.yml'
-      - deploy-config/{{ ansible_network_os }}-{{ 
-        provider|default(netlab_provider) }}.yml
+      - deploy-config/{{ ansible_network_os }}-{{ node_provider }}.yml
       - deploy-config/{{ ansible_network_os }}.yml
+      f_tasks_generic:
+      - deploy-config/{ netlab_device_type }-{ node_provider }.yml
+      - deploy-config/{ netlab_device_type }.yml
+      - deploy-config/{ ansible_network_os }-{ node_provider }.yml
+      - deploy-config/{ ansible_network_os }.yml
+      f_files:
+      - '{ netlab_device_type }/{ config_module }-{ node_provider }.yml'
+      - '{ netlab_device_type }/{ config_module }.yml'
+      - deploy-config/{ netlab_device_type }-{ node_provider }.yml
+      - deploy-config/{ netlab_device_type }.yml
+      - '{ ansible_network_os }/{ config_module }-{ node_provider }.yml'
+      - '{ ansible_network_os }/{ config_module }.yml'
+      - deploy-config/{ ansible_network_os }-{ node_provider }.yml
+      - deploy-config/{ ansible_network_os }.yml
     templates:
       dirs:
       - /home/pipi/netlab_gh/netsim/daemons
       - /home/pipi/netlab_gh/netsim/ansible/templates
     t_files:
       files:
-      - '{{config_module}}/{{netlab_device_type}}-{{provider|default(netlab_provider)}}.j2'
+      - '{{config_module}}/{{netlab_device_type}}-{{node_provider}}.j2'
       - '{{config_module}}/{{netlab_device_type}}.j2'
       - '{{config_module}}.{{netlab_device_type}}.j2'
-      - '{{config_module}}/{{ansible_network_os}}-{{provider|default(netlab_provider)}}.j2'
+      - '{{config_module}}/{{ansible_network_os}}-{{node_provider}}.j2'
       - '{{config_module}}/{{ansible_network_os}}.j2'
       - '{{config_module}}.{{ansible_network_os}}.j2'
       - '{{netlab_device_type}}/{{config_module}}.j2'
+      f_files:
+      - '{config_module}/{netlab_device_type}-{node_provider}.j2'
+      - '{config_module}/{netlab_device_type}.j2'
+      - '{config_module}.{netlab_device_type}.j2'
+      - '{config_module}/{ansible_network_os}-{node_provider}.j2'
+      - '{config_module}/{ansible_network_os}.j2'
+      - '{config_module}.{ansible_network_os}.j2'
+      - '{netlab_device_type}/{config_module}.j2'
     ready:
       dirs:
       - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
       files:
-      - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
+      - '{{netlab_device_type}}-{{node_provider}}.yml'
       - '{{netlab_device_type}}.yml'
-      - '{{ansible_network_os}}-{{provider|default(netlab_provider)}}.yml'
+      - '{{ansible_network_os}}-{{node_provider}}.yml'
       - '{{ansible_network_os}}.yml'
+      f_files:
+      - '{netlab_device_type}-{node_provider}.yml'
+      - '{netlab_device_type}.yml'
+      - '{ansible_network_os}-{node_provider}.yml'
+      - '{ansible_network_os}.yml'
     collect:
       dirs:
       - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
@@ -7850,6 +8210,7 @@ defaults:
       inactive: true
     supported_on:
       arubacx: true
+      asav: true
       bird: true
       cat8000v: true
       cisco8000v: true
@@ -8039,9 +8400,20 @@ defaults:
           type: dict
           _keytype: id
           _subtype:
-            type: list
-            make_list: true
-            _subtype: community_entry
+            type: dict
+            _keys:
+              type:
+                type: str
+                valid_values:
+                - standard
+                - extended
+                - large
+                _required: true
+                _default: standard
+              value:
+                type: list
+                make_list: true
+                _subtype: community_entry
         static:
           type: dict
           _keytype: id
@@ -8081,9 +8453,20 @@ defaults:
           type: dict
           _keytype: id
           _subtype:
-            type: list
-            make_list: true
-            _subtype: community_entry
+            type: dict
+            _keys:
+              type:
+                type: str
+                valid_values:
+                - standard
+                - extended
+                - large
+                _required: true
+                _default: standard
+              value:
+                type: list
+                make_list: true
+                _subtype: community_entry
             _alt_types:
             - NoneType
         static:
@@ -8104,11 +8487,16 @@ defaults:
       policy:
         set: Route map SET attributes
         match: Route map MATCH attributes
+        delete: Route map DELETE attributes
       static: Static routes
+      prefix: Prefix lists
+      aspath: AS-path access lists
+      community: BGP community access lists
     supported_on:
       arubacx: true
       bird: true
       cat8000v: true
+      cisco8000v: true
       csr: true
       cumulus: true
       cumulus_nvue: true
@@ -8121,6 +8509,7 @@ defaults:
       ios: true
       iosv: true
       iosvl2: true
+      iosxr: true
       junos: true
       linux: true
       none: true
@@ -8134,6 +8523,7 @@ defaults:
       vptx: true
       vsrx: true
       vyos: true
+      xr: true
   sr:
     requires:
     - isis
@@ -8451,6 +8841,7 @@ defaults:
       bird:
         clab: true
       cat8000v: true
+      cisco8000v: true
       csr: true
       cumulus: true
       cumulus_nvue: true
@@ -8520,6 +8911,7 @@ defaults:
     supported_on:
       arubacx: true
       cat8000v: true
+      cisco8000v: true
       csr: true
       cumulus: true
       cumulus_nvue: true
@@ -8531,6 +8923,7 @@ defaults:
       ios: true
       iosv: true
       iosvl2: true
+      iosxr: true
       junos: true
       none: true
       nxos: true
@@ -8546,6 +8939,7 @@ defaults:
       vptx: true
       vsrx: true
       vyos: true
+      xr: true
   vxlan:
     requires:
     - vlan
@@ -8587,6 +8981,7 @@ defaults:
       vtep6: VXLAN over IPv6
     supported_on:
       arubacx: true
+      cat8000v: true
       csr: true
       cumulus: true
       cumulus_nvue: true
@@ -8601,6 +8996,9 @@ defaults:
       unknown: true
       vjunos-switch: true
       vyos: true
+  _cache:
+    timestamp: 1766741248.1081293
+    source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     list: []
     extra: []
@@ -8681,4 +9079,4 @@ vxlan:
   vlans:
   - red
   use_v6_vtep: false
-_netlab_version: '25.11'
+_netlab_version: 25.12.03
