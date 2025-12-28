@@ -15,19 +15,19 @@ device support via the ripv2.unnumbered feature flag.
 An interface is unnumbered if it has IPv4 enabled but no IPv4 address (ipv4: true)
 """
 def ripv2_unnumbered(node: Box, features: Box) -> bool:
-  is_unnumbered = False
+  unnumbered_intfs = []
 
   for intf in node.get('interfaces',[]):
     if intf.get('ipv4',None) is True and 'ripv2' in intf:
-      is_unnumbered = True
-      break
+      unnumbered_intfs.append(f"{intf.ifname} ({intf.name})")
 
-  if is_unnumbered:
+  if unnumbered_intfs:
     if not features.ripv2.get('unnumbered',False):
       log.error(
         f'Device {node.device} used on node {node.name} cannot run RIPv2 over unnumbered interface',
-        log.IncorrectValue,
-        'interfaces')
+        category=log.IncorrectValue,
+        module='interfaces',
+        more_data=f'Unnumbered interfaces: {", ".join(unnumbered_intfs)}')
       return False
 
   return True
