@@ -208,6 +208,8 @@ def run_config(cli_args: typing.List[str]) -> None:
   topology = load_snapshot(args)
 
   nodeset = _nodeset.parse_nodeset(args.limit,topology) if args.limit else list(topology.nodes.keys())
+  if not nodeset:
+    error_and_exit('The specified nodeset is empty, there are no nodes to configure')
   set_initial_args(args,initial=False)
 
   if args.reload:
