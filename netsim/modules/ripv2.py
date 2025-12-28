@@ -5,7 +5,32 @@
 from box import Box
 
 from ..augment import devices
+from ..utils import log
 from . import _Module, _routing, bfd
+
+"""
+ripv2_unnumbered: Check whether RIPv2 is used on unnumbered interfaces and verify
+device support via the ripv2.unnumbered feature flag.
+
+An interface is unnumbered if it has IPv4 enabled but no IPv4 address (ipv4: true)
+"""
+def ripv2_unnumbered(node: Box, features: Box) -> bool:
+  is_unnumbered = False
+
+  for l in node.get('interfaces',[]):
+    if l.get('ipv4',None) is True and 'ripv2' in l:
+      is_unnumbered = True
+      break
+
+  if is_unnumbered:
+    if not features.ripv2.get('unnumbered',False):
+      log.error(
+        f'Device {node.device} used on node {node.name} cannot run RIPv2 over unnumbered interface',
+        log.IncorrectValue,
+        'interfaces')
+      return False
+
+  return True
 
 """
 adjust_rip_timers: Make sure all three timers are set if at least one of the 'ripv2.timers'
@@ -44,6 +69,9 @@ class RIPv2(_Module):
     for intf in node.get('interfaces',[]):
       if not _routing.external(intf,'ripv2'):                   # Remove external interfaces from RIPv2 process
         _routing.passive(intf,'ripv2',topology,features,node)   # Set passive flag on other RIPv2 interfaces
+
+    if not ripv2_unnumbered(node,features):
+      return
 
     _routing.igp_post_transform(node,topology,proto='ripv2',vrf_aware=True)
     _routing.check_vrf_protocol_support(node,proto='ripv2',af='ipv4',feature='ripv2',topology=topology)
