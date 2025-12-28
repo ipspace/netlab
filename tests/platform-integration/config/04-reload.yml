@@ -1,0 +1,34 @@
+provider: clab
+
+defaults.sources.extra: [ ../../integration/wait_times.yml ]
+
+plugin: [ files ]
+module: [ ospf ]
+
+nodes:
+  r1:
+    device: eos
+  r2:
+    device: iol
+
+links: [ r1-r2 ]
+
+files:
+  validate.sh: |
+    netlab collect
+    netlab config no_ospf
+    netlab config --reload config
+    netlab validate
+
+configlets:
+  no_ospf:
+    eos: |
+      no router ospf 1
+    iol: |
+      no router ospf 1
+
+validate:
+  adj:
+    nodes: [ r1 ]
+    wait: ospfv2_adj_p2p
+    plugin: ospf_neighbor(nodes.r2.ospf.router_id)

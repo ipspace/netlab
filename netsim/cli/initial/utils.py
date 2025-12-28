@@ -8,6 +8,7 @@ import typing
 
 from box import Box
 
+from ...utils import log
 from .. import common_parse_args, parser_lab_location
 
 
@@ -73,22 +74,27 @@ def initial_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namesp
 
   return parser.parse_known_args(args)
 
+def common_ansible_args() -> list:
+  rest = []
+  if log.VERBOSE:
+    rest += ['-' + 'v' * log.VERBOSE]
+
+  if log.QUIET:
+    os.environ["ANSIBLE_STDOUT_CALLBACK"] = "selective"
+
+  return rest
+
 """
 Build Ansible arguments based on 'netlab initial' parameters
 """
 def ansible_args(args: argparse.Namespace) -> list:
-  rest: typing.List[str] = []
-  if args.verbose:
-    rest = ['-' + 'v' * args.verbose] + rest
+  rest = common_ansible_args()
 
   if args.limit:
     rest = ['--limit',args.limit] + rest
 
   if args.initial:
     rest = ['-t','initial'] + rest
-
-  if args.quiet:
-    os.environ["ANSIBLE_STDOUT_CALLBACK"] = "selective"
 
   if args.module:
     if args.module != "*":
