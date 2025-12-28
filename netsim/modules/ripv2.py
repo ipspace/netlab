@@ -17,8 +17,8 @@ An interface is unnumbered if it has IPv4 enabled but no IPv4 address (ipv4: tru
 def ripv2_unnumbered(node: Box, features: Box) -> bool:
   is_unnumbered = False
 
-  for l in node.get('interfaces',[]):
-    if l.get('ipv4',None) is True and 'ripv2' in l:
+  for intf in node.get('interfaces',[]):
+    if intf.get('ipv4',None) is True and 'ripv2' in intf:
       is_unnumbered = True
       break
 
