@@ -216,13 +216,14 @@ addressing:
 After the lab is started, configure proxy ARP on the Linux gateway server. SSH into the gateway node and execute the following commands:
 
 ```bash
-# Enable proxy ARP on the uplink interface (e.g., eth1)
+# Enable proxy ARP on the uplink interface (adjust interface name as needed)
 sudo sysctl -w net.ipv4.conf.eth1.proxy_arp=1
 
 # Make the setting persistent across reboots
 echo "net.ipv4.conf.eth1.proxy_arp = 1" | sudo tee -a /etc/sysctl.conf
 
 # Add a static route for the external subnet pointing to the lab interface
+# Replace 192.18.42.0/24 with your actual external subnet
 sudo ip route add 192.18.42.0/24 dev eth2
 
 # Enable IP forwarding if not already enabled
@@ -230,7 +231,7 @@ sudo sysctl -w net.ipv4.ip_forward=1
 echo "net.ipv4.ip_forward = 1" | sudo tee -a /etc/sysctl.conf
 ```
 
-Replace `eth1` with your server's uplink interface name and `eth2` with the interface connected to the lab network. Use **ip addr** to identify the correct interface names.
+Replace `eth1` with your server's uplink interface name, `eth2` with the interface connected to the lab network, and `192.18.42.0/24` with your external subnet. Use **ip addr** to identify the correct interface names.
 
 ```{tip}
 The gateway node is configured with **role: gateway** which means it does not perform packet forwarding by default. However, you need to enable IP forwarding manually using sysctl as shown above for proxy ARP to work properly.
