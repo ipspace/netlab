@@ -1,475 +1,5 @@
 %YAML 1.1
 ---
-module:
-- dhcp
-- routing
-- ospf
-groups:
-  clients:
-    members:
-    - c1
-    - c2
-    module:
-    - ospf
-    - dhcp
-  servers:
-    members:
-    - server
-    device: dnsmasq
-    node_data:
-      dhcp:
-        server: true
-      provider: clab
-  all:
-    vars:
-      netlab_show_config: true
-    members: []
-    _default_group: true
-nodes:
-  relay:
-    device: eos
-    module:
-    - dhcp
-    - ospf
-    name: relay
-    interfaces:
-    - dhcp:
-        server:
-        - server
-        relay:
-          ipv4:
-          - 172.16.1.4
-      ipv4: 172.16.0.1/24
-      linkindex: 1
-      type: lan
-      bridge: ml_17_1
-      name: relay -> [c1,c2]
-      ifindex: 1
-      ifname: Ethernet1
-      mac_address: caf0.0001.0001
-      clab:
-        name: et1
-      neighbors:
-      - dhcp:
-          client:
-            ipv4: true
-        ipv4: 172.16.0.2/24
-        ifname: Ethernet0/1
-        node: c1
-      - dhcp:
-          client:
-            ipv4: true
-        ipv4: 172.16.0.3/24
-        ifname: Ethernet0/1
-        node: c2
-      ospf:
-        area: 0.0.0.0
-        passive: false
-    - ipv4: 172.16.1.1/24
-      linkindex: 2
-      type: lan
-      bridge: ml_17_2
-      name: relay -> server
-      ifindex: 2
-      ifname: Ethernet2
-      mac_address: caf0.0001.0002
-      clab:
-        name: et2
-      neighbors:
-      - ipv4: 172.16.1.4/24
-        ifname: eth1
-        node: server
-      ospf:
-        area: 0.0.0.0
-        passive: false
-        network_type: point-to-point
-    clab:
-      kind: ceos
-      env:
-        INTFTYPE: et
-        CLAB_MGMT_VRF: management
-    box: ceos:4.34.2F
-    ospf:
-      area: 0.0.0.0
-      router_id: 10.0.0.1
-      af:
-        ipv4: true
-      areas:
-      - area: 0.0.0.0
-        _area_int: 0
-        kind: regular
-    id: 1
-    role: router
-    af:
-      ipv4: true
-    mgmt:
-      ifname: Management0
-      mac: ca:fe:00:01:00:00
-      ipv4: 192.168.17.101
-    hostname: clab-ml_17-relay
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: Loopback0
-      ipv4: 10.0.0.1/32
-      ospf:
-        area: 0.0.0.0
-        passive: false
-    dhcp:
-      relay: true
-  c1:
-    name: c1
-    interfaces:
-    - dhcp:
-        client:
-          ipv4: true
-      linkindex: 1
-      type: lan
-      bridge: ml_17_1
-      name: c1 -> [c2,relay]
-      ifindex: 1
-      ifname: Ethernet0/1
-      clab:
-        name: Ethernet0/1
-      neighbors:
-      - dhcp:
-          client:
-            ipv4: true
-        ipv4: 172.16.0.3/24
-        ifname: Ethernet0/1
-        node: c2
-      - dhcp:
-          server:
-          - server
-        ipv4: 172.16.0.1/24
-        ifname: Ethernet1
-        node: relay
-      ospf:
-        area: 0.0.0.0
-        passive: false
-    module:
-    - dhcp
-    - ospf
-    device: iol
-    clab:
-      kind: cisco_iol
-    box: vrnetlab/cisco_iol:17.12.01
-    ospf:
-      area: 0.0.0.0
-      router_id: 10.0.0.2
-      af:
-        ipv4: true
-      areas:
-      - area: 0.0.0.0
-        _area_int: 0
-        kind: regular
-    id: 2
-    role: router
-    provider: clab
-    af:
-      ipv4: true
-    mgmt:
-      ifname: Ethernet0/0
-      mac: ca:fe:00:02:00:00
-      ipv4: 192.168.17.102
-    hostname: clab-ml_17-c1
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: Loopback0
-      ipv4: 10.0.0.2/32
-      ospf:
-        area: 0.0.0.0
-        passive: false
-  c2:
-    name: c2
-    interfaces:
-    - dhcp:
-        client:
-          ipv4: true
-      linkindex: 1
-      type: lan
-      bridge: ml_17_1
-      name: c2 -> [c1,relay]
-      ifindex: 1
-      ifname: Ethernet0/1
-      clab:
-        name: Ethernet0/1
-      neighbors:
-      - dhcp:
-          client:
-            ipv4: true
-        ipv4: 172.16.0.2/24
-        ifname: Ethernet0/1
-        node: c1
-      - dhcp:
-          server:
-          - server
-        ipv4: 172.16.0.1/24
-        ifname: Ethernet1
-        node: relay
-      ospf:
-        area: 0.0.0.0
-        passive: false
-    module:
-    - dhcp
-    - ospf
-    device: iol
-    clab:
-      kind: cisco_iol
-    box: vrnetlab/cisco_iol:17.12.01
-    ospf:
-      area: 0.0.0.0
-      router_id: 10.0.0.3
-      af:
-        ipv4: true
-      areas:
-      - area: 0.0.0.0
-        _area_int: 0
-        kind: regular
-    id: 3
-    role: router
-    provider: clab
-    af:
-      ipv4: true
-    mgmt:
-      ifname: Ethernet0/0
-      mac: ca:fe:00:03:00:00
-      ipv4: 192.168.17.103
-    hostname: clab-ml_17-c2
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: Loopback0
-      ipv4: 10.0.0.3/32
-      ospf:
-        area: 0.0.0.0
-        passive: false
-  server:
-    dhcp:
-      server: true
-      pools:
-      - name: links[1]
-        ipv4: 172.16.0.0/24
-        excluded:
-          ipv4:
-          - 172.16.0.1
-        clean_name: links_1_
-    name: server
-    interfaces:
-    - ipv4: 172.16.1.4/24
-      linkindex: 2
-      type: lan
-      bridge: ml_17_2
-      name: server -> relay
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.1.1/24
-        ifname: Ethernet2
-        node: relay
-      gateway:
-        ipv4: 172.16.1.1/24
-    device: dnsmasq
-    module:
-    - dhcp
-    - routing
-    clab:
-      kind: linux
-      config_templates:
-      - initial::ns
-      - routing::ns
-      - dnsmasq:/etc/dnsmasq.conf
-      - dhcp:/etc/dhcp.ignore
-      - hosts:/etc/hosts:shared
-      binds:
-      - node_files/server/dnsmasq:/etc/dnsmasq.conf
-      - node_files/server/dhcp:/etc/dhcp.ignore
-      - node_files/-shared-hosts:/etc/hosts:ro
-    box: netlab/dnsmasq:latest
-    id: 4
-    role: host
-    mtu: 1500
-    _daemon: true
-    _daemon_parent: linux
-    _daemon_config:
-      dnsmasq: /etc/dnsmasq.conf
-      dhcp: /etc/dhcp.ignore
-    _node_config:
-      initial: :ns
-      routing: :ns
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:04:00:00
-      ipv4: 192.168.17.104
-    hostname: clab-ml_17-server
-    routing:
-      static:
-      - ipv4: 172.16.0.0/16
-        nexthop:
-          ipv4: 172.16.1.1
-          intf: eth1
-          idx: 0
-      - ipv4: 10.0.0.0/24
-        nexthop:
-          ipv4: 172.16.1.1
-          intf: eth1
-          idx: 0
-      - ipv4: 10.1.0.0/16
-        nexthop:
-          ipv4: 172.16.1.1
-          intf: eth1
-          idx: 0
-      - ipv4: 10.2.0.0/24
-        nexthop:
-          ipv4: 172.16.1.1
-          intf: eth1
-          idx: 0
-    netlab_ansible_skip_module:
-    - dnsmasq
-    - dhcp
-    - initial
-    - routing
-    _template_cache:
-    - fname: initial
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
-      output: node_files/server/initial
-      mode: ns
-    - fname: routing
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
-      output: node_files/server/routing
-      mode: ns
-    - fname: dnsmasq
-      fpath: /home/pipi/netlab_gh/netsim/daemons/dnsmasq/dnsmasq.j2
-      output: node_files/server/dnsmasq
-      mapping: /etc/dnsmasq.conf
-    - fname: dhcp
-      fpath: /home/pipi/netlab_gh/netsim/daemons/dnsmasq/dhcp.j2
-      output: node_files/server/dhcp
-      mapping: /etc/dhcp.ignore
-    - fname: hosts
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
-      output: node_files/-shared-hosts
-      mode: shared
-      mapping: /etc/hosts:ro
-links:
-- _linkname: links[1]
-  interfaces:
-  - node: c1
-    dhcp:
-      client:
-        ipv4: true
-    ipv4: 172.16.0.2/24
-    ifindex: 1
-    ifname: Ethernet0/1
-  - node: c2
-    dhcp:
-      client:
-        ipv4: true
-    ipv4: 172.16.0.3/24
-    ifindex: 1
-    ifname: Ethernet0/1
-  - dhcp:
-      server:
-      - server
-    node: relay
-    ipv4: 172.16.0.1/24
-    ifindex: 1
-    ifname: Ethernet1
-  linkindex: 1
-  dhcp:
-    subnet:
-      ipv4: true
-  node_count: 3
-  type: lan
-  bridge: ml_17_1
-  prefix:
-    ipv4: 172.16.0.0/24
-- interfaces:
-  - node: relay
-    ipv4: 172.16.1.1/24
-    ifindex: 2
-    ifname: Ethernet2
-  - node: server
-    ipv4: 172.16.1.4/24
-    ifindex: 1
-    ifname: eth1
-  _linkname: links[2]
-  linkindex: 2
-  node_count: 2
-  type: lan
-  bridge: ml_17_2
-  prefix:
-    ipv4: 172.16.1.0/24
-validate:
-- description: Check for DHCP server lease
-  nodes:
-  - server
-  wait: 15
-  wait_msg: Waiting for DHCP clients
-  pass: The DHCP server has at least one active IPv4 lease
-  fail: No IPv4 leases on the DHCP server
-  show:
-    eos: dhcp server leases | json
-  exec:
-    dnsmasq: cat /var/lib/misc/dnsmasq.leases | grep --color=never -E ' c[1-9] '
-      | wc -l
-  valid:
-    eos: vrfs.default.ipv4ActiveLeases
-    dnsmasq: stdout.rstrip() > '0'
-  name: lease
-  devices:
-  - dnsmasq
-  - eos
-- description: Check for DHCP server lease
-  nodes:
-  - server
-  wait: 5
-  wait_msg: Waiting for the second DHCP client
-  pass: The DHCP server has at least two active IPv4 leases
-  fail: There are not enough IPv4 leases on the DHCP server
-  show:
-    eos: dhcp server leases | json
-  exec:
-    dnsmasq: cat /var/lib/misc/dnsmasq.leases | grep --color=never -E ' c[1-9] '
-      | wc -l
-  valid:
-    eos: len(vrfs.default.ipv4ActiveLeases) == 2
-    dnsmasq: stdout.rstrip() == '2'
-  name: lease_all
-  devices:
-  - dnsmasq
-  - eos
-- description: Check for OSPF adjacencies on the DHCP relay
-  wait: 40
-  pass: DHCP relay has two OSPF neighbors
-  fail: Some OSPF adjacencies are missing on the DHCP relay
-  nodes:
-  - relay
-  show:
-    eos: ip ospf neighbor | json
-  valid:
-    eos: len(vrfs.default.instList["1"].ospfNeighborEntries) == 2
-  name: ospf
-  devices:
-  - eos
-message: |
-  Use this topology to test the OSPF over interfaces using dynamic DHCP addresses. Use
-  'netlab validate' to check whether your devices acquired dynamic IPv4 addresses and whether they
-  established OSPF adjacency with the DHCP relay.
-input:
-- /home/pipi/netlab_gh/tests/integration/dhcp/31-ipv4-client-ospf.yml
-- /home/pipi/.netlab.yml
-- package:topology-defaults.yml
 defaults:
   provider: clab
   providers:
@@ -936,6 +466,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -994,6 +525,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox: {}
@@ -1233,6 +766,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -1287,6 +821,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox:
@@ -1688,7 +1224,7 @@ defaults:
         vxlan: {}
       mtu: 1500
       clab:
-        image: vrnetlab/vr-ftosv
+        image: vrnetlab/dell_ftos10v:10.5.6.6
         build: https://containerlab.dev/manual/kinds/vr-ftosv/
         node:
           kind: vr-ftosv
@@ -1903,7 +1439,7 @@ defaults:
             INTFTYPE: et
             CLAB_MGMT_VRF: management
         mgmt_if: Management0
-        image: ceos:4.34.2F
+        image: ceos:4.35.0.1F
         group_vars:
           ansible_user: admin
           ansible_ssh_pass: admin
@@ -1930,6 +1466,8 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
+      warnings:
+        ospf_stub: false
     fortios:
       description: Fortinet FortiOS firewall
       support:
@@ -2256,7 +1794,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:17.12.01
+        image: vrnetlab/cisco_iol:17.16.01a
         node:
           kind: cisco_iol
       role: router
@@ -2341,6 +1879,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2398,6 +1937,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       provider: clab
       _parents:
@@ -2436,7 +1977,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:L2-17.12.01
+        image: vrnetlab/cisco_iol:L2-17.16.01a
         node:
           kind: cisco_iol
           type: l2
@@ -2527,6 +2068,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2595,6 +2137,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       provider: clab
       _parents:
@@ -2723,6 +2267,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2775,6 +2320,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet0/{ifindex}
       libvirt:
         image: cisco/iosv
@@ -2910,6 +2457,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2974,6 +2522,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex // 4}/{ifindex % 4}
       libvirt:
         image: cisco/iosvl2
@@ -3660,7 +3210,7 @@ defaults:
         min_tx: 100
         min_rx: 100
       clab:
-        image: ghcr.io/nokia/srlinux:25.3.2
+        image: ghcr.io/nokia/srlinux:25.10.1
         node:
           kind: srl
           type: ixr-d2
@@ -3847,6 +3397,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
         routing:
           policy:
             set:
@@ -3888,6 +3439,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     srsim:
       description: Nokia SR-SIM (SR-OS) container
       mgmt_if: A/1
@@ -3982,6 +3535,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
         routing:
           policy:
             set:
@@ -4026,6 +3580,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
       _parents:
       - sros
     unknown:
@@ -4448,7 +4004,7 @@ defaults:
         pre_install: vptx
         create_template: vptx.xml.j2
       clab:
-        image: vrnetlab/juniper_vjunosevolved:25.2R1.8-EVO
+        image: vrnetlab/juniper_vjunosevolved:23.2R2.21-EVO
         build: https://containerlab.dev/manual/kinds/vr-vjunosevolved/
         mtu: 1500
         node:
@@ -6259,6 +5815,58 @@ defaults:
       neighbors: 5
       maxlength: 255
     MAX_NODE_ID: 150
+    validate:
+      ping: 5
+      ping_vrf: 5
+      ping_long: 15
+      vxlan_ping: 20
+      ping_stp: 45
+      ping_irb: 10
+      ra_send: 30
+      ospfv2_adj_p2p: 30
+      ospfv2_adj_lan: 50
+      ospfv2_adj_stp: 120
+      ospfv2_spf: 10
+      ospfv2_spf_long: 30
+      ospfv3_adj_p2p: 30
+      ospfv3_adj_lan: 50
+      ospfv3_adj_stp: 120
+      ospfv3_spf: 10
+      ospfv3_spf_long: 30
+      ospf_import: 20
+      ebgp_session: 30
+      ibgp_session: 30
+      bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_v4_originate: 15
+      bgp_v6_originate: 15
+      bgp_v4_redist: 15
+      bgp_v6_redist: 15
+      isis_adj_p2p: 20
+      isis_adj_lan: 50
+      isis_spf: 15
+      isis_spf_long: 45
+      isis_redist: 30
+      rip_start: 60
+      rip_update: 20
+      ldp_adj: 30
+      stp_forwarding: 40
+      lacp_setup: 10
+      xr:
+        bgp_v4_originate: 80
+        bgp_v6_originate: 80
+        bgp_v4_redist: 90
+        isis_redist: 60
+        ebgp_session: 90
+        ping_vrf: 20
+        bgp_scan_long: 30
+      ios:
+        bgp_v6_redist: 60
+      cisco8000v:
+        ping_irb: 90
+        ping_long: 15
+      vjunos-router:
+        ping_irb: 90
   hints:
     evpn:
       irb_group: >
@@ -6378,12 +5986,12 @@ defaults:
     - /home/pipi/netlab_gh/netsim/validate
     plugin:
     - /work/netlab_cicd
-    - /home/pipi/netlab_gh/tests/integration/dhcp
+    - /home/pipi/net101/tools/tests/integration/dhcp
     - /home/pipi/.netlab
     - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
-      - /home/pipi/netlab_gh/tests/integration/dhcp
+      - /home/pipi/net101/tools/tests/integration/dhcp
       - /work/netlab_cicd
       - /home/pipi/.netlab
       - /home/pipi/netlab_gh/netsim/extra
@@ -6506,6 +6114,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -8467,11 +8077,13 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1766696908.601621
+    timestamp: 1766948698.821706
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
+    extra:
+    - ../wait_times.yml
+    - ../warnings.yml
     list: []
-    extra: []
     user: []
     system: []
   workdir: /work/netlab_cicd
@@ -8509,6 +8121,478 @@ defaults:
   - routing
   - ospf
   name: ml_17
+module:
+- dhcp
+- routing
+- ospf
+groups:
+  clients:
+    members:
+    - c1
+    - c2
+    module:
+    - ospf
+    - dhcp
+  servers:
+    members:
+    - server
+    device: dnsmasq
+    node_data:
+      dhcp:
+        server: true
+      provider: clab
+  all:
+    vars:
+      netlab_show_config: true
+    members: []
+    _default_group: true
+nodes:
+  relay:
+    device: eos
+    module:
+    - dhcp
+    - ospf
+    name: relay
+    interfaces:
+    - dhcp:
+        server:
+        - server
+        relay:
+          ipv4:
+          - 172.16.1.4
+      ipv4: 172.16.0.1/24
+      linkindex: 1
+      type: lan
+      bridge: ml_17_1
+      name: relay -> [c1,c2]
+      ifindex: 1
+      ifname: Ethernet1
+      mac_address: caf0.0001.0001
+      clab:
+        name: et1
+      neighbors:
+      - dhcp:
+          client:
+            ipv4: true
+        ipv4: 172.16.0.2/24
+        ifname: Ethernet0/1
+        node: c1
+      - dhcp:
+          client:
+            ipv4: true
+        ipv4: 172.16.0.3/24
+        ifname: Ethernet0/1
+        node: c2
+      ospf:
+        area: 0.0.0.0
+        passive: false
+    - ipv4: 172.16.1.1/24
+      linkindex: 2
+      type: lan
+      bridge: ml_17_2
+      name: relay -> server
+      ifindex: 2
+      ifname: Ethernet2
+      mac_address: caf0.0001.0002
+      clab:
+        name: et2
+      neighbors:
+      - ipv4: 172.16.1.4/24
+        ifname: eth1
+        node: server
+      ospf:
+        area: 0.0.0.0
+        passive: false
+        network_type: point-to-point
+    clab:
+      kind: ceos
+      env:
+        INTFTYPE: et
+        CLAB_MGMT_VRF: management
+    box: ceos:4.35.0.1F
+    ospf:
+      area: 0.0.0.0
+      router_id: 10.0.0.1
+      af:
+        ipv4: true
+      areas:
+      - area: 0.0.0.0
+        _area_int: 0
+        kind: regular
+    id: 1
+    role: router
+    af:
+      ipv4: true
+    mgmt:
+      ifname: Management0
+      mac: ca:fe:00:01:00:00
+      ipv4: 192.168.17.101
+    hostname: clab-ml_17-relay
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.1/32
+      ospf:
+        area: 0.0.0.0
+        passive: false
+    dhcp:
+      relay: true
+  c1:
+    name: c1
+    interfaces:
+    - dhcp:
+        client:
+          ipv4: true
+      linkindex: 1
+      type: lan
+      bridge: ml_17_1
+      name: c1 -> [c2,relay]
+      ifindex: 1
+      ifname: Ethernet0/1
+      clab:
+        name: Ethernet0/1
+      neighbors:
+      - dhcp:
+          client:
+            ipv4: true
+        ipv4: 172.16.0.3/24
+        ifname: Ethernet0/1
+        node: c2
+      - dhcp:
+          server:
+          - server
+        ipv4: 172.16.0.1/24
+        ifname: Ethernet1
+        node: relay
+      ospf:
+        area: 0.0.0.0
+        passive: false
+    module:
+    - dhcp
+    - ospf
+    device: iol
+    clab:
+      kind: cisco_iol
+    box: vrnetlab/cisco_iol:17.16.01a
+    ospf:
+      area: 0.0.0.0
+      router_id: 10.0.0.2
+      af:
+        ipv4: true
+      areas:
+      - area: 0.0.0.0
+        _area_int: 0
+        kind: regular
+    id: 2
+    role: router
+    provider: clab
+    af:
+      ipv4: true
+    mgmt:
+      ifname: Ethernet0/0
+      mac: ca:fe:00:02:00:00
+      ipv4: 192.168.17.102
+    hostname: clab-ml_17-c1
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.2/32
+      ospf:
+        area: 0.0.0.0
+        passive: false
+  c2:
+    name: c2
+    interfaces:
+    - dhcp:
+        client:
+          ipv4: true
+      linkindex: 1
+      type: lan
+      bridge: ml_17_1
+      name: c2 -> [c1,relay]
+      ifindex: 1
+      ifname: Ethernet0/1
+      clab:
+        name: Ethernet0/1
+      neighbors:
+      - dhcp:
+          client:
+            ipv4: true
+        ipv4: 172.16.0.2/24
+        ifname: Ethernet0/1
+        node: c1
+      - dhcp:
+          server:
+          - server
+        ipv4: 172.16.0.1/24
+        ifname: Ethernet1
+        node: relay
+      ospf:
+        area: 0.0.0.0
+        passive: false
+    module:
+    - dhcp
+    - ospf
+    device: iol
+    clab:
+      kind: cisco_iol
+    box: vrnetlab/cisco_iol:17.16.01a
+    ospf:
+      area: 0.0.0.0
+      router_id: 10.0.0.3
+      af:
+        ipv4: true
+      areas:
+      - area: 0.0.0.0
+        _area_int: 0
+        kind: regular
+    id: 3
+    role: router
+    provider: clab
+    af:
+      ipv4: true
+    mgmt:
+      ifname: Ethernet0/0
+      mac: ca:fe:00:03:00:00
+      ipv4: 192.168.17.103
+    hostname: clab-ml_17-c2
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.3/32
+      ospf:
+        area: 0.0.0.0
+        passive: false
+  server:
+    dhcp:
+      server: true
+      pools:
+      - name: links[1]
+        ipv4: 172.16.0.0/24
+        excluded:
+          ipv4:
+          - 172.16.0.1
+        clean_name: links_1_
+    name: server
+    interfaces:
+    - ipv4: 172.16.1.4/24
+      linkindex: 2
+      type: lan
+      bridge: ml_17_2
+      name: server -> relay
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.1.1/24
+        ifname: Ethernet2
+        node: relay
+      gateway:
+        ipv4: 172.16.1.1/24
+    device: dnsmasq
+    module:
+    - dhcp
+    - routing
+    clab:
+      kind: linux
+      config_templates:
+      - initial::ns
+      - routing::ns
+      - dnsmasq:/etc/dnsmasq.conf
+      - dhcp:/etc/dhcp.ignore
+      - hosts:/etc/hosts:shared
+      binds:
+      - node_files/server/dnsmasq:/etc/dnsmasq.conf
+      - node_files/server/dhcp:/etc/dhcp.ignore
+      - node_files/-shared-hosts:/etc/hosts:ro
+    box: netlab/dnsmasq:latest
+    id: 4
+    role: host
+    mtu: 1500
+    _daemon: true
+    _daemon_parent: linux
+    _daemon_config:
+      dnsmasq: /etc/dnsmasq.conf
+      dhcp: /etc/dhcp.ignore
+    _node_config:
+      initial: :ns
+      routing: :ns
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:04:00:00
+      ipv4: 192.168.17.104
+    hostname: clab-ml_17-server
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          ipv4: 172.16.1.1
+          intf: eth1
+          idx: 0
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          ipv4: 172.16.1.1
+          intf: eth1
+          idx: 0
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          ipv4: 172.16.1.1
+          intf: eth1
+          idx: 0
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          ipv4: 172.16.1.1
+          intf: eth1
+          idx: 0
+    netlab_ansible_skip_module:
+    - dnsmasq
+    - dhcp
+    - initial
+    - routing
+    _template_cache:
+    - fname: initial
+      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
+      output: node_files/server/initial
+      mode: ns
+    - fname: routing
+      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
+      output: node_files/server/routing
+      mode: ns
+    - fname: dnsmasq
+      fpath: /home/pipi/netlab_gh/netsim/daemons/dnsmasq/dnsmasq.j2
+      output: node_files/server/dnsmasq
+      mapping: /etc/dnsmasq.conf
+    - fname: dhcp
+      fpath: /home/pipi/netlab_gh/netsim/daemons/dnsmasq/dhcp.j2
+      output: node_files/server/dhcp
+      mapping: /etc/dhcp.ignore
+    - fname: hosts
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
+      output: node_files/-shared-hosts
+      mode: shared
+      mapping: /etc/hosts:ro
+links:
+- _linkname: links[1]
+  interfaces:
+  - node: c1
+    dhcp:
+      client:
+        ipv4: true
+    ipv4: 172.16.0.2/24
+    ifindex: 1
+    ifname: Ethernet0/1
+  - node: c2
+    dhcp:
+      client:
+        ipv4: true
+    ipv4: 172.16.0.3/24
+    ifindex: 1
+    ifname: Ethernet0/1
+  - dhcp:
+      server:
+      - server
+    node: relay
+    ipv4: 172.16.0.1/24
+    ifindex: 1
+    ifname: Ethernet1
+  linkindex: 1
+  dhcp:
+    subnet:
+      ipv4: true
+  node_count: 3
+  type: lan
+  bridge: ml_17_1
+  prefix:
+    ipv4: 172.16.0.0/24
+- interfaces:
+  - node: relay
+    ipv4: 172.16.1.1/24
+    ifindex: 2
+    ifname: Ethernet2
+  - node: server
+    ipv4: 172.16.1.4/24
+    ifindex: 1
+    ifname: eth1
+  _linkname: links[2]
+  linkindex: 2
+  node_count: 2
+  type: lan
+  bridge: ml_17_2
+  prefix:
+    ipv4: 172.16.1.0/24
+validate:
+- description: Check for DHCP server lease
+  nodes:
+  - server
+  wait: 15
+  wait_msg: Waiting for DHCP clients
+  pass: The DHCP server has at least one active IPv4 lease
+  fail: No IPv4 leases on the DHCP server
+  show:
+    eos: dhcp server leases | json
+  exec:
+    dnsmasq: cat /var/lib/misc/dnsmasq.leases | grep --color=never -E ' c[1-9] '
+      | wc -l
+  valid:
+    eos: vrfs.default.ipv4ActiveLeases
+    dnsmasq: stdout.rstrip() > '0'
+  name: lease
+  devices:
+  - dnsmasq
+  - eos
+- description: Check for DHCP server lease
+  nodes:
+  - server
+  wait: 5
+  wait_msg: Waiting for the second DHCP client
+  pass: The DHCP server has at least two active IPv4 leases
+  fail: There are not enough IPv4 leases on the DHCP server
+  show:
+    eos: dhcp server leases | json
+  exec:
+    dnsmasq: cat /var/lib/misc/dnsmasq.leases | grep --color=never -E ' c[1-9] '
+      | wc -l
+  valid:
+    eos: len(vrfs.default.ipv4ActiveLeases) == 2
+    dnsmasq: stdout.rstrip() == '2'
+  name: lease_all
+  devices:
+  - dnsmasq
+  - eos
+- description: Check for OSPF adjacencies on the DHCP relay
+  wait: 40
+  pass: DHCP relay has two OSPF neighbors
+  fail: Some OSPF adjacencies are missing on the DHCP relay
+  nodes:
+  - relay
+  show:
+    eos: ip ospf neighbor | json
+  valid:
+    eos: len(vrfs.default.instList["1"].ospfNeighborEntries) == 2
+  name: ospf
+  devices:
+  - eos
+message: |
+  Use this topology to test the OSPF over interfaces using dynamic DHCP addresses. Use
+  'netlab validate' to check whether your devices acquired dynamic IPv4 addresses and whether they
+  established OSPF adjacency with the DHCP relay.
+input:
+- /home/pipi/net101/tools/tests/integration/dhcp/31-ipv4-client-ospf.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
+- /home/pipi/.netlab.yml
+- package:topology-defaults.yml
 plugin:
 - multilab
 name: ml_17

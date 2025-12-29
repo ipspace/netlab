@@ -7,169 +7,6 @@ message: |
 
   The validation test checks end-to-end connectivity across a BGP-free MPLS core
   between a set of linux hosts attached to the PE-routers.
-bgp:
-  advertise_loopback: false
-  community:
-    ibgp:
-    - standard
-    - extended
-    ebgp:
-    - standard
-  next_hop_self: true
-groups:
-  hosts:
-    members:
-    - h1
-    - h2
-    device: linux
-    node_data:
-      provider: clab
-  pe:
-    members:
-    - dut
-    - pe2
-    module:
-    - isis
-    - bgp
-    - sr
-    node_data:
-      bgp:
-        as: 65001
-  p:
-    members:
-    - p1
-    - p2
-    module:
-    - isis
-    - sr
-  x_switches:
-    members:
-    - p1
-    - p2
-    - pe2
-    device: frr
-    node_data:
-      provider: clab
-  all:
-    vars:
-      netlab_show_config: true
-    members: []
-    _default_group: true
-  as65001:
-    members:
-    - dut
-    - pe2
-links:
-- _linkname: links[1]
-  isis: false
-  interfaces:
-  - node: h1
-    ipv4: 172.16.0.1/24
-    ifindex: 1
-    ifname: eth1
-  - node: dut
-    ipv4: 172.16.0.3/24
-    ifindex: 1
-    ifname: eth1
-  linkindex: 1
-  node_count: 2
-  role: stub
-  type: lan
-  bridge: ml_17_1
-  prefix:
-    ipv4: 172.16.0.0/24
-- interfaces:
-  - node: dut
-    ipv4: 10.1.0.1/30
-    ifindex: 2
-    ifname: eth2
-  - node: p1
-    ipv4: 10.1.0.2/30
-    ifindex: 1
-    ifname: eth1
-  _linkname: links[2]
-  linkindex: 2
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.0/30
-- interfaces:
-  - node: p1
-    ipv4: 10.1.0.5/30
-    ifindex: 2
-    ifname: eth2
-  - node: p2
-    ipv4: 10.1.0.6/30
-    ifindex: 1
-    ifname: eth1
-  _linkname: links[3]
-  linkindex: 3
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.4/30
-- interfaces:
-  - node: p2
-    ipv4: 10.1.0.9/30
-    ifindex: 2
-    ifname: eth2
-  - node: pe2
-    ipv4: 10.1.0.10/30
-    ifindex: 1
-    ifname: eth1
-  _linkname: links[4]
-  linkindex: 4
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.8/30
-- _linkname: links[5]
-  isis: false
-  interfaces:
-  - node: pe2
-    ipv4: 172.16.1.4/24
-    ifindex: 2
-    ifname: eth2
-  - node: h2
-    ipv4: 172.16.1.2/24
-    ifindex: 1
-    ifname: eth1
-  linkindex: 5
-  node_count: 2
-  role: stub
-  type: lan
-  bridge: ml_17_5
-  prefix:
-    ipv4: 172.16.1.0/24
-validate:
-- description: Check ISIS sessions with DUT (wait up to 30 seconds)
-  wait: 30
-  wait_msg: Waiting for ISIS adjacency
-  nodes:
-  - p1
-  plugin: isis_neighbor('dut',level='L2',area='49.0001')
-  stop_on_error: true
-  name: isis
-- description: Check IBGP session
-  wait: 60
-  wait_msg: Waiting for IBGP sessions to start
-  nodes:
-  - pe2
-  plugin: bgp_neighbor(node.bgp.neighbors,'dut')
-  stop_on_error: true
-  name: ibgp
-- description: Ping-based end-to-end reachability test
-  wait_msg: We might have to wait a bit longer
-  wait: 10
-  nodes:
-  - h1
-  plugin: ping('h2')
-  name: ping
-input:
-- /home/pipi/net101/tools/tests/integration/sr/02-isis-ipv4-pe.yml
-- /home/pipi/net101/tools/tests/integration/sr/topology-defaults.yml
-- /home/pipi/.netlab.yml
-- package:topology-defaults.yml
 defaults:
   provider: clab
   providers:
@@ -636,6 +473,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -694,6 +532,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox: {}
@@ -933,6 +773,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -987,6 +828,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox:
@@ -1388,7 +1231,7 @@ defaults:
         vxlan: {}
       mtu: 1500
       clab:
-        image: vrnetlab/vr-ftosv
+        image: vrnetlab/dell_ftos10v:10.5.6.6
         build: https://containerlab.dev/manual/kinds/vr-ftosv/
         node:
           kind: vr-ftosv
@@ -1603,7 +1446,7 @@ defaults:
             INTFTYPE: et
             CLAB_MGMT_VRF: management
         mgmt_if: Management0
-        image: ceos:4.34.2F
+        image: ceos:4.35.0.1F
         group_vars:
           ansible_user: admin
           ansible_ssh_pass: admin
@@ -1630,6 +1473,8 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
+      warnings:
+        ospf_stub: false
     fortios:
       description: Fortinet FortiOS firewall
       support:
@@ -1957,7 +1802,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:17.12.01
+        image: vrnetlab/cisco_iol:17.16.01a
         node:
           kind: cisco_iol
       role: router
@@ -2042,6 +1887,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2099,6 +1945,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       _parents:
       - ios
@@ -2136,7 +1984,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:L2-17.12.01
+        image: vrnetlab/cisco_iol:L2-17.16.01a
         node:
           kind: cisco_iol
           type: l2
@@ -2227,6 +2075,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2295,6 +2144,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       _parents:
       - ios
@@ -2422,6 +2273,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2474,6 +2326,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet0/{ifindex}
       libvirt:
         image: cisco/iosv
@@ -2609,6 +2463,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2673,6 +2528,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex // 4}/{ifindex % 4}
       libvirt:
         image: cisco/iosvl2
@@ -3359,7 +3216,7 @@ defaults:
         min_tx: 100
         min_rx: 100
       clab:
-        image: ghcr.io/nokia/srlinux:25.3.2
+        image: ghcr.io/nokia/srlinux:25.10.1
         node:
           kind: srl
           type: ixr-d2
@@ -3546,6 +3403,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
         routing:
           policy:
             set:
@@ -3587,6 +3445,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     srsim:
       description: Nokia SR-SIM (SR-OS) container
       mgmt_if: A/1
@@ -3681,6 +3541,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
         routing:
           policy:
             set:
@@ -3725,6 +3586,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
       _parents:
       - sros
     unknown:
@@ -4150,7 +4013,7 @@ defaults:
         pre_install: vptx
         create_template: vptx.xml.j2
       clab:
-        image: vrnetlab/juniper_vjunosevolved:25.2R1.8-EVO
+        image: vrnetlab/juniper_vjunosevolved:23.2R2.21-EVO
         build: https://containerlab.dev/manual/kinds/vr-vjunosevolved/
         mtu: 1500
         node:
@@ -5963,6 +5826,58 @@ defaults:
       neighbors: 5
       maxlength: 255
     MAX_NODE_ID: 150
+    validate:
+      ping: 5
+      ping_vrf: 5
+      ping_long: 15
+      vxlan_ping: 20
+      ping_stp: 45
+      ping_irb: 10
+      ra_send: 30
+      ospfv2_adj_p2p: 30
+      ospfv2_adj_lan: 50
+      ospfv2_adj_stp: 120
+      ospfv2_spf: 10
+      ospfv2_spf_long: 30
+      ospfv3_adj_p2p: 30
+      ospfv3_adj_lan: 50
+      ospfv3_adj_stp: 120
+      ospfv3_spf: 10
+      ospfv3_spf_long: 30
+      ospf_import: 20
+      ebgp_session: 30
+      ibgp_session: 30
+      bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_v4_originate: 15
+      bgp_v6_originate: 15
+      bgp_v4_redist: 15
+      bgp_v6_redist: 15
+      isis_adj_p2p: 20
+      isis_adj_lan: 50
+      isis_spf: 15
+      isis_spf_long: 45
+      isis_redist: 30
+      rip_start: 60
+      rip_update: 20
+      ldp_adj: 30
+      stp_forwarding: 40
+      lacp_setup: 10
+      xr:
+        bgp_v4_originate: 80
+        bgp_v6_originate: 80
+        bgp_v4_redist: 90
+        isis_redist: 60
+        ebgp_session: 90
+        ping_vrf: 20
+        bgp_scan_long: 30
+      ios:
+        bgp_v6_redist: 60
+      cisco8000v:
+        ping_irb: 90
+        ping_long: 15
+      vjunos-router:
+        ping_irb: 90
   hints:
     evpn:
       irb_group: >
@@ -6210,6 +6125,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -8172,11 +8089,13 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1766588775.3743026
+    timestamp: 1766947757.4785776
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
+    extra:
+    - ../wait_times.yml
+    - ../warnings.yml
     list: []
-    extra: []
     user: []
     system: []
   workdir: /work/netlab_cicd
@@ -8215,6 +8134,171 @@ defaults:
   - isis
   - bgp
   - sr
+bgp:
+  advertise_loopback: false
+  community:
+    ibgp:
+    - standard
+    - extended
+    ebgp:
+    - standard
+  next_hop_self: true
+groups:
+  hosts:
+    members:
+    - h1
+    - h2
+    device: linux
+    node_data:
+      provider: clab
+  pe:
+    members:
+    - dut
+    - pe2
+    module:
+    - isis
+    - bgp
+    - sr
+    node_data:
+      bgp:
+        as: 65001
+  p:
+    members:
+    - p1
+    - p2
+    module:
+    - isis
+    - sr
+  x_switches:
+    members:
+    - p1
+    - p2
+    - pe2
+    device: frr
+    node_data:
+      provider: clab
+  all:
+    vars:
+      netlab_show_config: true
+    members: []
+    _default_group: true
+  as65001:
+    members:
+    - dut
+    - pe2
+links:
+- _linkname: links[1]
+  isis: false
+  interfaces:
+  - node: h1
+    ipv4: 172.16.0.1/24
+    ifindex: 1
+    ifname: eth1
+  - node: dut
+    ipv4: 172.16.0.3/24
+    ifindex: 1
+    ifname: eth1
+  linkindex: 1
+  node_count: 2
+  role: stub
+  type: lan
+  bridge: ml_17_1
+  prefix:
+    ipv4: 172.16.0.0/24
+- interfaces:
+  - node: dut
+    ipv4: 10.1.0.1/30
+    ifindex: 2
+    ifname: eth2
+  - node: p1
+    ipv4: 10.1.0.2/30
+    ifindex: 1
+    ifname: eth1
+  _linkname: links[2]
+  linkindex: 2
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.0/30
+- interfaces:
+  - node: p1
+    ipv4: 10.1.0.5/30
+    ifindex: 2
+    ifname: eth2
+  - node: p2
+    ipv4: 10.1.0.6/30
+    ifindex: 1
+    ifname: eth1
+  _linkname: links[3]
+  linkindex: 3
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.4/30
+- interfaces:
+  - node: p2
+    ipv4: 10.1.0.9/30
+    ifindex: 2
+    ifname: eth2
+  - node: pe2
+    ipv4: 10.1.0.10/30
+    ifindex: 1
+    ifname: eth1
+  _linkname: links[4]
+  linkindex: 4
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.8/30
+- _linkname: links[5]
+  isis: false
+  interfaces:
+  - node: pe2
+    ipv4: 172.16.1.4/24
+    ifindex: 2
+    ifname: eth2
+  - node: h2
+    ipv4: 172.16.1.2/24
+    ifindex: 1
+    ifname: eth1
+  linkindex: 5
+  node_count: 2
+  role: stub
+  type: lan
+  bridge: ml_17_5
+  prefix:
+    ipv4: 172.16.1.0/24
+validate:
+- description: Check ISIS sessions with DUT (wait up to 30 seconds)
+  wait: 30
+  wait_msg: Waiting for ISIS adjacency
+  nodes:
+  - p1
+  plugin: isis_neighbor('dut',level='L2',area='49.0001')
+  stop_on_error: true
+  name: isis
+- description: Check IBGP session
+  wait: 60
+  wait_msg: Waiting for IBGP sessions to start
+  nodes:
+  - pe2
+  plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  stop_on_error: true
+  name: ibgp
+- description: Ping-based end-to-end reachability test
+  wait_msg: We might have to wait a bit longer
+  wait: 10
+  nodes:
+  - h1
+  plugin: ping('h2')
+  name: ping
+input:
+- /home/pipi/net101/tools/tests/integration/sr/02-isis-ipv4-pe.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
+- /home/pipi/net101/tools/tests/integration/sr/topology-defaults.yml
+- /home/pipi/.netlab.yml
+- package:topology-defaults.yml
 plugin:
 - multilab
 name: ml_17
