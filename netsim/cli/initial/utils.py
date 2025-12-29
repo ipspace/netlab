@@ -13,10 +13,10 @@ from ...utils import log
 from .. import common_parse_args, parser_lab_location
 
 
-"""
-Filter out nodes in the unprovisioned group from the nodeset
-"""
-def filter_unprovisioned(nodeset: list, topology: Box) -> list:
+def filter_unprovisioned(nodeset: typing.List[str], topology: Box) -> typing.List[str]:
+  """
+  Filter out nodes in the unprovisioned group from the nodeset
+  """
   if 'unprovisioned' not in topology.groups:
     return nodeset
   
