@@ -185,6 +185,7 @@ def run(topology: Box, args: argparse.Namespace, cwd: str) -> None:
   # Find the subset of nodes we should work on
   #
   nodeset = _nodeset.parse_nodeset(args.limit,topology) if args.limit else list(topology.nodes.keys())
+  nodeset = utils.filter_unprovisioned(nodeset, topology)
   if not nodeset:
     error_and_exit('The specified nodeset is empty, there are no nodes to configure')
 

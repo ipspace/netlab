@@ -8,8 +8,20 @@ import typing
 
 from box import Box
 
+from ...augment import groups
 from ...utils import log
 from .. import common_parse_args, parser_lab_location
+
+
+"""
+Filter out nodes in the unprovisioned group from the nodeset
+"""
+def filter_unprovisioned(nodeset: list, topology: Box) -> list:
+  if 'unprovisioned' not in topology.groups:
+    return nodeset
+  
+  unprovisioned_members = groups.group_members(topology, 'unprovisioned')
+  return [node for node in nodeset if node not in unprovisioned_members]
 
 
 #
