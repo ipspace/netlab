@@ -149,6 +149,96 @@ links:
 You still have to specify the device type (either in the node or as the [default device type](default-device-type)) for unmanaged nodes. _netlab_ uses the device type to determine which features a node supports. If you want to use an unsupported unmanaged device, set **‌device** to **‌none**.
 ```
 
+(external-connectivity-proxy-arp)=
+## Using Proxy ARP for External Connectivity
+
+You can use a Linux server as a gateway to provide external connectivity to your lab devices using proxy ARP. This approach is particularly useful when you want to connect your lab to an external subnet without running routing protocols or setting up complex NAT configurations.
+
+### Solution Overview
+
+In this scenario, assuming `192.18.42.0/24` is the external subnet:
+
+* A Linux server acts as a gateway between your lab devices and the external network
+* The Linux server is configured with proxy ARP to respond to ARP requests on behalf of lab devices
+* Lab devices use static IP addresses from the external subnet
+* The Linux server forwards packets between the lab and external networks without performing NAT
+
+### Sample Lab Topology
+
+Here's a sample topology that demonstrates this approach:
+
+```yaml
+defaults.device: eos
+
+nodes:
+  gw:
+    device: linux
+    role: gateway
+  r1:
+  r2:
+
+links:
+- gw:
+    ipv4: 192.18.42.1/24
+  r1:
+    ipv4: 192.18.42.10/24
+  r2:
+    ipv4: 192.18.42.11/24
+  clab:
+    uplink: eth1
+```
+
+In this topology:
+* `gw` is a Linux node with the **gateway** role
+* `r1` and `r2` are lab routers with addresses from the external subnet
+* The link is connected to the external network via the server's `eth1` interface
+
+### User Defaults Configuration
+
+To configure the addressing pool for the external subnet, use the **netlab defaults** command to set the appropriate addressing parameters in your user defaults file:
+
+```bash
+netlab defaults --user addressing.external.ipv4=192.18.42.0/24
+netlab defaults --user addressing.external.start=10
+```
+
+Alternatively, you can add these settings directly to your `~/.netlab.yml` file:
+
+```yaml
+addressing:
+  external:
+    ipv4: 192.18.42.0/24
+    start: 10
+```
+
+### Proxy ARP Configuration on Linux Server
+
+After the lab is started, configure proxy ARP on the Linux gateway server. SSH into the gateway node and execute the following commands:
+
+```bash
+# Enable proxy ARP on the uplink interface (e.g., eth1)
+sudo sysctl -w net.ipv4.conf.eth1.proxy_arp=1
+
+# Make the setting persistent across reboots
+echo "net.ipv4.conf.eth1.proxy_arp = 1" | sudo tee -a /etc/sysctl.conf
+
+# Add a static route for the external subnet pointing to the lab interface
+sudo ip route add 192.18.42.0/24 dev eth2
+
+# Enable IP forwarding if not already enabled
+sudo sysctl -w net.ipv4.ip_forward=1
+echo "net.ipv4.ip_forward = 1" | sudo tee -a /etc/sysctl.conf
+```
+
+Replace `eth1` with your server's uplink interface name and `eth2` with the interface connected to the lab network. Use **ip addr** to identify the correct interface names.
+
+```{tip}
+The gateway node is configured with **role: gateway** which means it does not perform packet forwarding by default. However, you need to enable IP forwarding manually using sysctl as shown above for proxy ARP to work properly.
+```
+
+```{note}
+The external network must be configured to route traffic for the `192.18.42.0/24` subnet to your Linux server's uplink interface. This typically involves adding a static route on your external router or gateway.
+```
 
 ## Managing Physical Devices
 
