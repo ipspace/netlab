@@ -131,6 +131,7 @@ def run(topology: Box, args: argparse.Namespace, rest: list) -> None:
   lab_status_change(topology,f'deploying configuration: {deploy_text}')
 
   nodeset = _nodeset.parse_nodeset(args.limit,topology) if args.limit else list(topology.nodes.keys())
+  nodeset = utils.filter_unprovisioned(nodeset, topology)
   if not nodeset:
     error_and_exit('The specified nodeset is empty, there are no nodes to configure')
   if not args.no_refresh:

@@ -8,6 +8,7 @@ import typing
 
 from box import Box
 
+from ...augment import groups
 from ...utils import log
 from .. import common_parse_args, parser_lab_location
 
@@ -181,3 +182,13 @@ def nodeset_requires_ansible(nodeset: list, topology: Box, args: argparse.Namesp
       return True
 
   return False
+
+"""
+Filter out nodes in the unprovisioned group from the nodeset
+"""
+def filter_unprovisioned(nodeset: typing.List[str], topology: Box) -> typing.List[str]:
+  if 'unprovisioned' not in topology.groups:
+    return nodeset
+  
+  unprovisioned_members = groups.group_members(topology, 'unprovisioned')
+  return [node for node in nodeset if node not in unprovisioned_members]
