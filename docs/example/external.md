@@ -28,7 +28,7 @@ Alternatively, use *[graphite](../extool/graphite.md)* for GUI-based SSH access 
 
 ### Finding the Management IP Addresses
 
-The **netlab report mgmt** command displays the management IP addresses of the lab devices, protocol used to configure the devices (SSH, NETCONF, or Docker), and the username/password used by _netlab_ to configure the device.
+The **netlab report mgmt** command displays the management IP addresses of the lab devices, the protocol used to configure the devices (SSH, NETCONF, or Docker), and the username/password used by _netlab_ to configure the device.
 
 Alternatively, you could use Ansible inventory to find the same information:
 
@@ -65,6 +65,37 @@ nodes:
   fw:
     netlab_ssh_forward:
     - 8080:443
+```
+
+(external-proxy-arp)=
+### Using Proxy ARP to Access Lab Devices
+
+If you use a subnet of the external IPv4 prefix as the management IPv4 subnet, you can connect to the lab devices directly after configuring proxy ARP on the Linux server. The Linux server will respond to ARP requests for the lab devices' management IP addresses and forward traffic between external clients and the nodes attached to the lab management network.
+
+Let's assume that `192.18.42.0/24` is the IP network to which the _netlab_ Linux server is connected. We'll use a portion of that subnet (`192.168.42.64/28`) as the management network. Here are the modifications you could make to the default **addressing.mgmt** pool. Set the **start** parameter to a low value to avoid running out of management IPv4 addresses.
+
+```bash
+netlab defaults addressing.mgmt.ipv4=192.18.42.64/28
+netlab defaults addressing.mgmt.start=2
+```
+
+Before using this trick, you have to configure proxy ARP on the Linux server running _netlab_. Use commands similar to these:
+
+```bash
+# Enable proxy ARP on the uplink interface (adjust interface name as needed)
+sudo sysctl -w net.ipv4.conf.eth0.proxy_arp=1
+
+# Make the setting persistent across reboots
+echo "net.ipv4.conf.eth0.proxy_arp = 1" | sudo tee -a /etc/sysctl.conf
+
+# Enable IP forwarding if not already enabled
+sudo sysctl -w net.ipv4.ip_forward=1
+echo "net.ipv4.ip_forward = 1" | sudo tee -a /etc/sysctl.conf
+```
+
+```{tip}
+* Replace `eth0` with your server's uplink interface name. Use **ip addr** to identify the correct interface names.
+* You might have to adjust the firewall settings on your host to allow it to forward traffic between the external interface and the lab management network.
 ```
 
 (external-connectivity-control-plane)=
@@ -147,98 +178,6 @@ links:
 
 ```{tip}
 You still have to specify the device type (either in the node or as the [default device type](default-device-type)) for unmanaged nodes. _netlab_ uses the device type to determine which features a node supports. If you want to use an unsupported unmanaged device, set **‌device** to **‌none**.
-```
-
-(external-connectivity-proxy-arp)=
-## Using Proxy ARP for External Connectivity
-
-You can use a Linux server as a gateway to provide external connectivity to your lab devices using proxy ARP. This approach is particularly useful when you want to connect your lab to an external subnet without running routing protocols or setting up complex NAT configurations.
-
-### Solution Overview
-
-In this scenario, assuming `192.18.42.0/24` is the external subnet:
-
-* A Linux server acts as a gateway between your lab devices and the external network
-* The Linux server is configured with proxy ARP to respond to ARP requests on behalf of lab devices
-* Lab devices use static IP addresses from the external subnet
-* The Linux server forwards packets between the lab and external networks without performing NAT
-
-### Sample Lab Topology
-
-Here's a sample topology that demonstrates this approach:
-
-```yaml
-defaults.device: eos
-
-nodes:
-  gw:
-    device: linux
-    role: gateway
-  r1:
-  r2:
-
-links:
-- gw:
-    ipv4: 192.18.42.1/24
-  r1:
-    ipv4: 192.18.42.10/24
-  r2:
-    ipv4: 192.18.42.11/24
-  clab:
-    uplink: eth1
-```
-
-In this topology:
-* `gw` is a Linux node with the **gateway** role
-* `r1` and `r2` are lab routers with addresses from the external subnet
-* The link is connected to the external network via the server's `eth1` interface
-
-### User Defaults Configuration
-
-To configure the addressing pool for the external subnet, use the **netlab defaults** command to set the appropriate addressing parameters in your user defaults file:
-
-```bash
-netlab defaults --user addressing.external.ipv4=192.18.42.0/24
-netlab defaults --user addressing.external.start=10
-```
-
-Alternatively, you can add these settings directly to your `~/.netlab.yml` file:
-
-```yaml
-addressing:
-  external:
-    ipv4: 192.18.42.0/24
-    start: 10
-```
-
-### Proxy ARP Configuration on Linux Server
-
-After the lab is started, configure proxy ARP on the Linux gateway server. SSH into the gateway node and execute the following commands:
-
-```bash
-# Enable proxy ARP on the uplink interface (adjust interface name as needed)
-sudo sysctl -w net.ipv4.conf.eth1.proxy_arp=1
-
-# Make the setting persistent across reboots
-echo "net.ipv4.conf.eth1.proxy_arp = 1" | sudo tee -a /etc/sysctl.conf
-
-# Add a static route for the external subnet pointing to the lab interface
-# Replace 192.18.42.0/24 with your actual external subnet
-sudo ip route add 192.18.42.0/24 dev eth2
-
-# Enable IP forwarding if not already enabled
-sudo sysctl -w net.ipv4.ip_forward=1
-echo "net.ipv4.ip_forward = 1" | sudo tee -a /etc/sysctl.conf
-```
-
-Replace `eth1` with your server's uplink interface name, `eth2` with the interface connected to the lab network, and `192.18.42.0/24` with your external subnet. Use **ip addr** to identify the correct interface names.
-
-```{tip}
-The gateway node is configured with **role: gateway** which means it does not perform packet forwarding by default. However, you need to enable IP forwarding manually using sysctl as shown above for proxy ARP to work properly.
-```
-
-```{note}
-The external network must be configured to route traffic for the `192.18.42.0/24` subnet to your Linux server's uplink interface. This typically involves adding a static route on your external router or gateway.
 ```
 
 ## Managing Physical Devices
