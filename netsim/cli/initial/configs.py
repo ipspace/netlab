@@ -47,6 +47,7 @@ def create_config_file(
       provider_path: str,
       output_path: Path,
       template_path: typing.Optional[str] = None,
+      flatten_output_fname: bool = False,
       config_mode: str = '') -> bool:
 
   o_suffix = '' if config_mode == 'none' else '.sh' if (config_mode in ('ns','sh')) else '.cfg'
@@ -70,6 +71,10 @@ def create_config_file(
       module='configs',
       more_hints=["Use the '--debug template' option if you're troubleshooting custom configuration templates"])
     return False
+
+  if flatten_output_fname:                              # When used in "netlab initial --output"
+    o_fname = o_fname.replace('/','.')                  # ... create all output files in the same directory
+    o_fname = o_fname.replace('.j2.','.')               # ... and remove the .j2 suffix when present
 
   OK = u_templates.render_config_template(              # ... node.template.cfg/sh file in the output directory
           node=node,
@@ -97,7 +102,8 @@ def create_node_configs(
       no_refresh: bool = False,
       skip_extra_config: bool = False,
       node_directory: bool = False,
-      default_suffix: typing.Optional[str] = None) -> None:
+      default_suffix: typing.Optional[str] = None,
+      flatten_output_fname: bool = False) -> None:
   all_configs = utils.deploy_all_configs(args)
   for n_name in nodeset:
     n_data = topology.nodes[n_name]
@@ -156,7 +162,8 @@ def create_node_configs(
             module=module,
             provider_path=provider_path,
             output_path=abs_path / n_data.name if node_directory else abs_path,
-            config_mode=default_suffix or template_mode.get(module,'cfg')):
+            config_mode=default_suffix or template_mode.get(module,'cfg'),
+            flatten_output_fname=flatten_output_fname):
         created_list.append(module)
 
     if not log.VERBOSE and created_list:
@@ -201,7 +208,7 @@ def run(topology: Box, args: argparse.Namespace, cwd: str) -> None:
   if args.generate != 'ansible':                            # Did the user ask for Ansible-generated configs?
     if args.generate == 'compare':                          # Do we have to adjust the output to be directly
       remove_extra_templates(topology,nodeset)              # ... comparable with Ansible?
-    create_node_configs(topology,nodeset,abs_path,args)
+    create_node_configs(topology,nodeset,abs_path,args,flatten_output_fname=True)
   else:
     ansible.check_version()
     rest = utils.ansible_args(args)
