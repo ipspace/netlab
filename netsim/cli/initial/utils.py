@@ -9,7 +9,8 @@ import typing
 from box import Box
 
 from ...augment import groups
-from ...utils import log
+from ...utils import files as _files
+from ...utils import log, strings
 from .. import common_parse_args, parser_lab_location
 
 
@@ -172,16 +173,17 @@ def node_requires_ansible(node: Box, args: argparse.Namespace) -> bool:
   return bool(set(n_deploy) - set(n_skip))
 
 """
-nodeset_requires_ansible: Does any node in the nodeset need deployment through
-an Ansible playbook?
+nodeset_ansible_skip: return the list of nodes in the nodeset that do not
+need Ansible deployment
 """
-def nodeset_requires_ansible(nodeset: list, topology: Box, args: argparse.Namespace) -> bool:
+def nodeset_ansible_skip(nodeset: list, topology: Box, args: argparse.Namespace) -> list:
+  skip_list = []
   for n_name in nodeset:
     n_data = topology.nodes.get(n_name,{})
-    if node_requires_ansible(n_data,args):
-      return True
+    if not node_requires_ansible(n_data,args):
+      skip_list.append(n_name)
 
-  return False
+  return skip_list
 
 """
 Filter out nodes in the unprovisioned group from the nodeset
@@ -192,3 +194,22 @@ def filter_unprovisioned(nodeset: typing.List[str], topology: Box) -> typing.Lis
   
   unprovisioned_members = groups.group_members(topology, 'unprovisioned')
   return [node for node in nodeset if node not in unprovisioned_members]
+
+"""
+ansible_skip_group: Modify Ansible inventory to include _grp_config_skip listing all the
+hosts that do not need Ansible deployment
+"""
+def ansible_skip_group(skip_list: list) -> None:
+  if log.VERBOSE and skip_list:
+    log.info('Adjusting unprovisioned group in Ansible inventory')
+  try:
+    hosts = Box().from_yaml(filename='hosts.yml',default_box=True,box_dots=True)
+  except Exception:
+    log.info("Cannot read Ansible inventory file, skipping the unprovisioned group adjustments")
+    return
+
+  hosts.unprovisioned.children.pop('_grp_config_skip',None)
+  for node in skip_list:
+    hosts.unprovisioned.children._grp_config_skip.hosts[node] = {}
+
+  _files.create_file_from_text('hosts.yml',strings.get_yaml_string(hosts))

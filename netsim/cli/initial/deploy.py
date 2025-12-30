@@ -158,10 +158,13 @@ def run(topology: Box, args: argparse.Namespace, rest: list) -> None:
   if used_internal:
     print()
 
-  if utils.nodeset_requires_ansible(nodeset,topology,args):
+  ansible_skip_list = utils.nodeset_ansible_skip(nodeset,topology,args)
+  if len(ansible_skip_list) != len(nodeset):
+    utils.ansible_skip_group(ansible_skip_list)
     if used_internal:
       log.info('Starting Ansible playbook to deploy the rest of the configurations')
     status_ansible  = deploy_ansible_playbook(topology,rest)
+    utils.ansible_skip_group([])
   else:
     status_ansible = True
 
