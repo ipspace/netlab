@@ -108,9 +108,12 @@ def ansible_extra_vars(topology: Box) -> Box:
   ev = get_empty_box()
   ev.node_files = str(Path("./node_files").resolve().absolute())
 
-  ev.paths_t_files.files = "{{ config_module }}"  # Change the name of the module configuration snippet
-  ev.paths_custom.files = "{{ custom_config }}"   # Change the name of the custom configuration snippet
-  for p in ['templates','custom']:                # Change the search paths of the configuration snippets
+  # Change the search names of the module/custom configuration snippet, get rid of config paths
+  # and limit the search to per-node node_files
+  #
+  ev.paths_t_files.files = "{{ config_module }}"
+  ev.paths_custom.files = "{{ custom_config }}"
+  for p in ['templates','custom']:
     ev[f'paths_{p}'].dirs = "{{ node_files }}/{{ inventory_hostname }}"
 
   # Retain the custom configuration task name(s)

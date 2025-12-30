@@ -185,7 +185,10 @@ def find_provider_template(
       print(f'- {p}')
 
   if fname in node.get('config',[]):                    # Are we dealing with extra-config template?
-    n_list = topology.defaults.paths.custom.f_files
+    if fname.endswith('.j2'):                           # If the user specified a Jinja2 filename
+      n_list = [ fname ]                                # ... stop guessing and just use it
+    else:                                               # Otherwise, iterate through the whole list
+      n_list = topology.defaults.paths.custom.f_files   # ... of potential file names
   else:
     n_list = [ fname + '.j2'] + topology.defaults.paths.t_files.f_files
 

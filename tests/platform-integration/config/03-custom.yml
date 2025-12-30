@@ -1,0 +1,81 @@
+message: |
+  This topology tests various custom configuration mechanisms for non-daemon devices
+
+defaults.sources.extra: [ ../../integration/wait_times.yml ]
+
+provider: clab
+
+plugin: [ files, ospf.areas ]
+ospf.area: 1
+
+nodes:
+  r1:
+    device: frr
+    module: [ ospf ]
+    ospf.areas:
+    - area: 0.0.0.1
+      kind: stub
+  r2:
+    device: eos
+    module: [ ospf ]
+    ospf.areas:
+    - area: 0.0.0.1
+      kind: stub
+  r3:
+    device: frr
+    frr.daemons: [ ospfd ]
+    config: [ ospf_cfg, cfglet/o_areas, rid.j2 ]
+  r4:
+    device: eos
+    config: [ ospf_cfg, cfglet/o_areas/eos.j2, rid ]
+  h1:
+    device: linux
+    config: [ cfglet/ipaddr/h1.j2 ]
+
+configlets:
+  ospf_cfg:
+    eos-clab: |
+      router ospf 1
+      !
+      {% for intf in netlab_interfaces %}
+      interface {{ intf.ifname }}
+       ip ospf area 0.0.0.1
+      {% endfor %}
+    eos: |
+      no router ospf 1
+    frr: |
+      router ospf
+      !
+      {% for intf in netlab_interfaces %}
+      interface {{ intf.ifname }}
+       ip ospf area 0.0.0.1
+      {% endfor %}
+
+files:
+  rid.j2: |
+    router ospf {{'1' if netlab_device_type == 'eos' else ''}}
+      router-id {{ loopback.ipv4|ipaddr('address') }}
+  cfglet/o_areas/eos.j2: &c_stub |
+    router ospf {{'1' if netlab_device_type == 'eos' else ''}}
+      area 0.0.0.1 stub
+  cfglet/o_areas/frr.j2: *c_stub
+  cfglet/ipaddr/h1.j2: |
+    #!/bin/bash
+    #
+    ip addr
+
+links:
+- r1-r2
+- r2-r3
+- r3-r4
+- r4-r1
+
+validate:
+  o_r2:
+    nodes: [ r1, r3 ]
+    plugin: ospf_neighbor('10.0.0.2')
+    wait: ospfv2_adj_lan
+  o_r4:
+    nodes: [ r1, r3 ]
+    plugin: ospf_neighbor('10.0.0.4')
+    wait: ospfv2_adj_lan
