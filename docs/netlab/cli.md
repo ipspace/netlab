@@ -59,13 +59,13 @@ The **netlab** command is the *netlab* CLI interface. It includes data model tra
 .. toctree::
    :maxdepth: 1
 
+   netlab api <api.md>
    netlab capture <capture.md>
    netlab clab <clab.md>
    netlab collect <collect.md>
    netlab config <config.md>
    netlab connect <connect.md>
    netlab create <create.md>
-   netlab api <api.md>
    netlab defaults <defaults.md>
    netlab down <down.md>
    netlab exec <exec.md>
