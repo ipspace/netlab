@@ -17,6 +17,9 @@ def get_box(init: dict) -> Box:
 def get_empty_box() -> Box:
   return get_box({})
 
+def get_new_box(b: Box) -> Box:
+  return get_box(b.to_dict())
+
 #
 # Another thingy we need all the time: make something a list
 
