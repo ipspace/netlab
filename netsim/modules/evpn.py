@@ -50,15 +50,29 @@ def enable_evpn_af(node: Box, topology: Box) -> None:
   AF_WARNING = {}
   bgp_session = node.get('evpn.session',[])
   bgp_community = node.get('bgp.community',{})
+  evpn_transport = node.get('evpn.transport','vxlan')
+
+  if evpn_transport == 'vxlan':                   # For VXLAN transport
+    evpn_af = node.get('vxlan.transport','ipv4')  # Check the transport address family
+    if evpn_af == 'ipv6':                         # ... and enable EVPN over corresponding BGP session
+      features = devices.get_device_features(node,topology.defaults)
+      if not features.evpn.ipv6:                  # ... but only if the device supports it
+        log.error(
+          f'node {node.name}/device {node.device} cannot use EVPN with IPv6 next hops',
+          more_hints=['The node is using VXLAN-over-IPv6 transport, but does not support EVPN over IPv6'],
+          category=log.IncorrectValue)
+        return
+  else:                                           # For MPLS transport
+    evpn_af = 'ipv4'                              # ... assume we're using IPv4 with LDP
 
   # Enable EVPN AF on all BGP neighbors with the correct session type
   # that also use EVPN module
   #
   for bn in node.bgp.get('neighbors',[]):
     if bn.type in bgp_session and 'evpn' in topology.nodes[bn.name].get('module'):
-      if 'ipv4' not in bn:
+      if evpn_af not in bn:
         continue
-      bn.evpn = True
+      bn.evpn = evpn_af
 
       # Now check if the user enabled extended BGP communities on the BGP session type
       # used for this BGP neighbor. Cache the per-node warning status to prevent multiple

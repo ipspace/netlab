@@ -94,17 +94,17 @@ Most EVPN/VXLAN implementations support only IPv4 VXLAN transport; some can run 
 
 | Operating system   | IPv4 VXLAN<br>transport | IPv6 VXLAN<br>transport |
 | ------------------ | :-: | :-: |
-| Arista EOS         | ✅  | ❌   |
+| Arista EOS         | ✅  | ✅  |
 | Aruba AOS-CX       | ✅  | ❌   |
 | Cisco Nexus OS     | ✅  | ❌   |
 | Cumulus Linux 4.x  | ✅  | ❌   |
 | Cumulus 5.x (NVUE) | ✅  | ❌   |
 | Dell OS 10         | ✅  | ❌   |
-| FRR                | ✅  | ✅  |
+| FRR                | ✅  | ❌ [❗](caveats-frr)  |
 | Nokia SR Linux     | ✅  | ❌   |
 | Nokia SR OS[^SROS] | ✅  | ❌   |
 | vJunos-switch      | ✅  | ❌   |
-| VyOS               | ✅  | ❌ [❗](caveats-vyos)   |
+| VyOS               | ✅  | ❌ [❗](caveats-vyos) |
 
 (evpn-global-parameters)=
 ## Global EVPN Parameters
