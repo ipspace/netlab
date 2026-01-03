@@ -9,395 +9,6 @@ message: |
 
   Please note it might take a while for the lab to work due to STP learning
   phase.
-plugin:
-- anycast-check
-- multilab
-groups:
-  hosts:
-    members:
-    - h1
-    - h2
-    - h3
-    - h4
-    device: linux
-    node_data:
-      provider: clab
-  switches:
-    members:
-    - s1
-    - s2
-    module:
-    - vlan
-    - vxlan
-    - vrf
-    - ospf
-    - bgp
-    - evpn
-    - gateway
-  x_switches:
-    members:
-    - s2
-    device: frr
-    node_data:
-      provider: clab
-  all:
-    vars:
-      netlab_show_config: true
-    members: []
-    _default_group: true
-  as65000:
-    members:
-    - s1
-    - s2
-bgp:
-  advertise_loopback: true
-  community:
-    ibgp:
-    - standard
-    - extended
-    ebgp:
-    - standard
-  next_hop_self: true
-  as: 65000
-gateway:
-  anycast:
-    mac: 0200.cafe.00ff
-    unicast: true
-  vrrp:
-    group: 1
-  protocol: anycast
-vrfs:
-  customer:
-    evpn:
-      transit_vni: 5042
-      evi: 1
-    id: 1
-    rd: '65000:1'
-    import:
-    - '65000:1'
-    export:
-    - '65000:1'
-vlans:
-  red:
-    role: external
-    vrf: customer
-    gateway: true
-    id: 1000
-    prefix:
-      ipv4: 172.16.0.0/24
-      allocation: id_based
-    vni: 21000
-    evpn:
-      evi: 1000
-      import:
-      - 65000:1000
-      export:
-      - 65000:1000
-    neighbors:
-    - ipv4: 172.16.0.1/24
-      ifname: eth1
-      node: h1
-    - ifname: Vlan1000
-      node: s1
-      gateway:
-        ipv4: 172.16.0.254/24
-        id: -2
-        protocol: anycast
-        anycast:
-          mac: 0200.cafe.00ff
-          unicast: true
-        vrrp:
-          group: 1
-      ipv4: 172.16.0.5/24
-      vlan:
-        mode: irb
-        name: red
-      vrf: customer
-    - ipv4: 172.16.0.2/24
-      ifname: eth1
-      node: h2
-    - ifname: vlan1000
-      node: s2
-      gateway:
-        ipv4: 172.16.0.254/24
-        id: -2
-        protocol: anycast
-        anycast:
-          mac: 0200.cafe.00ff
-          unicast: true
-        vrrp:
-          group: 1
-      ipv4: 172.16.0.6/24
-      vlan:
-        mode: irb
-        name: red
-      vrf: customer
-    host_count: 2
-  blue:
-    role: external
-    vrf: customer
-    gateway: true
-    id: 1001
-    prefix:
-      ipv4: 172.16.1.0/24
-      allocation: id_based
-    vni: 21001
-    evpn:
-      evi: 1001
-      import:
-      - 65000:1001
-      export:
-      - 65000:1001
-    neighbors:
-    - ipv4: 172.16.1.3/24
-      ifname: eth1
-      node: h3
-    - ifname: Vlan1001
-      node: s1
-      gateway:
-        ipv4: 172.16.1.254/24
-        id: -2
-        protocol: anycast
-        anycast:
-          mac: 0200.cafe.00ff
-          unicast: true
-        vrrp:
-          group: 1
-      ipv4: 172.16.1.5/24
-      vlan:
-        mode: irb
-        name: blue
-      vrf: customer
-    host_count: 1
-  green:
-    role: external
-    vrf: customer
-    gateway: true
-    id: 1002
-    prefix:
-      ipv4: 172.16.2.0/24
-      allocation: id_based
-    vni: 21002
-    evpn:
-      evi: 1002
-      import:
-      - 65000:1002
-      export:
-      - 65000:1002
-    neighbors:
-    - ipv4: 172.16.2.4/24
-      ifname: eth1
-      node: h4
-    - ifname: vlan1002
-      node: s2
-      gateway:
-        ipv4: 172.16.2.254/24
-        id: -2
-        protocol: anycast
-        anycast:
-          mac: 0200.cafe.00ff
-          unicast: true
-        vrrp:
-          group: 1
-      ipv4: 172.16.2.6/24
-      vlan:
-        mode: irb
-        name: green
-      vrf: customer
-    host_count: 1
-links:
-- _linkname: links[1]
-  mtu: 1600
-  interfaces:
-  - node: s1
-    ipv4: 10.1.0.1/30
-    ifindex: 1
-    ifname: Ethernet1
-  - node: s2
-    ipv4: 10.1.0.2/30
-    ifindex: 1
-    ifname: eth1
-  linkindex: 1
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.0/30
-- interfaces:
-  - node: s1
-    vlan:
-      access: red
-    _vlan_mode: irb
-    gateway:
-      ipv4: 172.16.0.254/24
-    ipv4: 172.16.0.5/24
-    ifindex: 2
-    ifname: Ethernet2
-  - node: h1
-    gateway:
-      id: -2
-      protocol: anycast
-      anycast:
-        mac: 0200.cafe.00ff
-        unicast: true
-      vrrp:
-        group: 1
-      ipv4: 172.16.0.254/24
-    ipv4: 172.16.0.1/24
-    ifindex: 1
-    ifname: eth1
-  _linkname: vlans.red.links[1]
-  vlan:
-    access: red
-  linkindex: 2
-  role: external
-  vrf: customer
-  gateway:
-    id: -2
-    protocol: anycast
-    anycast:
-      mac: 0200.cafe.00ff
-      unicast: true
-    vrrp:
-      group: 1
-    ipv4: 172.16.0.254/24
-  prefix:
-    ipv4: 172.16.0.0/24
-    allocation: id_based
-  type: lan
-  node_count: 2
-  bridge: ml_17_2
-- interfaces:
-  - node: s2
-    vlan:
-      access: red
-    _vlan_mode: irb
-    gateway:
-      ipv4: 172.16.0.254/24
-    ipv4: 172.16.0.6/24
-    ifindex: 2
-    ifname: eth2
-  - node: h2
-    gateway:
-      id: -2
-      protocol: anycast
-      anycast:
-        mac: 0200.cafe.00ff
-        unicast: true
-      vrrp:
-        group: 1
-      ipv4: 172.16.0.254/24
-    ipv4: 172.16.0.2/24
-    ifindex: 1
-    ifname: eth1
-  _linkname: vlans.red.links[2]
-  vlan:
-    access: red
-  linkindex: 3
-  role: external
-  vrf: customer
-  gateway:
-    id: -2
-    protocol: anycast
-    anycast:
-      mac: 0200.cafe.00ff
-      unicast: true
-    vrrp:
-      group: 1
-    ipv4: 172.16.0.254/24
-  prefix:
-    ipv4: 172.16.0.0/24
-    allocation: id_based
-  type: lan
-  node_count: 2
-  bridge: ml_17_3
-- interfaces:
-  - node: s1
-    vlan:
-      access: blue
-    _vlan_mode: irb
-    gateway:
-      ipv4: 172.16.1.254/24
-    ipv4: 172.16.1.5/24
-    ifindex: 3
-    ifname: Ethernet3
-  - node: h3
-    gateway:
-      id: -2
-      protocol: anycast
-      anycast:
-        mac: 0200.cafe.00ff
-        unicast: true
-      vrrp:
-        group: 1
-      ipv4: 172.16.1.254/24
-    ipv4: 172.16.1.3/24
-    ifindex: 1
-    ifname: eth1
-  _linkname: vlans.blue.links[1]
-  vlan:
-    access: blue
-  linkindex: 4
-  role: external
-  vrf: customer
-  gateway:
-    id: -2
-    protocol: anycast
-    anycast:
-      mac: 0200.cafe.00ff
-      unicast: true
-    vrrp:
-      group: 1
-    ipv4: 172.16.1.254/24
-  prefix:
-    ipv4: 172.16.1.0/24
-    allocation: id_based
-  type: lan
-  node_count: 2
-  bridge: ml_17_4
-- interfaces:
-  - node: s2
-    vlan:
-      access: green
-    _vlan_mode: irb
-    gateway:
-      ipv4: 172.16.2.254/24
-    ipv4: 172.16.2.6/24
-    ifindex: 3
-    ifname: eth3
-  - node: h4
-    gateway:
-      id: -2
-      protocol: anycast
-      anycast:
-        mac: 0200.cafe.00ff
-        unicast: true
-      vrrp:
-        group: 1
-      ipv4: 172.16.2.254/24
-    ipv4: 172.16.2.4/24
-    ifindex: 1
-    ifname: eth1
-  _linkname: vlans.green.links[1]
-  vlan:
-    access: green
-  linkindex: 5
-  role: external
-  vrf: customer
-  gateway:
-    id: -2
-    protocol: anycast
-    anycast:
-      mac: 0200.cafe.00ff
-      unicast: true
-    vrrp:
-      group: 1
-    ipv4: 172.16.2.254/24
-  prefix:
-    ipv4: 172.16.2.0/24
-    allocation: id_based
-  type: lan
-  node_count: 2
-  bridge: ml_17_5
 defaults:
   provider: clab
   providers:
@@ -923,6 +534,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox: {}
@@ -1217,6 +830,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox:
@@ -1723,7 +1338,6 @@ defaults:
           bundle:
           - vlan_aware
           irb: true
-          ipv6: true
         gateway:
           protocol:
           - anycast
@@ -1861,6 +1475,8 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
+      warnings:
+        ospf_stub: false
       provider: clab
     fortios:
       description: Fortinet FortiOS firewall
@@ -2331,6 +1947,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       _parents:
       - ios
@@ -2528,6 +2146,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       _parents:
       - ios
@@ -2708,6 +2328,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet0/{ifindex}
       libvirt:
         image: cisco/iosv
@@ -2908,6 +2530,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex // 4}/{ifindex % 4}
       libvirt:
         image: cisco/iosvl2
@@ -3172,7 +2796,6 @@ defaults:
           bundle:
           - vlan_aware
           multi_rt: true
-          ipv6: true
         gateway:
           protocol:
           - anycast
@@ -3824,6 +3447,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     srsim:
       description: Nokia SR-SIM (SR-OS) container
       mgmt_if: A/1
@@ -3963,6 +3588,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
       _parents:
       - sros
     unknown:
@@ -4196,9 +3823,6 @@ defaults:
           - ssh
       graphite:
         icon: switch
-      netlab_validate:
-        ping_irb_h3:
-          wait: 40
       _parents:
       - junos
     vmx:
@@ -6201,6 +5825,60 @@ defaults:
       neighbors: 5
       maxlength: 255
     MAX_NODE_ID: 150
+    validate:
+      ping: 5
+      ping_vrf: 5
+      ping_long: 15
+      vxlan_ping: 20
+      ping_stp: 45
+      ping_irb: 10
+      ra_send: 30
+      ospfv2_adj_p2p: 30
+      ospfv2_adj_lan: 50
+      ospfv2_adj_stp: 120
+      ospfv2_spf: 10
+      ospfv2_spf_long: 30
+      ospfv3_adj_p2p: 30
+      ospfv3_adj_lan: 50
+      ospfv3_adj_stp: 120
+      ospfv3_spf: 10
+      ospfv3_spf_long: 30
+      ospf_import: 20
+      ebgp_session: 30
+      ibgp_session: 30
+      bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_v4_originate: 15
+      bgp_v6_originate: 15
+      bgp_v4_redist: 15
+      bgp_v6_redist: 15
+      isis_adj_p2p: 20
+      isis_adj_lan: 50
+      isis_spf: 15
+      isis_spf_long: 45
+      isis_redist: 30
+      rip_start: 60
+      rip_update: 20
+      ldp_adj: 30
+      stp_forwarding: 40
+      lacp_setup: 10
+      xr:
+        bgp_v4_originate: 80
+        bgp_v6_originate: 80
+        bgp_v4_redist: 90
+        isis_redist: 60
+        ebgp_session: 90
+        ping_vrf: 20
+        bgp_scan_long: 30
+      ios:
+        bgp_v6_redist: 60
+      cisco8000v:
+        ping_irb: 90
+        ping_long: 15
+      vjunos-switch:
+        ping_irb: 40
+      vjunos-router:
+        ping_irb: 90
   hints:
     evpn:
       irb_group: >
@@ -6320,12 +5998,12 @@ defaults:
     - /home/pipi/netlab_gh/netsim/validate
     plugin:
     - /work/netlab_cicd
-    - /home/pipi/net101/tools/tests/integration/evpn
+    - /home/pipi/netlab_gh/tests/integration/evpn
     - /home/pipi/.netlab
     - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
-      - /home/pipi/net101/tools/tests/integration/evpn
+      - /home/pipi/netlab_gh/tests/integration/evpn
       - /work/netlab_cicd
       - /home/pipi/.netlab
       - /home/pipi/netlab_gh/netsim/extra
@@ -6448,6 +6126,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -8417,11 +8097,13 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1767379651.5811217
+    timestamp: 1767447950.409062
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
+    extra:
+    - ../wait_times.yml
+    - ../warnings.yml
     list: []
-    extra: []
     user: []
     system: []
   workdir: /work/netlab_cicd
@@ -8464,24 +8146,415 @@ defaults:
   - vxlan
   - gateway
   - evpn
+plugin:
+- anycast-check
+- multilab
+groups:
+  hosts:
+    members:
+    - h1
+    - h2
+    - h3
+    - h4
+    device: linux
+    node_data:
+      provider: clab
+  switches:
+    members:
+    - dut
+    - s2
+    module:
+    - vlan
+    - vxlan
+    - vrf
+    - ospf
+    - bgp
+    - evpn
+    - gateway
+  x_switches:
+    members:
+    - s2
+    device: frr
+    node_data:
+      provider: clab
+  all:
+    vars:
+      netlab_show_config: true
+    members: []
+    _default_group: true
+  as65000:
+    members:
+    - dut
+    - s2
+bgp:
+  advertise_loopback: true
+  community:
+    ibgp:
+    - standard
+    - extended
+    ebgp:
+    - standard
+  next_hop_self: true
+  as: 65000
+gateway:
+  anycast:
+    mac: 0200.cafe.00ff
+    unicast: true
+  vrrp:
+    group: 1
+  protocol: anycast
+vrfs:
+  customer:
+    evpn:
+      transit_vni: 5042
+      evi: 1
+    id: 1
+    rd: '65000:1'
+    import:
+    - '65000:1'
+    export:
+    - '65000:1'
+vlans:
+  red:
+    role: external
+    vrf: customer
+    gateway: true
+    id: 1000
+    prefix:
+      ipv4: 172.16.0.0/24
+      allocation: id_based
+    vni: 21000
+    evpn:
+      evi: 1000
+      import:
+      - 65000:1000
+      export:
+      - 65000:1000
+    neighbors:
+    - ipv4: 172.16.0.1/24
+      ifname: eth1
+      node: h1
+    - ifname: Vlan1000
+      node: dut
+      gateway:
+        ipv4: 172.16.0.254/24
+        id: -2
+        protocol: anycast
+        anycast:
+          mac: 0200.cafe.00ff
+          unicast: true
+        vrrp:
+          group: 1
+      ipv4: 172.16.0.5/24
+      vlan:
+        mode: irb
+        name: red
+      vrf: customer
+    - ipv4: 172.16.0.2/24
+      ifname: eth1
+      node: h2
+    - ifname: vlan1000
+      node: s2
+      gateway:
+        ipv4: 172.16.0.254/24
+        id: -2
+        protocol: anycast
+        anycast:
+          mac: 0200.cafe.00ff
+          unicast: true
+        vrrp:
+          group: 1
+      ipv4: 172.16.0.6/24
+      vlan:
+        mode: irb
+        name: red
+      vrf: customer
+    host_count: 2
+  blue:
+    role: external
+    vrf: customer
+    gateway: true
+    id: 1001
+    prefix:
+      ipv4: 172.16.1.0/24
+      allocation: id_based
+    vni: 21001
+    evpn:
+      evi: 1001
+      import:
+      - 65000:1001
+      export:
+      - 65000:1001
+    neighbors:
+    - ipv4: 172.16.1.3/24
+      ifname: eth1
+      node: h3
+    - ifname: Vlan1001
+      node: dut
+      gateway:
+        ipv4: 172.16.1.254/24
+        id: -2
+        protocol: anycast
+        anycast:
+          mac: 0200.cafe.00ff
+          unicast: true
+        vrrp:
+          group: 1
+      ipv4: 172.16.1.5/24
+      vlan:
+        mode: irb
+        name: blue
+      vrf: customer
+    host_count: 1
+  green:
+    role: external
+    vrf: customer
+    gateway: true
+    id: 1002
+    prefix:
+      ipv4: 172.16.2.0/24
+      allocation: id_based
+    vni: 21002
+    evpn:
+      evi: 1002
+      import:
+      - 65000:1002
+      export:
+      - 65000:1002
+    neighbors:
+    - ipv4: 172.16.2.4/24
+      ifname: eth1
+      node: h4
+    - ifname: vlan1002
+      node: s2
+      gateway:
+        ipv4: 172.16.2.254/24
+        id: -2
+        protocol: anycast
+        anycast:
+          mac: 0200.cafe.00ff
+          unicast: true
+        vrrp:
+          group: 1
+      ipv4: 172.16.2.6/24
+      vlan:
+        mode: irb
+        name: green
+      vrf: customer
+    host_count: 1
+links:
+- _linkname: links[1]
+  mtu: 1600
+  interfaces:
+  - node: dut
+    ipv4: 10.1.0.1/30
+    ifindex: 1
+    ifname: Ethernet1
+  - node: s2
+    ipv4: 10.1.0.2/30
+    ifindex: 1
+    ifname: eth1
+  linkindex: 1
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.0/30
+- interfaces:
+  - node: dut
+    vlan:
+      access: red
+    _vlan_mode: irb
+    gateway:
+      ipv4: 172.16.0.254/24
+    ipv4: 172.16.0.5/24
+    ifindex: 2
+    ifname: Ethernet2
+  - node: h1
+    gateway:
+      id: -2
+      protocol: anycast
+      anycast:
+        mac: 0200.cafe.00ff
+        unicast: true
+      vrrp:
+        group: 1
+      ipv4: 172.16.0.254/24
+    ipv4: 172.16.0.1/24
+    ifindex: 1
+    ifname: eth1
+  _linkname: vlans.red.links[1]
+  vlan:
+    access: red
+  linkindex: 2
+  role: external
+  vrf: customer
+  gateway:
+    id: -2
+    protocol: anycast
+    anycast:
+      mac: 0200.cafe.00ff
+      unicast: true
+    vrrp:
+      group: 1
+    ipv4: 172.16.0.254/24
+  prefix:
+    ipv4: 172.16.0.0/24
+    allocation: id_based
+  type: lan
+  node_count: 2
+  bridge: ml_17_2
+- interfaces:
+  - node: s2
+    vlan:
+      access: red
+    _vlan_mode: irb
+    gateway:
+      ipv4: 172.16.0.254/24
+    ipv4: 172.16.0.6/24
+    ifindex: 2
+    ifname: eth2
+  - node: h2
+    gateway:
+      id: -2
+      protocol: anycast
+      anycast:
+        mac: 0200.cafe.00ff
+        unicast: true
+      vrrp:
+        group: 1
+      ipv4: 172.16.0.254/24
+    ipv4: 172.16.0.2/24
+    ifindex: 1
+    ifname: eth1
+  _linkname: vlans.red.links[2]
+  vlan:
+    access: red
+  linkindex: 3
+  role: external
+  vrf: customer
+  gateway:
+    id: -2
+    protocol: anycast
+    anycast:
+      mac: 0200.cafe.00ff
+      unicast: true
+    vrrp:
+      group: 1
+    ipv4: 172.16.0.254/24
+  prefix:
+    ipv4: 172.16.0.0/24
+    allocation: id_based
+  type: lan
+  node_count: 2
+  bridge: ml_17_3
+- interfaces:
+  - node: dut
+    vlan:
+      access: blue
+    _vlan_mode: irb
+    gateway:
+      ipv4: 172.16.1.254/24
+    ipv4: 172.16.1.5/24
+    ifindex: 3
+    ifname: Ethernet3
+  - node: h3
+    gateway:
+      id: -2
+      protocol: anycast
+      anycast:
+        mac: 0200.cafe.00ff
+        unicast: true
+      vrrp:
+        group: 1
+      ipv4: 172.16.1.254/24
+    ipv4: 172.16.1.3/24
+    ifindex: 1
+    ifname: eth1
+  _linkname: vlans.blue.links[1]
+  vlan:
+    access: blue
+  linkindex: 4
+  role: external
+  vrf: customer
+  gateway:
+    id: -2
+    protocol: anycast
+    anycast:
+      mac: 0200.cafe.00ff
+      unicast: true
+    vrrp:
+      group: 1
+    ipv4: 172.16.1.254/24
+  prefix:
+    ipv4: 172.16.1.0/24
+    allocation: id_based
+  type: lan
+  node_count: 2
+  bridge: ml_17_4
+- interfaces:
+  - node: s2
+    vlan:
+      access: green
+    _vlan_mode: irb
+    gateway:
+      ipv4: 172.16.2.254/24
+    ipv4: 172.16.2.6/24
+    ifindex: 3
+    ifname: eth3
+  - node: h4
+    gateway:
+      id: -2
+      protocol: anycast
+      anycast:
+        mac: 0200.cafe.00ff
+        unicast: true
+      vrrp:
+        group: 1
+      ipv4: 172.16.2.254/24
+    ipv4: 172.16.2.4/24
+    ifindex: 1
+    ifname: eth1
+  _linkname: vlans.green.links[1]
+  vlan:
+    access: green
+  linkindex: 5
+  role: external
+  vrf: customer
+  gateway:
+    id: -2
+    protocol: anycast
+    anycast:
+      mac: 0200.cafe.00ff
+      unicast: true
+    vrrp:
+      group: 1
+    ipv4: 172.16.2.254/24
+  prefix:
+    ipv4: 172.16.2.0/24
+    allocation: id_based
+  type: lan
+  node_count: 2
+  bridge: ml_17_5
 validate:
-- description: Check OSPF adjacencies with S1
-  wait: 40
+- description: Check OSPF adjacencies with DUT
+  wait: 30
   nodes:
   - s2
   wait_msg: Waiting for OSPF adjacency process to complete
-  plugin: ospf_neighbor(nodes.s1.ospf.router_id)
-  name: ospf_adj_s1
-- description: Check IBGP adjacencies with S1
-  wait: 40
+  plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  stop_on_error: true
+  name: ospf_adj
+- description: Check IBGP adjacencies with DUT
+  wait: 30
   nodes:
   - s2
   wait_msg: Waiting for IGBP session
-  plugin: bgp_neighbor(node.bgp.neighbors,'s1')
-  name: ibgp_adj_s1
+  plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  stop_on_error: true
+  name: ibgp_adj
 - description: Intra-VLAN ping-based reachability test
   wait_msg: Waiting for OSFP and STP to wake up
-  wait: 50
+  wait: 45
   nodes:
   - h1
   plugin: ping('h2')
@@ -8496,7 +8569,7 @@ validate:
   name: ping_gw
 - description: IRB ping-based reachability test (VLAN Blue)
   wait_msg: Waiting for OSFP and STP to wake up
-  wait: 20
+  wait: 15
   nodes:
   - h1
   - h2
@@ -8505,7 +8578,7 @@ validate:
   name: ping_irb_h3
 - description: IRB ping-based reachability test (VLAN Green)
   wait_msg: Waiting for OSFP and STP to wake up
-  wait: 10
+  wait: 15
   nodes:
   - h1
   - h2
@@ -8513,8 +8586,10 @@ validate:
   plugin: ping('h4')
   name: ping_irb_h4
 input:
-- /home/pipi/net101/tools/tests/integration/evpn/03-vxlan-symmetric-irb.yml
-- /home/pipi/net101/tools/tests/integration/evpn/topology-defaults.yml
+- /home/pipi/netlab_gh/tests/integration/evpn/03-vxlan-symmetric-irb.yml
+- /home/pipi/netlab_gh/tests/integration/wait_times.yml
+- /home/pipi/netlab_gh/tests/integration/warnings.yml
+- /home/pipi/netlab_gh/tests/integration/evpn/topology-defaults.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 name: ml_17
@@ -8536,13 +8611,13 @@ nodes:
       role: external
       type: lan
       bridge: ml_17_2
-      name: h1 -> [s1,h2,s2]
+      name: h1 -> [dut,h2,s2]
       ifindex: 1
       ifname: eth1
       mtu: 1500
       neighbors:
       - ifname: Vlan1000
-        node: s1
+        node: dut
         gateway:
           ipv4: 172.16.0.254/24
           id: -2
@@ -8657,7 +8732,7 @@ nodes:
       role: external
       type: lan
       bridge: ml_17_3
-      name: h2 -> [h1,s1,s2]
+      name: h2 -> [h1,dut,s2]
       ifindex: 1
       ifname: eth1
       mtu: 1500
@@ -8666,7 +8741,7 @@ nodes:
         ifname: eth1
         node: h1
       - ifname: Vlan1000
-        node: s1
+        node: dut
         gateway:
           ipv4: 172.16.0.254/24
           id: -2
@@ -8778,13 +8853,13 @@ nodes:
       role: external
       type: lan
       bridge: ml_17_4
-      name: h3 -> [s1]
+      name: h3 -> [dut]
       ifindex: 1
       ifname: eth1
       mtu: 1500
       neighbors:
       - ifname: Vlan1001
-        node: s1
+        node: dut
         gateway:
           ipv4: 172.16.1.254/24
           id: -2
@@ -8965,14 +9040,14 @@ nodes:
       output: node_files/-shared-hosts
       mode: shared
       mapping: /etc/hosts:ro
-  s1:
-    name: s1
+  dut:
+    name: dut
     interfaces:
     - ipv4: 10.1.0.1/30
       mtu: 1600
       linkindex: 1
       type: p2p
-      name: s1 -> s2
+      name: dut -> s2
       ifindex: 1
       ifname: Ethernet1
       mac_address: caf0.0005.0001
@@ -9000,7 +9075,7 @@ nodes:
       - ipv4: 172.16.0.1/24
         ifname: eth1
         node: h1
-      name: '[Access VLAN red] s1 -> h1'
+      name: '[Access VLAN red] dut -> h1'
     - vlan:
         access: blue
         access_id: 1001
@@ -9015,7 +9090,7 @@ nodes:
       - ipv4: 172.16.1.3/24
         ifname: eth1
         node: h3
-      name: '[Access VLAN blue] s1 -> h3'
+      name: '[Access VLAN blue] dut -> h3'
     - gateway:
         ipv4: 172.16.0.254/24
         id: -2
@@ -9154,7 +9229,7 @@ nodes:
         next_hop_self: ebgp
         activate:
           ipv4: true
-        evpn: ipv4
+        evpn: true
       ipv4: true
     evpn:
       session:
@@ -9178,7 +9253,7 @@ nodes:
       ifname: Management0
       mac: ca:fe:00:05:00:00
       ipv4: 192.168.17.105
-    hostname: clab-ml_17-s1
+    hostname: clab-ml_17-dut
     loopback:
       type: loopback
       neighbors: []
@@ -9257,13 +9332,13 @@ nodes:
       mtu: 1600
       linkindex: 1
       type: p2p
-      name: s2 -> s1
+      name: s2 -> dut
       ifindex: 1
       ifname: eth1
       neighbors:
       - ipv4: 10.1.0.1/30
         ifname: Ethernet1
-        node: s1
+        node: dut
       ospf:
         area: 0.0.0.0
         passive: false
@@ -9311,14 +9386,14 @@ nodes:
       ifindex: 40000
       mac_address: caf4.0006.0000
       ifname: vlan1000
-      name: VLAN red (1000) -> [h1,s1,h2]
+      name: VLAN red (1000) -> [h1,dut,h2]
       virtual_interface: true
       neighbors:
       - ipv4: 172.16.0.1/24
         ifname: eth1
         node: h1
       - ifname: Vlan1000
-        node: s1
+        node: dut
         gateway:
           ipv4: 172.16.0.254/24
           id: -2
@@ -9422,7 +9497,7 @@ nodes:
       as: 65000
       router_id: 10.0.0.6
       neighbors:
-      - name: s1
+      - name: dut
         as: 65000
         type: ibgp
         ipv4: 10.0.0.5
@@ -9436,7 +9511,7 @@ nodes:
         next_hop_self: ebgp
         activate:
           ipv4: true
-        evpn: ipv4
+        evpn: true
       ipv4: true
     evpn:
       session:

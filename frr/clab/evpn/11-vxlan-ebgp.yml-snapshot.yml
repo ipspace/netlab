@@ -10,959 +10,6 @@ message: |
 
   Please note it might take a while for the lab to work due to
   STP learning phase
-groups:
-  hosts:
-    members:
-    - h1
-    - h2
-    device: linux
-    node_data:
-      provider: clab
-  switches:
-    members:
-    - l1
-    - l2
-    - l3
-    module:
-    - vlan
-    - vxlan
-    - bgp
-    - evpn
-  core:
-    members:
-    - spine
-    module:
-    - bgp
-    - evpn
-    - ospf
-    node_data:
-      bgp:
-        rr: true
-  x_switches:
-    members:
-    - l1
-    - l2
-    - l3
-    device: frr
-    node_data:
-      provider: clab
-  all:
-    vars:
-      netlab_show_config: true
-    members: []
-    _default_group: true
-  as65100:
-    members:
-    - spine
-    - l3
-  as65201:
-    members:
-    - l1
-  as65202:
-    members:
-    - l2
-vlans:
-  red:
-    mode: bridge
-    vni: 1000
-    prefix:
-      ipv4: 172.31.1.0/24
-      allocation: id_based
-    id: 1000
-    evpn:
-      evi: 1000
-      import:
-      - 65000:1000
-      export:
-      - 65000:1000
-    role: external
-    neighbors:
-    - ipv4: 172.31.1.5/24
-      ifname: eth1
-      node: h1
-    - ifname: vlan1000
-      node: l1
-      vlan:
-        mode: bridge
-        name: red
-    - ipv4: 172.31.1.6/24
-      ifname: eth1
-      node: h2
-    - ifname: vlan1000
-      node: l2
-      vlan:
-        mode: bridge
-        name: red
-    host_count: 2
-evpn:
-  session:
-  - ibgp
-  - ebgp
-  as: 65000
-  vlans:
-  - red
-bgp:
-  advertise_loopback: true
-  community:
-    ibgp:
-    - standard
-    - extended
-    ebgp:
-    - standard
-    - extended
-  next_hop_self: true
-nodes:
-  spine:
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - large
-        - extended
-        ebgp:
-        - standard
-        - large
-        - extended
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      next_hop_self: true
-      rr: true
-      as: 65100
-      router_id: 10.0.0.1
-      rr_cluster_id: 10.0.0.1
-      neighbors:
-      - name: l3
-        as: 65100
-        type: ibgp
-        ipv4: 10.0.0.4
-        _source_intf:
-          type: loopback
-          neighbors: []
-          virtual_interface: true
-          ifindex: 0
-          ifname: lo
-          ipv4: 10.0.0.1/32
-        next_hop_self: ebgp
-        rr_client: true
-        activate:
-          ipv4: true
-        evpn: ipv4
-      - ifindex: 1
-        name: l1
-        as: 65201
-        type: ebgp
-        ipv4: 10.1.0.1
-        activate:
-          ipv4: true
-        evpn: ipv4
-      - ifindex: 2
-        name: l2
-        as: 65202
-        type: ebgp
-        ipv4: 10.1.0.5
-        activate:
-          ipv4: true
-        evpn: ipv4
-      ipv4: true
-    name: spine
-    interfaces:
-    - ipv4: 10.1.0.2/30
-      mtu: 1600
-      linkindex: 1
-      role: external
-      type: p2p
-      name: spine -> l1
-      ifindex: 1
-      ifname: eth1
-      neighbors:
-      - ipv4: 10.1.0.1/30
-        ifname: eth1
-        node: l1
-    - ipv4: 10.1.0.6/30
-      mtu: 1600
-      linkindex: 2
-      role: external
-      type: p2p
-      name: spine -> l2
-      ifindex: 2
-      ifname: eth2
-      neighbors:
-      - ipv4: 10.1.0.5/30
-        ifname: eth1
-        node: l2
-    - ipv4: 10.1.0.10/30
-      mtu: 1600
-      linkindex: 3
-      type: p2p
-      name: spine -> l3
-      ifindex: 3
-      ifname: eth3
-      neighbors:
-      - ipv4: 10.1.0.9/30
-        ifname: eth1
-        node: l3
-      ospf:
-        area: 0.0.0.0
-        passive: false
-        network_type: point-to-point
-    module:
-    - ospf
-    - bgp
-    - evpn
-    device: frr
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      binds:
-      - node_files/spine/daemons:/etc/frr/daemons
-      - node_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.5.0
-    evpn:
-      session:
-      - ibgp
-      - ebgp
-      vlans: []
-    ospf:
-      area: 0.0.0.0
-      router_id: 10.0.0.1
-      af:
-        ipv4: true
-      areas:
-      - area: 0.0.0.0
-        _area_int: 0
-        kind: regular
-    id: 1
-    role: router
-    mtu: 1500
-    provider: clab
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:01:00:00
-      ipv4: 192.168.17.101
-    hostname: clab-ml_17-spine
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.1/32
-      bgp:
-        advertise: true
-      ospf:
-        area: 0.0.0.0
-        passive: false
-    _template_cache:
-    - fname: daemons
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
-      output: node_files/spine/daemons
-      mapping: /etc/frr/daemons
-    - fname: hosts
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
-      output: node_files/-shared-hosts
-      mode: shared
-      mapping: /etc/hosts:ro
-  l1:
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - large
-        - extended
-        ebgp:
-        - standard
-        - large
-        - extended
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      next_hop_self: true
-      as: 65201
-      router_id: 10.0.0.2
-      neighbors:
-      - ifindex: 1
-        name: spine
-        as: 65100
-        type: ebgp
-        ipv4: 10.1.0.2
-        activate:
-          ipv4: true
-        evpn: ipv4
-      ipv4: true
-    name: l1
-    interfaces:
-    - ipv4: 10.1.0.1/30
-      mtu: 1600
-      linkindex: 1
-      role: external
-      type: p2p
-      name: l1 -> spine
-      ifindex: 1
-      ifname: eth1
-      neighbors:
-      - ipv4: 10.1.0.2/30
-        ifname: eth1
-        node: spine
-    - vlan:
-        access: red
-        access_id: 1000
-      linkindex: 4
-      type: lan
-      bridge: ml_17_4
-      ifindex: 2
-      ifname: eth2
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.31.1.5/24
-        ifname: eth1
-        node: h1
-      name: '[Access VLAN red] l1 -> h1'
-    - vlan:
-        mode: bridge
-        name: red
-      type: svi
-      ifindex: 40000
-      mac_address: caf4.0002.0000
-      ifname: vlan1000
-      name: VLAN red (1000) -> [h1,h2,l2]
-      virtual_interface: true
-      neighbors:
-      - ipv4: 172.31.1.5/24
-        ifname: eth1
-        node: h1
-      - ipv4: 172.31.1.6/24
-        ifname: eth1
-        node: h2
-      - ifname: vlan1000
-        node: l2
-        vlan:
-          mode: bridge
-          name: red
-      role: external
-      bridge_group: 1
-    device: frr
-    module:
-    - vlan
-    - bgp
-    - vxlan
-    - evpn
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      binds:
-      - node_files/l1/daemons:/etc/frr/daemons
-      - node_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.5.0
-    vxlan:
-      domain: global
-      flooding: evpn
-      vlans:
-      - red
-      vtep: 10.0.0.2
-      vtep_interface: lo
-    evpn:
-      session:
-      - ibgp
-      - ebgp
-      vlans:
-      - red
-    id: 2
-    role: router
-    mtu: 1500
-    provider: clab
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:02:00:00
-      ipv4: 192.168.17.102
-    hostname: clab-ml_17-l1
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.2/32
-      bgp:
-        advertise: true
-    vlans:
-      red:
-        mode: bridge
-        vni: 1000
-        prefix:
-          ipv4: 172.31.1.0/24
-          allocation: id_based
-        id: 1000
-        evpn:
-          evi: 1000
-          import:
-          - 65000:1000
-          export:
-          - 65000:1000
-          rd: 10.0.0.2:1000
-        role: external
-        bridge_group: 1
-    vlan:
-      max_bridge_group: 1
-    _template_cache:
-    - fname: daemons
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
-      output: node_files/l1/daemons
-      mapping: /etc/frr/daemons
-    - fname: hosts
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
-      output: node_files/-shared-hosts
-      mode: shared
-      mapping: /etc/hosts:ro
-  l2:
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - large
-        - extended
-        ebgp:
-        - standard
-        - large
-        - extended
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      next_hop_self: true
-      as: 65202
-      router_id: 10.0.0.3
-      neighbors:
-      - ifindex: 1
-        name: spine
-        as: 65100
-        type: ebgp
-        ipv4: 10.1.0.6
-        activate:
-          ipv4: true
-        evpn: ipv4
-      ipv4: true
-    name: l2
-    interfaces:
-    - ipv4: 10.1.0.5/30
-      mtu: 1600
-      linkindex: 2
-      role: external
-      type: p2p
-      name: l2 -> spine
-      ifindex: 1
-      ifname: eth1
-      neighbors:
-      - ipv4: 10.1.0.6/30
-        ifname: eth2
-        node: spine
-    - vlan:
-        access: red
-        access_id: 1000
-      linkindex: 5
-      type: lan
-      bridge: ml_17_5
-      ifindex: 2
-      ifname: eth2
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.31.1.6/24
-        ifname: eth1
-        node: h2
-      name: '[Access VLAN red] l2 -> h2'
-    - vlan:
-        mode: bridge
-        name: red
-      type: svi
-      ifindex: 40000
-      mac_address: caf4.0003.0000
-      ifname: vlan1000
-      name: VLAN red (1000) -> [h1,l1,h2]
-      virtual_interface: true
-      neighbors:
-      - ipv4: 172.31.1.5/24
-        ifname: eth1
-        node: h1
-      - ifname: vlan1000
-        node: l1
-        vlan:
-          mode: bridge
-          name: red
-      - ipv4: 172.31.1.6/24
-        ifname: eth1
-        node: h2
-      role: external
-      bridge_group: 1
-    device: frr
-    module:
-    - vlan
-    - bgp
-    - vxlan
-    - evpn
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      binds:
-      - node_files/l2/daemons:/etc/frr/daemons
-      - node_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.5.0
-    vxlan:
-      domain: global
-      flooding: evpn
-      vlans:
-      - red
-      vtep: 10.0.0.3
-      vtep_interface: lo
-    evpn:
-      session:
-      - ibgp
-      - ebgp
-      vlans:
-      - red
-    id: 3
-    role: router
-    mtu: 1500
-    provider: clab
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:03:00:00
-      ipv4: 192.168.17.103
-    hostname: clab-ml_17-l2
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.3/32
-      bgp:
-        advertise: true
-    vlans:
-      red:
-        mode: bridge
-        vni: 1000
-        prefix:
-          ipv4: 172.31.1.0/24
-          allocation: id_based
-        id: 1000
-        evpn:
-          evi: 1000
-          import:
-          - 65000:1000
-          export:
-          - 65000:1000
-          rd: 10.0.0.3:1000
-        role: external
-        bridge_group: 1
-    vlan:
-      max_bridge_group: 1
-    _template_cache:
-    - fname: daemons
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
-      output: node_files/l2/daemons
-      mapping: /etc/frr/daemons
-    - fname: hosts
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
-      output: node_files/-shared-hosts
-      mode: shared
-      mapping: /etc/hosts:ro
-  l3:
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - large
-        - extended
-        ebgp:
-        - standard
-        - large
-        - extended
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      next_hop_self: true
-      as: 65100
-      router_id: 10.0.0.4
-      neighbors:
-      - rr: true
-        name: spine
-        as: 65100
-        type: ibgp
-        ipv4: 10.0.0.1
-        _source_intf:
-          type: loopback
-          neighbors: []
-          virtual_interface: true
-          ifindex: 0
-          ifname: lo
-          ipv4: 10.0.0.4/32
-        next_hop_self: ebgp
-        activate:
-          ipv4: true
-        evpn: ipv4
-      ipv4: true
-    module:
-    - vlan
-    - ospf
-    - bgp
-    - evpn
-    name: l3
-    interfaces:
-    - ipv4: 10.1.0.9/30
-      mtu: 1600
-      linkindex: 3
-      type: p2p
-      name: l3 -> spine
-      ifindex: 1
-      ifname: eth1
-      neighbors:
-      - ipv4: 10.1.0.10/30
-        ifname: eth3
-        node: spine
-      ospf:
-        area: 0.0.0.0
-        passive: false
-        network_type: point-to-point
-    device: frr
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      binds:
-      - node_files/l3/daemons:/etc/frr/daemons
-      - node_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.5.0
-    ospf:
-      area: 0.0.0.0
-      router_id: 10.0.0.4
-      af:
-        ipv4: true
-      areas:
-      - area: 0.0.0.0
-        _area_int: 0
-        kind: regular
-    evpn:
-      session:
-      - ibgp
-      - ebgp
-      vlans: []
-    id: 4
-    role: router
-    mtu: 1500
-    provider: clab
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:04:00:00
-      ipv4: 192.168.17.104
-    hostname: clab-ml_17-l3
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.4/32
-      bgp:
-        advertise: true
-      ospf:
-        area: 0.0.0.0
-        passive: false
-    _template_cache:
-    - fname: daemons
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
-      output: node_files/l3/daemons
-      mapping: /etc/frr/daemons
-    - fname: hosts
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
-      output: node_files/-shared-hosts
-      mode: shared
-      mapping: /etc/hosts:ro
-  h1:
-    name: h1
-    interfaces:
-    - ipv4: 172.31.1.5/24
-      linkindex: 4
-      type: lan
-      bridge: ml_17_4
-      name: h1 -> [l1,h2,l2]
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ifname: vlan1000
-        node: l1
-        vlan:
-          mode: bridge
-          name: red
-      - ipv4: 172.31.1.6/24
-        ifname: eth1
-        node: h2
-      - ifname: vlan1000
-        node: l2
-        vlan:
-          mode: bridge
-          name: red
-    device: linux
-    clab:
-      kind: linux
-      config_templates:
-      - initial::ns
-      - routing::ns
-      - hosts:/etc/hosts:shared
-      binds:
-      - node_files/-shared-hosts:/etc/hosts:ro
-    box: python:3.13-alpine
-    id: 5
-    role: host
-    mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:05:00:00
-      ipv4: 192.168.17.105
-    hostname: clab-ml_17-h1
-    routing:
-      static: []
-    module:
-    - routing
-    netlab_ansible_skip_module:
-    - initial
-    - routing
-    _template_cache:
-    - fname: initial
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
-      output: node_files/h1/initial
-      mode: ns
-    - fname: routing
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
-      output: node_files/h1/routing
-      mode: ns
-    - fname: hosts
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
-      output: node_files/-shared-hosts
-      mode: shared
-      mapping: /etc/hosts:ro
-  h2:
-    name: h2
-    interfaces:
-    - ipv4: 172.31.1.6/24
-      linkindex: 5
-      type: lan
-      bridge: ml_17_5
-      name: h2 -> [h1,l1,l2]
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.31.1.5/24
-        ifname: eth1
-        node: h1
-      - ifname: vlan1000
-        node: l1
-        vlan:
-          mode: bridge
-          name: red
-      - ifname: vlan1000
-        node: l2
-        vlan:
-          mode: bridge
-          name: red
-    device: linux
-    clab:
-      kind: linux
-      config_templates:
-      - initial::ns
-      - routing::ns
-      - hosts:/etc/hosts:shared
-      binds:
-      - node_files/-shared-hosts:/etc/hosts:ro
-    box: python:3.13-alpine
-    id: 6
-    role: host
-    mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:06:00:00
-      ipv4: 192.168.17.106
-    hostname: clab-ml_17-h2
-    routing:
-      static: []
-    module:
-    - routing
-    netlab_ansible_skip_module:
-    - initial
-    - routing
-    _template_cache:
-    - fname: initial
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
-      output: node_files/h2/initial
-      mode: ns
-    - fname: routing
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
-      output: node_files/h2/routing
-      mode: ns
-    - fname: hosts
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
-      output: node_files/-shared-hosts
-      mode: shared
-      mapping: /etc/hosts:ro
-links:
-- mtu: 1600
-  interfaces:
-  - node: l1
-    ipv4: 10.1.0.1/30
-    ifindex: 1
-    ifname: eth1
-  - node: spine
-    ipv4: 10.1.0.2/30
-    ifindex: 1
-    ifname: eth1
-  _linkname: links[core][1]
-  linkindex: 1
-  role: external
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.0/30
-- mtu: 1600
-  interfaces:
-  - node: l2
-    ipv4: 10.1.0.5/30
-    ifindex: 1
-    ifname: eth1
-  - node: spine
-    ipv4: 10.1.0.6/30
-    ifindex: 2
-    ifname: eth2
-  _linkname: links[core][2]
-  linkindex: 2
-  role: external
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.4/30
-- mtu: 1600
-  interfaces:
-  - node: l3
-    ipv4: 10.1.0.9/30
-    ifindex: 1
-    ifname: eth1
-  - node: spine
-    ipv4: 10.1.0.10/30
-    ifindex: 3
-    ifname: eth3
-  _linkname: links[core][3]
-  linkindex: 3
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.8/30
-- interfaces:
-  - node: l1
-    vlan:
-      access: red
-    _vlan_mode: bridge
-    ifindex: 2
-    ifname: eth2
-  - node: h1
-    ipv4: 172.31.1.5/24
-    ifindex: 1
-    ifname: eth1
-  _linkname: vlans.red.links[1]
-  vlan:
-    access: red
-  linkindex: 4
-  prefix:
-    ipv4: 172.31.1.0/24
-    allocation: id_based
-  type: lan
-  node_count: 2
-  bridge: ml_17_4
-- interfaces:
-  - node: l2
-    vlan:
-      access: red
-    _vlan_mode: bridge
-    ifindex: 2
-    ifname: eth2
-  - node: h2
-    ipv4: 172.31.1.6/24
-    ifindex: 1
-    ifname: eth1
-  _linkname: vlans.red.links[2]
-  vlan:
-    access: red
-  linkindex: 5
-  prefix:
-    ipv4: 172.31.1.0/24
-    allocation: id_based
-  type: lan
-  node_count: 2
-  bridge: ml_17_5
-validate:
-- description: Check EBGP adjacencies with Spine
-  wait: 40
-  nodes:
-  - l1
-  - l2
-  wait_msg: Waiting for EGBP session
-  plugin: bgp_neighbor(node.bgp.neighbors,'spine')
-  name: ebgp_adj
-- description: Check IPv4 AF on EBGP adjacencies with Spine
-  nodes:
-  - l1
-  - l2
-  plugin: bgp_neighbor(node.bgp.neighbors,'spine',activate='ipv4')
-  name: ipv4_af
-- description: Check IPv4 AF on EBGP adjacencies with Spine
-  nodes:
-  - l1
-  - l2
-  plugin: bgp_neighbor(node.bgp.neighbors,'spine',activate='evpn')
-  name: evpn_af
-- description: Ping-based reachability test in VLAN red
-  wait_msg: Waiting for STP to wake up
-  wait: 30
-  nodes:
-  - h1
-  plugin: ping('h2')
-  name: ping_red
-input:
-- /home/pipi/net101/tools/tests/integration/evpn/11-vxlan-ebgp.yml
-- /home/pipi/net101/tools/tests/integration/evpn/topology-defaults.yml
-- /home/pipi/.netlab.yml
-- package:topology-defaults.yml
 defaults:
   provider: clab
   providers:
@@ -1488,6 +535,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox: {}
@@ -1782,6 +831,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox:
@@ -2288,7 +1339,6 @@ defaults:
           bundle:
           - vlan_aware
           irb: true
-          ipv6: true
         gateway:
           protocol:
           - anycast
@@ -2426,6 +1476,8 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
+      warnings:
+        ospf_stub: false
     fortios:
       description: Fortinet FortiOS firewall
       support:
@@ -2896,6 +1948,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       _parents:
       - ios
@@ -3093,6 +2147,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       _parents:
       - ios
@@ -3273,6 +2329,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet0/{ifindex}
       libvirt:
         image: cisco/iosv
@@ -3473,6 +2531,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex // 4}/{ifindex % 4}
       libvirt:
         image: cisco/iosvl2
@@ -3737,7 +2797,6 @@ defaults:
           bundle:
           - vlan_aware
           multi_rt: true
-          ipv6: true
         gateway:
           protocol:
           - anycast
@@ -4389,6 +3448,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     srsim:
       description: Nokia SR-SIM (SR-OS) container
       mgmt_if: A/1
@@ -4528,6 +3589,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
       _parents:
       - sros
     unknown:
@@ -6763,6 +5826,60 @@ defaults:
       neighbors: 5
       maxlength: 255
     MAX_NODE_ID: 150
+    validate:
+      ping: 5
+      ping_vrf: 5
+      ping_long: 15
+      vxlan_ping: 20
+      ping_stp: 45
+      ping_irb: 10
+      ra_send: 30
+      ospfv2_adj_p2p: 30
+      ospfv2_adj_lan: 50
+      ospfv2_adj_stp: 120
+      ospfv2_spf: 10
+      ospfv2_spf_long: 30
+      ospfv3_adj_p2p: 30
+      ospfv3_adj_lan: 50
+      ospfv3_adj_stp: 120
+      ospfv3_spf: 10
+      ospfv3_spf_long: 30
+      ospf_import: 20
+      ebgp_session: 30
+      ibgp_session: 30
+      bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_v4_originate: 15
+      bgp_v6_originate: 15
+      bgp_v4_redist: 15
+      bgp_v6_redist: 15
+      isis_adj_p2p: 20
+      isis_adj_lan: 50
+      isis_spf: 15
+      isis_spf_long: 45
+      isis_redist: 30
+      rip_start: 60
+      rip_update: 20
+      ldp_adj: 30
+      stp_forwarding: 40
+      lacp_setup: 10
+      xr:
+        bgp_v4_originate: 80
+        bgp_v6_originate: 80
+        bgp_v4_redist: 90
+        isis_redist: 60
+        ebgp_session: 90
+        ping_vrf: 20
+        bgp_scan_long: 30
+      ios:
+        bgp_v6_redist: 60
+      cisco8000v:
+        ping_irb: 90
+        ping_long: 15
+      vjunos-switch:
+        ping_irb: 40
+      vjunos-router:
+        ping_irb: 90
   hints:
     evpn:
       irb_group: >
@@ -6882,12 +5999,12 @@ defaults:
     - /home/pipi/netlab_gh/netsim/validate
     plugin:
     - /work/netlab_cicd
-    - /home/pipi/net101/tools/tests/integration/evpn
+    - /home/pipi/netlab_gh/tests/integration/evpn
     - /home/pipi/.netlab
     - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
-      - /home/pipi/net101/tools/tests/integration/evpn
+      - /home/pipi/netlab_gh/tests/integration/evpn
       - /work/netlab_cicd
       - /home/pipi/.netlab
       - /home/pipi/netlab_gh/netsim/extra
@@ -7010,6 +6127,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -8976,11 +8095,13 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1767380636.3065674
+    timestamp: 1767448961.4958372
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
+    extra:
+    - ../wait_times.yml
+    - ../warnings.yml
     list: []
-    extra: []
     user: []
     system: []
   workdir: /work/netlab_cicd
@@ -9021,6 +8142,964 @@ defaults:
   - bgp
   - vxlan
   - evpn
+groups:
+  hosts:
+    members:
+    - h1
+    - h2
+    device: linux
+    node_data:
+      provider: clab
+  switches:
+    members:
+    - l1
+    - l2
+    - l3
+    module:
+    - vlan
+    - vxlan
+    - bgp
+    - evpn
+  core:
+    members:
+    - dut
+    module:
+    - bgp
+    - evpn
+    - ospf
+    node_data:
+      bgp:
+        rr: true
+  x_switches:
+    members:
+    - l1
+    - l2
+    - l3
+    device: frr
+    node_data:
+      provider: clab
+  all:
+    vars:
+      netlab_show_config: true
+    members: []
+    _default_group: true
+  as65100:
+    members:
+    - dut
+    - l3
+  as65201:
+    members:
+    - l1
+  as65202:
+    members:
+    - l2
+vlans:
+  red:
+    mode: bridge
+    vni: 1000
+    prefix:
+      ipv4: 172.31.1.0/24
+      allocation: id_based
+    id: 1000
+    evpn:
+      evi: 1000
+      import:
+      - 65000:1000
+      export:
+      - 65000:1000
+    role: external
+    neighbors:
+    - ipv4: 172.31.1.5/24
+      ifname: eth1
+      node: h1
+    - ifname: vlan1000
+      node: l1
+      vlan:
+        mode: bridge
+        name: red
+    - ipv4: 172.31.1.6/24
+      ifname: eth1
+      node: h2
+    - ifname: vlan1000
+      node: l2
+      vlan:
+        mode: bridge
+        name: red
+    host_count: 2
+evpn:
+  session:
+  - ibgp
+  - ebgp
+  as: 65000
+  vlans:
+  - red
+bgp:
+  advertise_loopback: true
+  community:
+    ibgp:
+    - standard
+    - extended
+    ebgp:
+    - standard
+    - extended
+  next_hop_self: true
+nodes:
+  dut:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        - extended
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      rr: true
+      as: 65100
+      router_id: 10.0.0.1
+      rr_cluster_id: 10.0.0.1
+      neighbors:
+      - name: l3
+        as: 65100
+        type: ibgp
+        ipv4: 10.0.0.4
+        _source_intf:
+          type: loopback
+          neighbors: []
+          virtual_interface: true
+          ifindex: 0
+          ifname: lo
+          ipv4: 10.0.0.1/32
+        next_hop_self: ebgp
+        rr_client: true
+        activate:
+          ipv4: true
+        evpn: true
+      - ifindex: 1
+        name: l1
+        as: 65201
+        type: ebgp
+        ipv4: 10.1.0.2
+        activate:
+          ipv4: true
+        evpn: true
+      - ifindex: 2
+        name: l2
+        as: 65202
+        type: ebgp
+        ipv4: 10.1.0.6
+        activate:
+          ipv4: true
+        evpn: true
+      ipv4: true
+    name: dut
+    interfaces:
+    - ipv4: 10.1.0.1/30
+      mtu: 1600
+      linkindex: 1
+      role: external
+      type: p2p
+      name: dut -> l1
+      ifindex: 1
+      ifname: eth1
+      neighbors:
+      - ipv4: 10.1.0.2/30
+        ifname: eth1
+        node: l1
+    - ipv4: 10.1.0.5/30
+      mtu: 1600
+      linkindex: 2
+      role: external
+      type: p2p
+      name: dut -> l2
+      ifindex: 2
+      ifname: eth2
+      neighbors:
+      - ipv4: 10.1.0.6/30
+        ifname: eth1
+        node: l2
+    - ipv4: 10.1.0.9/30
+      mtu: 1600
+      linkindex: 3
+      type: p2p
+      name: dut -> l3
+      ifindex: 3
+      ifname: eth3
+      neighbors:
+      - ipv4: 10.1.0.10/30
+        ifname: eth1
+        node: l3
+      ospf:
+        area: 0.0.0.0
+        passive: false
+        network_type: point-to-point
+    module:
+    - ospf
+    - bgp
+    - evpn
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - node_files/dut/daemons:/etc/frr/daemons
+      - node_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.5.0
+    evpn:
+      session:
+      - ibgp
+      - ebgp
+      vlans: []
+    ospf:
+      area: 0.0.0.0
+      router_id: 10.0.0.1
+      af:
+        ipv4: true
+      areas:
+      - area: 0.0.0.0
+        _area_int: 0
+        kind: regular
+    id: 1
+    role: router
+    mtu: 1500
+    provider: clab
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:01:00:00
+      ipv4: 192.168.17.101
+    hostname: clab-ml_17-dut
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.1/32
+      bgp:
+        advertise: true
+      ospf:
+        area: 0.0.0.0
+        passive: false
+    _template_cache:
+    - fname: daemons
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
+      output: node_files/dut/daemons
+      mapping: /etc/frr/daemons
+    - fname: hosts
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
+      output: node_files/-shared-hosts
+      mode: shared
+      mapping: /etc/hosts:ro
+  l1:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        - extended
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65201
+      router_id: 10.0.0.2
+      neighbors:
+      - ifindex: 1
+        name: dut
+        as: 65100
+        type: ebgp
+        ipv4: 10.1.0.1
+        activate:
+          ipv4: true
+        evpn: true
+      ipv4: true
+    name: l1
+    interfaces:
+    - ipv4: 10.1.0.2/30
+      mtu: 1600
+      linkindex: 1
+      role: external
+      type: p2p
+      name: l1 -> dut
+      ifindex: 1
+      ifname: eth1
+      neighbors:
+      - ipv4: 10.1.0.1/30
+        ifname: eth1
+        node: dut
+    - vlan:
+        access: red
+        access_id: 1000
+      linkindex: 4
+      type: lan
+      bridge: ml_17_4
+      ifindex: 2
+      ifname: eth2
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.31.1.5/24
+        ifname: eth1
+        node: h1
+      name: '[Access VLAN red] l1 -> h1'
+    - vlan:
+        mode: bridge
+        name: red
+      type: svi
+      ifindex: 40000
+      mac_address: caf4.0002.0000
+      ifname: vlan1000
+      name: VLAN red (1000) -> [h1,h2,l2]
+      virtual_interface: true
+      neighbors:
+      - ipv4: 172.31.1.5/24
+        ifname: eth1
+        node: h1
+      - ipv4: 172.31.1.6/24
+        ifname: eth1
+        node: h2
+      - ifname: vlan1000
+        node: l2
+        vlan:
+          mode: bridge
+          name: red
+      role: external
+      bridge_group: 1
+    device: frr
+    module:
+    - vlan
+    - bgp
+    - vxlan
+    - evpn
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - node_files/l1/daemons:/etc/frr/daemons
+      - node_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.5.0
+    vxlan:
+      domain: global
+      flooding: evpn
+      vlans:
+      - red
+      vtep: 10.0.0.2
+      vtep_interface: lo
+    evpn:
+      session:
+      - ibgp
+      - ebgp
+      vlans:
+      - red
+    id: 2
+    role: router
+    mtu: 1500
+    provider: clab
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:02:00:00
+      ipv4: 192.168.17.102
+    hostname: clab-ml_17-l1
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.2/32
+      bgp:
+        advertise: true
+    vlans:
+      red:
+        mode: bridge
+        vni: 1000
+        prefix:
+          ipv4: 172.31.1.0/24
+          allocation: id_based
+        id: 1000
+        evpn:
+          evi: 1000
+          import:
+          - 65000:1000
+          export:
+          - 65000:1000
+          rd: 10.0.0.2:1000
+        role: external
+        bridge_group: 1
+    vlan:
+      max_bridge_group: 1
+    _template_cache:
+    - fname: daemons
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
+      output: node_files/l1/daemons
+      mapping: /etc/frr/daemons
+    - fname: hosts
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
+      output: node_files/-shared-hosts
+      mode: shared
+      mapping: /etc/hosts:ro
+  l2:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        - extended
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65202
+      router_id: 10.0.0.3
+      neighbors:
+      - ifindex: 1
+        name: dut
+        as: 65100
+        type: ebgp
+        ipv4: 10.1.0.5
+        activate:
+          ipv4: true
+        evpn: true
+      ipv4: true
+    name: l2
+    interfaces:
+    - ipv4: 10.1.0.6/30
+      mtu: 1600
+      linkindex: 2
+      role: external
+      type: p2p
+      name: l2 -> dut
+      ifindex: 1
+      ifname: eth1
+      neighbors:
+      - ipv4: 10.1.0.5/30
+        ifname: eth2
+        node: dut
+    - vlan:
+        access: red
+        access_id: 1000
+      linkindex: 5
+      type: lan
+      bridge: ml_17_5
+      ifindex: 2
+      ifname: eth2
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.31.1.6/24
+        ifname: eth1
+        node: h2
+      name: '[Access VLAN red] l2 -> h2'
+    - vlan:
+        mode: bridge
+        name: red
+      type: svi
+      ifindex: 40000
+      mac_address: caf4.0003.0000
+      ifname: vlan1000
+      name: VLAN red (1000) -> [h1,l1,h2]
+      virtual_interface: true
+      neighbors:
+      - ipv4: 172.31.1.5/24
+        ifname: eth1
+        node: h1
+      - ifname: vlan1000
+        node: l1
+        vlan:
+          mode: bridge
+          name: red
+      - ipv4: 172.31.1.6/24
+        ifname: eth1
+        node: h2
+      role: external
+      bridge_group: 1
+    device: frr
+    module:
+    - vlan
+    - bgp
+    - vxlan
+    - evpn
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - node_files/l2/daemons:/etc/frr/daemons
+      - node_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.5.0
+    vxlan:
+      domain: global
+      flooding: evpn
+      vlans:
+      - red
+      vtep: 10.0.0.3
+      vtep_interface: lo
+    evpn:
+      session:
+      - ibgp
+      - ebgp
+      vlans:
+      - red
+    id: 3
+    role: router
+    mtu: 1500
+    provider: clab
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:03:00:00
+      ipv4: 192.168.17.103
+    hostname: clab-ml_17-l2
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.3/32
+      bgp:
+        advertise: true
+    vlans:
+      red:
+        mode: bridge
+        vni: 1000
+        prefix:
+          ipv4: 172.31.1.0/24
+          allocation: id_based
+        id: 1000
+        evpn:
+          evi: 1000
+          import:
+          - 65000:1000
+          export:
+          - 65000:1000
+          rd: 10.0.0.3:1000
+        role: external
+        bridge_group: 1
+    vlan:
+      max_bridge_group: 1
+    _template_cache:
+    - fname: daemons
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
+      output: node_files/l2/daemons
+      mapping: /etc/frr/daemons
+    - fname: hosts
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
+      output: node_files/-shared-hosts
+      mode: shared
+      mapping: /etc/hosts:ro
+  l3:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        - extended
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65100
+      router_id: 10.0.0.4
+      neighbors:
+      - rr: true
+        name: dut
+        as: 65100
+        type: ibgp
+        ipv4: 10.0.0.1
+        _source_intf:
+          type: loopback
+          neighbors: []
+          virtual_interface: true
+          ifindex: 0
+          ifname: lo
+          ipv4: 10.0.0.4/32
+        next_hop_self: ebgp
+        activate:
+          ipv4: true
+        evpn: true
+      ipv4: true
+    module:
+    - vlan
+    - ospf
+    - bgp
+    - evpn
+    name: l3
+    interfaces:
+    - ipv4: 10.1.0.10/30
+      mtu: 1600
+      linkindex: 3
+      type: p2p
+      name: l3 -> dut
+      ifindex: 1
+      ifname: eth1
+      neighbors:
+      - ipv4: 10.1.0.9/30
+        ifname: eth3
+        node: dut
+      ospf:
+        area: 0.0.0.0
+        passive: false
+        network_type: point-to-point
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - node_files/l3/daemons:/etc/frr/daemons
+      - node_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.5.0
+    ospf:
+      area: 0.0.0.0
+      router_id: 10.0.0.4
+      af:
+        ipv4: true
+      areas:
+      - area: 0.0.0.0
+        _area_int: 0
+        kind: regular
+    evpn:
+      session:
+      - ibgp
+      - ebgp
+      vlans: []
+    id: 4
+    role: router
+    mtu: 1500
+    provider: clab
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:04:00:00
+      ipv4: 192.168.17.104
+    hostname: clab-ml_17-l3
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.4/32
+      bgp:
+        advertise: true
+      ospf:
+        area: 0.0.0.0
+        passive: false
+    _template_cache:
+    - fname: daemons
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
+      output: node_files/l3/daemons
+      mapping: /etc/frr/daemons
+    - fname: hosts
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
+      output: node_files/-shared-hosts
+      mode: shared
+      mapping: /etc/hosts:ro
+  h1:
+    name: h1
+    interfaces:
+    - ipv4: 172.31.1.5/24
+      linkindex: 4
+      type: lan
+      bridge: ml_17_4
+      name: h1 -> [l1,h2,l2]
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ifname: vlan1000
+        node: l1
+        vlan:
+          mode: bridge
+          name: red
+      - ipv4: 172.31.1.6/24
+        ifname: eth1
+        node: h2
+      - ifname: vlan1000
+        node: l2
+        vlan:
+          mode: bridge
+          name: red
+    device: linux
+    clab:
+      kind: linux
+      config_templates:
+      - initial::ns
+      - routing::ns
+      - hosts:/etc/hosts:shared
+      binds:
+      - node_files/-shared-hosts:/etc/hosts:ro
+    box: python:3.13-alpine
+    id: 5
+    role: host
+    mtu: 1500
+    _node_config:
+      initial: :ns
+      routing: :ns
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:05:00:00
+      ipv4: 192.168.17.105
+    hostname: clab-ml_17-h1
+    routing:
+      static: []
+    module:
+    - routing
+    netlab_ansible_skip_module:
+    - initial
+    - routing
+    _template_cache:
+    - fname: initial
+      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
+      output: node_files/h1/initial
+      mode: ns
+    - fname: routing
+      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
+      output: node_files/h1/routing
+      mode: ns
+    - fname: hosts
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
+      output: node_files/-shared-hosts
+      mode: shared
+      mapping: /etc/hosts:ro
+  h2:
+    name: h2
+    interfaces:
+    - ipv4: 172.31.1.6/24
+      linkindex: 5
+      type: lan
+      bridge: ml_17_5
+      name: h2 -> [h1,l1,l2]
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.31.1.5/24
+        ifname: eth1
+        node: h1
+      - ifname: vlan1000
+        node: l1
+        vlan:
+          mode: bridge
+          name: red
+      - ifname: vlan1000
+        node: l2
+        vlan:
+          mode: bridge
+          name: red
+    device: linux
+    clab:
+      kind: linux
+      config_templates:
+      - initial::ns
+      - routing::ns
+      - hosts:/etc/hosts:shared
+      binds:
+      - node_files/-shared-hosts:/etc/hosts:ro
+    box: python:3.13-alpine
+    id: 6
+    role: host
+    mtu: 1500
+    _node_config:
+      initial: :ns
+      routing: :ns
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:06:00:00
+      ipv4: 192.168.17.106
+    hostname: clab-ml_17-h2
+    routing:
+      static: []
+    module:
+    - routing
+    netlab_ansible_skip_module:
+    - initial
+    - routing
+    _template_cache:
+    - fname: initial
+      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
+      output: node_files/h2/initial
+      mode: ns
+    - fname: routing
+      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
+      output: node_files/h2/routing
+      mode: ns
+    - fname: hosts
+      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
+      output: node_files/-shared-hosts
+      mode: shared
+      mapping: /etc/hosts:ro
+links:
+- mtu: 1600
+  interfaces:
+  - node: l1
+    ipv4: 10.1.0.2/30
+    ifindex: 1
+    ifname: eth1
+  - node: dut
+    ipv4: 10.1.0.1/30
+    ifindex: 1
+    ifname: eth1
+  _linkname: links[core][1]
+  linkindex: 1
+  role: external
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.0/30
+- mtu: 1600
+  interfaces:
+  - node: l2
+    ipv4: 10.1.0.6/30
+    ifindex: 1
+    ifname: eth1
+  - node: dut
+    ipv4: 10.1.0.5/30
+    ifindex: 2
+    ifname: eth2
+  _linkname: links[core][2]
+  linkindex: 2
+  role: external
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.4/30
+- mtu: 1600
+  interfaces:
+  - node: l3
+    ipv4: 10.1.0.10/30
+    ifindex: 1
+    ifname: eth1
+  - node: dut
+    ipv4: 10.1.0.9/30
+    ifindex: 3
+    ifname: eth3
+  _linkname: links[core][3]
+  linkindex: 3
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.8/30
+- interfaces:
+  - node: l1
+    vlan:
+      access: red
+    _vlan_mode: bridge
+    ifindex: 2
+    ifname: eth2
+  - node: h1
+    ipv4: 172.31.1.5/24
+    ifindex: 1
+    ifname: eth1
+  _linkname: vlans.red.links[1]
+  vlan:
+    access: red
+  linkindex: 4
+  prefix:
+    ipv4: 172.31.1.0/24
+    allocation: id_based
+  type: lan
+  node_count: 2
+  bridge: ml_17_4
+- interfaces:
+  - node: l2
+    vlan:
+      access: red
+    _vlan_mode: bridge
+    ifindex: 2
+    ifname: eth2
+  - node: h2
+    ipv4: 172.31.1.6/24
+    ifindex: 1
+    ifname: eth1
+  _linkname: vlans.red.links[2]
+  vlan:
+    access: red
+  linkindex: 5
+  prefix:
+    ipv4: 172.31.1.0/24
+    allocation: id_based
+  type: lan
+  node_count: 2
+  bridge: ml_17_5
+validate:
+- description: Check EBGP adjacencies with DUT
+  wait: 30
+  nodes:
+  - l1
+  - l2
+  wait_msg: Waiting for EGBP session
+  stop_on_error: true
+  plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  name: ebgp_adj
+- description: Check IPv4 AF on EBGP adjacencies with DUT
+  nodes:
+  - l1
+  - l2
+  stop_on_error: true
+  plugin: bgp_neighbor(node.bgp.neighbors,'dut',activate='ipv4')
+  name: ipv4_af
+- description: Check IPv4 AF on EBGP adjacencies with DUT
+  nodes:
+  - l1
+  - l2
+  stop_on_error: true
+  plugin: bgp_neighbor(node.bgp.neighbors,'dut',activate='evpn')
+  name: evpn_af
+- description: Ping-based reachability test in VLAN red
+  wait_msg: Waiting for STP to wake up
+  wait: 45
+  nodes:
+  - h1
+  plugin: ping('h2')
+  name: ping_red
+input:
+- /home/pipi/netlab_gh/tests/integration/evpn/11-vxlan-ebgp.yml
+- /home/pipi/netlab_gh/tests/integration/wait_times.yml
+- /home/pipi/netlab_gh/tests/integration/warnings.yml
+- /home/pipi/netlab_gh/tests/integration/evpn/topology-defaults.yml
+- /home/pipi/.netlab.yml
+- package:topology-defaults.yml
 plugin:
 - multilab
 name: ml_17

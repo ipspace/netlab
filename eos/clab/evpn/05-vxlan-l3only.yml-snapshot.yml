@@ -8,127 +8,6 @@ message: |
 
   Please note it might take a while for the lab to work due to STP learning
   phase.
-groups:
-  hosts:
-    members:
-    - h1
-    - h2
-    device: linux
-    node_data:
-      provider: clab
-  switches:
-    members:
-    - s1
-    - s2
-    module:
-    - vlan
-    - vxlan
-    - vrf
-    - ospf
-    - bgp
-    - evpn
-  x_switches:
-    members:
-    - s2
-    device: frr
-    node_data:
-      provider: clab
-  all:
-    vars:
-      netlab_show_config: true
-    members: []
-    _default_group: true
-  as65000:
-    members:
-    - s1
-    - s2
-bgp:
-  advertise_loopback: true
-  community:
-    ibgp:
-    - standard
-    - extended
-    ebgp:
-    - standard
-  next_hop_self: true
-  as: 65000
-vrfs:
-  customer:
-    evpn:
-      transit_vni: 5042
-      evi: 1
-    id: 1
-    rd: '65000:1'
-    import:
-    - '65000:1'
-    export:
-    - '65000:1'
-links:
-- _linkname: links[1]
-  vrf: customer
-  interfaces:
-  - node: s1
-    ipv4: 172.16.0.3/24
-    ifindex: 1
-    ifname: Ethernet1
-  - node: h1
-    ipv4: 172.16.0.1/24
-    ifindex: 1
-    ifname: eth1
-  linkindex: 1
-  node_count: 2
-  role: stub
-  type: lan
-  bridge: ml_17_1
-  prefix:
-    ipv4: 172.16.0.0/24
-- _linkname: links[2]
-  vrf: customer
-  interfaces:
-  - node: s2
-    ipv4: 172.16.1.4/24
-    ifindex: 1
-    ifname: eth1
-  - node: h2
-    ipv4: 172.16.1.2/24
-    ifindex: 1
-    ifname: eth1
-  linkindex: 2
-  node_count: 2
-  role: stub
-  type: lan
-  bridge: ml_17_2
-  prefix:
-    ipv4: 172.16.1.0/24
-- _linkname: links[3]
-  mtu: 1600
-  interfaces:
-  - node: s1
-    ipv4: 10.1.0.1/30
-    ifindex: 2
-    ifname: Ethernet2
-  - node: s2
-    ipv4: 10.1.0.2/30
-    ifindex: 2
-    ifname: eth2
-  linkindex: 3
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.0/30
-validate:
-- description: Intra-VRF ping-based reachability test
-  wait_msg: Waiting for OSFP to wake up
-  wait: 50
-  nodes:
-  - h1
-  plugin: ping('h2')
-  name: ping_vlan
-input:
-- /home/pipi/net101/tools/tests/integration/evpn/05-vxlan-l3only.yml
-- /home/pipi/net101/tools/tests/integration/evpn/topology-defaults.yml
-- /home/pipi/.netlab.yml
-- package:topology-defaults.yml
 defaults:
   provider: clab
   providers:
@@ -654,6 +533,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox: {}
@@ -948,6 +829,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox:
@@ -1454,7 +1337,6 @@ defaults:
           bundle:
           - vlan_aware
           irb: true
-          ipv6: true
         gateway:
           protocol:
           - anycast
@@ -1592,6 +1474,8 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
+      warnings:
+        ospf_stub: false
       provider: clab
     fortios:
       description: Fortinet FortiOS firewall
@@ -2062,6 +1946,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       _parents:
       - ios
@@ -2259,6 +2145,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       _parents:
       - ios
@@ -2439,6 +2327,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet0/{ifindex}
       libvirt:
         image: cisco/iosv
@@ -2639,6 +2529,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex // 4}/{ifindex % 4}
       libvirt:
         image: cisco/iosvl2
@@ -2903,7 +2795,6 @@ defaults:
           bundle:
           - vlan_aware
           multi_rt: true
-          ipv6: true
         gateway:
           protocol:
           - anycast
@@ -3555,6 +3446,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     srsim:
       description: Nokia SR-SIM (SR-OS) container
       mgmt_if: A/1
@@ -3694,6 +3587,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
       _parents:
       - sros
     unknown:
@@ -5929,6 +5824,60 @@ defaults:
       neighbors: 5
       maxlength: 255
     MAX_NODE_ID: 150
+    validate:
+      ping: 5
+      ping_vrf: 5
+      ping_long: 15
+      vxlan_ping: 20
+      ping_stp: 45
+      ping_irb: 10
+      ra_send: 30
+      ospfv2_adj_p2p: 30
+      ospfv2_adj_lan: 50
+      ospfv2_adj_stp: 120
+      ospfv2_spf: 10
+      ospfv2_spf_long: 30
+      ospfv3_adj_p2p: 30
+      ospfv3_adj_lan: 50
+      ospfv3_adj_stp: 120
+      ospfv3_spf: 10
+      ospfv3_spf_long: 30
+      ospf_import: 20
+      ebgp_session: 30
+      ibgp_session: 30
+      bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_v4_originate: 15
+      bgp_v6_originate: 15
+      bgp_v4_redist: 15
+      bgp_v6_redist: 15
+      isis_adj_p2p: 20
+      isis_adj_lan: 50
+      isis_spf: 15
+      isis_spf_long: 45
+      isis_redist: 30
+      rip_start: 60
+      rip_update: 20
+      ldp_adj: 30
+      stp_forwarding: 40
+      lacp_setup: 10
+      xr:
+        bgp_v4_originate: 80
+        bgp_v6_originate: 80
+        bgp_v4_redist: 90
+        isis_redist: 60
+        ebgp_session: 90
+        ping_vrf: 20
+        bgp_scan_long: 30
+      ios:
+        bgp_v6_redist: 60
+      cisco8000v:
+        ping_irb: 90
+        ping_long: 15
+      vjunos-switch:
+        ping_irb: 40
+      vjunos-router:
+        ping_irb: 90
   hints:
     evpn:
       irb_group: >
@@ -6048,12 +5997,12 @@ defaults:
     - /home/pipi/netlab_gh/netsim/validate
     plugin:
     - /work/netlab_cicd
-    - /home/pipi/net101/tools/tests/integration/evpn
+    - /home/pipi/netlab_gh/tests/integration/evpn
     - /home/pipi/.netlab
     - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
-      - /home/pipi/net101/tools/tests/integration/evpn
+      - /home/pipi/netlab_gh/tests/integration/evpn
       - /work/netlab_cicd
       - /home/pipi/.netlab
       - /home/pipi/netlab_gh/netsim/extra
@@ -6176,6 +6125,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -8144,11 +8095,13 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1767379781.894079
+    timestamp: 1767448083.211012
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
+    extra:
+    - ../wait_times.yml
+    - ../warnings.yml
     list: []
-    extra: []
     user: []
     system: []
   workdir: /work/netlab_cicd
@@ -8190,6 +8143,151 @@ defaults:
   - vrf
   - vxlan
   - evpn
+groups:
+  hosts:
+    members:
+    - h1
+    - h2
+    device: linux
+    node_data:
+      provider: clab
+  switches:
+    members:
+    - dut
+    - s2
+    module:
+    - vlan
+    - vxlan
+    - vrf
+    - ospf
+    - bgp
+    - evpn
+  x_switches:
+    members:
+    - s2
+    device: frr
+    node_data:
+      provider: clab
+  all:
+    vars:
+      netlab_show_config: true
+    members: []
+    _default_group: true
+  as65000:
+    members:
+    - dut
+    - s2
+bgp:
+  advertise_loopback: true
+  community:
+    ibgp:
+    - standard
+    - extended
+    ebgp:
+    - standard
+  next_hop_self: true
+  as: 65000
+vrfs:
+  customer:
+    evpn:
+      transit_vni: 5042
+      evi: 1
+    id: 1
+    rd: '65000:1'
+    import:
+    - '65000:1'
+    export:
+    - '65000:1'
+links:
+- _linkname: links[1]
+  vrf: customer
+  interfaces:
+  - node: dut
+    ipv4: 172.16.0.3/24
+    ifindex: 1
+    ifname: Ethernet1
+  - node: h1
+    ipv4: 172.16.0.1/24
+    ifindex: 1
+    ifname: eth1
+  linkindex: 1
+  node_count: 2
+  role: stub
+  type: lan
+  bridge: ml_17_1
+  prefix:
+    ipv4: 172.16.0.0/24
+- _linkname: links[2]
+  vrf: customer
+  interfaces:
+  - node: s2
+    ipv4: 172.16.1.4/24
+    ifindex: 1
+    ifname: eth1
+  - node: h2
+    ipv4: 172.16.1.2/24
+    ifindex: 1
+    ifname: eth1
+  linkindex: 2
+  node_count: 2
+  role: stub
+  type: lan
+  bridge: ml_17_2
+  prefix:
+    ipv4: 172.16.1.0/24
+- _linkname: links[3]
+  mtu: 1600
+  interfaces:
+  - node: dut
+    ipv4: 10.1.0.1/30
+    ifindex: 2
+    ifname: Ethernet2
+  - node: s2
+    ipv4: 10.1.0.2/30
+    ifindex: 2
+    ifname: eth2
+  linkindex: 3
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.0/30
+validate:
+- description: Check OSPF adjacencies with DUT
+  wait: 30
+  nodes:
+  - s2
+  wait_msg: Waiting for OSPF adjacency process to complete
+  plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  stop_on_error: true
+  name: ospf_adj
+- description: Check IBGP adjacencies with DUT
+  wait: 30
+  nodes:
+  - s2
+  wait_msg: Waiting for IGBP session
+  plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  stop_on_error: true
+  name: ibgp_adj
+- description: Pinging default gateway
+  wait_msg: Waiting for STP and IRB to wake up
+  wait: 10
+  nodes:
+  - h1
+  plugin: ping(nodes.h1.interfaces[0].gateway.ipv4)
+  name: ping_gw
+- description: End-to-end Intra-VRF ping-based reachability test
+  wait: 5
+  nodes:
+  - h1
+  plugin: ping('h2')
+  name: ping_vlan
+input:
+- /home/pipi/netlab_gh/tests/integration/evpn/05-vxlan-l3only.yml
+- /home/pipi/netlab_gh/tests/integration/wait_times.yml
+- /home/pipi/netlab_gh/tests/integration/warnings.yml
+- /home/pipi/netlab_gh/tests/integration/evpn/topology-defaults.yml
+- /home/pipi/.netlab.yml
+- package:topology-defaults.yml
 plugin:
 - multilab
 name: ml_17
@@ -8202,7 +8300,7 @@ nodes:
       role: stub
       type: lan
       bridge: ml_17_1
-      name: h1 -> s1
+      name: h1 -> dut
       ifindex: 1
       ifname: eth1
       mtu: 1500
@@ -8210,7 +8308,7 @@ nodes:
       - ipv4: 172.16.0.3/24
         vrf: customer
         ifname: Ethernet1
-        node: s1
+        node: dut
       gateway:
         ipv4: 172.16.0.3/24
     device: linux
@@ -8360,8 +8458,8 @@ nodes:
       output: node_files/-shared-hosts
       mode: shared
       mapping: /etc/hosts:ro
-  s1:
-    name: s1
+  dut:
+    name: dut
     interfaces:
     - ipv4: 172.16.0.3/24
       vrf: customer
@@ -8369,7 +8467,7 @@ nodes:
       role: stub
       type: lan
       bridge: ml_17_1
-      name: s1 -> h1
+      name: dut -> h1
       ifindex: 1
       ifname: Ethernet1
       mac_address: caf0.0003.0001
@@ -8385,7 +8483,7 @@ nodes:
       mtu: 1600
       linkindex: 3
       type: p2p
-      name: s1 -> s2
+      name: dut -> s2
       ifindex: 2
       ifname: Ethernet2
       mac_address: caf0.0003.0002
@@ -8468,7 +8566,7 @@ nodes:
         next_hop_self: ebgp
         activate:
           ipv4: true
-        evpn: ipv4
+        evpn: true
       ipv4: true
     evpn:
       session:
@@ -8485,7 +8583,7 @@ nodes:
       ifname: Management0
       mac: ca:fe:00:03:00:00
       ipv4: 192.168.17.103
-    hostname: clab-ml_17-s1
+    hostname: clab-ml_17-dut
     loopback:
       type: loopback
       neighbors: []
@@ -8541,13 +8639,13 @@ nodes:
       mtu: 1600
       linkindex: 3
       type: p2p
-      name: s2 -> s1
+      name: s2 -> dut
       ifindex: 2
       ifname: eth2
       neighbors:
       - ipv4: 10.1.0.1/30
         ifname: Ethernet2
-        node: s1
+        node: dut
       ospf:
         area: 0.0.0.0
         passive: false
@@ -8605,7 +8703,7 @@ nodes:
       as: 65000
       router_id: 10.0.0.4
       neighbors:
-      - name: s1
+      - name: dut
         as: 65000
         type: ibgp
         ipv4: 10.0.0.3
@@ -8619,7 +8717,7 @@ nodes:
         next_hop_self: ebgp
         activate:
           ipv4: true
-        evpn: ipv4
+        evpn: true
       ipv4: true
     evpn:
       session:
