@@ -8,6 +8,8 @@ message: |
   Please note it might take a while for the lab to work due to STP learning
   phase.
 
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
 module: [ vlan, vxlan, vrf, ospf, bgp, evpn ]
 
 groups:
@@ -60,30 +62,46 @@ links:
   mtu: 1600
 
 validate:
+  ospf_spine:
+    description: Check OSPF adjacencies with spine
+    wait: ospfv2_adj_p2p
+    nodes: [ l2 ]
+    wait_msg: Waiting for OSPF adjacency process to complete
+    plugin: ospf_neighbor(nodes.spine.ospf.router_id)
+    stop_on_error: True
+
+  ibgp_spine:
+    description: Check IBGP adjacencies with spine
+    wait: ibgp_session
+    nodes: [ l2 ]
+    wait_msg: Waiting for IGBP session
+    plugin: bgp_neighbor(node.bgp.neighbors,'spine')
+    stop_on_error: True
+
   ping_red:
     description: Intra-VLAN ping-based reachability test (red)
-    wait_msg: Waiting for OSFP and STP to wake up
-    wait: 50
+    wait_msg: Waiting for STP to wake up
+    wait: ping_stp
     nodes: [ h1 ]
     plugin: ping('h2')
 
   ping_blue:
     description: Intra-VLAN ping-based reachability test (blue)
-    wait_msg: Waiting for OSFP and STP to wake up
-    wait: 20
+    wait_msg: Waiting for STP to wake up
+    wait: ping_stp
     nodes: [ h3 ]
     plugin: ping('h4')
 
   ping_h3:
     description: Inter-VLAN ping-based reachability test (red-to-blue)
     wait_msg: Waiting for EVPN convergence
-    wait: 3
+    wait: ping_irb
     nodes: [ h1, h2 ]
     plugin: ping('h3')
 
   ping_h1:
     description: Inter-VLAN ping-based reachability test (blue-to-red)
     wait_msg: Waiting for EVPN convergence
-    wait: 3
+    wait: ping
     nodes: [ h3, h4 ]
     plugin: ping('h1')

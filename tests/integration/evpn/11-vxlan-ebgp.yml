@@ -10,6 +10,8 @@ message: |
   Please note it might take a while for the lab to work due to
   STP learning phase
 
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
 groups:
   _auto_create: True
   hosts:
@@ -20,7 +22,7 @@ groups:
     members: [ l1, l2, l3 ]
     module: [ vlan, vxlan, bgp, evpn ]
   core:
-    members: [ spine ]
+    members: [ dut ]
     module: [ bgp, evpn, ospf ]
     bgp.rr: True
   x_switches:
@@ -41,7 +43,7 @@ evpn.session: [ ibgp, ebgp ]
 bgp.community.ebgp: [ standard, extended ]
 
 nodes:
-  spine:
+  dut:
     bgp.as: 65100
   l1:
     bgp.as: 65201
@@ -54,29 +56,32 @@ nodes:
 links:
 - group: core
   mtu: 1600
-  members: [ l1-spine, l2-spine, l3-spine ]
+  members: [ l1-dut, l2-dut, l3-dut ]
 
 validate:
   ebgp_adj:
-    description: Check EBGP adjacencies with Spine
-    wait: 40
+    description: Check EBGP adjacencies with DUT
+    wait: ebgp_session
     nodes: [ l1, l2 ]
     wait_msg: Waiting for EGBP session
-    plugin: bgp_neighbor(node.bgp.neighbors,'spine')
+    stop_on_error: True
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
 
   ipv4_af:
-    description: Check IPv4 AF on EBGP adjacencies with Spine
+    description: Check IPv4 AF on EBGP adjacencies with DUT
     nodes: [ l1, l2 ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'spine',activate='ipv4')
+    stop_on_error: True
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',activate='ipv4')
 
   evpn_af:
-    description: Check IPv4 AF on EBGP adjacencies with Spine
+    description: Check EVPN AF on EBGP adjacencies with DUT
     nodes: [ l1, l2 ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'spine',activate='evpn')
+    stop_on_error: True
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',activate='evpn')
 
   ping_red:
     description: Ping-based reachability test in VLAN red
     wait_msg: Waiting for STP to wake up
-    wait: 30
+    wait: ping_stp
     nodes: [ h1 ]
     plugin: ping('h2')

@@ -10,6 +10,8 @@ message: |
   Please note it might take a while for the lab to work due to
   STP learning phase
 
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
 groups:
   _auto_create: True
   hosts:
@@ -58,6 +60,19 @@ links:
   prefix.ipv4: True
 
 validate:
+  ebgp_session:
+    description: Check EBGP sessions with Spine
+    wait: ebgp_session
+    wait_msg: Wait for interface EBGP session to be established
+    nodes: [ l2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'spine',intf=node.interfaces[0].ifname)
+
+  evpn_af:
+    description: Check EVPN AF on EBGP session with Spine
+    nodes: [ l2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'spine',intf=node.interfaces[0].ifname,activate='evpn')
+    stop_on_error: True
+
   ping_red:
     description: Ping-based reachability test in VLAN red
     wait_msg: Waiting for STP to wake up
