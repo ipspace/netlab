@@ -46,12 +46,8 @@ def validate_evpn_lists(toponode: Box, obj_path: str, topology: Box, create: boo
     default_filter=lambda v: False if not isinstance(v,Box) else v.get('evpn.transit_vni',False),
     module='evpn')
 
-def enable_evpn_af(node: Box, topology: Box) -> None:
-  AF_WARNING = {}
-  bgp_session = node.get('evpn.session',[])
-  bgp_community = node.get('bgp.community',{})
+def get_evpn_af(node: Box, topology: Box) -> typing.Optional[str]:
   evpn_transport = node.get('evpn.transport','vxlan')
-
   if evpn_transport == 'vxlan':                   # For VXLAN transport
     evpn_af = node.get('vxlan.transport','ipv4')  # Check the transport address family
     if evpn_af == 'ipv6':                         # ... and enable EVPN over corresponding BGP session
@@ -61,9 +57,19 @@ def enable_evpn_af(node: Box, topology: Box) -> None:
           f'node {node.name}/device {node.device} cannot use EVPN with IPv6 next hops',
           more_hints=['The node is using VXLAN-over-IPv6 transport, but does not support EVPN over IPv6'],
           category=log.IncorrectValue)
-        return
+        return None
   else:                                           # For MPLS transport
     evpn_af = 'ipv4'                              # ... assume we're using IPv4 with LDP
+
+  return evpn_af
+
+def enable_evpn_af(node: Box, topology: Box) -> None:
+  AF_WARNING = {}
+  bgp_session = node.get('evpn.session',[])
+  bgp_community = node.get('bgp.community',{})
+  evpn_af = get_evpn_af(node,topology)
+  if not evpn_af:
+    return
 
   # Enable EVPN AF on all BGP neighbors with the correct session type
   # that also use EVPN module
