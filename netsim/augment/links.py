@@ -12,7 +12,7 @@ from .. import data
 from ..data.global_vars import get_const
 from ..data.types import must_be_dict, must_be_id, must_be_list, must_be_string
 from ..data.validate import get_object_attributes, validate_attributes
-from ..modules import get_effective_module_attribute
+from ..modules import _dataplane, get_effective_module_attribute
 
 # Related modules
 from ..utils import log, strings
@@ -1235,9 +1235,9 @@ Link index utility functions:
 def get_next_linkindex(topology: Box) -> int:
   if not topology.links:
     topology.links = []
-    return topology.defaults.get('link_index',1)
+    _dataplane.set_id_counter('linkindex',start=topology.defaults.get('link_index',1),max_value=100000)
 
-  return topology.links[-1].linkindex + 1
+  return _dataplane.get_next_id('linkindex')
 
 def get_link_by_index(topology: Box, idx: int) -> typing.Optional[Box]:
   for link in topology.links:
@@ -1259,10 +1259,9 @@ def set_linknames(topology: Box) -> None:
 set_linkindex -- set link index for each link
 '''
 def set_linkindex(topology: Box) -> None:
-  linkindex = topology.defaults.get('link_index',1)
+  _dataplane.set_id_counter('linkindex',start=topology.defaults.get('link_index',1),max_value=100000)
   for link in topology.links:
-    link.linkindex = linkindex
-    linkindex = linkindex + 1
+    link.linkindex = _dataplane.get_next_id('linkindex')
 
 '''
 check_duplicate_address: Check whether any two nodes on the link got duplicate IP
