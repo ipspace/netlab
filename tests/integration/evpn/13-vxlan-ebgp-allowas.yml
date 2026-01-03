@@ -8,6 +8,8 @@ message: |
   Please note it might take a while for the lab to work due to
   STP learning phase
 
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
 groups:
   _auto_create: True
   hosts:
@@ -15,7 +17,7 @@ groups:
     device: linux
     provider: clab
   switches:
-    members: [ l1, l2 ]
+    members: [ dut, l2 ]
     module: [ vlan, vxlan, bgp, evpn ]
   core:
     members: [ spine ]
@@ -31,7 +33,7 @@ vlans:
     vni: 1000
     prefix:
       ipv4: 172.31.1.0/24
-    links: [ l1-h1, l2-h2 ]
+    links: [ dut-h1, l2-h2 ]
 
 evpn.as: 65000
 evpn.session: [ ebgp ]
@@ -42,13 +44,13 @@ plugin: [ bgp.session ]
 nodes:
   spine:
     bgp.as: 65100
-  l1:
+  dut:
     bgp.as: 65200
   l2:
     bgp.as: 65200
 
 links:
-- l1:
+- dut:
     bgp.allowas_in: True
   spine:
   mtu: 1600
@@ -58,9 +60,29 @@ links:
   mtu: 1600
 
 validate:
+  ebgp_adj:
+    description: Check EBGP adjacencies with DUT
+    wait: ebgp_session
+    nodes: [ spine ]
+    wait_msg: Waiting for EGBP session
+    stop_on_error: True
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  ipv4_af:
+    description: Check IPv4 AF on EBGP adjacencies with DUT
+    nodes: [ spine ]
+    stop_on_error: True
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',activate='ipv4')
+
+  evpn_af:
+    description: Check EVPN AF on EBGP adjacencies with DUT
+    nodes: [ spine ]
+    stop_on_error: True
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',activate='evpn')
+
   ping_red:
     description: Ping-based reachability test in VLAN red
     wait_msg: Waiting for STP to wake up
-    wait: 30
+    wait: ping_stp
     nodes: [ h1 ]
     plugin: ping('h2')

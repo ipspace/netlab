@@ -4,13 +4,15 @@ message: |
 
   External devices should be able to ping each other
 
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
 module: [ vlan, vxlan, ospf, bgp, evpn, vrf ]
 bgp.as: 65000
 
 vrfs:
   tenant:
     evpn.transit_vni: 5042
-    links: [ ce1-s1, ce2-s2 ]
+    links: [ ce1-dut, ce2-s2 ]
 
 evpn.vrfs: [ tenant ]
 
@@ -20,7 +22,7 @@ groups:
     members: [ ce1, ce2 ]
     module: [ bgp ]
   switches:
-    members: [ s1, s2 ]
+    members: [ dut, s2 ]
   x_devices:
     members: [ s2, ce1, ce2 ]
     device: frr
@@ -33,41 +35,48 @@ nodes:
     bgp.as: 65101
 
 links:
-- s1:
+- dut:
   s2:
   mtu: 1600
 
 validate:
   ebgp_s1:
-    description: Check EBGP sessions CE1-S1
-    wait: 10
+    description: Check EBGP sessions CE1-DUT
+    wait: ebgp_session
     wait_msg: Waiting for BGP sessions to start
     nodes: [ ce1 ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'s1')
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
     stop_on_error: true
   ebgp_s2:
     description: Check EBGP sessions CE2-S2
-    wait: 10
+    wait: ebgp_session
     wait_msg: Waiting for BGP sessions to start
     nodes: [ ce2 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'s2')
     stop_on_error: true
+  ospf:
+    description: Check OSPF adjacencies with DUT
+    wait: ospfv2_adj_p2p
+    nodes: [ s2 ]
+    wait_msg: Waiting for OSPF adjacency process to complete
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+    stop_on_error: true
   ibgp:
-    description: Check IBGP sessions S1-S2
-    wait: 30
+    description: Check IBGP sessions S2-DUT
+    wait: ibgp_session
     wait_msg: Waiting for IBGP sessions to start
     nodes: [ s2 ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'s1')
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
     stop_on_error: true
   pfx_ce2:
     description: Check CE2 loopback on CE1
-    wait: 15
+    wait: bgp_scan_long
     wait_msg: Waiting for BGP convergence
     nodes: [ ce1 ]
     plugin: bgp_prefix(nodes.ce2.loopback.ipv4)
   pfx_ce1:
     description: Check CE1 loopback on CE2
-    wait: 15
+    wait: bgp_scan_long
     wait_msg: Waiting for BGP convergence
     nodes: [ ce2 ]
     plugin: bgp_prefix(nodes.ce1.loopback.ipv4)

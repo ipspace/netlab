@@ -9,6 +9,8 @@ message: |
   Please note it might take a while for the lab to work due to STP learning
   phase.
 
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
 plugin: [ anycast-check ]
 
 groups:
@@ -18,7 +20,7 @@ groups:
     device: linux
     provider: clab
   switches:
-    members: [ s1, s2 ]
+    members: [ dut, s2 ]
     module: [ vlan, vxlan, ospf, bgp, evpn, gateway ]
   x_switches:
     members: [ s2 ]
@@ -31,17 +33,17 @@ gateway.protocol: anycast
 vlans:
   red:
     role: external
-    links: [ s1-h1, s2-h2 ]
+    links: [ dut-h1, s2-h2 ]
     vni: 1000
     gateway: True
   blue:
     role: external
-    links: [ s1-h3, s2-h4 ]
+    links: [ dut-h3, s2-h4 ]
     vni: 1001
     gateway: True
 
 links:
-- s1:
+- dut:
   s2:
   mtu: 1600
 
@@ -52,53 +54,53 @@ validate:
 
   ospf_adj_s1:
     description: Check OSPF adjacencies with S1
-    wait: 40
+    wait: ospfv2_adj_p2p
     nodes: [ s2 ]
     wait_msg: Waiting for OSPF adjacency process to complete
-    plugin: ospf_neighbor(nodes.s1.ospf.router_id)
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
 
   ibgp_adj_s1:
     description: Check IBGP adjacencies with S1
-    wait: 40
+    wait: ibgp_session
     nodes: [ s2 ]
     wait_msg: Waiting for IGBP session
-    plugin: bgp_neighbor(node.bgp.neighbors,'s1')
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
 
   ipv4_adj_s1:
     description: Check IPv4 AF on IBGP adjacencies with S1
     nodes: [ s2 ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'s1',activate='ipv4')
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',activate='ipv4')
 
   evpn_adj_s1:
     description: Check EVPN AF on IBGP adjacencies with S1
     nodes: [ s2 ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'s1',activate='evpn')
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',activate='evpn')
     stop_on_error: True
 
   ping_gw_red:
     description: Pinging default gateway in red VLAN
     nodes: [ h1, h2 ]
-    wait: 40
+    wait: ping_irb
     wait_msg: Waiting for STP and IRB interfaces to wake up
     plugin: ping(nodes.h1.interfaces[0].gateway.ipv4)
 
   ping_gw_blue:
     description: Pinging default gateway in blue VLAN
     nodes: [ h3, h4 ]
-    wait: 20
+    wait: ping_irb
     wait_msg: Waiting for STP and IRB interfaces to wake up
     plugin: ping(nodes.h3.interfaces[0].gateway.ipv4)
 
   ping_h3:
     description: Host-to-host ping-based reachability test
     wait_msg: We might have to wait a bit longer
-    wait: 10
+    wait: ping_long
     nodes: [ h1, h2 ]
     plugin: ping('h3')
 
   ping_sw:
     description: Host-to-switch ping-based reachability test
     wait_msg: We might have to wait a bit longer
-    wait: 10
+    wait: ping_long
     nodes: [ h1, h2, h3, h4 ]
-    plugin: ping('s1')
+    plugin: ping('dut')
