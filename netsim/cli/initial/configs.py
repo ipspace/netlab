@@ -91,7 +91,7 @@ def create_config_file(
   return OK
 
 """
-Create all node configuration files, either those specified in the _template_cache
+Create all node configuration files, either those specified in the config_templates
 or in the node 'module' or 'config' lists
 """
 def create_node_configs(
@@ -169,12 +169,13 @@ Do not generate configuration files that are not module- or custom configs
 def remove_extra_templates(topology: Box, nodeset: list) -> None:
   for n_name in nodeset:
     n_data = topology.nodes[n_name]
-    t_cache_key = f'_template_cache'
+    provider = devices.get_provider(n_data,topology.defaults)
+    t_cache_key = f'{provider}.config_templates'
     if t_cache_key not in n_data:
       continue
 
     n_modules = n_data.get('module',[]) + n_data.get('config',[]) + ['initial']
-    n_data[t_cache_key] = [ item for item in n_data[t_cache_key] if item.fname in n_modules ]
+    n_data[t_cache_key] = [ item for item in n_data[t_cache_key] if item.source in n_modules ]
 
 """
 Create node configurations. The CLI arguments are in 'args' argument, the original

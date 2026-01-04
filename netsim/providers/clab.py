@@ -247,7 +247,6 @@ class Containerlab(_Provider):
       return
 
     for n in topology.nodes.values():
-      self.create_node_files(n,topology)
       check_node_binds(n)
 
   def pre_start_lab(self, topology: Box) -> None:
