@@ -21,6 +21,28 @@ You could also use Linux scripts for some configuration modules, Daemon configur
    :backlinks: none
 ```
 
+(dev-config-create)=
+## Creating Configuration Files and Scripts
+
+**netlab create** (the *configs* output module) and **netlab initial** create device configuration files in the **node_files** directory. That directory contains a separate per-node subdirectory with node-specific configuration files.
+
+The files in the per-node subdirectory are created from:
+
+* [Daemon configuration files](dev-config-daemon)
+* **normalize**[^WN] and **initial** configuration templates
+* Module configuration templates for modules specified in the **module** node attribute
+* Custom configuration templates for templates specified in the **config** node attribute.
+
+```{tip}
+The [](dev-config-deploy-paths) and [](dev-find-custom) sections describe how _netlab_ finds configuration templates
+```
+
+The node-specific configuration files (apart from daemon configuration files) are not created for nodes in the **unprovisioned** group. Daemon configuration files are always created.
+
+The [*clab* provider](lab-clab) maps some files in the **node_files/_nodename_** directory to container files. The mappings are specified in the [**clab.binds** node attribute](lab-clab-binds) which is derived from [daemon configuration files](dev-config-daemon), [Linux configuration scripts](dev-config-script) and user-specified binds.
+
+[^WN]: When the **features.initial.normalize** flag is set
+
 (dev-config-deploy-paths)=
 ## Configuration Deployment Search Paths
 
