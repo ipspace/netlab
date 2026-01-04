@@ -31,7 +31,7 @@ def parser_add_debug(parser: argparse.ArgumentParser, add_test: bool = True) -> 
                   choices=sorted([
                     'all','addr','cli','links','libvirt','clab','modules','plugin','template',
                     'vlan','vrf','quirks','validate','addressing','groups','status','paths',
-                    'external','defaults','lag']),
+                    'external','defaults','loadable','lag']),
                   help=argparse.SUPPRESS)
   if add_test:
     parser.add_argument('--test', dest='test', action='store',nargs='*',

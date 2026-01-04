@@ -231,17 +231,14 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
   else:
     if not os.path.isfile(filename):
       if log.LOGGING or log.VERBOSE:
-        print("YAML file %s does not exist" % filename) # pragma: no cover -- too hard to test to bother
+        print(f"YAML file {filename} does not exist") # pragma: no cover -- too hard to test to bother
       return None
     try:
       yaml_data = Box().from_yaml(filename=filename,default_box=True,box_dots=True,default_box_none_transform=False,Loader=UniqueKeyLoader)
       include_yaml(yaml_data,filename)
       read_cache[filename] = Box(yaml_data)
-    except:
-      log.fatal("Cannot read YAML from %s: %s " % (filename,str(sys.exc_info()[1])))
-
-  if log.LOGGING or log.VERBOSE:
-    print("Read YAML data from %s" % (filename or "string"))
+    except Exception as ex:
+      log.fatal(f"Cannot read YAML from {filename}: {str(ex)}")
 
   return yaml_data
 

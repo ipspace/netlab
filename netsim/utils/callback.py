@@ -9,7 +9,6 @@ The Callback class defines two methods:
 
 import importlib
 import inspect
-import sys
 import typing
 
 from . import log
@@ -19,22 +18,22 @@ class Callback():
 
   @classmethod
   def find_class(self, module_name: str, abort: bool = False) -> typing.Optional[typing.Any]:
-    if log.VERBOSE:
+    if log.debug_active('loadable'):
       print("loading %s..." % module_name)
     try:
       module = importlib.import_module(module_name)
       for name,obj in inspect.getmembers(module):
         if inspect.isclass(obj) and issubclass(obj,Callback):
-          if log.VERBOSE:
+          if log.debug_active('loadable'):
             print("... found %s " % obj)
           return obj
       return None
 
-    except (ImportError, AttributeError):
+    except (ImportError, AttributeError) as ex:
       if abort:
-        log.fatal(f"Failed to load specific module: {sys.exc_info()[1]}")
+        log.fatal(f"Failed to load specific module: {str(ex)}")
       else:
-        print(f"Failed to load specific module: {sys.exc_info()[1]}")
+        print(f"Failed to load specific module: {str(ex)}")
       return None
 
   def call(self, name: str, *args: typing.Any, **kwargs: typing.Any) -> typing.Any:

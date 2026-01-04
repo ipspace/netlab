@@ -18,6 +18,7 @@ LOGGING : bool = False
 VERBOSE : int = 0
 DEBUG : typing.Optional[typing.List[str]] = None
 QUIET : bool = False
+NO_WARNING: bool = False                # Do not display warnings (used in CI tests)
 
 RAISE_ON_ERROR : bool = False
 WARNING : bool = False
@@ -211,7 +212,8 @@ def error(
       skip_header: typing.Optional[bool] = None,
       exit_on_error: bool = False) -> None:
 
-  global _ERROR_LOG,err_class_map,_WARNING_LOG,_HINTS_CACHE,QUIET,err_color_map,_error_header_printed
+  global _ERROR_LOG,_WARNING_LOG,_HINTS_CACHE,QUIET,NO_WARNING
+  global err_class_map,err_color_map,_error_header_printed
 
   module = '' if module == '-' else get_calling_module(module)
   err_name = category.__name__
@@ -221,7 +223,7 @@ def error(
     _error_header_printed = skip_header
 
   if category is Warning:
-    if QUIET:
+    if QUIET or NO_WARNING:
       return
     _WARNING_LOG.extend(f'{module}: {text}'.split("\n"))            # Warnings are collected in a separate list
   else:
@@ -463,7 +465,7 @@ def print_verbose(t: typing.Any) -> None:
 # Internal debugging flags (RAISE_ON_ERROR, WARNING) cannot be set with this function
 #
 def set_logging_flags(args: typing.Union[argparse.Namespace,Box]) -> None:
-  global VERBOSE, LOGGING, DEBUG, QUIET, WARNING, RAISE_ON_ERROR
+  global VERBOSE, LOGGING, DEBUG, QUIET, WARNING, RAISE_ON_ERROR, NO_WARNING
   global _error_header_printed
   
   if 'verbose' in args and args.verbose:
@@ -471,9 +473,6 @@ def set_logging_flags(args: typing.Union[argparse.Namespace,Box]) -> None:
 
   if 'logging' in args and args.logging:
     LOGGING = True
-
-  if 'test' in args and args.test and 'errors' in args.test:
-    QUIET = True
 
   if 'debug' in args:
     if args.debug is None:
@@ -484,6 +483,7 @@ def set_logging_flags(args: typing.Union[argparse.Namespace,Box]) -> None:
 
   if 'test' in args and args.test and 'errors' in args.test:
     _error_header_printed = True
+    NO_WARNING = True
 
   if 'quiet' in args and args.quiet:
     QUIET = True
