@@ -247,7 +247,8 @@ class Containerlab(_Provider):
       return
 
     for n in topology.nodes.values():
-      check_node_binds(n)
+      if devices.get_provider(n,topology.defaults) == 'clab':
+        check_node_binds(n)
 
   def pre_start_lab(self, topology: Box) -> None:
     log.print_verbose('pre-start hook for Containerlab - create any bridges and load kernel modules')

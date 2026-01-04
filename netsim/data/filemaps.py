@@ -68,11 +68,11 @@ def normalize_item(
 
   k = k.replace('@','.')
   item = { 'source': k }
-  if value and ':' in value:
+  if ':' in v:
     item['target'],item['mode'] = v.split(':',maxsplit=1)
   else:
-    item['target'] = value or ''
-  
+    item['target'] = v
+
   return item
 
 """
