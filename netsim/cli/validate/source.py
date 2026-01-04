@@ -8,8 +8,9 @@ import os
 from box import Box
 
 from ...augment import validate as _validate
+from ...data import global_vars
 from ...data.types import must_be_id
-from ...data.validate import validate_attributes
+from ...data.validate import init_validation, validate_attributes
 from ...utils import log, read
 from .. import error_and_exit
 
@@ -54,6 +55,8 @@ def update_validation_tests(topology: Box, src: str) -> None:
       more_hints="It looks like your topology file has no validation tests")
 
   topology.validate = v_tests                     # Hope we got it right; replace validation tests
+  global_vars.init(topology)
+  init_validation(topology)
   validate_test_attributes(topology)
   _validate.process_validation(topology)          # Do checks and data transformation on validation tests
 
