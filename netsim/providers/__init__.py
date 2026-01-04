@@ -21,6 +21,13 @@ from ..utils import files as _files
 from ..utils import log, strings, templates
 from ..utils.callback import Callback
 
+"""
+Constants shared across all providers. They were in the _Provider class, but were moved
+here because we need to refer to them from functions that are not class methods.
+"""
+SHARED_PREFIX = '-shared-'
+SHARED_SUFFIX = 'shared'
+READ_ONLY_SUFFIX = 'ro'
 
 def get_cpu_model() -> str:
   processor_name = ""
@@ -40,9 +47,6 @@ def get_cpu_model() -> str:
 The generic provider class. Used as a super class of all other providers
 """
 class _Provider(Callback):
-  SHARED_PREFIX = '-shared-'
-  SHARED_SUFFIX = 'shared'
-  READ_ONLY_SUFFIX = 'ro'
 
   def __init__(self, provider: str, data: Box) -> None:
     self.provider = provider
@@ -100,51 +104,6 @@ class _Provider(Callback):
     else:
       topology.defaults.processor = get_cpu_model()
 
-  def find_node_file_templates(
-      self,
-      node: Box,
-      topology: Box,
-      inkey: str = 'config_templates') -> None:
-
-    mappings = node.get(f'{self.provider}.{inkey}',None)
-    if not mappings:
-      return
-    
-    map_dict = filemaps.mapping_to_dict(mappings)
-    base_path = pathlib.Path(f"node_files")
-    for file,mapping in map_dict.items():
-      file = file.replace('@','.')
-      out_path = base_path / node.name / file
-      f_mode = None
-      map_file = mapping
-      if ':' in mapping:
-        map_file,f_mode,*_ = mapping.split(':')
-        if f_mode == self.SHARED_SUFFIX:
-          map_file = map_file + ':' + self.READ_ONLY_SUFFIX
-          out_path = base_path / f"{self.SHARED_PREFIX}{file}" 
-        elif f_mode == self.READ_ONLY_SUFFIX:
-          map_file = mapping
-
-      template_path = templates.find_provider_template(node,file,topology,self.get_full_template_path())
-      if not template_path:
-        log.error(
-          f"Cannot find template {file}.j2 for extra file {self.provider}.{inkey}.{file} on node {node.name}",
-          category=log.IncorrectValue,
-          module=self.provider)
-        continue
-
-      template_entry = { 'fname': file, 'fpath': template_path, 'output': str(out_path) }
-      if f_mode:
-        template_entry['mode'] = f_mode
-      if map_file:
-        template_entry['mapping'] = map_file
-
-      append_to_list(node,'_template_cache',template_entry)
-
-    # Finally, remove the cached data we used to generate template file names. We won't need it any longer
-    #
-    node.pop('_template_vars',None)
-
   def create_node_files(
       self,
       node: Box,
@@ -188,8 +147,7 @@ class _Provider(Callback):
                 template_path=t_item.fpath,
                 output_file=str(full_out_path),
                 provider_path=self.get_full_template_path(),
-                topology=topology,
-                module=self.provider):
+                topology=topology):
         continue
 
       if log.VERBOSE:

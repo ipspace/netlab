@@ -14,7 +14,16 @@ from ..cli import external_commands, is_dry_run
 from ..data import append_to_list, filemaps, get_empty_box
 from ..data.types import must_be_dict
 from ..utils import linuxbridge, log, strings
-from . import _Provider, get_provider_forwarded_ports, node_add_forwarded_ports, tc_netem_set, validate_mgmt_ip
+from . import (
+  READ_ONLY_SUFFIX,
+  SHARED_PREFIX,
+  SHARED_SUFFIX,
+  _Provider,
+  get_provider_forwarded_ports,
+  node_add_forwarded_ports,
+  tc_netem_set,
+  validate_mgmt_ip,
+)
 
 
 def list_bridges( topology: Box ) -> typing.Set[str]:
@@ -171,24 +180,33 @@ def load_kmods(topology: Box) -> None:
 Add node files mapped through 'config_templates' to clab.binds
 '''
 def add_templates_to_binds(node: Box) -> None:
-  if '_template_cache' not in node:
+  if 'clab.config_templates' not in node:
     return
   
-  bind_dict = filemaps.mapping_to_dict(node.get('clab.binds',[]))
-  bind_rev  = { v.split(':')[0]:k for k,v in bind_dict.items() }
-  for t_item in node._template_cache:
-    if 'mapping' not in t_item:
+  bind_rev  = { item.target:item.source for item in node.get('clab.binds',[]) }
+  for t_item in node.clab.config_templates:
+    if not t_item.target:
       continue
-    map_fname = t_item.mapping.split(':')[0]
-    if map_fname in bind_rev:
+
+    if t_item.target in bind_rev:
       log.error(
-        f'Cannot map {t_item.output} into {map_fname} on node {node.name}',
-        more_data = [f'The output path is already mapped to {bind_rev[map_fname]}'],
+        f'Cannot map {t_item.source} into {t_item.target} on node {node.name}',
+        more_data = [f'The output path is already mapped to {bind_rev[t_item.target]}'],
         category=log.IncorrectValue,
         module='clab')
       continue
 
-    append_to_list(node.clab,'binds',f'{t_item.output}:{t_item.mapping}')
+    b_item = {'target': t_item.target}
+    b_mode = t_item.get('mode','')
+    if b_mode == SHARED_SUFFIX:
+      b_item['source'] = f'node_files/{SHARED_PREFIX}{t_item.source}'
+      b_item['mode'] = READ_ONLY_SUFFIX
+    else:
+      b_item['source'] = f'node_files/{node.name}/{t_item.source}'
+      if b_mode == READ_ONLY_SUFFIX:
+        b_item['mode'] = READ_ONLY_SUFFIX
+
+    append_to_list(node.clab,'binds',b_item)
 
 '''
 check_node_binds: ensure all files mapped into a container exist
@@ -198,12 +216,11 @@ def check_node_binds(node: Box) -> None:
   if not binds:
     return
 
-  bind_dict = filemaps.mapping_to_dict(binds)
-  for local_file,mapped_file in bind_dict.items():
-    if os.path.exists(local_file):
+  for bind_item in binds:
+    if os.path.exists(bind_item.source):
       continue
     log.error(
-      f'File {local_file} mapped to {mapped_file} on node {node.name} does not exist',
+      f'File {bind_item.source} mapped to {bind_item.target} on node {node.name} does not exist',
       category=log.IncorrectValue,
       module='clab')
 
@@ -219,8 +236,6 @@ class Containerlab(_Provider):
     add_config_filemaps(node,topology)
     normalize_clab_filemaps(node)
     validate_mgmt_ip(node,required=True,provider='clab',mgmt=topology.addressing.mgmt)
-
-    self.find_node_file_templates(node,topology)
     add_templates_to_binds(node)
 
   def post_configuration_create(self, topology: Box) -> None:
