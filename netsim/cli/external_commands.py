@@ -187,7 +187,7 @@ def start_lab(settings: Box, provider: str, step: int = 2, cli_command: str = "t
     log.fatal(f"{exec_command} failed, aborting...",cli_command)
 
 def deploy_configs(command: str = "test", fast: typing.Optional[bool] = False) -> None:
-  cmd = ["netlab","initial","--no-message","--no-refresh"]
+  cmd = ["netlab","initial","--no-message","--deploy"]
   if log.VERBOSE:
     cmd.append("-" + "v" * log.VERBOSE)
 

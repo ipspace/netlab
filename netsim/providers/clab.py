@@ -338,28 +338,28 @@ class Containerlab(_Provider):
         dp_data.build ])
 
   def deploy_node_config(self, node: Box, topology: Box, deploy_list: list) -> None:
-    node_files = node.get('_template_cache',{})
-    if not node_files:                                          # No node files => no config to deploy here
+    cfg_files = node.get('clab.config_templates',[])
+    if not cfg_files:                                          # No node files => no config to deploy here
       return
     node_name = self.get_node_name(node.name,topology)          # ... get container/namespace name
-    for n_file in node_files:                                   # Go through node files
-      mod_name = n_file.fname                                   # Get module name
-      f_type = n_file.get('mode',None)
+    for cfg_item in cfg_files:                                  # Go through configuration files
+      mod_name = cfg_item.source                                # Get module name
+      f_type = cfg_item.get('mode',None)
       if mod_name not in deploy_list:                           # ... and skip it if we're not deploying it
         continue
       config_cmd = None                                         # Command to execute
       if f_type == 'ns':                                        # Is this a host-side script?
-        config_cmd = f'sudo ip netns exec {node_name} sh {n_file.output}' 
+        config_cmd = f'sudo ip netns exec {node_name} sh node_files/{node.name}/{mod_name}' 
         log.info(f'Executing {mod_name} configuration for node {node.name} (namespace {node_name})')
       elif f_type == 'sh':
-        if not n_file.mapping:
+        if not cfg_item.target:
           log.error(
             f'Internal error: bash script for module {mod_name} is not mapped into a container file',
             more_data = [f'node: {node.name} / device: {node.device}'],
             category=log.FatalError,
             module='clab')
           break
-        config_cmd = f'docker exec {node_name} sh {n_file.mapping}' # Container-side script
+        config_cmd = f'docker exec {node_name} sh {cfg_item.target}' # Container-side script
         log.info(f'Executing {mod_name} configuration for node {node.name}')
       if not config_cmd:                                        # Not an executable file?
         continue

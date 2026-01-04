@@ -99,7 +99,6 @@ def create_node_configs(
       nodeset: list,
       abs_path: Path,
       args: argparse.Namespace,
-      no_refresh: bool = False,
       skip_extra_config: bool = False,
       node_directory: bool = False,
       default_suffix: typing.Optional[str] = None,
@@ -120,23 +119,17 @@ def create_node_configs(
     node_deploy = utils.node_deploy_list(n_data,args)                 # Subset of modules to deploy
     node_module = ['initial'] + n_data.get('module',[])               # All modules used on the node
     node_config = n_data.get('config',[])                             # ...plus the extra configs
-    template_cache = n_data.get('_template_cache',[])                 # Template cache
 
-    if no_refresh:                                                    # Skip existing files that are not outdated
-      skip_items = [ item.fname for item in template_cache if not item.get('modified',False) ]
-    else:
-      skip_items = []
-
-    template_mode: dict = {}
-    if args.generate != 'compare':                                    # Collect config modes for template items
-      template_mode = { t_item.fname: t_item.mode for t_item in template_cache if 'mode' in t_item }
-    created_list = []
+    skip_items :typing.List[str] = []
+    config_templates = n_data.get(f'{n_provider}.config_templates',[])
+    template_mode = { cfg_item.source:cfg_item.mode for cfg_item in config_templates if 'mode' in cfg_item }
+    created_list :typing.List[str] = []
 
     # Now build the list of items to create
+    item_list :typing.List[str] = []
     if not skip_extra_config and args.generate != 'compare':          # Create all files?
-      item_list = [ t_item.fname for t_item in template_cache ]       # Start with template cache
-    else:
-      item_list = []
+      item_list = [ cfg_item.source 
+                      for cfg_item in config_templates ]              # Start with template cache
 
     item_list += [ item for item in node_module + node_config         # Next, add other modules
                           if item not in item_list ]                  # and custom config items
