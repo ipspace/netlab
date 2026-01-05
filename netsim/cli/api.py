@@ -171,21 +171,21 @@ def add_opt(args: List[str], payload: Dict[str, Any], key: str, opt: str) -> Non
   args += [opt, str(value)]
 
 
-def action_runner(payload: Dict[str, Any], workdir: Path) -> Tuple[Callable[[List[str]], None], List[str]]:
+def action_runner(payload: Dict[str, Any], workdir: Path) -> Tuple[Callable[..., Any], List[str]]:
   action = (payload.get("action") or "up").strip().lower()
 
-  def run_up() -> Tuple[Callable[[List[str]], None], List[str]]:
+  def run_up() -> Tuple[Callable[..., Any], List[str]]:
     return netlab_up.run, [resolve_topology(payload, workdir)]
 
-  def run_create() -> Tuple[Callable[[List[str]], None], List[str]]:
+  def run_create() -> Tuple[Callable[..., Any], List[str]]:
     return netlab_create.run, [resolve_topology(payload, workdir)]
 
-  def run_down() -> Tuple[Callable[[List[str]], None], List[str]]:
+  def run_down() -> Tuple[Callable[..., Any], List[str]]:
     args: List[str] = []
     add_flag(args, payload, "cleanup", "--cleanup")
     return netlab_down.run, args
 
-  def run_collect() -> Tuple[Callable[[List[str]], None], List[str]]:
+  def run_collect() -> Tuple[Callable[..., Any], List[str]]:
     args: List[str] = []
     add_opt(args, payload, "instance", "--instance")
     add_opt(args, payload, "collectOutput", "--output")
@@ -193,13 +193,13 @@ def action_runner(payload: Dict[str, Any], workdir: Path) -> Tuple[Callable[[Lis
     add_flag(args, payload, "collectCleanup", "--cleanup")
     return netlab_collect.run, args
 
-  def run_status() -> Tuple[Callable[[List[str]], None], List[str]]:
+  def run_status() -> Tuple[Callable[..., Any], List[str]]:
     args: List[str] = ["--all"]
     if payload.get("instance"):
       args = ["--instance", str(payload.get("instance"))]
     return netlab_status.run, args
 
-  handlers: Dict[str, Callable[[], Tuple[Callable[[List[str]], None], List[str]]]] = {
+  handlers: Dict[str, Callable[[], Tuple[Callable[..., Any], List[str]]]] = {
     "up": run_up,
     "create": run_create,
     "down": run_down,
@@ -216,7 +216,7 @@ def action_runner(payload: Dict[str, Any], workdir: Path) -> Tuple[Callable[[Lis
 def run_netlab_action(payload: Dict[str, Any], log_fp: io.TextIOBase) -> None:
   workdir = workspace_dir(payload)
 
-  def _run_with_output(fn: Callable[[List[str]], None], args: List[str]) -> None:
+  def _run_with_output(fn: Callable[..., Any], args: List[str]) -> None:
     out = io.StringIO()
     with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
       fn(args)
@@ -351,7 +351,7 @@ class NetlabHandler(BaseHTTPRequestHandler):
     if parts[0] == "jobs" and len(parts) >= 2:
       job_id = parts[1]
       with JOB_LOCK:
-        job = JOBS.get(job_id)
+        job: Optional[Dict[str, Any]] = JOBS.get(job_id)
       if job is None:
         return self._not_found()
       if len(parts) == 2:
@@ -386,15 +386,15 @@ class NetlabHandler(BaseHTTPRequestHandler):
     if len(parts) == 3 and parts[0] == "jobs" and parts[2] == "cancel":
       job_id = parts[1]
       with JOB_LOCK:
-        job = JOBS.get(job_id)
-        if job is None:
+        job_entry: Optional[Dict[str, Any]] = JOBS.get(job_id)
+        if job_entry is None:
           return self._not_found()
-        if job["state"] != "queued":
+        if job_entry["state"] != "queued":
           send_json(self, HTTPStatus.CONFLICT, {"error": "cannot cancel running or finished job"})
           return
-        job["state"] = "canceled"
-        job["finishedAt"] = now_iso()
-      send_json(self, HTTPStatus.OK, job_public(job))
+        job_entry["state"] = "canceled"
+        job_entry["finishedAt"] = now_iso()
+      send_json(self, HTTPStatus.OK, job_public(job_entry))
       return
 
     self._not_found()
