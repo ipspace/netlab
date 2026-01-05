@@ -55,9 +55,9 @@ class ConfigurationFiles(_TopologyOutput):
             create_list.append(f'{cfg_source} (shared)')
             continue
 
-          do_config(cfg_source,SHARED_PREFIX+cfg_source)
           shared_list.append(cfg_source)
-          create_list.append(cfg_source)
+          if do_config(cfg_source,SHARED_PREFIX+cfg_source):
+            create_list.append(cfg_source)
         else:
           if do_config(cfg_source,f'{n_name}/{cfg_source}'):
             create_list.append(cfg_source)
