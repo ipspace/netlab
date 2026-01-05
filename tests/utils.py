@@ -13,12 +13,6 @@ Return the results of topology transformation YAML format
 * Create YAML text out of the remaining dictionary
 """
 def transformation_results_yaml(topology: Box) -> str:
-  # Remove template caches, which are specific to the directory in which the
-  # tests were executed, from the test results
-  #
-  for n_data in topology.nodes.values():
-    n_data.pop('_template_cache',None)
-
   ignore:list = topology.defaults.tests.ignore or ['addressing','defaults','nodes_map','includes']
   for k in ignore:
     topology.pop(k,None)

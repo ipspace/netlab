@@ -248,7 +248,7 @@ def deploy_initial_config(args: argparse.Namespace, topology: Box) -> None:
 
   lab_status_change(topology,f'deploying initial configuration')
   log.section_header('Deploying','initial device configurations')
-  external_commands.deploy_configs("netlab up",args.fast_config)
+  external_commands.deploy_configs("netlab up",args.fast_config,deploy_only=not args.snapshot)
   lab_status_change(topology,f'initial configuration complete')
 
   message = get_message(topology,'initial',True)

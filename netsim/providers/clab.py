@@ -14,7 +14,16 @@ from ..cli import external_commands, is_dry_run
 from ..data import append_to_list, filemaps, get_empty_box
 from ..data.types import must_be_dict
 from ..utils import linuxbridge, log, strings
-from . import _Provider, get_provider_forwarded_ports, node_add_forwarded_ports, tc_netem_set, validate_mgmt_ip
+from . import (
+  READ_ONLY_SUFFIX,
+  SHARED_PREFIX,
+  SHARED_SUFFIX,
+  _Provider,
+  get_provider_forwarded_ports,
+  node_add_forwarded_ports,
+  tc_netem_set,
+  validate_mgmt_ip,
+)
 
 
 def list_bridges( topology: Box ) -> typing.Set[str]:
@@ -171,24 +180,33 @@ def load_kmods(topology: Box) -> None:
 Add node files mapped through 'config_templates' to clab.binds
 '''
 def add_templates_to_binds(node: Box) -> None:
-  if '_template_cache' not in node:
+  if 'clab.config_templates' not in node:
     return
   
-  bind_dict = filemaps.mapping_to_dict(node.get('clab.binds',[]))
-  bind_rev  = { v.split(':')[0]:k for k,v in bind_dict.items() }
-  for t_item in node._template_cache:
-    if 'mapping' not in t_item:
+  bind_rev  = { item.target:item.source for item in node.get('clab.binds',[]) }
+  for t_item in node.clab.config_templates:
+    if not t_item.target:
       continue
-    map_fname = t_item.mapping.split(':')[0]
-    if map_fname in bind_rev:
+
+    if t_item.target in bind_rev:
       log.error(
-        f'Cannot map {t_item.output} into {map_fname} on node {node.name}',
-        more_data = [f'The output path is already mapped to {bind_rev[map_fname]}'],
+        f'Cannot map {t_item.source} into {t_item.target} on node {node.name}',
+        more_data = [f'The output path is already mapped to {bind_rev[t_item.target]}'],
         category=log.IncorrectValue,
         module='clab')
       continue
 
-    append_to_list(node.clab,'binds',f'{t_item.output}:{t_item.mapping}')
+    b_item = {'target': t_item.target}
+    b_mode = t_item.get('mode','')
+    if b_mode == SHARED_SUFFIX:
+      b_item['source'] = f'node_files/{SHARED_PREFIX}{t_item.source}'
+      b_item['mode'] = READ_ONLY_SUFFIX
+    else:
+      b_item['source'] = f'node_files/{node.name}/{t_item.source}'
+      if b_mode == READ_ONLY_SUFFIX:
+        b_item['mode'] = READ_ONLY_SUFFIX
+
+    append_to_list(node.clab,'binds',b_item)
 
 '''
 check_node_binds: ensure all files mapped into a container exist
@@ -198,12 +216,11 @@ def check_node_binds(node: Box) -> None:
   if not binds:
     return
 
-  bind_dict = filemaps.mapping_to_dict(binds)
-  for local_file,mapped_file in bind_dict.items():
-    if os.path.exists(local_file):
+  for bind_item in binds:
+    if os.path.exists(bind_item.source):
       continue
     log.error(
-      f'File {local_file} mapped to {mapped_file} on node {node.name} does not exist',
+      f'File {bind_item.source} mapped to {bind_item.target} on node {node.name} does not exist',
       category=log.IncorrectValue,
       module='clab')
 
@@ -219,8 +236,6 @@ class Containerlab(_Provider):
     add_config_filemaps(node,topology)
     normalize_clab_filemaps(node)
     validate_mgmt_ip(node,required=True,provider='clab',mgmt=topology.addressing.mgmt)
-
-    self.find_node_file_templates(node,topology)
     add_templates_to_binds(node)
 
   def post_configuration_create(self, topology: Box) -> None:
@@ -232,8 +247,8 @@ class Containerlab(_Provider):
       return
 
     for n in topology.nodes.values():
-      self.create_node_files(n,topology)
-      check_node_binds(n)
+      if devices.get_provider(n,topology.defaults) == 'clab':
+        check_node_binds(n)
 
   def pre_start_lab(self, topology: Box) -> None:
     log.print_verbose('pre-start hook for Containerlab - create any bridges and load kernel modules')
@@ -323,28 +338,28 @@ class Containerlab(_Provider):
         dp_data.build ])
 
   def deploy_node_config(self, node: Box, topology: Box, deploy_list: list) -> None:
-    node_files = node.get('_template_cache',{})
-    if not node_files:                                          # No node files => no config to deploy here
+    cfg_files = node.get('clab.config_templates',[])
+    if not cfg_files:                                          # No node files => no config to deploy here
       return
     node_name = self.get_node_name(node.name,topology)          # ... get container/namespace name
-    for n_file in node_files:                                   # Go through node files
-      mod_name = n_file.fname                                   # Get module name
-      f_type = n_file.get('mode',None)
+    for cfg_item in cfg_files:                                  # Go through configuration files
+      mod_name = cfg_item.source                                # Get module name
+      f_type = cfg_item.get('mode',None)
       if mod_name not in deploy_list:                           # ... and skip it if we're not deploying it
         continue
       config_cmd = None                                         # Command to execute
       if f_type == 'ns':                                        # Is this a host-side script?
-        config_cmd = f'sudo ip netns exec {node_name} sh {n_file.output}' 
+        config_cmd = f'sudo ip netns exec {node_name} sh node_files/{node.name}/{mod_name}' 
         log.info(f'Executing {mod_name} configuration for node {node.name} (namespace {node_name})')
       elif f_type == 'sh':
-        if not n_file.mapping:
+        if not cfg_item.target:
           log.error(
             f'Internal error: bash script for module {mod_name} is not mapped into a container file',
             more_data = [f'node: {node.name} / device: {node.device}'],
             category=log.FatalError,
             module='clab')
           break
-        config_cmd = f'docker exec {node_name} sh {n_file.mapping}' # Container-side script
+        config_cmd = f'docker exec {node_name} sh {cfg_item.target}' # Container-side script
         log.info(f'Executing {mod_name} configuration for node {node.name}')
       if not config_cmd:                                        # Not an executable file?
         continue

@@ -10,7 +10,7 @@ import typing
 
 from box import Box
 
-from ..utils.log import IncorrectType, IncorrectValue, error
+from ..utils.log import IncorrectType, IncorrectValue, error, fatal
 
 """
 Convert a box into a traditional dictionary, turning a hierarchy
@@ -28,42 +28,6 @@ def box_to_dict(b: Box) -> dict:
   return cvalue
 
 """
-Convert a dictionary into a file mapping -- list of strings in a:b format
-"""
-def dict_to_mapping(d: typing.Union[Box,dict]) -> list:
-  return [ f"{k}:{v}" for k,v in d.items() ]
-
-"""
-Convert a file mapping -- list of strings in a:b format -- into a dictionary
-"""
-def mapping_to_dict(m: list) -> dict:
-  return { k:v for k,v in [ l.split(':',1) for l in m ] }  # Limit max splits to 2
-
-"""
-Check mapping list -- it must be a list of strings, and each string must have exactly one :
-"""
-def check_mapping_list(map_list: list, path: str, module: str) -> bool:
-  OK = True
-  for (idx,value) in enumerate(map_list):
-    if not isinstance(value,str):
-      error(
-        f"{path}[{idx+1}] should be a string, found {type(value)}",
-        category=IncorrectType,
-        module=module)
-      OK = False
-      continue
-    vals = value.split(':')
-    if len(vals) != 2:
-      error(
-        f"{path}[{idx+1}] should be a string in host:target format, found {value}",
-        category=IncorrectValue,
-        module=module)
-      OK = False
-      continue
-
-  return OK
-
-"""
 Check mapping dict -- it must be a dictionary, and each key must be a string
 """
 def check_mapping_dict(value: dict, path: str, module: str) -> bool:
@@ -79,6 +43,39 @@ def check_mapping_dict(value: dict, path: str, module: str) -> bool:
   return OK
 
 """
+Normalize an item in file mapping
+"""
+def normalize_item(
+      path: str,
+      module: typing.Optional[str] = None,
+      key: typing.Optional[str] = None,
+      value: typing.Optional[str] = None,
+      line: typing.Optional[str] = None) -> typing.Optional[dict]:
+  if line:
+    if not ':' in line:
+      error(
+        f'Invalid line item in {path}: {line}',
+        category=IncorrectValue,
+        more_hints='The list values should be in source:target format',
+        module=module)
+      return None
+    k,v = line.split(':',maxsplit=1)
+  elif key and value:
+    k = key
+    v = value
+  else:
+    fatal('INTERNAL ERROR: normalize_item called without line or key/value')
+
+  k = k.replace('@','.')
+  item = { 'source': k }
+  if ':' in v:
+    item['target'],item['mode'] = v.split(':',maxsplit=1)
+  else:
+    item['target'] = v
+
+  return item
+
+"""
 Normalize file mapping:
 
 * Validate its value: it must be a list of strings in a:b format, or a dictionary of strings
@@ -88,6 +85,7 @@ def normalize_file_mapping(parent: Box, path: str, key: str, module: str) -> Non
   if not key in parent:
     return
   
+  path = f'{path}.{key}'
   value = parent[key]
   if value is None:
     parent[key] = []
@@ -95,13 +93,20 @@ def normalize_file_mapping(parent: Box, path: str, key: str, module: str) -> Non
 
   if isinstance(value,Box):
     value = box_to_dict(value)
-    if not check_mapping_dict(value,f'{path}.{key}',module):
-      parent[key] = []
+    parent[key] = []
+    if not check_mapping_dict(value,path,module):
       return
-    parent[key] = dict_to_mapping(value)
+    for k,v in value.items():
+      item = normalize_item(key=k, value=v, path=path, module=module)
+      if item:
+        parent[key].append(item)
   elif isinstance(value,list):
-    if not check_mapping_list(value,f'{path}.{key}',module):
-      parent[key] = []
+    xform_list = []
+    for line in value:
+      item = normalize_item(line=line,path=path,module=module)
+      if item:
+        xform_list.append(item)
+    parent[key] = xform_list
   else:
     error(
       f"{path}.{key} should be a list of strings in a:b format or a dictionary of strings, found {type(value)}",

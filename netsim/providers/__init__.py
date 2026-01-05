@@ -21,6 +21,13 @@ from ..utils import files as _files
 from ..utils import log, strings, templates
 from ..utils.callback import Callback
 
+"""
+Constants shared across all providers. They were in the _Provider class, but were moved
+here because we need to refer to them from functions that are not class methods.
+"""
+SHARED_PREFIX = '-shared-'
+SHARED_SUFFIX = 'shared'
+READ_ONLY_SUFFIX = 'ro'
 
 def get_cpu_model() -> str:
   processor_name = ""
@@ -40,9 +47,6 @@ def get_cpu_model() -> str:
 The generic provider class. Used as a super class of all other providers
 """
 class _Provider(Callback):
-  SHARED_PREFIX = '-shared-'
-  SHARED_SUFFIX = 'shared'
-  READ_ONLY_SUFFIX = 'ro'
 
   def __init__(self, provider: str, data: Box) -> None:
     self.provider = provider
@@ -99,112 +103,6 @@ class _Provider(Callback):
       return
     else:
       topology.defaults.processor = get_cpu_model()
-
-  def find_node_file_templates(
-      self,
-      node: Box,
-      topology: Box,
-      inkey: str = 'config_templates') -> None:
-
-    mappings = node.get(f'{self.provider}.{inkey}',None)
-    if not mappings:
-      return
-    
-    map_dict = filemaps.mapping_to_dict(mappings)
-    base_path = pathlib.Path(f"node_files")
-    for file,mapping in map_dict.items():
-      file = file.replace('@','.')
-      out_path = base_path / node.name / file
-      f_mode = None
-      map_file = mapping
-      if ':' in mapping:
-        map_file,f_mode,*_ = mapping.split(':')
-        if f_mode == self.SHARED_SUFFIX:
-          map_file = map_file + ':' + self.READ_ONLY_SUFFIX
-          out_path = base_path / f"{self.SHARED_PREFIX}{file}" 
-        elif f_mode == self.READ_ONLY_SUFFIX:
-          map_file = mapping
-
-      template_path = templates.find_provider_template(node,file,topology,self.get_full_template_path())
-      if not template_path:
-        log.error(
-          f"Cannot find template {file}.j2 for extra file {self.provider}.{inkey}.{file} on node {node.name}",
-          category=log.IncorrectValue,
-          module=self.provider)
-        continue
-
-      template_entry = { 'fname': file, 'fpath': template_path, 'output': str(out_path) }
-      if f_mode:
-        template_entry['mode'] = f_mode
-      if map_file:
-        template_entry['mapping'] = map_file
-
-      append_to_list(node,'_template_cache',template_entry)
-
-    # Finally, remove the cached data we used to generate template file names. We won't need it any longer
-    #
-    node.pop('_template_vars',None)
-
-  def create_node_files(
-      self,
-      node: Box,
-      topology: Box) -> None:
-
-    template_cache = node.get(f'_template_cache',None)
-    if not template_cache:
-      return
-
-    sys_folder = str(_files.get_moddir())+"/"
-
-    if log.debug_active('template'):
-      print(f"Template cache for {node.name}:")
-      for item in template_cache:
-        print(f"- {item}")
-
-    node_dict = templates.template_node_data(node,topology)
-    create_list = []
-
-    for t_item in template_cache:
-      template_path = t_item.fpath
-      short_path = template_path.replace(sys_folder,'package:')
-      full_out_path = pathlib.Path(t_item.output)
-      # Create parent dirs if needed
-      full_out_path.parent.mkdir(parents=True,exist_ok=True)
-
-      # If the file already exists (either shared or node-specific), skip re-rendering
-      if full_out_path.exists() and '-shared-' in str(full_out_path):
-        if log.VERBOSE:
-          if 'mapping' in t_item:
-            strings.print_colored_text('[REUSED]  ','bright_cyan','Mapped existing ')
-            print(f"{str(full_out_path)} to {node.name}:{t_item.mapping} (from {short_path})")
-        else:
-          create_list.append(f'{t_item.fname} (shared)')
-        continue
-
-      if not templates.render_config_template(
-                node=node,
-                node_dict=node_dict,
-                template_id=t_item.fname,
-                template_path=t_item.fpath,
-                output_file=str(full_out_path),
-                provider_path=self.get_full_template_path(),
-                topology=topology,
-                module=self.provider):
-        continue
-
-      if log.VERBOSE:
-        if t_item.mapping:
-          strings.print_colored_text('[MAPPED]  ','bright_cyan','Mapped ')
-          print(f"{str(full_out_path)} to {node.name}:{t_item.mapping} (from {short_path})")
-        else:
-          strings.print_colored_text('[CREATED] ','bright_cyan','Created ')
-          print(f"{str(full_out_path)} for {node.name} (from {short_path})")
-      elif not log.QUIET:
-        create_list.append(t_item.fname)
-
-    if create_list:
-      strings.print_colored_text('[CREATED] ','bright_cyan','Created ')
-      print(f"{node.name}: {','.join(create_list)}")
 
   def create(self, topology: Box, fname: typing.Optional[str]) -> None:
     self.transform(topology)

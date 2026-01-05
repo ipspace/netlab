@@ -61,8 +61,8 @@ def initial_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namesp
     dest='no_message', action='store_true',
     help=argparse.SUPPRESS)
   parser.add_argument(
-    '--no-refresh',
-    dest='no_refresh', action='store_true',
+    '--deploy',
+    dest='deploy', action='store_true',
     help=argparse.SUPPRESS)
   parser.add_argument(
     '--generate',

@@ -5,16 +5,16 @@ import functools
 import os
 import pathlib
 import typing
+from pathlib import Path
 
 from box import Box
 from jinja2 import Environment, FileSystemLoader
 
 from ..augment import devices
 from ..outputs import common as outputs_common
-from . import filters
+from . import filters, log
 from . import strings as _strings
 from .files import create_file_from_text, find_file, get_moddir
-from .log import IncorrectValue, debug_active, error, fatal
 
 
 def add_j2_filters(ENV: Environment) -> None:
@@ -66,7 +66,7 @@ def render_template(
   if extra_path is not None:
     template_path += [ p for p in extra_path if p not in template_path ]
 
-  if debug_active('template'):
+  if log.debug_active('template'):
     print(f"Template path for {j2_file or 'text'}:")
     for item in template_path:
       print(f"- {item}")
@@ -77,7 +77,7 @@ def render_template(
   elif j2_text is not None:
     template = ENV.from_string(j2_text)
   else:
-    fatal('Internal error: Call to template function with missing J2 file and J2 text, aborting')
+    log.fatal('Internal error: Call to template function with missing J2 file and J2 text, aborting')
     return ""
 
   return template.render(**data)
@@ -92,7 +92,7 @@ def write_template(
         out_folder: str,
         filename: str,
         extra_path: typing.Optional[list] = None) -> None:
-  if debug_active('template'):
+  if log.debug_active('template'):
     print(f"write_template {in_folder}/{j2} -> {out_folder}/{filename}")
   # Make sure we fail before creating any file(s)
   r_text = render_template(data=data,j2_file=j2,path=in_folder,extra_path=extra_path)
@@ -163,7 +163,7 @@ def template_lookup_name(f_name: str, cfg_name: str, node: Box, topology: Box) -
   try:
     return _strings.eval_format(f_name,node._template_vars)
   except Exception as ex:
-    error(
+    log.error(
       f'Internal error: Cannot render template name for node {node.name} from {f_name}',
       more_data = [ str(ex) ],
       module='templates')
@@ -179,7 +179,7 @@ def find_provider_template(
       provider_path: typing.Optional[str] = None) -> typing.Optional[str]:
 
   path = config_template_paths(node,fname,topology,provider_path=provider_path)
-  if debug_active('template'):
+  if log.debug_active('template'):
     print(f'Searching for {fname} template for {node.name}/{node.device} in:')
     for p in path:
       print(f'- {p}')
@@ -192,18 +192,18 @@ def find_provider_template(
   else:
     n_list = [ fname + '.j2'] + topology.defaults.paths.t_files.f_files
 
-  if debug_active('template'):
+  if log.debug_active('template'):
     print(f'Candidate file names:')
     for n_c in n_list:
       print(f'- {n_c}')
 
   for n_candidate in n_list:
     n_eval = template_lookup_name(n_candidate,fname,node,topology)
-    if debug_active('template'):
+    if log.debug_active('template'):
       print(f'{n_candidate} -> {n_eval}')
     found_file = find_file(n_eval,path)
     if found_file:
-      if debug_active('template'):
+      if log.debug_active('template'):
         print(f'Found file: {found_file}')
       return found_file
 
@@ -259,8 +259,7 @@ def render_config_template(
       template_path: str,
       output_file: str,
       provider_path: str,
-      topology: Box,
-      module: str = 'initial') -> bool:
+      topology: Box) -> bool:
 
   if node_dict is None:
     node_dict = template_node_data(node,topology)
@@ -280,9 +279,48 @@ def render_config_template(
     return True
   except Exception as ex:                               # Gee, we failed
     short_path = template_path.replace(str(get_moddir()),'package:')
-    error(                                          # Report an error and move on
+    log.error(                                          # Report an error and move on
       text=f"Error rendering template {template_id} for node {node.name}/device {node.device}",
       more_data=[f'Template source: {short_path}',f'error: {str(ex)}'] + template_error_location(ex),
       module='initial',
-      category=IncorrectValue)
+      category=log.IncorrectValue)
     return False
+
+"""
+Given the node data and module/template name, create a node config file
+"""
+def create_config_file(
+      node: Box,
+      node_dict: dict,
+      topology: Box,
+      module: str,
+      provider_path: str,
+      output_path: Path,
+      output_file: str) -> bool:
+
+  t_path = find_provider_template(
+              node=node,
+              fname=module,
+              topology=topology,
+              provider_path=provider_path)
+
+  if not t_path:
+    log.error(
+      f'Cannot find {module} configuration template for {node.name}/device {node.device}',
+      module='configs',
+      more_hints=["Use the '--debug template' option if you're troubleshooting custom configuration templates"])
+    return False
+
+  OK = render_config_template(              # ... node.template.cfg/sh file in the output directory
+          node=node,
+          node_dict=node_dict,
+          template_id=module,
+          template_path=t_path,
+          output_file=str(output_path / output_file),
+          provider_path=provider_path,
+          topology=topology)
+  
+  if OK and log.VERBOSE:
+    log.info(f"Rendered {module} template for {node.name} into {output_file}")
+
+  return OK

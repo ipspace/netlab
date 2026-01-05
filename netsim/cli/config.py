@@ -59,7 +59,6 @@ def set_initial_args(args: argparse.Namespace, initial: bool = False) -> None:
   setattr(args,'custom',True)                     # Tell 'netlab initial' code to deploy custom configs only
   setattr(args,'initial',initial)                 # We might need initial config for configuration reload
   setattr(args,'module',None)                     # ... but definitely no modules
-  setattr(args,'no_refresh',False)                # ... mandatory refresh
   setattr(args,'generate',None)                   # ... and internally-generated configs
 
 def set_custom_config(
@@ -132,7 +131,6 @@ def create_node_files(
     nodeset=nodeset,
     abs_path=Path('node_files'),
     args=args,
-    no_refresh=False,
     skip_extra_config=True,
     node_directory=True,
     default_suffix=cfg_suffix)

@@ -4,61 +4,18 @@
 # Deploys initial device configurations
 #
 import argparse
-import os
 import typing
 from pathlib import Path
 
 from box import Box
 
 from ... import devices
-from ...augment import devices as a_devices
 from ...data import get_empty_box
-from ...providers import execute_node, get_provider_module
-from ...utils import log, strings, templates
+from ...providers import execute_node
+from ...utils import log, strings
 from .. import _nodeset, ansible, error_and_exit, external_commands, get_message, lab_status_change
 from . import configs, utils
 
-"""
-update_template_cache: refresh the node template and check the timestamps on input and output files
-"""
-def update_template_cache(node: Box, n_provider: str, provider_path: str, topology: Box) -> None:
-  t_cache = node.get(f'_template_cache')
-  if not t_cache:
-    return
-  for t_item in t_cache:
-    t_path = templates.find_provider_template(
-                        node=node,
-                        fname=t_item.fname,
-                        topology=topology,
-                        provider_path=provider_path)
-    if not t_path:                                        # Try to find the configuration template
-      log.warning(                                        # Houston, we have a problem...
-        text=f'Cannot find {t_item.fname} template for node {node.name}/device {node.device}',
-        module='initial')
-      t_item.fpath = None
-      continue
-
-    if t_path != t_item.fpath:                            # Change in configuration template path?
-      t_item.fpath = t_path                               # Store the new one and mark the file as modified
-      t_item.modified = True
-      continue
-
-    if not os.path.exists(t_item.output):                 # Output file missing?
-      t_item.modified = True                              # We need to recreate it
-      continue
-
-    # Template modified later than the output file? Recreate the output file!
-    #
-    if os.path.getmtime(t_item.output) < os.path.getmtime(t_item.fpath):
-      t_item.modified = True
-
-def update_config_files(topology: Box, nodeset: list) -> None:
-  for n_name in nodeset:
-    n_data = topology.nodes[n_name]
-    n_provider = a_devices.get_provider(n_data,topology.defaults)
-    p = get_provider_module(topology,n_provider)
-    provider_path = p.get_full_template_path()
-    update_template_cache(n_data,n_provider,provider_path,topology)
 
 def deploy_provider_config(nodeset: list, topology: Box, args: argparse.Namespace) -> typing.Tuple[bool,bool]:
   OK = True
@@ -137,20 +94,17 @@ def run(topology: Box, args: argparse.Namespace, rest: list) -> None:
   nodeset = utils.filter_unprovisioned(nodeset, topology)
   if not nodeset:
     error_and_exit('The specified nodeset is empty, there are no nodes to configure')
-  if not args.no_refresh:
-    log.info(text='Checking for updates in configuration templates')
-    update_config_files(topology,nodeset)
 
-  log.info(text='Creating configuration snippets')
-  configs.create_node_configs(
-    topology=topology,
-    nodeset=nodeset,
-    abs_path=Path('node_files'),
-    args=args,
-    no_refresh=args.no_refresh,
-    skip_extra_config=True,
-    node_directory=True,
-    default_suffix='none')
+  if not args.deploy:
+    log.info(text='Creating configuration snippets')
+    configs.create_node_configs(
+      topology=topology,
+      nodeset=nodeset,
+      abs_path=Path('node_files'),
+      args=args,
+      skip_extra_config=True,
+      node_directory=True,
+      default_suffix='none')
 
   log.exit_on_error()
   (used_internal, status_internal) = deploy_provider_config(nodeset,topology,args)
