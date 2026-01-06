@@ -192,7 +192,7 @@ def build_lab_detail_payload(args: argparse.Namespace, lab_states: Box, topology
   iid = get_instance(args,lab_states)
   lab_state = lab_states[iid]
   lab_status = get_lab_status(lab_state)
-  payload = {
+  payload: typing.Dict[str, typing.Any] = {
     "lab": {
       "id": iid,
       "directory": lab_state.dir,
@@ -377,9 +377,10 @@ def run(cli_args: typing.List[str]) -> None:
       iid = get_instance(args,lab_states)
       wdir = lab_states[iid].dir
       snapshot = f'{wdir}/netlab.snapshot.yml'
-      topology = _read.read_yaml(filename=snapshot)
-      if topology is None:
+      topology_snapshot = _read.read_yaml(filename=snapshot)
+      if topology_snapshot is None:
         log.fatal(f'Cannot read topology snapshot file {snapshot}')
-      output_json(build_lab_detail_payload(args,lab_states,topology))
+        return
+      output_json(build_lab_detail_payload(args,lab_states,topology_snapshot))
     else:
       show_lab(args,lab_states)
