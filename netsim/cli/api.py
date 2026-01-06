@@ -330,11 +330,27 @@ class NetlabHandler(BaseHTTPRequestHandler):
         jobs = [job_public(j) for j in JOBS.values()]
       send_json(self, HTTPStatus.OK, {"jobs": jobs})
 
-    def get_status() -> None:
+    def get_status(status_id: Optional[str] = None) -> None:
+      args = ["--json"]
+      if status_id:
+        if status_id == "all":
+          args.append("--all")
+        else:
+          args += ["--instance", status_id]
       out = io.StringIO()
-      with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
-        netlab_status.run(["--all"])
-      send_json(self, HTTPStatus.OK, {"status": out.getvalue()})
+      try:
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
+          netlab_status.run(args)
+      except SystemExit:
+        # CLI calls sys.exit(1) on errors - return captured output as error
+        output = out.getvalue().strip()
+        send_json(self, HTTPStatus.NOT_FOUND, {"error": output or "Lab not found"})
+        return
+      try:
+        payload = json.loads(out.getvalue() or "{}")
+      except json.JSONDecodeError:
+        payload = {"status": out.getvalue()}
+      send_json(self, HTTPStatus.OK, payload)
 
     handlers: Dict[Tuple[str, ...], Callable[[], None]] = {
       ("healthz",): get_healthz,
@@ -346,6 +362,10 @@ class NetlabHandler(BaseHTTPRequestHandler):
     key = tuple(parts)
     if key in handlers:
       handlers[key]()
+      return
+
+    if parts[0] == "status" and len(parts) == 2:
+      get_status(parts[1])
       return
 
     if parts[0] == "jobs" and len(parts) >= 2:

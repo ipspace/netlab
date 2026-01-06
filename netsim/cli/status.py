@@ -4,6 +4,7 @@
 # Display the status of the specified lab or system-wide status
 #
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -43,6 +44,11 @@ def status_parse(args: typing.List[str]) -> argparse.Namespace:
     dest='all',
     action='store_true',
     help='Display an overview of all lab instance(s)')
+  parser.add_argument(
+    '--json',
+    dest='json',
+    action='store_true',
+    help='Display JSON output')
   parser_add_verbose(parser)
   parser_lab_location(parser,instance=True,action='inspect')
   return parser.parse_args(args)
@@ -80,14 +86,135 @@ def display_active_labs(topology: Box,args: argparse.Namespace,lab_states: Box) 
   if args.verbose:
     print(f'netlab status file: {status.get_status_filename(topology)}\n')
 
+  payload = build_active_labs_payload(lab_states)
   print("Active lab instance(s)\n")
   heading = [ 'id', 'directory', 'status', 'providers' ]
-  rows = []
-  for id,lab_state in lab_states.items():
-    line = [str(id),lab_state.dir,lab_state.status or 'Unknown',",".join(lab_state.providers)]
-    rows.append(line)
-
+  rows = [[str(lab['id']), lab['directory'], lab['status'], ','.join(lab['providers'])] 
+          for lab in payload['labs']]
   strings.print_table(heading,rows)
+
+def normalize_providers(providers: typing.Any) -> typing.List[str]:
+  """Normalize providers to a list of strings"""
+  if not providers:
+    return []
+  if isinstance(providers,(list,tuple)):
+    return list(providers)
+  # Handle comma-separated string
+  if isinstance(providers,str):
+    return [p.strip() for p in providers.split(',') if p.strip()]
+  return [str(providers)]
+
+def build_active_labs_payload(lab_states: Box) -> dict:
+  labs = []
+  for iid,lab_state in lab_states.items():
+    labs.append({
+      "id": iid,
+      "directory": lab_state.dir,
+      "status": lab_state.status or "Unknown",
+      "providers": normalize_providers(lab_state.get("providers")),
+    })
+  return {"labs": labs}
+
+def build_lab_nodes_payload(topology: Box) -> dict:
+  p_status: dict = {}
+  nodes: typing.List[dict] = []
+  tools: typing.List[dict] = []
+
+  for n_name,n_data in topology.nodes.items():
+    n_ext = outputs_common.adjust_inventory_host(
+              node=topology.nodes[n_name],
+              defaults=topology.defaults,
+              group_vars=True)
+
+    n_provider = n_data.get('provider',topology.defaults.provider)
+    p_module   = providers.get_provider_module(topology,n_provider)
+    load_provider_status(p_status,n_provider,topology)
+
+    entry = {
+      "name": n_data.name,
+      "device": n_data.device,
+      "image": None,
+      "mgmt_ipv4": n_data.mgmt.ipv4,
+      "connection": None,
+      "provider": n_provider,
+      "workload": None,
+      "status": None,
+      "unmanaged": bool(n_data.get("unmanaged",False)),
+    }
+
+    if entry["unmanaged"]:
+      entry["image"] = "unmanaged"
+      entry["status"] = "unmanaged"
+    else:
+      entry["image"] = n_data.box
+      entry["connection"] = n_ext.ansible_connection
+      wk_name = p_module.call('get_node_name',n_name,topology)
+      entry["workload"] = wk_name
+      wk_state = p_status[n_provider].get(wk_name,None) or p_status[n_provider].get(n_name,None)
+      entry["status"] = wk_state.status if wk_state else "Unknown"
+
+    nodes.append(entry)
+
+  for t_name,t_data in topology.tools.items():
+    n_provider = "clab"
+    load_provider_status(p_status,n_provider,topology)
+
+    wk_name = f'{topology.name}_{t_name}'
+    wk_state = p_status[n_provider].get(wk_name,get_empty_box())
+
+    tools.append({
+      "name": t_name,
+      "device": "(tool)",
+      "image": wk_state.get("image",""),
+      "mgmt_ipv4": None,
+      "connection": "docker",
+      "provider": n_provider,
+      "workload": wk_name,
+      "status": wk_state.get("status","Not running"),
+    })
+
+  return {"nodes": nodes, "tools": tools}
+
+def build_lab_log_payload(args: argparse.Namespace, lab_states: Box) -> dict:
+  iid = get_instance(args,lab_states)
+  lab_state = lab_states[iid]
+  return {
+    "lab": {
+      "id": iid,
+      "directory": lab_state.dir,
+      "status": lab_state.status,
+      "providers": normalize_providers(lab_state.get("providers")),
+    },
+    "log": list(lab_state.log),
+  }
+
+def build_lab_detail_payload(args: argparse.Namespace, lab_states: Box, topology: Box) -> dict:
+  iid = get_instance(args,lab_states)
+  lab_state = lab_states[iid]
+  lab_status = get_lab_status(lab_state)
+  payload = {
+    "lab": {
+      "id": iid,
+      "directory": lab_state.dir,
+      "status": lab_state.status,
+      "providers": normalize_providers(lab_state.get("providers")),
+    },
+    "status": lab_status,
+  }
+
+  if "started" not in lab_status:
+    payload["started"] = False
+    payload["log"] = list(lab_state.log)
+    return payload
+
+  payload["started"] = True
+  payload.update(build_lab_nodes_payload(topology))
+  if lab_status != "started":
+    payload["warning"] = "Lab is not in 'started' state"
+  return payload
+
+def output_json(payload: typing.Any) -> None:
+  print(json.dumps(payload, indent=2))
 
 def show_lab_instance(iid: Lab_Instance_ID, lab_state: Box) -> None:
   print(f'Lab {iid} in {lab_state.dir}')
@@ -102,41 +229,21 @@ def load_provider_status(p_status: dict, provider: str, topology: Box) -> None:
     p_status[provider] = p_module.call('get_lab_status') or get_empty_box()
 
 def show_lab_nodes(topology: Box) -> None:
-  p_status: dict = {}
-  rows = []
+  payload = build_lab_nodes_payload(topology)
   heading = [ 'node', 'device', 'image', 'mgmt IPv4', 'connection', 'provider', 'VM/container', 'status']
+  rows = []
 
-  for n_name,n_data in topology.nodes.items():
-    n_ext = outputs_common.adjust_inventory_host(
-              node=topology.nodes[n_name],
-              defaults=topology.defaults,
-              group_vars=True)
-
-    n_provider = n_data.get('provider',topology.defaults.provider)
-    p_module   = providers.get_provider_module(topology,n_provider)
-    load_provider_status(p_status,n_provider,topology)
-
-    if n_data.get('unmanaged',False):
-      row = [ n_data.name, n_data.device, 'unmanaged', n_data.mgmt.ipv4 ]
+  for node in payload['nodes']:
+    if node['unmanaged']:
+      row = [ node['name'], node['device'], 'unmanaged', node['mgmt_ipv4'] ]
     else:
-      row = [ n_data.name, n_data.device, n_data.box, n_data.mgmt.ipv4, n_ext.ansible_connection, n_provider ]
-      wk_name = p_module.call('get_node_name',n_name,topology)
-      row.append(wk_name)
-
-      wk_state = p_status[n_provider].get(wk_name,None) or p_status[n_provider].get(n_name,None)
-      row.append(wk_state.status if wk_state else 'Unknown')
-
+      row = [ node['name'], node['device'], node['image'], node['mgmt_ipv4'], 
+              node['connection'], node['provider'], node['workload'], node['status'] ]
     rows.append(row)
 
-  for t_name,t_data in topology.tools.items():
-    n_provider = 'clab'
-    load_provider_status(p_status,n_provider,topology)
-
-    wk_name = f'{topology.name}_{t_name}'
-    wk_state = p_status[n_provider].get(wk_name,get_empty_box())
-
-    row = [ t_name, '(tool)', wk_state.get('image',''), '', 'docker', n_provider, 
-            wk_name, wk_state.get('status','Not running') ]
+  for tool in payload['tools']:
+    row = [ tool['name'], tool['device'], tool['image'], '', 
+            tool['connection'], tool['provider'], tool['workload'], tool['status'] ]
     rows.append(row)
 
   strings.print_table(heading,rows)
@@ -161,7 +268,6 @@ def get_lab_status(lab_state: Box) -> str:
 def show_lab(args: argparse.Namespace,lab_states: Box) -> None:
   iid = get_instance(args,lab_states)
   lab_state = lab_states[iid]
-  show_lab_instance(iid,lab_state)
   wdir = lab_state.dir
   snapshot = f'{wdir}/netlab.snapshot.yml'
 
@@ -169,18 +275,20 @@ def show_lab(args: argparse.Namespace,lab_states: Box) -> None:
   if topology is None:
     log.fatal(f'Cannot read topology snapshot file {snapshot}')
 
-  lab_status = get_lab_status(lab_state)
-  if 'started' not in lab_status:
+  payload = build_lab_detail_payload(args,lab_states,topology)
+  show_lab_instance(iid,lab_state)
+
+  if not payload.get('started',False):
     log.error(
       'Lab is not started, cannot display node/tool status. Displaying lab start/stop log',
       category=log.FatalError,
       module='',)
     print()
-    print_lab_log(lab_state.log)
+    print_lab_log(payload.get('log',[]))
     return
 
   show_lab_nodes(topology)
-  if lab_status != 'started':
+  if payload.get('warning'):
     print()
     log.warning(
       text="Lab is not in 'started' state, inspect details with 'netlab status --log'",
@@ -253,10 +361,25 @@ def run(cli_args: typing.List[str]) -> None:
     sys.exit(1)
 
   if args.all:
-    display_active_labs(topology,args,lab_states)
+    if args.json:
+      output_json(build_active_labs_payload(lab_states))
+    else:
+      display_active_labs(topology,args,lab_states)
   elif args.cleanup:
     cleanup_lab(topology,args,lab_states)
   elif args.log:
-    show_lab_log(args,lab_states)
+    if args.json:
+      output_json(build_lab_log_payload(args,lab_states))
+    else:
+      show_lab_log(args,lab_states)
   else:
-    show_lab(args,lab_states)
+    if args.json:
+      iid = get_instance(args,lab_states)
+      wdir = lab_states[iid].dir
+      snapshot = f'{wdir}/netlab.snapshot.yml'
+      topology = _read.read_yaml(filename=snapshot)
+      if topology is None:
+        log.fatal(f'Cannot read topology snapshot file {snapshot}')
+      output_json(build_lab_detail_payload(args,lab_states,topology))
+    else:
+      show_lab(args,lab_states)
