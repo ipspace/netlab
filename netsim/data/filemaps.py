@@ -103,6 +103,9 @@ def normalize_file_mapping(parent: Box, path: str, key: str, module: str) -> Non
   elif isinstance(value,list):
     xform_list = []
     for line in value:
+      if not isinstance(line,str):
+        error('An entry in a {path} list should be a string',IncorrectType,module)
+        continue
       item = normalize_item(line=line,path=path,module=module)
       if item:
         xform_list.append(item)
