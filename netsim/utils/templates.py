@@ -27,6 +27,9 @@ def add_j2_filters(ENV: Environment) -> None:
   for fname,fcode in filters.BUILTIN_FILTERS.items():       # Do the same for ansible.builtin filters we use
     ENV.filters[fname] = fcode
     ENV.filters[f'ansible.builtin.{fname}'] = fcode
+  
+  # Add fail() as a global function for template validation
+  ENV.globals['fail'] = filters.j2_fail
 
 """
 Render a Jinja2 template

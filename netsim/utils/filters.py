@@ -104,11 +104,10 @@ def j2_hwaddr(value: typing.Any, format: str = '') -> str:
 
 # Fail template rendering with a custom error message
 #
-def j2_fail(value: typing.Any, msg: str) -> None:
+def j2_fail(msg: str) -> None:
   """
-  Jinja2 filter to fail template rendering with a custom error message.
-  Use in templates: {{ None | fail('Error message') }}
-  The first argument (value) is ignored.
+  Jinja2 global function to fail template rendering with a custom error message.
+  Use in templates: {{ fail('Error message') }}
   """
   raise ValueError(msg)
 
@@ -141,8 +140,7 @@ UTILS_FILTERS: dict = {
   'ipaddr': j2_ipaddr,
   'ipv4': j2_ipv4,
   'ipv6': j2_ipv6,
-  'hwaddr': j2_hwaddr,
-  'fail': j2_fail
+  'hwaddr': j2_hwaddr
 }
 
 """
