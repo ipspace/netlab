@@ -87,25 +87,16 @@ def render_j2_dockerfile(df_path: str, tmp_dir: str) -> str:
   
   # Render template (fail() is available as a standard Jinja2 global function)
   try:
-    rendered_content = templates.render_template(
-      data={'defaults': defaults},
-      j2_file=os.path.basename(df_path),
-      path=os.path.dirname(df_path)
-    )
+    templates.write_template(os.path.dirname(df_path), os.path.basename(df_path), {'defaults': defaults}, tmp_dir, 'Dockerfile')
   except Exception as ex:
     log.fatal(
       f'Failed to render Dockerfile template {os.path.basename(df_path)}: {str(ex)}',
       module='build')
   
-  # Write to temp directory
-  rendered_path = os.path.join(tmp_dir, 'Dockerfile')
-  with open(rendered_path, 'w') as f:
-    f.write(rendered_content)
-  
   strings.print_colored_text('[RENDERED] ','green',None)
   print(f"Template rendered to temporary Dockerfile")
   
-  return rendered_path
+  return os.path.join(tmp_dir, 'Dockerfile')
 
 def build_image(image: str, tag: typing.Optional[str]) -> None:
   if tag is None or not tag:
