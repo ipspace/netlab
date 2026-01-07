@@ -5,7 +5,7 @@ from box import Box
 from netsim import api
 from netsim.augment import devices, links
 from netsim.data.validate import validate_attributes
-from netsim.modules import vrf
+from netsim.modules import evpn, vrf
 from netsim.utils import log
 from netsim.utils import routing as _bgp
 
@@ -124,10 +124,17 @@ def augment_af_activation(ndata: Box, topology: Box) -> None:
         continue
       for bgp_af in af_list_base[af].valid_values:                # Iterate over all potential address famiilies
         chg = ngb.activate if bgp_af in ['ipv4','ipv6'] else ngb  # Find the object to change (neighbor or activate dictionary)
-        if bgp_af in af_set[af]:                                  # Is the AF active on this transport EBGP multhop session?
-          chg[bgp_af] = True                                      # Yes, turn it on
-        else:
-          chg.pop(bgp_af,None)                                    # Otherwise remove it
+        if bgp_af not in af_set[af]:                              # Are we using this AF on multihop sessions?
+          chg.pop(bgp_af,None)                                    # ... Nope, remove the AF just in case
+          continue                                                # ... and move on
+
+        if bgp_af == 'evpn':                                      # Special handling for EVPN AF
+          val = evpn.get_evpn_af(ndata,topology)                  # Get the transport session that should carry EVPN AF
+          if not val or val not in ngb:                           # Can we make it work?
+            continue                                              # ... nope, skip it
+          chg[bgp_af] = val
+        else:                                                     # For all other AFs
+          chg[bgp_af] = True                                      # ... just set the boolean flag
 
 '''
 Check whether a node has EBGP multihop sessions
