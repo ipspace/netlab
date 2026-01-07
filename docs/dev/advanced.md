@@ -25,4 +25,5 @@ Want to know how _netlab_ works behind the scenes? These documents might give yo
    tests.md
    integration-tests.md
    clab-netns.md
+   debugging.md
 ```
