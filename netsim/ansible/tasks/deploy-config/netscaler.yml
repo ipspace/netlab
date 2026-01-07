@@ -1,9 +1,18 @@
+- ansible.builtin.set_fact:
+    deployed_config: "{{ lookup('template', config_template) }}"
+
 - name: "Netscaler: deploying {{ netsim_action }} from {{ config_template }}"
-  delegate_to: localhost
-  ansible.builtin.shell: |
-    echo '{{ lookup("template", config_template) }}' | while IFS= read -r line; do
-      [ -n "$line" ] && docker exec {{ hostname }} nscli \
-        -U '127.0.0.1:{{ ansible_user }}:{{ ansible_ssh_pass }}' "$line" || true
-    done
+  ansible.builtin.raw: |
+    cat > /tmp/deploy.sh << 'NETSCALER_EOF'
+    #!/bin/bash
+    while IFS= read -r line; do
+      [ -n "$line" ] && nscli -U 127.0.0.1:{{ ansible_user }}:{{ ansible_ssh_pass }} "$line" || true
+    done << 'CONFIG_EOF'
+    {{ deployed_config }}
+    CONFIG_EOF
+    nscli -U 127.0.0.1:{{ ansible_user }}:{{ ansible_ssh_pass }} "save ns config"
+    NETSCALER_EOF
+    chmod +x /tmp/deploy.sh
+    sh /tmp/deploy.sh
   when: not ansible_check_mode
   tags: [ print_action, always ]
