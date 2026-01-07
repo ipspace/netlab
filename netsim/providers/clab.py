@@ -288,6 +288,10 @@ class Containerlab(_Provider):
   through "defaults.providers.clab.lab_prefix"
   """
   def get_node_name(self, node: str, topology: Box) -> str:
+    n_data = topology.nodes[node]
+    if 'clab.name' in n_data:
+      return n_data.clab.name
+
     lab_prefix = topology.get("defaults.providers.clab.lab_prefix")
     return f'{ lab_prefix }-{ topology.name }-{ node }' if lab_prefix else node
 
