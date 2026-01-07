@@ -28,7 +28,7 @@ Alternatively, use *[graphite](../extool/graphite.md)* for GUI-based SSH access 
 
 ### Finding the Management IP Addresses
 
-The **netlab report mgmt** command displays the management IP addresses of the lab devices, protocol used to configure the devices (SSH, NETCONF, or Docker), and the username/password used by _netlab_ to configure the device.
+The **netlab report mgmt** command displays the management IP addresses of the lab devices, the protocol used to configure the devices (SSH, NETCONF, or Docker), and the username/password used by _netlab_ to configure the device.
 
 Alternatively, you could use Ansible inventory to find the same information:
 
@@ -65,6 +65,37 @@ nodes:
   fw:
     netlab_ssh_forward:
     - 8080:443
+```
+
+(external-proxy-arp)=
+### Using Proxy ARP to Access Lab Devices
+
+If you use a subnet of the external IPv4 prefix as the management IPv4 subnet, you can connect to the lab devices directly after configuring proxy ARP on the Linux server. The Linux server will respond to ARP requests for the lab devices' management IP addresses and forward traffic between external clients and the nodes attached to the lab management network.
+
+Let's assume that `192.18.42.0/24` is the IP network to which the _netlab_ Linux server is connected. We'll use a portion of that subnet (`192.168.42.64/28`) as the management network. Here are the modifications you could make to the default **addressing.mgmt** pool. Set the **start** parameter to a low value to avoid running out of management IPv4 addresses.
+
+```bash
+netlab defaults addressing.mgmt.ipv4=192.18.42.64/28
+netlab defaults addressing.mgmt.start=2
+```
+
+Before using this trick, you have to configure proxy ARP on the Linux server running _netlab_. Use commands similar to these:
+
+```bash
+# Enable proxy ARP on the uplink interface (adjust interface name as needed)
+sudo sysctl -w net.ipv4.conf.eth0.proxy_arp=1
+
+# Make the setting persistent across reboots
+echo "net.ipv4.conf.eth0.proxy_arp = 1" | sudo tee -a /etc/sysctl.conf
+
+# Enable IP forwarding if not already enabled
+sudo sysctl -w net.ipv4.ip_forward=1
+echo "net.ipv4.ip_forward = 1" | sudo tee -a /etc/sysctl.conf
+```
+
+```{tip}
+* Replace `eth0` with your server's uplink interface name. Use **ip addr** to identify the correct interface names.
+* You might have to adjust the firewall settings on your host to allow it to forward traffic between the external interface and the lab management network.
 ```
 
 (external-connectivity-control-plane)=
@@ -148,7 +179,6 @@ links:
 ```{tip}
 You still have to specify the device type (either in the node or as the [default device type](default-device-type)) for unmanaged nodes. _netlab_ uses the device type to determine which features a node supports. If you want to use an unsupported unmanaged device, set **‌device** to **‌none**.
 ```
-
 
 ## Managing Physical Devices
 
