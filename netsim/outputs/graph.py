@@ -88,7 +88,7 @@ def gv_start(f : typing.TextIO, graph: Box, topology: Box, settings: Box) -> Non
   if rank:
     f.write ('  newrank=true;\n')
     for r_val in sorted(list(rank)):
-      r_nodes = [ node.name +"; "
+      r_nodes = [ f'"{node.name}"; '
                     for node in graph.nodes.values()
                       if node.get('graph.rank',None) == r_val and node.device != 'link' ]
       f.write(f'  {{ rank=same; {"".join(r_nodes)}}}\n')
@@ -128,7 +128,7 @@ def gv_network(f : typing.TextIO, n: Box, settings: Box, indent: int = 0) -> Non
 
 def gv_clusters(f : typing.TextIO, graph: Box, topology: Box, settings: Box) -> None:
   for c_name,c_data in graph.clusters.items():
-    f.write(f'  subgraph cluster_{c_name} {{\n')
+    f.write(f'  subgraph "cluster_{c_name}" {{\n')
 
     get_gv_attr(c_data,'as',settings)
     label = c_data.get('name',None)
