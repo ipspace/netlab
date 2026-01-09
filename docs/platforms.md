@@ -39,6 +39,7 @@
 | vJunos-router [❗](caveats-vjunos-router) | vjunos-router | full |
 | Mikrotik RouterOS 6 (CHR) [❗](caveats-routeros6) | routeros           | end of life |
 | Mikrotik RouterOS 7 (CHR) [❗](caveats-routeros7) | routeros7           | minimal |
+| Netscaler CPX | netscaler | minimal |
 | Nokia SR Linux [❗](caveats-srlinux) | srlinux | full       |
 | Nokia SR OS [❗](caveats-sros)    | sros    | best effort[^SROSBE]   |
 | Nokia SR-SIM [❗](caveats-srsim)  | srsim   | full          |
@@ -130,6 +131,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | vJunos-switch       |  ❌  |  ❌  | ✅[❗](clab-vrnetlab) |
 | vJunos-router       |  ❌  |  ❌  | ✅[❗](clab-vrnetlab) | | Mikrotik RouterOS 6 | ✅  |  ❌  |  ❌  |
 | Mikrotik RouterOS 7 | [✅](build-chr7)  |  ❌  |  ❌  |
+| Netscaler CPX       |  ❌  |  ❌  | ✅  | 
 | Nokia SR Linux      |  ❌  |  ❌  | ✅  |
 | Nokia SR OS         |  ❌  |  ❌  | ✅  |
 | Nokia SR-SIM        |  ❌  |  ❌  | ✅  |
@@ -193,6 +195,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Junos[^Junos]         | ✅ | ✅ |
 | Mikrotik RouterOS 6   | ✅ | ✅ |
 | Mikrotik RouterOS 7   | ✅ | ✅ |
+| Netscaler CPX         | ✅ | ❌  |
 | Nokia SR Linux        | ✅ | ✅ |
 | Nokia SR OS[^SROS]    | ✅ | ✅ |
 | OpenBSD               | ✅ | ❌  |
@@ -229,6 +232,7 @@ The following system-wide features are configured on supported network operating
 | Junos[^Junos]            | ✅  |  ❌  | ✅  | ✅  | ✅  | 
 | Mikrotik RouterOS 6      | ✅  | ✅  | ✅[❗](caveats-routeros6) | ✅ | ✅ |
 | Mikrotik RouterOS 7      | ✅ | ✅ | ✅[❗](caveats-routeros7) | ✅ | ✅ |
+| Netscaler CPX            | ✅  |  ❌  |  ❌  |  ❌  |  ❌  |
 | Nokia SR Linux           | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Nokia SR OS[^SROS]       | ✅  | ✅  | ✅  | ✅  | ✅  |
 | OpenBSD                  | ✅  | ✅  |  ❌  | ✅  | ✅  |
@@ -284,6 +288,7 @@ The following interface addresses are supported on various platforms:
 | Junos[^Junos]         | ✅  | ✅  | ✅  |  ❌  |
 | Mikrotik RouterOS 6   | ✅  | ✅  |  ❌  |  ❌  |
 | Mikrotik RouterOS 7   | ✅  | ✅  |  ❌  |  ❌  |
+| Netscaler CPX         | ✅  |  ❌  |  ❌  |  ❌  |
 | Nokia SR Linux        | ✅  | ✅  |  ❌  |  ❌  |
 | Nokia SR OS[^SROS]    | ✅  | ✅  | ✅  |  ❌  |
 | OpenBSD               | ✅  | ✅  |  ❌  |  ❌  |
