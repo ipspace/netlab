@@ -74,8 +74,8 @@ $ export NETLAB_MULTILAB_ID=17
 
 ```
 change:
-  name: 'ml_{id}'
-  defaults.name: 'ml_{id}'
+  name: 'ml-{id}'
+  defaults.name: 'ml-{id}'
   defaults.providers.libvirt.tunnel_id: '{id}'
   defaults.providers.libvirt.vifprefix: 'vif_{id}'
   addressing.mgmt:
