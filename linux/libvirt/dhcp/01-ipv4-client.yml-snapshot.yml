@@ -7,255 +7,6 @@ message: |
 
   If your client suppors configurable 'router option' requests to generate
   a default route, check that C1 has a default route but C2 does not.
-plugin:
-- no_dhcp_server
-- multilab
-groups:
-  dhcp_clients:
-    members:
-    - c1
-    - c2
-  all:
-    vars:
-      netlab_show_config: true
-    members: []
-    _default_group: true
-nodes:
-  c1:
-    name: c1
-    interfaces:
-    - dhcp:
-        client:
-          ipv4: true
-      linkindex: 1
-      type: lan
-      bridge: ml_17_1
-      role: stub
-      name: c1 -> [c2,server]
-      ifindex: 1
-      ifname: eth1
-      neighbors:
-      - dhcp:
-          client:
-            default: false
-            ipv4: true
-        ipv4: 172.16.0.2/24
-        ifname: eth1
-        node: c2
-      - ipv4: 172.16.0.3/24
-        ifname: eth1
-        node: server
-    device: linux
-    box: bento/ubuntu-24.04
-    module:
-    - dhcp
-    id: 1
-    role: host
-    provider: libvirt
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:01:00:00
-      ipv4: 192.168.17.101
-    dhcp: {}
-  c2:
-    name: c2
-    interfaces:
-    - dhcp:
-        client:
-          default: false
-          ipv4: true
-      linkindex: 1
-      type: lan
-      bridge: ml_17_1
-      role: stub
-      name: c2 -> [c1,server]
-      ifindex: 1
-      ifname: eth1
-      neighbors:
-      - dhcp:
-          client:
-            ipv4: true
-        ipv4: 172.16.0.1/24
-        ifname: eth1
-        node: c1
-      - ipv4: 172.16.0.3/24
-        ifname: eth1
-        node: server
-    device: linux
-    box: bento/ubuntu-24.04
-    module:
-    - dhcp
-    id: 2
-    role: host
-    provider: libvirt
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:02:00:00
-      ipv4: 192.168.17.102
-    dhcp: {}
-  server:
-    module:
-    - dhcp
-    - routing
-    device: dnsmasq
-    dhcp:
-      server: true
-      pools:
-      - name: links[1]
-        ipv4: 172.16.0.0/24
-        excluded:
-          ipv4:
-          - 172.16.0.3
-        clean_name: links_1_
-    provider: clab
-    name: server
-    interfaces:
-    - ipv4: 172.16.0.3/24
-      linkindex: 1
-      type: lan
-      bridge: ml_17_1
-      role: stub
-      name: server -> [c1,c2]
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - dhcp:
-          client:
-            ipv4: true
-        ipv4: 172.16.0.1/24
-        ifname: eth1
-        node: c1
-      - dhcp:
-          client:
-            default: false
-            ipv4: true
-        ipv4: 172.16.0.2/24
-        ifname: eth1
-        node: c2
-    clab:
-      kind: linux
-      config_templates:
-      - initial::ns
-      - routing::ns
-      - dnsmasq:/etc/dnsmasq.conf
-      - dhcp:/etc/dhcp.ignore
-      - hosts:/etc/hosts:shared
-      binds:
-      - node_files/server/dnsmasq:/etc/dnsmasq.conf
-      - node_files/server/dhcp:/etc/dhcp.ignore
-      - node_files/-shared-hosts:/etc/hosts:ro
-    box: netlab/dnsmasq:latest
-    id: 3
-    role: host
-    mtu: 1500
-    _daemon: true
-    _daemon_parent: linux
-    _daemon_config:
-      dnsmasq: /etc/dnsmasq.conf
-      dhcp: /etc/dhcp.ignore
-    _node_config:
-      initial: :ns
-      routing: :ns
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:03:00:00
-      ipv4: 192.168.17.103
-    hostname: clab-ml_17-server
-    routing:
-      static: []
-    netlab_ansible_skip_module:
-    - dnsmasq
-    - dhcp
-    - initial
-    - routing
-    _template_cache:
-    - fname: initial
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
-      output: node_files/server/initial
-      mode: ns
-    - fname: routing
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
-      output: node_files/server/routing
-      mode: ns
-    - fname: dnsmasq
-      fpath: /home/pipi/netlab_gh/netsim/daemons/dnsmasq/dnsmasq.j2
-      output: node_files/server/dnsmasq
-      mapping: /etc/dnsmasq.conf
-    - fname: dhcp
-      fpath: /home/pipi/netlab_gh/netsim/daemons/dnsmasq/dhcp.j2
-      output: node_files/server/dhcp
-      mapping: /etc/dhcp.ignore
-    - fname: hosts
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
-      output: node_files/-shared-hosts
-      mode: shared
-      mapping: /etc/hosts:ro
-links:
-- _linkname: links[1]
-  interfaces:
-  - node: c1
-    dhcp:
-      client:
-        ipv4: true
-    ipv4: 172.16.0.1/24
-    ifindex: 1
-    ifname: eth1
-  - dhcp:
-      client:
-        default: false
-        ipv4: true
-    node: c2
-    ipv4: 172.16.0.2/24
-    ifindex: 1
-    ifname: eth1
-  - node: server
-    ipv4: 172.16.0.3/24
-    ifindex: 1
-    ifname: eth1
-  linkindex: 1
-  dhcp:
-    subnet:
-      ipv4: true
-  libvirt:
-    provider:
-      clab: true
-  type: lan
-  bridge: ml_17_1
-  node_count: 3
-  role: stub
-  prefix:
-    ipv4: 172.16.0.0/24
-validate:
-- description: Check for DHCP server lease
-  nodes:
-  - server
-  wait_msg: Waiting for DHCP leases on DHCP server
-  wait: 15
-  pass: The DHCP server has at least two active IPv4 leases
-  fail: There are no IPv4 leases on the DHCP server
-  show:
-    eos: dhcp server leases | json
-  exec:
-    dnsmasq: cat /var/lib/misc/dnsmasq.leases | grep --color=never -E ' c[1-9] '
-      | wc -l
-  valid:
-    eos: len(vrfs.default.ipv4ActiveLeases) == 2
-    dnsmasq: stdout.rstrip() == '2'
-  name: lease
-  devices:
-  - dnsmasq
-  - eos
-input:
-- /home/pipi/netlab_gh/tests/integration/dhcp/01-ipv4-client.yml
-- /home/pipi/.netlab.yml
-- package:topology-defaults.yml
 defaults:
   provider: libvirt
   providers:
@@ -722,6 +473,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -780,6 +532,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox: {}
@@ -1019,6 +773,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -1073,6 +828,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox:
@@ -1579,6 +1336,7 @@ defaults:
           bundle:
           - vlan_aware
           irb: true
+          ipv6: true
         gateway:
           protocol:
           - anycast
@@ -1716,6 +1474,8 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
+      warnings:
+        ospf_stub: false
     fortios:
       description: Fortinet FortiOS firewall
       support:
@@ -2042,7 +1802,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:17.12.01
+        image: vrnetlab/cisco_iol:17.16.01a
         node:
           kind: cisco_iol
       role: router
@@ -2127,6 +1887,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2184,6 +1945,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       _parents:
       - ios
@@ -2221,7 +1984,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:L2-17.12.01
+        image: vrnetlab/cisco_iol:L2-17.16.01a
         node:
           kind: cisco_iol
           type: l2
@@ -2312,6 +2075,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2380,6 +2144,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       _parents:
       - ios
@@ -2507,6 +2273,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2559,6 +2326,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet0/{ifindex}
       libvirt:
         image: cisco/iosv
@@ -2694,6 +2463,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2758,6 +2528,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex // 4}/{ifindex % 4}
       libvirt:
         image: cisco/iosvl2
@@ -2955,6 +2727,39 @@ defaults:
       graphite:
         icon: server
       provider: libvirt
+    netscaler:
+      description: Citrix Netscaler ADC CPX
+      support:
+        level: minimal
+      interface_name: 0/{ifindex+2}
+      mgmt_if: 0/2
+      role: router
+      group_vars:
+        ansible_network_os: netscaler
+        ansible_python_interpreter: auto_silent
+      features:
+        initial:
+          ipv4:
+      mtu: 1500
+      clab:
+        image: netlab/netscaler
+        node:
+          kind: linux
+        interface:
+          name: eth{ifindex}
+        group_vars:
+          ansible_user: clab
+          ansible_ssh_pass: clab@123
+          ansible_connection: docker
+          netlab_show_command:
+          - nscli
+          - -U
+          - 127.0.0.1:clab:clab@123
+          - show $@
+      external:
+        image: none
+      graphite:
+        icon: server
     none:
       description: Dummy device used to test topology transformation
       _meta_device: true
@@ -3023,6 +2828,7 @@ defaults:
           bundle:
           - vlan_aware
           multi_rt: true
+          ipv6: true
         gateway:
           protocol:
           - anycast
@@ -3632,6 +3438,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
         routing:
           policy:
             set:
@@ -3673,6 +3480,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     srsim:
       description: Nokia SR-SIM (SR-OS) container
       mgmt_if: A/1
@@ -3767,6 +3576,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
         routing:
           policy:
             set:
@@ -3811,6 +3621,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
       _parents:
       - sros
     unknown:
@@ -5069,6 +4881,7 @@ defaults:
         - color
         - fill
         - width
+    config: {}
     provider: {}
     yaml=netlab:
       snapshot:
@@ -6046,6 +5859,60 @@ defaults:
       neighbors: 5
       maxlength: 255
     MAX_NODE_ID: 150
+    validate:
+      ping: 5
+      ping_vrf: 5
+      ping_long: 15
+      vxlan_ping: 20
+      ping_stp: 45
+      ping_irb: 10
+      ra_send: 30
+      ospfv2_adj_p2p: 30
+      ospfv2_adj_lan: 50
+      ospfv2_adj_stp: 120
+      ospfv2_spf: 10
+      ospfv2_spf_long: 30
+      ospfv3_adj_p2p: 30
+      ospfv3_adj_lan: 50
+      ospfv3_adj_stp: 120
+      ospfv3_spf: 10
+      ospfv3_spf_long: 30
+      ospf_import: 20
+      ebgp_session: 30
+      ibgp_session: 30
+      bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_v4_originate: 15
+      bgp_v6_originate: 15
+      bgp_v4_redist: 15
+      bgp_v6_redist: 15
+      isis_adj_p2p: 20
+      isis_adj_lan: 50
+      isis_spf: 15
+      isis_spf_long: 45
+      isis_redist: 30
+      rip_start: 60
+      rip_update: 20
+      ldp_adj: 30
+      stp_forwarding: 40
+      lacp_setup: 10
+      xr:
+        bgp_v4_originate: 80
+        bgp_v6_originate: 80
+        bgp_v4_redist: 90
+        isis_redist: 60
+        ebgp_session: 90
+        ping_vrf: 20
+        bgp_scan_long: 30
+      ios:
+        bgp_v6_redist: 60
+      cisco8000v:
+        ping_irb: 90
+        ping_long: 15
+      vjunos-switch:
+        ping_irb: 40
+      vjunos-router:
+        ping_irb: 90
   hints:
     evpn:
       irb_group: >
@@ -6134,9 +6001,9 @@ defaults:
         storage prices keep falling
   multilab:
     change:
-      name: ml_17
+      name: ml-17
       defaults:
-        name: ml_17
+        name: ml-17
         providers:
           libvirt:
             tunnel_id: '17'
@@ -6165,12 +6032,12 @@ defaults:
     - /home/pipi/netlab_gh/netsim/validate
     plugin:
     - /work/netlab_cicd
-    - /home/pipi/netlab_gh/tests/integration/dhcp
+    - /home/pipi/net101/tools/tests/integration/dhcp
     - /home/pipi/.netlab
     - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
-      - /home/pipi/netlab_gh/tests/integration/dhcp
+      - /home/pipi/net101/tools/tests/integration/dhcp
       - /work/netlab_cicd
       - /home/pipi/.netlab
       - /home/pipi/netlab_gh/netsim/extra
@@ -6293,6 +6160,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -8254,11 +8123,13 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1766743165.5949664
+    timestamp: 1768035354.2135954
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
+    extra:
+    - ../wait_times.yml
+    - ../warnings.yml
     list: []
-    extra: []
     user: []
     system: []
   workdir: /work/netlab_cicd
@@ -8291,11 +8162,252 @@ defaults:
     - vlan
     - vrf
     - vxlan
-  name: ml_17
+  name: ml-17
   module:
   - dhcp
   - routing
-name: ml_17
+plugin:
+- no_dhcp_server
+- multilab
+groups:
+  dhcp_clients:
+    members:
+    - c1
+    - c2
+  all:
+    vars:
+      netlab_show_config: true
+    members: []
+    _default_group: true
+nodes:
+  c1:
+    name: c1
+    interfaces:
+    - dhcp:
+        client:
+          ipv4: true
+      linkindex: 1
+      type: lan
+      bridge: ml-17_1
+      role: stub
+      name: c1 -> [c2,server]
+      ifindex: 1
+      ifname: eth1
+      neighbors:
+      - dhcp:
+          client:
+            default: false
+            ipv4: true
+        ipv4: 172.16.0.2/24
+        ifname: eth1
+        node: c2
+      - ipv4: 172.16.0.3/24
+        ifname: eth1
+        node: server
+    device: linux
+    box: bento/ubuntu-24.04
+    module:
+    - dhcp
+    id: 1
+    role: host
+    provider: libvirt
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:01:00:00
+      ipv4: 192.168.17.101
+    dhcp: {}
+  c2:
+    name: c2
+    interfaces:
+    - dhcp:
+        client:
+          default: false
+          ipv4: true
+      linkindex: 1
+      type: lan
+      bridge: ml-17_1
+      role: stub
+      name: c2 -> [c1,server]
+      ifindex: 1
+      ifname: eth1
+      neighbors:
+      - dhcp:
+          client:
+            ipv4: true
+        ipv4: 172.16.0.1/24
+        ifname: eth1
+        node: c1
+      - ipv4: 172.16.0.3/24
+        ifname: eth1
+        node: server
+    device: linux
+    box: bento/ubuntu-24.04
+    module:
+    - dhcp
+    id: 2
+    role: host
+    provider: libvirt
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:02:00:00
+      ipv4: 192.168.17.102
+    dhcp: {}
+  server:
+    module:
+    - dhcp
+    - routing
+    device: dnsmasq
+    dhcp:
+      server: true
+      pools:
+      - name: links[1]
+        ipv4: 172.16.0.0/24
+        excluded:
+          ipv4:
+          - 172.16.0.3
+        clean_name: links_1_
+    provider: clab
+    name: server
+    interfaces:
+    - ipv4: 172.16.0.3/24
+      linkindex: 1
+      type: lan
+      bridge: ml-17_1
+      role: stub
+      name: server -> [c1,c2]
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - dhcp:
+          client:
+            ipv4: true
+        ipv4: 172.16.0.1/24
+        ifname: eth1
+        node: c1
+      - dhcp:
+          client:
+            default: false
+            ipv4: true
+        ipv4: 172.16.0.2/24
+        ifname: eth1
+        node: c2
+    clab:
+      kind: linux
+      config_templates:
+      - source: initial
+        target: ''
+        mode: ns
+      - source: routing
+        target: ''
+        mode: ns
+      - source: dnsmasq
+        target: /etc/dnsmasq.conf
+      - source: dhcp
+        target: /etc/dhcp.ignore
+      - source: hosts
+        target: /etc/hosts
+        mode: shared
+      binds:
+      - target: /etc/dnsmasq.conf
+        source: node_files/server/dnsmasq
+      - target: /etc/dhcp.ignore
+        source: node_files/server/dhcp
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
+    box: netlab/dnsmasq:latest
+    id: 3
+    role: host
+    mtu: 1500
+    _daemon: true
+    _daemon_parent: linux
+    _daemon_config:
+      dnsmasq: /etc/dnsmasq.conf
+      dhcp: /etc/dhcp.ignore
+    _node_config:
+      initial: :ns
+      routing: :ns
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:03:00:00
+      ipv4: 192.168.17.103
+    hostname: clab-ml-17-server
+    routing:
+      static: []
+    netlab_ansible_skip_module:
+    - dnsmasq
+    - dhcp
+    - initial
+    - routing
+links:
+- _linkname: links[1]
+  interfaces:
+  - node: c1
+    dhcp:
+      client:
+        ipv4: true
+    ipv4: 172.16.0.1/24
+    ifindex: 1
+    ifname: eth1
+  - dhcp:
+      client:
+        default: false
+        ipv4: true
+    node: c2
+    ipv4: 172.16.0.2/24
+    ifindex: 1
+    ifname: eth1
+  - node: server
+    ipv4: 172.16.0.3/24
+    ifindex: 1
+    ifname: eth1
+  linkindex: 1
+  dhcp:
+    subnet:
+      ipv4: true
+  libvirt:
+    provider:
+      clab: true
+  type: lan
+  bridge: ml-17_1
+  node_count: 3
+  role: stub
+  prefix:
+    ipv4: 172.16.0.0/24
+validate:
+- description: Check for DHCP server lease
+  nodes:
+  - server
+  wait_msg: Waiting for DHCP leases on DHCP server
+  wait: 15
+  pass: The DHCP server has at least two active IPv4 leases
+  fail: There are no IPv4 leases on the DHCP server
+  show:
+    eos: dhcp server leases | json
+  exec:
+    dnsmasq: cat /var/lib/misc/dnsmasq.leases | grep --color=never -E ' c[1-9] '
+      | wc -l
+  valid:
+    eos: len(vrfs.default.ipv4ActiveLeases) == 2
+    dnsmasq: stdout.rstrip() == '2'
+  name: lease
+  devices:
+  - dnsmasq
+  - eos
+input:
+- /home/pipi/net101/tools/tests/integration/dhcp/01-ipv4-client.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
+- /home/pipi/.netlab.yml
+- package:topology-defaults.yml
+name: ml-17
 addressing:
   lan:
     ipv4: 172.16.0.0/16
