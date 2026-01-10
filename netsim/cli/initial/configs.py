@@ -101,7 +101,7 @@ def create_node_configs(
         o_fname = o_fname.replace('/','.')              # ... and remove the paths
         o_fname = o_fname.replace('.j2.','.')           # ... and the .j2 suffix when present
       else:                                             # Otherwise, create the output file in
-        o_fname = f'{n_name}/{module}'                  # ... per node directory
+        o_fname = f'{n_name}/{module}{o_suffix}'        # ... per node directory
       if u_templates.create_config_file(
             node=n_data,
             node_dict=node_dict,
