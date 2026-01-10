@@ -51,9 +51,10 @@ def create(topology: Box) -> Box:
   copy_paths(inventory,topology)
   copy_global_vars(inventory,topology)
 
-  inventory.modules.hosts = {}
-  inventory.custom_configs.hosts = {}
-  inventory.daemons.hosts = {}
+  # Create placeholders for well-known groups
+  #
+  for grp in ('modules','custom_configs','daemons','unprovisioned','netlab_no_reload'):
+    inventory[grp].hosts = {}
 
   defaults = topology.defaults
 

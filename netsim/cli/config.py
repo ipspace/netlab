@@ -147,6 +147,14 @@ def reload_node_configs(topology: Box,nodeset: list,args: argparse.Namespace, re
   if args.extra_vars:
     error_and_exit('You cannot specify extra vars while reloading configuration')
 
+  no_reload = topology.get('groups.netlab_no_reload.members',[])
+  if no_reload:
+    nodeset = [ n for n in nodeset if n not in no_reload ]
+    dev_list = { topology.nodes[n].device for n in no_reload }
+    log.warning(
+      text=f"Cannot reload device configurations for device(s) {','.join(sorted(dev_list))}",
+      module="reload")
+
   no_config = []
   for n_name in nodeset:                              # Identify nodes that have no configs
     if not list(cfg_path.glob(n_name+'.*')):          # ... in the specified directory
@@ -216,6 +224,9 @@ def run_config(cli_args: typing.List[str]) -> None:
     deploy_custom_config(topology,nodeset,args,rest)
 
   log.repeat_warnings('netlab config')
+  if topology.get('groups.netlab_no_reload.members',[]):
+    log.info("Use 'netlab initial --limit netlab_no_reload' to deploy initial configuration on"+ \
+             " devices that don't support configuration reload")
 
 """
 We need a wrapper around the actual "run" function to catch the user interrupts
