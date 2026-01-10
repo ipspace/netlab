@@ -37,61 +37,7 @@ def cleanup_config_dir(output_path: Path, args: argparse.Namespace) -> None:
     log.info(f'Cannot clean a directory outside of the lab directory')
 
 """
-Given the node data and module/template name, create a node config file
-"""
-def create_config_file(
-      node: Box,
-      node_dict: dict,
-      topology: Box,
-      module: str,
-      provider_path: str,
-      output_path: Path,
-      template_path: typing.Optional[str] = None,
-      flatten_output_fname: bool = False,
-      config_mode: str = '') -> bool:
-
-  o_suffix = '' if config_mode == 'none' else '.sh' if (config_mode in ('ns','sh')) else '.cfg'
-  if str(output_path).endswith('/'+node.name):          # Per-node directories?
-    o_fname = module + o_suffix                         # No need to have the node name in output file
-  else:
-    o_fname = f'{node.name}.{module}{o_suffix}'         # Single output directory ==> generate output filename
-
-  if not template_path:
-    t_path = u_templates.find_provider_template(        # Find the template path if not specified
-              node=node,
-              fname=module,
-              topology=topology,
-              provider_path=provider_path)
-  else:
-    t_path = template_path
-
-  if not t_path:
-    log.error(
-      f'Cannot find {module} configuration template for {node.name}/device {node.device}',
-      module='configs',
-      more_hints=["Use the '--debug template' option if you're troubleshooting custom configuration templates"])
-    return False
-
-  if flatten_output_fname:                              # When used in "netlab initial --output"
-    o_fname = o_fname.replace('/','.')                  # ... create all output files in the same directory
-    o_fname = o_fname.replace('.j2.','.')               # ... and remove the .j2 suffix when present
-
-  OK = u_templates.render_config_template(              # ... node.template.cfg/sh file in the output directory
-          node=node,
-          node_dict=node_dict,
-          template_id=module,
-          template_path=t_path,
-          output_file=str(output_path / o_fname),
-          provider_path=provider_path,
-          topology=topology)
-  
-  if OK and log.VERBOSE:
-    log.info(f"Rendered {module} template for {node.name} into {o_fname}")
-
-  return OK
-
-"""
-Create all node configuration files, either those specified in the _template_cache
+Create all node configuration files, either those specified in the config_templates
 or in the node 'module' or 'config' lists
 """
 def create_node_configs(
@@ -99,7 +45,6 @@ def create_node_configs(
       nodeset: list,
       abs_path: Path,
       args: argparse.Namespace,
-      no_refresh: bool = False,
       skip_extra_config: bool = False,
       node_directory: bool = False,
       default_suffix: typing.Optional[str] = None,
@@ -120,23 +65,17 @@ def create_node_configs(
     node_deploy = utils.node_deploy_list(n_data,args)                 # Subset of modules to deploy
     node_module = ['initial'] + n_data.get('module',[])               # All modules used on the node
     node_config = n_data.get('config',[])                             # ...plus the extra configs
-    template_cache = n_data.get('_template_cache',[])                 # Template cache
 
-    if no_refresh:                                                    # Skip existing files that are not outdated
-      skip_items = [ item.fname for item in template_cache if not item.get('modified',False) ]
-    else:
-      skip_items = []
-
-    template_mode: dict = {}
-    if args.generate != 'compare':                                    # Collect config modes for template items
-      template_mode = { t_item.fname: t_item.mode for t_item in template_cache if 'mode' in t_item }
-    created_list = []
+    skip_items :typing.List[str] = []
+    config_templates = n_data.get(f'{n_provider}.config_templates',[])
+    template_mode = { cfg_item.source:cfg_item.mode for cfg_item in config_templates if 'mode' in cfg_item }
+    created_list :typing.List[str] = []
 
     # Now build the list of items to create
+    item_list :typing.List[str] = []
     if not skip_extra_config and args.generate != 'compare':          # Create all files?
-      item_list = [ t_item.fname for t_item in template_cache ]       # Start with template cache
-    else:
-      item_list = []
+      item_list = [ cfg_item.source 
+                      for cfg_item in config_templates ]              # Start with template cache
 
     item_list += [ item for item in node_module + node_config         # Next, add other modules
                           if item not in item_list ]                  # and custom config items
@@ -155,15 +94,22 @@ def create_node_configs(
         item_list = ['normalize'] + item_list
 
     for module in item_list:
-      if create_config_file(
+      config_mode = default_suffix or template_mode.get(module,'cfg')
+      o_suffix = '' if config_mode == 'none' else '.sh' if (config_mode in ('ns','sh')) else '.cfg'
+      if flatten_output_fname:                          # Create all output files in the same directory?
+        o_fname = f'{n_name}.{module}{o_suffix}'        # ... we need node name in file name
+        o_fname = o_fname.replace('/','.')              # ... and remove the paths
+        o_fname = o_fname.replace('.j2.','.')           # ... and the .j2 suffix when present
+      else:                                             # Otherwise, create the output file in
+        o_fname = f'{n_name}/{module}'                  # ... per node directory
+      if u_templates.create_config_file(
             node=n_data,
             node_dict=node_dict,
             topology=topology,
             module=module,
             provider_path=provider_path,
-            output_path=abs_path / n_data.name if node_directory else abs_path,
-            config_mode=default_suffix or template_mode.get(module,'cfg'),
-            flatten_output_fname=flatten_output_fname):
+            output_path=abs_path,
+            output_file=o_fname):
         created_list.append(module)
 
     if not log.VERBOSE and created_list:
@@ -176,12 +122,13 @@ Do not generate configuration files that are not module- or custom configs
 def remove_extra_templates(topology: Box, nodeset: list) -> None:
   for n_name in nodeset:
     n_data = topology.nodes[n_name]
-    t_cache_key = f'_template_cache'
+    provider = devices.get_provider(n_data,topology.defaults)
+    t_cache_key = f'{provider}.config_templates'
     if t_cache_key not in n_data:
       continue
 
     n_modules = n_data.get('module',[]) + n_data.get('config',[]) + ['initial']
-    n_data[t_cache_key] = [ item for item in n_data[t_cache_key] if item.fname in n_modules ]
+    n_data[t_cache_key] = [ item for item in n_data[t_cache_key] if item.source in n_modules ]
 
 """
 Create node configurations. The CLI arguments are in 'args' argument, the original

@@ -277,6 +277,7 @@ nodes:
     clab.runtime: ignite
 ```
 
+(lab-clab-binds)=
 ### Using File Binds
 
 You can use **clab.binds** to map container paths to host file system paths, for example:

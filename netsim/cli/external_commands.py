@@ -186,8 +186,14 @@ def start_lab(settings: Box, provider: str, step: int = 2, cli_command: str = "t
   if not run_command(exec_command):
     log.fatal(f"{exec_command} failed, aborting...",cli_command)
 
-def deploy_configs(command: str = "test", fast: typing.Optional[bool] = False) -> None:
-  cmd = ["netlab","initial","--no-message","--no-refresh"]
+def deploy_configs(
+      command: str = "test",
+      fast: typing.Optional[bool] = False,
+      deploy_only: bool = True) -> None:
+  cmd = ["netlab","initial","--no-message"]
+  if deploy_only:
+    cmd.append("--deploy")
+
   if log.VERBOSE:
     cmd.append("-" + "v" * log.VERBOSE)
 

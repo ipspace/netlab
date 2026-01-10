@@ -21,10 +21,8 @@ def check_version(fatal: bool = False) -> None:
         text="You're using Ansible version 12.x or higher; netlab might not work correctly",
         more_hints = [
           "Ansible core version 2.19 introduced breaking changes in templates and playbooks",
-          "We tested netlab core with Ansible version 12.x but not every device template",
-          "You might want to downgrade Ansible to version 11.10 or lower.",
-          "Use 'netlab install ansible' on Ubuntu to do that",
-          "Finally, please open a GitHub issue if you experience errors/crashes"],
+          "We tested netlab core with Ansible version 13.x but some rarely-used devices might",
+          "not work properly. You might want to downgrade Ansible to version 11.10 or lower." ],
         module='ansible',
         flag='ver12',
         category=log.FatalError if fatal else Warning)

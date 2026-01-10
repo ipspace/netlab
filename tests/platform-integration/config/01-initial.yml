@@ -10,9 +10,16 @@ nodes:
   h1:
     device: linux
     provider: clab        # Linux container, configured through namespace scripts
+    clab:
+      binds:
+        hello.txt: /etc/hello/world.txt
+      config_templates:
+        hello: /etc/hello/world
   h2:
     device: linux
     provider: libvirt     # Linux VM, configured through Ansible
+    clab.binds:
+    - hello.txt:/etc/hello/world.txt
   r1:
     device: eos
     provider: clab        # Arista EOS container, configured through Ansible
@@ -22,6 +29,8 @@ nodes:
   r2:
     device: frr
     provider: clab        # FRR container, configured through Ansible
+    clab.binds:
+    - hello.txt:/etc/hello/world.txt
     config.inline: |
       #!/bin/bash
       ip link set {{ interfaces[0].ifname }} up
@@ -38,16 +47,39 @@ links:
   r3:
 - r3-h2
 
+files:
+- path: hello.txt
+  content: |
+    Hello, world
+- path: templates/linux/hello.j2
+  content: |
+    Hello, {{ inventory_hostname }}
+
 validate:
   o_r1:
     nodes: [ r2 ]
     wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPF adjacency
     plugin: ospf_neighbor(nodes.r1.ospf.router_id)
   o_r3:
     nodes: [ r2 ]
     wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPF adjacency
     plugin: ospf_neighbor(nodes.r3.ospf.router_id)
   ping:
     wait: ospfv2_spf
+    wait_msg: Waiting for OSPF SPF run
     nodes: [ h1 ]
     plugin: ping('h2')
+  hello_world:
+    nodes: [ h1, r2 ]
+    devices: [ linux ]
+    exec: cat /etc/hello/world.txt
+    valid: >-
+      'world' in stdout
+  hello_me:
+    nodes: [ h1 ]
+    devices: [ linux ]
+    exec: cat /etc/hello/world
+    valid: >-
+      'h1' in stdout

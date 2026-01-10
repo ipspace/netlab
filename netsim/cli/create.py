@@ -126,7 +126,7 @@ def run(cli_args: typing.List[str],
     args.topology = http_fetch_content(args.topology,args)
 
   if not args.output:
-    args.output = ['provider','yaml=netlab.snapshot.yml','pickle','tools']
+    args.output = ['config','provider','yaml=netlab.snapshot.yml','pickle','tools']
     args.output.append('devices' if args.devices else 'ansible:dirs')
   elif args.devices:
     log.error('--output and --devices flags are mutually exclusive',log.IncorrectValue,'create')
