@@ -81,3 +81,13 @@ After that, it treats the saved device configurations as custom templates (using
 To display device configurations within the Ansible playbook without deploying them, use `-v --tags test` parameters after the template name. 
 
 The `-v` flag enables debugging output, and the bogus `test` flag skips configuration deployment.
+
+```{tip}
+The **netlab config** command supports comprehensive debugging options. Use `--debug` to troubleshoot template search paths and template rendering.
+
+For example:
+- `netlab config my_template.j2 --debug template` - Debug Jinja2 template processing
+- `netlab config my_template.j2 --debug all -vv` - Enable all debugging with verbose output
+
+See [](dev-debug-flag) for complete documentation of all debugging options and which commands support them.
+```

@@ -73,6 +73,10 @@ You can specify the lab topology with a URL. The contents from the specified URL
 The lab topology downloaded from a URL must be self-contained. Any external files it needs must be embedded in the lab topology with the **[‌files](plugin-files)** plugin.
 ```
 
+```{tip}
+The **netlab up** command supports comprehensive debugging implemented within the **[‌netlab create](netlab-create)** command. See **[‌netlab create](netlab-create)** documentation for more details.
+```
+
 ```{warning}
 Do not use the `--fast-config` option with custom configuration templates that must be executed in a specific order. See **‌[netlab initial](netlab-initial-custom)** documentation for more details.
 ```

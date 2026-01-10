@@ -84,3 +84,5 @@ The **netlab** command is the *netlab* CLI interface. It includes data model tra
    netlab usage <usage.md>
    netlab validate <validate.md>
 ```
+
+See also [](dev-debug) for complete documentation of all debugging options and which commands support them.

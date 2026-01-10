@@ -57,3 +57,7 @@ Validation test development is usually an interactive process that requires seve
 
 * The **netlab validate** command compares the timestamp of the lab topology file with the timestamp of the snapshot file. When necessary, it rereads the validation tests from the changed lab topology file.
 * You can develop the validation tests in a separate YAML file and run them with the **netlab validate --source** CLI option. After the validation tests are complete, copy them into the lab topology.
+
+```{tip}
+Use the verbose flag (`-v` or `-vv`) to display commands executed on lab devices, the returned printouts, the parsed results, and the results of the validation plugins.
+```

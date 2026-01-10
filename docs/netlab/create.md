@@ -81,12 +81,20 @@ output files created when no output is specified:
 For a complete list of output formats please consult the documentation
 ```
 
-For more details on topology file format, please read the [lab topology overview](../topology-overview.md) and [reference documentation](../topology-reference.md).
+For more details on the topology file format, please read the [lab topology overview](../topology-overview.md) and [reference documentation](../topology-reference.md).
 
 ```{tip}
 You can specify the lab topology with a URL. The contents from the specified URL will be downloaded, saved into `downloaded.yml`, and used as the lab topology.
 
 The lab topology downloaded from a URL must be self-contained. Any external files it needs must be embedded in the lab topology with the **[‌files](plugin-files)** plugin.
+```
+
+```{tip}
+The **netlab create** command supports comprehensive [debugging options](dev-debug). Use the [`--debug` CLI argument](dev-debug-flag) to troubleshoot topology transformation, addressing, module processing, and more.
+
+For example:
+- `netlab create --debug addressing,vlan` - Debug IP addressing and VLAN assignment
+- `netlab create --debug links,modules -vv` - Debug link transformation and module processing with verbose output
 ```
 
 (netlab-create-output-formats)=

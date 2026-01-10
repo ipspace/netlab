@@ -138,3 +138,11 @@ All unrecognized parameters are passed to the internal `initial-config.ansible` 
 
 * Use the `-o` flag to create device configurations without deploying them. The optional value of `-o` parameter specifies the output directory name (default: `config`)
 * To display device configurations without deploying them, use `-v --tags test` flags (a bogus playbook tag turns off configuration deployment).
+
+```{tip}
+The **netlab initial** command supports [debugging options](dev-debug-flag) for template processing and configuration generation. Use the `--debug` CLI argument to troubleshoot template rendering and path resolution.
+
+For example:
+- `netlab initial --debug template` - Debug Jinja2 template processing
+- `netlab initial --debug paths` - Debug template search paths (helpful for custom templates)
+```
