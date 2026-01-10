@@ -12,7 +12,8 @@ import typing
 from box import Box
 
 from ...utils import files as _files
-from ...utils import log, strings
+from ...utils import log, strings, templates
+from ...utils import read as _read
 from .. import external_commands
 
 
@@ -44,7 +45,9 @@ def get_dockerfiles() -> dict:
   for d_file in d_list:
     daemon = os.path.basename(os.path.dirname(d_file))
     root, ext = os.path.splitext(d_file)
-    df_dict[daemon+ext] = d_file
+    # If the Dockerfile has a .j2 extension, keep it in the key name
+    ext = ext.replace('.j2', '')
+    df_dict[daemon + ext] = d_file
 
   return df_dict
 
@@ -54,16 +57,46 @@ def get_description(dfname: str) -> str:
     for line in df_lines:
       if not line.startswith('LABEL'):
         continue
-
       if not 'description=' in line:
         continue
-
       return line.split('description=')[1].replace('"','')
-    
+
   except:
     return '-- failed --'
   
   return '???'
+
+def render_j2_dockerfile(df_path: str, tmp_dir: str) -> str:
+  """
+  Render Dockerfile.j2 if needed, return path to use for build.
+  
+  If the Dockerfile ends with .j2, it's a Jinja2 template and needs to be rendered
+  with netlab device defaults before building.
+  """
+  if not df_path.endswith('.j2'):
+    return df_path  # Regular Dockerfile, use as-is
+  
+  strings.print_colored_text('[TEMPLATE] ','cyan',None)
+  print(f"Rendering Jinja2 template from {os.path.basename(df_path)}")
+  
+  # Load topology defaults to get device credentials
+  try:
+    defaults = _read.system_defaults().defaults
+  except Exception as ex:
+    log.fatal(f'Could not load system defaults: {str(ex)}', module='build')
+  
+  # Render template (fail() is available as a standard Jinja2 global function)
+  try:
+    templates.write_template(os.path.dirname(df_path), os.path.basename(df_path), {'defaults': defaults}, tmp_dir, 'Dockerfile')
+  except Exception as ex:
+    log.fatal(
+      f'Failed to render Dockerfile template {os.path.basename(df_path)}: {str(ex)}',
+      module='build')
+  
+  strings.print_colored_text('[RENDERED] ','green',None)
+  print(f"Template rendered to temporary Dockerfile")
+  
+  return os.path.join(tmp_dir, 'Dockerfile')
 
 def build_image(image: str, tag: typing.Optional[str]) -> None:
   if tag is None or not tag:
@@ -93,8 +126,12 @@ def build_image(image: str, tag: typing.Optional[str]) -> None:
 
   with tempfile.TemporaryDirectory() as tmp:
     os.chdir(tmp)
+    
+    # Render Dockerfile.j2 if needed, otherwise use original path
+    dockerfile_to_use = render_j2_dockerfile(df_dict[image], tmp)
+    
     status = external_commands.run_command(
-      f'docker build -t {tag} -f {df_dict[image]} .',
+      f'docker build -t {tag} -f {dockerfile_to_use} .',
       ignore_errors=True,
       check_result=False)
     if status:
@@ -112,7 +149,9 @@ def list_dockerfiles() -> None:
   rows = []
   df_dict = get_dockerfiles()
   for daemon in sorted(df_dict.keys()):
-    rows.append([daemon, f'netlab/{daemon}:latest', get_description(df_dict[daemon])])
+    # Strip .j2 extension from daemon name if present for display
+    display_name = daemon.replace('.j2', '')
+    rows.append([display_name, f'netlab/{display_name}:latest', get_description(df_dict[daemon])])
 
   print("""
 The 'netlab clab build' command can be used to build the following container images

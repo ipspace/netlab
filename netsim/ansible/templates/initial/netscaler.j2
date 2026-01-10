@@ -1,0 +1,15 @@
+
+set ns hostName {{ inventory_hostname.replace("_","-") }}
+
+{% for l in interfaces|default([]) %}
+set interface {{ l.ifname }} -ifAlias "{{ l.name }}{{
+  " ["+l.role+"]" if l.role is defined else "" }}" -ifnum {{
+  l.ifname }} -lldpmode TRANSCEIVER
+{% if l.ipv4 is defined %}
+{%   set vlan_id = 3990 + l.ifindex %}
+add vlan {{ vlan_id }} -aliasName Vlan{{ vlan_id }}
+add ns ip {{ l.ipv4|ansible.utils.ipaddr('address') }} {{ l.ipv4|ansible.utils.ipaddr('netmask') }} -vServer DISABLED
+bind vlan {{ vlan_id }} -ifnum {{ l.ifname }}
+bind vlan {{ vlan_id }} -IPAddress {{ l.ipv4|ansible.utils.ipaddr('address') }} {{ l.ipv4|ansible.utils.ipaddr('netmask') }}
+{% endif %}
+{% endfor %}

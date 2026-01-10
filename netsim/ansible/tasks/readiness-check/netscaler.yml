@@ -1,0 +1,17 @@
+---
+#
+# Netscaler readiness check - wait for nscli to be available
+#
+- name: Check {{ netlab_device_type|default(inventory_hostname) }} nscli readiness
+  ansible.builtin.raw: nscli -U '127.0.0.1:{{ ansible_user }}:{{ ansible_ssh_pass }}' 'show ns hostName'
+  changed_when: False
+  register: command_out
+  until: command_out.rc == 0 and "Done" in command_out.stdout
+  retries: "{{ netlab_check_retries | default(60) }}"
+  delay: "{{ netlab_check_delay | default(5) }}"
+  failed_when: False
+
+- name: Confirm {{ inventory_hostname }} is ready
+  ansible.builtin.debug:
+    msg: "Node {{ inventory_hostname }} is ready (nscli responding)."
+  when: command_out.rc == 0

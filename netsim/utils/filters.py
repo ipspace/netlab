@@ -102,6 +102,15 @@ def j2_hwaddr(value: typing.Any, format: str = '') -> str:
     else:                                         # Otherwise it was a filter query, return empty string
       return ''
 
+# Fail template rendering with a custom error message
+#
+def j2_fail(msg: str) -> None:
+  """
+  Jinja2 global function to fail template rendering with a custom error message.
+  Use in templates: {{ fail('Error message') }}
+  """
+  raise ValueError(msg)
+
 class j2_Undefined(StrictUndefined):
   """
   Mimics Ansible's undefined variable handling in Jinja2 templates.

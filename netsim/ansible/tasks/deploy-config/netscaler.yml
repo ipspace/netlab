@@ -1,0 +1,19 @@
+- ansible.builtin.set_fact:
+    deployed_config: "{{ lookup('template', config_template) }}"
+
+- name: "Netscaler: deploying {{ netsim_action }} from {{ config_template }}"
+  ansible.builtin.raw: |
+    AUTHENTICATE=127.0.0.1:{{ ansible_user }}:{{ ansible_ssh_pass }}
+    while IFS= read -r line; do
+      [ -n "$line" ] && nscli -U "$AUTHENTICATE" "$line" || true
+    done << 'CONFIG_EOF'
+    {{ deployed_config }}
+    CONFIG_EOF
+
+    if ! nscli -U "$AUTHENTICATE" "save ns config"; then
+      echo "Save failed waiting..."
+      sleep 5
+      nscli -U "$AUTHENTICATE" "save ns config"
+    fi
+  when: not ansible_check_mode
+  tags: [ print_action, always ]

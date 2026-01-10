@@ -1,0 +1,56 @@
+FROM quay.io/netscaler/netscaler-cpx:13.1-60.29
+
+LABEL description="Citrix Netscaler ADC CPX for containerlab"
+
+ENV EULA=yes
+
+# Setup the netlab container environment
+{% set _user = defaults.devices.netscaler.clab.group_vars.ansible_user %}
+{% set _password = defaults.devices.netscaler.clab.group_vars.ansible_ssh_pass %}
+{% if not _user %}{{ fail('ansible_user must be defined in devices.netscaler.clab.group_vars') }}{% endif %}
+{% if not _password %}{{ fail('ansible_ssh_pass must be defined in devices.netscaler.clab.group_vars') }}{% endif %}
+RUN <<BUILD
+# Make working directory
+#
+mkdir -p /var/nstmp && chmod 777 /var/nstmp
+#
+# Add clab user
+#
+useradd -m {{ _user }} && echo "{{ _user }}:{{ _password }}" | chpasswd
+#
+# Create bash scripts
+#
+cat <<WRAPPER >/usr/local/bin/nscli-wrapper
+#!/bin/bash
+exec nscli -U 127.0.0.1:{{ _user }}:{{ _password }}
+WRAPPER
+chmod +x /usr/local/bin/nscli-wrapper
+cat >/entrypoint.sh <<ENTRYPOINT
+#!/bin/bash
+/var/netscaler/bins/docker_startup.sh &
+if [ ! -f /initialized ]; then
+  while true; do
+    cli_script.sh "add system user {{ _user }} {{ _password }} -promptString '%u@%h'" >/tmp/result.txt
+    cat /tmp/result.txt
+    if ! grep -q "ERROR: Connection failed" /tmp/result.txt; then
+      echo "User configured"
+      break
+    fi
+    echo "Provision: waiting for another 5 seconds"
+    sleep 5
+  done
+  cli_script.sh "bind system user {{ _user }} superuser 0"
+  cli_script.sh "save ns config"
+  touch /initialized
+fi
+wait
+ENTRYPOINT
+chmod +x /entrypoint.sh
+BUILD
+
+# Entrypoint - runs startup and also provisioning if container is not already initialized
+# the timing of 120 seconds is required to ensure the netscaler is fully started before creating the user
+# when tested with 14.1, 120 was not enough, it might need to be increased to 180 seconds for future versions
+
+ENTRYPOINT ["/entrypoint.sh"]
+EXPOSE 22 9080 9443
