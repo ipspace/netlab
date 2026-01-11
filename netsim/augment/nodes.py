@@ -11,7 +11,7 @@ import netaddr
 from box import Box
 
 from .. import data, providers, utils
-from ..data import global_vars, is_true_int
+from ..data import append_to_list, global_vars, is_true_int
 from ..data.types import must_be_device, must_be_id, must_be_int, must_be_string
 from ..data.validate import get_object_attributes, validate_attributes
 from ..modules._dataplane import extend_id_set, get_next_id, is_id_used, set_id_counter
@@ -469,9 +469,10 @@ def augment_node_device_data(n: Box, topology: Box) -> None:
         category=log.IncorrectType)
       n.pop(attr_kw,None)
 
+  features = devices.get_device_features(n,defaults)
+
   role = n.get('role',None)
   if role:
-    features = devices.get_device_features(n,defaults)
     allowed_roles = features.initial.get('roles',['router'])
     if role not in allowed_roles:
       d_provider = devices.get_provider(n,defaults)
@@ -481,6 +482,9 @@ def augment_node_device_data(n: Box, topology: Box) -> None:
         flag='nodes.roles',
         category=log.IncorrectType,
         module='nodes')
+
+  if not features.get('initial.reload',True):
+    append_to_list(topology.groups.netlab_no_reload,'members',n.name)
 
 '''
 Main node transformation code
