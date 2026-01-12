@@ -1,9 +1,15 @@
 Release Notes
 =============
 
-**Release 26.01 (2026-xx-xx)**
+**Release 26.01 (2026-01-12)**
 
 Release 26.01 introduces a major rewrite of the device configuration file generation process, making it fully independent of Ansible. Ansible is used solely for configuration deployment.
+
+Other new features include:
+
+* EVPN for VXLAN-over-IPv6
+* The 'skip_config' [node attribute](node-attributes) can be used to deploy partially-provisioned labs
+* Lightweight [netlab API HTTP server](netlab-api)
 
 [More details](release-26.01) and [breaking changes](release-26.01-breaking)
 
