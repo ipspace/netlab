@@ -23,7 +23,6 @@ You can influence the data model transformation with optional [configuration mod
 **netlab create** uses transformed node- and link-level data structures to create:
 
 * Pickled transformed topology data in the **netlab.snapshot.pickle** file. This file is used by many other **netlab** commands to get the information about the currently running lab topology.
-* Snapshot of the transformed topology in the **netlab.snapshot.yml** file. You can use this file to get the information about the current lab topology in your own scripts.
 * Device configuration files
 * **Vagrantfile** supporting *[libvirt](lab-libvirt)* environment
 * **clab.yml** file used by *containerlab*.
@@ -74,7 +73,6 @@ optional arguments:
 output files created when no output is specified:
 
   * Pickled transformed data in netlab.snapshot.pickle
-  * Transformed topology snapshot in netlab.snapshot.yml
   * Device configuration files
   * Virtualization provider file with provider-specific filename
     (Vagrantfile or clab.yml)
