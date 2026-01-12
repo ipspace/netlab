@@ -50,9 +50,9 @@ class ConfigurationFiles(_TopologyOutput):
       create_list = []
       skip_config = n_data.get('skip_config',[])
       for cfg_item in n_data.get(f'{n_provider}.config_templates',[]):
-        if cfg_item in skip_config:
-          continue
         cfg_source = cfg_item.source
+        if cfg_source in skip_config:
+          continue
         if cfg_item.get('mode','') == SHARED_SUFFIX:
           if cfg_source in shared_list:
             create_list.append(f'{cfg_source} (shared)')
