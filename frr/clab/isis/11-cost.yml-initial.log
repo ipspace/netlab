@@ -1,21 +1,9 @@
-Warning in ansible: You're using Ansible version 12.x or higher; netlab might not work correctly
-... Ansible core version 2.19 introduced breaking changes in templates and playbooks
-... We tested netlab core with Ansible version 12.x but not every device template
-... You might want to downgrade Ansible to version 11.10 or lower.
-... Use 'netlab install ansible' on Ubuntu to do that
-... Finally, please open a GitHub issue if you experience errors/crashes
-... Set defaults.ansible.warnings.ver12 to False to hide this warning
- [INFO] Checking for updates in configuration templates
  [INFO] Creating configuration snippets
-[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
-[WARNING]: Found variable using reserved name 'hosts'.
-Origin: /work/netlab_cicd/group_vars/all/topology.yml:157:1
-
-155     ipv4: 10.2.0.0/24
-156     prefix: 32
-157 hosts:
-    ^ column 1
-
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -40,190 +28,104 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
-
-TASK [Find configuration template for normalize] *******************************
-ok: [dut]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-
-TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [dut]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
-
-TASK [Deploy normalize configuration] ******************************************
-skipping: [dut]
-
-TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [x1]
-
-TASK [Find configuration template for normalize] *******************************
-ok: [x1]
-
-TASK [fail] ********************************************************************
-skipping: [x1]
-
-TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [x1]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [x1]
-
-TASK [Deploy normalize configuration] ******************************************
-skipping: [x1]
-
-TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [x2]
 
 TASK [Find configuration template for normalize] *******************************
+ok: [dut]
+ok: [x1]
 ok: [x2]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
 skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [dut]
+ok: [x1]
 ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [x1]
 skipping: [x2]
 
 TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+skipping: [x1]
 skipping: [x2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
+ok: [x1]
+ok: [x2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [dut]
+ok: [x1]
+ok: [x2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
+skipping: [x1]
+skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
+ok: [x1]
+ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
     "msg": "initial configuration for dut\n=========================================\n#!/bin/bash\n#\nset -e\nset -x\n#\n# Create bash profile script\n#\ncat <<SCRIPT >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)# \"\necho\necho \"Use vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)\n#\n# FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands\n#\nsysctl -w net.ipv4.ip_forward=1\nsysctl -w net.ipv6.conf.all.forwarding=0\n#\n#\n# Get the current next hop for the default route\n#\ndef_nh=$(ip route list default|awk '{ print $3 }')\n#\n# Create the management VRF and add eth0 to it\n#\nif [ ! -e /sys/devices/virtual/net/mgmt ]; then\n  ip link add mgmt type vrf table 42\nfi\nip link set mgmt up\nsysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1\nip link set eth0 master mgmt\n#\n# Reinstall the default route if we had it before\n#\nif [[ -n \"$def_nh\" ]]; then\n  ip route add 0.0.0.0/0 vrf mgmt via $def_nh\nfi\n#\n# Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)\n#\n\n# Set system defaults\n#\n# Send ARP requests from a sane source IP address\n#\nsysctl -w net.ipv4.conf.all.arp_announce=2\n\n#\n# Create loopbacks, stub and lag/bond devices\n#\nif [ ! -e /sys/class/net/lo ]; then\n  if [ ! -e /sys/devices/virtual/net/lo ]; then\n    ip link add lo type dummy\n    ip link set dev lo up\n  fi\nfi\n\n# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)\n#\nip link set eth1 down\nsysctl -qw net.ipv6.conf.eth1.disable_ipv6=1\nip link set dev eth1 mtu 1500\nip link set eth1 up\nip link set eth2 down\nsysctl -qw net.ipv6.conf.eth2.disable_ipv6=1\nip link set dev eth2 mtu 1500\nip link set eth2 up\n\n#\n# Add vtysh.conf file\necho \"service integrated-vtysh-config\" >/etc/frr/vtysh.conf\n\n#\n# Rest of initial configuration done through VTYSH\n#\ncat >/tmp/config <<CONFIG\nhostname dut\n!\nlog file /tmp/logging\n\n!\nip forwarding\nvrf mgmt\n exit-vrf\n!\nfrr defaults datacenter\n!\ninterface lo\n no shutdown\n ip address 10.0.0.1/32\n!\ninterface eth1\n no shutdown\n description dut -> x1\n ip address 10.1.0.1/30\n!\ninterface eth2\n no shutdown\n description dut -> x2\n ip address 10.1.0.5/30\n!\ndo write\nCONFIG\nvtysh -f /tmp/config\n!\nexit 0\n"
 }
+ok: [x1] => {
+    "msg": "initial configuration for x1\n=========================================\n#!/bin/bash\n#\nset -e\nset -x\n#\n# Create bash profile script\n#\ncat <<SCRIPT >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)# \"\necho\necho \"Use vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)\n#\n# FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands\n#\nsysctl -w net.ipv4.ip_forward=1\nsysctl -w net.ipv6.conf.all.forwarding=0\n#\n#\n# Get the current next hop for the default route\n#\ndef_nh=$(ip route list default|awk '{ print $3 }')\n#\n# Create the management VRF and add eth0 to it\n#\nif [ ! -e /sys/devices/virtual/net/mgmt ]; then\n  ip link add mgmt type vrf table 42\nfi\nip link set mgmt up\nsysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1\nip link set eth0 master mgmt\n#\n# Reinstall the default route if we had it before\n#\nif [[ -n \"$def_nh\" ]]; then\n  ip route add 0.0.0.0/0 vrf mgmt via $def_nh\nfi\n#\n# Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)\n#\n\n# Set system defaults\n#\n# Send ARP requests from a sane source IP address\n#\nsysctl -w net.ipv4.conf.all.arp_announce=2\n\n#\n# Create loopbacks, stub and lag/bond devices\n#\nif [ ! -e /sys/class/net/lo ]; then\n  if [ ! -e /sys/devices/virtual/net/lo ]; then\n    ip link add lo type dummy\n    ip link set dev lo up\n  fi\nfi\n\n# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)\n#\nip link set eth1 down\nsysctl -qw net.ipv6.conf.eth1.disable_ipv6=1\nip link set dev eth1 mtu 1500\nip link set eth1 up\n\n#\n# Add vtysh.conf file\necho \"service integrated-vtysh-config\" >/etc/frr/vtysh.conf\n\n#\n# Rest of initial configuration done through VTYSH\n#\ncat >/tmp/config <<CONFIG\nhostname x1\n!\nlog file /tmp/logging\n\n!\nip forwarding\nvrf mgmt\n exit-vrf\n!\nfrr defaults datacenter\n!\ninterface lo\n no shutdown\n ip address 10.0.0.2/32\n!\ninterface eth1\n no shutdown\n description x1 -> dut\n ip address 10.1.0.2/30\n!\ndo write\nCONFIG\nvtysh -f /tmp/config\n!\nexit 0\n"
+}
+ok: [x2] => {
+    "msg": "initial configuration for x2\n=========================================\n#!/bin/bash\n#\nset -e\nset -x\n#\n# Create bash profile script\n#\ncat <<SCRIPT >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)# \"\necho\necho \"Use vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)\n#\n# FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands\n#\nsysctl -w net.ipv4.ip_forward=1\nsysctl -w net.ipv6.conf.all.forwarding=0\n#\n#\n# Get the current next hop for the default route\n#\ndef_nh=$(ip route list default|awk '{ print $3 }')\n#\n# Create the management VRF and add eth0 to it\n#\nif [ ! -e /sys/devices/virtual/net/mgmt ]; then\n  ip link add mgmt type vrf table 42\nfi\nip link set mgmt up\nsysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1\nip link set eth0 master mgmt\n#\n# Reinstall the default route if we had it before\n#\nif [[ -n \"$def_nh\" ]]; then\n  ip route add 0.0.0.0/0 vrf mgmt via $def_nh\nfi\n#\n# Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)\n#\n\n# Set system defaults\n#\n# Send ARP requests from a sane source IP address\n#\nsysctl -w net.ipv4.conf.all.arp_announce=2\n\n#\n# Create loopbacks, stub and lag/bond devices\n#\nif [ ! -e /sys/class/net/lo ]; then\n  if [ ! -e /sys/devices/virtual/net/lo ]; then\n    ip link add lo type dummy\n    ip link set dev lo up\n  fi\nfi\n\n# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)\n#\nip link set eth1 down\nsysctl -qw net.ipv6.conf.eth1.disable_ipv6=1\nip link set dev eth1 mtu 1500\nip link set eth1 up\n\n#\n# Add vtysh.conf file\necho \"service integrated-vtysh-config\" >/etc/frr/vtysh.conf\n\n#\n# Rest of initial configuration done through VTYSH\n#\ncat >/tmp/config <<CONFIG\nhostname x2\n!\nlog file /tmp/logging\n\n!\nip forwarding\nvrf mgmt\n exit-vrf\n!\nfrr defaults datacenter\n!\ninterface lo\n no shutdown\n ip address 10.0.0.3/32\n!\ninterface eth1\n no shutdown\n description x2 -> dut\n ip address 10.1.0.6/30\n!\ndo write\nCONFIG\nvtysh -f /tmp/config\n!\nexit 0\n"
+}
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for dut, x1, x2
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [dut -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [dut]
+skipping: [x1]
+skipping: [x2]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for dut, x1, x2
 
 TASK [template] ****************************************************************
+changed: [x2]
+changed: [x1]
 changed: [dut]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
+ok: [x1]
+ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /work/netlab_cicd/node_files/dut/initial] ***
+changed: [x1]
+changed: [x2]
 changed: [dut]
 
 TASK [run vtysh to import initial config from /work/netlab_cicd/node_files/dut/initial] ***
 skipping: [dut]
-
-TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [x1]
-
-TASK [Find configuration template for initial] *********************************
-ok: [x1]
-
-TASK [fail] ********************************************************************
 skipping: [x1]
-
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [x1]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [x1] => {
-    "msg": "initial configuration for x1\n=========================================\n#!/bin/bash\n#\nset -e\nset -x\n#\n# Create bash profile script\n#\ncat <<SCRIPT >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)# \"\necho\necho \"Use vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)\n#\n# FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands\n#\nsysctl -w net.ipv4.ip_forward=1\nsysctl -w net.ipv6.conf.all.forwarding=0\n#\n#\n# Get the current next hop for the default route\n#\ndef_nh=$(ip route list default|awk '{ print $3 }')\n#\n# Create the management VRF and add eth0 to it\n#\nif [ ! -e /sys/devices/virtual/net/mgmt ]; then\n  ip link add mgmt type vrf table 42\nfi\nip link set mgmt up\nsysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1\nip link set eth0 master mgmt\n#\n# Reinstall the default route if we had it before\n#\nif [[ -n \"$def_nh\" ]]; then\n  ip route add 0.0.0.0/0 vrf mgmt via $def_nh\nfi\n#\n# Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)\n#\n\n# Set system defaults\n#\n# Send ARP requests from a sane source IP address\n#\nsysctl -w net.ipv4.conf.all.arp_announce=2\n\n#\n# Create loopbacks, stub and lag/bond devices\n#\nif [ ! -e /sys/class/net/lo ]; then\n  if [ ! -e /sys/devices/virtual/net/lo ]; then\n    ip link add lo type dummy\n    ip link set dev lo up\n  fi\nfi\n\n# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)\n#\nip link set eth1 down\nsysctl -qw net.ipv6.conf.eth1.disable_ipv6=1\nip link set dev eth1 mtu 1500\nip link set eth1 up\n\n#\n# Add vtysh.conf file\necho \"service integrated-vtysh-config\" >/etc/frr/vtysh.conf\n\n#\n# Rest of initial configuration done through VTYSH\n#\ncat >/tmp/config <<CONFIG\nhostname x1\n!\nlog file /tmp/logging\n\n!\nip forwarding\nvrf mgmt\n exit-vrf\n!\nfrr defaults datacenter\n!\ninterface lo\n no shutdown\n ip address 10.0.0.2/32\n!\ninterface eth1\n no shutdown\n description x1 -> dut\n ip address 10.1.0.2/30\n!\ndo write\nCONFIG\nvtysh -f /tmp/config\n!\nexit 0\n"
-}
-
-TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x1
-
-TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x1 -> localhost]
-
-TASK [Disable FRR management VRF when modprobe fails] **************************
-skipping: [x1]
-
-TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1
-
-TASK [template] ****************************************************************
-changed: [x1]
-
-TASK [set_fact] ****************************************************************
-ok: [x1]
-
-TASK [run /tmp/config.sh to deploy initial config from /work/netlab_cicd/node_files/x1/initial] ***
-changed: [x1]
-
-TASK [run vtysh to import initial config from /work/netlab_cicd/node_files/x1/initial] ***
-skipping: [x1]
-
-TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [x2]
-
-TASK [Find configuration template for initial] *********************************
-ok: [x2]
-
-TASK [fail] ********************************************************************
-skipping: [x2]
-
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [x2]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [x2] => {
-    "msg": "initial configuration for x2\n=========================================\n#!/bin/bash\n#\nset -e\nset -x\n#\n# Create bash profile script\n#\ncat <<SCRIPT >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)# \"\necho\necho \"Use vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)\n#\n# FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands\n#\nsysctl -w net.ipv4.ip_forward=1\nsysctl -w net.ipv6.conf.all.forwarding=0\n#\n#\n# Get the current next hop for the default route\n#\ndef_nh=$(ip route list default|awk '{ print $3 }')\n#\n# Create the management VRF and add eth0 to it\n#\nif [ ! -e /sys/devices/virtual/net/mgmt ]; then\n  ip link add mgmt type vrf table 42\nfi\nip link set mgmt up\nsysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1\nip link set eth0 master mgmt\n#\n# Reinstall the default route if we had it before\n#\nif [[ -n \"$def_nh\" ]]; then\n  ip route add 0.0.0.0/0 vrf mgmt via $def_nh\nfi\n#\n# Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)\n#\n\n# Set system defaults\n#\n# Send ARP requests from a sane source IP address\n#\nsysctl -w net.ipv4.conf.all.arp_announce=2\n\n#\n# Create loopbacks, stub and lag/bond devices\n#\nif [ ! -e /sys/class/net/lo ]; then\n  if [ ! -e /sys/devices/virtual/net/lo ]; then\n    ip link add lo type dummy\n    ip link set dev lo up\n  fi\nfi\n\n# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)\n#\nip link set eth1 down\nsysctl -qw net.ipv6.conf.eth1.disable_ipv6=1\nip link set dev eth1 mtu 1500\nip link set eth1 up\n\n#\n# Add vtysh.conf file\necho \"service integrated-vtysh-config\" >/etc/frr/vtysh.conf\n\n#\n# Rest of initial configuration done through VTYSH\n#\ncat >/tmp/config <<CONFIG\nhostname x2\n!\nlog file /tmp/logging\n\n!\nip forwarding\nvrf mgmt\n exit-vrf\n!\nfrr defaults datacenter\n!\ninterface lo\n no shutdown\n ip address 10.0.0.3/32\n!\ninterface eth1\n no shutdown\n description x2 -> dut\n ip address 10.1.0.6/30\n!\ndo write\nCONFIG\nvtysh -f /tmp/config\n!\nexit 0\n"
-}
-
-TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x2
-
-TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x2 -> localhost]
-
-TASK [Disable FRR management VRF when modprobe fails] **************************
-skipping: [x2]
-
-TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x2
-
-TASK [template] ****************************************************************
-changed: [x2]
-
-TASK [set_fact] ****************************************************************
-ok: [x2]
-
-TASK [run /tmp/config.sh to deploy initial config from /work/netlab_cicd/node_files/x2/initial] ***
-changed: [x2]
-
-TASK [run vtysh to import initial config from /work/netlab_cicd/node_files/x2/initial] ***
 skipping: [x2]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -234,117 +136,70 @@ ok: [x1]
 ok: [x2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=isis)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1 => (item=isis)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x2 => (item=isis)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=isis)
 
 TASK [Figure out whether to deploy the module isis on current device] **********
 ok: [dut]
+ok: [x1]
+ok: [x2]
 
 TASK [Find configuration template for isis] ************************************
 ok: [dut]
+ok: [x1]
+ok: [x2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
+skipping: [x1]
+skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for isis] ********************
 ok: [dut]
+ok: [x1]
+ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
     "msg": "isis configuration for dut\n=========================================\n!\n!\n!\nrouter isis Gandalf\n log-adjacency-changes\n hostname dynamic\n is-type level-1-2\n metric-style wide\n lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800\n net 49.0001.0000.0000.0001.00\n\n\n!\ninterface lo\n! \n ip router isis Gandalf\n!\ninterface eth1\n! dut -> x1\n ip router isis Gandalf\n isis network point-to-point\n isis metric 17\n!\ninterface eth2\n! dut -> x2\n ip router isis Gandalf\n isis network point-to-point\n isis metric 80000\n!\n\n!\ndo write\n"
 }
-
-TASK [Deploy isis configuration] ***********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for dut
-
-TASK [template] ****************************************************************
-changed: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
-TASK [run /tmp/config.sh to deploy isis config from /work/netlab_cicd/node_files/dut/isis] ***
-skipping: [dut]
-
-TASK [run vtysh to import isis config from /work/netlab_cicd/node_files/dut/isis] ***
-changed: [dut]
-
-TASK [Figure out whether to deploy the module isis on current device] **********
-ok: [x1]
-
-TASK [Find configuration template for isis] ************************************
-ok: [x1]
-
-TASK [fail] ********************************************************************
-skipping: [x1]
-
-TASK [Find configuration deployment deploy_script for isis] ********************
-ok: [x1]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x1] => {
     "msg": "isis configuration for x1\n=========================================\n!\n!\n!\nrouter isis Gandalf\n log-adjacency-changes\n hostname dynamic\n is-type level-1-2\n metric-style wide\n lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800\n net 49.0001.0000.0000.0002.00\n\n\n!\ninterface lo\n! \n ip router isis Gandalf\n!\ninterface eth1\n! x1 -> dut\n ip router isis Gandalf\n isis network point-to-point\n isis metric 70000\n!\n\n!\ndo write\n"
 }
-
-TASK [Deploy isis configuration] ***********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1
-
-TASK [template] ****************************************************************
-changed: [x1]
-
-TASK [set_fact] ****************************************************************
-ok: [x1]
-
-TASK [run /tmp/config.sh to deploy isis config from /work/netlab_cicd/node_files/x1/isis] ***
-skipping: [x1]
-
-TASK [run vtysh to import isis config from /work/netlab_cicd/node_files/x1/isis] ***
-changed: [x1]
-
-TASK [Figure out whether to deploy the module isis on current device] **********
-ok: [x2]
-
-TASK [Find configuration template for isis] ************************************
-ok: [x2]
-
-TASK [fail] ********************************************************************
-skipping: [x2]
-
-TASK [Find configuration deployment deploy_script for isis] ********************
-ok: [x2]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x2] => {
     "msg": "isis configuration for x2\n=========================================\n!\n!\n!\nrouter isis Gandalf\n log-adjacency-changes\n hostname dynamic\n is-type level-1-2\n metric-style wide\n lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800\n net 49.0001.0000.0000.0003.00\n\n\n!\ninterface lo\n! \n ip router isis Gandalf\n!\ninterface eth1\n! x2 -> dut\n ip router isis Gandalf\n isis network point-to-point\n isis metric 80000\n!\n\n!\ndo write\n"
 }
 
 TASK [Deploy isis configuration] ***********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, x1, x2
 
 TASK [template] ****************************************************************
+changed: [x1]
 changed: [x2]
+changed: [dut]
 
 TASK [set_fact] ****************************************************************
+ok: [dut]
+ok: [x1]
 ok: [x2]
 
-TASK [run /tmp/config.sh to deploy isis config from /work/netlab_cicd/node_files/x2/isis] ***
+TASK [run /tmp/config.sh to deploy isis config from /work/netlab_cicd/node_files/dut/isis] ***
+skipping: [dut]
+skipping: [x1]
 skipping: [x2]
 
-TASK [run vtysh to import isis config from /work/netlab_cicd/node_files/x2/isis] ***
+TASK [run vtysh to import isis config from /work/netlab_cicd/node_files/dut/isis] ***
 changed: [x2]
+changed: [x1]
+changed: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
 dut                        : ok=27   changed=5    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
-x1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
-x2                         : ok=27   changed=5    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+x1                         : ok=26   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+x2                         : ok=26   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
 
-
-Warning: The following warnings were generated during the 'netlab initial' processing
-Warning: ansible: You're using Ansible version 12.x or higher; netlab might not work correctly
 [CREATED] dut: initial,isis
 [CREATED] x1: initial,isis
 [CREATED] x2: initial,isis
