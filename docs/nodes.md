@@ -77,6 +77,7 @@ nodes:
 * **mtu** -- sets device-wide (*system*) MTU. This MTU is applied to all interfaces that don't have an explicit MTU ([more details](links-mtu)).
 * **provider** -- virtualization provider used by this node (see [](labs/multi-provider.md) for more details).
 * **role** -- when set to **host**, the device does not get a loopback IP address and [uses static routing](node-router-host) toward the [default gateway](links-gateway) ([more details](node-router-host))
+* **skip_config** -- the list of configuration items that should not be deployed on this device. Use this attribute to set up partially configured training labs.
 * **unmanaged** -- when set to *True*, the node is not managed or configured by *netlab*. Use this parameter when integrating *netlab* topologies with additional external devices, which should not be configured by *netlab* ([more details](external-unmanaged)).
 
 ```{tip}

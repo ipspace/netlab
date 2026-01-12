@@ -147,16 +147,17 @@ def node_deploy_list(node: Box, args: argparse.Namespace) -> list:
   all_config = deploy_all_configs(args)
 
   node_configs = []
+  skip_config = node.get('skip_config',[])
   if args.module or all_config:
     node_modules = node.get('module',[])
     if args.module == '*' or all_config:
-      node_configs = node_modules
+      node_configs = [ m for m in node_modules if m not in skip_config ]
     else:
       node_configs = [ m for m in args.module.split(',') if m in node_modules ]
   if args.initial or all_config:
     node_configs = ['initial'] + node_configs
   if args.custom or all_config:
-    node_configs += node.get('config',[])
+    node_configs += [ cfg for cfg in node.get('config',[]) if cfg not in skip_config ]
 
   return node_configs
 

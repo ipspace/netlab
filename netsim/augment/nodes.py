@@ -453,7 +453,10 @@ def augment_node_device_data(n: Box, topology: Box) -> None:
     n._daemon = True                              # First, set the daemon flag so we don't have to look up the device data
     n._daemon_parent = dev_data.daemon_parent     # Next, remember the parent device -- we need that in template search paths
     if 'daemon_config' in dev_data:               # Does the daemon need special configuration files?
-      n._daemon_config = dev_data.daemon_config   # Yes, save it for later (clab binds or Ansible playbooks)
+      skip_config = n.get('skip_config',[])       # Do we need to skip some daemon configs?
+      n._daemon_config = {
+        k:v for k,v in dev_data.daemon_config.items()
+          if k not in skip_config }               # Save adjusted daemon_config for later (clab binds or Ansible playbooks)
 
   if 'node_config' in dev_data:                   # Do we have a node with non-Ansible configuration templates?
     n._node_config = dev_data.node_config         # Remember the templates
