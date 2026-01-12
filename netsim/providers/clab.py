@@ -331,15 +331,23 @@ class Containerlab(_Provider):
     if 'build' not in dp_data:                              # We have no build recipe, let's hope it's downloadable
       return
 
+    if dp_data.build is True:
+      hints = [
+        f"This container image is not available online and has to be installed locally.",
+        f"You can build the container image with the 'netlab clab build {node.device}' command",
+        f"See https://netlab.tools/netlab/clab/#netlab-clab-build for more details" ]
+    else:
+      hints = [
+        f"This container image is not available online and has to be installed locally.",
+        f"If you're using a private Docker repository, use the 'docker image pull {node.box}'",
+        f"command to pull the image from it or build/install it using this recipe:",
+        dp_data.build ]
+
     log.error(
       f'Container {node.box} used by node {node.name} is not installed',
       category=log.IncorrectValue,
       module='clab',
-      more_hints=[ 
-        f"This container image is not available on Docker Hub and has to be installed locally.",
-        f"If you're using a private Docker repository, use the 'docker image pull {node.box}'",
-        f"command to pull the image from it or build/install it using this recipe:",
-        dp_data.build ])
+      more_hints=hints)
 
   def deploy_node_config(self, node: Box, topology: Box, deploy_list: list) -> None:
     cfg_files = node.get('clab.config_templates',[])
