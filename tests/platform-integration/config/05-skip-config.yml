@@ -1,0 +1,127 @@
+message: |
+  This topology tests the "skip_config" functionality for daemons and devices
+  configured with Bash scripts (future) and Ansible
+
+defaults.sources.extra: [ ../../integration/wait_times.yml ]
+
+module: [ ospf, bgp ]
+plugin: [ bgp.session ]
+provider: clab
+
+nodes:
+  eos_f:
+    device: eos
+    bgp.as: 65001
+  eos_nb:
+    device: eos
+    bgp.as: 65002
+    skip_config: [ bgp ]
+  eos_nd:
+    device: eos
+    bgp.as: 65003
+    skip_config: [ bgp.session ]
+  frr_f:
+    device: frr
+    bgp.as: 65101
+  frr_nb:
+    device: frr
+    bgp.as: 65102
+    skip_config: [ bgp ]
+  frr_nd:
+    device: frr
+    bgp.as: 65103
+    skip_config: [ bgp.session ]
+  bird_f:
+    device: bird
+    bgp.as: 65201
+  bird_nb:
+    device: bird
+    bgp.as: 65202
+    skip_config: [ bgp ]
+  probe:
+    device: frr
+    bgp.as: 65400
+
+links:
+- group: test
+  role: igp
+  members:
+  - eos_f:
+      bgp.default_originate: True
+    probe:
+  - eos_nb:
+    probe:
+  - eos_nd:
+      bgp.default_originate: True
+    probe:
+  - frr_f:
+      bgp.default_originate: True
+    probe:
+  - frr_nb:
+    probe:
+  - frr_nd:
+      bgp.default_originate: True
+    probe:
+  - bird_f:
+    probe:
+  - bird_nb:
+    probe:
+
+validate:
+  bgp_adj:
+    plugin: bgp_neighbor(node.bgp.neighbors,'probe')
+    nodes: [ eos_f, eos_nd, frr_f, frr_nd ]
+    wait: ebgp_session
+    wait_msg: Waiting for EBGP adjacencies
+  bgp_bird:
+    plugin: bgp_neighbor(node.bgp.neighbors,'bird_f')
+    nodes: [ probe ]
+    wait: ebgp_session
+    wait_msg: Waiting for EBGP adjacency with Bird
+  ospf_adj:
+    plugin: ospf_neighbor(nodes.probe.ospf.router_id)
+    nodes: [ eos_f, eos_nb, eos_nd, frr_f, frr_nb, frr_nd ]
+    wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPFv2 adjacencies
+  ospf_b1:
+    plugin: ospf_neighbor(nodes.bird_f.ospf.router_id)
+    nodes: [ probe ]
+    wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPFv2 adjacency with Bird
+  ospf_b2:
+    plugin: ospf_neighbor(nodes.bird_nb.ospf.router_id)
+    nodes: [ probe ]
+    wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPFv2 adjacency with Bird
+  no_bgp_eos:
+    plugin: bgp_neighbor(node.bgp.neighbors,'eos_nb',state='Active')
+    nodes: [ probe ]
+    wait_msg: Check for BGP on eos_nb
+  no_bgp_frr:
+    plugin: bgp_neighbor(node.bgp.neighbors,'frr_nb',state='Active')
+    nodes: [ probe ]
+    wait_msg: Check for BGP on eos_nb
+  no_bgp_bird:
+    plugin: bgp_neighbor(node.bgp.neighbors,'bird_nb',state='Active')
+    nodes: [ probe ]
+    wait_msg: Check for BGP on bird_nb
+  def_eos:
+    description: Check whether EOS advertises IPv4 default
+    wait: bgp_scan_time
+    wait_msg: Waiting for BGP convergence
+    nodes: [ probe ]
+    plugin: bgp_prefix('0.0.0.0/0',peer=nodes.eos_f.bgp.router_id)
+  nodef_eos:
+    description: Check whether bgp.session plugin is missing on EOS
+    nodes: [ probe ]
+    plugin: bgp_prefix('0.0.0.0/0',peer=nodes.eos_nd.bgp.router_id,state='missing')
+  def_frr:
+    description: Check whether FRR advertises IPv4 default
+    wait: bgp_scan_time
+    wait_msg: Waiting for BGP convergence
+    nodes: [ probe ]
+    plugin: bgp_prefix('0.0.0.0/0',peer=nodes.frr_f.bgp.router_id)
+  nodef_frr:
+    description: Check whether bgp.session plugin is missing on FRR
+    nodes: [ probe ]
+    plugin: bgp_prefix('0.0.0.0/0',peer=nodes.frr_nd.bgp.router_id,state='missing')

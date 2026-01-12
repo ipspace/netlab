@@ -42,6 +42,7 @@
   - name: Set variables that cannot be set with VARS
     set_fact:
       mod_select: "{{ modlist.split(',') if modlist is defined else netlab_module }}"
+      mod_skip: "{{ [] if modlist is defined else skip_config|default([]) }}"
   - name: Deploy individual configuration modules
     include_tasks: "tasks/deploy-module.yml"
     args:
@@ -50,7 +51,7 @@
           paths: "{{ search_path }}"
         tags: [ always ]
     loop: "{{ netlab_module }}"
-    when: config_module in mod_select
+    when: config_module in mod_select and config_module not in mod_skip
     loop_control:
       loop_var: config_module
 
@@ -77,7 +78,8 @@
         tags: [ always ]
     when: >
       custom_config in config and 
-      custom_config not in netlab_ansible_skip_module|default([])
+      custom_config not in netlab_ansible_skip_module|default([]) and
+      custom_config not in skip_config|default([])
     loop: "{{ netlab_custom_config }}"
     loop_control:
       loop_var: custom_config

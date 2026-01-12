@@ -48,7 +48,10 @@ class ConfigurationFiles(_TopologyOutput):
       node_dict = templates.template_node_data(n_data,topology)       # The dictionary used in templates
 
       create_list = []
+      skip_config = n_data.get('skip_config',[])
       for cfg_item in n_data.get(f'{n_provider}.config_templates',[]):
+        if cfg_item in skip_config:
+          continue
         cfg_source = cfg_item.source
         if cfg_item.get('mode','') == SHARED_SUFFIX:
           if cfg_source in shared_list:
@@ -71,6 +74,8 @@ class ConfigurationFiles(_TopologyOutput):
 
       mod_list += n_data.get('module',[]) + n_data.get('config',[])
       for module in mod_list:
+        if module in skip_config:
+          continue
         if module in create_list:
           continue
         if do_config(module,f'{n_name}/{module}'):

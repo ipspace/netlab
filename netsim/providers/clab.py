@@ -110,15 +110,24 @@ add_config_filemaps: add device-level node/daemon_config dictionary to clab.conf
 '''
 
 def add_config_filemaps(node: Box, topology: Box) -> None:
+  skip_config = node.get('skip_config',[])
   for kw in ('_daemon_config','_node_config'):
     if kw not in node:                            # Does the current node need non-ansible binds?
       continue
+
+    # Adjust the configuration templates based on whether the skip_config is set
+    #
+    if skip_config:
+      add_config = { k:v for k,v in node[kw].items() if k not in skip_config }
+    else:
+      add_config = node[kw]
+
 
     # Add the config templates in the correct priority: node config_templates
     # are preferred over _daemon_config which is preferred over _node_config
     # to allow Linux-based daemons to override Linux configuration (for example, routing)
     #
-    node.clab.config_templates = node[kw] + node.clab.config_templates
+    node.clab.config_templates = add_config + node.clab.config_templates
 
 '''
 get_loaded_kernel_modules: Get the list of loaded kernel modules from '/proc/modules'
