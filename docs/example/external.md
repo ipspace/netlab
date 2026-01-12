@@ -35,7 +35,7 @@ Alternatively, you could use Ansible inventory to find the same information:
 * Run `ansible-inventory --host _device-name_` to display the Ansible variables for the specified lab device.
 * Look for **ansible_host** variable or **ipv4** value in **mgmt** dictionary.
 
-Finally, you could display node information in YAML format with the **[netlab inspect --node _nodename_](../netlab/inspect.md)** command, or analyze the  **nodes** dictionary in the `netlab.snapshot.yml` file with `yq` or a custom script.
+Finally, you could display node information in YAML format with the **[netlab inspect --node _nodename_](netlab-inspect)** command.
 
 (external-ssh-forwarding)=
 ### Using SSH Port Forwarding

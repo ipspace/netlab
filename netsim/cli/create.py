@@ -35,7 +35,6 @@ def create_topology_parse(
       output files created when no output is specified:
 
         * Pickled transformed data in netlab.snapshot.pickle
-        * Transformed topology snapshot in netlab.snapshot.yml
         * Device configuration files
         * Virtualization provider file with provider-specific filename
           (Vagrantfile or clab.yml)
