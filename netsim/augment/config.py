@@ -151,7 +151,7 @@ paths: adjust system paths, replacing package: and topology: prefixes
 '''
 def paths(topology: Box) -> None:
   adjust_paths(topology.defaults.paths)
-  make_paths_absolute(topology.defaults.paths)
+  make_paths_absolute(topology.defaults.paths,limit=['plugin'])
 
 '''
 adjust_paths: prepend or append path elements to default paths
@@ -181,8 +181,10 @@ Recursive function that traverses the 'paths' tree and converts every list into
 a list of absolute paths... unless the key starts with 'files' or 'tasks' in
 which case the list is a list of potential file names and should not be changed.
 '''
-def make_paths_absolute(p_top: Box, parents: str = 'defaults.paths') -> None:
+def make_paths_absolute(p_top: Box, parents: str = 'defaults.paths', limit: list = []) -> None:
   for k in list(p_top.keys()):
+    if limit and k not in limit:
+      continue
     if k.startswith('files') or k.startswith('tasks'):
       p_top[k] = [ fn.replace('\n','') for fn in p_top[k] ]
       p_top[f'f_{k}'] = [ fn.replace('{{','{').replace('}}','}') for fn in p_top[k] ]

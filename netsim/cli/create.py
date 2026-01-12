@@ -188,6 +188,11 @@ def run(cli_args: typing.List[str],
     if plugin:
       augment.plugin.execute_plugin_hook('output',plugin,topology)
 
+  # Adjust search paths before creating output files. This step cannot be done
+  # earlier in the process because the plugins might create directories that
+  # are used in search paths
+  augment.config.make_paths_absolute(topology.defaults.paths)
+
   for output_format in args.output:
     output_param = get_output_parameter(output_format,args.output)
     if not output_param:
