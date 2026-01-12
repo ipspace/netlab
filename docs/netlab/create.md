@@ -103,7 +103,7 @@ Without specifying the output format(s), **netlab create** creates a snapshot of
 You could specify one or more output formats with the `-o` CLI parameter. For more details, see the [output formats](output-formats) documentation.
 
 ```{tip}
-Use the **‌defaults.netlab.create.output** [topology default](topo-defaults) to change the default output formats. Use the `netlab defaults netlab.create.output` command to display the current default output formats (hint: `None` value means "use this output format with no extra options, setting a value to `False` means "do not use this output format").
+Use the **‌defaults.netlab.create.output** [topology default](topo-defaults) to change the default output formats. Use the `netlab defaults netlab.create.output` command to display the current default output formats (hint: `None` value means "use this output format with no extra options", setting a value to `False` means "do not use this output format").
 ```
 
 (netlab-create-set)=
