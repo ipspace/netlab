@@ -154,7 +154,7 @@ def init(topology: Box) -> None:
     restructure_configlets(topology)
     output_hook = True
   if output_hook:
-    append_to_list(topology.defaults.netlab.create,'output','files')
+    append_to_list(topology.defaults.netlab.create,'plugin','files')
 
 """
 Post-transform validation: check that all paths are within the current lab directory tree

@@ -36,6 +36,7 @@ def create_topology_parse(
 
         * Pickled transformed data in netlab.snapshot.pickle
         * Transformed topology snapshot in netlab.snapshot.yml
+        * Device configuration files
         * Virtualization provider file with provider-specific filename
           (Vagrantfile or clab.yml)
         * Ansible inventory file (hosts.yml) and configuration (ansible.cfg)
@@ -112,6 +113,34 @@ def http_fetch_content(url: str, args: typing.Union[argparse.Namespace,Box]) -> 
 
   return fname
 
+"""
+Reconstruct the value of the output parameter from 'output' list or dict
+
+If the args.output is not a dictionary, the output parameter is returned as-is, otherwise the
+output parameter is modified based on the dictionary value (copied from the topology defaults)
+
+* Box value is used to specify options and output parameters
+* False value means that the user doesn't want this specific output module => return None
+* Otherwise, the non-falsy dictionary value specifies the option(s) for the output module
+"""
+
+def get_output_parameter(pname: str, pset: typing.Union[Box,list]) -> typing.Optional[str]:
+  if not isinstance(pset,Box):                    # The output arguments are specified in a list
+    return pname                                  # => List item is the final value
+
+  pvalue = pset[pname]                            # Get the value of the output argument
+  if not isinstance(pvalue,Box):                  # Not a box? Return parameter name with an option or None
+    return None if pvalue is False else \
+           pname if not pvalue else f'{pname}:{pvalue}'
+
+  if 'options' in pvalue:                         # Complex scenario: add options
+    pname += f':{pvalue.options}'
+
+  if 'output' in pvalue:                          # ... and output file
+    pname += f'={pvalue.output}'
+
+  return pname
+
 def run(cli_args: typing.List[str],
         cli_command: str = 'create',
         cli_describe: str = 'Create provider- and automation configuration files',
@@ -122,14 +151,11 @@ def run(cli_args: typing.List[str],
   if not 'devices' in args:
     args.devices = None
 
+  if args.output and args.devices:
+    error_and_exit('--output and --devices flags are mutually exclusive')
+
   if '://' in args.topology:
     args.topology = http_fetch_content(args.topology,args)
-
-  if not args.output:
-    args.output = ['config','provider','yaml=netlab.snapshot.yml','pickle','tools']
-    args.output.append('devices' if args.devices else 'ansible:dirs')
-  elif args.devices:
-    log.error('--output and --devices flags are mutually exclusive',log.IncorrectValue,'create')
 
   tpath = Path(args.topology)
   if not tpath.exists():
@@ -147,17 +173,27 @@ def run(cli_args: typing.List[str],
     os.remove('netlab.lock')
     lab_status_log(topology,'Configuration files have been recreated')
 
+  # Find the default output modules
+  #
+  if not args.output:
+    args.output = topology.defaults.netlab.create.output
+    if args.devices:
+      args.output.devices = {}
+
   # Iterate over plugins that registered 'output' hook
   # We have to reload the plugin as the original 'Plugin' dictionary was removed
   # as the last step in the topology transformation process
   #
-  for p_name in topology.defaults.netlab.create.get('output',[]):
+  for p_name in topology.defaults.netlab.create.get('plugin',[]):
     plugin = augment.plugin.load_plugin(p_name,topology)
     if plugin:
       augment.plugin.execute_plugin_hook('output',plugin,topology)
 
   for output_format in args.output:
-    output_module = _TopologyOutput.load(output_format,topology.defaults.outputs[output_format.split(':')[0]])
+    output_param = get_output_parameter(output_format,args.output)
+    if not output_param:
+      continue
+    output_module = _TopologyOutput.load(output_param,topology.defaults.outputs[output_param.split(':')[0]])
     if output_module:
       output_module.write(topology)
       log.exit_on_error()

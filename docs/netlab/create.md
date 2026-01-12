@@ -10,13 +10,13 @@ The **netlab create** command reads network topology description in YAML format,
 **netlab create** uses these sources of information to build the desired lab topology:
 
 * Network topology in YAML format (default: `topology.yml`, but see also [](../dev/versioning.md))
-* [Default settings](../defaults.md) that can be specified in [project-, user- or system default files](defaults-locations)
+* [Default settings](topo-defaults) that can be specified in [project-, user- or system default files](defaults-locations)
 
 ## Data Model Transformation
 
-After reading the network topology, **netlab create** performs a complex data transformation to create device- and link-level data structures fully describing network topology, IP addressing and (optional) routing protocols.
+After reading the network topology, **netlab create** performs a complex data transformation to generate device- and link-level data structures that fully describe the network topology, IP addressing, and (optionally) routing protocols and data-plane features.
 
-You can influence the data model transformation with optional [configuration modules](../modules.md) and [custom plugins](../plugins.md).
+You can influence the data model transformation with optional [configuration modules](topo-modules) and [custom plugins](topo-plugins).
 
 ## Creating Configuration Files
 
@@ -24,20 +24,21 @@ You can influence the data model transformation with optional [configuration mod
 
 * Pickled transformed topology data in the **netlab.snapshot.pickle** file. This file is used by many other **netlab** commands to get the information about the currently running lab topology.
 * Snapshot of the transformed topology in the **netlab.snapshot.yml** file. You can use this file to get the information about the current lab topology in your own scripts.
+* Device configuration files
 * **Vagrantfile** supporting *[libvirt](lab-libvirt)* environment
 * **clab.yml** file used by *containerlab*.
 * Ansible inventory[^1], either as a single-file data structure, or as a minimal inventory file with data stored primarily in **host_vars** and **group_vars**
-* Various graphs in *graphviz* DOT format
+* Graph descriptions in *[graphviz](outputs-graphviz)* or *[D2](outputs-d2)* format
 * YAML or JSON representation of transformed lab topology or parts of the transformed data model
 * Configuration files for [external tools](tools-intro)
 
 ```{warning}
 **‌netlab create** command refuses to create provider configuration files, Ansible inventory, or `netlab.snapshot.pickle` file if it finds `netlab.lock` file in the current directory. 
 
-`netlab.lock` file is created by the **‌netlab up** command to ensure subsequent **‌netlab create** commands don't overwrite the provider configuration files. It is automatically removed after a successful completion of **‌netlab down** command.
+`netlab.lock` file is created by the **‌netlab up** command to ensure subsequent **‌netlab create** commands don't overwrite the provider configuration files. It is automatically removed when the **‌netlab down** command successfully stops the lab.
 ```
 
-The _[](netlab-create-output-formats)_ section describes how you can control the output files and their format with CLI parameters. See _[](../outputs/index.md)_ for more details on individual file formats.
+The _[](netlab-create-output-formats)_ section describes how you can control the output files and their format with CLI parameters. See _[](output-formats)_ for more details on individual file formats.
 
 [^1]: Or *netlab-devices.yml* file when the `--devices` flag is used
 
@@ -74,6 +75,7 @@ output files created when no output is specified:
 
   * Pickled transformed data in netlab.snapshot.pickle
   * Transformed topology snapshot in netlab.snapshot.yml
+  * Device configuration files
   * Virtualization provider file with provider-specific filename
     (Vagrantfile or clab.yml)
   * Ansible inventory file (hosts.yml) and configuration (ansible.cfg)
@@ -83,26 +85,26 @@ For a complete list of output formats please consult the documentation
 
 For more details on the topology file format, please read the [lab topology overview](../topology-overview.md) and [reference documentation](../topology-reference.md).
 
-```{tip}
-You can specify the lab topology with a URL. The contents from the specified URL will be downloaded, saved into `downloaded.yml`, and used as the lab topology.
+**Usage tips:**
 
+* You can specify the lab topology with a URL. The contents from the specified URL will be downloaded, saved into `downloaded.yml`, and used as the lab topology.
+
+```{tip}
 The lab topology downloaded from a URL must be self-contained. Any external files it needs must be embedded in the lab topology with the **[‌files](plugin-files)** plugin.
 ```
 
-```{tip}
-The **netlab create** command supports comprehensive [debugging options](dev-debug). Use the [`--debug` CLI argument](dev-debug-flag) to troubleshoot topology transformation, addressing, module processing, and more.
-
-For example:
-- `netlab create --debug addressing,vlan` - Debug IP addressing and VLAN assignment
-- `netlab create --debug links,modules -vv` - Debug link transformation and module processing with verbose output
-```
+* The **netlab create** command supports comprehensive [debugging options](dev-debug). Use the [`--debug` CLI argument](dev-debug-flag) to troubleshoot topology transformation, addressing, module processing, and more.
 
 (netlab-create-output-formats)=
 ## Output Formats
 
-Without specifying the output format(s), **netlab create** creates a provider configuration file (*Vagrantfile* or *clab.yml*) and either [Ansible inventory data](../outputs/ansible.md) (*hosts.yml*, *ansible.cfg*, *host_vars*, *group_vars*) or [*netlab-devices.yml* file](../outputs/devices.md) (if the `--devices` flag was specified).
+Without specifying the output format(s), **netlab create** creates a snapshot of transformed lab topology, device configurations, a provider configuration file (*Vagrantfile* or *clab.yml*), [Ansible inventory data](../outputs/ansible.md) (*hosts.yml*, *ansible.cfg*, *host_vars*, *group_vars*), and [*netlab-devices.yml* file](../outputs/devices.md) (if the `--devices` flag was specified).
 
-You could specify one or more output formats with the `-o` CLI parameter. For more details please read the [output formats](../outputs/index.md) part of the documentation.
+You could specify one or more output formats with the `-o` CLI parameter. For more details, see the [output formats](output-formats) documentation.
+
+```{tip}
+Use the **‌defaults.netlab.create.output** [topology default](topo-defaults) to change the default output formats. Use the `netlab defaults netlab.create.output` command to display the current default output formats (hint: `None` value means "use this output format with no extra options, setting a value to `False` means "do not use this output format").
+```
 
 (netlab-create-set)=
 ## Setting Topology Parameters from Command Line
