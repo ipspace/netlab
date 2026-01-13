@@ -177,6 +177,11 @@ def device_supports_test(device: str, provider: str, t_data: Box, setup: Box) ->
   
   return True
 
+def set_env(var: str, value: typing.Any, log: bool = False) -> None:
+  os.environ[var] = str(value)
+  if log:
+    print(f'env: {var}={str(value)}')
+
 def run_single_test(
       device: str,
       provider: str,
@@ -193,16 +198,15 @@ def run_single_test(
     print()
     time.sleep(1)
 
-  os.environ['NETLAB_DEVICE'] = device
-  os.environ['NETLAB_PROVIDER'] = provider
+  set_env('NETLAB_DEVICE',device,dry_run)
+  set_env('NETLAB_PROVIDER',provider,dry_run)
   if not setup.get(f'devices.{device}.{provider}.daemon',False):      # Force device-specific provider
-    os.environ[f'NETLAB_DEVICES_{device}_PROVIDER'] = provider        # ... but not for daemons
-  os.environ['NETLAB_GROUPS_ALL_VARS_NETLAB__SHOW__CONFIG'] = 'True'  # Enable configuration display
+    set_env(f'NETLAB_DEVICES_{device}_PROVIDER',provider,dry_run)     # ... but not for daemons
+  set_env('NETLAB_GROUPS_ALL_VARS_NETLAB__SHOW__CONFIG',True,dry_run) # Enable configuration display
   for nl_param in setup.netlab.keys():
     ev = 'NETLAB_' + nl_param.upper()
     if ev not in os.environ:
-      os.environ[ev] = str(setup.netlab[nl_param])
-      print(f'Set: {ev}={os.environ[ev]}')
+      set_env(ev,str(setup.netlab[nl_param]),log=True)
 
   log_path = os.path.expanduser(setup.params.log or setup.params.home) + '/' + device + '/' + provider + '/' + test
   workdir  = setup.params.workdir or '/tmp/netlab_cicd'

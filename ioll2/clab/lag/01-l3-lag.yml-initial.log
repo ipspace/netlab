@@ -1,9 +1,21 @@
-/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
-  "cipher": algorithms.TripleDES,
-/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
-  "class": algorithms.TripleDES,
+Warning in ansible: You're using Ansible version 12.x or higher; netlab might not work correctly
+... Ansible core version 2.19 introduced breaking changes in templates and playbooks
+... We tested netlab core with Ansible version 12.x but not every device template
+... You might want to downgrade Ansible to version 11.10 or lower.
+... Use 'netlab install ansible' on Ubuntu to do that
+... Finally, please open a GitHub issue if you experience errors/crashes
+... Set defaults.ansible.warnings.ver12 to False to hide this warning
+ [INFO] Checking for updates in configuration templates
+ [INFO] Creating configuration snippets
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
-[WARNING]: Found variable using reserved name: hosts
+[WARNING]: Found variable using reserved name 'hosts'.
+Origin: /work/netlab_cicd/group_vars/all/topology.yml:161:1
+
+159     ipv4: 10.2.0.0/24
+160     prefix: 32
+161 hosts:
+    ^ column 1
+
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -12,310 +24,194 @@ ok: [dut]
 ok: [x1]
 ok: [x2]
 
-TASK [Find device readiness script] ********************************************
-ok: [dut]
-ok: [x1]
-ok: [x2]
-
-TASK [Wait for device to become ready] *****************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/ioll2-clab.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.yml for x1, x2
+TASK [Generic readiness tests] *************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ssh.yml for dut, x1, x2 => (item=ssh)
 
 TASK [Check if 'sshpass' is installed] *****************************************
 ok: [dut -> localhost]
 
 TASK [Check for 'timeout' command] *********************************************
 ok: [dut -> localhost]
+ok: [x1 -> localhost]
+ok: [x2 -> localhost]
 
-TASK [Execute local ssh command to check ioll2 readiness] **********************
+TASK [Execute local ssh command to check ssh readiness] ************************
+FAILED - RETRYING: [x1 -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
+FAILED - RETRYING: [x2 -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
 ok: [dut -> localhost]
+ok: [x1 -> localhost]
+ok: [x2 -> localhost]
 
 TASK [Confirm dut SSH server works] ********************************************
-ok: [dut] => 
-  msg: Node dut is ready.
+ok: [dut] => {
+    "msg": "Node dut is ready."
+}
+ok: [x1] => {
+    "msg": "Node x1 is ready."
+}
+ok: [x2] => {
+    "msg": "Node x2 is ready."
+}
 
-TASK [Wait for cEOS SSH daemon to start] ***************************************
-ok: [x2]
+TASK [Find device readiness script] ********************************************
+ok: [dut]
 ok: [x1]
+ok: [x2]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
-ok: [x1]
-ok: [x2]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [dut]
-ok: [x1]
-ok: [x2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [x1]
-skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [dut]
-ok: [x1]
-ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [dut] => 
-  msg: |-
-    normalize configuration for dut
-    =========================================
-    !
-    interface Port-channel1
-     shutdown
-     mac-address 52dc.cafe.0100
-    !
-    interface Port-channel2
-     shutdown
-     mac-address 52dc.cafe.0101
-    !
-    interface Ethernet0/1
-     shutdown
-     mac-address 52dc.cafe.0101
-    !
-    interface Ethernet0/2
-     shutdown
-     mac-address 52dc.cafe.0102
-    !
-    interface Ethernet0/3
-     shutdown
-     mac-address 52dc.cafe.0103
-    !
-    interface Ethernet1/0
-     shutdown
-     mac-address 52dc.cafe.0104
-ok: [x1] => 
-  msg: |-
-    normalize configuration for x1
-    =========================================
-    !
-    interface Ethernet1
-     shutdown
-     mac-address 52dc.cafe.0201
-    !
-    interface Ethernet2
-     shutdown
-     mac-address 52dc.cafe.0202
-ok: [x2] => 
-  msg: |-
-    normalize configuration for x2
-    =========================================
-    !
-    interface Ethernet1
-     shutdown
-     mac-address 52dc.cafe.0301
-    !
-    interface Ethernet2
-     shutdown
-     mac-address 52dc.cafe.0302
+ok: [dut] => {
+    "msg": "normalize configuration for dut\n=========================================\n!\ninterface Port-channel1\n shutdown\n!\ninterface Port-channel2\n shutdown\n!\ninterface Ethernet0/1\n shutdown\n!\ninterface Ethernet0/2\n shutdown\n!\ninterface Ethernet0/3\n shutdown\n!\ninterface Ethernet1/0\n shutdown\n"
+}
 
 TASK [Deploy normalize configuration] ******************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
 
-TASK [ios_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/ioll2.j2] ***
-[WARNING]: To ensure idempotency and correct diff the input configuration lines
-should be similar to how they appear if present in the running configuration on
-device including the indentation
+TASK [ios_config: deploying normalize from /work/netlab_cicd/node_files/dut/normalize] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines should be similar to how they appear if present in the running configuration on device including the indentation
 changed: [dut]
 
-TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/eos.j2] ***
-changed: [x1]
-changed: [x2]
-
-TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
-
-TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [dut]
+TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [x1]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [x1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x1] => {
+    "msg": "normalize configuration for x1\n=========================================\n!\ninterface Ethernet1\n shutdown\n!\ninterface Ethernet2\n shutdown\n"
+}
+
+TASK [Deploy normalize configuration] ******************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x1
+
+TASK [eos_config: deploying normalize from /work/netlab_cicd/node_files/x1/normalize] ***
+[WARNING]: Task result `warnings` was <class 'str'> instead of <class 'list'>.
+changed: [x1]
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [x2]
 
-TASK [Find configuration template for initial] *********************************
-ok: [dut]
-ok: [x1]
+TASK [Find configuration template for normalize] *******************************
 ok: [x2]
 
 TASK [fail] ********************************************************************
-skipping: [dut]
-skipping: [x1]
 skipping: [x2]
 
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [dut]
-ok: [x1]
+TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [x1] => 
-  msg: |-
-    initial configuration for x1
-    =========================================
-    hostname x1
-    !
-    logging monitor debugging
-    aaa authorization exec default local
-    !
-    lldp run
-    no ip routing
-    no ipv6 unicast-routing
-    !
-    !
-    ip host dut 10.0.0.1 172.16.0.1 172.16.1.1
-    ip host x2 172.16.1.3
-    !
-    interface Management0
-     no lldp transmit
-     no lldp receive
-    !
-    interface port-channel1
-     no switchport
-     mtu 1500
-     description x1 -> dut [stub]
-     ip address 172.16.0.2/24
-    !
-    interface Ethernet1
-     no switchport
-     mtu 1500
-     description x1 -> dut [stub]
-    !
-     mac-address 52dc.cafe.0201
-     no shutdown
-    !
-    interface Ethernet2
-     no switchport
-     mtu 1500
-     description x1 -> dut [stub]
-    !
-     mac-address 52dc.cafe.0202
-     no shutdown
-    !
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    hostname dut
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    ip host x1 172.16.0.2
-    ip host x2 172.16.1.3
-    !
-    ip routing
-    !
-    no ipv6 unicast-routing
-    !
-    !
-    interface Loopback0
-     ip address 10.0.0.1 255.255.255.255
-    !
-    interface Ethernet0/0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Port-channel1
-     no switchport
-     description dut -> x1 [stub]
-     ip mtu 1500
-     ip address 172.16.0.1 255.255.255.0
-     no shutdown
-    !
-    interface Port-channel2
-     no switchport
-     description dut -> x2 [stub]
-     ip mtu 1400
-     ip address 172.16.1.1 255.255.255.0
-     no shutdown
-    !
-    interface Ethernet0/1
-     no switchport
-     description dut -> x1 [stub]
-     no shutdown
-    !
-    interface Ethernet0/2
-     no switchport
-     description dut -> x1 [stub]
-     no shutdown
-    !
-    interface Ethernet0/3
-     no switchport
-     description dut -> x2 [stub]
-     no shutdown
-    !
-    interface Ethernet1/0
-     no switchport
-     description dut -> x2 [stub]
-     no shutdown
-    !
-    !
-    line vty 0 4
-     exec-timeout 0 0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
-ok: [x2] => 
-  msg: |-
-    initial configuration for x2
-    =========================================
-    hostname x2
-    !
-    logging monitor debugging
-    aaa authorization exec default local
-    !
-    lldp run
-    no ip routing
-    no ipv6 unicast-routing
-    !
-    !
-    ip host dut 10.0.0.1 172.16.0.1 172.16.1.1
-    ip host x1 172.16.0.2
-    !
-    interface Management0
-     no lldp transmit
-     no lldp receive
-    !
-    interface port-channel1
-     no switchport
-     mtu 1400
-     description x2 -> dut [stub]
-     ip address 172.16.1.3/24
-    !
-    interface Ethernet1
-     no switchport
-     mtu 1400
-     description x2 -> dut [stub]
-    !
-     mac-address 52dc.cafe.0301
-     no shutdown
-    !
-    interface Ethernet2
-     no switchport
-     mtu 1400
-     description x2 -> dut [stub]
-    !
-     mac-address 52dc.cafe.0302
-     no shutdown
-    !
+ok: [x2] => {
+    "msg": "normalize configuration for x2\n=========================================\n!\ninterface Ethernet1\n shutdown\n!\ninterface Ethernet2\n shutdown\n"
+}
+
+TASK [Deploy normalize configuration] ******************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x2
+
+TASK [eos_config: deploying normalize from /work/netlab_cicd/node_files/x2/normalize] ***
+changed: [x2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x2
 
-TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "initial configuration for dut\n=========================================\nhostname dut\n!\nno ip domain lookup\nlogging buffered 256000\n\n!\nlldp run\n!\nip host x1 172.16.0.2\nip host x2 172.16.1.3\n!\nip routing\n!\nno ipv6 unicast-routing\n!\n!\ninterface Loopback0\n ip address 10.0.0.1 255.255.255.255\n!\ninterface Ethernet0/0\n no lldp transmit\n no lldp receive\n!\ninterface Port-channel1\n no switchport\n description dut -> x1 [stub]\n ip mtu 1500\n ip address 172.16.0.1 255.255.255.0\n no shutdown\n!\ninterface Port-channel2\n no switchport\n description dut -> x2 [stub]\n ip mtu 1400\n ip address 172.16.1.1 255.255.255.0\n no shutdown\n!\ninterface Ethernet0/1\n no switchport\n description dut -> x1 [stub]\n mac-address caf0.0001.0001\n no shutdown\n!\ninterface Ethernet0/2\n no switchport\n description dut -> x1 [stub]\n mac-address caf0.0001.0002\n no shutdown\n!\ninterface Ethernet0/3\n no switchport\n description dut -> x2 [stub]\n mac-address caf0.0001.0003\n no shutdown\n!\ninterface Ethernet1/0\n no switchport\n description dut -> x2 [stub]\n mac-address caf0.0001.0004\n no shutdown\n!\n!\nline vty 0 4\n exec-timeout 0 0 \n!\nno banner exec\nno banner login\nno banner incoming\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+
+TASK [ios_config: deploying initial from /work/netlab_cicd/node_files/dut/initial] ***
 changed: [dut]
 
-TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
-changed: [x2]
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [x1]
+
+TASK [Find configuration template for initial] *********************************
+ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [x1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x1] => {
+    "msg": "initial configuration for x1\n=========================================\nhostname x1\n!\nlogging monitor debugging\naaa authorization exec default local\n!\nlldp run\nno ip routing\nno ipv6 unicast-routing\n!\n!\nip host dut 10.0.0.1 172.16.0.1 172.16.1.1\nip host x2 172.16.1.3\n!\ninterface Management0\n no lldp transmit\n no lldp receive\n!\ninterface port-channel1\n no switchport\n mtu 1500\n description x1 -> dut [stub]\n ip address 172.16.0.2/24\n!\ninterface Ethernet1\n no switchport\n mtu 1500\n description x1 -> dut [stub]\n mac-address caf0.0002.0001\n!\n no shutdown\n!\ninterface Ethernet2\n no switchport\n mtu 1500\n description x1 -> dut [stub]\n mac-address caf0.0002.0002\n!\n no shutdown\n!\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x1
+
+TASK [eos_config: deploying initial from /work/netlab_cicd/node_files/x1/initial] ***
 changed: [x1]
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [x2]
+
+TASK [Find configuration template for initial] *********************************
+ok: [x2]
+
+TASK [fail] ********************************************************************
+skipping: [x2]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [x2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x2] => {
+    "msg": "initial configuration for x2\n=========================================\nhostname x2\n!\nlogging monitor debugging\naaa authorization exec default local\n!\nlldp run\nno ip routing\nno ipv6 unicast-routing\n!\n!\nip host dut 10.0.0.1 172.16.0.1 172.16.1.1\nip host x1 172.16.0.2\n!\ninterface Management0\n no lldp transmit\n no lldp receive\n!\ninterface port-channel1\n no switchport\n mtu 1400\n description x2 -> dut [stub]\n ip address 172.16.1.3/24\n!\ninterface Ethernet1\n no switchport\n mtu 1400\n description x2 -> dut [stub]\n mac-address caf0.0003.0001\n!\n no shutdown\n!\ninterface Ethernet2\n no switchport\n mtu 1400\n description x2 -> dut [stub]\n mac-address caf0.0003.0002\n!\n no shutdown\n!\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x2
+
+TASK [eos_config: deploying initial from /work/netlab_cicd/node_files/x2/initial] ***
+changed: [x2]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -325,163 +221,160 @@ ok: [x1]
 ok: [x2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=lag)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=lag)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1 => (item=lag)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1 => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x2 => (item=lag)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x2 => (item=routing)
 
 TASK [Figure out whether to deploy the module lag on current device] ***********
 ok: [dut]
-ok: [x1]
-ok: [x2]
 
 TASK [Find configuration template for lag] *************************************
 ok: [dut]
-ok: [x1]
-ok: [x2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [x1]
-skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for lag] *********************
 ok: [dut]
-ok: [x1]
-ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [dut] => 
-  msg: |-
-    lag configuration for dut
-    =========================================
-    interface Port-channel1
-     description dut -> x1
-    interface Ethernet0/1
-     description dut -> x1 in channel-group 1
-     channel-group 1 mode active
-    interface Ethernet0/2
-     description dut -> x1 in channel-group 1
-     channel-group 1 mode active
-    interface Port-channel2
-     description dut -> x2
-    interface Ethernet0/3
-     description dut -> x2 in channel-group 2
-     channel-group 2 mode active
-    interface Ethernet1/0
-     description dut -> x2 in channel-group 2
-     channel-group 2 mode active
-ok: [x1] => 
-  msg: |-
-    lag configuration for x1
-    =========================================
-  
-    interface port-channel1
-     description x1 -> dut
-    !
-    !
-    !
-    interface Ethernet1
-     description x1 -> dut in channel-group 1
-     channel-group 1 mode active
-     lacp timer fast
-    !
-    interface Ethernet2
-     description x1 -> dut in channel-group 1
-     channel-group 1 mode active
-     lacp timer fast
-ok: [x2] => 
-  msg: |-
-    lag configuration for x2
-    =========================================
-  
-    interface port-channel1
-     description x2 -> dut
-    !
-    !
-    !
-    interface Ethernet1
-     description x2 -> dut in channel-group 1
-     channel-group 1 mode active
-     lacp timer fast
-    !
-    interface Ethernet2
-     description x2 -> dut in channel-group 1
-     channel-group 1 mode active
-     lacp timer fast
+ok: [dut] => {
+    "msg": "lag configuration for dut\n=========================================\ninterface Port-channel1\n description dut -> x1\ninterface Ethernet0/1\n description dut -> x1 in channel-group 1\n channel-group 1 mode active\ninterface Ethernet0/2\n description dut -> x1 in channel-group 1\n channel-group 1 mode active\ninterface Port-channel2\n description dut -> x2\ninterface Ethernet0/3\n description dut -> x2 in channel-group 2\n channel-group 2 mode active\ninterface Ethernet1/0\n description dut -> x2 in channel-group 2\n channel-group 2 mode active\n"
+}
 
 TASK [Deploy lag configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
 
-TASK [ios_config: deploying lag from /home/pipi/net101/tools/netsim/ansible/templates/lag/ios.j2] ***
+TASK [ios_config: deploying lag from /work/netlab_cicd/node_files/dut/lag] *****
 changed: [dut]
-
-TASK [eos_config: deploying lag from /home/pipi/net101/tools/netsim/ansible/templates/lag/eos.j2] ***
-changed: [x2]
-changed: [x1]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [dut]
-ok: [x1]
-ok: [x2]
 
 TASK [Find configuration template for routing] *********************************
 skipping: [dut]
-ok: [x1]
-ok: [x2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [x1]
-skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for routing] *****************
 skipping: [dut]
-ok: [x1]
-ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
-ok: [x1] => 
-  msg: |-
-    routing configuration for x1
-    =========================================
-    !
-    !
-    ! AS-path access lists
-    !
-    !
-    ! Static routes
-    !
-    ip route 0.0.0.0/0 port-channel1 172.16.0.1
-ok: [x2] => 
-  msg: |-
-    routing configuration for x2
-    =========================================
-    !
-    !
-    ! AS-path access lists
-    !
-    !
-    ! Static routes
-    !
-    ip route 0.0.0.0/0 port-channel1 172.16.1.1
 
 TASK [Deploy routing configuration] ********************************************
 skipping: [dut]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
 
-TASK [eos_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/templates/routing/eos.j2] ***
-changed: [x2]
+TASK [Figure out whether to deploy the module lag on current device] ***********
+ok: [x1]
+
+TASK [Find configuration template for lag] *************************************
+ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for lag] *********************
+ok: [x1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x1] => {
+    "msg": "lag configuration for x1\n=========================================\n\ninterface port-channel1\n description x1 -> dut\n!\n!\n!\ninterface Ethernet1\n description x1 -> dut in channel-group 1\n channel-group 1 mode active\n lacp timer fast\n!\ninterface Ethernet2\n description x1 -> dut in channel-group 1\n channel-group 1 mode active\n lacp timer fast\n"
+}
+
+TASK [Deploy lag configuration] ************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x1
+
+TASK [eos_config: deploying lag from /work/netlab_cicd/node_files/x1/lag] ******
 changed: [x1]
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [x1]
+
+TASK [Find configuration template for routing] *********************************
+ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+ok: [x1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x1] => {
+    "msg": "routing configuration for x1\n=========================================\n!\n!\n! Static routes\n!\nip route 0.0.0.0/0 port-channel1 172.16.0.1\n"
+}
+
+TASK [Deploy routing configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x1
+
+TASK [eos_config: deploying routing from /work/netlab_cicd/node_files/x1/routing] ***
+changed: [x1]
+
+TASK [Figure out whether to deploy the module lag on current device] ***********
+ok: [x2]
+
+TASK [Find configuration template for lag] *************************************
+ok: [x2]
+
+TASK [fail] ********************************************************************
+skipping: [x2]
+
+TASK [Find configuration deployment deploy_script for lag] *********************
+ok: [x2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x2] => {
+    "msg": "lag configuration for x2\n=========================================\n\ninterface port-channel1\n description x2 -> dut\n!\n!\n!\ninterface Ethernet1\n description x2 -> dut in channel-group 1\n channel-group 1 mode active\n lacp timer fast\n!\ninterface Ethernet2\n description x2 -> dut in channel-group 1\n channel-group 1 mode active\n lacp timer fast\n"
+}
+
+TASK [Deploy lag configuration] ************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x2
+
+TASK [eos_config: deploying lag from /work/netlab_cicd/node_files/x2/lag] ******
+changed: [x2]
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [x2]
+
+TASK [Find configuration template for routing] *********************************
+ok: [x2]
+
+TASK [fail] ********************************************************************
+skipping: [x2]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+ok: [x2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x2] => {
+    "msg": "routing configuration for x2\n=========================================\n!\n!\n! Static routes\n!\nip route 0.0.0.0/0 port-channel1 172.16.1.1\n"
+}
+
+TASK [Deploy routing configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x2
+
+TASK [eos_config: deploying routing from /work/netlab_cicd/node_files/x2/routing] ***
+changed: [x2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=31   changed=3    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-x1                         : ok=33   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-x2                         : ok=33   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+dut                        : ok=31   changed=3    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+x1                         : ok=35   changed=4    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+x2                         : ok=35   changed=4    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 
+
+Warning: The following warnings were generated during the 'netlab initial' processing
+Warning: ansible: You're using Ansible version 12.x or higher; netlab might not work correctly
+[CREATED] dut: normalize,initial,lag
+[CREATED] x1: normalize,initial,lag,routing
+[CREATED] x2: normalize,initial,lag,routing
 
 
 The device under is a router with a L3 LAG link connected to a FRR device. The

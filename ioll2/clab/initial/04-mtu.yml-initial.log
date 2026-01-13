@@ -1,5 +1,36 @@
+Warning in ansible: You're using Ansible version 12.x or higher; netlab might not work correctly
+... Ansible core version 2.19 introduced breaking changes in templates and playbooks
+... We tested netlab core with Ansible version 12.x but not every device template
+... You might want to downgrade Ansible to version 11.10 or lower.
+... Use 'netlab install ansible' on Ubuntu to do that
+... Finally, please open a GitHub issue if you experience errors/crashes
+... Set defaults.ansible.warnings.ver12 to False to hide this warning
+ [INFO] Checking for updates in configuration templates
+ [INFO] Creating configuration snippets
+[CREATED] dut: normalize,initial
+[CREATED] p1: normalize,initial,routing
+[CREATED] t_1300: initial,routing
+[CREATED] t_1400: initial,routing
+ [INFO] Executing initial configuration for node t_1300 (namespace
+          clab-ml_17-t_1300)
+ [INFO] Executing routing configuration for node t_1300 (namespace
+          clab-ml_17-t_1300)
+ [INFO] Executing initial configuration for node t_1400 (namespace
+          clab-ml_17-t_1400)
+ [INFO] Executing routing configuration for node t_1400 (namespace
+          clab-ml_17-t_1400)
+
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
-[WARNING]: Found variable using reserved name: hosts
+[WARNING]: Found variable using reserved name 'hosts'.
+Origin: /work/netlab_cicd/group_vars/all/topology.yml:163:1
+
+161     ipv4: 10.2.0.0/24
+162     prefix: 32
+163 hosts:
+    ^ column 1
+
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -9,357 +40,220 @@ ok: [t_1400]
 ok: [p1]
 ok: [dut]
 
-TASK [Find device readiness script] ********************************************
-ok: [t_1300]
-ok: [t_1400]
-ok: [dut]
-ok: [p1]
-
-TASK [Wait for device to become ready] *****************************************
+TASK [Generic readiness tests] *************************************************
 skipping: [t_1300]
 skipping: [t_1400]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/eos-clab.yml for p1
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ioll2-clab.yml for dut
-
-TASK [Wait for cEOS SSH daemon to start] ***************************************
-ok: [p1]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ssh.yml for p1, dut => (item=ssh)
 
 TASK [Check if 'sshpass' is installed] *****************************************
-ok: [dut -> localhost]
+ok: [p1 -> localhost]
 
 TASK [Check for 'timeout' command] *********************************************
 ok: [dut -> localhost]
+ok: [p1 -> localhost]
 
-TASK [Execute local ssh command to check ioll2 readiness] **********************
+TASK [Execute local ssh command to check ssh readiness] ************************
+FAILED - RETRYING: [p1 -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
 ok: [dut -> localhost]
+ok: [p1 -> localhost]
 
-TASK [Confirm dut SSH server works] ********************************************
-ok: [dut] => 
-  msg: Node dut is ready.
+TASK [Confirm p1 SSH server works] *********************************************
+ok: [dut] => {
+    "msg": "Node dut is ready."
+}
+ok: [p1] => {
+    "msg": "Node p1 is ready."
+}
+
+TASK [Find device readiness script] ********************************************
+ok: [t_1300]
+ok: [t_1400]
+ok: [p1]
+ok: [dut]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [p1]
+skipping: [t_1300]
+skipping: [t_1400]
+skipping: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for p1, dut, t_1300, t_1400
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for p1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for t_1300
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for t_1400
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [p1]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [p1]
+
+TASK [fail] ********************************************************************
+skipping: [p1]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [p1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [p1] => {
+    "msg": "normalize configuration for p1\n=========================================\n!\ninterface Ethernet1\n shutdown\n"
+}
+
+TASK [Deploy normalize configuration] ******************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for p1
+
+TASK [eos_config: deploying normalize from /work/netlab_cicd/node_files/p1/normalize] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines should be similar to how they appear if present in the running configuration on device including the indentation
+[WARNING]: Task result `warnings` was <class 'str'> instead of <class 'list'>.
+changed: [p1]
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [t_1300]
-ok: [t_1400]
-ok: [p1]
-ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [t_1300]
-ok: [t_1400]
-ok: [dut]
-ok: [p1]
 
 TASK [fail] ********************************************************************
-skipping: [p1]
-skipping: [dut]
 skipping: [t_1300]
-skipping: [t_1400]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [t_1300]
-ok: [t_1400]
-ok: [p1]
-ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [t_1300]
-skipping: [t_1400]
-ok: [dut] => 
-  msg: |-
-    normalize configuration for dut
-    =========================================
-    !
-    interface Ethernet0/1
-     shutdown
-     mac-address 52dc.cafe.0101
-    !
-    interface Ethernet0/2
-     shutdown
-     mac-address 52dc.cafe.0102
-    !
-    interface Ethernet0/3
-     shutdown
-     mac-address 52dc.cafe.0103
-ok: [p1] => 
-  msg: |-
-    normalize configuration for p1
-    =========================================
-    !
-    interface Ethernet1
-     shutdown
-     mac-address 52dc.cafe.0201
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [t_1300]
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [t_1400]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [t_1400]
+
+TASK [fail] ********************************************************************
 skipping: [t_1400]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for p1
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
 
-TASK [eos_config: deploying normalize from /home/pipi/netlab_gh/netsim/ansible/templates/normalize/eos.j2] ***
-[WARNING]: To ensure idempotency and correct diff the input configuration lines
-should be similar to how they appear if present in the running configuration on
-device including the indentation
-changed: [p1]
-
-TASK [ios_config: deploying normalize from /home/pipi/netlab_gh/netsim/ansible/templates/normalize/ioll2.j2] ***
-changed: [dut]
-
-TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for p1, dut, t_1300, t_1400
-
-TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [t_1300]
+TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [t_1400]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [t_1400]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [t_1400]
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
-ok: [p1]
 
-TASK [Find configuration template for initial] *********************************
-ok: [t_1300]
-ok: [t_1400]
-ok: [p1]
+TASK [Find configuration template for normalize] *******************************
 ok: [dut]
 
 TASK [fail] ********************************************************************
-skipping: [p1]
 skipping: [dut]
-skipping: [t_1300]
-skipping: [t_1400]
 
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [t_1300]
-ok: [t_1400]
-ok: [p1]
+TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [t_1300] => 
-  msg: |-
-    initial configuration for t_1300
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.2.3/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.2.3/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
-    set +e
-    ip -6 addr del 2001:db8:1:2::3/64 dev eth1 2>/dev/null
-    set -e
-    ip -6 addr add 2001:db8:1:2::3/64 dev eth1
-    ip link set dev eth1 mtu 1500
-ok: [t_1400] => 
-  msg: |-
-    initial configuration for t_1400
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.1.4/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
-    set +e
-    ip -6 addr del 2001:db8:1:1::4/64 dev eth1 2>/dev/null
-    set -e
-    ip -6 addr add 2001:db8:1:1::4/64 dev eth1
-    ip link set dev eth1 mtu 1500
-ok: [p1] => 
-  msg: |-
-    initial configuration for p1
-    =========================================
-    hostname p1
-    !
-    logging monitor debugging
-    aaa authorization exec default local
-    !
-    lldp run
-    ip routing
-    ipv6 unicast-routing
-    !
-    !
-    ip host dut 10.0.0.1 172.16.0.1 172.16.1.1 172.16.2.1
-    ip host t1300 172.16.2.3
-    ip host t1400 172.16.1.4
-    ipv6 host dut 2001:db8:0:1::1
-    ipv6 host t1300 2001:db8:1:2::3
-    ipv6 host t1400 2001:db8:1:1::4
-    !
-    interface Management0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Loopback0
-     ip address 10.0.0.2/32
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:0:2::1/64
-    !
-    interface Ethernet1
-     no switchport
-     mtu 1500
-     description p1 -> dut
-     ip address 172.16.0.2/24
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:1::2/64
-    !
-     mac-address 52dc.cafe.0201
-     no shutdown
-    !
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    hostname dut
-    !
-    no ip domain lookup
-    logging buffered 256000
-  
-    !
-    lldp run
-    !
-    ip host p1 10.0.0.2 172.16.0.2
-    ip host t_1300 172.16.2.3
-    ip host t_1400 172.16.1.4
-    !
-    ip routing
-    !
-    ipv6 unicast-routing
-    !
-    !
-    interface Loopback0
-     ip address 10.0.0.1 255.255.255.255
-     ipv6 address 2001:DB8:0:1::1/64
-    !
-    interface Ethernet0/0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Ethernet0/1
-     no switchport
-     description dut -> p1
-     bandwidth 1000
-     ip mtu 1500
-     ipv6 mtu 1500
-     ip address 172.16.0.1 255.255.255.0
-     ipv6 nd ra interval 5
-     ipv6 address 2001:DB8:1::1/64
-     no shutdown
-    !
-    interface Ethernet0/2
-     no switchport
-     description dut -> t_1400 [stub]
-     ip mtu 1400
-     ipv6 mtu 1400
-     ip address 172.16.1.1 255.255.255.0
-     ipv6 nd ra interval 5
-     ipv6 address 2001:DB8:1:1::1/64
-     no shutdown
-    !
-    interface Ethernet0/3
-     no switchport
-     description dut -> t_1300 [stub]
-     ip mtu 1300
-     ipv6 mtu 1300
-     ip address 172.16.2.1 255.255.255.0
-     ipv6 nd ra interval 5
-     ipv6 address 2001:DB8:1:2::1/64
-     no shutdown
-    !
-    !
-    line vty 0 4
-     exec-timeout 0 0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
+ok: [dut] => {
+    "msg": "normalize configuration for dut\n=========================================\n!\ninterface Ethernet0/1\n shutdown\n!\ninterface Ethernet0/2\n shutdown\n!\ninterface Ethernet0/3\n shutdown\n"
+}
+
+TASK [Deploy normalize configuration] ******************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+
+TASK [ios_config: deploying normalize from /work/netlab_cicd/node_files/dut/normalize] ***
+changed: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for p1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for t_1300
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for t_1400
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [p1]
+
+TASK [Find configuration template for initial] *********************************
+ok: [p1]
+
+TASK [fail] ********************************************************************
+skipping: [p1]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [p1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [p1] => {
+    "msg": "initial configuration for p1\n=========================================\nhostname p1\n!\nlogging monitor debugging\naaa authorization exec default local\n!\nlldp run\nip routing\nipv6 unicast-routing\n!\n!\nip host dut 10.0.0.1 172.16.0.1 172.16.1.1 172.16.2.1\nip host t1300 172.16.2.3\nip host t1400 172.16.1.4\nipv6 host dut 2001:db8:0:1::1\nipv6 host t1300 2001:db8:1:2::3\nipv6 host t1400 2001:db8:1:1::4\n!\ninterface Management0\n no lldp transmit\n no lldp receive\n!\ninterface Loopback0\n ip address 10.0.0.2/32\n ipv6 nd ra interval 5\n ipv6 address 2001:db8:0:2::1/64\n!\ninterface Ethernet1\n no switchport\n mtu 1500\n description p1 -> dut\n ip address 172.16.0.2/24\n ipv6 nd ra interval 5\n ipv6 address 2001:db8:1::2/64\n mac-address caf0.0002.0001\n!\n no shutdown\n!\n"
+}
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for p1
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for t_1300, t_1400
 
-TASK [eos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/eos.j2] ***
+TASK [eos_config: deploying initial from /work/netlab_cicd/node_files/p1/initial] ***
 changed: [p1]
 
-TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
-changed: [dut]
-
-TASK [Define script filename and determine whether to execute in netns] ********
+TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [t_1300]
+
+TASK [Find configuration template for initial] *********************************
+skipping: [t_1300]
+
+TASK [fail] ********************************************************************
+skipping: [t_1300]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+skipping: [t_1300]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [t_1300]
+
+TASK [Deploy initial configuration] ********************************************
+skipping: [t_1300]
+
+TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [t_1400]
 
-TASK [Create a temporary file for the rendered script] *************************
-changed: [t_1300 -> localhost]
-changed: [t_1400 -> localhost]
-
-TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [t_1400 -> localhost]
-changed: [t_1300 -> localhost]
-
-TASK [Copy script into running container at /tmp/config-t_1300_initial.sh] *****
-skipping: [t_1300]
+TASK [Find configuration template for initial] *********************************
 skipping: [t_1400]
 
-TASK [Execute /tmp/config-t_1300_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-skipping: [t_1300]
+TASK [fail] ********************************************************************
 skipping: [t_1400]
 
-TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [t_1400 -> localhost]
-changed: [t_1300 -> localhost]
+TASK [Find configuration deployment deploy_script for initial] *****************
+skipping: [t_1400]
 
-TASK [Remove temporary file /tmp/t_1300_initial-i9yb3cmo.sh] *******************
-changed: [t_1400 -> localhost]
-changed: [t_1300 -> localhost]
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [t_1400]
+
+TASK [Deploy initial configuration] ********************************************
+skipping: [t_1400]
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "initial configuration for dut\n=========================================\nhostname dut\n!\nno ip domain lookup\nlogging buffered 256000\n\n!\nlldp run\n!\nip host p1 10.0.0.2 172.16.0.2\nip host t_1300 172.16.2.3\nip host t_1400 172.16.1.4\n!\nip routing\n!\nipv6 unicast-routing\n!\n!\ninterface Loopback0\n ip address 10.0.0.1 255.255.255.255\n ipv6 address 2001:DB8:0:1::1/64\n!\ninterface Ethernet0/0\n no lldp transmit\n no lldp receive\n!\ninterface Ethernet0/1\n no switchport\n description dut -> p1\n bandwidth 1000\n ip mtu 1500\n ipv6 mtu 1500\n ip address 172.16.0.1 255.255.255.0\n ipv6 nd ra interval 5\n ipv6 address 2001:DB8:1::1/64\n mac-address caf0.0001.0001\n no shutdown\n!\ninterface Ethernet0/2\n no switchport\n description dut -> t_1400 [stub]\n ip mtu 1400\n ipv6 mtu 1400\n ip address 172.16.1.1 255.255.255.0\n ipv6 nd ra interval 5\n ipv6 address 2001:DB8:1:1::1/64\n mac-address caf0.0001.0002\n no shutdown\n!\ninterface Ethernet0/3\n no switchport\n description dut -> t_1300 [stub]\n ip mtu 1300\n ipv6 mtu 1300\n ip address 172.16.2.1 255.255.255.0\n ipv6 nd ra interval 5\n ipv6 address 2001:DB8:1:2::1/64\n mac-address caf0.0001.0003\n no shutdown\n!\n!\nline vty 0 4\n exec-timeout 0 0 \n!\nno banner exec\nno banner login\nno banner incoming\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+
+TASK [ios_config: deploying initial from /work/netlab_cicd/node_files/dut/initial] ***
+changed: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -369,145 +263,85 @@ ok: [t_1400]
 ok: [p1]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for p1, t_1300, t_1400 => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for p1 => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for t_1300 => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for t_1400 => (item=routing)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
-ok: [t_1300]
-ok: [t_1400]
 ok: [p1]
 
 TASK [Find configuration template for routing] *********************************
-ok: [t_1300]
-ok: [t_1400]
 ok: [p1]
 
 TASK [fail] ********************************************************************
 skipping: [p1]
-skipping: [t_1300]
-skipping: [t_1400]
 
 TASK [Find configuration deployment deploy_script for routing] *****************
-ok: [t_1300]
-ok: [t_1400]
 ok: [p1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [t_1300] => 
-  msg: |-
-    routing configuration for t_1300
-    =========================================
-    #!/bin/bash
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.2.1 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.2.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.2.1 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.2.1 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
-ok: [t_1400] => 
-  msg: |-
-    routing configuration for t_1400
-    =========================================
-    #!/bin/bash
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.1.1 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.1.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.1.1 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.1.1 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
-ok: [p1] => 
-  msg: |-
-    routing configuration for p1
-    =========================================
-    !
-    !
-    ! AS-path access lists
-    !
-    !
-    ! Static routes
-    !
-    ip route 0.0.0.0/0 Ethernet1 172.16.0.1
-    ipv6 route ::/0 Ethernet1 2001:db8:1::1
+ok: [p1] => {
+    "msg": "routing configuration for p1\n=========================================\n!\n!\n! Static routes\n!\nip route 0.0.0.0/0 Ethernet1 172.16.0.1\nipv6 route ::/0 Ethernet1 2001:db8:1::1\n"
+}
 
 TASK [Deploy routing configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for p1
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for t_1300, t_1400
 
-TASK [eos_config: deploying routing from /home/pipi/netlab_gh/netsim/ansible/templates/routing/eos.j2] ***
+TASK [eos_config: deploying routing from /work/netlab_cicd/node_files/p1/routing] ***
 changed: [p1]
 
-TASK [Define script filename and determine whether to execute in netns] ********
+TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [t_1300]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [t_1300]
+
+TASK [fail] ********************************************************************
+skipping: [t_1300]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [t_1300]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [t_1300]
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [t_1300]
+
+TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [t_1400]
 
-TASK [Create a temporary file for the rendered script] *************************
-changed: [t_1300 -> localhost]
-changed: [t_1400 -> localhost]
-
-TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [t_1400 -> localhost]
-changed: [t_1300 -> localhost]
-
-TASK [Copy script into running container at /tmp/config-t_1300_routing.sh] *****
-skipping: [t_1300]
+TASK [Find configuration template for routing] *********************************
 skipping: [t_1400]
 
-TASK [Execute /tmp/config-t_1300_routing.sh to deploy routing config based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
-skipping: [t_1300]
+TASK [fail] ********************************************************************
 skipping: [t_1400]
 
-TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [t_1300 -> localhost]
-changed: [t_1400 -> localhost]
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [t_1400]
 
-TASK [Remove temporary file /tmp/t_1300_routing-w2xc0rab.sh] *******************
-changed: [t_1300 -> localhost]
-changed: [t_1400 -> localhost]
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [t_1400]
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [t_1400]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=21   changed=2    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-p1                         : ok=26   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
-t_1300                     : ok=29   changed=8    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
-t_1400                     : ok=29   changed=8    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+dut                        : ok=20   changed=2    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+p1                         : ok=29   changed=3    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+t_1300                     : ok=11   changed=0    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+t_1400                     : ok=11   changed=0    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
+
+Warning: The following warnings were generated during the 'netlab initial' processing
+Warning: ansible: You're using Ansible version 12.x or higher; netlab might not work correctly
+Results of configuration script deployments
+================================================================================
+t_1300                       OK: 2   
+t_1400                       OK: 2   
 
 
 This scenario tests MTU configuration and path MTU discovery (generation of ICMP unreachables)

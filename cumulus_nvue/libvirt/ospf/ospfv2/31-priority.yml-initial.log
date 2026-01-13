@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -8,15 +12,23 @@ ok: [dut]
 ok: [x1]
 ok: [x2]
 
+TASK [Generic readiness tests] *************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
 TASK [Find device readiness script] ********************************************
 ok: [dut]
 ok: [x1]
 ok: [x2]
 
 TASK [Wait for device to become ready] *****************************************
-skipping: [dut]
 skipping: [x1]
 skipping: [x2]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/cumulus_nvue.yml for dut
+
+TASK [Wait for nvued to start] *************************************************
+ok: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
@@ -83,6 +95,8 @@ ok: [dut] =>
     - set:
         system:
           hostname: dut
+          global:
+            system-mac: ca:fe:00:01:00:00
           config:
             snippet:
               system-mtu:
@@ -218,6 +232,9 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -241,6 +258,7 @@ ok: [x1] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [x2] => 
   msg: |-
@@ -329,6 +347,9 @@ ok: [x2] =>
     cat >/tmp/config <<CONFIG
     hostname x2
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -352,6 +373,7 @@ ok: [x2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
@@ -363,12 +385,6 @@ ok: [dut]
 
 TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
 changed: [dut]
-
-TASK [Wait for nvued to start] *************************************************
-ok: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
 
 TASK [execute on cumulus: 'nv config patch' for initial config] ****************
 changed: [dut]
@@ -387,16 +403,16 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -452,7 +468,6 @@ ok: [dut] =>
                 enable: on
                 area:
                   0.0.0.0: {}
-  
                 router-id: 10.0.0.1
   
         interface:
@@ -540,12 +555,6 @@ ok: [dut]
 TASK [copy the cumulus nvue YAML ospf config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/cumulus_nvue.j2)] ***
 changed: [dut]
 
-TASK [Wait for nvued to start] *************************************************
-skipping: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
 TASK [execute on cumulus: 'nv config patch' for ospf config] *******************
 changed: [dut]
 
@@ -553,8 +562,8 @@ TASK [execute on cumulus: 'nv config apply -y' for ospf config] ****************
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -645,12 +654,6 @@ ok: [dut]
 TASK [copy the cumulus nvue YAML vrf config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/cumulus_nvue.j2)] ***
 changed: [dut]
 
-TASK [Wait for nvued to start] *************************************************
-skipping: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
 TASK [execute on cumulus: 'nv config patch' for vrf config] ********************
 changed: [dut]
 
@@ -661,10 +664,9 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=41   changed=9    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-x1                         : ok=29   changed=5    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-x2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-
+dut                        : ok=39   changed=9    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+x1                         : ok=29   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+x2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 This lab tests the OSPF interface timers. The device under test must establish
