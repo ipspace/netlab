@@ -111,7 +111,8 @@ def create_node_configs(
             output_path=abs_path,
             output_file=o_fname):
         created_list.append(module)
-
+      if config_mode in ('sh','cp_sh'):
+        (abs_path / o_fname).chmod(0o755)
     if not log.VERBOSE and created_list:
       strings.print_colored_text(strings.pad_err_code('CREATED',10),'green')
       print(f"{n_name}: {','.join(created_list)}")

@@ -380,7 +380,7 @@ class Containerlab(_Provider):
             category=log.FatalError,
             module='clab')
           break
-        config_cmd = f'docker exec {node_name} sh {cfg_item.target}' # Container-side script
+        config_cmd = f'docker exec {node_name} {cfg_item.target}' # Container-side script
         log.info(f'Executing {mod_name} configuration for node {node.name}')
       if not config_cmd:                                        # Not an executable file?
         continue
