@@ -219,7 +219,7 @@ defaults:
             INTFTYPE: et
             CLAB_MGMT_VRF: management
         mgmt_if: Management0
-        image: ceos:4.34.2F
+        image: ceos:4.35.0.1F
         group_vars:
           ansible_user: admin
           ansible_ssh_pass: admin
@@ -462,7 +462,7 @@ defaults:
           - -c
           - show $@
           netlab_mgmt_vrf: true
-        image: quay.io/frrouting/frr:10.5.0
+        image: quay.io/frrouting/frr:10.5.1
         kmods:
         node:
           kind: linux
@@ -822,7 +822,7 @@ defaults:
       lag_interface_name: port-channel{lag.ifindex}
       mtu: 1500
       clab:
-        image: vrnetlab/vr-ftosv
+        image: vrnetlab/dell_ftos10v:10.5.6.6
         build: https://containerlab.dev/manual/kinds/vr-ftosv/
         node:
           kind: vr-ftosv
@@ -1778,7 +1778,7 @@ defaults:
         min_tx: 100
         min_rx: 100
       clab:
-        image: ghcr.io/nokia/srlinux:25.3.2
+        image: ghcr.io/nokia/srlinux:25.10.1
         node:
           kind: srl
           type: ixr-d2
@@ -3430,6 +3430,7 @@ defaults:
         routing:
           static: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -3513,6 +3514,7 @@ defaults:
           ipv4:
       mtu: 1500
       clab:
+        build: true
         image: netlab/netscaler
         node:
           kind: linux
@@ -3544,12 +3546,13 @@ defaults:
         routing:
           static: true
         initial:
-          roles:
-          - host
-          - router
           ipv6:
             use_ra: true
             lla: true
+          reload: false
+          roles:
+          - host
+          - router
         ospf:
           unnumbered: false
           import:
@@ -3660,6 +3663,7 @@ defaults:
             unnumbered: true
           ipv6:
             lla: true
+          reload: false
         bgp:
           activate_af: true
           ipv6_lla: true
@@ -4299,7 +4303,7 @@ defaults:
         pre_install: vptx
         create_template: vptx.xml.j2
       clab:
-        image: vrnetlab/juniper_vjunosevolved:25.2R1.8-EVO
+        image: vrnetlab/juniper_vjunosevolved:23.2R2.21-EVO
         build: https://containerlab.dev/manual/kinds/vr-vjunosevolved/
         mtu: 1500
         node:
@@ -4457,6 +4461,7 @@ defaults:
           static:
             discard: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -4568,7 +4573,7 @@ defaults:
           - birdc
           - show $@
           docker_shell: bash -il
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
       external:
         image: none
       graphite:
@@ -4598,6 +4603,7 @@ defaults:
         routing:
           static: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -4662,7 +4668,7 @@ defaults:
           ansible_user: root
           netlab_linux_distro: vanilla
           docker_shell: bash -il
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
       external:
         image: none
       graphite:
@@ -5174,6 +5180,7 @@ defaults:
             unnumbered: peer
           ipv6:
             lla: true
+          reload: false
           roles:
           - host
           - router
@@ -5197,7 +5204,7 @@ defaults:
           - show $@
           docker_shell: bash -il
         image: netlab/bird:latest
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
         features:
           initial:
             roles:
@@ -5221,7 +5228,7 @@ defaults:
         group_vars:
           docker_shell: bash -il
         image: netlab/dnsmasq:latest
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
         features:
           initial:
             roles:
@@ -5234,6 +5241,7 @@ defaults:
         dhcp:
           server: true
         initial:
+          reload: false
           roles:
           - host
       dhcp:
@@ -5444,6 +5452,7 @@ defaults:
             configuration template(s)
         _alt_types:
         - list
+      skip_config: list
       group: list
       role:
         type: str
@@ -6391,6 +6400,11 @@ defaults:
         - width
     config: {}
     provider: {}
+    pickle: {}
+    tools: {}
+    ansible:
+      hostfile: {}
+      configfile: {}
     yaml=netlab:
       snapshot:
         yml: {}
@@ -6692,6 +6706,12 @@ defaults:
         ping_irb: 40
       vjunos-router:
         ping_irb: 90
+      nxos:
+        bgp_v4_redist: 40
+        bgp_v6_redist: 40
+      vptx:
+        ldp_adj: 180
+        ibgp_session: 40
   hints:
     evpn:
       irb_group: >
@@ -6805,7 +6825,15 @@ defaults:
       - svg
       - jpg
       - jpeg
-    create: {}
+    create:
+      output:
+        config:
+        provider:
+        pickle:
+        tools:
+        ansible: dirs
+        yaml:
+          output: netlab.snapshot.yml
   paths:
     validate:
     - /home/pipi/netlab_gh/netsim/validate
@@ -6897,6 +6925,7 @@ defaults:
       - deploy-config/{ ansible_network_os }.yml
     templates:
       dirs:
+      - /work/netlab_cicd/templates
       - /home/pipi/netlab_gh/netsim/daemons
       - /home/pipi/netlab_gh/netsim/ansible/templates
     t_files:
@@ -8698,7 +8727,7 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1768034261.125424
+    timestamp: 1768405855.0427165
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
@@ -8767,6 +8796,9 @@ groups:
   as65102:
     members:
     - x3
+  netlab_no_reload:
+    members:
+    - dut
 nodes:
   dut:
     name: dut
@@ -9014,7 +9046,7 @@ nodes:
       - target: /etc/hosts
         source: node_files/-shared-hosts
         mode: ro
-    box: quay.io/frrouting/frr:10.5.0
+    box: quay.io/frrouting/frr:10.5.1
     module:
     - bgp
     id: 2
@@ -9097,7 +9129,7 @@ nodes:
       - target: /etc/hosts
         source: node_files/-shared-hosts
         mode: ro
-    box: quay.io/frrouting/frr:10.5.0
+    box: quay.io/frrouting/frr:10.5.1
     module:
     - bgp
     id: 3
@@ -9183,7 +9215,7 @@ nodes:
       - target: /etc/hosts
         source: node_files/-shared-hosts
         mode: ro
-    box: quay.io/frrouting/frr:10.5.0
+    box: quay.io/frrouting/frr:10.5.1
     module:
     - bgp
     id: 4
@@ -9332,4 +9364,4 @@ prefix:
   any:
     ipv4: 0.0.0.0/0
     ipv6: ::/0
-_netlab_version: 25.12.03
+_netlab_version: '26.01'
