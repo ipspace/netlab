@@ -163,9 +163,9 @@ def show_lab(args: argparse.Namespace,lab_states: Box) -> None:
   lab_state = lab_states[iid]
   show_lab_instance(iid,lab_state)
   wdir = lab_state.dir
-  snapshot = f'{wdir}/netlab.snapshot.yml'
+  snapshot = f'{wdir}/netlab.snapshot.pickle'
 
-  topology = _read.read_yaml(filename=snapshot)
+  topology = _read.load_pickled_data(snapshot)
   if topology is None:
     log.fatal(f'Cannot read topology snapshot file {snapshot}')
 
