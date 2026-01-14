@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+**Release 26.01.01 (2026-01-14)**
+
+Release 26.01.01 is a bug-fix release [fixing](bug-fixes-26.01.01) the **[netlab status](netlab-status)** crash.
+
 **Release 26.01 (2026-01-12)**
 
 Release 26.01 introduces a major rewrite of the device configuration file generation process, making it fully independent of Ansible. Ansible is used solely for configuration deployment.
