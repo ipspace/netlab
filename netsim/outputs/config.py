@@ -66,7 +66,7 @@ class ConfigurationFiles(_TopologyOutput):
           cfg_path = f'{n_name}/{cfg_source}'
           if do_config(cfg_source,cfg_path):
             create_list.append(cfg_source)
-          if 'sh' in cfg_mode:
+          if cfg_mode in ('sh','cp_sh'):
             (node_files / cfg_path).chmod(0o755)
 
       if n_name in unprovisioned:

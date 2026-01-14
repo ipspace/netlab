@@ -235,7 +235,7 @@ The **clab.node_config** dictionary is copied into the **clab.config_templates**
 
 **netlab initial** (also invoked as the last step in the **netlab up** process) executes scripts specified in the **clab.node_config** dictionary:
 
-* Scripts with `:sh` suffix are executed with **docker exec _container_ sh _script_**
+* Scripts with `:sh` suffix are executed with **docker exec _container_ _script_** command. The scripts should therefore include the shebang interpreter directive on the first line.
 * Scripts with `:ns` suffix are executed with **sudo ip netns exec _namespace_ sh _script_**
 * Other scripts are treated like configuration files and are not executed.
 
