@@ -51,9 +51,10 @@ class ConfigurationFiles(_TopologyOutput):
       skip_config = n_data.get('skip_config',[])
       for cfg_item in n_data.get(f'{n_provider}.config_templates',[]):
         cfg_source = cfg_item.source
+        cfg_mode = cfg_item.get('mode','')
         if cfg_source in skip_config:
           continue
-        if cfg_item.get('mode','') == SHARED_SUFFIX:
+        if cfg_mode == SHARED_SUFFIX:
           if cfg_source in shared_list:
             create_list.append(f'{cfg_source} (shared)')
             continue
@@ -62,8 +63,11 @@ class ConfigurationFiles(_TopologyOutput):
           if do_config(cfg_source,SHARED_PREFIX+cfg_source):
             create_list.append(cfg_source)
         else:
-          if do_config(cfg_source,f'{n_name}/{cfg_source}'):
+          cfg_path = f'{n_name}/{cfg_source}'
+          if do_config(cfg_source,cfg_path):
             create_list.append(cfg_source)
+          if 'sh' in cfg_mode:
+            (node_files / cfg_path).chmod(0o755)
 
       if n_name in unprovisioned:
         continue
