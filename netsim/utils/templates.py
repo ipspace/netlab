@@ -85,8 +85,20 @@ def render_template(
 
   return template.render(**data)
 
+J2_WRAPPER_ENV: typing.Optional[Environment] = None
+
+def render_wrapper(wrapper: str, cfg_text: str, data: typing.Dict) -> str:
+  global J2_WRAPPER_ENV
+
+  if not J2_WRAPPER_ENV:
+    J2_WRAPPER_ENV = get_jinja2_env_for_path(())
+
+  return J2_WRAPPER_ENV.from_string(wrapper).render(netlab_config_text=cfg_text,**data)
+
 """
 write_template: Applies a custom template (in_folder/j2) and writes it to the given file path (out_folder/filename)
+
+Might have to apply a wrapper (specified in 'netlab_config_wrapper' group variable) to rendered text
 """
 def write_template(
         in_folder: str,
@@ -99,7 +111,9 @@ def write_template(
     print(f"write_template {in_folder}/{j2} -> {out_folder}/{filename}")
   # Make sure we fail before creating any file(s)
   r_text = render_template(data=data,j2_file=j2,path=in_folder,extra_path=extra_path)
-
+  wrapper = data.get('netlab_config_wrapper',None)
+  if wrapper:
+    r_text = render_wrapper(wrapper,r_text,data)
   pathlib.Path(out_folder).mkdir(parents=True, exist_ok=True)
   out_file = f"{out_folder}/{filename}"
   create_file_from_text(out_file,r_text)

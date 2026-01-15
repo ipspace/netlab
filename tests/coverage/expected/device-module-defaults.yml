@@ -38,6 +38,9 @@ module:
 name: input
 nodes:
   l1:
+    _node_config:
+      bgp: /etc/config/02-bgp.sh:sh
+      initial: /etc/config/01-initial.sh:sh
     af:
       ipv4: true
     bgp:
@@ -69,17 +72,29 @@ nodes:
     box: quay.io/frrouting/frr:10.0.1
     clab:
       binds:
+      - source: node_files/l1/initial
+        target: /etc/config/01-initial.sh
+      - source: node_files/l1/bgp
+        target: /etc/config/02-bgp.sh
       - source: node_files/l1/daemons
         target: /etc/frr/daemons
       - mode: ro
         source: node_files/-shared-hosts
         target: /etc/hosts
       config_templates:
+      - mode: sh
+        source: initial
+        target: /etc/config/01-initial.sh
+      - mode: sh
+        source: bgp
+        target: /etc/config/02-bgp.sh
       - source: daemons
         target: /etc/frr/daemons
       - mode: shared
         source: hosts
         target: /etc/hosts
+      exec:
+      - sleep 1
       kind: linux
     device: frr
     hostname: clab-input-l1
@@ -114,6 +129,9 @@ nodes:
     - bgp
     mtu: 1500
     name: l1
+    netlab_ansible_skip_module:
+    - initial
+    - bgp
     role: router
   l2:
     af:

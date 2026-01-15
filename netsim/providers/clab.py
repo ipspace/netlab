@@ -132,12 +132,9 @@ def add_config_filemaps(node: Box, topology: Box) -> None:
 add_default_config_mode: if the clab.config_mode is set, add configured modules to _node_config dictionary
 '''
 def add_default_config_mode(node: Box, topology: Box) -> None:
-  cfg_mode = node.get('netlab_config_mode',False)
-  if cfg_mode == False:                           # If needed, get default device config mode (for the node provider)
-    dev_data = devices.get_consolidated_device_data(node,topology.defaults)
-    cfg_mode = dev_data.get('group_vars.netlab_config_mode',None)
-  if not cfg_mode:                                # No default config mode?
-    return                                        # ... get out of here
+  cfg_mode = devices.get_node_group_var(node,'netlab_config_mode',topology.defaults)
+  if not cfg_mode:
+    return
 
   # Get what's already been processed and the list of configuration snippets. That list
   # has to include initial configuration, all modules, and custom config templates
@@ -158,6 +155,12 @@ def add_default_config_mode(node: Box, topology: Box) -> None:
 
     # Finally, store the mapping of this config item into _node_config
     node._node_config[m] = f'{file_target}:{cfg_mode}'
+
+  # Finally, if the container needs extra precautions to work with config mode (hi there, FRR),
+  # add the exec commands to the container exec list
+  cfg_exec = devices.get_node_group_var(node,'netlab_config_exec',topology.defaults) or []
+  if cfg_exec:
+    append_to_list(node,'clab.exec',cfg_exec,flatten=True)
 
 '''
 get_loaded_kernel_modules: Get the list of loaded kernel modules from '/proc/modules'
