@@ -1,3 +1,4 @@
+(plugin-kind)=
 # Kubernetes Cluster in Container Nodes
 
 The *kind* plugin implements Kubernetes in Docker (KinD) cluster for *containerlab* deployments.
@@ -88,7 +89,3 @@ links:
 | kc-control-plane | eth1        | X_1             | kc-control-plane -> [sw,kc-worker,kc-worker2] |
 | kc-worker     | eth1        | X_1             | kc-worker -> [sw,kc-control-plane,kc-worker2] |
 | kc-worker2    | eth1        | X_1             | kc-worker2 -> [sw,kc-control-plane,kc-worker] |
-
-```{warning}
-The current version of the plugin does not configure IP addresses or static routes on the cluster nodes.
-```
