@@ -417,7 +417,7 @@ class Containerlab(_Provider):
       f_type = cfg_item.get('mode',None)
       if mod_name not in deploy_list:                           # ... and skip it if we're not deploying it
         continue
-      if f_type == 'cp_sh' and 'target' in cfg_item:
+      if f_type == 'cp_sh' and cfg_item.target:                 # Note: checking for non-existent attribute is OK
         cp_status = external_commands.run_command(
                       cmd=['docker','cp','-q',
                            f'node_files/{node.name}/{cfg_item.source}',
