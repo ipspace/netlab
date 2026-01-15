@@ -417,11 +417,27 @@ class Containerlab(_Provider):
       f_type = cfg_item.get('mode',None)
       if mod_name not in deploy_list:                           # ... and skip it if we're not deploying it
         continue
+      if f_type == 'cp_sh' and 'target' in cfg_item:
+        cp_status = external_commands.run_command(
+                      cmd=['docker','cp','-q',
+                           f'node_files/{node.name}/{cfg_item.source}',
+                           f'{node_name}:{cfg_item.target}'],
+                      ignore_errors=True)
+        if not cp_status:
+          log.error(
+            f'Cannot copy configuration file {cfg_item.source} into container {node_name} as {cfg_item.target}',
+            category=log.FatalError,
+            module='clab',
+            skip_header=True)
+          continue
+        elif log.VERBOSE:
+          log.info(f'Copying {mod_name} configuration into {node_name} as {cfg_item.target}')
+
       config_cmd = None                                         # Command to execute
       if f_type == 'ns':                                        # Is this a host-side script?
         config_cmd = f'sudo ip netns exec {node_name} sh node_files/{node.name}/{mod_name}' 
         log.info(f'Executing {mod_name} configuration for node {node.name} (namespace {node_name})')
-      elif f_type == 'sh':
+      elif f_type in ('sh','cp_sh'):
         if not cfg_item.target:
           log.error(
             f'Internal error: bash script for module {mod_name} is not mapped into a container file',
