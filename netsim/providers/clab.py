@@ -148,7 +148,7 @@ def add_default_config_mode(node: Box, topology: Box) -> None:
     m = m.replace('.','@')                        # Use the @-as-. hack for things like bgp.session
     if m in node_cfg:                             # Module already processed, move on
       continue
-    file_target = ''
+    file_target = ''                              # By default, config file is not accessible in the container
     if cfg_mode == 'sh':                          # File mapped into container using a containerlab bind
       file_target = f'/etc/config/{idx:02d}-{m}.sh'
     elif cfg_mode == 'cp_sh':                     # File copied into container, must use existing directory

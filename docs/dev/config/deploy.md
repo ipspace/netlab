@@ -244,7 +244,7 @@ clab:
     routing: :ns
 ```
 
-The **clab.config_mode parameter** can be used to replace these definitions with a simpler one:
+The **clab.config_mode** parameter can be used to replace these definitions with a simpler one:
 
 ```
 clab:
