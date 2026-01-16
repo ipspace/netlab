@@ -1,7 +1,9 @@
-{% macro policy(sp_data,af) -%}
-  {% if 'policy' in sp_data %} route-map {{ sp_data.policy }}-{{ af }}{% endif +%}
+{% macro policy(sp_data,af,metric) -%}
+  {% if 'policy' in sp_data %} route-map {{ sp_data.policy }}-{{ af }}{% 
+     elif metric %} metric {{ metric }}{%
+     endif +%}
 {%- endmacro %}
-{% macro config(pdata,af,af_redistribute=False,isis_level='') -%}
+{% macro config(pdata,af,af_redistribute=False,isis_level='',metric='') -%}
 {%   if pdata.import is defined %}
 {%     for s_proto,s_data in pdata.import.items() %}
 {%       if s_proto == 'ospf' and af == 'ipv6' %}
@@ -16,7 +18,7 @@
 {#         ISIS wants to know into which database it should redistribute #}
 {%         set s_proto = s_proto + ' ' + isis_level %}
 {%       endif %}
- redistribute {{ s_proto }}{{ policy(s_data,af) }}
+ redistribute {{ s_proto }}{{ policy(s_data,af,metric) }}
 {%     endfor %}
 {%   endif %}
 {%- endmacro %}
