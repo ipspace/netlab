@@ -3,6 +3,7 @@
 [CREATED] h1: initial,routing
 [CREATED] h2: initial,routing
 [CREATED] h3: initial,routing
+ [INFO] Executing initial configuration for node r
  [INFO] Executing initial configuration for node h1 (namespace clab-
           ml-17-h1)
  [INFO] Executing initial configuration for node h2 (namespace clab-
@@ -11,109 +12,14 @@
           ml-17-h3)
  [INFO] Executing routing configuration for node h1 (namespace clab-
           ml-17-h1)
- [INFO] Executing routing configuration for node h2 (namespace clab-
-          ml-17-h2)
  [INFO] Executing routing configuration for node h3 (namespace clab-
           ml-17-h3)
-
- [INFO] Starting Ansible playbook to deploy the rest of the
-          configurations
-/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
-  "cipher": algorithms.TripleDES,
-/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
-  "class": algorithms.TripleDES,
-[WARNING]: Found variable using reserved name: hosts
-
-PLAY [Deploy initial device configuration] *************************************
-
-TASK [Set variables that cannot be set with VARS] ******************************
-ok: [r]
-
-TASK [Generic readiness tests] *************************************************
-skipping: [r]
-
-TASK [Find device readiness script] ********************************************
-ok: [r]
-
-TASK [Wait for device to become ready] *****************************************
-skipping: [r]
-
-TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r
-
-TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [r]
-
-TASK [Find configuration template for normalize] *******************************
-ok: [r]
-
-TASK [fail] ********************************************************************
-skipping: [r]
-
-TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [r]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [r]
-
-TASK [Deploy normalize configuration] ******************************************
-skipping: [r]
-
-TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r
-
-TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [r]
-
-TASK [Find configuration template for initial] *********************************
-ok: [r]
-
-TASK [fail] ********************************************************************
-skipping: [r]
-
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [r]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [r] => {
-    "msg": "initial configuration for r\n=========================================\n#!/bin/bash\n#\nset -e\nset -x\n#\n# Create bash profile script\n#\ncat <<SCRIPT >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)# \"\necho\necho \"Use vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)\n#\n# FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands\n#\nsysctl -w net.ipv4.ip_forward=1\nsysctl -w net.ipv6.conf.all.forwarding=1\n#\n#\n# Get the current next hop for the default route\n#\ndef_nh=$(ip route list default|awk '{ print $3 }')\n#\n# Create the management VRF and add eth0 to it\n#\nif [ ! -e /sys/devices/virtual/net/mgmt ]; then\n  ip link add mgmt type vrf table 42\nfi\nip link set mgmt up\nsysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1\nip link set eth0 master mgmt\n#\n# Reinstall the default route if we had it before\n#\nif [[ -n \"$def_nh\" ]]; then\n  ip route add 0.0.0.0/0 vrf mgmt via $def_nh\nfi\n#\n# Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)\n#\n\n# Set system defaults\n#\n# Send ARP requests from a sane source IP address\n#\nsysctl -w net.ipv4.conf.all.arp_announce=2\n\n#\n# Create loopbacks, stub and lag/bond devices\n#\nif [ ! -e /sys/class/net/lo ]; then\n  if [ ! -e /sys/devices/virtual/net/lo ]; then\n    ip link add lo type dummy\n    ip link set dev lo up\n  fi\nfi\n\n# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)\n#\nip link set eth1 down\nsysctl -qw net.ipv6.conf.eth1.autoconf=0\nsysctl -qw net.ipv6.conf.eth1.accept_ra=0\nip link set dev eth1 mtu 1500\nip link set eth1 up\nip link set eth2 down\nsysctl -qw net.ipv6.conf.eth2.autoconf=0\nsysctl -qw net.ipv6.conf.eth2.accept_ra=0\nip link set dev eth2 mtu 1500\nip link set eth2 up\nip link set eth3 down\nsysctl -qw net.ipv6.conf.eth3.autoconf=0\nsysctl -qw net.ipv6.conf.eth3.accept_ra=0\nip link set dev eth3 mtu 1500\nip link set eth3 down\n\n#\n# Add vtysh.conf file\necho \"service integrated-vtysh-config\" >/etc/frr/vtysh.conf\n\n#\n# Rest of initial configuration done through VTYSH\n#\ncat >/tmp/config <<CONFIG\nhostname r\n!\nlog file /tmp/logging\n\n!\nip forwarding\nipv6 forwarding\nvrf mgmt\n exit-vrf\n!\nfrr defaults datacenter\n!\ninterface lo\n no shutdown\n ip address 10.0.0.132/32\n ipv6 address 2001:db8:0:84::1/64\n!\ninterface eth1\n no shutdown\n description r -> h1 [stub]\n ip address 172.16.0.132/24\n ipv6 address 2001:db8:1::84/64\n ipv6 nd ra-interval 5\n no ipv6 nd suppress-ra\n bandwidth 1000\n!\ninterface eth2\n no shutdown\n description r -> h2 [stub]\n ip address 172.16.1.132/24\n ipv6 address 2001:db8:1:1::84/64\n ipv6 nd ra-interval 5\n no ipv6 nd suppress-ra\n bandwidth 2000\n!\ninterface eth3\n shutdown\n description r -> h3 [stub]\n ip address 172.16.2.132/24\n ipv6 address 2001:db8:1:2::84/64\n ipv6 nd ra-interval 5\n no ipv6 nd suppress-ra\n!\ndo write\nCONFIG\nvtysh -f /tmp/config\n!\nexit 0\n"
-}
-
-TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r
-
-TASK [Attempt to load VRF kernel module] ***************************************
-changed: [r -> localhost]
-
-TASK [Disable FRR management VRF when modprobe fails] **************************
-skipping: [r]
-
-TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r
-
-TASK [template] ****************************************************************
-changed: [r]
-
-TASK [set_fact] ****************************************************************
-ok: [r]
-
-TASK [run /tmp/config.sh to deploy initial config from /work/netlab_cicd/node_files/r/initial] ***
-changed: [r]
-
-TASK [run vtysh to import initial config from /work/netlab_cicd/node_files/r/initial] ***
-skipping: [r]
-
-PLAY [Deploy module-specific configurations] ***********************************
-skipping: no hosts matched
-
-PLAY [Deploy custom deployment templates] **************************************
-skipping: no hosts matched
-
-PLAY RECAP *********************************************************************
-r                          : ok=17   changed=3    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+ [INFO] Executing routing configuration for node h2 (namespace clab-
+          ml-17-h2)
 
 Results of configuration script deployments
 ================================================================================
+r                            OK: 1   
 h1                           OK: 2   
 h2                           OK: 2   
 h3                           OK: 2   

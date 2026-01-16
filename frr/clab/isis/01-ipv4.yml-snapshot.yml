@@ -62,7 +62,11 @@ defaults:
           _keys:
             binds:
             kind: str
-            config_templates:
+            config_mode:
+              type: str
+              _alt_types:
+              - NoneType
+            config_templates: dict
             type: str
             cmd: str
             dns:
@@ -1229,7 +1233,7 @@ defaults:
         vxlan: {}
       mtu: 1500
       clab:
-        image: vrnetlab/dell_ftos10v:10.5.6.6
+        image: vrnetlab/vr-ftosv
         build: https://containerlab.dev/manual/kinds/vr-ftosv/
         node:
           kind: vr-ftosv
@@ -1445,7 +1449,7 @@ defaults:
             INTFTYPE: et
             CLAB_MGMT_VRF: management
         mgmt_if: Management0
-        image: ceos:4.35.0.1F
+        image: ceos:4.34.2F
         group_vars:
           ansible_user: admin
           ansible_ssh_pass: admin
@@ -1560,6 +1564,7 @@ defaults:
           - ldpd
       mtu: 1500
       clab:
+        config_mode: sh
         group_vars:
           ansible_connection: docker
           ansible_user: root
@@ -1568,6 +1573,12 @@ defaults:
           - -c
           - show $@
           netlab_mgmt_vrf: true
+          netlab_config_wrapper: |
+            {% if not netlab_config_text.startswith("#!") %}
+            #!/usr/bin/vtysh -f
+            #
+            {% endif %}
+            {{ netlab_config_text }}
         image: quay.io/frrouting/frr:10.5.1
         kmods:
         node:
@@ -2692,11 +2703,7 @@ defaults:
         netlab_lldp_enable: false
         netlab_net_tools: false
       clab:
-        node_config:
-          initial: :ns
-          lag: :ns
-          vlan: :ns
-          routing: :ns
+        config_mode: ns
         features:
           initial:
             roles:
@@ -3253,7 +3260,7 @@ defaults:
         min_tx: 100
         min_rx: 100
       clab:
-        image: ghcr.io/nokia/srlinux:25.10.1
+        image: ghcr.io/nokia/srlinux:25.3.2
         node:
           kind: srl
           type: ixr-d2
@@ -4050,7 +4057,7 @@ defaults:
         pre_install: vptx
         create_template: vptx.xml.j2
       clab:
-        image: vrnetlab/juniper_vjunosevolved:23.2R2.21-EVO
+        image: vrnetlab/juniper_vjunosevolved:25.2R1.8-EVO
         build: https://containerlab.dev/manual/kinds/vr-vjunosevolved/
         mtu: 1500
         node:
@@ -4380,11 +4387,7 @@ defaults:
           static: RTS_STATIC_DEVICE,RTS_STATIC
         netlab_device_type: bird
       clab:
-        node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
-          routing: :ns
+        config_mode: sh
         features:
           initial:
             roles:
@@ -4478,11 +4481,7 @@ defaults:
         netlab_net_tools: false
         netlab_device_type: dnsmasq
       clab:
-        node_config:
-          initial: :ns
-          lag: :ns
-          vlan: :ns
-          routing: :ns
+        config_mode: ns
         features:
           initial:
             roles:
@@ -4545,10 +4544,7 @@ defaults:
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
       clab:
-        node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
+        config_mode: sh
         group_vars:
           netlab_show_command:
           - birdc
@@ -6056,18 +6052,18 @@ defaults:
           output: netlab.snapshot.yml
   paths:
     validate:
-    - /home/pipi/net101/tools/netsim/validate
+    - /home/pipi/netlab_gh/netsim/validate
     plugin:
     - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/isis
     - /home/pipi/.netlab
-    - /home/pipi/net101/tools/netsim/extra
+    - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/isis
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/net101/tools/netsim/extra
+      - /home/pipi/netlab_gh/netsim/extra
       files:
       - '{{custom_config}}/{{inventory_hostname}}.{{netlab_device_type}}-{{node_provider}}.j2'
       - '{{custom_config}}/{{inventory_hostname}}.{{netlab_device_type}}.j2'
@@ -6114,7 +6110,7 @@ defaults:
       - '{ custom_config }/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks
+      - /home/pipi/netlab_gh/netsim/ansible/tasks
       tasks_generic:
       - deploy-config/{{ netlab_device_type }}-{{ node_provider }}.yml
       - deploy-config/{{ netlab_device_type }}.yml
@@ -6145,9 +6141,8 @@ defaults:
       - deploy-config/{ ansible_network_os }.yml
     templates:
       dirs:
-      - /work/netlab_cicd/templates
-      - /home/pipi/net101/tools/netsim/daemons
-      - /home/pipi/net101/tools/netsim/ansible/templates
+      - /home/pipi/netlab_gh/netsim/daemons
+      - /home/pipi/netlab_gh/netsim/ansible/templates
     t_files:
       files:
       - '{{config_module}}/{{netlab_device_type}}-{{node_provider}}.j2'
@@ -6167,7 +6162,7 @@ defaults:
       - '{netlab_device_type}/{config_module}.j2'
     ready:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{node_provider}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -6180,7 +6175,7 @@ defaults:
       - '{ansible_network_os}.yml'
     collect:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
   ports:
     ssh: 22
     http: 80
@@ -8150,8 +8145,8 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1768217485.9933183
-    source: /home/pipi/net101/tools/netsim/topology-defaults.yml
+    timestamp: 1768509713.4534676
+    source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   groups:
     probes:
       device: frr
@@ -8264,12 +8259,22 @@ nodes:
     clab:
       kind: linux
       config_templates:
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: isis
+        target: /etc/config/02-isis.sh
+        mode: sh
       - source: daemons
         target: /etc/frr/daemons
       - source: hosts
         target: /etc/hosts
         mode: shared
       binds:
+      - target: /etc/config/01-initial.sh
+        source: node_files/dut/initial
+      - target: /etc/config/02-isis.sh
+        source: node_files/dut/isis
       - target: /etc/frr/daemons
         source: node_files/dut/daemons
       - target: /etc/hosts
@@ -8298,6 +8303,12 @@ nodes:
       ipv4: 10.0.0.1/32
       isis:
         passive: false
+    netlab_ansible_skip_module:
+    - initial
+    - isis
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      isis: /etc/config/02-isis.sh:sh
   x1:
     box: quay.io/frrouting/frr:10.2.2
     name: x1
@@ -8320,12 +8331,22 @@ nodes:
     clab:
       kind: linux
       config_templates:
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: isis
+        target: /etc/config/02-isis.sh
+        mode: sh
       - source: daemons
         target: /etc/frr/daemons
       - source: hosts
         target: /etc/hosts
         mode: shared
       binds:
+      - target: /etc/config/01-initial.sh
+        source: node_files/x1/initial
+      - target: /etc/config/02-isis.sh
+        source: node_files/x1/isis
       - target: /etc/frr/daemons
         source: node_files/x1/daemons
       - target: /etc/hosts
@@ -8361,6 +8382,12 @@ nodes:
       ipv4: 10.0.0.2/32
       isis:
         passive: false
+    netlab_ansible_skip_module:
+    - initial
+    - isis
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      isis: /etc/config/02-isis.sh:sh
   x2:
     box: quay.io/frrouting/frr:10.2.2
     isis:
@@ -8391,12 +8418,22 @@ nodes:
     clab:
       kind: linux
       config_templates:
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: isis
+        target: /etc/config/02-isis.sh
+        mode: sh
       - source: daemons
         target: /etc/frr/daemons
       - source: hosts
         target: /etc/hosts
         mode: shared
       binds:
+      - target: /etc/config/01-initial.sh
+        source: node_files/x2/initial
+      - target: /etc/config/02-isis.sh
+        source: node_files/x2/isis
       - target: /etc/frr/daemons
         source: node_files/x2/daemons
       - target: /etc/hosts
@@ -8424,6 +8461,12 @@ nodes:
       ipv4: 10.0.0.3/32
       isis:
         passive: false
+    netlab_ansible_skip_module:
+    - initial
+    - isis
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      isis: /etc/config/02-isis.sh:sh
 links:
 - _linkname: links[1]
   interfaces:
@@ -8528,4 +8571,4 @@ addressing:
     ipv4: 10.2.0.0/24
     prefix: 32
 provider: clab
-_netlab_version: 25.12.03
+_netlab_version: 26.01.01

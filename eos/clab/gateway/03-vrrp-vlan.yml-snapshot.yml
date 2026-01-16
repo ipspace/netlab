@@ -5,693 +5,6 @@ message: |
   the device-under-test (DUT) forwards traffic sent to the VRRP IP/MAC address,
   whether it has correct VRRP priority, and whether the preemption mechanism
   works.
-module:
-- vlan
-- gateway
-- routing
-vlans:
-  access:
-    gateway:
-      protocol: vrrp
-      id: 42
-      vrrp:
-        group: 217
-      ipv4: 172.16.33.42/24
-      ipv6: 2001:db8:cafe:33::2a/64
-    prefix:
-      ipv4: 172.16.33.0/24
-      ipv6: 2001:db8:cafe:33::/64
-      _name: source
-      allocation: id_based
-    id: 1000
-    neighbors:
-    - ifname: Vlan1000
-      node: dut
-      gateway:
-        protocol: vrrp
-        id: 42
-        vrrp:
-          group: 217
-          priority: 30
-        ipv4: 172.16.33.42/24
-        ipv6: 2001:db8:cafe:33::2a/64
-        anycast:
-          mac: 0200.cafe.00ff
-          unicast: true
-      ipv4: 172.16.33.1/24
-      ipv6: 2001:db8:cafe:33::1/64
-      vlan:
-        mode: irb
-        name: access
-    - ipv4: 172.16.33.3/24
-      ipv6: 2001:db8:cafe:33::3/64
-      ifname: eth1
-      node: h1
-    - ifname: Vlan1000
-      node: r2
-      gateway:
-        protocol: vrrp
-        id: 42
-        vrrp:
-          group: 217
-          priority: 20
-        ipv4: 172.16.33.42/24
-        ipv6: 2001:db8:cafe:33::2a/64
-        anycast:
-          mac: 0200.cafe.00ff
-          unicast: true
-      ipv4: 172.16.33.2/24
-      ipv6: 2001:db8:cafe:33::2/64
-      vlan:
-        mode: irb
-        name: access
-    host_count: 1
-groups:
-  probes:
-    device: eos
-    members:
-    - r2
-    node_data:
-      provider: clab
-  hosts:
-    device: linux
-    members:
-    - h1
-    - h2
-    module:
-    - routing
-    node_data:
-      role: host
-      provider: clab
-  all:
-    vars:
-      netlab_show_config: true
-    members: []
-    _default_group: true
-prefix:
-  any:
-    ipv4: 0.0.0.0/0
-    ipv6: ::/0
-  source:
-    ipv4: 172.16.33.0/24
-    ipv6: 2001:db8:cafe:33::/64
-    _name: source
-  target:
-    ipv4: 172.16.44.0/24
-    ipv6: 2001:db8:cafe:44::/64
-    _name: target
-nodes:
-  dut:
-    vlans:
-      access:
-        gateway:
-          protocol: vrrp
-          id: 42
-          vrrp:
-            group: 217
-            priority: 30
-          ipv4: 172.16.33.42/24
-          ipv6: 2001:db8:cafe:33::2a/64
-        prefix:
-          ipv4: 172.16.33.0/24
-          ipv6: 2001:db8:cafe:33::/64
-          _name: source
-          allocation: id_based
-        id: 1000
-        mode: irb
-        bridge_group: 1
-    name: dut
-    interfaces:
-    - vlan:
-        trunk:
-          access: {}
-        trunk_id:
-        - 1000
-      linkindex: 1
-      type: p2p
-      name: dut -> r2
-      ifindex: 1
-      ifname: Ethernet1
-      mac_address: caf0.0001.0001
-      clab:
-        name: et1
-      neighbors:
-      - ifname: Ethernet1
-        node: r2
-    - ra:
-        slaac: true
-      ipv4: 172.16.44.1/24
-      ipv6: 2001:db8:cafe:44::1/64
-      linkindex: 2
-      type: lan
-      bridge: ml_17_2
-      name: dut -> [r2,h2]
-      ifindex: 2
-      ifname: Ethernet2
-      mac_address: caf0.0001.0002
-      clab:
-        name: et2
-      neighbors:
-      - ipv4: 172.16.44.2/24
-        ipv6: 2001:db8:cafe:44::2/64
-        ifname: Ethernet2
-        node: r2
-      - ipv4: 172.16.44.4/24
-        ipv6: 2001:db8:cafe:44::4/64
-        ifname: eth1
-        node: h2
-    - gateway:
-        protocol: vrrp
-        id: 42
-        vrrp:
-          group: 217
-          priority: 30
-          mac:
-            ipv4: 00:00:5e:00:01:d9
-            ipv6: 00:00:5e:00:02:d9
-          lla: fe80::200:5eff:fe00:02d9
-        ipv4: 172.16.33.42/24
-        ipv6: 2001:db8:cafe:33::2a/64
-      ipv4: 172.16.33.1/24
-      ipv6: 2001:db8:cafe:33::1/64
-      vlan:
-        mode: irb
-        name: access
-      type: svi
-      ifindex: 40000
-      ifname: Vlan1000
-      name: VLAN access (1000) -> [h1,r2]
-      virtual_interface: true
-      neighbors:
-      - ipv4: 172.16.33.3/24
-        ipv6: 2001:db8:cafe:33::3/64
-        ifname: eth1
-        node: h1
-      - ifname: Vlan1000
-        node: r2
-        gateway:
-          protocol: vrrp
-          id: 42
-          vrrp:
-            group: 217
-            priority: 20
-          ipv4: 172.16.33.42/24
-          ipv6: 2001:db8:cafe:33::2a/64
-          anycast:
-            mac: 0200.cafe.00ff
-            unicast: true
-        ipv4: 172.16.33.2/24
-        ipv6: 2001:db8:cafe:33::2/64
-        vlan:
-          mode: irb
-          name: access
-      bridge_group: 1
-    device: eos
-    clab:
-      kind: ceos
-      env:
-        INTFTYPE: et
-        CLAB_MGMT_VRF: management
-    box: ceos:4.34.2F
-    module:
-    - vlan
-    - gateway
-    gateway:
-      vrrp:
-        group: 1
-    id: 1
-    role: router
-    provider: clab
-    af:
-      ipv4: true
-      ipv6: true
-    mgmt:
-      ifname: Management0
-      mac: ca:fe:00:01:00:00
-      ipv4: 192.168.17.101
-    hostname: clab-ml_17-dut
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: Loopback0
-      ipv4: 10.0.0.1/32
-    vlan:
-      max_bridge_group: 1
-  r2:
-    vlans:
-      access:
-        gateway:
-          protocol: vrrp
-          id: 42
-          vrrp:
-            group: 217
-            priority: 20
-          ipv4: 172.16.33.42/24
-          ipv6: 2001:db8:cafe:33::2a/64
-        prefix:
-          ipv4: 172.16.33.0/24
-          ipv6: 2001:db8:cafe:33::/64
-          _name: source
-          allocation: id_based
-        id: 1000
-        mode: irb
-        bridge_group: 1
-    name: r2
-    interfaces:
-    - vlan:
-        trunk:
-          access: {}
-        trunk_id:
-        - 1000
-      linkindex: 1
-      type: p2p
-      name: r2 -> dut
-      ifindex: 1
-      ifname: Ethernet1
-      mac_address: caf0.0002.0001
-      clab:
-        name: et1
-      neighbors:
-      - ifname: Ethernet1
-        node: dut
-    - ra:
-        slaac: true
-      ipv4: 172.16.44.2/24
-      ipv6: 2001:db8:cafe:44::2/64
-      linkindex: 2
-      type: lan
-      bridge: ml_17_2
-      name: r2 -> [dut,h2]
-      ifindex: 2
-      ifname: Ethernet2
-      mac_address: caf0.0002.0002
-      clab:
-        name: et2
-      neighbors:
-      - ipv4: 172.16.44.1/24
-        ipv6: 2001:db8:cafe:44::1/64
-        ifname: Ethernet2
-        node: dut
-      - ipv4: 172.16.44.4/24
-        ipv6: 2001:db8:cafe:44::4/64
-        ifname: eth1
-        node: h2
-    - vlan:
-        access: access
-        access_id: 1000
-      linkindex: 3
-      type: lan
-      bridge: ml_17_3
-      ifindex: 3
-      ifname: Ethernet3
-      clab:
-        name: et3
-      neighbors:
-      - ipv4: 172.16.33.3/24
-        ipv6: 2001:db8:cafe:33::3/64
-        ifname: eth1
-        node: h1
-      name: '[Access VLAN access] r2 -> h1'
-    - gateway:
-        protocol: vrrp
-        id: 42
-        vrrp:
-          group: 217
-          priority: 20
-          mac:
-            ipv4: 00:00:5e:00:01:d9
-            ipv6: 00:00:5e:00:02:d9
-          lla: fe80::200:5eff:fe00:02d9
-        ipv4: 172.16.33.42/24
-        ipv6: 2001:db8:cafe:33::2a/64
-      ipv4: 172.16.33.2/24
-      ipv6: 2001:db8:cafe:33::2/64
-      vlan:
-        mode: irb
-        name: access
-      type: svi
-      ifindex: 40000
-      ifname: Vlan1000
-      name: VLAN access (1000) -> [dut,h1]
-      virtual_interface: true
-      neighbors:
-      - ifname: Vlan1000
-        node: dut
-        gateway:
-          protocol: vrrp
-          id: 42
-          vrrp:
-            group: 217
-            priority: 30
-          ipv4: 172.16.33.42/24
-          ipv6: 2001:db8:cafe:33::2a/64
-          anycast:
-            mac: 0200.cafe.00ff
-            unicast: true
-        ipv4: 172.16.33.1/24
-        ipv6: 2001:db8:cafe:33::1/64
-        vlan:
-          mode: irb
-          name: access
-      - ipv4: 172.16.33.3/24
-        ipv6: 2001:db8:cafe:33::3/64
-        ifname: eth1
-        node: h1
-      bridge_group: 1
-    device: eos
-    clab:
-      kind: ceos
-      env:
-        INTFTYPE: et
-        CLAB_MGMT_VRF: management
-    box: ceos:4.34.2F
-    module:
-    - vlan
-    - gateway
-    gateway:
-      vrrp:
-        group: 1
-    id: 2
-    role: router
-    provider: clab
-    af:
-      ipv4: true
-      ipv6: true
-    mgmt:
-      ifname: Management0
-      mac: ca:fe:00:02:00:00
-      ipv4: 192.168.17.102
-    hostname: clab-ml_17-r2
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: Loopback0
-      ipv4: 10.0.0.2/32
-    vlan:
-      max_bridge_group: 1
-  h1:
-    role: host
-    routing:
-      static:
-      - ipv4: 172.16.44.0/24
-        nexthop:
-          ipv4: 172.16.33.42
-          intf: eth1
-          idx: 0
-      - ipv6: 2001:db8:cafe:44::/64
-        nexthop:
-          ipv6: 2001:db8:cafe:33::2a
-          intf: eth1
-          idx: 0
-    name: h1
-    interfaces:
-    - gateway:
-        id: 42
-        protocol: vrrp
-        anycast:
-          mac: 0200.cafe.00ff
-          unicast: true
-        vrrp:
-          group: 217
-        ipv4: 172.16.33.42/24
-        ipv6: 2001:db8:cafe:33::2a/64
-      ipv4: 172.16.33.3/24
-      ipv6: 2001:db8:cafe:33::3/64
-      linkindex: 3
-      type: lan
-      bridge: ml_17_3
-      name: h1 -> [dut,r2]
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ifname: Vlan1000
-        node: dut
-        gateway:
-          protocol: vrrp
-          id: 42
-          vrrp:
-            group: 217
-            priority: 30
-          ipv4: 172.16.33.42/24
-          ipv6: 2001:db8:cafe:33::2a/64
-          anycast:
-            mac: 0200.cafe.00ff
-            unicast: true
-        ipv4: 172.16.33.1/24
-        ipv6: 2001:db8:cafe:33::1/64
-        vlan:
-          mode: irb
-          name: access
-      - ifname: Vlan1000
-        node: r2
-        gateway:
-          protocol: vrrp
-          id: 42
-          vrrp:
-            group: 217
-            priority: 20
-          ipv4: 172.16.33.42/24
-          ipv6: 2001:db8:cafe:33::2a/64
-          anycast:
-            mac: 0200.cafe.00ff
-            unicast: true
-        ipv4: 172.16.33.2/24
-        ipv6: 2001:db8:cafe:33::2/64
-        vlan:
-          mode: irb
-          name: access
-    device: linux
-    module:
-    - routing
-    clab:
-      kind: linux
-      config_templates:
-      - initial::ns
-      - routing::ns
-      - hosts:/etc/hosts:shared
-      binds:
-      - node_files/-shared-hosts:/etc/hosts:ro
-    box: python:3.13-alpine
-    id: 3
-    mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
-    af:
-      ipv4: true
-      ipv6: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:03:00:00
-      ipv4: 192.168.17.103
-    hostname: clab-ml_17-h1
-    netlab_ansible_skip_module:
-    - initial
-    - routing
-    _template_cache:
-    - fname: initial
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
-      output: node_files/h1/initial
-      mode: ns
-    - fname: routing
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
-      output: node_files/h1/routing
-      mode: ns
-    - fname: hosts
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
-      output: node_files/-shared-hosts
-      mode: shared
-      mapping: /etc/hosts:ro
-  h2:
-    role: host
-    routing:
-      static:
-      - ipv4: 172.16.33.0/24
-        nexthop:
-          ipv4: 172.16.44.1
-          intf: eth1
-          ipv6: 2001:db8:cafe:44::1
-          idx: 0
-      - ipv6: 2001:db8:cafe:33::/64
-        nexthop:
-          ipv4: 172.16.44.1
-          intf: eth1
-          ipv6: 2001:db8:cafe:44::1
-          idx: 0
-    name: h2
-    interfaces:
-    - ipv4: 172.16.44.4/24
-      ipv6: 2001:db8:cafe:44::4/64
-      linkindex: 2
-      type: lan
-      bridge: ml_17_2
-      name: h2 -> [dut,r2]
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.44.1/24
-        ipv6: 2001:db8:cafe:44::1/64
-        ifname: Ethernet2
-        node: dut
-      - ipv4: 172.16.44.2/24
-        ipv6: 2001:db8:cafe:44::2/64
-        ifname: Ethernet2
-        node: r2
-    device: linux
-    module:
-    - routing
-    clab:
-      kind: linux
-      config_templates:
-      - initial::ns
-      - routing::ns
-      - hosts:/etc/hosts:shared
-      binds:
-      - node_files/-shared-hosts:/etc/hosts:ro
-    box: python:3.13-alpine
-    id: 4
-    mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
-    af:
-      ipv4: true
-      ipv6: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:04:00:00
-      ipv4: 192.168.17.104
-    hostname: clab-ml_17-h2
-    netlab_ansible_skip_module:
-    - initial
-    - routing
-    _template_cache:
-    - fname: initial
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
-      output: node_files/h2/initial
-      mode: ns
-    - fname: routing
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
-      output: node_files/h2/routing
-      mode: ns
-    - fname: hosts
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
-      output: node_files/-shared-hosts
-      mode: shared
-      mapping: /etc/hosts:ro
-links:
-- _linkname: links[1]
-  vlan:
-    trunk:
-      access: {}
-  interfaces:
-  - node: dut
-    vlan:
-      trunk:
-        access: {}
-    ifindex: 1
-    ifname: Ethernet1
-  - node: r2
-    vlan:
-      trunk:
-        access: {}
-    ifindex: 1
-    ifname: Ethernet1
-  linkindex: 1
-  prefix: {}
-  node_count: 2
-  type: p2p
-- _linkname: links[2]
-  prefix:
-    ipv4: 172.16.44.0/24
-    ipv6: 2001:db8:cafe:44::/64
-    _name: target
-  interfaces:
-  - node: dut
-    ra:
-      slaac: true
-    ipv4: 172.16.44.1/24
-    ipv6: 2001:db8:cafe:44::1/64
-    ifindex: 2
-    ifname: Ethernet2
-  - node: r2
-    ra:
-      slaac: true
-    ipv4: 172.16.44.2/24
-    ipv6: 2001:db8:cafe:44::2/64
-    ifindex: 2
-    ifname: Ethernet2
-  - node: h2
-    ipv4: 172.16.44.4/24
-    ipv6: 2001:db8:cafe:44::4/64
-    ifindex: 1
-    ifname: eth1
-  linkindex: 2
-  node_count: 3
-  type: lan
-  bridge: ml_17_2
-- interfaces:
-  - node: h1
-    gateway:
-      id: 42
-      protocol: vrrp
-      anycast:
-        mac: 0200.cafe.00ff
-        unicast: true
-      vrrp:
-        group: 217
-      ipv4: 172.16.33.42/24
-      ipv6: 2001:db8:cafe:33::2a/64
-    ipv4: 172.16.33.3/24
-    ipv6: 2001:db8:cafe:33::3/64
-    ifindex: 1
-    ifname: eth1
-  - node: r2
-    vlan:
-      access: access
-    _vlan_mode: irb
-    gateway:
-      protocol: vrrp
-      id: 42
-      vrrp:
-        group: 217
-        priority: 20
-      ipv4: 172.16.33.42/24
-      ipv6: 2001:db8:cafe:33::2a/64
-    ra:
-      slaac: true
-    ipv4: 172.16.33.2/24
-    ipv6: 2001:db8:cafe:33::2/64
-    ifindex: 3
-    ifname: Ethernet3
-  _linkname: vlans.access.links[1]
-  vlan:
-    access: access
-  linkindex: 3
-  gateway:
-    id: 42
-    protocol: vrrp
-    anycast:
-      mac: 0200.cafe.00ff
-      unicast: true
-    vrrp:
-      group: 217
-    ipv4: 172.16.33.42/24
-    ipv6: 2001:db8:cafe:33::2a/64
-  prefix:
-    ipv4: 172.16.33.0/24
-    ipv6: 2001:db8:cafe:33::/64
-    _name: source
-    allocation: id_based
-  type: lan
-  node_count: 2
-  bridge: ml_17_3
 defaults:
   provider: clab
   providers:
@@ -749,7 +62,11 @@ defaults:
           _keys:
             binds:
             kind: str
-            config_templates:
+            config_mode:
+              type: str
+              _alt_types:
+              - NoneType
+            config_templates: dict
             type: str
             cmd: str
             dns:
@@ -1158,6 +475,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -1216,6 +534,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox: {}
@@ -1455,6 +775,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -1509,6 +830,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox:
@@ -2015,6 +1338,7 @@ defaults:
           bundle:
           - vlan_aware
           irb: true
+          ipv6: true
         gateway:
           protocol:
           - anycast
@@ -2152,6 +1476,8 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
+      warnings:
+        ospf_stub: false
       provider: clab
     fortios:
       description: Fortinet FortiOS firewall
@@ -2239,6 +1565,7 @@ defaults:
           - ldpd
       mtu: 1500
       clab:
+        config_mode: sh
         group_vars:
           ansible_connection: docker
           ansible_user: root
@@ -2247,7 +1574,13 @@ defaults:
           - -c
           - show $@
           netlab_mgmt_vrf: true
-        image: quay.io/frrouting/frr:10.5.0
+          netlab_config_wrapper: |
+            {% if not netlab_config_text.startswith("#!") %}
+            #!/usr/bin/vtysh -f
+            #
+            {% endif %}
+            {{ netlab_config_text }}
+        image: quay.io/frrouting/frr:10.5.1
         kmods:
         node:
           kind: linux
@@ -2479,7 +1812,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:17.12.01
+        image: vrnetlab/cisco_iol:17.16.01a
         node:
           kind: cisco_iol
       role: router
@@ -2564,6 +1897,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2621,6 +1955,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       _parents:
       - ios
@@ -2658,7 +1994,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:L2-17.12.01
+        image: vrnetlab/cisco_iol:L2-17.16.01a
         node:
           kind: cisco_iol
           type: l2
@@ -2749,6 +2085,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2817,6 +2154,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       _parents:
       - ios
@@ -2944,6 +2283,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2996,6 +2336,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet0/{ifindex}
       libvirt:
         image: cisco/iosv
@@ -3131,6 +2473,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -3195,6 +2538,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex // 4}/{ifindex % 4}
       libvirt:
         image: cisco/iosvl2
@@ -3323,6 +2668,7 @@ defaults:
         routing:
           static: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -3357,11 +2703,7 @@ defaults:
         netlab_lldp_enable: false
         netlab_net_tools: false
       clab:
-        node_config:
-          initial: :ns
-          lag: :ns
-          vlan: :ns
-          routing: :ns
+        config_mode: ns
         features:
           initial:
             roles:
@@ -3387,6 +2729,40 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+      external:
+        image: none
+      graphite:
+        icon: server
+    netscaler:
+      description: Citrix Netscaler ADC CPX
+      support:
+        level: minimal
+      interface_name: 0/{ifindex+2}
+      mgmt_if: 0/2
+      role: router
+      group_vars:
+        ansible_network_os: netscaler
+        ansible_python_interpreter: auto_silent
+      features:
+        initial:
+          ipv4:
+      mtu: 1500
+      clab:
+        build: true
+        image: netlab/netscaler
+        node:
+          kind: linux
+        interface:
+          name: eth{ifindex}
+        group_vars:
+          ansible_user: clab
+          ansible_ssh_pass: clab@123
+          ansible_connection: docker
+          netlab_show_command:
+          - nscli
+          - -U
+          - 127.0.0.1:clab:clab@123
+          - show $@
       external:
         image: none
       graphite:
@@ -3459,6 +2835,7 @@ defaults:
           bundle:
           - vlan_aware
           multi_rt: true
+          ipv6: true
         gateway:
           protocol:
           - anycast
@@ -3663,12 +3040,13 @@ defaults:
         routing:
           static: true
         initial:
-          roles:
-          - host
-          - router
           ipv6:
             use_ra: true
             lla: true
+          reload: false
+          roles:
+          - host
+          - router
         ospf:
           unnumbered: false
           import:
@@ -3833,6 +3211,7 @@ defaults:
             unnumbered: true
           ipv6:
             lla: true
+          reload: false
         bgp:
           activate_af: true
           ipv6_lla: true
@@ -4068,6 +3447,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
         routing:
           policy:
             set:
@@ -4109,6 +3489,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     srsim:
       description: Nokia SR-SIM (SR-OS) container
       mgmt_if: A/1
@@ -4203,6 +3585,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
         routing:
           policy:
             set:
@@ -4247,6 +3630,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
       _parents:
       - sros
     unknown:
@@ -4934,6 +4319,7 @@ defaults:
           static:
             discard: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -5003,11 +4389,7 @@ defaults:
           static: RTS_STATIC_DEVICE,RTS_STATIC
         netlab_device_type: bird
       clab:
-        node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
-          routing: :ns
+        config_mode: sh
         features:
           initial:
             roles:
@@ -5036,7 +4418,7 @@ defaults:
           - birdc
           - show $@
           docker_shell: bash -il
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
       external:
         image: none
       graphite:
@@ -5065,6 +4447,7 @@ defaults:
         routing:
           static: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -5100,11 +4483,7 @@ defaults:
         netlab_net_tools: false
         netlab_device_type: dnsmasq
       clab:
-        node_config:
-          initial: :ns
-          lag: :ns
-          vlan: :ns
-          routing: :ns
+        config_mode: ns
         features:
           initial:
             roles:
@@ -5129,7 +4508,7 @@ defaults:
           ansible_user: root
           netlab_linux_distro: vanilla
           docker_shell: bash -il
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
       external:
         image: none
       graphite:
@@ -5167,17 +4546,14 @@ defaults:
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
       clab:
-        node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
+        config_mode: sh
         group_vars:
           netlab_show_command:
           - birdc
           - show $@
           docker_shell: bash -il
         image: netlab/bird:latest
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
         features:
           initial:
             roles:
@@ -5227,6 +4603,7 @@ defaults:
             unnumbered: peer
           ipv6:
             lla: true
+          reload: false
           roles:
           - host
           - router
@@ -5244,7 +4621,7 @@ defaults:
         group_vars:
           docker_shell: bash -il
         image: netlab/dnsmasq:latest
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
         features:
           initial:
             roles:
@@ -5257,6 +4634,7 @@ defaults:
         dhcp:
           server: true
         initial:
+          reload: false
           roles:
           - host
       dhcp:
@@ -5508,7 +4886,13 @@ defaults:
         - color
         - fill
         - width
+    config: {}
     provider: {}
+    pickle: {}
+    tools: {}
+    ansible:
+      hostfile: {}
+      configfile: {}
     yaml=netlab:
       snapshot:
         yml: {}
@@ -5913,6 +5297,7 @@ defaults:
             configuration template(s)
         _alt_types:
         - list
+      skip_config: list
       group: list
       role:
         type: str
@@ -6485,6 +5870,66 @@ defaults:
       neighbors: 5
       maxlength: 255
     MAX_NODE_ID: 150
+    validate:
+      ping: 5
+      ping_vrf: 5
+      ping_long: 15
+      vxlan_ping: 20
+      ping_stp: 45
+      ping_irb: 10
+      ra_send: 30
+      ospfv2_adj_p2p: 30
+      ospfv2_adj_lan: 50
+      ospfv2_adj_stp: 120
+      ospfv2_spf: 10
+      ospfv2_spf_long: 30
+      ospfv3_adj_p2p: 30
+      ospfv3_adj_lan: 50
+      ospfv3_adj_stp: 120
+      ospfv3_spf: 10
+      ospfv3_spf_long: 30
+      ospf_import: 20
+      ebgp_session: 30
+      ibgp_session: 30
+      bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_v4_originate: 15
+      bgp_v6_originate: 15
+      bgp_v4_redist: 15
+      bgp_v6_redist: 15
+      isis_adj_p2p: 20
+      isis_adj_lan: 50
+      isis_spf: 15
+      isis_spf_long: 45
+      isis_redist: 30
+      rip_start: 60
+      rip_update: 20
+      ldp_adj: 30
+      stp_forwarding: 40
+      lacp_setup: 10
+      xr:
+        bgp_v4_originate: 80
+        bgp_v6_originate: 80
+        bgp_v4_redist: 90
+        isis_redist: 60
+        ebgp_session: 90
+        ping_vrf: 20
+        bgp_scan_long: 30
+      ios:
+        bgp_v6_redist: 60
+      cisco8000v:
+        ping_irb: 90
+        ping_long: 15
+      vjunos-switch:
+        ping_irb: 40
+      vjunos-router:
+        ping_irb: 90
+      nxos:
+        bgp_v4_redist: 40
+        bgp_v6_redist: 40
+      vptx:
+        ldp_adj: 180
+        ibgp_session: 40
   hints:
     evpn:
       irb_group: >
@@ -6573,9 +6018,9 @@ defaults:
         storage prices keep falling
   multilab:
     change:
-      name: ml_17
+      name: ml-17
       defaults:
-        name: ml_17
+        name: ml-17
         providers:
           libvirt:
             tunnel_id: '17'
@@ -6598,7 +6043,15 @@ defaults:
       - svg
       - jpg
       - jpeg
-    create: {}
+    create:
+      output:
+        config:
+        provider:
+        pickle:
+        tools:
+        ansible: dirs
+        yaml:
+          output: netlab.snapshot.yml
   paths:
     validate:
     - /home/pipi/netlab_gh/netsim/validate
@@ -6732,6 +6185,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -8695,11 +8150,13 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1766911672.377295
+    timestamp: 1768505974.2627208
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
+    extra:
+    - ../wait_times.yml
+    - ../warnings.yml
     list: []
-    extra: []
     user: []
     system: []
   workdir: /work/netlab_cicd
@@ -8736,7 +8193,686 @@ defaults:
   - vlan
   - gateway
   - routing
-  name: ml_17
+  name: ml-17
+module:
+- vlan
+- gateway
+- routing
+vlans:
+  access:
+    gateway:
+      protocol: vrrp
+      id: 42
+      vrrp:
+        group: 217
+      ipv4: 172.16.33.42/24
+      ipv6: 2001:db8:cafe:33::2a/64
+    prefix:
+      ipv4: 172.16.33.0/24
+      ipv6: 2001:db8:cafe:33::/64
+      _name: source
+      allocation: id_based
+    id: 1000
+    neighbors:
+    - ifname: Vlan1000
+      node: dut
+      gateway:
+        protocol: vrrp
+        id: 42
+        vrrp:
+          group: 217
+          priority: 30
+        ipv4: 172.16.33.42/24
+        ipv6: 2001:db8:cafe:33::2a/64
+        anycast:
+          mac: 0200.cafe.00ff
+          unicast: true
+      ipv4: 172.16.33.1/24
+      ipv6: 2001:db8:cafe:33::1/64
+      vlan:
+        mode: irb
+        name: access
+    - ipv4: 172.16.33.3/24
+      ipv6: 2001:db8:cafe:33::3/64
+      ifname: eth1
+      node: h1
+    - ifname: Vlan1000
+      node: r2
+      gateway:
+        protocol: vrrp
+        id: 42
+        vrrp:
+          group: 217
+          priority: 20
+        ipv4: 172.16.33.42/24
+        ipv6: 2001:db8:cafe:33::2a/64
+        anycast:
+          mac: 0200.cafe.00ff
+          unicast: true
+      ipv4: 172.16.33.2/24
+      ipv6: 2001:db8:cafe:33::2/64
+      vlan:
+        mode: irb
+        name: access
+    host_count: 1
+groups:
+  probes:
+    device: eos
+    members:
+    - r2
+    node_data:
+      provider: clab
+  hosts:
+    device: linux
+    members:
+    - h1
+    - h2
+    module:
+    - routing
+    node_data:
+      role: host
+      provider: clab
+  all:
+    vars:
+      netlab_show_config: true
+    members: []
+    _default_group: true
+  netlab_no_reload:
+    members:
+    - h1
+    - h2
+prefix:
+  any:
+    ipv4: 0.0.0.0/0
+    ipv6: ::/0
+  source:
+    ipv4: 172.16.33.0/24
+    ipv6: 2001:db8:cafe:33::/64
+    _name: source
+  target:
+    ipv4: 172.16.44.0/24
+    ipv6: 2001:db8:cafe:44::/64
+    _name: target
+nodes:
+  dut:
+    vlans:
+      access:
+        gateway:
+          protocol: vrrp
+          id: 42
+          vrrp:
+            group: 217
+            priority: 30
+          ipv4: 172.16.33.42/24
+          ipv6: 2001:db8:cafe:33::2a/64
+        prefix:
+          ipv4: 172.16.33.0/24
+          ipv6: 2001:db8:cafe:33::/64
+          _name: source
+          allocation: id_based
+        id: 1000
+        mode: irb
+        bridge_group: 1
+    name: dut
+    interfaces:
+    - vlan:
+        trunk:
+          access: {}
+        trunk_id:
+        - 1000
+      linkindex: 1
+      type: p2p
+      name: dut -> r2
+      ifindex: 1
+      ifname: Ethernet1
+      mac_address: caf0.0001.0001
+      clab:
+        name: et1
+      neighbors:
+      - ifname: Ethernet1
+        node: r2
+    - ra:
+        slaac: true
+      ipv4: 172.16.44.1/24
+      ipv6: 2001:db8:cafe:44::1/64
+      linkindex: 2
+      type: lan
+      bridge: ml-17_2
+      name: dut -> [r2,h2]
+      ifindex: 2
+      ifname: Ethernet2
+      mac_address: caf0.0001.0002
+      clab:
+        name: et2
+      neighbors:
+      - ipv4: 172.16.44.2/24
+        ipv6: 2001:db8:cafe:44::2/64
+        ifname: Ethernet2
+        node: r2
+      - ipv4: 172.16.44.4/24
+        ipv6: 2001:db8:cafe:44::4/64
+        ifname: eth1
+        node: h2
+    - gateway:
+        protocol: vrrp
+        id: 42
+        vrrp:
+          group: 217
+          priority: 30
+          mac:
+            ipv4: 00:00:5e:00:01:d9
+            ipv6: 00:00:5e:00:02:d9
+          lla: fe80::200:5eff:fe00:02d9
+        ipv4: 172.16.33.42/24
+        ipv6: 2001:db8:cafe:33::2a/64
+      ipv4: 172.16.33.1/24
+      ipv6: 2001:db8:cafe:33::1/64
+      vlan:
+        mode: irb
+        name: access
+      type: svi
+      ifindex: 40000
+      ifname: Vlan1000
+      name: VLAN access (1000) -> [h1,r2]
+      virtual_interface: true
+      neighbors:
+      - ipv4: 172.16.33.3/24
+        ipv6: 2001:db8:cafe:33::3/64
+        ifname: eth1
+        node: h1
+      - ifname: Vlan1000
+        node: r2
+        gateway:
+          protocol: vrrp
+          id: 42
+          vrrp:
+            group: 217
+            priority: 20
+          ipv4: 172.16.33.42/24
+          ipv6: 2001:db8:cafe:33::2a/64
+          anycast:
+            mac: 0200.cafe.00ff
+            unicast: true
+        ipv4: 172.16.33.2/24
+        ipv6: 2001:db8:cafe:33::2/64
+        vlan:
+          mode: irb
+          name: access
+      bridge_group: 1
+    device: eos
+    clab:
+      kind: ceos
+      env:
+        INTFTYPE: et
+        CLAB_MGMT_VRF: management
+    box: ceos:4.34.2F
+    module:
+    - vlan
+    - gateway
+    gateway:
+      vrrp:
+        group: 1
+    id: 1
+    role: router
+    provider: clab
+    af:
+      ipv4: true
+      ipv6: true
+    mgmt:
+      ifname: Management0
+      mac: ca:fe:00:01:00:00
+      ipv4: 192.168.17.101
+    hostname: clab-ml-17-dut
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.1/32
+    vlan:
+      max_bridge_group: 1
+  r2:
+    vlans:
+      access:
+        gateway:
+          protocol: vrrp
+          id: 42
+          vrrp:
+            group: 217
+            priority: 20
+          ipv4: 172.16.33.42/24
+          ipv6: 2001:db8:cafe:33::2a/64
+        prefix:
+          ipv4: 172.16.33.0/24
+          ipv6: 2001:db8:cafe:33::/64
+          _name: source
+          allocation: id_based
+        id: 1000
+        mode: irb
+        bridge_group: 1
+    name: r2
+    interfaces:
+    - vlan:
+        trunk:
+          access: {}
+        trunk_id:
+        - 1000
+      linkindex: 1
+      type: p2p
+      name: r2 -> dut
+      ifindex: 1
+      ifname: Ethernet1
+      mac_address: caf0.0002.0001
+      clab:
+        name: et1
+      neighbors:
+      - ifname: Ethernet1
+        node: dut
+    - ra:
+        slaac: true
+      ipv4: 172.16.44.2/24
+      ipv6: 2001:db8:cafe:44::2/64
+      linkindex: 2
+      type: lan
+      bridge: ml-17_2
+      name: r2 -> [dut,h2]
+      ifindex: 2
+      ifname: Ethernet2
+      mac_address: caf0.0002.0002
+      clab:
+        name: et2
+      neighbors:
+      - ipv4: 172.16.44.1/24
+        ipv6: 2001:db8:cafe:44::1/64
+        ifname: Ethernet2
+        node: dut
+      - ipv4: 172.16.44.4/24
+        ipv6: 2001:db8:cafe:44::4/64
+        ifname: eth1
+        node: h2
+    - vlan:
+        access: access
+        access_id: 1000
+      linkindex: 3
+      type: lan
+      bridge: ml-17_3
+      ifindex: 3
+      ifname: Ethernet3
+      clab:
+        name: et3
+      neighbors:
+      - ipv4: 172.16.33.3/24
+        ipv6: 2001:db8:cafe:33::3/64
+        ifname: eth1
+        node: h1
+      name: '[Access VLAN access] r2 -> h1'
+    - gateway:
+        protocol: vrrp
+        id: 42
+        vrrp:
+          group: 217
+          priority: 20
+          mac:
+            ipv4: 00:00:5e:00:01:d9
+            ipv6: 00:00:5e:00:02:d9
+          lla: fe80::200:5eff:fe00:02d9
+        ipv4: 172.16.33.42/24
+        ipv6: 2001:db8:cafe:33::2a/64
+      ipv4: 172.16.33.2/24
+      ipv6: 2001:db8:cafe:33::2/64
+      vlan:
+        mode: irb
+        name: access
+      type: svi
+      ifindex: 40000
+      ifname: Vlan1000
+      name: VLAN access (1000) -> [dut,h1]
+      virtual_interface: true
+      neighbors:
+      - ifname: Vlan1000
+        node: dut
+        gateway:
+          protocol: vrrp
+          id: 42
+          vrrp:
+            group: 217
+            priority: 30
+          ipv4: 172.16.33.42/24
+          ipv6: 2001:db8:cafe:33::2a/64
+          anycast:
+            mac: 0200.cafe.00ff
+            unicast: true
+        ipv4: 172.16.33.1/24
+        ipv6: 2001:db8:cafe:33::1/64
+        vlan:
+          mode: irb
+          name: access
+      - ipv4: 172.16.33.3/24
+        ipv6: 2001:db8:cafe:33::3/64
+        ifname: eth1
+        node: h1
+      bridge_group: 1
+    device: eos
+    clab:
+      kind: ceos
+      env:
+        INTFTYPE: et
+        CLAB_MGMT_VRF: management
+    box: ceos:4.34.2F
+    module:
+    - vlan
+    - gateway
+    gateway:
+      vrrp:
+        group: 1
+    id: 2
+    role: router
+    provider: clab
+    af:
+      ipv4: true
+      ipv6: true
+    mgmt:
+      ifname: Management0
+      mac: ca:fe:00:02:00:00
+      ipv4: 192.168.17.102
+    hostname: clab-ml-17-r2
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.2/32
+    vlan:
+      max_bridge_group: 1
+  h1:
+    role: host
+    routing:
+      static:
+      - ipv4: 172.16.44.0/24
+        nexthop:
+          ipv4: 172.16.33.42
+          intf: eth1
+          idx: 0
+      - ipv6: 2001:db8:cafe:44::/64
+        nexthop:
+          ipv6: 2001:db8:cafe:33::2a
+          intf: eth1
+          idx: 0
+    name: h1
+    interfaces:
+    - gateway:
+        id: 42
+        protocol: vrrp
+        anycast:
+          mac: 0200.cafe.00ff
+          unicast: true
+        vrrp:
+          group: 217
+        ipv4: 172.16.33.42/24
+        ipv6: 2001:db8:cafe:33::2a/64
+      ipv4: 172.16.33.3/24
+      ipv6: 2001:db8:cafe:33::3/64
+      linkindex: 3
+      type: lan
+      bridge: ml-17_3
+      name: h1 -> [dut,r2]
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ifname: Vlan1000
+        node: dut
+        gateway:
+          protocol: vrrp
+          id: 42
+          vrrp:
+            group: 217
+            priority: 30
+          ipv4: 172.16.33.42/24
+          ipv6: 2001:db8:cafe:33::2a/64
+          anycast:
+            mac: 0200.cafe.00ff
+            unicast: true
+        ipv4: 172.16.33.1/24
+        ipv6: 2001:db8:cafe:33::1/64
+        vlan:
+          mode: irb
+          name: access
+      - ifname: Vlan1000
+        node: r2
+        gateway:
+          protocol: vrrp
+          id: 42
+          vrrp:
+            group: 217
+            priority: 20
+          ipv4: 172.16.33.42/24
+          ipv6: 2001:db8:cafe:33::2a/64
+          anycast:
+            mac: 0200.cafe.00ff
+            unicast: true
+        ipv4: 172.16.33.2/24
+        ipv6: 2001:db8:cafe:33::2/64
+        vlan:
+          mode: irb
+          name: access
+    device: linux
+    module:
+    - routing
+    clab:
+      kind: linux
+      config_templates:
+      - source: initial
+        target: ''
+        mode: ns
+      - source: routing
+        target: ''
+        mode: ns
+      - source: hosts
+        target: /etc/hosts
+        mode: shared
+      binds:
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
+    box: python:3.13-alpine
+    id: 3
+    mtu: 1500
+    af:
+      ipv4: true
+      ipv6: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:03:00:00
+      ipv4: 192.168.17.103
+    hostname: clab-ml-17-h1
+    netlab_ansible_skip_module:
+    - initial
+    - routing
+    _node_config:
+      initial: :ns
+      routing: :ns
+  h2:
+    role: host
+    routing:
+      static:
+      - ipv4: 172.16.33.0/24
+        nexthop:
+          ipv4: 172.16.44.1
+          intf: eth1
+          ipv6: 2001:db8:cafe:44::1
+          idx: 0
+      - ipv6: 2001:db8:cafe:33::/64
+        nexthop:
+          ipv4: 172.16.44.1
+          intf: eth1
+          ipv6: 2001:db8:cafe:44::1
+          idx: 0
+    name: h2
+    interfaces:
+    - ipv4: 172.16.44.4/24
+      ipv6: 2001:db8:cafe:44::4/64
+      linkindex: 2
+      type: lan
+      bridge: ml-17_2
+      name: h2 -> [dut,r2]
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.44.1/24
+        ipv6: 2001:db8:cafe:44::1/64
+        ifname: Ethernet2
+        node: dut
+      - ipv4: 172.16.44.2/24
+        ipv6: 2001:db8:cafe:44::2/64
+        ifname: Ethernet2
+        node: r2
+    device: linux
+    module:
+    - routing
+    clab:
+      kind: linux
+      config_templates:
+      - source: initial
+        target: ''
+        mode: ns
+      - source: routing
+        target: ''
+        mode: ns
+      - source: hosts
+        target: /etc/hosts
+        mode: shared
+      binds:
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
+    box: python:3.13-alpine
+    id: 4
+    mtu: 1500
+    af:
+      ipv4: true
+      ipv6: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:04:00:00
+      ipv4: 192.168.17.104
+    hostname: clab-ml-17-h2
+    netlab_ansible_skip_module:
+    - initial
+    - routing
+    _node_config:
+      initial: :ns
+      routing: :ns
+links:
+- _linkname: links[1]
+  vlan:
+    trunk:
+      access: {}
+  interfaces:
+  - node: dut
+    vlan:
+      trunk:
+        access: {}
+    ifindex: 1
+    ifname: Ethernet1
+  - node: r2
+    vlan:
+      trunk:
+        access: {}
+    ifindex: 1
+    ifname: Ethernet1
+  linkindex: 1
+  prefix: {}
+  node_count: 2
+  type: p2p
+- _linkname: links[2]
+  prefix:
+    ipv4: 172.16.44.0/24
+    ipv6: 2001:db8:cafe:44::/64
+    _name: target
+  interfaces:
+  - node: dut
+    ra:
+      slaac: true
+    ipv4: 172.16.44.1/24
+    ipv6: 2001:db8:cafe:44::1/64
+    ifindex: 2
+    ifname: Ethernet2
+  - node: r2
+    ra:
+      slaac: true
+    ipv4: 172.16.44.2/24
+    ipv6: 2001:db8:cafe:44::2/64
+    ifindex: 2
+    ifname: Ethernet2
+  - node: h2
+    ipv4: 172.16.44.4/24
+    ipv6: 2001:db8:cafe:44::4/64
+    ifindex: 1
+    ifname: eth1
+  linkindex: 2
+  node_count: 3
+  type: lan
+  bridge: ml-17_2
+- interfaces:
+  - node: h1
+    gateway:
+      id: 42
+      protocol: vrrp
+      anycast:
+        mac: 0200.cafe.00ff
+        unicast: true
+      vrrp:
+        group: 217
+      ipv4: 172.16.33.42/24
+      ipv6: 2001:db8:cafe:33::2a/64
+    ipv4: 172.16.33.3/24
+    ipv6: 2001:db8:cafe:33::3/64
+    ifindex: 1
+    ifname: eth1
+  - node: r2
+    vlan:
+      access: access
+    _vlan_mode: irb
+    gateway:
+      protocol: vrrp
+      id: 42
+      vrrp:
+        group: 217
+        priority: 20
+      ipv4: 172.16.33.42/24
+      ipv6: 2001:db8:cafe:33::2a/64
+    ra:
+      slaac: true
+    ipv4: 172.16.33.2/24
+    ipv6: 2001:db8:cafe:33::2/64
+    ifindex: 3
+    ifname: Ethernet3
+  _linkname: vlans.access.links[1]
+  vlan:
+    access: access
+  linkindex: 3
+  gateway:
+    id: 42
+    protocol: vrrp
+    anycast:
+      mac: 0200.cafe.00ff
+      unicast: true
+    vrrp:
+      group: 217
+    ipv4: 172.16.33.42/24
+    ipv6: 2001:db8:cafe:33::2a/64
+  prefix:
+    ipv4: 172.16.33.0/24
+    ipv6: 2001:db8:cafe:33::/64
+    _name: source
+    allocation: id_based
+  type: lan
+  node_count: 2
+  bridge: ml-17_3
 validate:
 - description: Disable VRRP on R2
   nodes:
@@ -8881,11 +9017,13 @@ validate:
   - frr
 input:
 - /home/pipi/net101/tools/tests/integration/gateway/03-vrrp-vlan.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 plugin:
 - multilab
-name: ml_17
+name: ml-17
 addressing:
   lan:
     ipv4: 172.16.0.0/16
@@ -8917,4 +9055,4 @@ gateway:
     unicast: true
   vrrp:
     group: 1
-_netlab_version: 25.12.03
+_netlab_version: 26.01.01

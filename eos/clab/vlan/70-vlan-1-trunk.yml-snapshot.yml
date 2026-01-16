@@ -70,7 +70,11 @@ defaults:
           _keys:
             binds:
             kind: str
-            config_templates:
+            config_mode:
+              type: str
+              _alt_types:
+              - NoneType
+            config_templates: dict
             type: str
             cmd: str
             dns:
@@ -479,6 +483,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -537,6 +542,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox: {}
@@ -776,6 +783,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -830,6 +838,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox:
@@ -1336,6 +1346,7 @@ defaults:
           bundle:
           - vlan_aware
           irb: true
+          ipv6: true
         gateway:
           protocol:
           - anycast
@@ -1473,6 +1484,8 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
+      warnings:
+        ospf_stub: false
       provider: clab
     fortios:
       description: Fortinet FortiOS firewall
@@ -1560,6 +1573,7 @@ defaults:
           - ldpd
       mtu: 1500
       clab:
+        config_mode: sh
         group_vars:
           ansible_connection: docker
           ansible_user: root
@@ -1568,7 +1582,13 @@ defaults:
           - -c
           - show $@
           netlab_mgmt_vrf: true
-        image: quay.io/frrouting/frr:10.5.0
+          netlab_config_wrapper: |
+            {% if not netlab_config_text.startswith("#!") %}
+            #!/usr/bin/vtysh -f
+            #
+            {% endif %}
+            {{ netlab_config_text }}
+        image: quay.io/frrouting/frr:10.5.1
         kmods:
         node:
           kind: linux
@@ -1800,7 +1820,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:17.12.01
+        image: vrnetlab/cisco_iol:17.16.01a
         node:
           kind: cisco_iol
       role: router
@@ -1885,6 +1905,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -1942,6 +1963,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       _parents:
       - ios
@@ -1979,7 +2002,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:L2-17.12.01
+        image: vrnetlab/cisco_iol:L2-17.16.01a
         node:
           kind: cisco_iol
           type: l2
@@ -2070,6 +2093,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2138,6 +2162,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       _parents:
       - ios
@@ -2265,6 +2291,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2317,6 +2344,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet0/{ifindex}
       libvirt:
         image: cisco/iosv
@@ -2452,6 +2481,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2516,6 +2546,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex // 4}/{ifindex % 4}
       libvirt:
         image: cisco/iosvl2
@@ -2644,6 +2676,7 @@ defaults:
         routing:
           static: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -2678,11 +2711,7 @@ defaults:
         netlab_lldp_enable: false
         netlab_net_tools: false
       clab:
-        node_config:
-          initial: :ns
-          lag: :ns
-          vlan: :ns
-          routing: :ns
+        config_mode: ns
         features:
           initial:
             roles:
@@ -2708,6 +2737,40 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+      external:
+        image: none
+      graphite:
+        icon: server
+    netscaler:
+      description: Citrix Netscaler ADC CPX
+      support:
+        level: minimal
+      interface_name: 0/{ifindex+2}
+      mgmt_if: 0/2
+      role: router
+      group_vars:
+        ansible_network_os: netscaler
+        ansible_python_interpreter: auto_silent
+      features:
+        initial:
+          ipv4:
+      mtu: 1500
+      clab:
+        build: true
+        image: netlab/netscaler
+        node:
+          kind: linux
+        interface:
+          name: eth{ifindex}
+        group_vars:
+          ansible_user: clab
+          ansible_ssh_pass: clab@123
+          ansible_connection: docker
+          netlab_show_command:
+          - nscli
+          - -U
+          - 127.0.0.1:clab:clab@123
+          - show $@
       external:
         image: none
       graphite:
@@ -2780,6 +2843,7 @@ defaults:
           bundle:
           - vlan_aware
           multi_rt: true
+          ipv6: true
         gateway:
           protocol:
           - anycast
@@ -2984,12 +3048,13 @@ defaults:
         routing:
           static: true
         initial:
-          roles:
-          - host
-          - router
           ipv6:
             use_ra: true
             lla: true
+          reload: false
+          roles:
+          - host
+          - router
         ospf:
           unnumbered: false
           import:
@@ -3154,6 +3219,7 @@ defaults:
             unnumbered: true
           ipv6:
             lla: true
+          reload: false
         bgp:
           activate_af: true
           ipv6_lla: true
@@ -3389,6 +3455,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
         routing:
           policy:
             set:
@@ -3430,6 +3497,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     srsim:
       description: Nokia SR-SIM (SR-OS) container
       mgmt_if: A/1
@@ -3524,6 +3593,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
         routing:
           policy:
             set:
@@ -3568,6 +3638,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
       _parents:
       - sros
     unknown:
@@ -4250,6 +4322,7 @@ defaults:
           static:
             discard: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -4319,11 +4392,7 @@ defaults:
           static: RTS_STATIC_DEVICE,RTS_STATIC
         netlab_device_type: bird
       clab:
-        node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
-          routing: :ns
+        config_mode: sh
         features:
           initial:
             roles:
@@ -4352,7 +4421,7 @@ defaults:
           - birdc
           - show $@
           docker_shell: bash -il
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
       external:
         image: none
       graphite:
@@ -4381,6 +4450,7 @@ defaults:
         routing:
           static: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -4416,11 +4486,7 @@ defaults:
         netlab_net_tools: false
         netlab_device_type: dnsmasq
       clab:
-        node_config:
-          initial: :ns
-          lag: :ns
-          vlan: :ns
-          routing: :ns
+        config_mode: ns
         features:
           initial:
             roles:
@@ -4445,7 +4511,7 @@ defaults:
           ansible_user: root
           netlab_linux_distro: vanilla
           docker_shell: bash -il
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
       external:
         image: none
       graphite:
@@ -4483,17 +4549,14 @@ defaults:
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
       clab:
-        node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
+        config_mode: sh
         group_vars:
           netlab_show_command:
           - birdc
           - show $@
           docker_shell: bash -il
         image: netlab/bird:latest
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
         features:
           initial:
             roles:
@@ -4543,6 +4606,7 @@ defaults:
             unnumbered: peer
           ipv6:
             lla: true
+          reload: false
           roles:
           - host
           - router
@@ -4560,7 +4624,7 @@ defaults:
         group_vars:
           docker_shell: bash -il
         image: netlab/dnsmasq:latest
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
         features:
           initial:
             roles:
@@ -4573,6 +4637,7 @@ defaults:
         dhcp:
           server: true
         initial:
+          reload: false
           roles:
           - host
       dhcp:
@@ -4824,7 +4889,13 @@ defaults:
         - color
         - fill
         - width
+    config: {}
     provider: {}
+    pickle: {}
+    tools: {}
+    ansible:
+      hostfile: {}
+      configfile: {}
     yaml=netlab:
       snapshot:
         yml: {}
@@ -5229,6 +5300,7 @@ defaults:
             configuration template(s)
         _alt_types:
         - list
+      skip_config: list
       group: list
       role:
         type: str
@@ -5851,8 +5923,16 @@ defaults:
       cisco8000v:
         ping_irb: 90
         ping_long: 15
+      vjunos-switch:
+        ping_irb: 40
       vjunos-router:
         ping_irb: 90
+      nxos:
+        bgp_v4_redist: 40
+        bgp_v6_redist: 40
+      vptx:
+        ldp_adj: 180
+        ibgp_session: 40
   hints:
     evpn:
       irb_group: >
@@ -5941,9 +6021,9 @@ defaults:
         storage prices keep falling
   multilab:
     change:
-      name: ml_17
+      name: ml-17
       defaults:
-        name: ml_17
+        name: ml-17
         providers:
           libvirt:
             tunnel_id: '17'
@@ -5966,7 +6046,15 @@ defaults:
       - svg
       - jpg
       - jpeg
-    create: {}
+    create:
+      output:
+        config:
+        provider:
+        pickle:
+        tools:
+        ansible: dirs
+        yaml:
+          output: netlab.snapshot.yml
   paths:
     validate:
     - /home/pipi/netlab_gh/netsim/validate
@@ -6100,6 +6188,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -8062,11 +8152,12 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1766575325.6232116
+    timestamp: 1768501955.1703475
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
     - ../wait_times.yml
+    - ../warnings.yml
     list: []
     user: []
     system: []
@@ -8100,7 +8191,7 @@ defaults:
     - vlan
     - vrf
     - vxlan
-  name: ml_17
+  name: ml-17
   module:
   - vlan
   - routing
@@ -8137,6 +8228,16 @@ groups:
       netlab_show_config: true
     members: []
     _default_group: true
+  netlab_no_reload:
+    members:
+    - r1
+    - r2
+    - r3
+    - r4
+    - d1
+    - d2
+    - d3
+    - d4
 nodes:
   s1:
     id: 1
@@ -8171,7 +8272,7 @@ nodes:
         - 1
       linkindex: 2
       type: lan
-      bridge: ml_17_2
+      bridge: ml-17_2
       ifindex: 2
       ifname: Ethernet2
       clab:
@@ -8192,7 +8293,7 @@ nodes:
         - 1
       linkindex: 3
       type: lan
-      bridge: ml_17_3
+      bridge: ml-17_3
       ifindex: 3
       ifname: Ethernet3
       clab:
@@ -8206,7 +8307,7 @@ nodes:
         access_id: 700
       linkindex: 4
       type: lan
-      bridge: ml_17_4
+      bridge: ml-17_4
       ifindex: 4
       ifname: Ethernet4
       clab:
@@ -8221,7 +8322,7 @@ nodes:
         access_id: 1
       linkindex: 8
       type: lan
-      bridge: ml_17_8
+      bridge: ml-17_8
       ifindex: 5
       ifname: Ethernet5
       clab:
@@ -8326,7 +8427,7 @@ nodes:
       ifname: Management0
       mac: ca:fe:00:01:00:00
       ipv4: 192.168.17.101
-    hostname: clab-ml_17-s1
+    hostname: clab-ml-17-s1
     loopback:
       type: loopback
       neighbors: []
@@ -8369,7 +8470,7 @@ nodes:
         access_id: 700
       linkindex: 5
       type: lan
-      bridge: ml_17_5
+      bridge: ml-17_5
       ifindex: 2
       ifname: eth2
       mtu: 1500
@@ -8383,7 +8484,7 @@ nodes:
         access_id: 1
       linkindex: 9
       type: lan
-      bridge: ml_17_9
+      bridge: ml-17_9
       ifindex: 3
       ifname: eth3
       mtu: 1500
@@ -8506,12 +8607,28 @@ nodes:
     clab:
       kind: linux
       config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: vlan
+        target: /etc/config/02-vlan.sh
+        mode: sh
+      - source: daemons
+        target: /etc/frr/daemons
+      - source: hosts
+        target: /etc/hosts
+        mode: shared
       binds:
-      - node_files/s2/daemons:/etc/frr/daemons
-      - node_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.5.0
+      - target: /etc/config/01-initial.sh
+        source: node_files/s2/initial
+      - target: /etc/config/02-vlan.sh
+        source: node_files/s2/vlan
+      - target: /etc/frr/daemons
+        source: node_files/s2/daemons
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
+    box: quay.io/frrouting/frr:10.5.1
     id: 2
     role: router
     mtu: 1500
@@ -8521,7 +8638,7 @@ nodes:
       ifname: eth0
       mac: ca:fe:00:02:00:00
       ipv4: 192.168.17.102
-    hostname: clab-ml_17-s2
+    hostname: clab-ml-17-s2
     loopback:
       type: loopback
       neighbors: []
@@ -8546,16 +8663,12 @@ nodes:
         bridge_group: 2
     vlan:
       max_bridge_group: 2
-    _template_cache:
-    - fname: daemons
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
-      output: node_files/s2/daemons
-      mapping: /etc/frr/daemons
-    - fname: hosts
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
-      output: node_files/-shared-hosts
-      mode: shared
-      mapping: /etc/hosts:ro
+    netlab_ansible_skip_module:
+    - initial
+    - vlan
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      vlan: /etc/config/02-vlan.sh:sh
   s3:
     name: s3
     interfaces:
@@ -8569,7 +8682,7 @@ nodes:
         - 1
       linkindex: 2
       type: lan
-      bridge: ml_17_2
+      bridge: ml-17_2
       ifindex: 1
       ifname: eth1
       mtu: 1500
@@ -8584,7 +8697,7 @@ nodes:
         access_id: 700
       linkindex: 6
       type: lan
-      bridge: ml_17_6
+      bridge: ml-17_6
       ifindex: 2
       ifname: eth2
       mtu: 1500
@@ -8598,7 +8711,7 @@ nodes:
         access_id: 1
       linkindex: 10
       type: lan
-      bridge: ml_17_10
+      bridge: ml-17_10
       ifindex: 3
       ifname: eth3
       mtu: 1500
@@ -8707,12 +8820,28 @@ nodes:
     clab:
       kind: linux
       config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: vlan
+        target: /etc/config/02-vlan.sh
+        mode: sh
+      - source: daemons
+        target: /etc/frr/daemons
+      - source: hosts
+        target: /etc/hosts
+        mode: shared
       binds:
-      - node_files/s3/daemons:/etc/frr/daemons
-      - node_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.5.0
+      - target: /etc/config/01-initial.sh
+        source: node_files/s3/initial
+      - target: /etc/config/02-vlan.sh
+        source: node_files/s3/vlan
+      - target: /etc/frr/daemons
+        source: node_files/s3/daemons
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
+    box: quay.io/frrouting/frr:10.5.1
     id: 3
     role: router
     mtu: 1500
@@ -8722,7 +8851,7 @@ nodes:
       ifname: eth0
       mac: ca:fe:00:03:00:00
       ipv4: 192.168.17.103
-    hostname: clab-ml_17-s3
+    hostname: clab-ml-17-s3
     loopback:
       type: loopback
       neighbors: []
@@ -8747,16 +8876,12 @@ nodes:
         bridge_group: 2
     vlan:
       max_bridge_group: 2
-    _template_cache:
-    - fname: daemons
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
-      output: node_files/s3/daemons
-      mapping: /etc/frr/daemons
-    - fname: hosts
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
-      output: node_files/-shared-hosts
-      mode: shared
-      mapping: /etc/hosts:ro
+    netlab_ansible_skip_module:
+    - initial
+    - vlan
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      vlan: /etc/config/02-vlan.sh:sh
   s4:
     name: s4
     interfaces:
@@ -8770,7 +8895,7 @@ nodes:
         - 700
       linkindex: 3
       type: lan
-      bridge: ml_17_3
+      bridge: ml-17_3
       ifindex: 1
       ifname: eth1
       mtu: 1500
@@ -8784,7 +8909,7 @@ nodes:
         access_id: 700
       linkindex: 7
       type: lan
-      bridge: ml_17_7
+      bridge: ml-17_7
       ifindex: 2
       ifname: eth2
       mtu: 1500
@@ -8798,7 +8923,7 @@ nodes:
         access_id: 1
       linkindex: 11
       type: lan
-      bridge: ml_17_11
+      bridge: ml-17_11
       ifindex: 3
       ifname: eth3
       mtu: 1500
@@ -8908,12 +9033,28 @@ nodes:
     clab:
       kind: linux
       config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: vlan
+        target: /etc/config/02-vlan.sh
+        mode: sh
+      - source: daemons
+        target: /etc/frr/daemons
+      - source: hosts
+        target: /etc/hosts
+        mode: shared
       binds:
-      - node_files/s4/daemons:/etc/frr/daemons
-      - node_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.5.0
+      - target: /etc/config/01-initial.sh
+        source: node_files/s4/initial
+      - target: /etc/config/02-vlan.sh
+        source: node_files/s4/vlan
+      - target: /etc/frr/daemons
+        source: node_files/s4/daemons
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
+    box: quay.io/frrouting/frr:10.5.1
     id: 4
     role: router
     mtu: 1500
@@ -8923,7 +9064,7 @@ nodes:
       ifname: eth0
       mac: ca:fe:00:04:00:00
       ipv4: 192.168.17.104
-    hostname: clab-ml_17-s4
+    hostname: clab-ml-17-s4
     loopback:
       type: loopback
       neighbors: []
@@ -8948,23 +9089,19 @@ nodes:
         bridge_group: 2
     vlan:
       max_bridge_group: 2
-    _template_cache:
-    - fname: daemons
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
-      output: node_files/s4/daemons
-      mapping: /etc/frr/daemons
-    - fname: hosts
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
-      output: node_files/-shared-hosts
-      mode: shared
-      mapping: /etc/hosts:ro
+    netlab_ansible_skip_module:
+    - initial
+    - vlan
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      vlan: /etc/config/02-vlan.sh:sh
   r1:
     name: r1
     interfaces:
     - ipv4: 172.31.1.5/24
       linkindex: 4
       type: lan
-      bridge: ml_17_4
+      bridge: ml-17_4
       name: r1 -> [s1,r2,s2,r3,s3...]
       ifindex: 1
       ifname: eth1
@@ -9003,25 +9140,30 @@ nodes:
     clab:
       kind: linux
       config_templates:
-      - initial::ns
-      - routing::ns
-      - hosts:/etc/hosts:shared
+      - source: initial
+        target: ''
+        mode: ns
+      - source: routing
+        target: ''
+        mode: ns
+      - source: hosts
+        target: /etc/hosts
+        mode: shared
       binds:
-      - node_files/-shared-hosts:/etc/hosts:ro
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
     box: python:3.13-alpine
     id: 5
     role: host
     mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
     af:
       ipv4: true
     mgmt:
       ifname: eth0
       mac: ca:fe:00:05:00:00
       ipv4: 192.168.17.105
-    hostname: clab-ml_17-r1
+    hostname: clab-ml-17-r1
     routing:
       static: []
     module:
@@ -9029,27 +9171,16 @@ nodes:
     netlab_ansible_skip_module:
     - initial
     - routing
-    _template_cache:
-    - fname: initial
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
-      output: node_files/r1/initial
-      mode: ns
-    - fname: routing
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
-      output: node_files/r1/routing
-      mode: ns
-    - fname: hosts
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
-      output: node_files/-shared-hosts
-      mode: shared
-      mapping: /etc/hosts:ro
+    _node_config:
+      initial: :ns
+      routing: :ns
   r2:
     name: r2
     interfaces:
     - ipv4: 172.31.1.6/24
       linkindex: 5
       type: lan
-      bridge: ml_17_5
+      bridge: ml-17_5
       name: r2 -> [r1,s1,s2,r3,s3...]
       ifindex: 1
       ifname: eth1
@@ -9088,25 +9219,30 @@ nodes:
     clab:
       kind: linux
       config_templates:
-      - initial::ns
-      - routing::ns
-      - hosts:/etc/hosts:shared
+      - source: initial
+        target: ''
+        mode: ns
+      - source: routing
+        target: ''
+        mode: ns
+      - source: hosts
+        target: /etc/hosts
+        mode: shared
       binds:
-      - node_files/-shared-hosts:/etc/hosts:ro
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
     box: python:3.13-alpine
     id: 6
     role: host
     mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
     af:
       ipv4: true
     mgmt:
       ifname: eth0
       mac: ca:fe:00:06:00:00
       ipv4: 192.168.17.106
-    hostname: clab-ml_17-r2
+    hostname: clab-ml-17-r2
     routing:
       static: []
     module:
@@ -9114,27 +9250,16 @@ nodes:
     netlab_ansible_skip_module:
     - initial
     - routing
-    _template_cache:
-    - fname: initial
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
-      output: node_files/r2/initial
-      mode: ns
-    - fname: routing
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
-      output: node_files/r2/routing
-      mode: ns
-    - fname: hosts
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
-      output: node_files/-shared-hosts
-      mode: shared
-      mapping: /etc/hosts:ro
+    _node_config:
+      initial: :ns
+      routing: :ns
   r3:
     name: r3
     interfaces:
     - ipv4: 172.31.1.7/24
       linkindex: 6
       type: lan
-      bridge: ml_17_6
+      bridge: ml-17_6
       name: r3 -> [r1,s1,r2,s2,s3...]
       ifindex: 1
       ifname: eth1
@@ -9173,25 +9298,30 @@ nodes:
     clab:
       kind: linux
       config_templates:
-      - initial::ns
-      - routing::ns
-      - hosts:/etc/hosts:shared
+      - source: initial
+        target: ''
+        mode: ns
+      - source: routing
+        target: ''
+        mode: ns
+      - source: hosts
+        target: /etc/hosts
+        mode: shared
       binds:
-      - node_files/-shared-hosts:/etc/hosts:ro
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
     box: python:3.13-alpine
     id: 7
     role: host
     mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
     af:
       ipv4: true
     mgmt:
       ifname: eth0
       mac: ca:fe:00:07:00:00
       ipv4: 192.168.17.107
-    hostname: clab-ml_17-r3
+    hostname: clab-ml-17-r3
     routing:
       static: []
     module:
@@ -9199,27 +9329,16 @@ nodes:
     netlab_ansible_skip_module:
     - initial
     - routing
-    _template_cache:
-    - fname: initial
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
-      output: node_files/r3/initial
-      mode: ns
-    - fname: routing
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
-      output: node_files/r3/routing
-      mode: ns
-    - fname: hosts
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
-      output: node_files/-shared-hosts
-      mode: shared
-      mapping: /etc/hosts:ro
+    _node_config:
+      initial: :ns
+      routing: :ns
   r4:
     name: r4
     interfaces:
     - ipv4: 172.31.1.8/24
       linkindex: 7
       type: lan
-      bridge: ml_17_7
+      bridge: ml-17_7
       name: r4 -> [r1,s1,r2,s2,r3...]
       ifindex: 1
       ifname: eth1
@@ -9258,25 +9377,30 @@ nodes:
     clab:
       kind: linux
       config_templates:
-      - initial::ns
-      - routing::ns
-      - hosts:/etc/hosts:shared
+      - source: initial
+        target: ''
+        mode: ns
+      - source: routing
+        target: ''
+        mode: ns
+      - source: hosts
+        target: /etc/hosts
+        mode: shared
       binds:
-      - node_files/-shared-hosts:/etc/hosts:ro
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
     box: python:3.13-alpine
     id: 8
     role: host
     mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
     af:
       ipv4: true
     mgmt:
       ifname: eth0
       mac: ca:fe:00:08:00:00
       ipv4: 192.168.17.108
-    hostname: clab-ml_17-r4
+    hostname: clab-ml-17-r4
     routing:
       static: []
     module:
@@ -9284,27 +9408,16 @@ nodes:
     netlab_ansible_skip_module:
     - initial
     - routing
-    _template_cache:
-    - fname: initial
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
-      output: node_files/r4/initial
-      mode: ns
-    - fname: routing
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
-      output: node_files/r4/routing
-      mode: ns
-    - fname: hosts
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
-      output: node_files/-shared-hosts
-      mode: shared
-      mapping: /etc/hosts:ro
+    _node_config:
+      initial: :ns
+      routing: :ns
   d1:
     name: d1
     interfaces:
     - ipv4: 172.31.1.9/24
       linkindex: 8
       type: lan
-      bridge: ml_17_8
+      bridge: ml-17_8
       name: d1 -> [s1,d2,s2,d3,s3...]
       ifindex: 1
       ifname: eth1
@@ -9349,25 +9462,30 @@ nodes:
     clab:
       kind: linux
       config_templates:
-      - initial::ns
-      - routing::ns
-      - hosts:/etc/hosts:shared
+      - source: initial
+        target: ''
+        mode: ns
+      - source: routing
+        target: ''
+        mode: ns
+      - source: hosts
+        target: /etc/hosts
+        mode: shared
       binds:
-      - node_files/-shared-hosts:/etc/hosts:ro
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
     box: python:3.13-alpine
     id: 9
     role: host
     mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
     af:
       ipv4: true
     mgmt:
       ifname: eth0
       mac: ca:fe:00:09:00:00
       ipv4: 192.168.17.109
-    hostname: clab-ml_17-d1
+    hostname: clab-ml-17-d1
     routing:
       static:
       - ipv4: 172.16.0.0/16
@@ -9395,27 +9513,16 @@ nodes:
     netlab_ansible_skip_module:
     - initial
     - routing
-    _template_cache:
-    - fname: initial
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
-      output: node_files/d1/initial
-      mode: ns
-    - fname: routing
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
-      output: node_files/d1/routing
-      mode: ns
-    - fname: hosts
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
-      output: node_files/-shared-hosts
-      mode: shared
-      mapping: /etc/hosts:ro
+    _node_config:
+      initial: :ns
+      routing: :ns
   d2:
     name: d2
     interfaces:
     - ipv4: 172.31.1.10/24
       linkindex: 9
       type: lan
-      bridge: ml_17_9
+      bridge: ml-17_9
       name: d2 -> [d1,s1,s2,d3,s3...]
       ifindex: 1
       ifname: eth1
@@ -9460,25 +9567,30 @@ nodes:
     clab:
       kind: linux
       config_templates:
-      - initial::ns
-      - routing::ns
-      - hosts:/etc/hosts:shared
+      - source: initial
+        target: ''
+        mode: ns
+      - source: routing
+        target: ''
+        mode: ns
+      - source: hosts
+        target: /etc/hosts
+        mode: shared
       binds:
-      - node_files/-shared-hosts:/etc/hosts:ro
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
     box: python:3.13-alpine
     id: 10
     role: host
     mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
     af:
       ipv4: true
     mgmt:
       ifname: eth0
       mac: ca:fe:00:0a:00:00
       ipv4: 192.168.17.110
-    hostname: clab-ml_17-d2
+    hostname: clab-ml-17-d2
     routing:
       static:
       - ipv4: 172.16.0.0/16
@@ -9506,27 +9618,16 @@ nodes:
     netlab_ansible_skip_module:
     - initial
     - routing
-    _template_cache:
-    - fname: initial
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
-      output: node_files/d2/initial
-      mode: ns
-    - fname: routing
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
-      output: node_files/d2/routing
-      mode: ns
-    - fname: hosts
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
-      output: node_files/-shared-hosts
-      mode: shared
-      mapping: /etc/hosts:ro
+    _node_config:
+      initial: :ns
+      routing: :ns
   d3:
     name: d3
     interfaces:
     - ipv4: 172.31.1.11/24
       linkindex: 10
       type: lan
-      bridge: ml_17_10
+      bridge: ml-17_10
       name: d3 -> [d1,s1,d2,s2,s3...]
       ifindex: 1
       ifname: eth1
@@ -9571,25 +9672,30 @@ nodes:
     clab:
       kind: linux
       config_templates:
-      - initial::ns
-      - routing::ns
-      - hosts:/etc/hosts:shared
+      - source: initial
+        target: ''
+        mode: ns
+      - source: routing
+        target: ''
+        mode: ns
+      - source: hosts
+        target: /etc/hosts
+        mode: shared
       binds:
-      - node_files/-shared-hosts:/etc/hosts:ro
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
     box: python:3.13-alpine
     id: 11
     role: host
     mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
     af:
       ipv4: true
     mgmt:
       ifname: eth0
       mac: ca:fe:00:0b:00:00
       ipv4: 192.168.17.111
-    hostname: clab-ml_17-d3
+    hostname: clab-ml-17-d3
     routing:
       static:
       - ipv4: 172.16.0.0/16
@@ -9617,27 +9723,16 @@ nodes:
     netlab_ansible_skip_module:
     - initial
     - routing
-    _template_cache:
-    - fname: initial
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
-      output: node_files/d3/initial
-      mode: ns
-    - fname: routing
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
-      output: node_files/d3/routing
-      mode: ns
-    - fname: hosts
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
-      output: node_files/-shared-hosts
-      mode: shared
-      mapping: /etc/hosts:ro
+    _node_config:
+      initial: :ns
+      routing: :ns
   d4:
     name: d4
     interfaces:
     - ipv4: 172.31.1.12/24
       linkindex: 11
       type: lan
-      bridge: ml_17_11
+      bridge: ml-17_11
       name: d4 -> [d1,s1,d2,s2,d3...]
       ifindex: 1
       ifname: eth1
@@ -9682,25 +9777,30 @@ nodes:
     clab:
       kind: linux
       config_templates:
-      - initial::ns
-      - routing::ns
-      - hosts:/etc/hosts:shared
+      - source: initial
+        target: ''
+        mode: ns
+      - source: routing
+        target: ''
+        mode: ns
+      - source: hosts
+        target: /etc/hosts
+        mode: shared
       binds:
-      - node_files/-shared-hosts:/etc/hosts:ro
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
     box: python:3.13-alpine
     id: 12
     role: host
     mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
     af:
       ipv4: true
     mgmt:
       ifname: eth0
       mac: ca:fe:00:0c:00:00
       ipv4: 192.168.17.112
-    hostname: clab-ml_17-d4
+    hostname: clab-ml-17-d4
     routing:
       static:
       - ipv4: 172.16.0.0/16
@@ -9728,20 +9828,9 @@ nodes:
     netlab_ansible_skip_module:
     - initial
     - routing
-    _template_cache:
-    - fname: initial
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2
-      output: node_files/d4/initial
-      mode: ns
-    - fname: routing
-      fpath: /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2
-      output: node_files/d4/routing
-      mode: ns
-    - fname: hosts
-      fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/linux/hosts.j2
-      output: node_files/-shared-hosts
-      mode: shared
-      mapping: /etc/hosts:ro
+    _node_config:
+      initial: :ns
+      routing: :ns
 vlans:
   red:
     mode: bridge
@@ -9885,7 +9974,7 @@ links:
     allocation: id_based
   type: lan
   node_count: 2
-  bridge: ml_17_2
+  bridge: ml-17_2
 - _linkname: links[3]
   vlan:
     trunk:
@@ -9917,7 +10006,7 @@ links:
     allocation: id_based
   type: lan
   node_count: 2
-  bridge: ml_17_3
+  bridge: ml-17_3
 - interfaces:
   - node: s1
     vlan:
@@ -9938,7 +10027,7 @@ links:
     allocation: id_based
   type: lan
   node_count: 2
-  bridge: ml_17_4
+  bridge: ml-17_4
 - interfaces:
   - node: s2
     vlan:
@@ -9959,7 +10048,7 @@ links:
     allocation: id_based
   type: lan
   node_count: 2
-  bridge: ml_17_5
+  bridge: ml-17_5
 - interfaces:
   - node: s3
     vlan:
@@ -9980,7 +10069,7 @@ links:
     allocation: id_based
   type: lan
   node_count: 2
-  bridge: ml_17_6
+  bridge: ml-17_6
 - interfaces:
   - node: s4
     vlan:
@@ -10001,7 +10090,7 @@ links:
     allocation: id_based
   type: lan
   node_count: 2
-  bridge: ml_17_7
+  bridge: ml-17_7
 - interfaces:
   - node: s1
     vlan:
@@ -10023,7 +10112,7 @@ links:
     allocation: id_based
   type: lan
   node_count: 2
-  bridge: ml_17_8
+  bridge: ml-17_8
 - interfaces:
   - node: s2
     vlan:
@@ -10045,7 +10134,7 @@ links:
     allocation: id_based
   type: lan
   node_count: 2
-  bridge: ml_17_9
+  bridge: ml-17_9
 - interfaces:
   - node: s3
     vlan:
@@ -10067,7 +10156,7 @@ links:
     allocation: id_based
   type: lan
   node_count: 2
-  bridge: ml_17_10
+  bridge: ml-17_10
 - interfaces:
   - node: s4
     vlan:
@@ -10089,7 +10178,7 @@ links:
     allocation: id_based
   type: lan
   node_count: 2
-  bridge: ml_17_11
+  bridge: ml-17_11
 validate:
 - description: Ping-based reachability test in VLAN red
   wait: 45
@@ -10122,12 +10211,13 @@ validate:
 input:
 - /home/pipi/net101/tools/tests/integration/vlan/70-vlan-1-trunk.yml
 - /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
 - /home/pipi/net101/tools/tests/integration/vlan/topology-defaults.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 plugin:
 - multilab
-name: ml_17
+name: ml-17
 addressing:
   lan:
     ipv4: 172.16.0.0/16
@@ -10156,4 +10246,4 @@ provider: clab
 module:
 - vlan
 - routing
-_netlab_version: 25.12.03
+_netlab_version: 26.01.01

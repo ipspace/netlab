@@ -6,550 +6,6 @@ message: |
   The bridge with the highest priority (s1) should become the root on all VLANs,
   the link x1-x2 should get blocked. Please note that we're running traditional
   STP where BPDUs are sent untagged.
-module:
-- vlan
-- stp
-groups:
-  probes:
-    members:
-    - x1
-    - x2
-    device: eos
-  all:
-    vars:
-      netlab_show_config: true
-    members: []
-    _default_group: true
-nodes:
-  dut:
-    stp:
-      enable: true
-      protocol: stp
-      priority: 4096
-    name: dut
-    interfaces:
-    - vlan:
-        trunk:
-          red: {}
-          blue: {}
-        trunk_id:
-        - 42
-        - 76
-      linkindex: 1
-      type: p2p
-      name: dut -> x1
-      ifindex: 1
-      ifname: Ethernet1
-      mac_address: caf0.0001.0001
-      clab:
-        name: et1
-      neighbors:
-      - ifname: Ethernet1
-        node: x1
-    - vlan:
-        trunk:
-          red: {}
-          blue: {}
-        trunk_id:
-        - 42
-        - 76
-      linkindex: 2
-      type: p2p
-      name: dut -> x2
-      ifindex: 2
-      ifname: Ethernet2
-      mac_address: caf0.0001.0002
-      clab:
-        name: et2
-      neighbors:
-      - ifname: Ethernet1
-        node: x2
-    - vlan:
-        mode: bridge
-        name: blue
-      type: svi
-      ifindex: 40000
-      ifname: Vlan76
-      name: VLAN blue (76) -> [x2,x1]
-      virtual_interface: true
-      neighbors:
-      - ifname: Vlan76
-        node: x2
-        vlan:
-          mode: bridge
-          name: blue
-      - ifname: Vlan76
-        node: x1
-        vlan:
-          mode: bridge
-          name: blue
-      bridge_group: 1
-    - vlan:
-        mode: bridge
-        name: red
-      type: svi
-      ifindex: 40001
-      ifname: Vlan42
-      name: VLAN red (42) -> [x2,x1]
-      virtual_interface: true
-      neighbors:
-      - ifname: Vlan42
-        node: x2
-        vlan:
-          mode: bridge
-          name: red
-      - ifname: Vlan42
-        node: x1
-        vlan:
-          mode: bridge
-          name: red
-      bridge_group: 2
-    device: eos
-    clab:
-      kind: ceos
-      env:
-        INTFTYPE: et
-        CLAB_MGMT_VRF: management
-    box: ceos:4.34.2F
-    module:
-    - vlan
-    - stp
-    id: 1
-    role: router
-    provider: clab
-    af:
-      ipv4: true
-    mgmt:
-      ifname: Management0
-      mac: ca:fe:00:01:00:00
-      ipv4: 192.168.17.101
-    hostname: clab-ml_17-dut
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: Loopback0
-      ipv4: 10.0.0.1/32
-    vlans:
-      blue:
-        mode: bridge
-        id: 76
-        prefix:
-          ipv4: 172.16.1.0/24
-          allocation: id_based
-        bridge_group: 1
-      red:
-        mode: bridge
-        id: 42
-        prefix:
-          ipv4: 172.16.0.0/24
-          allocation: id_based
-        bridge_group: 2
-    vlan:
-      max_bridge_group: 2
-  x2:
-    stp:
-      enable: true
-      protocol: stp
-      priority: 16384
-    name: x2
-    interfaces:
-    - vlan:
-        trunk:
-          red: {}
-          blue: {}
-        trunk_id:
-        - 42
-        - 76
-      linkindex: 2
-      type: p2p
-      name: x2 -> dut
-      ifindex: 1
-      ifname: Ethernet1
-      mac_address: caf0.0002.0001
-      clab:
-        name: et1
-      neighbors:
-      - ifname: Ethernet2
-        node: dut
-    - vlan:
-        trunk:
-          red: {}
-          blue: {}
-        trunk_id:
-        - 42
-        - 76
-      linkindex: 3
-      type: p2p
-      name: x2 -> x1
-      ifindex: 2
-      ifname: Ethernet2
-      mac_address: caf0.0002.0002
-      clab:
-        name: et2
-      neighbors:
-      - ifname: Ethernet2
-        node: x1
-    - vlan:
-        mode: bridge
-        name: blue
-      type: svi
-      ifindex: 40000
-      ifname: Vlan76
-      name: VLAN blue (76) -> [dut,x1]
-      virtual_interface: true
-      neighbors:
-      - ifname: Vlan76
-        node: dut
-        vlan:
-          mode: bridge
-          name: blue
-      - ifname: Vlan76
-        node: x1
-        vlan:
-          mode: bridge
-          name: blue
-      bridge_group: 1
-    - vlan:
-        mode: bridge
-        name: red
-      type: svi
-      ifindex: 40001
-      ifname: Vlan42
-      name: VLAN red (42) -> [dut,x1]
-      virtual_interface: true
-      neighbors:
-      - ifname: Vlan42
-        node: dut
-        vlan:
-          mode: bridge
-          name: red
-      - ifname: Vlan42
-        node: x1
-        vlan:
-          mode: bridge
-          name: red
-      bridge_group: 2
-    device: eos
-    clab:
-      kind: ceos
-      env:
-        INTFTYPE: et
-        CLAB_MGMT_VRF: management
-    box: ceos:4.34.2F
-    module:
-    - vlan
-    - stp
-    id: 2
-    role: router
-    provider: clab
-    af:
-      ipv4: true
-    mgmt:
-      ifname: Management0
-      mac: ca:fe:00:02:00:00
-      ipv4: 192.168.17.102
-    hostname: clab-ml_17-x2
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: Loopback0
-      ipv4: 10.0.0.2/32
-    vlans:
-      blue:
-        mode: bridge
-        id: 76
-        prefix:
-          ipv4: 172.16.1.0/24
-          allocation: id_based
-        bridge_group: 1
-      red:
-        mode: bridge
-        id: 42
-        prefix:
-          ipv4: 172.16.0.0/24
-          allocation: id_based
-        bridge_group: 2
-    vlan:
-      max_bridge_group: 2
-  x1:
-    name: x1
-    interfaces:
-    - vlan:
-        trunk:
-          red: {}
-          blue: {}
-        trunk_id:
-        - 42
-        - 76
-      linkindex: 1
-      type: p2p
-      name: x1 -> dut
-      ifindex: 1
-      ifname: Ethernet1
-      mac_address: caf0.0003.0001
-      clab:
-        name: et1
-      neighbors:
-      - ifname: Ethernet1
-        node: dut
-    - vlan:
-        trunk:
-          red: {}
-          blue: {}
-        trunk_id:
-        - 42
-        - 76
-      linkindex: 3
-      type: p2p
-      name: x1 -> x2
-      ifindex: 2
-      ifname: Ethernet2
-      mac_address: caf0.0003.0002
-      clab:
-        name: et2
-      neighbors:
-      - ifname: Ethernet2
-        node: x2
-    - vlan:
-        mode: bridge
-        name: blue
-      type: svi
-      ifindex: 40000
-      ifname: Vlan76
-      name: VLAN blue (76) -> [dut,x2]
-      virtual_interface: true
-      neighbors:
-      - ifname: Vlan76
-        node: dut
-        vlan:
-          mode: bridge
-          name: blue
-      - ifname: Vlan76
-        node: x2
-        vlan:
-          mode: bridge
-          name: blue
-      bridge_group: 1
-    - vlan:
-        mode: bridge
-        name: red
-      type: svi
-      ifindex: 40001
-      ifname: Vlan42
-      name: VLAN red (42) -> [dut,x2]
-      virtual_interface: true
-      neighbors:
-      - ifname: Vlan42
-        node: dut
-        vlan:
-          mode: bridge
-          name: red
-      - ifname: Vlan42
-        node: x2
-        vlan:
-          mode: bridge
-          name: red
-      bridge_group: 2
-    device: eos
-    clab:
-      kind: ceos
-      env:
-        INTFTYPE: et
-        CLAB_MGMT_VRF: management
-    box: ceos:4.34.2F
-    module:
-    - vlan
-    - stp
-    stp:
-      enable: true
-      protocol: stp
-    id: 3
-    role: router
-    provider: clab
-    af:
-      ipv4: true
-    mgmt:
-      ifname: Management0
-      mac: ca:fe:00:03:00:00
-      ipv4: 192.168.17.103
-    hostname: clab-ml_17-x1
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: Loopback0
-      ipv4: 10.0.0.3/32
-    vlans:
-      blue:
-        mode: bridge
-        id: 76
-        prefix:
-          ipv4: 172.16.1.0/24
-          allocation: id_based
-        bridge_group: 1
-      red:
-        mode: bridge
-        id: 42
-        prefix:
-          ipv4: 172.16.0.0/24
-          allocation: id_based
-        bridge_group: 2
-    vlan:
-      max_bridge_group: 2
-vlans:
-  red:
-    mode: bridge
-    id: 42
-    prefix:
-      ipv4: 172.16.0.0/24
-      allocation: id_based
-    neighbors:
-    - ifname: Vlan42
-      node: dut
-      vlan:
-        mode: bridge
-        name: red
-    - ifname: Vlan42
-      node: x2
-      vlan:
-        mode: bridge
-        name: red
-    - ifname: Vlan42
-      node: x1
-      vlan:
-        mode: bridge
-        name: red
-    host_count: 0
-  blue:
-    mode: bridge
-    id: 76
-    prefix:
-      ipv4: 172.16.1.0/24
-      allocation: id_based
-    neighbors:
-    - ifname: Vlan76
-      node: dut
-      vlan:
-        mode: bridge
-        name: blue
-    - ifname: Vlan76
-      node: x2
-      vlan:
-        mode: bridge
-        name: blue
-    - ifname: Vlan76
-      node: x1
-      vlan:
-        mode: bridge
-        name: blue
-    host_count: 0
-links:
-- _linkname: links[1]
-  vlan:
-    trunk:
-      red: {}
-      blue: {}
-  interfaces:
-  - node: dut
-    vlan:
-      trunk:
-        red: {}
-        blue: {}
-    ifindex: 1
-    ifname: Ethernet1
-  - node: x1
-    vlan:
-      trunk:
-        red: {}
-        blue: {}
-    ifindex: 1
-    ifname: Ethernet1
-  linkindex: 1
-  prefix: {}
-  node_count: 2
-  type: p2p
-- _linkname: links[2]
-  vlan:
-    trunk:
-      red: {}
-      blue: {}
-  interfaces:
-  - node: dut
-    vlan:
-      trunk:
-        red: {}
-        blue: {}
-    ifindex: 2
-    ifname: Ethernet2
-  - node: x2
-    vlan:
-      trunk:
-        red: {}
-        blue: {}
-    ifindex: 1
-    ifname: Ethernet1
-  linkindex: 2
-  prefix: {}
-  node_count: 2
-  type: p2p
-- _linkname: links[3]
-  vlan:
-    trunk:
-      red: {}
-      blue: {}
-  interfaces:
-  - node: x1
-    vlan:
-      trunk:
-        red: {}
-        blue: {}
-    ifindex: 2
-    ifname: Ethernet2
-  - node: x2
-    vlan:
-      trunk:
-        red: {}
-        blue: {}
-    ifindex: 2
-    ifname: Ethernet2
-  linkindex: 3
-  prefix: {}
-  node_count: 2
-  type: p2p
-validate:
-- wait: 40
-  wait_msg: Waiting for STP
-  nodes:
-  - x1
-  devices:
-  - eos
-  pass: Port X1 => DUT the root port; DUT is STP root
-  fail: Port X1 => DUT the not root port; DUT is not STP root
-  show: spanning-tree | json
-  valid: |
-    spanningTreeInstances.MST0.rootPort.interface == 'Ethernet1'
-  name: link_fwd
-- wait: 10
-  wait_msg: Waiting for STP
-  nodes:
-  - x1
-  devices:
-  - eos
-  pass: Link X1-X2 is blocking; DUT is STP root
-  fail: Link X1-X2 is not blocking; DUT is not STP root
-  show: spanning-tree | json
-  valid: |
-    spanningTreeInstances.MST0.interfaces.Ethernet2.state == 'discarding'
-  name: link_block
-input:
-- /home/pipi/net101/tools/tests/integration/stp/02-stp-trunk.yml
-- /home/pipi/.netlab.yml
-- package:topology-defaults.yml
 defaults:
   provider: clab
   providers:
@@ -607,7 +63,11 @@ defaults:
           _keys:
             binds:
             kind: str
-            config_templates:
+            config_mode:
+              type: str
+              _alt_types:
+              - NoneType
+            config_templates: dict
             type: str
             cmd: str
             dns:
@@ -1016,6 +476,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -1074,6 +535,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox: {}
@@ -1313,6 +776,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -1367,6 +831,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox:
@@ -1873,6 +1339,7 @@ defaults:
           bundle:
           - vlan_aware
           irb: true
+          ipv6: true
         gateway:
           protocol:
           - anycast
@@ -2010,6 +1477,8 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
+      warnings:
+        ospf_stub: false
       provider: clab
     fortios:
       description: Fortinet FortiOS firewall
@@ -2097,6 +1566,7 @@ defaults:
           - ldpd
       mtu: 1500
       clab:
+        config_mode: sh
         group_vars:
           ansible_connection: docker
           ansible_user: root
@@ -2105,7 +1575,13 @@ defaults:
           - -c
           - show $@
           netlab_mgmt_vrf: true
-        image: quay.io/frrouting/frr:10.5.0
+          netlab_config_wrapper: |
+            {% if not netlab_config_text.startswith("#!") %}
+            #!/usr/bin/vtysh -f
+            #
+            {% endif %}
+            {{ netlab_config_text }}
+        image: quay.io/frrouting/frr:10.5.1
         kmods:
         node:
           kind: linux
@@ -2337,7 +1813,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:17.12.01
+        image: vrnetlab/cisco_iol:17.16.01a
         node:
           kind: cisco_iol
       role: router
@@ -2422,6 +1898,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2479,6 +1956,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       _parents:
       - ios
@@ -2516,7 +1995,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:L2-17.12.01
+        image: vrnetlab/cisco_iol:L2-17.16.01a
         node:
           kind: cisco_iol
           type: l2
@@ -2607,6 +2086,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2675,6 +2155,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       _parents:
       - ios
@@ -2802,6 +2284,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2854,6 +2337,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet0/{ifindex}
       libvirt:
         image: cisco/iosv
@@ -2989,6 +2474,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -3053,6 +2539,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex // 4}/{ifindex % 4}
       libvirt:
         image: cisco/iosvl2
@@ -3181,6 +2669,7 @@ defaults:
         routing:
           static: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -3215,11 +2704,7 @@ defaults:
         netlab_lldp_enable: false
         netlab_net_tools: false
       clab:
-        node_config:
-          initial: :ns
-          lag: :ns
-          vlan: :ns
-          routing: :ns
+        config_mode: ns
         features:
           initial:
             roles:
@@ -3245,6 +2730,40 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+      external:
+        image: none
+      graphite:
+        icon: server
+    netscaler:
+      description: Citrix Netscaler ADC CPX
+      support:
+        level: minimal
+      interface_name: 0/{ifindex+2}
+      mgmt_if: 0/2
+      role: router
+      group_vars:
+        ansible_network_os: netscaler
+        ansible_python_interpreter: auto_silent
+      features:
+        initial:
+          ipv4:
+      mtu: 1500
+      clab:
+        build: true
+        image: netlab/netscaler
+        node:
+          kind: linux
+        interface:
+          name: eth{ifindex}
+        group_vars:
+          ansible_user: clab
+          ansible_ssh_pass: clab@123
+          ansible_connection: docker
+          netlab_show_command:
+          - nscli
+          - -U
+          - 127.0.0.1:clab:clab@123
+          - show $@
       external:
         image: none
       graphite:
@@ -3317,6 +2836,7 @@ defaults:
           bundle:
           - vlan_aware
           multi_rt: true
+          ipv6: true
         gateway:
           protocol:
           - anycast
@@ -3521,12 +3041,13 @@ defaults:
         routing:
           static: true
         initial:
-          roles:
-          - host
-          - router
           ipv6:
             use_ra: true
             lla: true
+          reload: false
+          roles:
+          - host
+          - router
         ospf:
           unnumbered: false
           import:
@@ -3691,6 +3212,7 @@ defaults:
             unnumbered: true
           ipv6:
             lla: true
+          reload: false
         bgp:
           activate_af: true
           ipv6_lla: true
@@ -3926,6 +3448,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
         routing:
           policy:
             set:
@@ -3967,6 +3490,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     srsim:
       description: Nokia SR-SIM (SR-OS) container
       mgmt_if: A/1
@@ -4061,6 +3586,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
         routing:
           policy:
             set:
@@ -4105,6 +3631,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
       _parents:
       - sros
     unknown:
@@ -4787,6 +4315,7 @@ defaults:
           static:
             discard: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -4856,11 +4385,7 @@ defaults:
           static: RTS_STATIC_DEVICE,RTS_STATIC
         netlab_device_type: bird
       clab:
-        node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
-          routing: :ns
+        config_mode: sh
         features:
           initial:
             roles:
@@ -4889,7 +4414,7 @@ defaults:
           - birdc
           - show $@
           docker_shell: bash -il
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
       external:
         image: none
       graphite:
@@ -4918,6 +4443,7 @@ defaults:
         routing:
           static: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -4953,11 +4479,7 @@ defaults:
         netlab_net_tools: false
         netlab_device_type: dnsmasq
       clab:
-        node_config:
-          initial: :ns
-          lag: :ns
-          vlan: :ns
-          routing: :ns
+        config_mode: ns
         features:
           initial:
             roles:
@@ -4982,7 +4504,7 @@ defaults:
           ansible_user: root
           netlab_linux_distro: vanilla
           docker_shell: bash -il
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
       external:
         image: none
       graphite:
@@ -5020,17 +4542,14 @@ defaults:
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
       clab:
-        node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
+        config_mode: sh
         group_vars:
           netlab_show_command:
           - birdc
           - show $@
           docker_shell: bash -il
         image: netlab/bird:latest
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
         features:
           initial:
             roles:
@@ -5080,6 +4599,7 @@ defaults:
             unnumbered: peer
           ipv6:
             lla: true
+          reload: false
           roles:
           - host
           - router
@@ -5097,7 +4617,7 @@ defaults:
         group_vars:
           docker_shell: bash -il
         image: netlab/dnsmasq:latest
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
         features:
           initial:
             roles:
@@ -5110,6 +4630,7 @@ defaults:
         dhcp:
           server: true
         initial:
+          reload: false
           roles:
           - host
       dhcp:
@@ -5361,7 +4882,13 @@ defaults:
         - color
         - fill
         - width
+    config: {}
     provider: {}
+    pickle: {}
+    tools: {}
+    ansible:
+      hostfile: {}
+      configfile: {}
     yaml=netlab:
       snapshot:
         yml: {}
@@ -5766,6 +5293,7 @@ defaults:
             configuration template(s)
         _alt_types:
         - list
+      skip_config: list
       group: list
       role:
         type: str
@@ -6338,6 +5866,66 @@ defaults:
       neighbors: 5
       maxlength: 255
     MAX_NODE_ID: 150
+    validate:
+      ping: 5
+      ping_vrf: 5
+      ping_long: 15
+      vxlan_ping: 20
+      ping_stp: 45
+      ping_irb: 10
+      ra_send: 30
+      ospfv2_adj_p2p: 30
+      ospfv2_adj_lan: 50
+      ospfv2_adj_stp: 120
+      ospfv2_spf: 10
+      ospfv2_spf_long: 30
+      ospfv3_adj_p2p: 30
+      ospfv3_adj_lan: 50
+      ospfv3_adj_stp: 120
+      ospfv3_spf: 10
+      ospfv3_spf_long: 30
+      ospf_import: 20
+      ebgp_session: 30
+      ibgp_session: 30
+      bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_v4_originate: 15
+      bgp_v6_originate: 15
+      bgp_v4_redist: 15
+      bgp_v6_redist: 15
+      isis_adj_p2p: 20
+      isis_adj_lan: 50
+      isis_spf: 15
+      isis_spf_long: 45
+      isis_redist: 30
+      rip_start: 60
+      rip_update: 20
+      ldp_adj: 30
+      stp_forwarding: 40
+      lacp_setup: 10
+      xr:
+        bgp_v4_originate: 80
+        bgp_v6_originate: 80
+        bgp_v4_redist: 90
+        isis_redist: 60
+        ebgp_session: 90
+        ping_vrf: 20
+        bgp_scan_long: 30
+      ios:
+        bgp_v6_redist: 60
+      cisco8000v:
+        ping_irb: 90
+        ping_long: 15
+      vjunos-switch:
+        ping_irb: 40
+      vjunos-router:
+        ping_irb: 90
+      nxos:
+        bgp_v4_redist: 40
+        bgp_v6_redist: 40
+      vptx:
+        ldp_adj: 180
+        ibgp_session: 40
   hints:
     evpn:
       irb_group: >
@@ -6426,9 +6014,9 @@ defaults:
         storage prices keep falling
   multilab:
     change:
-      name: ml_17
+      name: ml-17
       defaults:
-        name: ml_17
+        name: ml-17
         providers:
           libvirt:
             tunnel_id: '17'
@@ -6451,7 +6039,15 @@ defaults:
       - svg
       - jpg
       - jpeg
-    create: {}
+    create:
+      output:
+        config:
+        provider:
+        pickle:
+        tools:
+        ansible: dirs
+        yaml:
+          output: netlab.snapshot.yml
   paths:
     validate:
     - /home/pipi/netlab_gh/netsim/validate
@@ -6585,6 +6181,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -8547,11 +8145,13 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1766581100.6658404
+    timestamp: 1768506477.320663
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
+    extra:
+    - ../wait_times.yml
+    - ../warnings.yml
     list: []
-    extra: []
     user: []
     system: []
   workdir: /work/netlab_cicd
@@ -8587,10 +8187,556 @@ defaults:
   module:
   - vlan
   - stp
-  name: ml_17
+  name: ml-17
+module:
+- vlan
+- stp
+groups:
+  probes:
+    members:
+    - x1
+    - x2
+    device: eos
+  all:
+    vars:
+      netlab_show_config: true
+    members: []
+    _default_group: true
+nodes:
+  dut:
+    stp:
+      enable: true
+      protocol: stp
+      priority: 4096
+    name: dut
+    interfaces:
+    - vlan:
+        trunk:
+          red: {}
+          blue: {}
+        trunk_id:
+        - 42
+        - 76
+      linkindex: 1
+      type: p2p
+      name: dut -> x1
+      ifindex: 1
+      ifname: Ethernet1
+      mac_address: caf0.0001.0001
+      clab:
+        name: et1
+      neighbors:
+      - ifname: Ethernet1
+        node: x1
+    - vlan:
+        trunk:
+          red: {}
+          blue: {}
+        trunk_id:
+        - 42
+        - 76
+      linkindex: 2
+      type: p2p
+      name: dut -> x2
+      ifindex: 2
+      ifname: Ethernet2
+      mac_address: caf0.0001.0002
+      clab:
+        name: et2
+      neighbors:
+      - ifname: Ethernet1
+        node: x2
+    - vlan:
+        mode: bridge
+        name: blue
+      type: svi
+      ifindex: 40000
+      ifname: Vlan76
+      name: VLAN blue (76) -> [x2,x1]
+      virtual_interface: true
+      neighbors:
+      - ifname: Vlan76
+        node: x2
+        vlan:
+          mode: bridge
+          name: blue
+      - ifname: Vlan76
+        node: x1
+        vlan:
+          mode: bridge
+          name: blue
+      bridge_group: 1
+    - vlan:
+        mode: bridge
+        name: red
+      type: svi
+      ifindex: 40001
+      ifname: Vlan42
+      name: VLAN red (42) -> [x2,x1]
+      virtual_interface: true
+      neighbors:
+      - ifname: Vlan42
+        node: x2
+        vlan:
+          mode: bridge
+          name: red
+      - ifname: Vlan42
+        node: x1
+        vlan:
+          mode: bridge
+          name: red
+      bridge_group: 2
+    device: eos
+    clab:
+      kind: ceos
+      env:
+        INTFTYPE: et
+        CLAB_MGMT_VRF: management
+    box: ceos:4.34.2F
+    module:
+    - vlan
+    - stp
+    id: 1
+    role: router
+    provider: clab
+    af:
+      ipv4: true
+    mgmt:
+      ifname: Management0
+      mac: ca:fe:00:01:00:00
+      ipv4: 192.168.17.101
+    hostname: clab-ml-17-dut
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.1/32
+    vlans:
+      blue:
+        mode: bridge
+        id: 76
+        prefix:
+          ipv4: 172.16.1.0/24
+          allocation: id_based
+        bridge_group: 1
+      red:
+        mode: bridge
+        id: 42
+        prefix:
+          ipv4: 172.16.0.0/24
+          allocation: id_based
+        bridge_group: 2
+    vlan:
+      max_bridge_group: 2
+  x2:
+    stp:
+      enable: true
+      protocol: stp
+      priority: 16384
+    name: x2
+    interfaces:
+    - vlan:
+        trunk:
+          red: {}
+          blue: {}
+        trunk_id:
+        - 42
+        - 76
+      linkindex: 2
+      type: p2p
+      name: x2 -> dut
+      ifindex: 1
+      ifname: Ethernet1
+      mac_address: caf0.0002.0001
+      clab:
+        name: et1
+      neighbors:
+      - ifname: Ethernet2
+        node: dut
+    - vlan:
+        trunk:
+          red: {}
+          blue: {}
+        trunk_id:
+        - 42
+        - 76
+      linkindex: 3
+      type: p2p
+      name: x2 -> x1
+      ifindex: 2
+      ifname: Ethernet2
+      mac_address: caf0.0002.0002
+      clab:
+        name: et2
+      neighbors:
+      - ifname: Ethernet2
+        node: x1
+    - vlan:
+        mode: bridge
+        name: blue
+      type: svi
+      ifindex: 40000
+      ifname: Vlan76
+      name: VLAN blue (76) -> [dut,x1]
+      virtual_interface: true
+      neighbors:
+      - ifname: Vlan76
+        node: dut
+        vlan:
+          mode: bridge
+          name: blue
+      - ifname: Vlan76
+        node: x1
+        vlan:
+          mode: bridge
+          name: blue
+      bridge_group: 1
+    - vlan:
+        mode: bridge
+        name: red
+      type: svi
+      ifindex: 40001
+      ifname: Vlan42
+      name: VLAN red (42) -> [dut,x1]
+      virtual_interface: true
+      neighbors:
+      - ifname: Vlan42
+        node: dut
+        vlan:
+          mode: bridge
+          name: red
+      - ifname: Vlan42
+        node: x1
+        vlan:
+          mode: bridge
+          name: red
+      bridge_group: 2
+    device: eos
+    clab:
+      kind: ceos
+      env:
+        INTFTYPE: et
+        CLAB_MGMT_VRF: management
+    box: ceos:4.34.2F
+    module:
+    - vlan
+    - stp
+    id: 2
+    role: router
+    provider: clab
+    af:
+      ipv4: true
+    mgmt:
+      ifname: Management0
+      mac: ca:fe:00:02:00:00
+      ipv4: 192.168.17.102
+    hostname: clab-ml-17-x2
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.2/32
+    vlans:
+      blue:
+        mode: bridge
+        id: 76
+        prefix:
+          ipv4: 172.16.1.0/24
+          allocation: id_based
+        bridge_group: 1
+      red:
+        mode: bridge
+        id: 42
+        prefix:
+          ipv4: 172.16.0.0/24
+          allocation: id_based
+        bridge_group: 2
+    vlan:
+      max_bridge_group: 2
+  x1:
+    name: x1
+    interfaces:
+    - vlan:
+        trunk:
+          red: {}
+          blue: {}
+        trunk_id:
+        - 42
+        - 76
+      linkindex: 1
+      type: p2p
+      name: x1 -> dut
+      ifindex: 1
+      ifname: Ethernet1
+      mac_address: caf0.0003.0001
+      clab:
+        name: et1
+      neighbors:
+      - ifname: Ethernet1
+        node: dut
+    - vlan:
+        trunk:
+          red: {}
+          blue: {}
+        trunk_id:
+        - 42
+        - 76
+      linkindex: 3
+      type: p2p
+      name: x1 -> x2
+      ifindex: 2
+      ifname: Ethernet2
+      mac_address: caf0.0003.0002
+      clab:
+        name: et2
+      neighbors:
+      - ifname: Ethernet2
+        node: x2
+    - vlan:
+        mode: bridge
+        name: blue
+      type: svi
+      ifindex: 40000
+      ifname: Vlan76
+      name: VLAN blue (76) -> [dut,x2]
+      virtual_interface: true
+      neighbors:
+      - ifname: Vlan76
+        node: dut
+        vlan:
+          mode: bridge
+          name: blue
+      - ifname: Vlan76
+        node: x2
+        vlan:
+          mode: bridge
+          name: blue
+      bridge_group: 1
+    - vlan:
+        mode: bridge
+        name: red
+      type: svi
+      ifindex: 40001
+      ifname: Vlan42
+      name: VLAN red (42) -> [dut,x2]
+      virtual_interface: true
+      neighbors:
+      - ifname: Vlan42
+        node: dut
+        vlan:
+          mode: bridge
+          name: red
+      - ifname: Vlan42
+        node: x2
+        vlan:
+          mode: bridge
+          name: red
+      bridge_group: 2
+    device: eos
+    clab:
+      kind: ceos
+      env:
+        INTFTYPE: et
+        CLAB_MGMT_VRF: management
+    box: ceos:4.34.2F
+    module:
+    - vlan
+    - stp
+    stp:
+      enable: true
+      protocol: stp
+    id: 3
+    role: router
+    provider: clab
+    af:
+      ipv4: true
+    mgmt:
+      ifname: Management0
+      mac: ca:fe:00:03:00:00
+      ipv4: 192.168.17.103
+    hostname: clab-ml-17-x1
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.3/32
+    vlans:
+      blue:
+        mode: bridge
+        id: 76
+        prefix:
+          ipv4: 172.16.1.0/24
+          allocation: id_based
+        bridge_group: 1
+      red:
+        mode: bridge
+        id: 42
+        prefix:
+          ipv4: 172.16.0.0/24
+          allocation: id_based
+        bridge_group: 2
+    vlan:
+      max_bridge_group: 2
+vlans:
+  red:
+    mode: bridge
+    id: 42
+    prefix:
+      ipv4: 172.16.0.0/24
+      allocation: id_based
+    neighbors:
+    - ifname: Vlan42
+      node: dut
+      vlan:
+        mode: bridge
+        name: red
+    - ifname: Vlan42
+      node: x2
+      vlan:
+        mode: bridge
+        name: red
+    - ifname: Vlan42
+      node: x1
+      vlan:
+        mode: bridge
+        name: red
+    host_count: 0
+  blue:
+    mode: bridge
+    id: 76
+    prefix:
+      ipv4: 172.16.1.0/24
+      allocation: id_based
+    neighbors:
+    - ifname: Vlan76
+      node: dut
+      vlan:
+        mode: bridge
+        name: blue
+    - ifname: Vlan76
+      node: x2
+      vlan:
+        mode: bridge
+        name: blue
+    - ifname: Vlan76
+      node: x1
+      vlan:
+        mode: bridge
+        name: blue
+    host_count: 0
+links:
+- _linkname: links[1]
+  vlan:
+    trunk:
+      red: {}
+      blue: {}
+  interfaces:
+  - node: dut
+    vlan:
+      trunk:
+        red: {}
+        blue: {}
+    ifindex: 1
+    ifname: Ethernet1
+  - node: x1
+    vlan:
+      trunk:
+        red: {}
+        blue: {}
+    ifindex: 1
+    ifname: Ethernet1
+  linkindex: 1
+  prefix: {}
+  node_count: 2
+  type: p2p
+- _linkname: links[2]
+  vlan:
+    trunk:
+      red: {}
+      blue: {}
+  interfaces:
+  - node: dut
+    vlan:
+      trunk:
+        red: {}
+        blue: {}
+    ifindex: 2
+    ifname: Ethernet2
+  - node: x2
+    vlan:
+      trunk:
+        red: {}
+        blue: {}
+    ifindex: 1
+    ifname: Ethernet1
+  linkindex: 2
+  prefix: {}
+  node_count: 2
+  type: p2p
+- _linkname: links[3]
+  vlan:
+    trunk:
+      red: {}
+      blue: {}
+  interfaces:
+  - node: x1
+    vlan:
+      trunk:
+        red: {}
+        blue: {}
+    ifindex: 2
+    ifname: Ethernet2
+  - node: x2
+    vlan:
+      trunk:
+        red: {}
+        blue: {}
+    ifindex: 2
+    ifname: Ethernet2
+  linkindex: 3
+  prefix: {}
+  node_count: 2
+  type: p2p
+validate:
+- wait: 40
+  wait_msg: Waiting for STP
+  nodes:
+  - x1
+  devices:
+  - eos
+  pass: Port X1 => DUT the root port; DUT is STP root
+  fail: Port X1 => DUT the not root port; DUT is not STP root
+  show: spanning-tree | json
+  valid: |
+    spanningTreeInstances.MST0.rootPort.interface == 'Ethernet1'
+  name: link_fwd
+- wait: 10
+  wait_msg: Waiting for STP
+  nodes:
+  - x1
+  devices:
+  - eos
+  pass: Link X1-X2 is blocking; DUT is STP root
+  fail: Link X1-X2 is not blocking; DUT is not STP root
+  show: spanning-tree | json
+  valid: |
+    spanningTreeInstances.MST0.interfaces.Ethernet2.state == 'discarding'
+  name: link_block
+input:
+- /home/pipi/net101/tools/tests/integration/stp/02-stp-trunk.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
+- /home/pipi/.netlab.yml
+- package:topology-defaults.yml
 plugin:
 - multilab
-name: ml_17
+name: ml-17
 addressing:
   lan:
     ipv4: 172.16.0.0/16
@@ -8619,4 +8765,4 @@ provider: clab
 stp:
   enable: true
   protocol: stp
-_netlab_version: 25.12.03
+_netlab_version: 26.01.01
