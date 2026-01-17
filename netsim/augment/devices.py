@@ -11,6 +11,12 @@ from .. import data
 from ..utils import log, strings
 
 """
+Get node provider -- return node-specific provider or the default provider
+"""
+def get_provider(node: Box, defaults: Box) -> str:
+  return node.get('provider',defaults.provider)
+
+"""
 Get generic device attribute:
 
 * Use node.device to find device used by the current node
@@ -64,6 +70,54 @@ def get_device_features(node: Box, defaults: Box) -> Box:
     return data.get_empty_box()
 
   return features + n_features
+
+"""
+Get all device data for current provider
+"""
+def get_provider_data(node: Box, defaults: Box) -> Box:
+  devtype  = node.device
+  provider = get_provider(node,defaults)
+
+  if not devtype in defaults.devices:
+    log.fatal(f'Internal error: call to get_provider_data with unknown device {devtype}')
+
+  return defaults.devices[devtype].get(provider,{})
+
+"""
+Get consolidated device data
+"""
+def get_consolidated_device_data(node: Box, defaults: Box) -> Box:
+  devtype  = node.device
+  provider = get_provider(node,defaults)
+
+  if not devtype in defaults.devices:
+    log.fatal(f'Internal error: call to get_consolidated_device_data with unknown device {devtype}')
+
+  data = defaults.devices[devtype] + defaults.devices[devtype].get(provider,{})
+  for p in defaults.providers.keys():
+    data.pop(p,None)
+
+  return data
+
+"""
+Get group variable from node or device data
+"""
+def get_node_group_var(node: Box, g_var: str, defaults: Box) -> typing.Any:
+  if g_var in node:                               # Is group variable set in node?
+    return node.get(g_var)
+  else:                                           # Not set, get default device value for the node provider
+    dev_data = get_consolidated_device_data(node,defaults)
+    return dev_data.get(f'group_vars.{g_var}',None)
+
+"""
+Get device loopback name (built-in loopback if ifindex == 0 else an additional loopback)
+"""
+def get_loopback_name(node: Box, topology: Box, ifindex: int = 0) -> typing.Optional[str]:
+  lbname = get_device_attribute(node,'loopback_interface_name',topology.defaults)
+  if not lbname:
+    return None
+
+  return strings.eval_format(lbname,{ 'ifindex': ifindex })
 
 """
 Check whether the 'data' used in 'node' at 'path' contains valid optional device features
@@ -141,50 +195,6 @@ def check_optional_features(
     return OK                       # Return the final result
   else:                             # Assume the feature is supported
     return FC_MODE.OK
-
-"""
-Get device loopback name (built-in loopback if ifindex == 0 else an additional loopback)
-"""
-def get_loopback_name(node: Box, topology: Box, ifindex: int = 0) -> typing.Optional[str]:
-  lbname = get_device_attribute(node,'loopback_interface_name',topology.defaults)
-  if not lbname:
-    return None
-  
-  return strings.eval_format(lbname,{ 'ifindex': ifindex })
-
-"""
-Get all device data for current provider
-"""
-def get_provider_data(node: Box, defaults: Box) -> Box:
-  devtype  = node.device
-  provider = get_provider(node,defaults)
-
-  if not devtype in defaults.devices:
-    log.fatal(f'Internal error: call to get_provider_data with unknown device {devtype}')
-
-  return defaults.devices[devtype].get(provider,{})
-
-"""
-Get consolidated device data
-"""
-def get_consolidated_device_data(node: Box, defaults: Box) -> Box:
-  devtype  = node.device
-  provider = get_provider(node,defaults)
-
-  if not devtype in defaults.devices:
-    log.fatal(f'Internal error: call to get_provider_data with unknown device {devtype}')
-
-  data = defaults.devices[devtype] + defaults.devices[devtype].get(provider,{})
-  for p in defaults.providers.keys():
-    data.pop(p,None)
-
-  return data
-
-"""
-Get node provider -- currently returns the default provider, but we'll do fun stuff pretty soon ;)
-"""
-def get_provider(node: Box, defaults: Box) -> str:
-  return node.get('provider',defaults.provider)
 
 """
 process_device_inheritance: for devices with 'parent' attribute merge parent settings with the
