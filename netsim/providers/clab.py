@@ -200,18 +200,29 @@ def load_kmods(topology: Box) -> None:
   #
   for m in kmod_list.keys():
     loaded_kmods = get_loaded_kernel_modules()
-    needed_kmods = [ kmod for kmod in kmod_list[m] if kmod not in loaded_kmods ]
+    needed_kmods = [ kmod for kmod in kmod_list[m] if kmod.replace('?','') not in loaded_kmods ]
     if not needed_kmods:
       continue
-    strings.print_colored_text('[LOADING] ','bright_cyan',None)
-    print(f'Loading Linux kernel modules {",".join(needed_kmods)} required by containers using {m} module')
+
+    # Any required modules? If so, print the message
+    #
+    if [ kmod for kmod in needed_kmods if '?' not in kmod ] or log.VERBOSE:
+      mod_names = [ kmod.replace('?','') for kmod in needed_kmods ]
+      strings.print_colored_text('[LOADING] ','bright_cyan',None)
+      print(f'Loading Linux kernel modules {",".join(mod_names)} required by containers using {m} module')
+
     for kmod in needed_kmods:
+      load_mod = kmod.replace('?','')                       # Get the true module name
       status = external_commands.run_command(
-        ['sudo','modprobe',kmod ],
-        check_result=True,
-        return_stdout=True)
+        ['sudo','modprobe',load_mod ],
+        ignore_errors=True,
+        check_result=not log.VERBOSE,                       # Hide STDOUT if we're not in verbose mode
+        return_stdout=not log.VERBOSE)                      # ... so we won't annoy users for optional module failures
       if status is False:
-        log.error(f'Cannot load Linux kernel module {kmod}',log.IncorrectValue,'clab')
+        if '?' not in kmod:
+          log.error(f'Cannot load Linux kernel module {load_mod}',log.IncorrectValue,'clab')
+        elif log.VERBOSE:
+          log.info(f'Cannot load optional Linux kernel module {load_mod}')
 
   log.exit_on_error()
 
