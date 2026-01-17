@@ -63,10 +63,6 @@ defaults:
           _keys:
             binds:
             kind: str
-            config_mode:
-              type: str
-              _alt_types:
-              - NoneType
             config_templates: dict
             type: str
             cmd: str
@@ -1566,7 +1562,6 @@ defaults:
           - ldpd
       mtu: 1500
       clab:
-        config_mode: sh
         group_vars:
           ansible_connection: docker
           ansible_user: root
@@ -1575,12 +1570,15 @@ defaults:
           - -c
           - show $@
           netlab_mgmt_vrf: true
+          netlab_config_mode: sh
           netlab_config_wrapper: |
             {% if not netlab_config_text.startswith("#!") %}
             #!/usr/bin/vtysh -f
             #
             {% endif %}
             {{ netlab_config_text }}
+          netlab_config_exec:
+          - sleep 1
         image: quay.io/frrouting/frr:10.5.1
         kmods:
         node:
@@ -2704,7 +2702,6 @@ defaults:
         netlab_lldp_enable: false
         netlab_net_tools: false
       clab:
-        config_mode: ns
         features:
           initial:
             roles:
@@ -2730,6 +2727,7 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+          netlab_config_mode: ns
       external:
         image: none
       graphite:
@@ -4385,7 +4383,6 @@ defaults:
           static: RTS_STATIC_DEVICE,RTS_STATIC
         netlab_device_type: bird
       clab:
-        config_mode: sh
         features:
           initial:
             roles:
@@ -4410,6 +4407,7 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+          netlab_config_mode: sh
           netlab_show_command:
           - birdc
           - show $@
@@ -4479,7 +4477,6 @@ defaults:
         netlab_net_tools: false
         netlab_device_type: dnsmasq
       clab:
-        config_mode: ns
         features:
           initial:
             roles:
@@ -4503,6 +4500,7 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+          netlab_config_mode: ns
           docker_shell: bash -il
         build: true
       external:
@@ -4542,12 +4540,12 @@ defaults:
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
       clab:
-        config_mode: sh
         group_vars:
           netlab_show_command:
           - birdc
           - show $@
           docker_shell: bash -il
+          netlab_config_mode: sh
         image: netlab/bird:latest
         build: true
         features:
@@ -5889,7 +5887,6 @@ defaults:
       ospf_import: 20
       ebgp_session: 30
       ibgp_session: 30
-      bgp_af_activate: 5
       bgp_scan_time: 5
       bgp_scan_long: 15
       bgp_v4_originate: 15
@@ -6056,12 +6053,12 @@ defaults:
     - /home/pipi/netlab_gh/netsim/validate
     plugin:
     - /work/netlab_cicd
-    - /home/pipi/netlab_gh/tests/integration/bgp
+    - /home/pipi/net101/tools/tests/integration/bgp
     - /home/pipi/.netlab
     - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
-      - /home/pipi/netlab_gh/tests/integration/bgp
+      - /home/pipi/net101/tools/tests/integration/bgp
       - /work/netlab_cicd
       - /home/pipi/.netlab
       - /home/pipi/netlab_gh/netsim/extra
@@ -6142,6 +6139,7 @@ defaults:
       - deploy-config/{ ansible_network_os }.yml
     templates:
       dirs:
+      - /work/netlab_cicd/templates
       - /home/pipi/netlab_gh/netsim/daemons
       - /home/pipi/netlab_gh/netsim/ansible/templates
     t_files:
@@ -8146,7 +8144,7 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1768552174.0730338
+    timestamp: 1768649760.9993463
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
@@ -8422,6 +8420,8 @@ nodes:
       - source: hosts
         target: /etc/hosts
         mode: shared
+      exec:
+      - sleep 1
       binds:
       - target: /etc/config/01-initial.sh
         source: node_files/x1/initial
@@ -8589,6 +8589,8 @@ nodes:
       - source: hosts
         target: /etc/hosts
         mode: shared
+      exec:
+      - sleep 1
       binds:
       - target: /etc/config/01-initial.sh
         source: node_files/x2/initial
@@ -8690,14 +8692,12 @@ validate:
   wait: 3
   name: wait
 - description: IPv6 EBGP session (X2-DUT) should not be established
-  wait: 5
   nodes:
   - x2
   plugin: 
     bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6',state=['Idle','Active'])
   name: ipv6_ebgp
 - description: IPv4 IBGP session (X1-DUT) should not be established
-  wait: 5
   nodes:
   - x1
   plugin: bgp_neighbor(node.bgp.neighbors,'dut',state=['Idle','Active'])
@@ -8727,9 +8727,9 @@ validate:
     bgp_neighbor(node.bgp.neighbors,'dut',af='ipv4',activate='ipv6',state='missing')
   name: ebgp_6o4
 input:
-- /home/pipi/netlab_gh/tests/integration/bgp/20-dual-stack-activate.yml
-- /home/pipi/netlab_gh/tests/integration/wait_times.yml
-- /home/pipi/netlab_gh/tests/integration/warnings.yml
+- /home/pipi/net101/tools/tests/integration/bgp/20-dual-stack-activate.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 plugin:

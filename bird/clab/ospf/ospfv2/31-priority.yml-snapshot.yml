@@ -63,7 +63,7 @@ defaults:
           _keys:
             binds:
             kind: str
-            config_templates:
+            config_templates: dict
             type: str
             cmd: str
             dns:
@@ -1569,6 +1569,15 @@ defaults:
           - -c
           - show $@
           netlab_mgmt_vrf: true
+          netlab_config_mode: sh
+          netlab_config_wrapper: |
+            {% if not netlab_config_text.startswith("#!") %}
+            #!/usr/bin/vtysh -f
+            #
+            {% endif %}
+            {{ netlab_config_text }}
+          netlab_config_exec:
+          - sleep 1
         image: quay.io/frrouting/frr:10.5.1
         kmods:
         node:
@@ -2692,7 +2701,6 @@ defaults:
         netlab_lldp_enable: false
         netlab_net_tools: false
       clab:
-        config_mode: ns
         features:
           initial:
             roles:
@@ -2718,6 +2726,7 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+          netlab_config_mode: ns
       external:
         image: none
       graphite:
@@ -4373,7 +4382,6 @@ defaults:
           static: RTS_STATIC_DEVICE,RTS_STATIC
         netlab_device_type: bird
       clab:
-        config_mode: sh
         features:
           initial:
             roles:
@@ -4398,6 +4406,7 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+          netlab_config_mode: sh
           netlab_show_command:
           - birdc
           - show $@
@@ -4467,7 +4476,6 @@ defaults:
         netlab_net_tools: false
         netlab_device_type: dnsmasq
       clab:
-        config_mode: ns
         features:
           initial:
             roles:
@@ -4491,6 +4499,7 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+          netlab_config_mode: ns
           docker_shell: bash -il
         build: true
       external:
@@ -4530,12 +4539,12 @@ defaults:
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
       clab:
-        config_mode: sh
         group_vars:
           netlab_show_command:
           - birdc
           - show $@
           docker_shell: bash -il
+          netlab_config_mode: sh
         image: netlab/bird:latest
         build: true
         features:
@@ -6127,6 +6136,7 @@ defaults:
       - deploy-config/{ ansible_network_os }.yml
     templates:
       dirs:
+      - /work/netlab_cicd/templates
       - /home/pipi/netlab_gh/netsim/daemons
       - /home/pipi/netlab_gh/netsim/ansible/templates
     t_files:
@@ -8131,7 +8141,7 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1768483970.062086
+    timestamp: 1768645555.786086
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
@@ -8374,12 +8384,24 @@ nodes:
     clab:
       kind: linux
       config_templates:
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: ospf
+        target: /etc/config/02-ospf.sh
+        mode: sh
       - source: daemons
         target: /etc/frr/daemons
       - source: hosts
         target: /etc/hosts
         mode: shared
+      exec:
+      - sleep 1
       binds:
+      - target: /etc/config/01-initial.sh
+        source: node_files/x1/initial
+      - target: /etc/config/02-ospf.sh
+        source: node_files/x1/ospf
       - target: /etc/frr/daemons
         source: node_files/x1/daemons
       - target: /etc/hosts
@@ -8414,6 +8436,12 @@ nodes:
       ospf:
         area: 0.0.0.0
         passive: false
+    netlab_ansible_skip_module:
+    - initial
+    - ospf
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      ospf: /etc/config/02-ospf.sh:sh
   x2:
     mtu: 1500
     name: x2
@@ -8460,12 +8488,24 @@ nodes:
     clab:
       kind: linux
       config_templates:
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: ospf
+        target: /etc/config/02-ospf.sh
+        mode: sh
       - source: daemons
         target: /etc/frr/daemons
       - source: hosts
         target: /etc/hosts
         mode: shared
+      exec:
+      - sleep 1
       binds:
+      - target: /etc/config/01-initial.sh
+        source: node_files/x2/initial
+      - target: /etc/config/02-ospf.sh
+        source: node_files/x2/ospf
       - target: /etc/frr/daemons
         source: node_files/x2/daemons
       - target: /etc/hosts
@@ -8500,6 +8540,12 @@ nodes:
       ospf:
         area: 0.0.0.0
         passive: false
+    netlab_ansible_skip_module:
+    - initial
+    - ospf
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      ospf: /etc/config/02-ospf.sh:sh
 links:
 - _linkname: links[1]
   interfaces:
