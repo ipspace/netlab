@@ -85,6 +85,11 @@ def render_template(
 
   return template.render(**data)
 
+"""
+render_wrapper: when a device has a script wrapper template, use that template to create the
+final configuration script. The script wrappers should be simple, so we're using a shared Jinja2
+environment with an empty search path.
+"""
 J2_WRAPPER_ENV: typing.Optional[Environment] = None
 
 def render_wrapper(wrapper: str, cfg_text: str, data: typing.Dict) -> str:
