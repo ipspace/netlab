@@ -10,18 +10,18 @@
 (caveats-eos)=
 ## Arista EOS
 
-* Routed VLANs cannot be used in EVPN MPLS VLAN bundles
-* Arista EOS uses an [invalid value for the suboption 150 of the DHCP option 82](https://blog.ipspace.net/2023/03/netlab-vrf-dhcp-relay.html#vendor-interoperability-is-fun) when doing inter-VRF DHCPv4 relaying.
-* The DHCP client on Arista EOS is finicky. When the DHCP state changes on one of the data-plane Ethernet interfaces, the management interface might lose its IPv4 address.
-* You can set Arista cEOS serial number and system MAC address with the **eos.serialnumber** and **eos.systemmacaddr** node properties.
+### Arista vEOS VM Caveats
+
 * Use **libvirt.uuid** node property to ensure a vEOS VM does not change its serial number every time you start the lab.
+
+(caveats-ceos)=
+### Arista cEOS Container Caveats
+
+* Arista cEOS containers are configured through an Ansible playbook, using an SSH session with the **arista.eos.eos_config** Ansible modules. To configure them with Linux scripts using FastCLI, set the **defaults.devices.eos.clab.group_vars.netlab_config_mode** [topology default](topo-defaults) to **sh**. You can also set the **netlab_config_mode** node variable to **sh** to experiment with this feature.
+* You can set Arista cEOS serial number and system MAC address with the **eos.serialnumber** and **eos.systemmacaddr** node properties.
 * Anycast gateways and DHCP/DHCPv6 clients do not work on Arista cEOS Ethernet interfaces.
-* Arista EOS cannot configure OSPF NSSA type-7 address ranges.
-* IPv6 BFD for IS-IS cannot be enabled on individual interfaces.  If you set **isis.bfd.ipv6** to *True*, BFD is enabled on all IS-IS interfaces.
 * cEOS MPLS data plane was introduced in release 4.32.1F.
 * Arista cEOS disables OSPFv2 on broadcast container stub interfaces (implemented as _dummy_ interfaces). _netlab_ automatically changes the OSPF network type for Arista cEOS dummy interfaces to **point-to-point**.
-* Arista EOS virtual machines and containers use [proprietary control-plane messages to indicate the loss of Ethernet line protocol](https://blog.ipspace.net/2025/03/arista-spooky-action-distance/). Set the **netlab_phy_control** node variable to *False* to disable this functionality.
-* Reloading device configurations that contain `no lldp transmit` or `no lldp receive` configuration command randomly fails due to an Arista EOS bug ([more details](https://github.com/ipspace/netlab/issues/2577)). Remove these commands from the saved device configurations before restarting the lab.
 
 The default name of the management interface is **Management0** on vEOS and **Management1** on cEOS. If you'd like to change the management interface name on cEOS:
 
@@ -44,6 +44,16 @@ nodes:
     clab.binds:
       intf_map: /mnt/flash/EosIntfMapping_json
 ```
+
+### Other Arista EOS Caveats
+
+* Routed VLANs cannot be used in EVPN MPLS VLAN bundles
+* Arista EOS uses an [invalid value for the suboption 150 of the DHCP option 82](https://blog.ipspace.net/2023/03/netlab-vrf-dhcp-relay.html#vendor-interoperability-is-fun) when doing inter-VRF DHCPv4 relaying.
+* The DHCP client on Arista EOS is finicky. When the DHCP state changes on one of the data-plane Ethernet interfaces, the management interface might lose its IPv4 address.
+* Arista EOS cannot configure OSPF NSSA type-7 address ranges.
+* IPv6 BFD for IS-IS cannot be enabled on individual interfaces.  If you set **isis.bfd.ipv6** to *True*, BFD is enabled on all IS-IS interfaces.
+* Arista EOS virtual machines and containers use [proprietary control-plane messages to indicate the loss of Ethernet line protocol](https://blog.ipspace.net/2025/03/arista-spooky-action-distance/). Set the **netlab_phy_control** node variable to *False* to disable this functionality. This functionality is automatically disabled if you use FastCli scripts to configure Arista cEOS containers.
+* Device configurations that contain `no lldp transmit` or `no lldp receive` configuration command trigger configuration reload failures due to an Arista EOS bug ([more details](https://github.com/ipspace/netlab/issues/2577)). These commands are thus automatically removed from collected device configurations.
 
 (caveats-aruba)=
 ## Aruba AOS-CX
