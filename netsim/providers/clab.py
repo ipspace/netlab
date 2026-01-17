@@ -108,7 +108,6 @@ def normalize_clab_filemaps(node: Box) -> None:
 '''
 add_config_filemaps: add device-level node/daemon_config dictionary to clab.config_templates dictionary
 '''
-
 def add_config_filemaps(node: Box, topology: Box) -> None:
   skip_config = node.get('skip_config',[])
   for kw in ('_daemon_config','_node_config'):
@@ -128,6 +127,37 @@ def add_config_filemaps(node: Box, topology: Box) -> None:
     # to allow Linux-based daemons to override Linux configuration (for example, routing)
     #
     node.clab.config_templates = add_config + node.clab.config_templates
+
+'''
+add_default_config_mode: if the clab.config_mode is set, add configured modules to _node_config dictionary
+'''
+def add_default_config_mode(node: Box, topology: Box) -> None:
+  cfg_mode = node.get('netlab_config_mode',False)
+  if cfg_mode == False:                           # If needed, get default device config mode (for the node provider)
+    dev_data = devices.get_consolidated_device_data(node,topology.defaults)
+    cfg_mode = dev_data.get('group_vars.netlab_config_mode',None)
+  if not cfg_mode:                                # No default config mode?
+    return                                        # ... get out of here
+
+  # Get what's already been processed and the list of configuration snippets. That list
+  # has to include initial configuration, all modules, and custom config templates
+  #
+  mod_list = ['initial'] + node.get('module',[]) + node.get('config',[])
+  node_cfg = node.get('_node_config',{}) + node.get('_daemon_config',{})
+
+  for idx,m in enumerate(mod_list,start=1):
+    append_to_list(node,'netlab_ansible_skip_module',m)
+    m = m.replace('.','@')                        # Use the @-as-. hack for things like bgp.session
+    if m in node_cfg:                             # Module already processed, move on
+      continue
+    file_target = ''                              # By default, config file is not accessible in the container
+    if cfg_mode == 'sh':                          # File mapped into container using a containerlab bind
+      file_target = f'/etc/config/{idx:02d}-{m}.sh'
+    elif cfg_mode == 'cp_sh':                     # File copied into container, must use existing directory
+      file_target = f'/etc/cfg-{idx:02d}-{m}.sh'
+
+    # Finally, store the mapping of this config item into _node_config
+    node._node_config[m] = f'{file_target}:{cfg_mode}'
 
 '''
 get_loaded_kernel_modules: Get the list of loaded kernel modules from '/proc/modules'
@@ -242,6 +272,7 @@ class Containerlab(_Provider):
       node_add_forwarded_ports(node,node_fp,topology)
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
+    add_default_config_mode(node,topology)
     add_config_filemaps(node,topology)
     normalize_clab_filemaps(node)
     validate_mgmt_ip(node,required=True,provider='clab',mgmt=topology.addressing.mgmt)

@@ -231,6 +231,27 @@ _netlab_ assumes that the modules specified in the **clab.node_config** dictiona
 The scripts specified in the **clab.node_config** dictionary are executed in the order in which they're defined. This order must match the sequence in which the configuration modules must be configured.
 ```
 
+You can also use the **netlab_config_mode** device group variable to specify the execution mode (`sh` or `ns`) that applies to all configuration scripts. When a device has that parameter set, the **clab** provider module automatically populates the **node_config** dictionary with all modules and custom templates used on the node that are not already specified in **daemon_config** or **node_config** dictionary.
+
+For example, the following definition was used in the `linux` device in release 25.12 to configure Linux containers with host-side scripts executed in the container network namespace:
+
+```
+clab:
+  node_config:
+    initial: :ns
+    lag: :ns
+    vlan: :ns
+    routing: :ns
+```
+
+The **netlab_config_mode** group variable can be used to replace these definitions with a simpler one:
+
+```
+clab:
+  group_vars:
+    netlab_config_mode: ns
+```
+
 The **clab.node_config** dictionary is copied into the **clab.config_templates** dictionary (**daemon_config** dictionary takes precedence). The templates specified in the **node_config** dictionary are thus rendered into `clab_files` during the **netlab up**/**netlab create** process (using the standard template search process) and mapped into the container file system through **clab.binds**.
 
 **netlab initial** (also invoked as the last step in the **netlab up** process) executes scripts specified in the **clab.node_config** dictionary:
