@@ -132,8 +132,10 @@ def add_config_filemaps(node: Box, topology: Box) -> None:
 add_default_config_mode: if the clab.config_mode is set, add configured modules to _node_config dictionary
 '''
 def add_default_config_mode(node: Box, topology: Box) -> None:
-  dev_data = devices.get_consolidated_device_data(node,topology.defaults)
-  cfg_mode = dev_data.get('config_mode',None)     # Get default device config mode (for the node provider)
+  cfg_mode = node.get('netlab_config_mode',False)
+  if cfg_mode == False:                           # If needed, get default device config mode (for the node provider)
+    dev_data = devices.get_consolidated_device_data(node,topology.defaults)
+    cfg_mode = dev_data.get('group_vars.netlab_config_mode',None)
   if not cfg_mode:                                # No default config mode?
     return                                        # ... get out of here
 

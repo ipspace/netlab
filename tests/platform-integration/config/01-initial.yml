@@ -1,5 +1,5 @@
 message: |
-  This topology tests various device configuration mechanisms for non-daemon devices
+  This topology tests various device configuration mechanisms
 
 defaults.sources.extra: [ ../../integration/wait_times.yml ]
 
@@ -37,6 +37,12 @@ nodes:
   r3:
     device: frr
     provider: libvirt     # FRR VM, configured through Ansible
+  r4:
+    device: bird          # Bird container, configured through daemon files and scripts
+    provider: clab
+    config.inline: |
+      #!/bin/bash
+      ip link set {{ interfaces[0].ifname }} up
 
 links:
 - r1-h1
@@ -46,6 +52,9 @@ links:
 - r2:
   r3:
 - r3-h2
+- r3:
+  r4:
+    shutdown: True
 
 files:
 - path: hello.txt
@@ -66,6 +75,10 @@ validate:
     wait: ospfv2_adj_p2p
     wait_msg: Waiting for OSPF adjacency
     plugin: ospf_neighbor(nodes.r3.ospf.router_id)
+  o_r4:
+    nodes: [ r3 ]
+    wait: ospfv2_adj_p2p
+    plugin: ospf_neighbor(nodes.r4.ospf.router_id)
   ping:
     wait: ospfv2_spf
     wait_msg: Waiting for OSPF SPF run
