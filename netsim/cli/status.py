@@ -203,8 +203,24 @@ def cleanup_lab(topology: Box,args: argparse.Namespace,lab_states: Box) -> None:
     print("")
     log.fatal('User interrupt, exiting...')
 
-  print(f'Shutting down lab {iid} in {lab_states[iid].dir}')
-  os.chdir(lab_states[iid].dir)
+  lab_dir = lab_states[iid].dir
+  print(f'Shutting down lab {iid} in {lab_dir}')
+  try:
+    os.chdir(lab_dir)
+  except Exception as ex:
+    log.error(
+      f'Cannot change directory to {lab_dir}',
+      more_data=[ str(ex) ],
+      category=log.FatalError)
+    print(f'''
+It looks like something messed up the directory in which the lab was running. If
+that's the case, the only way to recover from this condition is to shut down all
+other lab instances, reset the instance tracking system with 'netlab status
+--reset' and clean up the remaining containers and virtual machines by hand as
+the Vagrant and containerlab information has probably been lost.
+''')
+    sys.exit(1)
+
   try:
     subprocess.run(['netlab','down','--cleanup'],capture_output=False,check=True)
   except Exception as ex:
