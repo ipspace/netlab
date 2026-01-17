@@ -281,7 +281,8 @@ def render_config_template(
       template_path: str,
       output_file: str,
       provider_path: str,
-      topology: Box) -> bool:
+      topology: Box,
+      config_mode: typing.Optional[str] = None) -> bool:
 
   if node_dict is None:
     node_dict = template_node_data(node,topology)
@@ -291,6 +292,7 @@ def render_config_template(
                     fname=template_id,
                     topology=topology,
                     provider_path=provider_path)
+    node_dict['netlab_config_mode'] = config_mode
     write_template(
       in_folder=os.path.dirname(template_path),
       j2=os.path.basename(template_path),
@@ -298,6 +300,7 @@ def render_config_template(
       out_folder=os.path.dirname(output_file),
       filename=os.path.basename(output_file),
       extra_path=node_paths)
+    node_dict.pop('netlab_config_mode',None)
     return True
   except Exception as ex:                               # Gee, we failed
     short_path = template_path.replace(str(get_moddir()),'package:')
@@ -306,6 +309,7 @@ def render_config_template(
       more_data=[f'Template source: {short_path}',f'error: {str(ex)}'] + template_error_location(ex),
       module='initial',
       category=log.IncorrectValue)
+    node_dict.pop('netlab_config_mode',None)
     return False
 
 """
@@ -318,7 +322,8 @@ def create_config_file(
       module: str,
       provider_path: str,
       output_path: Path,
-      output_file: str) -> bool:
+      output_file: str,
+      config_mode: typing.Optional[str] = None) -> bool:
 
   t_path = find_provider_template(
               node=node,
@@ -340,7 +345,8 @@ def create_config_file(
           template_path=t_path,
           output_file=str(output_path / output_file),
           provider_path=provider_path,
-          topology=topology)
+          topology=topology,
+          config_mode=config_mode)
   
   if OK and log.VERBOSE:
     log.info(f"Rendered {module} template for {node.name} into {output_file}")

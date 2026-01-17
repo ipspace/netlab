@@ -109,7 +109,8 @@ def create_node_configs(
             module=module,
             provider_path=provider_path,
             output_path=abs_path,
-            output_file=o_fname):
+            output_file=o_fname,
+            config_mode=config_mode):
         created_list.append(module)
       if config_mode in ('sh','cp_sh'):
         (abs_path / o_fname).chmod(0o755)
