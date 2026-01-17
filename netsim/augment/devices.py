@@ -91,7 +91,7 @@ def get_consolidated_device_data(node: Box, defaults: Box) -> Box:
   provider = get_provider(node,defaults)
 
   if not devtype in defaults.devices:
-    log.fatal(f'Internal error: call to get_provider_data with unknown device {devtype}')
+    log.fatal(f'Internal error: call to get_consolidated_device_data with unknown device {devtype}')
 
   data = defaults.devices[devtype] + defaults.devices[devtype].get(provider,{})
   for p in defaults.providers.keys():
