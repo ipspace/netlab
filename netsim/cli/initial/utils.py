@@ -72,7 +72,7 @@ def initial_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namesp
     help=argparse.SUPPRESS)
   parser.add_argument(
     '--debug', dest='debug', action='store',nargs='*',
-    choices=sorted(['template','paths','defaults']),
+    choices=sorted(['template','paths','defaults','ssh']),
     help=argparse.SUPPRESS)
   parser_lab_location(parser,instance=True,i_used=True,action='configure')
 
