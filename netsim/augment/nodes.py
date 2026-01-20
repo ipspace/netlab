@@ -14,6 +14,7 @@ from .. import data, providers, utils
 from ..data import append_to_list, global_vars, is_true_int
 from ..data.types import must_be_device, must_be_id, must_be_int, must_be_string
 from ..data.validate import get_object_attributes, validate_attributes
+from ..devices._common import requires_plugin
 from ..modules._dataplane import extend_id_set, get_next_id, is_id_used, set_id_counter
 from ..utils import log
 from . import addressing, devices, groups, links
@@ -312,6 +313,9 @@ def find_node_device(n: Box, topology: Box) -> bool:
 
   for group in dev_def.features.get('group',[]):
     groups.add_node_to_group(n.name,group,topology)
+
+  for plugin in dev_def.get('plugin',[]):                   # Check the required plugins
+    requires_plugin(n,plugin,topology)
 
   return True
 

@@ -69,7 +69,8 @@ def init(topology: Box) -> None:
   for node in list(topology.nodes.values()):
     if node.device != 'kind':
       continue
-    adjust_kind_nodes(node,topology)
+    adjust_kind_nodes(node,topology)                        # Initial tweaks to the KinD nodes
+  return
 
 """
 Expand 'kind' devices into KinD clusters before node transform starts
