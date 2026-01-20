@@ -1450,6 +1450,17 @@ defaults:
           ansible_become_method: enable
           netlab_ready:
           - ssh
+          netlab_config_mode: sh
+          netlab_config_path: /mnt/flash/
+          netlab_config_wrapper: |
+            {% if netlab_config_mode == 'sh' %}
+            #!/usr/bin/FastCli
+            configure terminal
+            {% endif %}
+            {{ netlab_config_text }}
+            {% if netlab_config_mode == 'sh' %}
+            end
+            {% endif %}
       libvirt:
         build: https://netlab.tools/labs/eos/
         image: arista/veos
@@ -1568,7 +1579,7 @@ defaults:
           netlab_mgmt_vrf: true
           netlab_config_mode: sh
           netlab_config_wrapper: |
-            {% if not netlab_config_text.startswith("#!") %}
+            {% if netlab_config_mode == 'sh' and netlab_config_text and not netlab_config_text.startswith("#!") %}
             #!/usr/bin/vtysh -f
             #
             {% endif %}
@@ -1577,6 +1588,8 @@ defaults:
           - sleep 1
         image: quay.io/frrouting/frr:10.5.1
         kmods:
+          initial:
+          - vrf?
         node:
           kind: linux
           config_templates:
@@ -8138,7 +8151,7 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1768647146.3701594
+    timestamp: 1768724018.2290187
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
@@ -8285,6 +8298,23 @@ nodes:
       env:
         INTFTYPE: et
         CLAB_MGMT_VRF: management
+      config_templates:
+      - source: normalize
+        target: /mnt/flash/01-normalize.sh
+        mode: sh
+      - source: initial
+        target: /mnt/flash/02-initial.sh
+        mode: sh
+      - source: routing
+        target: /mnt/flash/03-routing.sh
+        mode: sh
+      binds:
+      - target: /mnt/flash/01-normalize.sh
+        source: node_files/dut/normalize
+      - target: /mnt/flash/02-initial.sh
+        source: node_files/dut/initial
+      - target: /mnt/flash/03-routing.sh
+        source: node_files/dut/routing
     box: ceos:4.34.2F
     id: 1
     provider: clab
@@ -8306,6 +8336,14 @@ nodes:
           idx: 0
     module:
     - routing
+    netlab_ansible_skip_module:
+    - normalize
+    - initial
+    - routing
+    _node_config:
+      normalize: /mnt/flash/01-normalize.sh:sh
+      initial: /mnt/flash/02-initial.sh:sh
+      routing: /mnt/flash/03-routing.sh:sh
   rtr:
     device: frr
     name: rtr

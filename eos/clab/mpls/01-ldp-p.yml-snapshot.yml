@@ -1452,6 +1452,17 @@ defaults:
           ansible_become_method: enable
           netlab_ready:
           - ssh
+          netlab_config_mode: sh
+          netlab_config_path: /mnt/flash/
+          netlab_config_wrapper: |
+            {% if netlab_config_mode == 'sh' %}
+            #!/usr/bin/FastCli
+            configure terminal
+            {% endif %}
+            {{ netlab_config_text }}
+            {% if netlab_config_mode == 'sh' %}
+            end
+            {% endif %}
       libvirt:
         build: https://netlab.tools/labs/eos/
         image: arista/veos
@@ -1570,7 +1581,7 @@ defaults:
           netlab_mgmt_vrf: true
           netlab_config_mode: sh
           netlab_config_wrapper: |
-            {% if not netlab_config_text.startswith("#!") %}
+            {% if netlab_config_mode == 'sh' and netlab_config_text and not netlab_config_text.startswith("#!") %}
             #!/usr/bin/vtysh -f
             #
             {% endif %}
@@ -1579,6 +1590,8 @@ defaults:
           - sleep 1
         image: quay.io/frrouting/frr:10.5.1
         kmods:
+          initial:
+          - vrf?
         node:
           kind: linux
           config_templates:
@@ -8146,7 +8159,7 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1768655501.0249908
+    timestamp: 1768729719.512143
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
@@ -8903,6 +8916,28 @@ nodes:
       env:
         INTFTYPE: et
         CLAB_MGMT_VRF: management
+      config_templates:
+      - source: normalize
+        target: /mnt/flash/01-normalize.sh
+        mode: sh
+      - source: initial
+        target: /mnt/flash/02-initial.sh
+        mode: sh
+      - source: ospf
+        target: /mnt/flash/03-ospf.sh
+        mode: sh
+      - source: mpls
+        target: /mnt/flash/04-mpls.sh
+        mode: sh
+      binds:
+      - target: /mnt/flash/01-normalize.sh
+        source: node_files/dut/normalize
+      - target: /mnt/flash/02-initial.sh
+        source: node_files/dut/initial
+      - target: /mnt/flash/03-ospf.sh
+        source: node_files/dut/ospf
+      - target: /mnt/flash/04-mpls.sh
+        source: node_files/dut/mpls
     box: ceos:4.34.2F
     ospf:
       area: 0.0.0.0
@@ -8937,6 +8972,16 @@ nodes:
       router_id: 10.0.0.5
       af:
         ipv4: true
+    netlab_ansible_skip_module:
+    - normalize
+    - initial
+    - ospf
+    - mpls
+    _node_config:
+      normalize: /mnt/flash/01-normalize.sh:sh
+      initial: /mnt/flash/02-initial.sh:sh
+      ospf: /mnt/flash/03-ospf.sh:sh
+      mpls: /mnt/flash/04-mpls.sh:sh
   p2:
     mpls: {}
     name: p2

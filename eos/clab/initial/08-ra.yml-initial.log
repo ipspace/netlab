@@ -6,12 +6,14 @@
 [CREATED] h1: initial
 [CREATED] h2: initial
 [CREATED] h3: initial
+ [INFO] Executing normalize configuration for node dut
  [INFO] Executing initial configuration for node dhsrv (namespace
           clab-ml-17-dhsrv)
  [INFO] Executing initial configuration for node h0
  [INFO] Executing initial configuration for node h1
  [INFO] Executing initial configuration for node h2
  [INFO] Executing initial configuration for node h3
+ [INFO] Executing initial configuration for node dut
 
  [INFO] Starting Ansible playbook to deploy the rest of the
           configurations
@@ -21,109 +23,65 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h4]
-ok: [dut]
 
 TASK [Generic readiness tests] *************************************************
 skipping: [h4]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ssh.yml for dut => (item=ssh)
-
-TASK [Check if 'sshpass' is installed] *****************************************
-ok: [dut -> localhost]
-
-TASK [Check for 'timeout' command] *********************************************
-ok: [dut -> localhost]
-
-TASK [Execute local ssh command to check ssh readiness] ************************
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
-ok: [dut -> localhost]
-
-TASK [Confirm dut SSH server works] ********************************************
-ok: [dut] => {
-    "msg": "Node dut is ready."
-}
 
 TASK [Find device readiness script] ********************************************
 ok: [h4]
-ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [h4]
-skipping: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h4, dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h4
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [h4]
-ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [h4]
-ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [h4]
-skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [h4]
-ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h4]
-ok: [dut] => {
-    "msg": "normalize configuration for dut\n=========================================\n!\ninterface Ethernet1\n shutdown\n!\ninterface Ethernet2\n shutdown\n!\ninterface Ethernet3\n shutdown\n!\ninterface Ethernet4\n shutdown\n!\ninterface Ethernet5\n shutdown\n"
-}
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [h4]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for dut
-
-TASK [eos_config: deploying normalize from /work/netlab_cicd/node_files/dut/normalize] ***
-[WARNING]: To ensure idempotency and correct diff the input configuration lines
-should be similar to how they appear if present in the running configuration on
-device including the indentation
-changed: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h4, dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h4
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [h4]
-ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h4]
-ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [h4]
-skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h4]
-ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h4] => {
     "msg": "initial configuration for h4\n=========================================\n#!/bin/bash\n#\nset -e\n#\n# Create bash profile script\n#\ncat <<SCRIPT >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)$ \"\nSCRIPT\nhostname h4\n#\n# Build hosts file\n#\n#\ncat <<SCRIPT >/tmp/hosts\n#\n# Created by netlab initial\n#\n2001:db8:1:4::2 dhsrv eth1.dhsrv\n2001:db8:0:84::1 dut\n2001:db8:1::84 Ethernet1.dut\n2001:db8:1:1::84 Ethernet2.dut\n2001:db8:1:2::84 Ethernet3.dut\n2001:db8:1:3::84 Ethernet4.dut\n2001:db8:1:4::84 Ethernet5.dut\nSCRIPT\ngrep \"Created by netlab\" /etc/hosts || uniq /tmp/hosts >>/etc/hosts\n# It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.\n# This is annoying on a network with filtered DNS.\n# DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.\n# Let's use that.\n#\n# (Overwrite netplan config to remove DNS stuff)\necho -n 'Starting initial config ' && date\ncat <<SCRIPT >/etc/netplan/01-netcfg.yaml\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    eth0:\n      dhcp4: true\n      dhcp6: false\n      optional: true\nSCRIPT\nnetplan apply\n\n# (Overwrite resolved config to remove DNS stuff)\ncat <<SCRIPT > /etc/systemd/resolved.conf \n[Resolve]\nDNS=\nFallbackDNS=\nDomains=\nDNSOverTLS=no\nCache=yes\nDNSStubListener=yes\nSCRIPT\n\nsystemctl restart systemd-resolved\n\n# Set persistent hostname\nhostnamectl set-hostname h4\n\nNEED_APT_UPDATE=YES\n\n# Loopback addressing\n\n# Interface addressing and bonds, including any static routes\ncat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    eth1:\n      dhcp6: true\n      accept-ra: true\nSCRIPT\n\n# Disable auto-negotiation on Ethernet interfaces, needed to make LACP work correctly\ncat <<SCRIPT > /etc/systemd/network/98-eth.link\n\n[Match]\nOriginalName=eth*\n\n[Link]\nBitsPerSecond=1G\nAutoNegotiation=no\nDuplex=full\nSCRIPT\n\nchmod 400 /etc/netplan/*\n\necho -n 'Starting netplan generate ' && date\nnetplan generate\necho -n 'Starting netplan apply ' && date\nnetplan apply\n\n#\n# Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA\n# Do this after 'netplan apply', e.g. bond devices won't exist before that\n#\ncat <<SCRIPT > /etc/sysctl.d/10-netsim.conf\nnet.ipv4.conf.all.arp_announce=2\nnet.ipv4.ip_forward=0\nnet.ipv6.conf.all.forwarding=0\n\nnet.ipv6.conf.eth1.disable_ipv6=1\n\nSCRIPT\nsysctl -p /etc/sysctl.d/10-netsim.conf\n"
 }
-ok: [dut] => {
-    "msg": "initial configuration for dut\n=========================================\nhostname dut\n!\nlogging monitor debugging\naaa authorization exec default local\n!\nlldp run\nno ip routing\nipv6 unicast-routing\n!\n!\nipv6 host dhsrv 2001:db8:1:4::2\n!\ninterface Management0\n no lldp transmit\n no lldp receive\n!\ninterface Loopback0\n ipv6 nd ra interval 5\n ipv6 address 2001:db8:0:84::1/64\n!\ninterface Ethernet1\n no switchport\n description Regular link (default RA behavior) [stub]\n ipv6 nd ra interval 5\n ipv6 address 2001:db8:1::84/64\n mac-address caf0.0084.0001\n!\n no shutdown\n!\ninterface Ethernet2\n no switchport\n description no RA [stub]\n ipv6 nd ra disabled all\n ipv6 address 2001:db8:1:1::84/64\n mac-address caf0.0084.0002\n!\n no shutdown\n!\ninterface Ethernet3\n no switchport\n description No SLAAC [stub]\n ipv6 nd ra interval 5\n ipv6 nd prefix 2001:db8:1:2::/64 no-autoconfig\n ipv6 address 2001:db8:1:2::84/64\n mac-address caf0.0084.0003\n!\n no shutdown\n!\ninterface Ethernet4\n no switchport\n description No onlink [stub]\n ipv6 nd ra interval 5\n ipv6 nd prefix 2001:db8:1:3::/64 no-onlink\n ipv6 address 2001:db8:1:3::84/64\n mac-address caf0.0084.0004\n!\n no shutdown\n!\ninterface Ethernet5\n no switchport\n description DHCPv6 managed config\n ipv6 nd ra interval 5\n ipv6 nd prefix 2001:db8:1:4::/64 no-autoconfig\n ipv6 nd managed-config-flag\n ipv6 address 2001:db8:1:4::84/64\n mac-address caf0.0084.0005\n!\n no shutdown\n!\n"
-}
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux.yml for h4
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for dut
 
 TASK [template] ****************************************************************
 changed: [h4]
 
 TASK [Execute /tmp/config.sh to deploy initial config from /work/netlab_cicd/node_files/h4/initial] ***
 changed: [h4]
-
-TASK [eos_config: deploying initial from /work/netlab_cicd/node_files/dut/initial] ***
-changed: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -169,11 +127,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=21   changed=2    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
 h4                         : ok=23   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================
+dut                          OK: 2   
 dhsrv                        OK: 1   
 h0                           OK: 1   
 h1                           OK: 1   

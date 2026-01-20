@@ -2198,6 +2198,17 @@ defaults:
           ansible_become_method: enable
           netlab_ready:
           - ssh
+          netlab_config_mode: sh
+          netlab_config_path: /mnt/flash/
+          netlab_config_wrapper: |
+            {% if netlab_config_mode == 'sh' %}
+            #!/usr/bin/FastCli
+            configure terminal
+            {% endif %}
+            {{ netlab_config_text }}
+            {% if netlab_config_mode == 'sh' %}
+            end
+            {% endif %}
       libvirt:
         build: https://netlab.tools/labs/eos/
         image: arista/veos
@@ -2316,7 +2327,7 @@ defaults:
           netlab_mgmt_vrf: true
           netlab_config_mode: sh
           netlab_config_wrapper: |
-            {% if not netlab_config_text.startswith("#!") %}
+            {% if netlab_config_mode == 'sh' and netlab_config_text and not netlab_config_text.startswith("#!") %}
             #!/usr/bin/vtysh -f
             #
             {% endif %}
@@ -2325,6 +2336,8 @@ defaults:
           - sleep 1
         image: quay.io/frrouting/frr:10.5.1
         kmods:
+          initial:
+          - vrf?
         node:
           kind: linux
           config_templates:
@@ -8164,7 +8177,7 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1768654892.0822725
+    timestamp: 1768846626.979701
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
@@ -8423,6 +8436,33 @@ nodes:
       env:
         INTFTYPE: et
         CLAB_MGMT_VRF: management
+      config_templates:
+      - source: normalize
+        target: /mnt/flash/01-normalize.sh
+        mode: sh
+      - source: initial
+        target: /mnt/flash/02-initial.sh
+        mode: sh
+      - source: ospf
+        target: /mnt/flash/03-ospf.sh
+        mode: sh
+      - source: bgp
+        target: /mnt/flash/04-bgp.sh
+        mode: sh
+      - source: evpn
+        target: /mnt/flash/05-evpn.sh
+        mode: sh
+      binds:
+      - target: /mnt/flash/01-normalize.sh
+        source: node_files/dut/normalize
+      - target: /mnt/flash/02-initial.sh
+        source: node_files/dut/initial
+      - target: /mnt/flash/03-ospf.sh
+        source: node_files/dut/ospf
+      - target: /mnt/flash/04-bgp.sh
+        source: node_files/dut/bgp
+      - target: /mnt/flash/05-evpn.sh
+        source: node_files/dut/evpn
     box: ceos:4.34.2F
     ospf:
       area: 0.0.0.0
@@ -8462,6 +8502,18 @@ nodes:
         passive: false
       bgp:
         advertise: true
+    netlab_ansible_skip_module:
+    - normalize
+    - initial
+    - ospf
+    - bgp
+    - evpn
+    _node_config:
+      normalize: /mnt/flash/01-normalize.sh:sh
+      initial: /mnt/flash/02-initial.sh:sh
+      ospf: /mnt/flash/03-ospf.sh:sh
+      bgp: /mnt/flash/04-bgp.sh:sh
+      evpn: /mnt/flash/05-evpn.sh:sh
   s1:
     device: eos
     config:
@@ -8535,6 +8587,48 @@ nodes:
       env:
         INTFTYPE: et
         CLAB_MGMT_VRF: management
+      config_templates:
+      - source: normalize
+        target: /mnt/flash/01-normalize.sh
+        mode: sh
+      - source: initial
+        target: /mnt/flash/02-initial.sh
+        mode: sh
+      - source: vlan
+        target: /mnt/flash/03-vlan.sh
+        mode: sh
+      - source: ospf
+        target: /mnt/flash/04-ospf.sh
+        mode: sh
+      - source: bgp
+        target: /mnt/flash/05-bgp.sh
+        mode: sh
+      - source: vxlan
+        target: /mnt/flash/06-vxlan.sh
+        mode: sh
+      - source: evpn
+        target: /mnt/flash/07-evpn.sh
+        mode: sh
+      - source: _n_s1
+        target: /mnt/flash/08-_n_s1.sh
+        mode: sh
+      binds:
+      - target: /mnt/flash/01-normalize.sh
+        source: node_files/s1/normalize
+      - target: /mnt/flash/02-initial.sh
+        source: node_files/s1/initial
+      - target: /mnt/flash/03-vlan.sh
+        source: node_files/s1/vlan
+      - target: /mnt/flash/04-ospf.sh
+        source: node_files/s1/ospf
+      - target: /mnt/flash/05-bgp.sh
+        source: node_files/s1/bgp
+      - target: /mnt/flash/06-vxlan.sh
+        source: node_files/s1/vxlan
+      - target: /mnt/flash/07-evpn.sh
+        source: node_files/s1/evpn
+      - target: /mnt/flash/08-_n_s1.sh
+        source: node_files/s1/_n_s1
     box: ceos:4.34.2F
     vxlan:
       domain: global
@@ -8647,6 +8741,24 @@ nodes:
         bridge_group: 1
     vlan:
       max_bridge_group: 1
+    netlab_ansible_skip_module:
+    - normalize
+    - initial
+    - vlan
+    - ospf
+    - bgp
+    - vxlan
+    - evpn
+    - _n_s1
+    _node_config:
+      normalize: /mnt/flash/01-normalize.sh:sh
+      initial: /mnt/flash/02-initial.sh:sh
+      vlan: /mnt/flash/03-vlan.sh:sh
+      ospf: /mnt/flash/04-ospf.sh:sh
+      bgp: /mnt/flash/05-bgp.sh:sh
+      vxlan: /mnt/flash/06-vxlan.sh:sh
+      evpn: /mnt/flash/07-evpn.sh:sh
+      _n_s1: /mnt/flash/08-_n_s1.sh:sh
   s2:
     device: frr
     name: s2

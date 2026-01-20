@@ -227,6 +227,17 @@ defaults:
           ansible_become_method: enable
           netlab_ready:
           - ssh
+          netlab_config_mode: sh
+          netlab_config_path: /mnt/flash/
+          netlab_config_wrapper: |
+            {% if netlab_config_mode == 'sh' %}
+            #!/usr/bin/FastCli
+            configure terminal
+            {% endif %}
+            {{ netlab_config_text }}
+            {% if netlab_config_mode == 'sh' %}
+            end
+            {% endif %}
       libvirt:
         build: https://netlab.tools/labs/eos/
         image: arista/veos
@@ -465,7 +476,7 @@ defaults:
           netlab_mgmt_vrf: true
           netlab_config_mode: sh
           netlab_config_wrapper: |
-            {% if not netlab_config_text.startswith("#!") %}
+            {% if netlab_config_mode == 'sh' and netlab_config_text and not netlab_config_text.startswith("#!") %}
             #!/usr/bin/vtysh -f
             #
             {% endif %}
@@ -474,6 +485,8 @@ defaults:
           - sleep 1
         image: quay.io/frrouting/frr:10.5.1
         kmods:
+          initial:
+          - vrf?
         node:
           kind: linux
           config_templates:
@@ -8721,7 +8734,7 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1768650182.5474179
+    timestamp: 1768735045.4569802
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
@@ -8850,6 +8863,28 @@ nodes:
       env:
         INTFTYPE: et
         CLAB_MGMT_VRF: management
+      config_templates:
+      - source: normalize
+        target: /mnt/flash/01-normalize.sh
+        mode: sh
+      - source: initial
+        target: /mnt/flash/02-initial.sh
+        mode: sh
+      - source: bgp
+        target: /mnt/flash/03-bgp.sh
+        mode: sh
+      - source: bgp.session
+        target: /mnt/flash/04-bgp@session.sh
+        mode: sh
+      binds:
+      - target: /mnt/flash/01-normalize.sh
+        source: node_files/dut/normalize
+      - target: /mnt/flash/02-initial.sh
+        source: node_files/dut/initial
+      - target: /mnt/flash/03-bgp.sh
+        source: node_files/dut/bgp
+      - target: /mnt/flash/04-bgp@session.sh
+        source: node_files/dut/bgp.session
     box: ceos:4.34.2F
     module:
     - bgp
@@ -8924,6 +8959,16 @@ nodes:
         advertise: true
     config:
     - bgp.session
+    netlab_ansible_skip_module:
+    - normalize
+    - initial
+    - bgp
+    - bgp.session
+    _node_config:
+      normalize: /mnt/flash/01-normalize.sh:sh
+      initial: /mnt/flash/02-initial.sh:sh
+      bgp: /mnt/flash/03-bgp.sh:sh
+      bgp@session: /mnt/flash/04-bgp@session.sh:sh
   x1:
     bgp:
       advertise_loopback: true
