@@ -87,7 +87,7 @@ def get_instance(args: argparse.Namespace, lab_states: Box) -> Lab_Instance_ID:
         category=log.FatalError,
         module='',
         more_hints="Use 'netlab status --all' to display the list of lab instances")
-      sys.exit(1)
+      sys.exit(1)                                 # We'll never get here, but mypy won't complain
     return instance_id
 
   try:
@@ -106,7 +106,7 @@ def get_instance(args: argparse.Namespace, lab_states: Box) -> Lab_Instance_ID:
     category=log.FatalError,
     module='',
     more_hints="Use 'netlab status --all' to display the list of lab instances")
-  sys.exit(1)
+  sys.exit(1)                                     # To keep mypy happy ;)
 
 def cleanup_state(ls: Box, iid: typing.Optional[typing.Union[int,str]] = None) -> Box:
   if iid is not None:
@@ -166,11 +166,13 @@ def fetch_node_status(ls: Box, topology: Box) -> None:
       'mgmt':   n_data.mgmt.ipv4
     }
     node_stat = ls.nodes[n_name]
+    node_stat.connection = n_ext.ansible_connection
     if n_data.get('unmanaged',False):
       node_stat.image = 'unmanaged'
+      node_stat.provider = 'unmanaged'
+      node_stat.status = 'Unknown'
     else:
       node_stat.image = n_data.box
-      node_stat.connection = n_ext.ansible_connection
       node_stat.provider = n_provider
       wk_name = p_module.call('get_node_name',n_name,topology)
       node_stat.provider_name = wk_name
@@ -197,8 +199,9 @@ def show_lab_nodes(ls: Box, topology: Box) -> None:
   heading = [ 'node', 'device', 'image', 'mgmt IPv4', 'connection', 'provider', 'VM/container', 'status']
 
   for n_name,n_data in ls.nodes.items():
-    row = [ n_name, n_data.device, n_data.image, n_data.mgmt or '', 
-            n_data.connection, n_data.provider, n_data.provider_name, n_data.status ]
+    row = [ n_name, n_data.device, n_data.image, n_data.get('mgmt',''),
+            n_data.connection, n_data.get('provider',''),
+            n_data.get('provider_name',''), n_data.status ]
     rows.append(row)
 
   strings.print_table(heading,rows)
@@ -261,9 +264,9 @@ def show_lab_log(args: argparse.Namespace, lab_states: Box) -> None:
   if args.format != 'text':
     print_result(cleanup_state(lab_state,iid),fmt=args.format)
     return
-  else:
-    show_lab_instance(iid,lab_state)
-    print_lab_log(lab_state.log)
+
+  show_lab_instance(iid,lab_state)
+  print_lab_log(lab_state.log)
 
 def cleanup_lab(topology: Box,args: argparse.Namespace,lab_states: Box) -> None:
   iid = get_instance(args,lab_states)
