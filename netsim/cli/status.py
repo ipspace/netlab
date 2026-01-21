@@ -12,7 +12,7 @@ import typing
 from box import Box
 
 from .. import providers
-from ..data import get_empty_box
+from ..data import get_box, get_empty_box
 from ..outputs import common as outputs_common
 from ..utils import log, status, strings
 from ..utils import read as _read
@@ -39,6 +39,13 @@ def status_parse(args: typing.List[str]) -> argparse.Namespace:
     action='store_true',
     help='Reset the lab instance tracking system')
   parser.add_argument(
+    '--format',
+    dest='format',
+    action='store',
+    choices=['json','yaml','text'],
+    default='text',
+    help='Specify the output format')
+  parser.add_argument(
     '--all',
     dest='all',
     action='store_true',
@@ -49,12 +56,34 @@ def status_parse(args: typing.List[str]) -> argparse.Namespace:
 
 Lab_Instance_ID = typing.Union[str,int]
 
+OUTPUT_FORMAT: str = 'text'
+
+def raise_error(text: str, fatal: bool = False,**kwargs: typing.Any) -> None:
+  global OUTPUT_FORMAT
+  if OUTPUT_FORMAT != 'text':
+    raise log.ErrorAbort(text)
+  if 'module' not in kwargs:
+    kwargs['module'] = 'status'
+  log.error(text,**kwargs)
+  if fatal or kwargs.get('category',None) == log.FatalError:
+    sys.exit(1)
+
+  return
+
+def print_result(r: Box, fmt: str) -> None:
+  if fmt == 'json':
+    print(r.to_json(skipkeys=True,indent=2))
+  elif fmt == 'yaml':
+    print(r.to_yaml())
+  else:
+    raise_error(f'Invalid output format {fmt}',category=log.FatalError)
+
 def get_instance(args: argparse.Namespace, lab_states: Box) -> Lab_Instance_ID:
   if args.instance:
     instance_id = int(args.instance) if args.instance.isdigit() else args.instance
     if not instance_id in lab_states:
-      log.error(
-        f"Unknown lab instance {args.instance}.",
+      raise_error(
+        f"Unknown lab instance {args.instance}",
         category=log.FatalError,
         module='',
         more_hints="Use 'netlab status --all' to display the list of lab instances")
@@ -64,21 +93,38 @@ def get_instance(args: argparse.Namespace, lab_states: Box) -> Lab_Instance_ID:
   try:
     cur_dir = os.getcwd()
   except Exception as ex:
-    log.fatal(f'Cannot get current directory: {ex}','')
+    raise_error(
+      f'Cannot get current directory: {str(ex)}',
+      category=log.FatalError)
+
   for id,state in lab_states.items():
     if state.dir == cur_dir:
       return id
     
-  log.error(
+  raise_error(
     f"There's no running lab in the current directory.",
     category=log.FatalError,
     module='',
     more_hints="Use 'netlab status --all' to display the list of lab instances")
   sys.exit(1)
 
+def cleanup_state(ls: Box, iid: typing.Optional[typing.Union[int,str]] = None) -> Box:
+  if iid is not None:
+    ls.instance = iid
+
+  if 'timestamp' in ls:
+    ls.timestamp = str(ls.timestamp)
+
+  return ls
+
 def display_active_labs(topology: Box,args: argparse.Namespace,lab_states: Box) -> None:
   if args.verbose:
     print(f'netlab status file: {status.get_status_filename(topology)}\n')
+
+  if args.format != 'text':
+    result = get_box({ k:cleanup_state(v) for k,v in lab_states.items() })
+    print_result(result,args.format)
+    return
 
   print("Active lab instance(s)\n")
   heading = [ 'id', 'directory', 'status', 'providers' ]
@@ -91,8 +137,10 @@ def display_active_labs(topology: Box,args: argparse.Namespace,lab_states: Box) 
 
 def show_lab_instance(iid: Lab_Instance_ID, lab_state: Box) -> None:
   print(f'Lab {iid} in {lab_state.dir}')
-  print(f'  status: {lab_state.status}')
-  print(f'  provider(s): {",".join(lab_state.providers)}')
+  if lab_state.status:
+    print(f'  status: {lab_state.status}')
+  if lab_state.providers:
+    print(f'  provider(s): {",".join(lab_state.providers)}')
   print()
 
 def load_provider_status(p_status: dict, provider: str, topology: Box) -> None:
@@ -101,11 +149,8 @@ def load_provider_status(p_status: dict, provider: str, topology: Box) -> None:
   if not provider in p_status:
     p_status[provider] = p_module.call('get_lab_status') or get_empty_box()
 
-def show_lab_nodes(topology: Box) -> None:
+def fetch_node_status(ls: Box, topology: Box) -> None:
   p_status: dict = {}
-  rows = []
-  heading = [ 'node', 'device', 'image', 'mgmt IPv4', 'connection', 'provider', 'VM/container', 'status']
-
   for n_name,n_data in topology.nodes.items():
     n_ext = outputs_common.adjust_inventory_host(
               node=topology.nodes[n_name],
@@ -116,17 +161,21 @@ def show_lab_nodes(topology: Box) -> None:
     p_module   = providers.get_provider_module(topology,n_provider)
     load_provider_status(p_status,n_provider,topology)
 
+    ls.nodes[n_name] = {
+      'device': n_data.device,
+      'mgmt':   n_data.mgmt.ipv4
+    }
+    node_stat = ls.nodes[n_name]
     if n_data.get('unmanaged',False):
-      row = [ n_data.name, n_data.device, 'unmanaged', n_data.mgmt.ipv4 ]
+      node_stat.image = 'unmanaged'
     else:
-      row = [ n_data.name, n_data.device, n_data.box, n_data.mgmt.ipv4, n_ext.ansible_connection, n_provider ]
+      node_stat.image = n_data.box
+      node_stat.connection = n_ext.ansible_connection
+      node_stat.provider = n_provider
       wk_name = p_module.call('get_node_name',n_name,topology)
-      row.append(wk_name)
-
+      node_stat.provider_name = wk_name
       wk_state = p_status[n_provider].get(wk_name,None) or p_status[n_provider].get(n_name,None)
-      row.append(wk_state.status if wk_state else 'Unknown')
-
-    rows.append(row)
+      node_stat.status = wk_state.get('status','Unknown')
 
   for t_name,t_data in topology.tools.items():
     n_provider = 'clab'
@@ -134,9 +183,22 @@ def show_lab_nodes(topology: Box) -> None:
 
     wk_name = f'{topology.name}_{t_name}'
     wk_state = p_status[n_provider].get(wk_name,get_empty_box())
+    ls.nodes[t_name] = {
+      'device': '(tool)',
+      'image': wk_state.get('image',''),
+      'connection': 'docker',
+      'provider': n_provider,
+      'provider_name': wk_name,
+      'status': wk_state.get('status','Not running')
+    }
 
-    row = [ t_name, '(tool)', wk_state.get('image',''), '', 'docker', n_provider, 
-            wk_name, wk_state.get('status','Not running') ]
+def show_lab_nodes(ls: Box, topology: Box) -> None:
+  rows = []
+  heading = [ 'node', 'device', 'image', 'mgmt IPv4', 'connection', 'provider', 'VM/container', 'status']
+
+  for n_name,n_data in ls.nodes.items():
+    row = [ n_name, n_data.device, n_data.image, n_data.mgmt or '', 
+            n_data.connection, n_data.provider, n_data.provider_name, n_data.status ]
     rows.append(row)
 
   strings.print_table(heading,rows)
@@ -154,14 +216,14 @@ def get_lab_status(lab_state: Box) -> str:
 
   for line in lab_state.log:
     if 'started' in line:
+      lab_state.status = line
       return line
 
   return lab_state.status
 
 def show_lab(args: argparse.Namespace,lab_states: Box) -> None:
   iid = get_instance(args,lab_states)
-  lab_state = lab_states[iid]
-  show_lab_instance(iid,lab_state)
+  lab_state = cleanup_state(lab_states[iid])
   wdir = lab_state.dir
   snapshot = f'{wdir}/netlab.snapshot.pickle'
 
@@ -171,15 +233,22 @@ def show_lab(args: argparse.Namespace,lab_states: Box) -> None:
 
   lab_status = get_lab_status(lab_state)
   if 'started' not in lab_status:
-    log.error(
-      'Lab is not started, cannot display node/tool status. Displaying lab start/stop log',
-      category=log.FatalError,
-      module='',)
+    err = 'Lab is not started, cannot display node/tool status'
+    if args.format == 'text':
+      err += '. Displaying lab start/stop log'
+    raise_error(err, category=log.MissingValue,module='')
     print()
+    show_lab_instance(iid,lab_state)
     print_lab_log(lab_state.log)
     return
 
-  show_lab_nodes(topology)
+  fetch_node_status(lab_state,topology)
+  if args.format != 'text':
+    print_result(lab_state,args.format)
+    return
+
+  show_lab_instance(iid,lab_state)
+  show_lab_nodes(lab_state,topology)
   if lab_status != 'started':
     print()
     log.warning(
@@ -189,8 +258,12 @@ def show_lab(args: argparse.Namespace,lab_states: Box) -> None:
 def show_lab_log(args: argparse.Namespace, lab_states: Box) -> None:
   iid = get_instance(args,lab_states)
   lab_state = lab_states[iid]
-  show_lab_instance(iid,lab_state)
-  print_lab_log(lab_state.log)
+  if args.format != 'text':
+    print_result(cleanup_state(lab_state,iid),fmt=args.format)
+    return
+  else:
+    show_lab_instance(iid,lab_state)
+    print_lab_log(lab_state.log)
 
 def cleanup_lab(topology: Box,args: argparse.Namespace,lab_states: Box) -> None:
   iid = get_instance(args,lab_states)
@@ -252,27 +325,44 @@ def check_conflicting_options(args: argparse.Namespace) -> None:
   kw_list = [ '--'+kw for kw in ('all','reset','cleanup') if kw in var_args and var_args[kw] ]
   if len(kw_list) > 1:
     log.fatal(f"You can use only one of the {', '.join(kw_list)} options")
+  no_json = [ '--'+kw for kw in ('reset','cleanup') if kw in var_args and var_args[kw] ]
+  if no_json and var_args.get('format','text') != 'text':
+    log.fatal(f"Cannot use {no_json[0]} option with JSON or YAML output format")
+
+def no_labs_message(fmt: str) -> typing.NoReturn:
+  txt = 'No netlab-managed labs'
+  if fmt == 'text':
+    print(txt)
+  else:
+    print_result(get_box({'warning': txt}),fmt)
+
+  sys.exit(1)
 
 def run(cli_args: typing.List[str]) -> None:
+  global OUTPUT_FORMAT
+
   args = status_parse(cli_args)
   log.set_logging_flags(args)
   check_conflicting_options(args)
+  OUTPUT_FORMAT = args.format
 
-  topology = _read.system_defaults()
-  if args.reset:
-    reset_lab_status(topology)
-    return
+  try:
+    topology = _read.system_defaults()
+    if args.reset:
+      reset_lab_status(topology)
+      return
 
-  lab_states = status.read_status(topology)
-  if not lab_states:
-    print('No netlab-managed labs')
-    sys.exit(1)
+    lab_states = status.read_status(topology)
+    if not lab_states:
+      no_labs_message(args.format)
 
-  if args.all:
-    display_active_labs(topology,args,lab_states)
-  elif args.cleanup:
-    cleanup_lab(topology,args,lab_states)
-  elif args.log:
-    show_lab_log(args,lab_states)
-  else:
-    show_lab(args,lab_states)
+    if args.all:
+      display_active_labs(topology,args,lab_states)
+    elif args.cleanup:
+      cleanup_lab(topology,args,lab_states)
+    elif args.log:
+      show_lab_log(args,lab_states)
+    else:
+      show_lab(args,lab_states)
+  except log.ErrorAbort as ex:
+    print_result(get_box({'error': str(ex)}),args.format)

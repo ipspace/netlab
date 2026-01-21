@@ -8,8 +8,8 @@ This command uses the *netlab* status file (default: `~/.netlab/status.yml`) to 
 ## Usage
 
 ```
-$ netlab status -h
-usage: netlab status [-h] [-l] [--cleanup] [--reset] [--all] [-v] [-q] [-i INSTANCE]
+usage: netlab status [-h] [-l] [--cleanup] [--reset] [--format {json,yaml,text}] [--all]
+                     [-v] [-q] [-i INSTANCE]
 
 Display lab status
 
@@ -18,11 +18,13 @@ options:
   -l, --log             Display the lab instance event log
   --cleanup             Cleanup the current or specified lab instance
   --reset               Reset the lab instance tracking system
+  --format {json,yaml,text}
+                        Specify the output format
   --all                 Display an overview of all lab instance(s)
   -v, --verbose         Verbose logging (add multiple flags for increased verbosity)
   -q, --quiet           Report only major errors
-  -i INSTANCE, --instance INSTANCE
-                        Specify lab instance to inspect
+  -i, --instance INSTANCE
+                        Specify the lab instance to inspect
 ```
 
 * **netlab status** displays the status and workload (VMs or containers) of the current or selected lab instance.
@@ -30,6 +32,10 @@ options:
 * **netlab status --log** displays detailed status log (including state changes and executed commands) of the current- or selected lab instance(s)
 * **netlab status --cleanup** shuts down selected lab instance(s). It changes the current directory to the lab directory saved in the status file and executes **netlab down --cleanup** in that directory
 * **netlab status --reset** deletes the status file. Use this command only if the status file becomes corrupted.
+
+```{tip}
+You can use the `--format json` or `--format yaml` option to display the lab status in automation-friendly format
+```
 
 ## Display Lab Instance State
 
@@ -65,6 +71,7 @@ Lab default in /home/user/net101/tools/X
 ```{tip}
 **‌netlab status** executes **‌vagrant status --machine-readable** to get the status of Vagrant-controlled virtual machines and **‌docker ps** to get the status of running containers. The **vagrant status‌** might take a few seconds when executed on large labs and significantly longer if Vagrant cannot determine the state of a virtual machine (returning **‌inaccessible**).
 ```
+
 ## Display Lab Instance Log
 
 The **netlab status --log** command displays a detailed lab instance log, including state changes and executed commands:
