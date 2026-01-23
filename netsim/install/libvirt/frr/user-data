@@ -1,0 +1,83 @@
+#cloud-config
+hostname: frr
+create_hostname_file: true
+fqdn: lab.local
+ssh_pwauth: true
+disable_root: false
+system_info:
+  default_user:
+    name: vagrant
+
+network:
+  version: 2
+  ethernets:
+    eth0:
+      dhcp4: true
+
+users:
+- name: vagrant
+  groups: [sudo]
+  shell: /bin/bash
+  sudo: ['ALL=(ALL) NOPASSWD:ALL']
+  ssh_authorized_keys:
+  - ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key
+  - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN1YdxBpNlzxDqfJyw/QKow1F+wvG9hXGoqiysfJOn5Y vagrant insecure public key
+
+chpasswd:
+  expire: false
+  list: |
+    root:vagrant
+    vagrant:vagrant
+
+bootcmd:
+- sed -i 's/^GRUB_CMDLINE_LINUX=.*/GRUB_CMDLINE_LINUX="console=tty0 console=ttyS0,115200 net.ifnames=0 biosdevname=0"/' /etc/default/grub
+- update-grub
+
+runcmd:
+- [ sh, "/etc/netlab-install.sh" ]
+- shutdown -P now
+
+write_files:
+- path: /etc/netlab-install.sh
+  permissions: '0755'
+  content: |
+    #!/bin/bash
+    export DEBIAN_FRONTEND=noninteractive
+    echo "Installing ifupdown, GPG, curl, and iproute2"
+    apt-get update -qq >/dev/null
+    apt-get install -qq ifupdown curl gnupg iproute2 >/dev/null
+    echo "Installing FRR"
+    curl -s https://deb.frrouting.org/frr/keys.asc >/etc/apt/trusted.gpg.d/frr.asc
+    FRRVER="frr-stable"
+    echo deb https://deb.frrouting.org/frr $(lsb_release -s -c) $FRRVER > /etc/apt/sources.list.d/frr.list
+    apt-get update -qq >/dev/null
+    apt-get install -qq frr frr-pythontools bridge-utils ethtool >/dev/null
+    systemctl disable systemd-networkd --now
+    systemctl mask systemd-networkd
+    systemctl disable systemd-resolved --now
+    systemctl mask systemd-resolved
+    systemctl enable networking --now
+    echo "Installation complete"
+    echo
+    echo
+    echo "================================="
+    echo "FRR version installed: $(dpkg-query -W -f='${Version}\n' frr | cut -d- -f1)"
+    echo "================================="
+    echo
+    echo
+- path: /etc/network/interfaces
+  content: |
+    # interfaces(5) file used by ifup(8) and ifdown(8)
+    # Include files from /etc/network/interfaces.d:
+    source-directory /etc/network/interfaces.d
+
+    # The loopback network interface
+    auto lo
+    iface lo inet loopback
+
+    # The primary network interface
+    allow-hotplug eth0
+    iface eth0 inet dhcp
+- path: /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+  content: |
+    network: {config: disabled}

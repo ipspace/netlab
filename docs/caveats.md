@@ -345,6 +345,7 @@ diag debug application httpsd -1
 **FRR VM caveats:**
 
 * The VM version of FRR is a Debian VM. The FRR package is downloaded and installed during **vagrant up** processing in the libvirt environment. To postpone the FRR installation to the initial configuration process, set the node variable **netlab_quick_start** to `true`.
+* You can [build a custom FRR VM](build-frr) with a preinstalled **frr** package to speed up the **vagrant up** processing.
 
 **FRR container caveats:**
 

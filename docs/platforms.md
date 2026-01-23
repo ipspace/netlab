@@ -123,7 +123,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ✅[❗](caveats-cumulus) |
 | Dell OS10          | [✅](build-dellos10)  |  ❌  | ✅  |
 | Fortinet FortiOS   | ✅  |  ❌  |  ✅  |
-| FRR | ✅[❗](caveats-frr) | ✅[❗](caveats-frr) | ✅ |
+| FRR | [✅](build-frr)[❗](caveats-frr) | ✅[❗](caveats-frr) | ✅ |
 | Generic Linux (Ubuntu/Alpine) [❗](labs/linux.md) | ✅  | ✅  | ✅  |
 | Juniper vMX        |  ❌  |  ❌  | ✅[❗](clab-vrnetlab)   |
 | Juniper vPTX       | [✅](build-vptx)  |  ❌  | ✅[❗](clab-vrnetlab)  |
