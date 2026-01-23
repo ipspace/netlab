@@ -1,5 +1,5 @@
 #
-# netlab initial -- implement standard device readiness checkes
+# netlab initial -- implement standard device readiness checks
 #
 import concurrent.futures
 import subprocess
@@ -27,8 +27,8 @@ def setup_ssh_ready_parameters(nodeset: list, topology: Box) -> None:
   # Build SSH command
   #
   def build_ssh_command(n_data: Box) -> typing.Optional[list]:
-    ssh_exec = ['sshpass','-p']
-    ssh_exec.append(a_devices.get_node_group_var(n_data,'ansible_ssh_pass',defaults))
+    ssh_pass = a_devices.get_node_group_var(n_data,'ansible_ssh_pass',defaults)
+    ssh_exec = ['sshpass','-p',ssh_pass] if ssh_pass else []
     ssh_exec.extend(['ssh','-o','StrictHostKeyChecking=no','-o','UserKnownHostsFile=/dev/null'])
     ssh_args = a_devices.get_node_group_var(n_data,'netlab_ssh_args',defaults)
     if ssh_args:
@@ -36,7 +36,7 @@ def setup_ssh_ready_parameters(nodeset: list, topology: Box) -> None:
     ssh_host = n_data.get('mgmt.ipv4',None) or n_data.get('mgmt.ipv6',None)
     if not ssh_host:
       log.error(
-        f'Cannot check the SSH server on node {n_data.node} (device {n_data.device})',
+        f'Cannot check the SSH server on node {n_data.name} (device {n_data.device})',
         more_hints=['The node does not have a management IPv4 or IPv6 address'],
         category=log.MissingValue,
         module='initial')
@@ -83,7 +83,7 @@ def device_ssh_ready(waitset: list, topology: Box) -> None:
       w_time = round(time.time() - start_time,1)
       print(
         f'Waiting for {len(wait_list)} devices ({w_time} seconds)',
-        end='\n' if log.debug_active('ssh') else '\r')
+        end='\n' if log.debug_active('ssh') else '\r',flush=True)
       time.sleep(1)
 
   def wait_for_ssh(n_name: str) -> bool:                    # Try out SSH server on the device
@@ -92,14 +92,14 @@ def device_ssh_ready(waitset: list, topology: Box) -> None:
     result = ''
     try:                                                    # Try the SSH command
       if log.debug_active('ssh'):
-        print(f'SSH: starting check on {n_name}, timeout={r_data.delay}')
+        print(f'SSH: starting check on {n_name}, timeout={r_data.delay}',flush=True)
       subprocess.run(args=r_data.ssh_exec,capture_output=True,check=True,timeout=r_data.delay)
       r_data.ssh_ready = True                               # No errors, we're ready to roll
       now = time.time()
       if now > start_time + 5 or log.VERBOSE:               # Report progress only if it's worth reporting
         strings.print_colored_text('[SSH] ','green')
         print(f'SSH server on node {n_name} (device {n_data.device}) ' +\
-              f'is ready after {round(now - start_time,1)} seconds')
+              f'is ready after {round(now - start_time,1)} seconds',flush=True)
       return True
     except subprocess.CalledProcessError as ex:             # SSH reported an error
       result = str(ex)
@@ -114,7 +114,7 @@ def device_ssh_ready(waitset: list, topology: Box) -> None:
         r_data.ssh_failed = True
         strings.print_colored_text('[SSH] ','red')
         print(f'SSH server on node {n_name} (device {n_data.device}) ' +\
-              f'is not ready after {round(now - start_time,1)} seconds')
+              f'is not ready after {round(now - start_time,1)} seconds',flush=True)
       if log.debug_active('ssh'):                         # Do we need to report SSH status periodically?
         if now > r_data.get('debug_time',start_time) + 5:   # Report errors only every five seconds
           print(f'SSH: Error on {n_data.name} ({n_data.device}): {result}')
@@ -145,10 +145,11 @@ def device_ssh_ready(waitset: list, topology: Box) -> None:
         break
       for result in executor.map(wait_for_ssh, check_list):
         pass
+      time.sleep(1)                               # Wait a bit before running another iteration
 
   failed_list = [ n_name for n_name in waitset if topology.nodes[n_name]._ready.ssh_failed ]
   if failed_list:
-    error_and_exit('SSH server did not start in time on node(s) {",".join(failed_list)}')
+    error_and_exit(f'SSH server did not start in time on node(s) {",".join(failed_list)}')
 
 READY_ACTIONS = { 'ssh': device_ssh_ready }
 
