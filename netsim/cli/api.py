@@ -26,6 +26,7 @@ from ..utils import log
 from . import collect as netlab_collect
 from . import create as netlab_create
 from . import down as netlab_down
+from . import external_commands
 from . import status as netlab_status
 from . import up as netlab_up
 
@@ -292,22 +293,31 @@ def parse_json_body(handler: BaseHTTPRequestHandler) -> Dict[str, Any]:
   except (json.JSONDecodeError, UnicodeDecodeError) as exc:
     raise ValueError("invalid JSON body") from exc
 
+def send_reply(
+      handler: BaseHTTPRequestHandler,
+      status: int, ctype: str = 'text/plain', reply: bytes = b'') -> None:
+  handler.send_response(status)
+  handler.send_header("Content-Type", ctype)
+  handler.send_header("Content-Length", str(len(reply)))
+  handler.end_headers()
+  handler.wfile.write(reply)
 
 def send_json(handler: BaseHTTPRequestHandler, status: int, payload: Any) -> None:
   data = json.dumps(payload).encode("utf-8")
-  handler.send_response(status)
-  handler.send_header("Content-Type", "application/json")
-  handler.send_header("Content-Length", str(len(data)))
-  handler.end_headers()
-  handler.wfile.write(data)
+  send_reply(handler,status,'application/json',data)
 
+def send_error(
+      handler: BaseHTTPRequestHandler,
+      status: int = HTTPStatus.INTERNAL_SERVER_ERROR,
+      error: str = 'Failed miserably') -> None:
+  send_json(handler,status,{"error": error})
 
 class NetlabHandler(BaseHTTPRequestHandler):
   def log_message(self, format: str, *args: Any) -> None:
     return
 
   def _not_found(self) -> None:
-    send_json(self, HTTPStatus.NOT_FOUND, {"error": "not found"})
+    send_error(self, HTTPStatus.NOT_FOUND,"not found")
 
   def do_GET(self) -> None:
     if not require_auth(self):
@@ -325,48 +335,82 @@ class NetlabHandler(BaseHTTPRequestHandler):
       template_dir = query.get("dir", [""])[0]
       send_json(self, HTTPStatus.OK, {"templates": list_templates(template_dir)})
 
-    def get_jobs() -> None:
-      with JOB_LOCK:
-        jobs = [job_public(j) for j in JOBS.values()]
-      send_json(self, HTTPStatus.OK, {"jobs": jobs})
-
-    def get_status() -> None:
+    def get_status(*parts: Any) -> None:
       out = io.StringIO()
-      with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
-        netlab_status.run(["--all"])
-      send_json(self, HTTPStatus.OK, {"status": out.getvalue()})
+      args = []
+      if parts and parts[0] == 'json':
+        args += ['--format','json']
+        parts = parts[1:]
 
-    handlers: Dict[Tuple[str, ...], Callable[[], None]] = {
-      ("healthz",): get_healthz,
-      ("templates",): get_templates,
-      ("jobs",): get_jobs,
-      ("status",): get_status,
-    }
+      if parts:
+        args += ['--instance', parts[0]]
+      else:
+        args += ['--all']
 
-    key = tuple(parts)
-    if key in handlers:
-      handlers[key]()
-      return
+      try:
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
+          netlab_status.run(args)
+        status_code = HTTPStatus.OK
+      except SystemExit:
+        status_code = HTTPStatus.NOT_FOUND
 
-    if parts[0] == "jobs" and len(parts) >= 2:
-      job_id = parts[1]
-      with JOB_LOCK:
-        job: Optional[Dict[str, Any]] = JOBS.get(job_id)
-      if job is None:
+      status = out.getvalue()
+      try:
+        j_status = json.loads(status)
+        send_json(self, status_code, j_status)
+      except json.JSONDecodeError:
+        send_json(self, status_code, {"status": status})
+      except Exception as ex:
+        send_error(self, HTTPStatus.INTERNAL_SERVER_ERROR, str(ex))
+
+    def get_jobs(job_id: Optional[str] = None, fmt: Optional[str] = None, *args: Any) -> None:
+      if args:
         return self._not_found()
-      if len(parts) == 2:
-        send_json(self, HTTPStatus.OK, job_public(job))
-        return
-      if len(parts) == 3 and parts[2] == "log":
+
+      if not job_id:
+        with JOB_LOCK:
+          jobs = [job_public(j) for j in JOBS.values()]
+        return send_json(self, HTTPStatus.OK, {"jobs": jobs})
+
+      with JOB_LOCK:
+        job = JOBS.get(job_id)
+
+      if job is None:
+        return send_error(self,HTTPStatus.NOT_FOUND,f'Job {job_id} not found')
+
+      if not fmt:
+        return send_json(self, HTTPStatus.OK, job_public(job))
+      if fmt == "log":
         try:
           with open(job["logPath"], "r", encoding="utf-8") as fp:
             content = fp.read()
         except FileNotFoundError:
           content = ""
-        send_json(self, HTTPStatus.OK, {"log": content})
-        return
+        return send_json(self, HTTPStatus.OK, {"log": content})
+      else:
+        return send_error(self,HTTPStatus.NOT_IMPLEMENTED,f'Invalid parameter {fmt}')
 
-    self._not_found()
+    simple_handlers: Dict[str, Callable] = {
+      "healthz": get_healthz,
+      "templates": get_templates,
+    }
+
+    path_handlers: Dict[str, Callable] = {
+      "jobs": get_jobs,
+      "status": get_status,
+    }
+
+    key = parts.pop(0)
+    try:
+      log.init_log_system(header=False)
+      if key in simple_handlers and not parts:
+        return simple_handlers[key]()
+      elif key in path_handlers:
+        return path_handlers[key](*parts)
+      else:
+        return self._not_found()
+    except SystemExit:
+      return send_json(self, HTTPStatus.NOT_FOUND,{"error": log._ERROR_LOG})
 
   def do_POST(self) -> None:
     if not require_auth(self):
@@ -404,7 +448,7 @@ def api_parse_args() -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(description="netlab API server")
   parser.add_argument(
     "--bind",
-    default=os.getenv("NETLAB_API_BIND", "127.0.0.1"),
+    default=os.getenv("NETLAB_API_BIND", external_commands.get_local_addr()),
     help="Bind address (NETLAB_API_BIND)",
   )
   parser.add_argument(
@@ -436,7 +480,7 @@ def api_parse_args() -> argparse.ArgumentParser:
   return parser
 
 
-def run(cli_args: List[str]) -> None:
+def run_api(cli_args: List[str]) -> None:
   parser = api_parse_args()
   args = parser.parse_args(cli_args)
   auth_user = args.auth_user.strip() or None
@@ -456,5 +500,15 @@ def run(cli_args: List[str]) -> None:
     context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     context.load_cert_chain(certfile=tls_cert, keyfile=tls_key)
     server.socket = context.wrap_socket(server.socket, server_side=True)
-  log.section_header("Starting", f"netlab API on {args.bind}:{args.port}")
+    http_proto = 'https'
+  else:
+    http_proto = 'http'
+  log.section_header("Starting", f"netlab API on {http_proto}://{args.bind}:{args.port}")
   server.serve_forever()
+
+def run(cli_args: List[str]) -> None:
+  try:
+    run_api(cli_args)
+  except KeyboardInterrupt:
+    print()
+    log.info('Exiting the API server')
