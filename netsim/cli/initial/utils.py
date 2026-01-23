@@ -8,7 +8,9 @@ import typing
 
 from box import Box
 
+from ...augment import devices as a_devices
 from ...augment import groups
+from ...data import global_vars
 from ...utils import files as _files
 from ...utils import log, strings
 from .. import common_parse_args, parser_lab_location
@@ -156,6 +158,11 @@ def node_deploy_list(node: Box, args: argparse.Namespace) -> list:
       node_configs = [ m for m in args.module.split(',') if m in node_modules ]
   if args.initial or all_config:
     node_configs = ['initial'] + node_configs
+    topology = global_vars.get_topology()
+    if topology:
+      features = a_devices.get_device_features(node,topology.defaults)
+      if features.get('initial.normalize',False):
+        node_configs = ['normalize'] + node_configs
   if args.custom or all_config:
     node_configs += [ cfg for cfg in node.get('config',[]) if cfg not in skip_config ]
 

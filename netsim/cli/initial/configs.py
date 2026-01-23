@@ -69,6 +69,11 @@ def create_node_configs(
     skip_items :typing.List[str] = []
     config_templates = n_data.get(f'{n_provider}.config_templates',[])
     template_mode = { cfg_item.source:cfg_item.mode for cfg_item in config_templates if 'mode' in cfg_item }
+    if log.debug_active('template'):
+      print(f'config_templates for {n_data.name}:')
+      for item in config_templates:
+        print(f'  - {item}')
+      print(f'... template_mode: {template_mode}')
     created_list :typing.List[str] = []
 
     # Now build the list of items to create
@@ -94,8 +99,8 @@ def create_node_configs(
         item_list = ['normalize'] + item_list
 
     for module in item_list:
-      config_mode = default_suffix or template_mode.get(module,'cfg')
-      o_suffix = '' if config_mode == 'none' else '.sh' if (config_mode in ('ns','sh')) else '.cfg'
+      config_mode = template_mode.get(module,default_suffix)
+      o_suffix = '' if default_suffix == 'none' else '.sh' if (config_mode in ('ns','sh','cp_sh')) else '.cfg'
       if flatten_output_fname:                          # Create all output files in the same directory?
         o_fname = f'{n_name}.{module}{o_suffix}'        # ... we need node name in file name
         o_fname = o_fname.replace('/','.')              # ... and remove the paths
@@ -110,7 +115,7 @@ def create_node_configs(
             provider_path=provider_path,
             output_path=abs_path,
             output_file=o_fname,
-            config_mode=config_mode):
+            config_mode='cfg' if flatten_output_fname else config_mode):
         created_list.append(module)
       if config_mode in ('sh','cp_sh'):
         (abs_path / o_fname).chmod(0o755)

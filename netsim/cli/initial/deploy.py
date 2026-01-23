@@ -26,7 +26,7 @@ def deploy_provider_config(nodeset: list, topology: Box, args: argparse.Namespac
     n_data = topology.nodes[n_name]
     n_deploy = utils.node_deploy_list(n_data, args)
     if log.VERBOSE:
-      log.info(f'Starting deployment thread for {n_name}')
+      log.info(f'Starting deployment thread for {n_name} to deploy {",".join(n_deploy)}')
     execute_node("deploy_node_config", n_data, topology, deploy_list=n_deploy)
 
   with concurrent.futures.ThreadPoolExecutor() as executor:
