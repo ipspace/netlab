@@ -194,9 +194,11 @@ def nodeset_ansible_skip(nodeset: list, topology: Box, args: argparse.Namespace)
   return skip_list
 
 """
-Filter out nodes in the unprovisioned group from the nodeset
+Filter unmanaged nodes and nodes in the unprovisioned group from the nodeset
 """
 def filter_unprovisioned(nodeset: typing.List[str], topology: Box) -> typing.List[str]:
+  nodeset = [node for node in nodeset
+                    if not topology.nodes[node].get('unmanaged',False)]
   if 'unprovisioned' not in topology.groups:
     return nodeset
   
