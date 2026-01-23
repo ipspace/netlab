@@ -78,7 +78,9 @@ def find_vagrant_box(args: argparse.Namespace) -> None:
     abort('Cannot get the list of Vagrant boxes')
 
   # note: str(boxes) used just to keep mypy happy
-  box_list = [ line for line in str(boxes).split('\n') if line.startswith(args.box+' ') ]
+  box_list = [ line for line in str(boxes).split('\n') 
+                      if line.startswith(args.box+' ') or 
+                         args.custom_box and line.startswith(args.custom_box+' ') ]
   if not box_list:
     abort(f'The Vagrant box {args.box} cannot be found')
 
@@ -97,7 +99,13 @@ def find_vagrant_box(args: argparse.Namespace) -> None:
 
   if len(box_libvirt) > 1:
     print_box_versions(args,box_libvirt)
-    abort('You have to specify the box version you want to remove with the --version argument')
+    print()
+    error_and_exit(
+      'You have to specify the box version you want to remove with the --version argument',
+      more_hints = 'You might have to specify the box you want to remove with the --box argument' \
+        if args.custom_box else '',
+      category=log.MissingValue,
+      module='')
 
   box_info = box_libvirt[0].split('(')[1]
   box_version = box_info.split(', ')[1].replace(')','')
@@ -204,16 +212,21 @@ def run(cli_args: typing.List[str], topology: Box) -> None:
   args = remove_parse(cli_args,settings)
   use_show = 'Use "netlab show images -p libvirt" to display devices with libvirt Vagrant boxes'
 
+  args.custom_box = None
   if args.device and args.box:
     abort('You can specify a device or a box name but not both')
   if args.device:
     if args.device not in settings.devices:
       error_and_exit(f'Invalid device {args.device}',more_hints=use_show)
-    args.box = topology.defaults.devices[args.device].libvirt.image
+    lv_data = topology.defaults.devices[args.device].libvirt
+    args.box = lv_data.image or lv_data.create_image
     if not args.box:
       error_and_exit(
         f'netlab defaults do not specify the libvirt Vagrant box name for {args.device}',
         more_hints=use_show)
+    if lv_data.create_image and args.box != lv_data.create_image:
+      args.custom_box = lv_data.create_image
+
   if args.cleanup:
     volume_purge_confirm(args)
     purge_volume(args)

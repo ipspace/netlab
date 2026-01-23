@@ -227,7 +227,7 @@ def lp_create_bootstrap_iso(args: argparse.Namespace,settings: Box) -> None:
   if os.path.exists('bootstrap.iso'):
     os.remove('bootstrap.iso')
 
-  abort_on_failure("mkisofs -l --iso-level 4 -o bootstrap.iso iso")
+  abort_on_failure("mkisofs -l --iso-level 4 -V cidata -o bootstrap.iso iso")
   strings.print_colored_text('[COMPLETE] ','green',None)
   print("Boostrap ISO image completed\n")
 
@@ -332,7 +332,7 @@ end
 def lp_install_box(args: argparse.Namespace,settings: Box) -> None:
   log.section_header('INSTALL','Installing new Vagrant box')
   devdata = settings.devices[args.device]
-  boxname = devdata.libvirt.image
+  boxname = devdata.libvirt.create_image or devdata.libvirt.image
   if not boxname:
     log.fatal("Libvirt box name is not set for device {args.device}")
 
@@ -394,6 +394,19 @@ Examples: 9.3.8 for Nexus OS, 4.27.0M for Arista EOS, 17.03.04 for CSR...
   if not external_commands.run_command(f"vagrant box add {json_name}"):
     log.fatal(
       f'Failed to add Vagrant box. Fix the error(s) and use "vagrant box add {json_name}" to add it.','libvirt')
+
+  if devdata.libvirt.image != boxname:
+    print(f"""
+You created a custom Vagrant box. To use this box in a lab topology, add the
+following setting to the lab topology:
+
+defaults.devices.{args.device}.libvirt.image: {boxname}
+
+Alternatively, use the "netlab defaults" command to set the custom box as the
+directory-, project- or user default, for example:
+
+netlab defaults devices.{args.device}.libvirt.image={boxname}
+""")
 
 def build(args: argparse.Namespace, topology: Box, workdir: str) -> None:
   skip = args.skip
