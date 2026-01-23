@@ -139,9 +139,11 @@ def add_default_config_mode(node: Box, topology: Box) -> None:
   # Get what's already been processed and the list of configuration snippets. That list
   # has to include initial configuration, all modules, and custom config templates
   #
-  mod_list = ['initial'] + node.get('module',[]) + node.get('config',[])
+  features = devices.get_device_features(node,topology.defaults)
+  mod_list = ['normalize'] if features.initial.get('normalize',False) else []
+  mod_list += ['initial'] + node.get('module',[]) + node.get('config',[])
   node_cfg = node.get('_node_config',{}) + node.get('_daemon_config',{})
-
+  node_cfg_path = devices.get_node_group_var(node,'netlab_config_path',topology.defaults)
   for idx,m in enumerate(mod_list,start=1):
     append_to_list(node,'netlab_ansible_skip_module',m)
     m = m.replace('.','@')                        # Use the @-as-. hack for things like bgp.session
@@ -149,9 +151,11 @@ def add_default_config_mode(node: Box, topology: Box) -> None:
       continue
     file_target = ''                              # By default, config file is not accessible in the container
     if cfg_mode == 'sh':                          # File mapped into container using a containerlab bind
-      file_target = f'/etc/config/{idx:02d}-{m}.sh'
+      cfg_path = node_cfg_path or '/etc/config/'
+      file_target = f'{cfg_path}{idx:02d}-{m}.sh'
     elif cfg_mode == 'cp_sh':                     # File copied into container, must use existing directory
-      file_target = f'/etc/cfg-{idx:02d}-{m}.sh'
+      cfg_path = node_cfg_path or '/etc/cfg-'
+      file_target = f'{cfg_path}-{idx:02d}-{m}.sh'
 
     # Finally, store the mapping of this config item into _node_config
     node._node_config[m] = f'{file_target}:{cfg_mode}'
@@ -438,8 +442,12 @@ class Containerlab(_Provider):
       if status == 0:                                           # Everything OK?
         append_to_list(node._deploy,'success',mod_name)
       else:                                                     # Otherwise we failed
-        if external_commands.CAPTURED_STDERR:                   # Did we get some printout?
-          printout='  '+strings.wrap_error_message(external_commands.CAPTURED_STDERR,indent=2)
+        printout = ''                                           # Collect any printout we might have received
+        if external_commands.CAPTURED_STDOUT:
+          printout +='  '+strings.wrap_error_message(external_commands.CAPTURED_STDOUT,indent=2)
+        if external_commands.CAPTURED_STDERR:
+          printout +='  '+strings.wrap_error_message(external_commands.CAPTURED_STDERR,indent=2)
+        if printout:                                            # And print it
           strings.print_colored_text(txt=printout,color='bright_black')
         log.error(
           f'{mod_name} configuration in namespace {node_name} failed for node {node.name}',

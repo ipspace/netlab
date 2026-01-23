@@ -223,6 +223,7 @@ Some Linux-based containers (Linux nodes, Linux-based Daemons, FRRouting, and Vy
 The scripts used to configure Linux-based containers are specified in the **clab.node_config** dictionary. The dictionary keys must be *initial* (for initial device configuration), configuration modules, or custom configuration templates (for example, *bgp.session*). The dictionary values are the target file names within the container file system (the file name can be empty for host-side scripts), optionally followed by a suffix indicating the type of the configuration script:
 
 * `:sh` for scripts executed within the containers
+* `:cp_sh` for scripts that have to be copied into the containers with **docker cp** command and then executed within the containers. Use this mode for containers that cannot use the *containerlab* **binds** list (for example, KinD nodes).
 * `:ns` for scripts executed within the container network namespace on _netlab_ host (see also [](dev-clab-ns)).
 
 _netlab_ assumes that the modules specified in the **clab.node_config** dictionary are configured through Linux scripts or configuration files. It therefore excludes them from the Ansible playbook executed by the **netlab initial** command.
@@ -231,7 +232,9 @@ _netlab_ assumes that the modules specified in the **clab.node_config** dictiona
 The scripts specified in the **clab.node_config** dictionary are executed in the order in which they're defined. This order must match the sequence in which the configuration modules must be configured.
 ```
 
-You can also use the **netlab_config_mode** device group variable to specify the execution mode (`sh` or `ns`) that applies to all configuration scripts. When a device has that parameter set, the **clab** provider module automatically populates the **node_config** dictionary with all modules and custom templates used on the node that are not already specified in **daemon_config** or **node_config** dictionary.
+### Default Device Configuration Mode
+
+You can also use the **netlab_config_mode** device group variable to specify the execution mode (`sh`/`cp_sh`/`ns`) that applies to all configuration scripts. When a device has that parameter set, the **clab** provider module automatically populates the **node_config** dictionary with all modules and custom templates used on the node that are not already specified in **daemon_config** or **node_config** dictionary.
 
 For example, the following definition was used in the `linux` device in release 25.12 to configure Linux containers with host-side scripts executed in the container network namespace:
 
@@ -252,15 +255,42 @@ clab:
     netlab_config_mode: ns
 ```
 
+### Rendering Linux Configuration Scripts
+
 The **clab.node_config** dictionary is copied into the **clab.config_templates** dictionary (**daemon_config** dictionary takes precedence). The templates specified in the **node_config** dictionary are thus rendered into `clab_files` during the **netlab up**/**netlab create** process (using the standard template search process) and mapped into the container file system through **clab.binds**.
+
+Some devices (for example, FRRouting) use a mixture of **bash** scripts and device configurations. Some others (for example, cEOS containers) use traditional device configurations that can be deployed through Linux scripts. In both cases, the device configurations converted to Linux scripts require an *[interpreter directive](https://en.wikipedia.org/wiki/Shebang_(Unix))* as the first line of the script.
+
+You can use the **netlab_config_wrapper** group variable to specify a Jinja2 template that converts device configuration into a Linux script. The script can use two extra variables:
+
+* **netlab_config_mode** to determine whether it needs to do configuration-to-script conversion
+* **netlab_config_text** contains the already-rendered device configuration.
+
+For example, FRR device definition contains the following **clab.group_vars.netlab_config_wrapper** definition to create *vtysh* scripts from device configurations:
+
+```
+netlab_config_wrapper: |
+  {% if netlab_config_mode == 'sh' and netlab_config_text and not netlab_config_text.startswith("#!") %}
+  #!/usr/bin/vtysh -f
+  #
+  {% endif %}
+  {{ netlab_config_text }}
+```
+
+### Deploying Linux Configuration Scripts
 
 **netlab initial** (also invoked as the last step in the **netlab up** process) executes scripts specified in the **clab.node_config** dictionary:
 
 * Scripts with `:sh` suffix are executed with **docker exec _container_ _script_** command. The scripts should therefore include the shebang interpreter directive on the first line.
+* Scripts with `:cp_sh` suffix are copied into the container with the **docker cp** command and then executed like they would have the `:sh` suffix.
 * Scripts with `:ns` suffix are executed with **sudo ip netns exec _namespace_ sh _script_**
 * Other scripts are treated like configuration files and are not executed.
 
 The Linux scripts are executed before **netlab initial** executes the Ansible playbook.
+
+```{tip}
+Some devices cannot be configured as soon as *‌containerlab* claims the container has started. You can use the **‌netlab_config_exec** group variable to specify a list of commands that have to be executed after the container has started (FRR containers use `[ sleep 1 ]` to ensure FRR daemons are ready) or the **‌netlab_ready** group variable to specify that the device should have a working SSH server before it can be configured.
+```
 
 (change-search-paths)=
 ## Changing and Troubleshooting Search Paths
