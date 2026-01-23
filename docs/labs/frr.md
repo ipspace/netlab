@@ -23,3 +23,5 @@ All you have to do is identify the FRR version that was installed on the VM and 
 [   21.100452] cloud-init[500]: FRR version installed: 10.5.1
 [   21.100844] cloud-init[500]: =================================
 ```
+
+If the installation process fails, the VM remains running. You can log in as user **vagrant** (password **vagrant**) and investigate the cause of the error (or [open an issue](https://github.com/ipspace/netlab/issues/new/choose)). To disconnect from the VM, use the **virsh** disconnect sequence (usually `Ctrl-]`).
