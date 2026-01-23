@@ -199,22 +199,37 @@ nodes:
           intf: eth1
           ipv4: 172.16.1.1
   rtr:
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      ospf: /etc/config/02-ospf.sh:sh
     af:
       ipv4: true
     box: quay.io/frrouting/frr:10.0.1
     clab:
       binds:
+      - source: node_files/rtr/initial
+        target: /etc/config/01-initial.sh
+      - source: node_files/rtr/ospf
+        target: /etc/config/02-ospf.sh
       - source: node_files/rtr/daemons
         target: /etc/frr/daemons
       - mode: ro
         source: node_files/-shared-hosts
         target: /etc/hosts
       config_templates:
+      - mode: sh
+        source: initial
+        target: /etc/config/01-initial.sh
+      - mode: sh
+        source: ospf
+        target: /etc/config/02-ospf.sh
       - source: daemons
         target: /etc/frr/daemons
       - mode: shared
         source: hosts
         target: /etc/hosts
+      exec:
+      - sleep 1
       image: none
       kind: linux
     device: frr
@@ -273,6 +288,9 @@ nodes:
     - ospf
     mtu: 1500
     name: rtr
+    netlab_ansible_skip_module:
+    - initial
+    - ospf
     ospf:
       af:
         ipv4: true

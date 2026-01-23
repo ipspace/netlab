@@ -86,7 +86,24 @@ def render_template(
   return template.render(**data)
 
 """
+render_wrapper: when a device has a script wrapper template, use that template to create the
+final configuration script. The script wrappers should be simple, so we're using a shared Jinja2
+environment with an empty search path.
+"""
+J2_WRAPPER_ENV: typing.Optional[Environment] = None
+
+def render_wrapper(wrapper: str, cfg_text: str, data: typing.Dict) -> str:
+  global J2_WRAPPER_ENV
+
+  if not J2_WRAPPER_ENV:
+    J2_WRAPPER_ENV = get_jinja2_env_for_path(())
+
+  return J2_WRAPPER_ENV.from_string(wrapper).render(netlab_config_text=cfg_text,**data)
+
+"""
 write_template: Applies a custom template (in_folder/j2) and writes it to the given file path (out_folder/filename)
+
+Might have to apply a wrapper (specified in 'netlab_config_wrapper' group variable) to rendered text
 """
 def write_template(
         in_folder: str,
@@ -99,7 +116,9 @@ def write_template(
     print(f"write_template {in_folder}/{j2} -> {out_folder}/{filename}")
   # Make sure we fail before creating any file(s)
   r_text = render_template(data=data,j2_file=j2,path=in_folder,extra_path=extra_path)
-
+  wrapper = data.get('netlab_config_wrapper',None)
+  if wrapper:
+    r_text = render_wrapper(wrapper,r_text,data)
   pathlib.Path(out_folder).mkdir(parents=True, exist_ok=True)
   out_file = f"{out_folder}/{filename}"
   create_file_from_text(out_file,r_text)
@@ -262,7 +281,8 @@ def render_config_template(
       template_path: str,
       output_file: str,
       provider_path: str,
-      topology: Box) -> bool:
+      topology: Box,
+      config_mode: typing.Optional[str] = None) -> bool:
 
   if node_dict is None:
     node_dict = template_node_data(node,topology)
@@ -272,6 +292,7 @@ def render_config_template(
                     fname=template_id,
                     topology=topology,
                     provider_path=provider_path)
+    node_dict['netlab_config_mode'] = config_mode
     write_template(
       in_folder=os.path.dirname(template_path),
       j2=os.path.basename(template_path),
@@ -279,6 +300,7 @@ def render_config_template(
       out_folder=os.path.dirname(output_file),
       filename=os.path.basename(output_file),
       extra_path=node_paths)
+    node_dict.pop('netlab_config_mode',None)
     return True
   except Exception as ex:                               # Gee, we failed
     short_path = template_path.replace(str(get_moddir()),'package:')
@@ -287,6 +309,7 @@ def render_config_template(
       more_data=[f'Template source: {short_path}',f'error: {str(ex)}'] + template_error_location(ex),
       module='initial',
       category=log.IncorrectValue)
+    node_dict.pop('netlab_config_mode',None)
     return False
 
 """
@@ -299,7 +322,8 @@ def create_config_file(
       module: str,
       provider_path: str,
       output_path: Path,
-      output_file: str) -> bool:
+      output_file: str,
+      config_mode: typing.Optional[str] = None) -> bool:
 
   t_path = find_provider_template(
               node=node,
@@ -321,7 +345,8 @@ def create_config_file(
           template_path=t_path,
           output_file=str(output_path / output_file),
           provider_path=provider_path,
-          topology=topology)
+          topology=topology,
+          config_mode=config_mode)
   
   if OK and log.VERBOSE:
     log.info(f"Rendered {module} template for {node.name} into {output_file}")

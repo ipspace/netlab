@@ -19,7 +19,7 @@ class ConfigurationFiles(_TopologyOutput):
 
   def write(self, topology: Box) -> None:
 
-    def do_config(t_name: str, f_name: str) -> bool:
+    def do_config(t_name: str, f_name: str, cfg_mode: str) -> bool:
       return templates.create_config_file(
         node=n_data,
         node_dict=node_dict,
@@ -27,7 +27,8 @@ class ConfigurationFiles(_TopologyOutput):
         module=t_name,
         provider_path=provider_path,
         output_path=node_files,
-        output_file=f_name)
+        output_file=f_name,
+        config_mode=cfg_mode)
 
     check_writeable('device configuration files')
 
@@ -60,11 +61,11 @@ class ConfigurationFiles(_TopologyOutput):
             continue
 
           shared_list.append(cfg_source)
-          if do_config(cfg_source,SHARED_PREFIX+cfg_source):
+          if do_config(cfg_source,SHARED_PREFIX+cfg_source,cfg_mode):
             create_list.append(cfg_source)
         else:
           cfg_path = f'{n_name}/{cfg_source}'
-          if do_config(cfg_source,cfg_path):
+          if do_config(cfg_source,cfg_path,cfg_mode):
             create_list.append(cfg_source)
           if cfg_mode in ('sh','cp_sh'):
             (node_files / cfg_path).chmod(0o755)
@@ -82,7 +83,7 @@ class ConfigurationFiles(_TopologyOutput):
           continue
         if module in create_list:
           continue
-        if do_config(module,f'{n_name}/{module}'):
+        if do_config(module,f'{n_name}/{module}','cfg'):
           create_list.append(module)
 
       if not log.VERBOSE and create_list:

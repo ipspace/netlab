@@ -129,22 +129,37 @@ nodes:
           allocation: id_based
           ipv4: 172.16.0.0/24
   s:
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      vlan: /etc/config/02-vlan.sh:sh
     af:
       ipv4: true
     box: quay.io/frrouting/frr:10.0.1
     clab:
       binds:
+      - source: node_files/s/initial
+        target: /etc/config/01-initial.sh
+      - source: node_files/s/vlan
+        target: /etc/config/02-vlan.sh
       - source: node_files/s/daemons
         target: /etc/frr/daemons
       - mode: ro
         source: node_files/-shared-hosts
         target: /etc/hosts
       config_templates:
+      - mode: sh
+        source: initial
+        target: /etc/config/01-initial.sh
+      - mode: sh
+        source: vlan
+        target: /etc/config/02-vlan.sh
       - source: daemons
         target: /etc/frr/daemons
       - mode: shared
         source: hosts
         target: /etc/hosts
+      exec:
+      - sleep 1
       kind: linux
     device: frr
     hostname: clab-input-s
@@ -244,6 +259,9 @@ nodes:
     - vlan
     mtu: 1500
     name: s
+    netlab_ansible_skip_module:
+    - initial
+    - vlan
     provider: clab
     role: router
     vlan:
