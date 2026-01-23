@@ -80,7 +80,7 @@ def find_vagrant_box(args: argparse.Namespace) -> None:
   # note: str(boxes) used just to keep mypy happy
   box_list = [ line for line in str(boxes).split('\n') 
                       if line.startswith(args.box+' ') or 
-                         args.custom_box and line.startswith(args.custom_box) ]
+                         args.custom_box and line.startswith(args.custom_box+' ') ]
   if not box_list:
     abort(f'The Vagrant box {args.box} cannot be found')
 
