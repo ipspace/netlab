@@ -443,10 +443,12 @@ class Containerlab(_Provider):
         append_to_list(node._deploy,'success',mod_name)
       else:                                                     # Otherwise we failed
         printout = ''                                           # Collect any printout we might have received
-        if external_commands.CAPTURED_STDOUT:
-          printout +='  '+strings.wrap_error_message(external_commands.CAPTURED_STDOUT,indent=2)
+        if external_commands.CAPTURED_STDOUT:                   # ... making sure it ends with a single newline
+          stdout = external_commands.CAPTURED_STDOUT.strip(" \n") + "\n"
+          printout +='  '+strings.wrap_error_message(stdout,indent=2)
         if external_commands.CAPTURED_STDERR:
-          printout +='  '+strings.wrap_error_message(external_commands.CAPTURED_STDERR,indent=2)
+          stderr = external_commands.CAPTURED_STDERR.strip(" \n") + "\n"
+          printout +='  '+strings.wrap_error_message(stderr,indent=2)
         if printout:                                            # And print it
           strings.print_colored_text(txt=printout,color='bright_black')
         log.error(

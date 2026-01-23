@@ -100,7 +100,7 @@ def create_node_configs(
 
     for module in item_list:
       config_mode = template_mode.get(module,default_suffix)
-      o_suffix = '' if default_suffix == 'none' else '.sh' if (config_mode in ('ns','sh')) else '.cfg'
+      o_suffix = '' if default_suffix == 'none' else '.sh' if (config_mode in ('ns','sh','cp_sh')) else '.cfg'
       if flatten_output_fname:                          # Create all output files in the same directory?
         o_fname = f'{n_name}.{module}{o_suffix}'        # ... we need node name in file name
         o_fname = o_fname.replace('/','.')              # ... and remove the paths
