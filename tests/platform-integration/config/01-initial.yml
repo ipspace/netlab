@@ -1,3 +1,4 @@
+---
 message: |
   This topology tests various device configuration mechanisms
 
@@ -10,6 +11,9 @@ nodes:
   h1:
     device: linux
     provider: clab        # Linux container, configured through namespace scripts
+    config.inline: |      # But not the custom config template
+      #!/bin/bash
+      echo "Wazzup" >/etc/wazzup
     clab:
       binds:
         hello.txt: /etc/hello/world.txt
@@ -20,6 +24,13 @@ nodes:
     provider: libvirt     # Linux VM, configured through Ansible
     clab.binds:
     - hello.txt:/etc/hello/world.txt
+  h3:
+    device: linux
+    provider: clab
+    netlab_config_mode: sh  # Custom config templates result in directly executed bash scripts
+    config.inline: |
+      #!/bin/sh
+      echo "Wazzup" >/etc/wazzup
   r1:
     device: eos
     provider: clab        # Arista EOS container, configured through Ansible
@@ -51,7 +62,7 @@ links:
   shutdown: True
 - r2:
   r3:
-- r3-h2
+- r3-h2-h3
 - r3:
   r4:
     shutdown: True
@@ -96,3 +107,9 @@ validate:
     exec: cat /etc/hello/world
     valid: >-
       'h1' in stdout
+  wazzup:
+    nodes: [ h1, h3 ]
+    devices: [ linux ]
+    exec: cat /etc/wazzup
+    valid: >-
+      'Wazzup' in stdout
