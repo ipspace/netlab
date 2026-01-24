@@ -31,7 +31,7 @@
 | Dell OS10 [❗](caveats-os10) | dellos10     | full          | 
 | Fortinet FortiOS [❗](caveats-fortios) | fortios | minimal  |
 | FRRouting (FRR) [❗](caveats-frr) | frr     | full          |
-| [Generic Linux host](labs/linux.md) | linux | full          |
+| [Generic Linux host](generic-linux-devices) | linux | full          |
 | Juniper vMX [❗](caveats-vmx) | vmx         | best effort   |
 | Juniper vPTX (vJunos EVO) [❗](caveats-vptx) | vptx | full  |              
 | Juniper vSRX 3.0 [❗](caveats-vsrx) | vsrx  | best effort   |

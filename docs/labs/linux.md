@@ -1,7 +1,7 @@
 (generic-linux-devices)=
 # Generic Linux Devices
 
-You can run Linux hosts or routers in virtual machines or containers. The default image used for a Linux virtual machine is Ubuntu 20.04, the default container image is Python 3.9 container running on Alpine Linux.
+You can run Linux hosts or routers in virtual machines or containers. The default image used for a Linux virtual machine is Ubuntu 24.04, and the default container image is a Python 3.13 container running on Alpine Linux (use the **‌netlab show images --device linux** command to display the actual defaults).
 
 To use any other Linux distribution or container, or to start a home-built Vagrant box or Docker container, add **image** attribute with the name of Vagrant box or Docker container to the node data[^GL]. The only requirements for a Linux virtual machine is working Python environment (to support Ansible playbooks used in **netlab initial** command) and the presence of **ip** command used in initial device configuration. Docker containers have no requirements ([see below](clab-linux))
 
@@ -54,13 +54,13 @@ The netlab-generated entries are *appended* to the existing `/etc/hosts` file on
 (linux-forwarding)=
 ## Static Routes and Packet Forwarding on Linux
 
-Linux devices are usually hosts using [static routes](node-router-host) toward the [default gateway](links-gateway).
+Linux devices are usually hosts that use [static routes](node-router-host) with the [default gateway](links-gateway) as the next hop. The default route is created by *containerlab* and points to the management network, allowing Linux containers to access external destinations through the management network.
 
-IPv4 and IPv6 packet forwarding on Linux devices also is controlled with the **role** node parameter:
+IPv4 and IPv6 packet forwarding on Linux devices is controlled with the **role** node parameter:
 
 * **host** (default): a Linux device does not perform packet forwarding and cannot be the default gateway for other hosts.
 * **gateway**: a Linux device does not perform packet forwarding but acts as the default gateway for other hosts. You will have to install a proxy (or a similar solution) for inter-subnet packet forwarding.
-* **router**: A Linux device performs packet forwarding but does not run routing protocols. Use **frr** device if you want to run routing protocols on a Linux server.
+* **router**: A Linux device performs packet forwarding but does not run routing protocols. Use the **frr** device if you want to run routing protocols on a Linux server.
 
 (linux-loopback)=
 ## Loopback Interface
@@ -114,12 +114,12 @@ _netlab_ supports two Linux networking configuration mechanisms:
 * Netplan-based configuration on Ubuntu -- used when  the **netlab_linux_distro** group variable is set to **ubuntu** (default setting)
 * Traditional configuration with **ip** commands.
 
-You might have to change the initial configuration mechanism to *traditional configuration* if you're using Linux virtual machines that are not based on Ubuntu. To do that, set the node **netlab_linux_distro** parameter to **vanilla** or set **defaults.devices.linux._provider_.group_vars.netlab_linux_distro** variable to **vanilla**.
+You might have to switch the initial configuration mechanism to *traditional configuration* if you're using Linux virtual machines that are not based on Ubuntu. To do that, set the node **netlab_linux_distro** parameter to **vanilla** or set **defaults.devices.linux._provider_.group_vars.netlab_linux_distro** variable to **vanilla**.
 
 (linux-ubuntu-package)=
-## Ubuntu Package Installation During Initial Configuration
+### Ubuntu Package Installation During Initial Configuration
 
-If needed the _netlab_ initial configuration script installs **lldpd** and **net-tools** Ubuntu packages.
+If needed, the _netlab_ initial configuration script installs **lldpd** and **net-tools** Ubuntu packages on Linux virtual machines.
 
 * **net-tools** package is installed if the **netlab_net_tools** variable is set to **True** (default setting is **False**) and if the **arp** command cannot be found.
 * **lldpd** package is installed if the **netlab_lldp_enable** variable is set to **True** (default setting is **False**) and if the **lldpd.service** is not running.
@@ -131,10 +131,10 @@ _netlab_ initial configuration script will skip Ubuntu package installation if i
 (clab-linux)=
 ## Initial Configuration on Linux Containers
 
-The initial configuration process (**[netlab initial](../netlab/initial.md)**) does not rely on commands executed within Linux containers:
+The initial configuration (**[netlab initial](../netlab/initial.md)**) of Linux containers uses a process that does not rely on specific programs being available within the containers:
 
-* The `/etc/hosts` file is generated during the **[netlab create](../netlab/create.md)** process from the ```templates/provider/clab/frr/hosts.j2``` template (see [](clab-config-template)).
-* Interface IP addresses, static routes to the default gateway (see [](linux-forwarding)), and any lag bonding interfaces are configured with **ip** commands executed on the Linux host but within the container network namespace.
-* Static default route points to the management interface.
+* The `/etc/hosts` file is generated during the **[netlab create](../netlab/create.md)** process from the ```templates/provider/clab/frr/hosts.j2``` template (see [](clab-config-template)) and mapped into the container.
+* Initial device configuration (interface IP addresses), static routes to the default gateway (**routing** module; see also [](linux-forwarding)), and **lag** and **vlan** configurations are configured with **ip** commands executed on the Linux host but within the container network namespace. You can, therefore, use any container image as a Linux node.
+* All other configuration templates (for example, custom configuration templates) should result in executable scripts (including shebang in the first line) that will be executed within the container, or on the host within the container namespace if the template name ends with `-clab.j2`.
 
-You can, therefore, use any container image as a Linux node.
+If you want to deploy custom configuration templates on Linux containers with directly-executed **bash** scripts (bypassing Ansible playbooks and therefore [significantly reducing the lab configuration time](https://blog.ipspace.net/2026/01/netlab-faster-without-ansible/)), set the **netlab_config_mode** node variable to `sh` (to execute scripts within the container) or `ns` (to execute scripts on the host, but within the container namespace). You can also set the equivalent device group variable (**defaults.devices.linux.clab.group_vars.netlab_config_mode**) in [topology defaults](topo-defaults).
