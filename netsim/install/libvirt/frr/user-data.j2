@@ -43,9 +43,9 @@ write_files:
     #!/bin/bash
     set -e
     export DEBIAN_FRONTEND=noninteractive
-    echo "Installing ifupdown, GPG, curl, and iproute2"
+    echo "Installing ifupdown2, GPG, curl, and iproute2"
     apt-get update -qq >/dev/null
-    apt-get install -qq ifupdown curl gnupg iproute2 >/dev/null
+    apt-get install -qq ifupdown2 curl gnupg iproute2 >/dev/null
     echo "Installing FRR"
     curl -s https://deb.frrouting.org/frr/keys.asc >/etc/apt/trusted.gpg.d/frr.asc
     FRRVER="frr-stable"
@@ -66,6 +66,13 @@ write_files:
     echo
     echo
     shutdown -P now
+{% if netlab_mgmt_vrf|default(False) %}
+- path: /etc/sysctl.d/VRFBindAll.conf
+  content: |
+    # Enable listening to TCP services in all VRFs
+    #
+    net.ipv4.tcp_l3mdev_accept=1
+{% endif %}
 - path: /etc/network/interfaces
   content: |
     # interfaces(5) file used by ifup(8) and ifdown(8)
@@ -76,9 +83,18 @@ write_files:
     auto lo
     iface lo inet loopback
 
+{% if netlab_mgmt_vrf|default(False) %}
+    # Management VRF
+    auto mgmt
+    iface mgmt inet manual
+      vrf-table 1042
+{% endif %}
     # The primary network interface
     allow-hotplug eth0
     iface eth0 inet dhcp
+{% if netlab_mgmt_vrf|default(False) %}
+      vrf mgmt
+{% endif %}
 - path: /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
   content: |
     network: {config: disabled}

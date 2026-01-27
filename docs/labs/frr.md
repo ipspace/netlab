@@ -1,7 +1,7 @@
 (build-frr)=
 # Building an FRRouting Libvirt Box
 
-By default, _netlab_ uses Debian Vagrant boxes to start FRRouting virtual machines. The Debian boxes do not contain the FRR package (or a few other packages). These packages are installed whenever a lab starts, resulting in significantly longer start times.
+By default, _netlab_ uses Debian Vagrant boxes to start FRRouting virtual machines. The Debian boxes do not contain the FRR package (or a few other packages). These packages are installed whenever an FRR VM is started, resulting in significantly longer start times.
 
 You can use the **netlab libvirt package** command to build a custom FRRouting Vagrant box:
 
@@ -43,3 +43,17 @@ netlab defaults devices.frr.libvirt.image=netlab/frr
 ```
 
 Finally, use the **netlab libvirt remove --box netlab/frr** command if you want to remove the custom FRR Vagrant box.
+
+## Using a Management VRF
+
+Unline FRR containers, the default or custom-built FRR VM does not have the `eth0` interface in a management VRF. If you want to have the management interface (and the associated default route) on FRR VMs in a management VRF, set the **netlab_mgmt_vrf** parameter with the **[netlab defaults](netlab-defaults)** command:
+
+```
+netlab defaults devices.frr.libvirt.group_vars.netlab_mgmt_vrf=True
+```
+
+Rebuild the FRR VM after changing the **netlab_mgmt_vrf** parameter. The modified VM will include:
+
+* A management VRF (`mgmt`)
+* `eth0` enslaved (according to [Linux docs](https://docs.kernel.org/networking/vrf.html)) to the `mgmt` device
+* **sysctl** parameter `net.ipv4.tcp_l3mdev_accept` set to 1 to enable the SSH daemon to accept SSH sessions on VRF interfaces.

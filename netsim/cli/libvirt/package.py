@@ -4,6 +4,7 @@
 # Build a Vagrant box for a network device
 #
 import argparse
+import glob
 import os
 import pathlib
 import re
@@ -19,7 +20,7 @@ from ...providers import get_cpu_model
 from ...providers.libvirt import LIBVIRT_MANAGEMENT_NETWORK_NAME, create_vagrant_network
 from ...utils import files as _files
 from ...utils import log, status, strings, templates
-from .. import external_commands, parser_add_debug, parser_add_verbose
+from .. import error_and_exit, external_commands, parser_add_debug, parser_add_verbose
 
 
 def package_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
@@ -34,6 +35,11 @@ def package_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
     dest='skip',
     action='store',
     default='',help=argparse.SUPPRESS)
+  parser.add_argument(
+    '--yes',
+    dest='yes',
+    action='store_true',
+    help='Answer "yes" to all yes/no questions')
   parser.add_argument(
     dest='device',
     action='store',
@@ -68,7 +74,11 @@ status of your lab instances with "netlab status" and stop them with
 """
 Make user confirm they know what they're doing
 """
-def box_build_confirm() -> None:
+def box_build_confirm(args: argparse.Namespace) -> None:
+  if args.yes:
+    log.info('Box building confirmed through CLI --yes flag')
+    return
+
   log.section_header('WARNING','Read this first','yellow')
   print("""
 This script tries to build a Vagrant box for libvirt provider out of a VM disk.
@@ -224,6 +234,16 @@ def lp_create_bootstrap_iso(args: argparse.Namespace,settings: Box) -> None:
   isodir = _files.get_moddir() / "install/libvirt" / devdata.libvirt.create_iso
   shutil.rmtree('iso',ignore_errors=True)
   shutil.copytree(isodir,'iso')
+  for iso_tpt in glob.glob('iso/*.j2'):
+    dt_data = devdata + devdata.libvirt + devdata.libvirt.group_vars
+    tpt_name = os.path.basename(iso_tpt)
+    out_name = tpt_name.replace('.j2','')
+    templates.write_template(
+      in_folder='./iso',j2=tpt_name,
+      data=dt_data.to_dict(),
+      out_folder='iso',filename=out_name)
+    os.remove(iso_tpt)
+    log.info(f'Created iso/{out_name} from Jinja2 template')
   if os.path.exists('bootstrap.iso'):
     os.remove('bootstrap.iso')
 
@@ -392,8 +412,14 @@ Examples: 9.3.8 for Nexus OS, 4.27.0M for Arista EOS, 17.03.04 for CSR...
   strings.print_colored_text('[IMPORT]  ','green',None)
   print(f"Importing Vagrant box {boxname} version {version}")
   if not external_commands.run_command(f"vagrant box add {json_name}"):
-    log.fatal(
-      f'Failed to add Vagrant box. Fix the error(s) and use "vagrant box add {json_name}" to add it.','libvirt')
+    error_and_exit(
+      f'Failed to add Vagrant box. Fix the error(s) and use "vagrant box add {json_name}" to add it.',
+      module='libvirt',
+      category=log.FatalError,
+      more_hints=[
+        f'If you rebuilt an already-installed box, remove the old one with',
+        f'netlab libvirt remove --box {boxname}'
+      ])
 
   if devdata.libvirt.image != boxname:
     print(f"""
@@ -410,7 +436,7 @@ netlab defaults devices.{args.device}.libvirt.image={boxname}
 
 def build(args: argparse.Namespace, topology: Box, workdir: str) -> None:
   skip = args.skip
-  box_build_confirm()
+  box_build_confirm(args)
   settings = topology.defaults
 
   # Set environment variables to ensure we have a consistent LIBVIRT environment
