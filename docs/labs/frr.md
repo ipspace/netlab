@@ -24,4 +24,22 @@ All you have to do is identify the FRR version that was installed on the VM and 
 [   21.100844] cloud-init[500]: =================================
 ```
 
+```{tip}
 If the installation process fails, the VM remains running. You can log in as user **vagrant** (password **vagrant**) and investigate the cause of the error (or [open an issue](https://github.com/ipspace/netlab/issues/new/choose)). To disconnect from the VM, use the **virsh** disconnect sequence (usually `Ctrl-]`).
+```
+
+After finishing the box-building process, the **netlab libvirt package** command tells you how to use the custom box in a lab topology or as a default FRR box:
+
+```
+You created a custom Vagrant box. To use this box in a lab topology, add the
+following setting to the lab topology:
+
+defaults.devices.frr.libvirt.image: netlab/frr
+
+Alternatively, use the "netlab defaults" command to set the custom box as the
+directory-, project- or user default, for example:
+
+netlab defaults devices.frr.libvirt.image=netlab/frr
+```
+
+Finally, use the **netlab libvirt remove --box netlab/frr** command if you want to remove the custom FRR Vagrant box.
