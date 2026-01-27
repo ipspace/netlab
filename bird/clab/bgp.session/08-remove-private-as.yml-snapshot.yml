@@ -16,6 +16,7 @@ defaults:
       daemon_config:
         bgp@session: /etc/bird/bgp.session.conf
         bird: /etc/bird/bird.conf
+        bfd: /etc/bird/bfd.conf
         bgp: /etc/bird/bgp.mod.conf
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
@@ -705,7 +706,7 @@ defaults:
           netlab_mgmt_vrf: true
           netlab_config_mode: sh
           netlab_config_wrapper: |
-            {% if not netlab_config_text.startswith("#!") %}
+            {% if netlab_config_mode == 'sh' and netlab_config_text and not netlab_config_text.startswith("#!") %}
             #!/usr/bin/vtysh -f
             #
             {% endif %}
@@ -714,6 +715,8 @@ defaults:
           - sleep 1
         image: quay.io/frrouting/frr:10.5.1
         kmods:
+          initial:
+          - vrf?
         node:
           kind: linux
           config_templates:
@@ -3496,6 +3499,11 @@ defaults:
         netlab_lldp_enable: false
         netlab_net_tools: false
       clab:
+        node_config:
+          initial: :ns
+          lag: :ns
+          vlan: :ns
+          routing: :ns
         features:
           initial:
             roles:
@@ -3521,7 +3529,6 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
-          netlab_config_mode: ns
       external:
         image: none
       graphite:
@@ -4542,6 +4549,11 @@ defaults:
           static: RTS_STATIC_DEVICE,RTS_STATIC
         netlab_device_type: bird
       clab:
+        node_config:
+          initial: :ns
+          lag: :ns
+          vlan: :ns
+          routing: :ns
         features:
           initial:
             roles:
@@ -4566,11 +4578,11 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
-          netlab_config_mode: sh
           netlab_show_command:
           - birdc
           - show $@
           docker_shell: bash -il
+          netlab_config_mode: sh
         build: true
       external:
         image: none
@@ -4579,6 +4591,7 @@ defaults:
       daemon_config:
         bgp@session: /etc/bird/bgp.session.conf
         bird: /etc/bird/bird.conf
+        bfd: /etc/bird/bfd.conf
         bgp: /etc/bird/bgp.mod.conf
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
@@ -4637,6 +4650,11 @@ defaults:
         netlab_net_tools: false
         netlab_device_type: dnsmasq
       clab:
+        node_config:
+          initial: :ns
+          lag: :ns
+          vlan: :ns
+          routing: :ns
         features:
           initial:
             roles:
@@ -4660,7 +4678,6 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
-          netlab_config_mode: ns
           docker_shell: bash -il
         build: true
       external:
@@ -8509,7 +8526,7 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1768646323.5358183
+    timestamp: 1769506757.4548779
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
@@ -8697,30 +8714,28 @@ nodes:
       kind: linux
       config_templates:
       - source: initial
-        target: /etc/config/01-initial.sh
-        mode: sh
+        target: ''
+        mode: ns
+      - source: routing
+        target: /etc/bird/routing.mod.conf
       - source: bgp.session
         target: /etc/bird/bgp.session.conf
       - source: bird
         target: /etc/bird/bird.conf
       - source: bgp
         target: /etc/bird/bgp.mod.conf
-      - source: routing
-        target: /etc/bird/routing.mod.conf
       - source: hosts
         target: /etc/hosts
         mode: shared
       binds:
-      - target: /etc/config/01-initial.sh
-        source: node_files/dut/initial
+      - target: /etc/bird/routing.mod.conf
+        source: node_files/dut/routing
       - target: /etc/bird/bgp.session.conf
         source: node_files/dut/bgp.session
       - target: /etc/bird/bird.conf
         source: node_files/dut/bird
       - target: /etc/bird/bgp.mod.conf
         source: node_files/dut/bgp
-      - target: /etc/bird/routing.mod.conf
-        source: node_files/dut/routing
       - target: /etc/hosts
         source: node_files/-shared-hosts
         mode: ro
@@ -8738,6 +8753,9 @@ nodes:
       bird: /etc/bird/bird.conf
       bgp: /etc/bird/bgp.mod.conf
       routing: /etc/bird/routing.mod.conf
+    _node_config:
+      initial: :ns
+      routing: :ns
     af:
       ipv4: true
       ipv6: true
@@ -8781,8 +8799,6 @@ nodes:
     - bgp
     - routing
     - initial
-    _node_config:
-      initial: /etc/config/01-initial.sh:sh
   x1:
     bgp:
       advertise_loopback: true
