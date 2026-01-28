@@ -12,8 +12,9 @@ def adjust_kind_nodes(node: Box, topology: Box) -> None:
     node.module = []                                        # ... make sure it has none
 
 def setup_kind_cluster(node: Box, topology: Box) -> None:
-  k_workers = node.get('kind.workers',0)
-  node.clab['startup-config'] = f'node_files/{node.name}/initial'
+  k_workers = node.get('kind.workers',0)                    # Number of worker nodes (zero: single CP/DP node)
+  if 'startup-config' not in node.clab:                     # Initial K8S cluster config
+    node.clab['startup-config'] = f'node_files/{node.name}/initial'
   kind_name = node.name                                     # Cluster name
   k_nodes   = [f'{kind_name}-control-plane']                # List of cluster nodes, starting with control plane
   if k_workers > 0:                                         # Add workers if requested
@@ -21,6 +22,7 @@ def setup_kind_cluster(node: Box, topology: Box) -> None:
     for extra_worker in range(2,k_workers + 1):             # ... but the naming scheme is a bit peculiar
       k_nodes.append(f'{kind_name}-worker{extra_worker}')
 
+  cp_attr = ('provider','routing','box','role','loopback')
   for kn_name in k_nodes:                                   # Now create cluster nodes
     kn_data = topology.nodes[kn_name]                       # Box dictionary is created on first reference
     kn_data.name   = kn_name                                # Set node name
@@ -28,9 +30,9 @@ def setup_kind_cluster(node: Box, topology: Box) -> None:
     kn_data.clab.name = kn_name                             # ... container name (does not follow regular convention)
     kn_data.device = 'kind-node'                            # ... device = member of kind cluster
     kn_data.interfaces = []                                 # ... and no interfaces so far
-    for attr in ('provider','routing','box'):               # Copy a few attributes from the cluster
-      if attr in node:
-        kn_data[attr] = node[attr]
+    for k,v in node.items():                                # Copy select attributes from cluster node
+      if k in cp_attr or k.startswith('netlab_') and k not in kn_data:
+        kn_data[k] = v
 
   link_index = 0                                            # Create links to cluster nodes
   while link_index < len(topology.links):                   # Iterate over all links (the list might grow)
@@ -67,7 +69,7 @@ Adjust KinD cluster settings before lab transformation starts
 """
 def init(topology: Box) -> None:
   for node in list(topology.nodes.values()):
-    if node.device != 'kind':
+    if node.get('device','') != 'kind':
       continue
     adjust_kind_nodes(node,topology)                        # Initial tweaks to the KinD nodes
   return

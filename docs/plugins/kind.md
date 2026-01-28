@@ -89,3 +89,56 @@ links:
 | kc-control-plane | eth1        | X_1             | kc-control-plane -> [sw,kc-worker,kc-worker2] |
 | kc-worker     | eth1        | X_1             | kc-worker -> [sw,kc-control-plane,kc-worker2] |
 | kc-worker2    | eth1        | X_1             | kc-worker2 -> [sw,kc-control-plane,kc-worker] |
+
+## Other Networking Parameters
+
+* IPv4/IPv6 forwarding is enabled on the KinD containers. To disable it, set the **netlab_ip_forwarding** parameter of the cluster node to *False* ([more details](linux-forwarding)), for example:
+
+```
+provider: clab
+plugin: [ kind ]
+
+nodes:
+  kc:
+    device: kind
+    kind.workers: 2
+    netlab_ip_forwarding: False
+```
+
+* KinD containers do not have loopback interfaces. To add the loopback interface to KinD containers, set the **loopback** parameter of the cluster node to *True*.
+
+## Additional Cluster Node Parameters
+
+You can influence the parameters of the control plane or worker nodes using the attributes of the cluster node. The following parameters are copied from the cluster node (device *kind*) to KinD containers:
+
+* The **box**, **role**, and **loopback** parameters
+* The **routing** dictionary (allowing you to specify custom static routes)
+* All parameters starting with **netlab\_** (allowing you to disable IP forwarding).
+
+## Setting Parameters on Individual KinD Containers
+
+You can also change the parameters of individual KinD containers:
+
+* Add them to the lab topology (use the node names the plugin will use)
+* Set the node **device** to *kind-node* if you haven't specified the default device in the lab topology.
+* Set the parameters you want to change, for example, **clab.exec** to execute commands on individual containers once they're started.
+
+Example:
+
+```
+provider: clab
+plugin: [ kind ]
+
+nodes:
+  kc:
+    device: kind
+    kind.workers: 2
+  kc-control-plane:
+    clab.exec:
+    - echo "hello, world"
+    device: kind-node
+```
+
+```{warning}
+You cannot use **‌clab.binds** or **‌clab.config_templates** parameters; containerlab does not use these parameters on members of KinD clusters.
+```
