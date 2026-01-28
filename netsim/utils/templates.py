@@ -92,18 +92,20 @@ environment with an empty search path.
 """
 J2_WRAPPER_ENV: typing.Optional[Environment] = None
 
-def render_wrapper(wrapper: str, cfg_text: str, data: typing.Dict) -> str:
+def render_wrapper(wrapper: str, cfg_text: str, data: typing.Dict, **kwargs: typing.Any) -> str:
   global J2_WRAPPER_ENV
 
   if not J2_WRAPPER_ENV:
     J2_WRAPPER_ENV = get_jinja2_env_for_path(())
 
-  return J2_WRAPPER_ENV.from_string(wrapper).render(netlab_config_text=cfg_text,**data)
+  return J2_WRAPPER_ENV.from_string(wrapper).render(netlab_config_text=cfg_text,**data,**kwargs)
 
 """
-write_template: Applies a custom template (in_folder/j2) and writes it to the given file path (out_folder/filename)
+write_template: Applies a custom template (in_folder/j2) and writes it to the
+given file path (out_folder/filename)
 
-Might have to apply a wrapper (specified in 'netlab_config_wrapper' group variable) to rendered text
+Might have to apply a default shebang (specified in 'netlab_default_shebang') or
+wrapper (specified in 'netlab_config_wrapper' group variable) to rendered text
 """
 def write_template(
         in_folder: str,
@@ -116,9 +118,26 @@ def write_template(
     print(f"write_template {in_folder}/{j2} -> {out_folder}/{filename}")
   # Make sure we fail before creating any file(s)
   r_text = render_template(data=data,j2_file=j2,path=in_folder,extra_path=extra_path)
-  wrapper = data.get('netlab_config_wrapper',None)
-  if wrapper:
-    r_text = render_wrapper(wrapper,r_text,data)
+  cfg_mode = data.get('netlab_config_mode','')
+  cfg_shebang = data.get('netlab_default_shebang','').strip(" \n")
+
+  # Prepend default shebang to the text if the config mode is a shell script
+  # and the config text doesn't start with a shebang
+  #
+  need_shebang = cfg_mode in ('sh','cp_sh') and not r_text.startswith('#!')
+  if need_shebang and cfg_shebang:
+    r_text = cfg_shebang + "\n" + r_text
+  #
+  # In all other cases, try to apply config wrapper to the config text. The
+  # config wrapper has to handle the config_mode and starts-with-shebang
+  # logic on its own, all we can do is to give it a hint
+  else:
+    wrapper = data.get('netlab_config_wrapper',None)
+    if wrapper:
+      r_text = render_wrapper(wrapper,r_text,data,netlab_need_shebang=need_shebang)
+
+  # Finally, we have the configuration test. Write it to the output file
+  #
   pathlib.Path(out_folder).mkdir(parents=True, exist_ok=True)
   out_file = f"{out_folder}/{filename}"
   create_file_from_text(out_file,r_text)
