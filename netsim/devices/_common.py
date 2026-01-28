@@ -3,6 +3,7 @@
 #
 from box import Box
 
+from ..utils import log
 from . import report_quirk
 
 
@@ -16,3 +17,11 @@ def check_indirect_static_routes(node: Box) -> None:
         node=node,
         quirk='indirect_nexthop',
         more_data=f'Static route data: {sr_entry}')
+
+def requires_plugin(node: Box, plugin: str, topology: Box) -> None:
+  if plugin not in topology.get('plugin',[]):
+    log.error(
+      f'Device {node.device} (node {node.name}) requires "{plugin}" plugin to work properly',
+      more_hints=f'Add "{plugin}" to the topology "plugin" list',
+      category=log.MissingDependency,
+      module=node.device)

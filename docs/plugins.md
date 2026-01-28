@@ -16,6 +16,7 @@
    plugins/check.config.md
    plugins/fabric.md
    plugins/files.md
+   plugins/kind.md
    plugins/mlag.vtep.md
    plugins/multilab.md
    plugins/node.clone.md

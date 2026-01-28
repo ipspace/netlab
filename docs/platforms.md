@@ -56,6 +56,7 @@
 | --------------- | ------------------ | ------------- |
 | BIRD Internet Routing Daemon [❗](caveats-bird) | bird               | full |
 | dnsmasq DHCP server [❗](caveats-dnsmasq) | dnsmasq | full |
+| [Kubernetes in Docker](plugin-kind) | kind | best effort |
 
 You can also run network management software and even some network services products (for example, NetScaler) as [custom Linux containers](tutorial-linux-custom).
 
@@ -83,6 +84,7 @@ Most devices behave as routers (or layer-3 switches); the following devices can 
 | dnsmasq               | ❌  | ✅ | ❌  |
 | FRRouting             | ✅ | ✅ | ✅ |
 | Generic Linux         | ❌  | ✅ | ✅ |
+| Kubernetes in Docker  | ❌  | ✅ | ❌  |
 | Open BSD              | ✅ | ✅ | ❌  |
 
 **Notes:**
@@ -101,7 +103,7 @@ Most devices behave as routers (or layer-3 switches); the following devices can 
 * [Containerlab](https://containerlab.srlinux.dev/)
 * External -- *meta* virtualization provider that allows you to configure external physical or virtual devices with *netlab*
 
-You cannot use all supported network devices with all virtualization providers. These are the supported combinations (use **[netlab show images](netlab/show.md)** command to display the current system settings).
+You cannot use all supported network devices with all virtualization providers. These are the supported combinations (use **[netlab show images](netlab/show.md)** command to display the current system settings); daemons always run in containers.
 
 (platform-provider-support)=
 
@@ -129,7 +131,8 @@ You cannot use all supported network devices with all virtualization providers. 
 | Juniper vPTX       | [✅](build-vptx)  |  ❌  | ✅[❗](clab-vrnetlab)  |
 | Juniper vSRX 3.0   | [✅](build-vsrx)  | ✅  | ✅[❗](caveats-vsrx)  |
 | vJunos-switch       |  ❌  |  ❌  | ✅[❗](clab-vrnetlab) |
-| vJunos-router       |  ❌  |  ❌  | ✅[❗](clab-vrnetlab) | | Mikrotik RouterOS 6 | ✅  |  ❌  |  ❌  |
+| vJunos-router       |  ❌  |  ❌  | ✅[❗](clab-vrnetlab) |
+| Mikrotik RouterOS 6 | ✅  |  ❌  |  ❌  |
 | Mikrotik RouterOS 7 | [✅](build-chr7)  |  ❌  |  ❌  |
 | Netscaler CPX       |  ❌  |  ❌  | ✅  | 
 | Nokia SR Linux      |  ❌  |  ❌  | ✅  |
@@ -202,6 +205,8 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Sonic                 | ✅ | ✅ |
 | VyOS                  | ✅ | ✅ |
 
+**Note:** *netlab* can deploy daemon configurations, but cannot collect them. Use the **netlab initial -o** command to create daemon configuration files in a custom directory.
+
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL) and IOL Layer-2 image
 
 [^Junos]: Includes vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
@@ -212,7 +217,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 
 ## Initial Device Configurations
 
-The following system-wide features are configured on supported network operating systems as part of the initial device configuration:
+The following system-wide features are configured on supported network operating systems as part of the initial device configuration; hostname and hosts table are configured on daemons.
 
 (platform-initial-config)=
 | Operating system      | Hostname | IPv4/IPv6<br>hosts |           LLDP            | IPv4<br>Loopback | IPv6<br>Loopback |
@@ -268,7 +273,7 @@ The following interface parameters are configured on supported network operating
 | VyOS                  | ✅  |  ❌  | ✅  | ✅  |
 
 (platform-initial-addresses)=
-The following interface addresses are supported on various platforms:
+The following interface addresses are supported on various platforms; most daemons support only numbered IPv4 and IPv6 interfaces.
 
 | Operating system      | IPv4<br />addresses | IPv6<br />addresses | Unnumbered<br />IPv4 interfaces | Configurable<br>IPv6 RA |
 | --------------------- | :-: | :-: | :-: | :-: |
