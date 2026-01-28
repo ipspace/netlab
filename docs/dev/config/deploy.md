@@ -46,7 +46,7 @@ The [*clab* provider](lab-clab) maps some files in the **node_files/_nodename_**
 (dev-config-deploy-paths)=
 ## Configuration Deployment Search Paths
 
-Before starting the configuration deployment process, the **netlab initial** Ansible playbook tries to find an Ansible task list that can be used to check the readiness of a lab device. If that task list is found, it's executed before the initial device configuration deployment starts. You can use that task list to check the device's SSH server (Arista cEOS) or interface initialization state (Cisco Nexus OS). **netlab initial** uses these default parameters to find the device readiness task list ([more details](change-search-paths)):
+Before starting the configuration deployment process, the **netlab initial** Ansible playbook attempts to find an Ansible task list to check the readiness of a lab device. If that task list is found, it's executed before the initial device configuration deployment starts. You can use that task list to check the device's SSH server (Arista cEOS) or interface initialization state (Cisco Nexus OS). **netlab initial** uses these default parameters to find the device readiness task list ([more details](change-search-paths)):
 
 | Parameter | Usage |
 |-----------|-------|
@@ -67,7 +67,7 @@ _netlab_ assumes you're always using Jinja2-based device configuration templates
 ```
 
 (deploy-task-list)=
-After locating the Jinja2 template, the initial configuration deployment playbook attempts to retrieve the device/module-specific Ansible task list to deploy the configuration (*config_module* is set to *initial* when deploying the initial device configuration). The task list search process uses these default parameters ([more details](change-search-paths)):
+After locating the Jinja2 template, the initial configuration deployment playbook attempts to retrieve the device- or module-specific Ansible task list to deploy the configuration (*config_module* is set to *initial* when deploying the initial device configuration). The task list search process uses these default parameters ([more details](change-search-paths)):
 
 | Parameter | Usage |
 |-----------|-------|
@@ -223,7 +223,7 @@ Some Linux-based containers (Linux nodes, Linux-based Daemons, FRRouting, and Vy
 The scripts used to configure Linux-based containers are specified in the **clab.node_config** dictionary. The dictionary keys must be *initial* (for initial device configuration), configuration modules, or custom configuration templates (for example, *bgp.session*). The dictionary values are the target file names within the container file system (the file name can be empty for host-side scripts), optionally followed by a suffix indicating the type of the configuration script:
 
 * `:sh` for scripts executed within the containers
-* `:cp_sh` for scripts that have to be copied into the containers with **docker cp** command and then executed within the containers. Use this mode for containers that cannot use the *containerlab* **binds** list (for example, KinD nodes).
+* `:cp_sh` for scripts that have to be copied into the containers with the **docker cp** command and then executed within the containers. Use this mode for containers that cannot use the *containerlab* **binds** list (for example, KinD nodes).
 * `:ns` for scripts executed within the container network namespace on _netlab_ host (see also [](dev-clab-ns)).
 
 _netlab_ assumes that the modules specified in the **clab.node_config** dictionary are configured through Linux scripts or configuration files. It therefore excludes them from the Ansible playbook executed by the **netlab initial** command.
@@ -261,12 +261,24 @@ The **clab.node_config** dictionary is copied into the **clab.config_templates**
 
 Some devices (for example, FRRouting) use a mixture of **bash** scripts and device configurations. Some others (for example, cEOS containers) use traditional device configurations that can be deployed through Linux scripts. In both cases, the device configurations converted to Linux scripts require an *[interpreter directive](https://en.wikipedia.org/wiki/Shebang_(Unix))* as the first line of the script.
 
-You can use the **netlab_config_wrapper** group variable to specify a Jinja2 template that converts device configuration into a Linux script. The script can use two extra variables:
+The easy cases (adding shebang in front of a device configuration) can be handled with the **netlab_default_shebang** group variable. The contents of that variable are prepended to the rendered configuration template when:
 
-* **netlab_config_mode** to determine whether it needs to do configuration-to-script conversion
+* The **netlab_config_mode** is set to `sh` or `cp_sh`
+* The rendered configuration text does not start with `#!`
+
+Alternatively, you can use the **netlab_config_wrapper** group variable to specify a Jinja2 template that converts device configuration into a Linux script. The script can use three extra variables:
+
+* **netlab_need_shebang** is set whenever _netlab_ would apply the **netlab_default_shebang**
+* **netlab_config_mode** to determine whether the wrapper template needs to do configuration-to-script conversion
 * **netlab_config_text** contains the already-rendered device configuration.
 
-For example, FRR device definition contains the following **clab.group_vars.netlab_config_wrapper** definition to create *vtysh* scripts from device configurations:
+For example, the FRR device definition contains the following **clab.group_vars.netlab_default_shebang** definition to deploy FRR configurations with **vtysh**:
+
+```
+netlab_default_shebang: '#!/usr/bin/vtysh -f'
+```
+
+It could have also used the **clab.group_vars.netlab_config_wrapper** definition to create *vtysh* scripts from device configurations:
 
 ```
 netlab_config_wrapper: |
