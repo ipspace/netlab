@@ -1,0 +1,77 @@
+---
+message: |
+  This lab topology creates a leaf/spine/superspine fabric with
+  192 leafs, twelve spines and four superspines.
+
+plugin: [ fabric, node.clone, bgp.session ]
+
+defaults.const.MAX_NODE_ID: 400
+addressing:
+  mgmt: 192.168.128.0/22
+  lan.prefix: 22
+  loopback.ipv4: 10.0.0.0/22
+
+provider: clab
+defaults.device: frr
+
+module: [ vlan, vxlan, bgp, evpn ]
+bgp.as: 65000
+
+vlans:
+  V1:
+  V2:
+  V3:
+
+# This creates superspine structure
+fabric:
+  spines: 4
+  leafs: 12
+  leaf:
+    graph.rank: 2
+    name: S{count}
+    module: [ bgp, ospf, evpn ]
+  spine:
+    graph.rank: 1
+    name: SS{count}
+    bgp.rr: True             # Spines are route reflectors
+    module: [ bgp, ospf, evpn ]
+
+nodes:
+  LA:
+    clone.count: 64
+  LB:
+    clone.count: 64
+  LC:
+    clone.count: 64
+
+groups:
+  edges:
+    members: [ LA*, LB*, LC* ]
+    bgp.as: 65001
+    bgp.sessions.ipv4: [ ebgp ]
+
+links:
+- interfaces: [ LA ]        # Edge VLANs in the first group
+  vlan.access: V1
+- LA.bgp.allowas_in: True
+  S1:
+- LA.bgp.allowas_in: True
+  S2:
+- LA.bgp.allowas_in: True
+  S3:
+- LA.bgp.allowas_in: True
+  S4:
+
+- interfaces: [ LB ]        # Edge VLANs in the second group
+  vlan.access: V2
+- interfaces: [ LB, S5 ]    # Uplinks in the second group
+- interfaces: [ LB, S6 ]
+- interfaces: [ LB, S7 ]
+- interfaces: [ LB, S8 ]
+
+- interfaces: [ LC ]        # Edge VLANs in the third group
+  vlan.access: V3
+- interfaces: [ LC, S9 ]    # Uplinks in the third group
+- interfaces: [ LC, S10 ]
+- interfaces: [ LC, S11]
+- interfaces: [ LC, S12 ]
