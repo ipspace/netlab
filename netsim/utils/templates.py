@@ -136,7 +136,7 @@ def write_template(
     if wrapper:
       r_text = render_wrapper(wrapper,r_text,data,netlab_need_shebang=need_shebang)
 
-  # Finally, we have the configuration test. Write it to the output file
+  # We have the final version of configuration text. Write it to the output file
   #
   pathlib.Path(out_folder).mkdir(parents=True, exist_ok=True)
   out_file = f"{out_folder}/{filename}"

@@ -272,7 +272,13 @@ Alternatively, you can use the **netlab_config_wrapper** group variable to speci
 * **netlab_config_mode** to determine whether the wrapper template needs to do configuration-to-script conversion
 * **netlab_config_text** contains the already-rendered device configuration.
 
-For example, FRR device definition contains the following **clab.group_vars.netlab_config_wrapper** definition to create *vtysh* scripts from device configurations:
+For example, the FRR device definition contains the following **clab.group_vars.netlab_default_shebang** definition to deploy FRR configurations with **vtysh**:
+
+```
+netlab_default_shebang: '#!/usr/bin/vtysh -f'
+```
+
+It could have also used the **clab.group_vars.netlab_config_wrapper** definition to create *vtysh* scripts from device configurations:
 
 ```
 netlab_config_wrapper: |
