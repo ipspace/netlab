@@ -62,6 +62,8 @@ IPv4 and IPv6 packet forwarding on Linux devices is controlled with the **role**
 * **gateway**: a Linux device does not perform packet forwarding but acts as the default gateway for other hosts. You will have to install a proxy (or a similar solution) for inter-subnet packet forwarding.
 * **router**: A Linux device performs packet forwarding but does not run routing protocols. Use the **frr** device if you want to run routing protocols on a Linux server.
 
+You can also enable the IPv4/IPv6 packet forwarding on a Linux device with the **netlab_ip_forwarding** node attribute/group variable set to *True*.
+
 (linux-loopback)=
 ## Loopback Interface
 
