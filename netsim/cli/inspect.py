@@ -63,7 +63,7 @@ Read Ansible variables for the 'all' group (paths, pools, prefixes)
 """
 def read_all_group_vars() -> Box:
   try:
-    return Box().from_yaml(filename='group_vars/all/topology.yml')
+    return Box().from_json(filename='group_vars/all/topology.json')
   except Exception as ex:
     log.fatal(f"Cannot read variables for 'all' group: {str(ex)}")    
 
