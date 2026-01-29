@@ -15,7 +15,7 @@ from ...data import get_empty_box
 from ...providers import execute_node
 from ...utils import log, strings
 from .. import _nodeset, ansible, error_and_exit, external_commands, get_message, lab_status_change
-from . import configs, utils
+from . import configs, ready, utils
 
 
 def deploy_provider_config(nodeset: list, topology: Box, args: argparse.Namespace) -> typing.Tuple[bool, bool]:
@@ -121,6 +121,7 @@ def run(topology: Box, args: argparse.Namespace, rest: list) -> None:
     )
 
   log.exit_on_error()
+  ready.device_ready(nodeset,topology)
   (used_internal, status_internal) = deploy_provider_config(nodeset, topology, args)
 
   if used_internal:
