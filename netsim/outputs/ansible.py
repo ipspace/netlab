@@ -6,7 +6,7 @@ import typing
 
 from box import Box
 
-from ..augment import nodes, plugin
+from ..augment import devices, nodes, plugin
 from ..utils import files as _files
 from ..utils import log, strings, templates
 from . import _TopologyOutput, check_writeable
@@ -83,6 +83,10 @@ def create(topology: Box) -> Box:
     for xg in extra_groups.keys():
       if node.get(xg,False):                # Add device to the extra group if it has the corresponding attribute set
         inventory[extra_groups[xg]].hosts[name] = {}
+
+    ready = devices.get_node_group_var(node,'netlab_ready',topology.defaults) or []
+    for r_item in ready:
+      inventory[f'netlab_ready_{r_item}'].hosts[name] = {}
 
   if 'devices' in defaults:
     for group in inventory.keys():

@@ -1,6 +1,7 @@
 #
 # netlab initial -- implement standard device readiness checks
 #
+import argparse
 import concurrent.futures
 import subprocess
 import time
@@ -11,7 +12,8 @@ from box import Box
 from ...augment import devices as a_devices
 from ...data import append_to_list, get_empty_box
 from ...utils import log, strings
-from .. import error_and_exit, external_commands
+from .. import ansible, error_and_exit, external_commands, lab_status_change
+from . import utils
 
 """
 Prepare for SSH readiness check -- copy timeouts and retry counters, check for "sshpass", set up the SSH command
@@ -97,7 +99,7 @@ def device_ssh_ready(waitset: list, topology: Box) -> None:
       r_data.ssh_ready = True                               # No errors, we're ready to roll
       now = time.time()
       if now > start_time + 5 or log.VERBOSE:               # Report progress only if it's worth reporting
-        strings.print_colored_text('[SSH] ','green')
+        strings.print_colored_text('[SSH]     ','green')
         print(f'SSH server on node {n_name} (device {n_data.device}) ' +\
               f'is ready after {round(now - start_time,1)} seconds',flush=True)
       return True
@@ -112,7 +114,7 @@ def device_ssh_ready(waitset: list, topology: Box) -> None:
       now = time.time()
       if now > start_time + r_data.wait:                    # Have we exceeded the wait period?
         r_data.ssh_failed = True
-        strings.print_colored_text('[SSH] ','red')
+        strings.print_colored_text('[SSH]     ','red')
         print(f'SSH server on node {n_name} (device {n_data.device}) ' +\
               f'is not ready after {round(now - start_time,1)} seconds',flush=True)
       if log.debug_active('ssh'):                         # Do we need to report SSH status periodically?
@@ -134,7 +136,7 @@ def device_ssh_ready(waitset: list, topology: Box) -> None:
   setup_ssh_ready_parameters(waitset,topology)
   log.exit_on_error()
   start_time = time.time()
-  log.info(text=f'Checking SSH servers on {",".join(waitset)}')
+  log.info(text=f'Checking SSH server(s) on {",".join(waitset)}')
 
   with concurrent.futures.ThreadPoolExecutor() as executor:
     if strings.rich_color:
@@ -157,8 +159,23 @@ READY_ACTIONS = { 'ssh': device_ssh_ready }
 Execute all "wait for device to be ready" steps recognized by "netlab initial". Further
 steps might have to be executed by Ansible playbooks
 """
-def device_ready(nodeset: list, topology: Box) -> None:
+def internal_device_ready(waitlists: Box, topology: Box) -> Box:
   global READY_ACTIONS
+
+  # Iterate over known steps, check whether any device needs that, and execute
+  # the corresponding ready function
+  for r_step in READY_ACTIONS.keys():
+    if r_step not in waitlists:                   # Nobody asked for this step, move on
+      continue
+    if topology.defaults.netlab.initial.ready[r_step] != 'internal':
+      continue                                    # We're not using the internal code for this step
+
+    READY_ACTIONS[r_step](waitlists[r_step],topology)
+    waitlists.pop(r_step)
+
+  return waitlists
+
+def get_waitlists(nodeset: list, topology: Box) -> Box:
   waitlists = get_empty_box()
   defaults = topology.defaults
 
@@ -172,9 +189,21 @@ def device_ready(nodeset: list, topology: Box) -> None:
     for step in ready_steps:
       append_to_list(waitlists,step,n_name)
 
-  # Iterate over known steps, check whether any device needs that, and execute
-  # the corresponding ready function
-  for r_step in READY_ACTIONS.keys():
-    if r_step not in waitlists:                   # Nobody asked for this step, move on
-      continue
-    READY_ACTIONS[r_step](waitlists[r_step],topology)
+  return waitlists
+
+def run(topology: Box, args: argparse.Namespace, rest: list) -> None:
+  nodeset = utils.get_deploy_nodeset(args,topology)
+  node_waits = get_waitlists(nodeset,topology)
+  if node_waits and not log.QUIET:
+    log.section_header('Checking',f'Are lab devices ready to be configured?')
+
+  ansible_waits = internal_device_ready(node_waits,topology)
+  if ansible_waits:
+    log.info(text='Checking lab devices with an Ansible playbook')
+    ansible.check_version()
+    ansible_limit = ['--tag',','.join(['ready_'+wl for wl in ansible_waits.keys()])]
+    ansible.playbook('device-ready.ansible',rest + utils.min_ansible_args(args) + ansible_limit)
+
+  if args.ready:
+    lab_status_change(topology,'devices are ready')
+    log.info(text='Lab devices are ready to be configured')
