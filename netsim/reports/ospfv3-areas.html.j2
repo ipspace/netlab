@@ -1,0 +1,74 @@
+{# description: OSPF areas, nodes and interfaces #}
+{% import 'ospf-utils.include.j2' as ocode %}
+
+{#
+   First, build a list of OSPF areas
+#}
+{% set areas = [] %}
+{% set af = 'ipv6' %}
+{{- ocode.get_areas(areas,nodes,af) -}}
+{% set flags = namespace(first=True) %}
+{% for name in nodes|sort if 'ospf' in nodes[name] and nodes[name].af.ipv6|default(False) %}
+{%   if loop.first %}
+<h2>OSPF Routers</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Router</th>
+      <th>OSPFv3 Router Identifier</th>
+    </tr>
+  </thead>
+  <tbody>
+{%   endif %}
+    <tr>
+      <td>{{ name }}</td>
+      <td class='right'>{{ nodes[name].ospf.router_id }}</td>
+    </tr>
+{%   if loop.last %}
+  </tbody>
+</table>
+{%   endif %}
+{% else %}
+<p>No routers are running OSPFv3</p>
+{% endfor %}
+{% for area in areas|sort %}
+{%   if loop.first %}
+<h2>OSPF Areas</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Router</th>
+      <th>Interface</th>
+      <th class='right'>IPv6 address</th>
+      <th>Neighbor(s)</th>
+    </tr>
+  </thead>
+  <tbody>
+{%   endif %}
+    <tr>
+      <td colspan="4"><h3>Area {{ area }}</h3></td>
+    </tr>
+{%   for name,n in nodes.items() if 'ospf' in n %}
+{%     call ocode.loopback(n,area,af,flags) %}
+    <tr>
+      <td>{{ name }}</td>
+      <td>Loopback</td>
+      <td class='right'>{{ n.loopback[af] }}</td>
+      <td></td>
+    </tr>
+{%     endcall %}
+{%     call ocode.interfaces(n,nodes,area,af,flags) %}
+{%       set intf = flags.intf %}
+    <tr>
+      <td>{{ name if flags.node != name else '' }}</td>
+      <td>{{ intf.ifname }}</td>
+      <td class='right'>{{ intf[af] }}</td>
+      <td>{{ 'passive' if intf.ospf.passive|default(False) else flags.ngb|join(',') }}</td>
+    </tr>
+{%     endcall %}
+{%   endfor %}
+{%   if loop.last %}
+  </tbody>
+</table>
+{%   endif %}
+{% endfor %}
