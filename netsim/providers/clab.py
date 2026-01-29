@@ -129,11 +129,12 @@ def add_config_filemaps(node: Box, topology: Box) -> None:
     node.clab.config_templates = add_config + node.clab.config_templates
 
 '''
-add_clab_exec: Add commands from the specified group variable to clab.exec list
+add_clab_exec: Add commands from the specified group variable (for example,
+'netlab_config_exec' or 'netlab_start_exec') to the clab.exec list.
 
-Use to delay the container start ('netlab_config_exec') when using Linux configuration scripts
-('netlab_config_mode') as well as when containers simply need more time but containerlab does
-not handle that ('netlab_start_exec')
+These commands can be used to delay container start when using Linux configuration
+scripts ('netlab_config_mode' via 'netlab_config_exec') or to introduce additional
+startup delay when containerlab itself does not handle that ('netlab_start_exec').
 '''
 def add_clab_exec(node: Box, gvar: str, topology: Box) -> None:
   cfg_exec = devices.get_node_group_var(node,gvar,topology.defaults) or []
