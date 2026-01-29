@@ -129,6 +129,19 @@ def add_config_filemaps(node: Box, topology: Box) -> None:
     node.clab.config_templates = add_config + node.clab.config_templates
 
 '''
+add_clab_exec: Add commands from the specified group variable (for example,
+'netlab_config_exec' or 'netlab_start_exec') to the clab.exec list.
+
+These commands can be used to delay container start when using Linux configuration
+scripts ('netlab_config_mode' via 'netlab_config_exec') or to introduce additional
+startup delay when containerlab itself does not handle that ('netlab_start_exec').
+'''
+def add_clab_exec(node: Box, gvar: str, topology: Box) -> None:
+  cfg_exec = devices.get_node_group_var(node,gvar,topology.defaults) or []
+  if cfg_exec:
+    append_to_list(node,'clab.exec',cfg_exec,flatten=True)
+
+'''
 add_default_config_mode: if the netlab_config_mode is set, add configured modules to _node_config dictionary
 '''
 def add_default_config_mode(node: Box, topology: Box) -> None:
@@ -162,9 +175,7 @@ def add_default_config_mode(node: Box, topology: Box) -> None:
 
   # Finally, if the container needs extra precautions to work with config mode (hi there, FRR),
   # add the exec commands to the container exec list
-  cfg_exec = devices.get_node_group_var(node,'netlab_config_exec',topology.defaults) or []
-  if cfg_exec:
-    append_to_list(node,'clab.exec',cfg_exec,flatten=True)
+  add_clab_exec(node,'netlab_config_exec',topology)
 
 '''
 get_loaded_kernel_modules: Get the list of loaded kernel modules from '/proc/modules'
@@ -290,6 +301,7 @@ class Containerlab(_Provider):
       node_add_forwarded_ports(node,node_fp,topology)
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
+    add_clab_exec(node,'netlab_start_exec',topology)
     add_default_config_mode(node,topology)
     add_config_filemaps(node,topology)
     normalize_clab_filemaps(node)
