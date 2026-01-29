@@ -1,0 +1,58 @@
+{# description: OSPFv3 nodes, router IDs, areas, and interfaces #}
+{% import 'ospf-utils.include.j2' as ocode %}
+{% set row_fmt = "| {0:15} | {1:15} | {2:>40} | {3:20} |" %}
+{% set rid_fmt = "| {0:15} | {1:>15} |" %}
+{% set row_sep = "|" + "-"*17+ "|" + "-"*17 + "|" + "-"*42 + "|" + "-" * 22 + "|" %}
+{% set rid_sep = "|" + "-"*17+ "|" + "-"*17 + "|" %}
+{%- macro header(flag) -%}
+{%-  call ocode.header(flag) -%}
+{{ row_sep }}
+{{ row_fmt.format("Router","Interface","IPv6 Address","Neighbor(s)") }}
+{{ row_sep }}
+{%-  endcall -%}
+{%- endmacro -%}
+{#
+   First, build a list of OSPFv3 areas
+#}
+{% set areas = [] %}
+{% set af = 'ipv6' %}
+{{- ocode.get_areas(areas,nodes,af) -}}
+{% set flags = namespace(first=True,node='') %}
+{% for name in nodes|sort if 'ospf' in nodes[name] and nodes[name].af.ipv6|default(False) %}
+{%   if loop.first %}
+OSPFv3 Router Identifiers
+
+{{ rid_sep }}
+{{ rid_fmt.format('Router','OSPFv3 Router ID') }}
+{{ rid_sep }}
+{%   endif %}
+{{ rid_fmt.format(name,nodes[name].ospf.router_id) }}
+{%   if loop.last %}
+{{ rid_sep }}
+{%   endif %}
+{% else %}
+No routers are running OSPFv3
+{% endfor %}
+{% for area in areas|sort %}
+
+OSPFv3 Area {{ area }}
+
+{%   set flags.first = True %}
+{%   for name,n in nodes.items() if 'ospf' in n %}
+{%     set flags.node = '' %}
+{%     call ocode.loopback(n,area,af,flags) %}
+{{-      header(flags) -}}
+{{ row_fmt.format(name,"Loopback",n.loopback[af],"") }}
+{%     endcall %}
+{%     call ocode.interfaces(n,nodes,area,af,flags) %}
+{{-      header(flags) -}}
+{%       set intf = flags.intf %}
+{%       set ngb_string = 'passive' if intf.ospf.passive|default(False) else flags.ngb|join(',') %}
+{%       set ngb_string = ngb_string[:19] %}
+{{ row_fmt.format(name if flags.node != name else '',intf.ifname,intf[af],ngb_string) }}
+{%     endcall %}
+{%     if flags.node == name %}
+{{ row_sep }}
+{%     endif %}
+{%   endfor %}
+{% endfor %}
