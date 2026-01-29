@@ -44,9 +44,13 @@ def render_from_file(fmt: str, topo: Box) -> str:
       hint='source')
     return ""
   except Exception as ex:
-    log.fatal(
+    log.error(
       text=f"Error rendering {fmt}\n{strings.extra_data_printout(str(ex))}",
-      module="report")
+      more_data=templates.template_error_location(ex),
+      category=log.FatalError,
+      module="report",
+      skip_header=True,
+      exit_on_error=True)
     return ""
 
 def render(fmt: str, settings: Box, topo: Box) -> str:
