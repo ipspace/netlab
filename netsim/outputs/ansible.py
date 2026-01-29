@@ -133,12 +133,16 @@ def dump(data: Box) -> None:
   inventory = create(data)
   print(strings.get_yaml_string(inventory))
 
-def write_yaml(data: Box, fname: str, header: str) -> None:
+def write_inventory_file(data: Box, fname: str, header: str) -> None:
   dirname = os.path.dirname(fname)
   if dirname and not os.path.exists(dirname):
     os.makedirs(dirname)
 
-  _files.create_file_from_text(fname,header+"\n"+strings.get_yaml_string(data))
+  if fname.endswith('.json'):
+    contents = data.to_json()
+  else:
+    contents = header+"\n"+strings.get_yaml_string(data)
+  _files.create_file_from_text(fname,contents)
 
 min_inventory_data = [ 'id','ansible_host','ansible_port','ansible_connection','ansible_user','ansible_ssh_pass' ]
 
@@ -154,7 +158,7 @@ def ansible_inventory(topology: Box, fname: typing.Optional[str] = 'hosts.yml', 
     hostvars = "dirs"
 
   if hostvars == "min":
-    write_yaml(inventory,fname,header)
+    write_inventory_file(inventory,fname,header)
     log.status_created()
     print(f"single-file Ansible inventory {fname}")
     return
@@ -162,13 +166,14 @@ def ansible_inventory(topology: Box, fname: typing.Optional[str] = 'hosts.yml', 
   for g in inventory.keys():
     gvars = inventory[g].pop('vars',None)
     if gvars:
-      write_yaml(gvars,'group_vars/%s/topology.yml' % g,header)
+      write_inventory_file(gvars,f'group_vars/{g}/topology.json',header)
       if not log.QUIET:
         strings.print_colored_text('[GROUPS]  ','bright_cyan','Created ')
         print(f"group_vars for {g}")
 
     if 'hosts' in inventory[g]:
       hosts = inventory[g]['hosts']
+      h_list = []
       for h in hosts.keys():
         if not hosts[h]:
           continue
@@ -180,13 +185,22 @@ def ansible_inventory(topology: Box, fname: typing.Optional[str] = 'hosts.yml', 
           else:
             vars_host[item] = hosts[h][item]
 
-        write_yaml(vars_host,'host_vars/%s/topology.yml' % h,header)
-        if not log.QUIET:
+        write_inventory_file(vars_host,f'host_vars/{h}/topology.json',header)
+        if log.VERBOSE:
           strings.print_colored_text('[HOSTS]   ','bright_cyan','Created ')
           print(f"host_vars for {h}")
+        else:
+          h_list.append(h)
         hosts[h] = min_host
+      
+      if not log.QUIET and not log.VERBOSE and h_list:
+        strings.print_colored_text('[HOSTS]   ','bright_cyan','Created ')
+        text = "host_vars for " + ", ".join(h_list)
+        w_text = strings.wrap_text_into_lines(text,strings.rich_width-10,first_line=' '*10,next_line=' '*10)
+        w_text[0] = w_text[0][10:]
+        print("\n".join(w_text))
 
-  write_yaml(inventory,fname,header)
+  write_inventory_file(inventory,fname,header)
   log.status_created()
   print(f"minimized Ansible inventory {fname}")
 
