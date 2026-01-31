@@ -338,9 +338,15 @@ class NetlabHandler(BaseHTTPRequestHandler):
     def get_status(*parts: Any) -> None:
       out = io.StringIO()
       args = []
-      if parts and parts[0] == 'json':
+      query = urllib.parse.parse_qs(parsed.query)
+      o_format_qs = query.get("output")
+      if not o_format_qs:
+        o_format = os.environ.get("NETLAB_API_STATUS_OUTPUT","json")
+      else:
+        o_format = o_format_qs[0]
+
+      if o_format != "text":
         args += ['--format','json']
-        parts = parts[1:]
 
       if parts:
         args += ['--instance', parts[0]]
