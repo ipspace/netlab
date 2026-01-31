@@ -6,11 +6,10 @@
 {% endif %}
 {# options are 'none', rstp, rapid-pvst or mstp (default if not set) #}
 spanning-tree mode {{ mode }} 
-
 {% if 'priority' in stp %}
 spanning-tree priority {{ stp.priority }}
 {% endif %}
-
+!
 {# Check for per-VLAN enable and priority; implies Rapid-PVST #}
 {% if vlans is defined %}
 {%   for vname,vdata in vlans.items() %}
@@ -23,19 +22,18 @@ spanning-tree vlan-id {{ vdata.id }} priority {{ stp.priority }}
 {%     endif %}
 {%   endfor +%}
 {% endif %}
-
+!
 {% for ifdata in interfaces if 'stp' in ifdata %}
 {%   if ifdata.vlan.trunk_id is defined or ifdata.vlan.access_id is defined %}
 interface {{ ifdata.ifname }}
 {%    if not ifdata.stp.enable|default(True) %}
- ! Disable STP on this interface, i.e. dont receive or send BPDUs
+! Disable STP on this interface, i.e. don't receive or send BPDUs
  spanning-tree bpdufilter enable
 {%    elif 'port_priority' in ifdata.stp %}
-#
-# Use 16x port_priority to get the correct 4-bit value on the wire
-#
+!
+! Use 16x port_priority to get the correct 4-bit value on the wire
+!
  spanning-tree port-priority {{ ifdata.stp.port_priority * 16 }}
-#
 {%    endif %} 
 {%   endif %}
 {%   if ifdata.stp.port_type is defined %}
