@@ -71,13 +71,18 @@ All other arguments are passed directly to ansible-playbook
 
 ## Wait for Devices to Become Ready
 
-Some devices are not ready immediately after they complete the boot process. For example, Cisco Nexus OS or Juniper vPTX need another minute to realize they have data-plane interfaces.
+**netlab initial** starts with a device readiness check to ensure the lab devices are ready for configuration deployment. If you want to execute just this part of the process, use the `--ready` option.
 
-Likewise, the virtualization provider might prematurely report that the devices are ready. For example, *containerlab*  does not wait for VMs running in containers to complete their boot process (see [](clab-vrnetlab) for more details).[^vssh]
+There are several reasons a device might not be ready when the virtualization providers finish their job:
+
+* A virtualization provider might prematurely report that the devices are ready. For example, *containerlab*  does not wait for VMs running in containers to complete their boot process (see [](clab-vrnetlab) for more details).[^vssh] _netlab_ checks the reachability of SSH servers for all containers that are configured via SSH.
+* Some devices are not ready even after their SSH servers start accepting incoming sessions. For example, Cisco Nexus OS or Juniper vPTX requires around a minute to detect data-plane interfaces. In such cases, _netlab_ uses a device-specific Ansible task list to verify that the devices are ready for configuration.
 
 [^vssh]: Vagrant waits for all devices to become reachable via SSH before reporting them ready.
 
-**netlab initial** starts with a device readiness check to ensure the lab devices are ready for configuration deployment. If you want to execute just this part of the process, use the `--ready` option.
+```{tip}
+_netlab_ uses internal (Python) code to check the reachability of SSH servers. If you want to check the SSH servers from an Ansible playbook, set the **‌defaults.netlab.initial.ready.ssh** [topology default](topo-defaults) to **‌ansible** (preferably using a [user defaults file](defaults-user-file)).
+```
 
 ## Initial Device Configurations
 

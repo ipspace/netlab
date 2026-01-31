@@ -13,7 +13,7 @@ from ...augment import groups
 from ...data import global_vars
 from ...utils import files as _files
 from ...utils import log, strings
-from .. import common_parse_args, parser_lab_location
+from .. import _nodeset, common_parse_args, parser_lab_location
 
 
 #
@@ -91,11 +91,17 @@ def common_ansible_args() -> list:
 """
 Build Ansible arguments based on 'netlab initial' parameters
 """
-def ansible_args(args: argparse.Namespace) -> list:
+def min_ansible_args(args: argparse.Namespace) -> list:
   rest = common_ansible_args()
-
   if args.limit:
     rest = ['--limit',args.limit] + rest
+  if args.fast or os.environ.get('NETLAB_FAST_CONFIG',None):
+    rest = ['-e','netlab_strategy=free'] + rest
+
+  return rest
+
+def ansible_args(args: argparse.Namespace) -> list:
+  rest = min_ansible_args(args)
 
   if args.initial:
     rest = ['-t','initial'] + rest
@@ -110,9 +116,6 @@ def ansible_args(args: argparse.Namespace) -> list:
 
   if args.custom:
     rest = ['-t','custom'] + rest
-
-  if args.fast or os.environ.get('NETLAB_FAST_CONFIG',None):
-    rest = ['-e','netlab_strategy=free'] + rest
 
   return rest
 
@@ -204,6 +207,13 @@ def filter_unprovisioned(nodeset: typing.List[str], topology: Box) -> typing.Lis
   
   unprovisioned_members = groups.group_members(topology, 'unprovisioned')
   return [node for node in nodeset if node not in unprovisioned_members]
+
+"""
+Get deployment nodeset from args.limit
+"""
+def get_deploy_nodeset(args: argparse.Namespace, topology: Box) -> list:
+  nodeset = _nodeset.parse_nodeset(args.limit, topology) if args.limit else list(topology.nodes.keys())
+  return filter_unprovisioned(nodeset, topology)
 
 """
 ansible_skip_group: Modify Ansible inventory to include _grp_config_skip listing all the

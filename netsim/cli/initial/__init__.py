@@ -10,7 +10,7 @@ from ... import devices
 from ...utils import log
 from ...utils import status as _status
 from .. import ansible, error_and_exit, external_commands, get_message, lab_status_change, load_snapshot
-from . import configs, deploy, utils
+from . import configs, deploy, ready, utils
 
 
 def run_initial(cli_args: typing.List[str]) -> None:
@@ -30,13 +30,8 @@ def run_initial(cli_args: typing.List[str]) -> None:
     configs.run(topology,args,cwd)
     return
   elif args.ready:
-    rest += utils.ansible_args(args)
-    ansible.check_version()
-    ansible.playbook('device-ready.ansible',rest)
-    if topology:
-      lab_status_change(topology,'devices are ready')
+    ready.run(topology,args,rest)
   else:
-    rest += utils.ansible_args(args)
     ansible.check_version()
     deploy.run(topology,args,rest)
 

@@ -14,7 +14,7 @@ from ... import devices
 from ...data import get_empty_box
 from ...providers import execute_node
 from ...utils import log, strings
-from .. import _nodeset, ansible, error_and_exit, external_commands, get_message, lab_status_change
+from .. import ansible, error_and_exit, external_commands, get_message, lab_status_change
 from . import configs, ready, utils
 
 
@@ -100,16 +100,14 @@ def run(topology: Box, args: argparse.Namespace, rest: list) -> None:
   deploy_parts = utils.get_deploy_parts(args)
   deploy_text = ", ".join(deploy_parts) or "complete configuration"
 
-  devices.process_config_sw_check(topology)
-  lab_status_change(topology, f"deploying configuration: {deploy_text}")
-
-  nodeset = _nodeset.parse_nodeset(args.limit, topology) if args.limit else list(topology.nodes.keys())
-  nodeset = utils.filter_unprovisioned(nodeset, topology)
+  nodeset = utils.get_deploy_nodeset(args,topology)
   if not nodeset:
     error_and_exit("The specified nodeset is empty, there are no nodes to configure")
 
+  devices.process_config_sw_check(topology)
+
   if not args.deploy:
-    log.info(text="Creating configuration snippets")
+    log.section_header('Creating',f'Device configuration snippets')
     configs.create_node_configs(
       topology=topology,
       nodeset=nodeset,
@@ -121,18 +119,21 @@ def run(topology: Box, args: argparse.Namespace, rest: list) -> None:
     )
 
   log.exit_on_error()
-  ready.device_ready(nodeset,topology)
-  (used_internal, status_internal) = deploy_provider_config(nodeset, topology, args)
 
-  if used_internal:
-    print()
+  ready.run(topology,args,rest)
+  log.exit_on_error()
+
+  log.section_header('Config',f'Deploying device configurations')
+  lab_status_change(topology, f"deploying configuration: {deploy_text}")
+
+  (used_internal, status_internal) = deploy_provider_config(nodeset, topology, args)
 
   ansible_skip_list = utils.nodeset_ansible_skip(nodeset, topology, args)
   if len(ansible_skip_list) != len(nodeset):
     utils.ansible_skip_group(ansible_skip_list)
     if used_internal:
       log.info("Starting Ansible playbook to deploy the rest of the configurations")
-    status_ansible = deploy_ansible_playbook(topology, rest)
+    status_ansible = deploy_ansible_playbook(topology,rest + utils.ansible_args(args))
     utils.ansible_skip_group([])
   else:
     status_ansible = True
