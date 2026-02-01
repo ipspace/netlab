@@ -9,7 +9,7 @@ import typing
 from box import Box, BoxList
 
 from ..data import get_empty_box
-from ..outputs import _TopologyOutput
+from ..outputs import _TopologyOutput, ansible
 from ..outputs import common as outputs_common
 from ..utils import log, strings
 from . import _nodeset, load_data_source, parser_add_verbose, parser_data_source
@@ -58,21 +58,12 @@ def fmt_value(v: typing.Union[Box,BoxList], fmt: str) -> str:
   value = v.to_yaml() if fmt == 'yaml' else v.to_json()
   return value.strip('\n')
 
-"""
-Read Ansible variables for the 'all' group (paths, pools, prefixes)
-"""
-def read_all_group_vars() -> Box:
-  try:
-    return Box().from_json(filename='group_vars/all/topology.json')
-  except Exception as ex:
-    log.fatal(f"Cannot read variables for 'all' group: {str(ex)}")    
-
 def inspect_node(topology: Box, node_list: list, args: argparse.Namespace) -> None:
   o_format = args.format or 'yaml'
   hdr_row: list = []
   data_row: list = []
 
-  global_data = read_all_group_vars() if args.all else get_empty_box()
+  global_data = ansible.get_all_vars(topology) if args.all else get_empty_box()
     
   for node in node_list:
     node_data = outputs_common.adjust_inventory_host(
