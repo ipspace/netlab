@@ -1,17 +1,6 @@
-#!/bin/vbash
-source /opt/vyatta/etc/functions/script-template
-
-if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-    exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-fi
-
-# Configuration items start here
-
-configure
-
-# Catch all config stuff on the same loop (and avoid multiple loopings)
-
-# main routing table
+#
+# Global BGP neighbors
+#
 {% for n in bgp.neighbors %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
 {%     set peer = n[af] if n[af] is string else n.local_if|default('?') %}
@@ -47,7 +36,9 @@ set protocols bgp neighbor {{ peer }} address-family {{ af }}-unicast remove-pri
 {%   endfor %}
 {% endfor %}
 
-# Specific VRFs
+#
+# VRF BGP neighbors
+#
 {% for vname,vdata in (vrfs|default({})).items() if vdata.bgp is defined %}
 {%   for n in vdata.bgp.neighbors|default([]) %}
 {%     for af in ['ipv4','ipv6'] if n[af] is defined %}
@@ -82,11 +73,8 @@ set vrf name {{ vname }} protocols bgp neighbor {{ peer }} address-family {{ af 
 {%   endfor %}
 {% endfor %}
 
-# Commit, save and exit from subshell
-
 commit
 save
-exit
 
 vtysh -c 'clear bgp *'
 {% if vrfs is defined %}
