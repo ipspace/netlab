@@ -7,6 +7,7 @@ import typing
 from box import Box
 
 from ..augment import devices, nodes, plugin
+from ..data import get_empty_box
 from ..utils import files as _files
 from ..utils import log, strings, templates
 from . import _TopologyOutput, check_writeable
@@ -14,42 +15,37 @@ from .common import adjust_inventory_host, get_host_addresses
 
 forwarded_port_name = { 'ssh': 'ansible_port', }
 
+"""
+Build the contents of the 'all' group (shared variables)
+"""
 
-"""
-Add the hosts dictionary to Ansible inventory as an 'all' group variable 
-"""
-def add_host_addresses(topology: Box, inventory: Box) -> None:
-  inventory.all.vars.hosts = get_host_addresses(topology)
+def get_all_vars(topology: Box) -> Box:
+  all_vars = get_empty_box()
+  all_vars.netlab_provider = topology.defaults.provider
+  all_vars.netlab_name = topology.name
+  all_vars.hosts = get_host_addresses(topology)
+  all_vars.netlab_hosts = all_vars.hosts
+  if 'paths' in topology.defaults:
+    for k,v in topology.defaults.paths.items():
+      all_vars[f'paths_{k}'] = v
 
-"""
-Copy defaults.paths dictionary into ALL group. Create separate variables
-from individual customizable paths to prevent dependencies on too many
-variables that might not be set (example: only 'paths.custom' values should
-depend on 'custom_config' variable)
-"""
-def copy_paths(inventory: Box, topology: Box) -> None:
-  if 'paths' not in topology.defaults:
-    return
-  
-  for k,v in topology.defaults.paths.items():
-    inventory.all.vars[f'paths_{k}'] = v
-
-"""
-Copy other interesting global topology data into all group to make it accessible to all nodes
-"""
-def copy_global_vars(inventory: Box, topology: Box) -> None:
   for kw in ['prefix']:
-    if kw not in topology:
-      continue
-    inventory.all.vars[kw] = topology[kw]
+    if kw in topology:
+      all_vars[kw] = topology[kw]
+
+  if 'addressing' in topology:
+    for name,pool in topology.addressing.items():
+      for k,v in pool.items():
+        if '_pfx' not in k and '_eui' not in k:
+          all_vars.pools[name][k] = v
+
+  return all_vars
 
 def create(topology: Box) -> Box:
   inventory = Box({},default_box=True,box_dots=True)
 
-  inventory.all.vars.netlab_provider = topology.defaults.provider
-  inventory.all.vars.netlab_name = topology.name
-  copy_paths(inventory,topology)
-  copy_global_vars(inventory,topology)
+  inventory.all.vars = get_all_vars(topology)
+  inventory.all.hosts = {}
 
   # Create placeholders for well-known groups
   #
@@ -60,15 +56,6 @@ def create(topology: Box) -> Box:
 
   if 'module' in topology:
     inventory.modules.vars.netlab_module = topology.module
-
-  if 'addressing' in topology:
-    inventory.all.vars.pools = topology.addressing
-    for name,pool in inventory.all.vars.pools.items():
-      for k in list(pool.keys()):
-        if ('_pfx' in k) or ('_eui' in k):
-          del pool[k]
-
-  add_host_addresses(topology,inventory)    # Create the 'hosts' dictionary in 'all' group
 
   extra_groups: dict = {                    # Extra groups created in Ansible inventory
     'module':  'modules',                   # Devices using configuration modules
