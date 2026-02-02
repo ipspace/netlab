@@ -5,7 +5,7 @@
 #
 # (Overwrite netplan config to remove DNS stuff)
 echo -n 'Starting initial config ' && date
-cat <<SCRIPT >/etc/netplan/01-netcfg.yaml
+cat <<'SCRIPT' >/etc/netplan/01-netcfg.yaml
 network:
   version: 2
   renderer: networkd
@@ -18,7 +18,7 @@ SCRIPT
 netplan apply
 
 # (Overwrite resolved config to remove DNS stuff)
-cat <<SCRIPT > /etc/systemd/resolved.conf 
+cat <<'SCRIPT' > /etc/systemd/resolved.conf 
 [Resolve]
 DNS=
 FallbackDNS=
@@ -69,7 +69,7 @@ else
   apt-get install -qq lldpd
 fi
 
-cat <<CONFIG >/etc/lldpd.d/system.conf
+cat <<'CONFIG' >/etc/lldpd.d/system.conf
 configure lldp tx-interval 30
 configure lldp tx-hold 3
 configure system interface pattern *,!eth0,eth*
@@ -80,7 +80,7 @@ systemctl restart lldpd
 
 # Loopback addressing
 {% if loopback.ipv4 is defined or loopback.ipv6 is defined %}
-cat <<SCRIPT > /etc/netplan/02-loopback.yaml
+cat <<'SCRIPT' > /etc/netplan/02-loopback.yaml
 network:
   version: 2
   renderer: networkd
@@ -98,7 +98,7 @@ SCRIPT
 
 # Interface addressing and bonds, including any static routes
 {% for l in interfaces|default([]) if (l.ipv4 is defined or l.ipv6 is defined or l.dhcp is defined or l.type in ['lag','bond'])%}
-cat <<SCRIPT > /etc/netplan/03-eth-{{ l.ifname }}.yaml
+cat <<'SCRIPT' > /etc/netplan/03-eth-{{ l.ifname }}.yaml
 network:
   version: 2
   renderer: networkd
@@ -163,7 +163,7 @@ SCRIPT
 {% endfor %}
 
 # Disable auto-negotiation on Ethernet interfaces, needed to make LACP work correctly
-cat <<SCRIPT > /etc/systemd/network/98-eth.link
+cat <<'SCRIPT' > /etc/systemd/network/98-eth.link
 
 [Match]
 OriginalName=eth*
@@ -191,7 +191,7 @@ netplan apply
    assumed to be 'host' when missing
 #}
 {% set pkt_fwd = "1" if netlab_ip_forwarding|default(role|default("host") == "router") else "0" %}
-cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
+cat <<'SCRIPT' > /etc/sysctl.d/10-netsim.conf
 net.ipv4.conf.all.arp_announce=2
 net.ipv4.ip_forward={{ pkt_fwd }}
 net.ipv6.conf.all.forwarding={{ pkt_fwd }}
