@@ -280,38 +280,53 @@ def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
     log_result(test,'create',False)
     return
 
-  if 'up' not in args.steps:
+  topology = _read.load_pickled_data("netlab.snapshot.pickle")
+  if not topology:
+    print_fail("read",fail_color="red")
+    print("",flush=True)
+    log_result(test,'create',False)
+    return
+
+  test_def = topology.defaults.netlab.integration
+  test_skip = test_def.get("skip",[])
+  test_exec = []
+
+  up_cmd = test_def.get("up",f"netlab up --snapshot --no-config")
+  if "up" not in args.steps or "up" in test_skip:
     print("up(skip)",end=" ",flush=True)
-  elif execute(f"netlab up --snapshot --no-config",args,test=test,log="up",err="up").returncode == 0:
+  elif execute(up_cmd,args,test=test,log="up",err="up").returncode == 0:
     print("up(ok)",end=" ",flush=True)
     log_result(test,'up',True,image=args.image)
+    test_exec.append("up")
   else:
     print_fail("up")
     log_result(test,'up',False)
     run_cleanup(args)
     return
 
-  if 'initial' not in args.steps:
+  if "initial" not in args.steps or "initial" in test_skip:
     print("config(skip)",end=" ",flush=True)
     return
   else:
     os.environ['ANSIBLE_ANY_ERRORS_FATAL'] = 'True'
     cmd  = "netlab initial" if 'up' in args.steps else "netlab initial -o config"
     stat = "config(ok)" if 'up' in args.steps else "config(files)"
+    cmd  = test_def.get("initial",cmd)
     if execute(cmd,args,test=test,log="initial",err="initial").returncode == 0:
       print(stat,end=" ",flush=True)
       log_result(test,'config',True)
+      test_exec.append("initial")
     else:
       print_fail("config")
       log_result(test,'config',False)
       run_cleanup(args)
       return
 
-  if 'validate' not in args.steps:
+  if "validate" not in args.steps or "validate" in test_skip:
     print("validate(skip)",end=" ",flush=True)
     run_cleanup(args)
     return
-  if 'up' not in args.steps or 'initial' not in args.steps:
+  if "up" not in test_exec or "initial" not in test_exec:
     print("validate(unavailable)",end=" ",flush=True)
     run_cleanup(args)
     return
@@ -324,6 +339,7 @@ def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
     valid_cmd += " --dump result"
 
   valid_capture = "validate" if args.quiet or args.batch else None
+  valid_cmd = test_def.get("validate",valid_cmd)
   valid = execute(valid_cmd,args,test=test,log=valid_capture,err=valid_capture)
   if valid.returncode == 0:
     log_result(test,'validate',True)
