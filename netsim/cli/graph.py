@@ -14,7 +14,7 @@ from box import Box
 from ..outputs import _TopologyOutput
 from ..utils import log, strings
 from ..utils import read as _read
-from . import external_commands, load_data_source, parser_add_verbose, parser_data_source
+from . import error_and_exit, external_commands, load_data_source, parser_add_verbose, parser_data_source
 
 
 #
@@ -53,7 +53,7 @@ def graph_parse(args: typing.List[str]) -> argparse.Namespace:
     nargs='?',
     help='Optional: Output file name')
 
-  parser_add_verbose(parser,verbose=False)
+  parser_add_verbose(parser,verbose=True)
   parser_data_source(parser,t_used=True,action='create a graph from')
   return parser.parse_args(args)
 
@@ -91,9 +91,12 @@ def create_graph(o_type: str, o_name: str, args: argparse.Namespace, topology: B
   cmd = strings.eval_format(cmd,{'gfile': o_name, 'gtype': o_type, 'gname': o_stem})
   if external_commands.run_command(cmd,ignore_errors=True):
     log.info(text=f'Created {o_stem}.{o_type} from {o_name}')
+  else:
+    error_and_exit('Failed to create graph file',more_data=f'command: {cmd}')
 
 def run(cli_args: typing.List[str]) -> None:
   args = graph_parse(cli_args)
+  log.set_logging_flags(args)
   topology = load_data_source(args,ghosts=False)
   _read.include_environment_defaults(topology)
   if args.g_title:
