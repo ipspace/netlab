@@ -1,12 +1,33 @@
+{#
+   If we're generating a Linux script to configure cEOS containers
+   we have to use a Bash script to avoid the random permanent
+   shutdown of cEOS interfaces due to their PHY emulation
+#}
+{% if netlab_config_mode == 'sh' %}
+#!/bin/bash
+set -e
+cat <<'CONFIG' >/mnt/flash/00-normalize.cfg
+configure terminal
+{% endif %}
 {% for intf in interfaces if intf.virtual_interface is not defined %}
 !
 interface {{ intf.ifname }}
-{% if node_provider == 'clab' and netlab_config_mode == 'sh' %}
- platform tfa phy control-frame disabled
-{% endif %}
 {# 'no switchport' allocates an internal VLAN in range 1006-, causing issues when overlapping with topology vlans #}
  shutdown
-{% if l.mac_address is defined %}
- mac-address {{ l.mac_address }}
+{% if intf.mac_address is defined %}
+ mac-address {{ intf.mac_address }}
 {% endif %}
 {% endfor %}
+{% if netlab_config_mode == 'sh' %}
+end
+CONFIG
+{#
+   Now for the dirty hack: sleep a random amount of time, shut down
+   the interfaces, sleep for another random amount of time, hoping this
+   is good enough for both Arista boxes connected to a link to realize
+   what's going on
+#}
+sleep "$(printf "0.%03d" $((150 + RANDOM % 150)))"
+FastCli /mnt/flash/00-normalize.cfg
+sleep "$(printf "0.%03d" $((150 + RANDOM % 150)))"
+{% endif %}
