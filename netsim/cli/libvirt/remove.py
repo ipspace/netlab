@@ -42,6 +42,11 @@ def remove_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
     action='store',
     default='default',
     help="Specify the libvirt storage pool ('default' usually works)")
+  parser.add_argument(
+    '--yes',
+    dest='yes',
+    action='store_true',
+    help='Answer "yes" to all yes/no questions')
 
   return parser.parse_args(args)
 
@@ -120,6 +125,10 @@ def find_vagrant_box(args: argparse.Namespace) -> None:
 Make user confirm they know what they're doing
 """
 def box_remove_confirm(args: argparse.Namespace) -> None:
+  if args.yes:
+    log.info("User confirmed with the --yes CLI flag we can do whatever damage we need. Hooray!")
+    return
+
   log.section_header('WARNING','Read this first','yellow')
 
   print('\nThis command will remove Vagrant box ',end='')
@@ -139,6 +148,10 @@ a wrong choice.
     abort('User decided to abort the Vagrant box removal')
 
 def volume_purge_confirm(args: argparse.Namespace) -> None:
+  if args.yes:
+    log.info("User used the --yes flag, so I hope they're OK with us removing the volume ;)")
+    return
+
   log.section_header('WARNING','Read this first','yellow')
 
   print('\nThis command will remove libvirt volumes related to Vagrant box ',end='')
@@ -182,7 +195,9 @@ def purge_volume(args: argparse.Namespace) -> None:
 
   print(f'Volumes matching the {vol_box} Vagrant box:',end="\n\n")
   print("\n".join(vol_match),end="\n\n")
-  if not strings.confirm('Do you want to remove these volumes'):
+  if args.yes:
+    log.info("User used the --yes flag, so I hope they're OK with us removing the volume ;)")
+  elif not strings.confirm('Do you want to remove these volumes'):
     abort('Not removing the libvirt volumes')
 
   OK = True

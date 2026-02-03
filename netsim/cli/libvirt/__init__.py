@@ -23,7 +23,7 @@ Use 'netlab libvirt <action> --help' to get action-specific help
 """)
 
 def run(cli_args: typing.List[str]) -> None:
-  topology = _read.system_defaults()
+  topology = _read.system_defaults(include_user=True)
   if not topology:
     log.fatal("Cannot read the system defaults","libvirt")
 

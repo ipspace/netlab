@@ -386,8 +386,8 @@ def load(
 #
 # Read just the system defaults
 #
-def system_defaults() -> Box:
-  return load("package:cli/empty.yml",user_defaults=[])
+def system_defaults(include_user: bool = False) -> Box:
+  return load("package:cli/empty.yml",user_defaults=None if include_user else [])
 #
 # Parse values specified in CLI settings. Return string, bool or int
 #
