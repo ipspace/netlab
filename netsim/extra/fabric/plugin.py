@@ -141,14 +141,14 @@ def generate_fabric(topology: Box, l_cnt: int, s_cnt: int) -> typing.Tuple[Box, 
   for role in ('leaf','spine'):
     #
     # Get the fabric group name, create the new group
-    group_name = topology.get(f'fabric.{role}.group',defaults.fabric[role].group or f'{role}s')
+    group_name = fabric.get(f'{role}.group',defaults.fabric[role].group or f'{role}s')
     add_group(groups,group_name,node_lists[role])
 
     adjust_group_parameters(                                # Adjust group/node parameters
       group_name,
       groups,
       node_lists[role],
-      topology.get(f'fabric.{role}',{}))
+      fabric.get(role,{}))
 
   nodes = data.get_empty_box()                              # Finally create nodes
   for n in node_lists.leaf + node_lists.spine:              # ... copying leaf + spine lists
