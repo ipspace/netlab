@@ -1,7 +1,10 @@
 %YAML 1.1
 ---
-module:
-- isis
+provider: clab
+plugin:
+- files
+- fabric
+- multilab
 defaults:
   attributes:
     global:
@@ -14,6 +17,17 @@ defaults:
           content:
             type: str
             _required: true
+      fabric:
+        leafs:
+          type: int
+          _required: true
+        spines:
+          type: int
+          _required: true
+        leaf: dict
+        spine: dict
+        link: dict
+        debug: bool
       addressing:
         type: dict
         _keytype: id
@@ -69,6 +83,8 @@ defaults:
         debug:
           type: list
           split_lines: true
+      bgp_community_type:
+        valid_values: {}
     internal:
       input:
       pools: dict
@@ -744,6 +760,13 @@ defaults:
         - NoneType
       _namespace:
       - link
+  fabric:
+    leaf:
+      name: L{count}
+      group: leafs
+    spine:
+      name: S{count}
+      group: spines
   provider: clab
   providers:
     clab:
@@ -6995,7 +7018,6 @@ defaults:
           type: int
           min_value: 1
           max_value: 16777215
-      node_copy: {}
     features:
       unnumbered:
         ipv4: IPv4 unnumbered interfaces
@@ -7764,6 +7786,7 @@ defaults:
         - prefix
         - nexthop
         - aspath
+      node_copy: {}
     features:
       policy:
         set: Route map SET attributes
@@ -8276,7 +8299,7 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1770121873.1124594
+    timestamp: 1770121877.177436
     source: /home/pipi/net101/tools/netsim/topology-defaults.yml
   device: frr
   sources:
@@ -8308,54 +8331,121 @@ defaults:
     - vrf
     - vxlan
   module:
-  - isis
+  - routing
+  - ospf
+  - bgp
   name: ml-17
-provider: clab
-plugin:
-- files
-- multilab
-isis:
-  area: '49.0100'
-  type: level-2
-  instance: Gandalf
+fabric:
+  leafs: 2
+  spines: 2
+  link:
+    role: core
 groups:
-  l2_is:
+  leafs:
     members:
-    - c1
-    - c2
-    - x1
-    - x2
+    - L1
+    - L2
+  spines:
+    members:
+    - S1
+    - S2
+  nms:
+    members:
+    - nms_1
+    - nms_2
+    device: linux
     node_data:
       graph:
-        rank: 1
+        class:
+        - nms
+  as65000:
+    members:
+    - L1
+    - L2
+    - S1
+    - S2
+  netlab_no_reload:
+    members:
+    - nms_1
+    - nms_2
+module:
+- routing
+- ospf
+- bgp
+bgp:
+  advertise_loopback: true
+  community:
+    ibgp:
+    - standard
+    - extended
+    ebgp:
+    - standard
+  next_hop_self: true
+  as: 65000
 nodes:
-  x1:
-    graph:
-      rank: 1
-    isis:
-      area: '49.0001'
-      type: level-2
-      instance: Gandalf
-      system_id: 0000.0000.0001
-      net: 49.0001.0000.0000.0001.00
-      af:
-        ipv4: true
-    name: x1
+  L1:
+    name: L1
     interfaces:
-    - ipv4: 10.1.0.2/30
+    - ipv4: 10.1.0.1/30
+      role: core
       linkindex: 1
       type: p2p
-      name: x1 -> c1
+      name: L1 -> S1
       ifindex: 1
       ifname: eth1
       mtu: 1500
       neighbors:
-      - ipv4: 10.1.0.1/30
+      - ipv4: 10.1.0.2/30
         ifname: eth1
-        node: c1
-      isis:
+        node: S1
+      ospf:
+        area: 0.0.0.0
         passive: false
         network_type: point-to-point
+    - ipv4: 10.1.0.5/30
+      role: core
+      linkindex: 2
+      type: p2p
+      name: L1 -> S2
+      ifindex: 2
+      ifname: eth2
+      mtu: 1500
+      neighbors:
+      - ipv4: 10.1.0.6/30
+        ifname: eth1
+        node: S2
+      ospf:
+        area: 0.0.0.0
+        passive: false
+        network_type: point-to-point
+    - ipv4: 172.16.0.1/24
+      linkindex: 5
+      type: lan
+      bridge: ml-17_5
+      name: L1 -> [S1,S2,L2,nms_1,nms_2]
+      ifindex: 3
+      ifname: eth3
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.0.3/24
+        ifname: eth3
+        node: S1
+      - ipv4: 172.16.0.4/24
+        ifname: eth3
+        node: S2
+      - ipv4: 172.16.0.2/24
+        ifname: eth3
+        node: L2
+      - ipv4: 172.16.0.5/24
+        ifname: eth1
+        node: nms_1
+      - ipv4: 172.16.0.6/24
+        ifname: eth1
+        node: nms_2
+      ospf:
+        area: 0.0.0.0
+        passive: false
+    _fabric_count: 1
     device: frr
     clab:
       kind: linux
@@ -8363,8 +8453,11 @@ nodes:
       - source: initial
         target: /etc/config/01-initial.sh
         mode: sh
-      - source: isis
-        target: /etc/config/02-isis.sh
+      - source: ospf
+        target: /etc/config/02-ospf.sh
+        mode: sh
+      - source: bgp
+        target: /etc/config/03-bgp.sh
         mode: sh
       - source: daemons
         target: /etc/frr/daemons
@@ -8375,17 +8468,99 @@ nodes:
       - sleep 1
       binds:
       - target: /etc/config/01-initial.sh
-        source: node_files/x1/initial
-      - target: /etc/config/02-isis.sh
-        source: node_files/x1/isis
+        source: node_files/L1/initial
+      - target: /etc/config/02-ospf.sh
+        source: node_files/L1/ospf
+      - target: /etc/config/03-bgp.sh
+        source: node_files/L1/bgp
       - target: /etc/frr/daemons
-        source: node_files/x1/daemons
+        source: node_files/L1/daemons
       - target: /etc/hosts
         source: node_files/-shared-hosts
         mode: ro
     box: quay.io/frrouting/frr:10.5.1
     module:
-    - isis
+    - ospf
+    - bgp
+    ospf:
+      area: 0.0.0.0
+      router_id: 10.0.0.1
+      af:
+        ipv4: true
+      areas:
+      - area: 0.0.0.0
+        _area_int: 0
+        kind: regular
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65000
+      router_id: 10.0.0.1
+      neighbors:
+      - name: L2
+        as: 65000
+        type: ibgp
+        ipv4: 10.0.0.2
+        _source_intf:
+          type: loopback
+          neighbors: []
+          virtual_interface: true
+          ifindex: 0
+          ifname: lo
+          ipv4: 10.0.0.1/32
+          ospf:
+            area: 0.0.0.0
+            passive: false
+        next_hop_self: ebgp
+        activate:
+          ipv4: true
+      - name: S1
+        as: 65000
+        type: ibgp
+        ipv4: 10.0.0.3
+        _source_intf:
+          type: loopback
+          neighbors: []
+          virtual_interface: true
+          ifindex: 0
+          ifname: lo
+          ipv4: 10.0.0.1/32
+          ospf:
+            area: 0.0.0.0
+            passive: false
+        next_hop_self: ebgp
+        activate:
+          ipv4: true
+      - name: S2
+        as: 65000
+        type: ibgp
+        ipv4: 10.0.0.4
+        _source_intf:
+          type: loopback
+          neighbors: []
+          virtual_interface: true
+          ifindex: 0
+          ifname: lo
+          ipv4: 10.0.0.1/32
+          ospf:
+            area: 0.0.0.0
+            passive: false
+        next_hop_self: ebgp
+        activate:
+          ipv4: true
+      ipv4: true
     id: 1
     role: router
     mtu: 1500
@@ -8395,7 +8570,7 @@ nodes:
       ifname: eth0
       mac: ca:fe:00:01:00:00
       ipv4: 192.168.17.101
-    hostname: clab-ml-17-x1
+    hostname: clab-ml-17-L1
     loopback:
       type: loopback
       neighbors: []
@@ -8403,81 +8578,82 @@ nodes:
       ifindex: 0
       ifname: lo
       ipv4: 10.0.0.1/32
-      isis:
+      ospf:
+        area: 0.0.0.0
         passive: false
+      bgp:
+        advertise: true
     netlab_ansible_skip_module:
     - initial
-    - isis
+    - ospf
+    - bgp
     _node_config:
       initial: /etc/config/01-initial.sh:sh
-      isis: /etc/config/02-isis.sh:sh
-  c1:
-    graph:
-      rank: 1
-    isis:
-      area: '49.0100'
-      type: level-1-2
-      instance: Gandalf
-      system_id: 0000.0000.0002
-      net: 49.0100.0000.0000.0002.00
-      af:
-        ipv4: true
-    name: c1
+      ospf: /etc/config/02-ospf.sh:sh
+      bgp: /etc/config/03-bgp.sh:sh
+  L2:
+    name: L2
     interfaces:
-    - ipv4: 10.1.0.1/30
-      linkindex: 1
+    - ipv4: 10.1.0.9/30
+      role: core
+      linkindex: 3
       type: p2p
-      name: c1 -> x1
+      name: L2 -> S1
       ifindex: 1
       ifname: eth1
       mtu: 1500
       neighbors:
-      - ipv4: 10.1.0.2/30
-        ifname: eth1
-        node: x1
-      isis:
+      - ipv4: 10.1.0.10/30
+        ifname: eth2
+        node: S1
+      ospf:
+        area: 0.0.0.0
         passive: false
         network_type: point-to-point
-    - ipv4: 10.1.0.5/30
-      linkindex: 2
+    - ipv4: 10.1.0.13/30
+      role: core
+      linkindex: 4
       type: p2p
-      name: c1 -> c2
+      name: L2 -> S2
       ifindex: 2
       ifname: eth2
       mtu: 1500
       neighbors:
-      - ipv4: 10.1.0.6/30
-        ifname: eth1
-        node: c2
-      isis:
+      - ipv4: 10.1.0.14/30
+        ifname: eth2
+        node: S2
+      ospf:
+        area: 0.0.0.0
         passive: false
         network_type: point-to-point
-    - ipv4: 10.1.0.13/30
-      linkindex: 4
-      type: p2p
-      name: c1 -> r1
+    - ipv4: 172.16.0.2/24
+      linkindex: 5
+      type: lan
+      bridge: ml-17_5
+      name: L2 -> [S1,S2,L1,nms_1,nms_2]
       ifindex: 3
       ifname: eth3
       mtu: 1500
       neighbors:
-      - ipv4: 10.1.0.14/30
+      - ipv4: 172.16.0.3/24
+        ifname: eth3
+        node: S1
+      - ipv4: 172.16.0.4/24
+        ifname: eth3
+        node: S2
+      - ipv4: 172.16.0.1/24
+        ifname: eth3
+        node: L1
+      - ipv4: 172.16.0.5/24
         ifname: eth1
-        node: r1
-      isis:
+        node: nms_1
+      - ipv4: 172.16.0.6/24
+        ifname: eth1
+        node: nms_2
+      ospf:
+        area: 0.0.0.0
         passive: false
-        network_type: point-to-point
-    - ipv4: 172.16.1.2/24
-      linkindex: 7
-      role: stub
-      type: stub
-      bridge: ml-17_7
-      name: c1 -> stub
-      ifindex: 4
-      ifname: eth4
-      mtu: 1500
-      neighbors: []
-      isis:
-        passive: true
+    _fabric_count: 2
     device: frr
     clab:
       kind: linux
@@ -8485,8 +8661,11 @@ nodes:
       - source: initial
         target: /etc/config/01-initial.sh
         mode: sh
-      - source: isis
-        target: /etc/config/02-isis.sh
+      - source: ospf
+        target: /etc/config/02-ospf.sh
+        mode: sh
+      - source: bgp
+        target: /etc/config/03-bgp.sh
         mode: sh
       - source: daemons
         target: /etc/frr/daemons
@@ -8497,17 +8676,99 @@ nodes:
       - sleep 1
       binds:
       - target: /etc/config/01-initial.sh
-        source: node_files/c1/initial
-      - target: /etc/config/02-isis.sh
-        source: node_files/c1/isis
+        source: node_files/L2/initial
+      - target: /etc/config/02-ospf.sh
+        source: node_files/L2/ospf
+      - target: /etc/config/03-bgp.sh
+        source: node_files/L2/bgp
       - target: /etc/frr/daemons
-        source: node_files/c1/daemons
+        source: node_files/L2/daemons
       - target: /etc/hosts
         source: node_files/-shared-hosts
         mode: ro
     box: quay.io/frrouting/frr:10.5.1
     module:
-    - isis
+    - ospf
+    - bgp
+    ospf:
+      area: 0.0.0.0
+      router_id: 10.0.0.2
+      af:
+        ipv4: true
+      areas:
+      - area: 0.0.0.0
+        _area_int: 0
+        kind: regular
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65000
+      router_id: 10.0.0.2
+      neighbors:
+      - name: L1
+        as: 65000
+        type: ibgp
+        ipv4: 10.0.0.1
+        _source_intf:
+          type: loopback
+          neighbors: []
+          virtual_interface: true
+          ifindex: 0
+          ifname: lo
+          ipv4: 10.0.0.2/32
+          ospf:
+            area: 0.0.0.0
+            passive: false
+        next_hop_self: ebgp
+        activate:
+          ipv4: true
+      - name: S1
+        as: 65000
+        type: ibgp
+        ipv4: 10.0.0.3
+        _source_intf:
+          type: loopback
+          neighbors: []
+          virtual_interface: true
+          ifindex: 0
+          ifname: lo
+          ipv4: 10.0.0.2/32
+          ospf:
+            area: 0.0.0.0
+            passive: false
+        next_hop_self: ebgp
+        activate:
+          ipv4: true
+      - name: S2
+        as: 65000
+        type: ibgp
+        ipv4: 10.0.0.4
+        _source_intf:
+          type: loopback
+          neighbors: []
+          virtual_interface: true
+          ifindex: 0
+          ifname: lo
+          ipv4: 10.0.0.2/32
+          ospf:
+            area: 0.0.0.0
+            passive: false
+        next_hop_self: ebgp
+        activate:
+          ipv4: true
+      ipv4: true
     id: 2
     role: router
     mtu: 1500
@@ -8517,7 +8778,7 @@ nodes:
       ifname: eth0
       mac: ca:fe:00:02:00:00
       ipv4: 192.168.17.102
-    hostname: clab-ml-17-c1
+    hostname: clab-ml-17-L2
     loopback:
       type: loopback
       neighbors: []
@@ -8525,81 +8786,82 @@ nodes:
       ifindex: 0
       ifname: lo
       ipv4: 10.0.0.2/32
-      isis:
+      ospf:
+        area: 0.0.0.0
         passive: false
+      bgp:
+        advertise: true
     netlab_ansible_skip_module:
     - initial
-    - isis
+    - ospf
+    - bgp
     _node_config:
       initial: /etc/config/01-initial.sh:sh
-      isis: /etc/config/02-isis.sh:sh
-  c2:
-    graph:
-      rank: 1
-    isis:
-      area: '49.0100'
-      type: level-1-2
-      instance: Gandalf
-      system_id: 0000.0000.0003
-      net: 49.0100.0000.0000.0003.00
-      af:
-        ipv4: true
-    name: c2
+      ospf: /etc/config/02-ospf.sh:sh
+      bgp: /etc/config/03-bgp.sh:sh
+  S1:
+    name: S1
     interfaces:
-    - ipv4: 10.1.0.6/30
-      linkindex: 2
+    - ipv4: 10.1.0.2/30
+      role: core
+      linkindex: 1
       type: p2p
-      name: c2 -> c1
+      name: S1 -> L1
       ifindex: 1
       ifname: eth1
       mtu: 1500
       neighbors:
-      - ipv4: 10.1.0.5/30
-        ifname: eth2
-        node: c1
-      isis:
+      - ipv4: 10.1.0.1/30
+        ifname: eth1
+        node: L1
+      ospf:
+        area: 0.0.0.0
         passive: false
         network_type: point-to-point
-    - ipv4: 10.1.0.9/30
+    - ipv4: 10.1.0.10/30
+      role: core
       linkindex: 3
       type: p2p
-      name: c2 -> x2
+      name: S1 -> L2
       ifindex: 2
       ifname: eth2
       mtu: 1500
       neighbors:
-      - ipv4: 10.1.0.10/30
+      - ipv4: 10.1.0.9/30
         ifname: eth1
-        node: x2
-      isis:
+        node: L2
+      ospf:
+        area: 0.0.0.0
         passive: false
         network_type: point-to-point
-    - ipv4: 10.1.0.17/30
+    - ipv4: 172.16.0.3/24
       linkindex: 5
-      type: p2p
-      name: c2 -> r1
+      type: lan
+      bridge: ml-17_5
+      name: S1 -> [S2,L1,L2,nms_1,nms_2]
       ifindex: 3
       ifname: eth3
       mtu: 1500
       neighbors:
-      - ipv4: 10.1.0.18/30
-        ifname: eth2
-        node: r1
-      isis:
+      - ipv4: 172.16.0.4/24
+        ifname: eth3
+        node: S2
+      - ipv4: 172.16.0.1/24
+        ifname: eth3
+        node: L1
+      - ipv4: 172.16.0.2/24
+        ifname: eth3
+        node: L2
+      - ipv4: 172.16.0.5/24
+        ifname: eth1
+        node: nms_1
+      - ipv4: 172.16.0.6/24
+        ifname: eth1
+        node: nms_2
+      ospf:
+        area: 0.0.0.0
         passive: false
-        network_type: point-to-point
-    - ipv4: 172.16.2.3/24
-      linkindex: 8
-      role: stub
-      type: stub
-      bridge: ml-17_8
-      name: c2 -> stub
-      ifindex: 4
-      ifname: eth4
-      mtu: 1500
-      neighbors: []
-      isis:
-        passive: true
+    _fabric_count: 1
     device: frr
     clab:
       kind: linux
@@ -8607,8 +8869,11 @@ nodes:
       - source: initial
         target: /etc/config/01-initial.sh
         mode: sh
-      - source: isis
-        target: /etc/config/02-isis.sh
+      - source: ospf
+        target: /etc/config/02-ospf.sh
+        mode: sh
+      - source: bgp
+        target: /etc/config/03-bgp.sh
         mode: sh
       - source: daemons
         target: /etc/frr/daemons
@@ -8619,17 +8884,99 @@ nodes:
       - sleep 1
       binds:
       - target: /etc/config/01-initial.sh
-        source: node_files/c2/initial
-      - target: /etc/config/02-isis.sh
-        source: node_files/c2/isis
+        source: node_files/S1/initial
+      - target: /etc/config/02-ospf.sh
+        source: node_files/S1/ospf
+      - target: /etc/config/03-bgp.sh
+        source: node_files/S1/bgp
       - target: /etc/frr/daemons
-        source: node_files/c2/daemons
+        source: node_files/S1/daemons
       - target: /etc/hosts
         source: node_files/-shared-hosts
         mode: ro
     box: quay.io/frrouting/frr:10.5.1
     module:
-    - isis
+    - ospf
+    - bgp
+    ospf:
+      area: 0.0.0.0
+      router_id: 10.0.0.3
+      af:
+        ipv4: true
+      areas:
+      - area: 0.0.0.0
+        _area_int: 0
+        kind: regular
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65000
+      router_id: 10.0.0.3
+      neighbors:
+      - name: L1
+        as: 65000
+        type: ibgp
+        ipv4: 10.0.0.1
+        _source_intf:
+          type: loopback
+          neighbors: []
+          virtual_interface: true
+          ifindex: 0
+          ifname: lo
+          ipv4: 10.0.0.3/32
+          ospf:
+            area: 0.0.0.0
+            passive: false
+        next_hop_self: ebgp
+        activate:
+          ipv4: true
+      - name: L2
+        as: 65000
+        type: ibgp
+        ipv4: 10.0.0.2
+        _source_intf:
+          type: loopback
+          neighbors: []
+          virtual_interface: true
+          ifindex: 0
+          ifname: lo
+          ipv4: 10.0.0.3/32
+          ospf:
+            area: 0.0.0.0
+            passive: false
+        next_hop_self: ebgp
+        activate:
+          ipv4: true
+      - name: S2
+        as: 65000
+        type: ibgp
+        ipv4: 10.0.0.4
+        _source_intf:
+          type: loopback
+          neighbors: []
+          virtual_interface: true
+          ifindex: 0
+          ifname: lo
+          ipv4: 10.0.0.3/32
+          ospf:
+            area: 0.0.0.0
+            passive: false
+        next_hop_self: ebgp
+        activate:
+          ipv4: true
+      ipv4: true
     id: 3
     role: router
     mtu: 1500
@@ -8639,7 +8986,7 @@ nodes:
       ifname: eth0
       mac: ca:fe:00:03:00:00
       ipv4: 192.168.17.103
-    hostname: clab-ml-17-c2
+    hostname: clab-ml-17-S1
     loopback:
       type: loopback
       neighbors: []
@@ -8647,41 +8994,82 @@ nodes:
       ifindex: 0
       ifname: lo
       ipv4: 10.0.0.3/32
-      isis:
+      ospf:
+        area: 0.0.0.0
         passive: false
+      bgp:
+        advertise: true
     netlab_ansible_skip_module:
     - initial
-    - isis
+    - ospf
+    - bgp
     _node_config:
       initial: /etc/config/01-initial.sh:sh
-      isis: /etc/config/02-isis.sh:sh
-  x2:
-    graph:
-      rank: 1
-    isis:
-      area: '49.0002'
-      type: level-2
-      instance: Gandalf
-      system_id: 0000.0000.0004
-      net: 49.0002.0000.0000.0004.00
-      af:
-        ipv4: true
-    name: x2
+      ospf: /etc/config/02-ospf.sh:sh
+      bgp: /etc/config/03-bgp.sh:sh
+  S2:
+    name: S2
     interfaces:
-    - ipv4: 10.1.0.10/30
-      linkindex: 3
+    - ipv4: 10.1.0.6/30
+      role: core
+      linkindex: 2
       type: p2p
-      name: x2 -> c2
+      name: S2 -> L1
       ifindex: 1
       ifname: eth1
       mtu: 1500
       neighbors:
-      - ipv4: 10.1.0.9/30
+      - ipv4: 10.1.0.5/30
         ifname: eth2
-        node: c2
-      isis:
+        node: L1
+      ospf:
+        area: 0.0.0.0
         passive: false
         network_type: point-to-point
+    - ipv4: 10.1.0.14/30
+      role: core
+      linkindex: 4
+      type: p2p
+      name: S2 -> L2
+      ifindex: 2
+      ifname: eth2
+      mtu: 1500
+      neighbors:
+      - ipv4: 10.1.0.13/30
+        ifname: eth2
+        node: L2
+      ospf:
+        area: 0.0.0.0
+        passive: false
+        network_type: point-to-point
+    - ipv4: 172.16.0.4/24
+      linkindex: 5
+      type: lan
+      bridge: ml-17_5
+      name: S2 -> [S1,L1,L2,nms_1,nms_2]
+      ifindex: 3
+      ifname: eth3
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.0.3/24
+        ifname: eth3
+        node: S1
+      - ipv4: 172.16.0.1/24
+        ifname: eth3
+        node: L1
+      - ipv4: 172.16.0.2/24
+        ifname: eth3
+        node: L2
+      - ipv4: 172.16.0.5/24
+        ifname: eth1
+        node: nms_1
+      - ipv4: 172.16.0.6/24
+        ifname: eth1
+        node: nms_2
+      ospf:
+        area: 0.0.0.0
+        passive: false
+    _fabric_count: 2
     device: frr
     clab:
       kind: linux
@@ -8689,8 +9077,11 @@ nodes:
       - source: initial
         target: /etc/config/01-initial.sh
         mode: sh
-      - source: isis
-        target: /etc/config/02-isis.sh
+      - source: ospf
+        target: /etc/config/02-ospf.sh
+        mode: sh
+      - source: bgp
+        target: /etc/config/03-bgp.sh
         mode: sh
       - source: daemons
         target: /etc/frr/daemons
@@ -8701,17 +9092,99 @@ nodes:
       - sleep 1
       binds:
       - target: /etc/config/01-initial.sh
-        source: node_files/x2/initial
-      - target: /etc/config/02-isis.sh
-        source: node_files/x2/isis
+        source: node_files/S2/initial
+      - target: /etc/config/02-ospf.sh
+        source: node_files/S2/ospf
+      - target: /etc/config/03-bgp.sh
+        source: node_files/S2/bgp
       - target: /etc/frr/daemons
-        source: node_files/x2/daemons
+        source: node_files/S2/daemons
       - target: /etc/hosts
         source: node_files/-shared-hosts
         mode: ro
     box: quay.io/frrouting/frr:10.5.1
     module:
-    - isis
+    - ospf
+    - bgp
+    ospf:
+      area: 0.0.0.0
+      router_id: 10.0.0.4
+      af:
+        ipv4: true
+      areas:
+      - area: 0.0.0.0
+        _area_int: 0
+        kind: regular
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65000
+      router_id: 10.0.0.4
+      neighbors:
+      - name: L1
+        as: 65000
+        type: ibgp
+        ipv4: 10.0.0.1
+        _source_intf:
+          type: loopback
+          neighbors: []
+          virtual_interface: true
+          ifindex: 0
+          ifname: lo
+          ipv4: 10.0.0.4/32
+          ospf:
+            area: 0.0.0.0
+            passive: false
+        next_hop_self: ebgp
+        activate:
+          ipv4: true
+      - name: L2
+        as: 65000
+        type: ibgp
+        ipv4: 10.0.0.2
+        _source_intf:
+          type: loopback
+          neighbors: []
+          virtual_interface: true
+          ifindex: 0
+          ifname: lo
+          ipv4: 10.0.0.4/32
+          ospf:
+            area: 0.0.0.0
+            passive: false
+        next_hop_self: ebgp
+        activate:
+          ipv4: true
+      - name: S1
+        as: 65000
+        type: ibgp
+        ipv4: 10.0.0.3
+        _source_intf:
+          type: loopback
+          neighbors: []
+          virtual_interface: true
+          ifindex: 0
+          ifname: lo
+          ipv4: 10.0.0.4/32
+          ospf:
+            area: 0.0.0.0
+            passive: false
+        next_hop_self: ebgp
+        activate:
+          ipv4: true
+      ipv4: true
     id: 4
     role: router
     mtu: 1500
@@ -8721,7 +9194,7 @@ nodes:
       ifname: eth0
       mac: ca:fe:00:04:00:00
       ipv4: 192.168.17.104
-    hostname: clab-ml-17-x2
+    hostname: clab-ml-17-S2
     loopback:
       type: loopback
       neighbors: []
@@ -8729,246 +9202,315 @@ nodes:
       ifindex: 0
       ifname: lo
       ipv4: 10.0.0.4/32
-      isis:
+      ospf:
+        area: 0.0.0.0
         passive: false
+      bgp:
+        advertise: true
     netlab_ansible_skip_module:
     - initial
-    - isis
+    - ospf
+    - bgp
     _node_config:
       initial: /etc/config/01-initial.sh:sh
-      isis: /etc/config/02-isis.sh:sh
-  r1:
-    isis:
-      area: '49.0100'
-      type: level-1
-      instance: Gandalf
-      system_id: 0000.0000.0005
-      net: 49.0100.0000.0000.0005.00
-      af:
-        ipv4: true
-    name: r1
+      ospf: /etc/config/02-ospf.sh:sh
+      bgp: /etc/config/03-bgp.sh:sh
+  nms_1:
+    graph:
+      class:
+      - nms
+    name: nms_1
     interfaces:
-    - ipv4: 10.1.0.14/30
-      linkindex: 4
-      type: p2p
-      name: r1 -> c1
+    - ipv4: 172.16.0.5/24
+      linkindex: 5
+      type: lan
+      bridge: ml-17_5
+      name: nms_1 -> [S1,S2,L1,L2,nms_2]
       ifindex: 1
       ifname: eth1
       mtu: 1500
       neighbors:
-      - ipv4: 10.1.0.13/30
+      - ipv4: 172.16.0.3/24
         ifname: eth3
-        node: c1
-      isis:
-        passive: false
-        network_type: point-to-point
-    - ipv4: 10.1.0.18/30
-      linkindex: 5
-      type: p2p
-      name: r1 -> c2
-      ifindex: 2
-      ifname: eth2
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.17/30
+        node: S1
+      - ipv4: 172.16.0.4/24
         ifname: eth3
-        node: c2
-      isis:
-        passive: false
-        network_type: point-to-point
-    - ipv4: 172.16.0.5/24
-      linkindex: 6
-      role: stub
-      type: stub
-      bridge: ml-17_6
-      name: r1 -> stub
-      ifindex: 3
-      ifname: eth3
-      mtu: 1500
-      neighbors: []
-      isis:
-        passive: true
-    device: frr
+        node: S2
+      - ipv4: 172.16.0.1/24
+        ifname: eth3
+        node: L1
+      - ipv4: 172.16.0.2/24
+        ifname: eth3
+        node: L2
+      - ipv4: 172.16.0.6/24
+        ifname: eth1
+        node: nms_2
+      gateway:
+        ipv4: 172.16.0.3/24
+    device: linux
     clab:
       kind: linux
       config_templates:
       - source: initial
-        target: /etc/config/01-initial.sh
-        mode: sh
-      - source: isis
-        target: /etc/config/02-isis.sh
-        mode: sh
-      - source: daemons
-        target: /etc/frr/daemons
+        target: ''
+        mode: ns
+      - source: routing
+        target: ''
+        mode: ns
       - source: hosts
         target: /etc/hosts
         mode: shared
-      exec:
-      - sleep 1
       binds:
-      - target: /etc/config/01-initial.sh
-        source: node_files/r1/initial
-      - target: /etc/config/02-isis.sh
-        source: node_files/r1/isis
-      - target: /etc/frr/daemons
-        source: node_files/r1/daemons
       - target: /etc/hosts
         source: node_files/-shared-hosts
         mode: ro
-    box: quay.io/frrouting/frr:10.5.1
-    module:
-    - isis
+    box: python:3.13-alpine
     id: 5
-    role: router
+    role: host
     mtu: 1500
+    _node_config:
+      initial: :ns
+      routing: :ns
     af:
       ipv4: true
     mgmt:
       ifname: eth0
       mac: ca:fe:00:05:00:00
       ipv4: 192.168.17.105
-    hostname: clab-ml-17-r1
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.5/32
-      isis:
-        passive: false
+    hostname: clab-ml-17-nms_1
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          ipv4: 172.16.0.3
+          intf: eth1
+          idx: 0
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          ipv4: 172.16.0.3
+          intf: eth1
+          idx: 0
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          ipv4: 172.16.0.3
+          intf: eth1
+          idx: 0
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          ipv4: 172.16.0.3
+          intf: eth1
+          idx: 0
+    module:
+    - routing
     netlab_ansible_skip_module:
     - initial
-    - isis
+    - routing
+  nms_2:
+    graph:
+      class:
+      - nms
+    name: nms_2
+    interfaces:
+    - ipv4: 172.16.0.6/24
+      linkindex: 5
+      type: lan
+      bridge: ml-17_5
+      name: nms_2 -> [S1,S2,L1,L2,nms_1]
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.0.3/24
+        ifname: eth3
+        node: S1
+      - ipv4: 172.16.0.4/24
+        ifname: eth3
+        node: S2
+      - ipv4: 172.16.0.1/24
+        ifname: eth3
+        node: L1
+      - ipv4: 172.16.0.2/24
+        ifname: eth3
+        node: L2
+      - ipv4: 172.16.0.5/24
+        ifname: eth1
+        node: nms_1
+      gateway:
+        ipv4: 172.16.0.3/24
+    device: linux
+    clab:
+      kind: linux
+      config_templates:
+      - source: initial
+        target: ''
+        mode: ns
+      - source: routing
+        target: ''
+        mode: ns
+      - source: hosts
+        target: /etc/hosts
+        mode: shared
+      binds:
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
+    box: python:3.13-alpine
+    id: 6
+    role: host
+    mtu: 1500
     _node_config:
-      initial: /etc/config/01-initial.sh:sh
-      isis: /etc/config/02-isis.sh:sh
+      initial: :ns
+      routing: :ns
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:06:00:00
+      ipv4: 192.168.17.106
+    hostname: clab-ml-17-nms_2
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          ipv4: 172.16.0.3
+          intf: eth1
+          idx: 0
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          ipv4: 172.16.0.3
+          intf: eth1
+          idx: 0
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          ipv4: 172.16.0.3
+          intf: eth1
+          idx: 0
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          ipv4: 172.16.0.3
+          intf: eth1
+          idx: 0
+    module:
+    - routing
+    netlab_ansible_skip_module:
+    - initial
+    - routing
 links:
-- interfaces:
-  - node: x1
-    ipv4: 10.1.0.2/30
-    ifindex: 1
-    ifname: eth1
-  - node: c1
+- _linkname: links[1]
+  role: core
+  interfaces:
+  - node: L1
     ipv4: 10.1.0.1/30
     ifindex: 1
     ifname: eth1
-  _linkname: links[1]
+  - node: S1
+    ipv4: 10.1.0.2/30
+    ifindex: 1
+    ifname: eth1
   linkindex: 1
   node_count: 2
   type: p2p
   prefix:
     ipv4: 10.1.0.0/30
-- interfaces:
-  - node: c1
+- _linkname: links[2]
+  role: core
+  interfaces:
+  - node: L1
     ipv4: 10.1.0.5/30
     ifindex: 2
     ifname: eth2
-  - node: c2
+  - node: S2
     ipv4: 10.1.0.6/30
     ifindex: 1
     ifname: eth1
-  _linkname: links[2]
   linkindex: 2
   node_count: 2
   type: p2p
   prefix:
     ipv4: 10.1.0.4/30
-- interfaces:
-  - node: c2
+- _linkname: links[3]
+  role: core
+  interfaces:
+  - node: L2
     ipv4: 10.1.0.9/30
-    ifindex: 2
-    ifname: eth2
-  - node: x2
-    ipv4: 10.1.0.10/30
     ifindex: 1
     ifname: eth1
-  _linkname: links[3]
+  - node: S1
+    ipv4: 10.1.0.10/30
+    ifindex: 2
+    ifname: eth2
   linkindex: 3
   node_count: 2
   type: p2p
   prefix:
     ipv4: 10.1.0.8/30
-- interfaces:
-  - node: c1
+- _linkname: links[4]
+  role: core
+  interfaces:
+  - node: L2
     ipv4: 10.1.0.13/30
-    ifindex: 3
-    ifname: eth3
-  - node: r1
+    ifindex: 2
+    ifname: eth2
+  - node: S2
     ipv4: 10.1.0.14/30
-    ifindex: 1
-    ifname: eth1
-  _linkname: links[4]
+    ifindex: 2
+    ifname: eth2
   linkindex: 4
   node_count: 2
   type: p2p
   prefix:
     ipv4: 10.1.0.12/30
 - interfaces:
-  - node: c2
-    ipv4: 10.1.0.17/30
+  - node: S1
+    ipv4: 172.16.0.3/24
     ifindex: 3
     ifname: eth3
-  - node: r1
-    ipv4: 10.1.0.18/30
-    ifindex: 2
-    ifname: eth2
+  - node: S2
+    ipv4: 172.16.0.4/24
+    ifindex: 3
+    ifname: eth3
+  - node: L1
+    ipv4: 172.16.0.1/24
+    ifindex: 3
+    ifname: eth3
+  - node: L2
+    ipv4: 172.16.0.2/24
+    ifindex: 3
+    ifname: eth3
+  - node: nms_1
+    ipv4: 172.16.0.5/24
+    ifindex: 1
+    ifname: eth1
+  - node: nms_2
+    ipv4: 172.16.0.6/24
+    ifindex: 1
+    ifname: eth1
+  graph:
+    class:
+    - nms
+    - nms_link
   _linkname: links[5]
   linkindex: 5
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.16/30
-- interfaces:
-  - node: r1
-    ipv4: 172.16.0.5/24
-    ifindex: 3
-    ifname: eth3
-  _linkname: links[6]
-  linkindex: 6
-  node_count: 1
-  role: stub
-  type: stub
-  bridge: ml-17_6
+  node_count: 6
+  type: lan
+  bridge: ml-17_5
   prefix:
     ipv4: 172.16.0.0/24
-- interfaces:
-  - node: c1
-    ipv4: 172.16.1.2/24
-    ifindex: 4
-    ifname: eth4
-  _linkname: links[7]
-  linkindex: 7
-  node_count: 1
-  role: stub
-  type: stub
-  bridge: ml-17_7
-  prefix:
-    ipv4: 172.16.1.0/24
-- interfaces:
-  - node: c2
-    ipv4: 172.16.2.3/24
-    ifindex: 4
-    ifname: eth4
-  _linkname: links[8]
-  linkindex: 8
-  node_count: 1
-  role: stub
-  type: stub
-  bridge: ml-17_8
-  prefix:
-    ipv4: 172.16.2.0/24
 files:
 - path: make_dot.sh
   content: |
     set -e
-    netlab graph -t isis dot-isis.svg
+    netlab graph --title "Exclude NMS" --exclude nms dot-no-nms.svg
+    netlab graph --title "Exclude NMS link" --exclude nms_link dot-no-nms-link.svg
+    netlab graph --title "Include bgp/core" --include bgp --include core dot-core.svg
 - path: make_d2.sh
   content: |
     set -e
-    netlab graph -t isis -e d2 d2-isis.svg
+    netlab graph --title "Exclude NMS" --exclude nms -e d2 d2-no-nms.svg
+    netlab graph --title "Exclude NMS link" --exclude nms_link -e d2 d2-no-nms-link.svg
+    netlab graph --title "Include bgp/core" --include bgp --include core d2-core.svg
 input:
-- /home/pipi/net101/tools/tests/platform-integration/graph/03-isis.yml
+- /home/pipi/net101/tools/tests/platform-integration/graph/05-include-exclude.yml
 - /home/pipi/net101/tools/tests/platform-integration/graph/topology-defaults.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
@@ -8997,6 +9539,8 @@ addressing:
   vrf_loopback:
     ipv4: 10.2.0.0/24
     prefix: 32
+ospf:
+  area: 0.0.0.0
 _cleanup:
   files:
   - make_dot.sh
