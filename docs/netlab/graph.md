@@ -110,7 +110,7 @@ The `--include` and `--exclude` parameters can be used to create a graph from a 
 
 * You can specify one value per `--include` or `--exclude` parameter, but can specify the parameters multiple times
 * The include/exclude values match node modules, link roles, or node/link **graph.class** attributes (hint: the **graph.class** attribute can be a list of values)
-* If the include/exclude values don't match any nodes or links, **netlab graph** ignores them and creates a warning message (otherwise, you could get an empty graph)
+* If none of the specified include/exclude values match any nodes or links, **netlab graph** ignores all of the filters, emits a warning, and generates the full unfiltered graph to avoid returning an empty graph.
 * If you specify just the `--include` parameter, **netlab graph** creates a graph from the nodes or links that match the include values.
 * If you specify just the `--exclude` parameter, **netlab graph** removes the matching nodes/links from the topology
 * When you specify both parameters, **netlab graph** removes the nodes/links matching any of the `--exclude` values unless they also match one of the `--include` values.
