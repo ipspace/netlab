@@ -11,7 +11,7 @@ from pathlib import Path
 
 from box import Box
 
-from ..outputs import _TopologyOutput
+from ..outputs import _graph, _TopologyOutput
 from ..utils import log, strings
 from ..utils import read as _read
 from . import error_and_exit, external_commands, load_data_source, parser_add_verbose, parser_data_source
@@ -35,6 +35,14 @@ def graph_parse(args: typing.List[str]) -> argparse.Namespace:
     choices=['topology','bgp','isis'],
     help='Graph type')
   parser.add_argument(
+    '-i','--include',
+    dest='inc_list', action='append',
+    help='Links/nodes to include in the graph')
+  parser.add_argument(
+    '-x','--exclude',
+    dest='exc_list', action='append',
+    help='Links/nodes to exclude from the graph')
+  parser.add_argument(
     '--title',
     dest='g_title', action='store',
     help='Graph title')
@@ -54,7 +62,7 @@ def graph_parse(args: typing.List[str]) -> argparse.Namespace:
     help='Optional: Output file name')
 
   parser_add_verbose(parser,verbose=True)
-  parser_data_source(parser,t_used=True,action='create a graph from')
+  parser_data_source(parser,t_used=True,i_used=True,action='create a graph from')
   return parser.parse_args(args)
 
 def parse_output(args: argparse.Namespace, topology: Box) -> typing.Tuple[typing.Optional[str],typing.Optional[str]]:
@@ -98,6 +106,16 @@ def run(cli_args: typing.List[str]) -> None:
   args = graph_parse(cli_args)
   log.set_logging_flags(args)
   topology = load_data_source(args,ghosts=False)
+
+  for inc_exc_para in (args.inc_list or []) + (args.exc_list or []):
+    if ',' in inc_exc_para:
+      log.error(
+        f'Use multiple --include or --exclude parameters, not commas in parameter values',
+        more_data = [ inc_exc_para ])
+
+  log.exit_on_error()
+
+  _graph.adjust_graph_topology(topology,args.inc_list or [], args.exc_list or [])
   _read.include_environment_defaults(topology)
   if args.g_title:
     topology.graph.title = args.g_title
