@@ -46,7 +46,7 @@ Finally, use the **netlab libvirt remove --box netlab/frr** command if you want 
 
 ## Using a Management VRF
 
-Unline FRR containers, the default or custom-built FRR VM does not have the `eth0` interface in a management VRF. If you want to have the management interface (and the associated default route) on FRR VMs in a management VRF, set the **netlab_mgmt_vrf** parameter with the **[netlab defaults](netlab-defaults)** command:
+Unlike FRR containers, the default or custom-built FRR VM does not have the `eth0` interface in a management VRF. If you want to have the management interface (and the associated default route) on FRR VMs in a management VRF, set the **netlab_mgmt_vrf** parameter with the **[netlab defaults](netlab-defaults)** command:
 
 ```
 netlab defaults devices.frr.libvirt.group_vars.netlab_mgmt_vrf=True
