@@ -116,8 +116,10 @@ def generate_fabric(topology: Box, l_cnt: int, s_cnt: int) -> typing.Tuple[Box, 
   #
   # Get the fabric settings: leaf node names, spine node names...
   defaults = topology.defaults
-  l_name = topology.get('fabric.leaf.name',defaults.fabric.leaf.name or 'L{count}')
-  s_name = topology.get('fabric.spine.name',defaults.fabric.spine.name or 'S{count}')
+  fabric = topology.get('fabric',{})
+  l_name = fabric.get('leaf.name',defaults.fabric.leaf.name or 'L{count}')
+  s_name = fabric.get('spine.name',defaults.fabric.spine.name or 'S{count}')
+  link_attr = fabric.get('link',{})
 
   node_lists = data.get_box({ 'leaf': [], 'spine': [] })    # Create empty list of leafs and spines
 
@@ -130,7 +132,7 @@ def generate_fabric(topology: Box, l_cnt: int, s_cnt: int) -> typing.Tuple[Box, 
   links = []
   for l in node_lists.leaf:                                 # Links are a cartesian product of leafs
     for s in node_lists.spine:                              # ... and spines
-      link = data.get_empty_box()                           # Every link starts as an empty box
+      link = data.get_new_box(link_attr)                    # Every link starts with a copy of shared link attributes
       link[l.name] = {}                                     # ... attach leaf node to it
       link[s.name] = {}                                     # ... and the spine node
       links.append(link)                                    # Append the link to fabric link list
@@ -139,14 +141,14 @@ def generate_fabric(topology: Box, l_cnt: int, s_cnt: int) -> typing.Tuple[Box, 
   for role in ('leaf','spine'):
     #
     # Get the fabric group name, create the new group
-    group_name = topology.get(f'fabric.{role}.group',defaults.fabric[role].group or f'{role}s')
+    group_name = fabric.get(f'{role}.group',defaults.fabric[role].group or f'{role}s')
     add_group(groups,group_name,node_lists[role])
 
     adjust_group_parameters(                                # Adjust group/node parameters
       group_name,
       groups,
       node_lists[role],
-      topology.get(f'fabric.{role}',{}))
+      fabric.get(role,{}))
 
   nodes = data.get_empty_box()                              # Finally create nodes
   for n in node_lists.leaf + node_lists.spine:              # ... copying leaf + spine lists
