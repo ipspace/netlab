@@ -52,7 +52,7 @@ All other leaf- and spine parameters are copied into the corresponding _netlab_ 
 (fabric-ospf)=
 ### Create a Simple Fabric Running OSPF
 
-The following lab topology creates a leaf-and-spine fabric with four leaves (L1 through L4) and two spines (S1 and S2). All nodes are Arista EOS switches running OSPF. The core switches use prefixes from the `core` [addressing pool](address-pools).
+The following lab topology creates a leaf-and-spine fabric with four leaves (L1 through L4) and two spines (S1 and S2). All nodes are Arista EOS switches running OSPF. The leaf-to-spine links use prefixes from the `core` [addressing pool](address-pools).
 
 ```yaml
 defaults.device: eos

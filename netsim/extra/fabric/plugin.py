@@ -118,7 +118,7 @@ def generate_fabric(topology: Box, l_cnt: int, s_cnt: int) -> typing.Tuple[Box, 
   defaults = topology.defaults
   fabric = topology.get('fabric',{})
   l_name = fabric.get('leaf.name',defaults.fabric.leaf.name or 'L{count}')
-  s_name = fabric.get('fabric.spine.name',defaults.fabric.spine.name or 'S{count}')
+  s_name = fabric.get('spine.name',defaults.fabric.spine.name or 'S{count}')
   link_attr = fabric.get('link',{})
 
   node_lists = data.get_box({ 'leaf': [], 'spine': [] })    # Create empty list of leafs and spines
