@@ -1,0 +1,35 @@
+---
+provider: clab
+plugin: [ files, fabric ]
+defaults.device: frr
+
+fabric.leafs: 2
+fabric.spines: 2
+fabric.link.role: core
+
+groups:
+  _auto_create: True
+  nms:
+    members: [ nms_1, nms_2 ]
+    device: linux
+    graph.class: nms
+
+module: [ ospf, bgp ]
+bgp.as: 65000
+
+nodes:
+links:
+- interfaces: [ S1, S2, L1, L2, nms_1, nms_2 ]
+  graph.class: [ nms, nms_link ]
+
+files:
+  make_dot.sh: |
+    set -e
+    netlab graph --title "Exclude NMS" --exclude nms dot-no-nms.svg
+    netlab graph --title "Exclude NMS link" --exclude nms_link dot-no-nms-link.svg
+    netlab graph --title "Include bgp/core" --include bgp --include core dot-core.svg
+  make_d2.sh: |
+    set -e
+    netlab graph --title "Exclude NMS" --exclude nms -e d2 d2-no-nms.svg
+    netlab graph --title "Exclude NMS link" --exclude nms_link -e d2 d2-no-nms-link.svg
+    netlab graph --title "Include bgp/core" --include bgp --include core d2-core.svg

@@ -5,7 +5,7 @@ import typing
 
 from box import Box
 
-from ..data import get_box, get_empty_box
+from ..data import get_a_list, get_box, get_empty_box
 from ..data.types import must_be_list
 from ..utils import log
 from ..utils import routing as _routing
@@ -386,3 +386,67 @@ def parse_bgp_params(settings: Box, format: typing.Optional[list]) -> None:
   if log.VERBOSE:
     log.info('BGP graph parameters',more_data=settings.bgp.to_yaml().split('\n'))
   log.exit_on_error()
+
+"""
+Figure out whether an object belongs to a graph based on graph's include/exclude
+lists:
+
+* If only the include list is set, the object is included only if it's in the
+  include list
+* Otherwise, the object is excluded if it's in the exclude list but not in the
+  include list
+"""
+def check_include_status(object: Box, inc_set: set, exc_set: set) -> None:
+  obj_class = set(object.get('graph.class',[]) + object.get('module',[]) + get_a_list(object.get('role',[])))
+  if inc_set and not exc_set:                   # Include list = whitelist
+    object._include = bool(inc_set & obj_class)
+  else:
+    object._include = bool(not(obj_class & exc_set) or obj_class & inc_set)
+
+def adjust_graph_topology(topology: Box, inc_list: list, exc_list: list) -> None:
+  if not inc_list and not exc_list:
+    return
+
+  inc_set = set(inc_list)
+  exc_set = set(exc_list)
+  nodes = topology.nodes
+  links = topology.links
+
+  for n_data in nodes.values():
+    check_include_status(n_data,inc_set,exc_set)
+  for l_data in links:
+    check_include_status(l_data,inc_set,exc_set)
+
+  node_include = [ n for n in nodes if nodes[n]._include ]
+  link_include = [ link.linkindex for link in links if link._include ]
+  if link_include:
+    for n_data in nodes.values():
+      for intf in list(n_data.interfaces):
+        if intf.linkindex not in link_include:
+          n_data.interfaces.remove(intf)
+      if not n_data.interfaces:
+        n_data._include = False
+
+  if node_include:
+    for l_data in links:
+      for intf in list(l_data.interfaces):
+        if intf.node not in node_include:
+          l_data.interfaces.remove(intf)
+      if not l_data.interfaces:
+        l_data._include = False
+
+  node_exclude = [ n for n in nodes if not nodes[n]._include and node_include ]
+  link_exclude = [ link._linkname for link in links if not link._include and link_include ]
+  if log.VERBOSE:
+    if node_exclude:
+      log.info(f'Nodes removed from graph: {",".join(node_exclude)}')
+    if link_exclude:
+      log.info(f'Links removed from graph: {",".join(link_exclude)}')
+
+  if inc_set and not node_include and not link_include:
+    log.warning(text='No nodes or links were included based on the --include parameter(s)',module='graph')
+  if exc_set and not node_exclude and not link_exclude:
+    log.warning(text='No nodes or links were excluded based on the --exclude parameter(s)',module='graph')
+
+  topology.nodes = { n:v for n,v in nodes.items() if v._include or not node_include }
+  topology.links = [ l for l in links if l._include or not link_include ]
