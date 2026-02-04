@@ -482,7 +482,7 @@ def copy_group_device_module(topology: Box) -> None:
       continue                                              # This group is not interesting, move on
 
     if log.debug_active('groups'):
-      print(f'Setting device for group {grp}: {gdata.device}')
+      print(f'Setting device for group {grp}: {gdata.device}',flush=True)
     g_members = group_members(topology,grp)
     if not g_members and not gdata.get('_default_group',False):
       log.error(
@@ -499,7 +499,7 @@ def copy_group_device_module(topology: Box) -> None:
       if 'device' not in ndata:                             # Copy device from group data to node data
         ndata.device = gdata.device
         if log.debug_active('groups'):
-          print(f'... setting {name}.device to {gdata.device}')
+          print(f'... setting {name}.device to {gdata.device}',flush=True)
 
   for grp in sorted_groups:                                 # Next, augment device modules
     gdata = topology.groups[grp]                            # We have to do this after augmenting devices
@@ -508,7 +508,7 @@ def copy_group_device_module(topology: Box) -> None:
       continue                                              # ... move on
 
     if log.debug_active('groups'):
-      print(f'Setting module for group {grp}: {gdata.module}')
+      print(f'Setting module for group {grp}: {gdata.module}',flush=True)
     g_members = group_members(topology,grp)
     if not g_members and not gdata.get('_default_group',False):
       log.error(
@@ -532,7 +532,7 @@ def copy_group_device_module(topology: Box) -> None:
         data.append_to_list(ndata,'module',m)               # ... and append group modules to node.module list
 
       if log.debug_active('groups'):
-        print(f'... adding module {gdata.module} to {name}. Node modules now {ndata.module}')
+        print(f'... adding module {gdata.module} to {name}. Node modules now {ndata.module}',flush=True)
 
 '''
 Copy node data from group into group members
@@ -549,7 +549,7 @@ def copy_group_node_data(topology: Box,pfx: str) -> None:
     g_type = gdata.get('type','node')
     g_members = group_members(topology,grp,g_type)                    # Get recursive list of members
     if log.debug_active('groups'):
-      print(f'copy node data {grp}: {gdata.node_data}')
+      print(f'copy node data {grp}: {gdata.node_data}',flush=True)
 
     g_ns = g_type + 's'                                               # Get the target object dictionary
     for name in g_members:                                            # Iterate over group members
@@ -557,7 +557,7 @@ def copy_group_node_data(topology: Box,pfx: str) -> None:
         continue                                                      # ... should have been detected earlier
 
       if log.debug_active('groups'):
-        print(f'... merging {g_type} data with {name}')
+        print(f'... merging {g_type} data with {name}',flush=True)
       merge_data = copy.deepcopy(gdata.node_data)
       if g_type == 'node' and 'module' in topology.nodes[name]:
         for m in topo_modules:

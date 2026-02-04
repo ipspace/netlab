@@ -172,9 +172,9 @@ def adjust_link_list(
       'links')
 
   if log.debug_active('links'):
-    print("Adjusted link list")
-    print("=" * 60)
-    print(strings.get_yaml_string(link_list))
+    print("Adjusted link list",flush=True)
+    print("=" * 60,flush=True)
+    print(strings.get_yaml_string(link_list),flush=True)
 
   return link_list
 
@@ -414,7 +414,7 @@ def set_fhrp_gateway(link: Box, pfx_list: Box, nodes: Box, link_path: str) -> No
     return
 
   if log.debug_active('links'):     # pragma: no cover (debugging)
-    print(f'FHRP gateway set for {link}')
+    print(f'FHRP gateway set for {link}',flush=True)
 
 """
 Assign a prefix (IPv4+IPv6) to a link:
@@ -440,7 +440,7 @@ def assign_link_prefix(
   if 'prefix' in link:                                    # Does the link have prefix parameters?
     pfx_data = addressing.parse_prefix(link.prefix,path=link_path)
     if log.debug_active('addr'):                          # pragma: no cover (debugging printout)
-      print(f'link {link_path} got prefix {pfx_data} from {link.prefix}')
+      print(f'link {link_path} got prefix {pfx_data} from {link.prefix}',flush=True)
     
     if link.prefix is False:                              # There should be no prefix on this link, get out
       return pfx_data
@@ -858,7 +858,7 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box
   link_attr_propagate = get_link_propagate_attributes(defaults)
 
   if log.debug_active('links'):     # pragma: no cover (debugging)
-    print(f'\nCreate node interfaces: {link} using {link_attr_propagate}')
+    print(f'\nCreate node interfaces: {link} using {link_attr_propagate}',flush=True)
 
   interfaces = []
   for (intf_cnt,value) in enumerate(link.interfaces):
@@ -881,8 +881,8 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box
                                                                   # ... must use dict not Box as Box creates a copy of the data structure
 
   if log.debug_active('links'):     # pragma: no cover (debugging)
-    print(f'... link data: {link}')
-    print(f'... interface data: {interfaces}\n')
+    print(f'... link data: {link}',flush=True)
+    print(f'... interface data: {interfaces}\n',flush=True)
 
   # Second phase: build neighbor list from list of newly-created interfaces
   for node_if in interfaces:

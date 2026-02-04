@@ -227,7 +227,7 @@ def load_kmods(topology: Box) -> None:
     if [ kmod for kmod in needed_kmods if '?' not in kmod ] or log.VERBOSE:
       mod_names = [ kmod.replace('?','') for kmod in needed_kmods ]
       strings.print_colored_text('[LOADING] ','bright_cyan',None)
-      print(f'Loading Linux kernel modules {",".join(mod_names)} required by containers using {m} module')
+      print(f'Loading Linux kernel modules {",".join(mod_names)} required by containers using {m} module',flush=True)
 
     for kmod in needed_kmods:
       load_mod = kmod.replace('?','')                       # Get the true module name

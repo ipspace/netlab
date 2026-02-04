@@ -90,7 +90,7 @@ def get_topology(args: argparse.Namespace, cli_args: typing.List[str]) -> Box:
     log.set_logging_flags(args)                               # ... use these arguments to set logging flags and read the snapshot
 
     topology = load_snapshot(args,ghosts=False)
-    print(f"Using transformed lab topology from snapshot file {args.snapshot}")
+    print(f"Using transformed lab topology from snapshot file {args.snapshot}",flush=True)
   else:                                                       # No snapshot file, use 'netlab create' parser
     log.section_header('Creating','configuration files')
     topology = create.run(cli_args,'up','Create configuration files, start a virtual lab, and configure it',up_args_parser)
@@ -152,7 +152,7 @@ machine, or 'netlab down' to shut down the other lab running in this directory.
 
 If you are sure that no other lab is running in this directory, remove the
 netlab.lock file manually and retry.
-''')
+''',flush=True)
   log.fatal('Cannot start another lab in the same directory')
 
 """
@@ -179,7 +179,7 @@ netlab status -i {lab_id} --cleanup
 
 If you think your netlab status file is corrupt, use 'netlab status --reset' to
 delete it.
-''')
+''',flush=True)
   log.fatal(f'aborting "netlab up" request')
 
 """
@@ -214,7 +214,7 @@ def start_provider_lab(topology: Box, pname: str, sname: typing.Optional[str] = 
 
   exec_list = exec_command if isinstance(exec_command,list) else [ exec_command ]
   for cmd in exec_list:
-    print(f"provider {p_name}: executing {cmd}")
+    print(f"provider {p_name}: executing {cmd}",flush=True)
     if not external_commands.run_command(cmd):
       log.fatal(f"{cmd} failed, aborting...","netlab up")
 
@@ -233,7 +233,7 @@ def recreate_secondary_config(topology: Box, p_provider: str, s_provider: str) -
   sp_module  = providers.get_provider_module(topology,s_provider)
   s_topology = providers.select_topology(topology,s_provider)         # Create secondary provider subtopology
   filename = sp_data.filename                                         # Get the secondary configuration filename
-  print(f"Recreating {filename} configuration file for {s_provider} provider")
+  print(f"Recreating {filename} configuration file for {s_provider} provider",flush=True)
   sp_module.create(s_topology,filename)                               # ... and create the new configuration file
 
 """
@@ -241,9 +241,9 @@ Deploy initial configuration
 """
 def deploy_initial_config(args: argparse.Namespace, topology: Box) -> None:
   if args.no_config:
-    print()
+    print(flush=True)
     strings.print_colored_text('[SKIPPED] ','yellow',None)
-    print("Initial configuration skipped, run 'netlab initial' to configure the devices")
+    print("Initial configuration skipped, run 'netlab initial' to configure the devices",flush=True)
     return
 
   lab_status_change(topology,f'deploying initial configuration')
@@ -253,7 +253,7 @@ def deploy_initial_config(args: argparse.Namespace, topology: Box) -> None:
 
   message = get_message(topology,'initial',True)
   if message:
-    print(f"\n\n{message}")
+    print(f"\n\n{message}",flush=True)
 
 """
 Reload saved configurations
@@ -266,7 +266,7 @@ def reload_saved_config(args: argparse.Namespace, topology: Box) -> None:
     log.fatal("netlab config --reload failed, aborting...",'netlab up')
   lab_status_change(topology,f'saved initial configurations reloaded')
   log.status_success()
-  print("Saved configurations reloaded")
+  print("Saved configurations reloaded",flush=True)
 
 """
 Check the state of the external tool container
@@ -293,9 +293,9 @@ def start_external_tools(args: argparse.Namespace, topology: Box) -> None:
   if not 'tools' in topology:
     return
   if args.no_tools:
-    print()
+    print(flush=True)
     strings.print_colored_text('[SKIPPED] ','yellow',None)
-    print("External tools not started, start them manually")
+    print("External tools not started, start them manually",flush=True)
     return
 
   lab_status_change(topology,f'starting external tools')
@@ -316,15 +316,15 @@ def start_external_tools(args: argparse.Namespace, topology: Box) -> None:
     if not is_dry_run():
       t_success += 1
       log.status_success()
-      print(f"{tool} tool started")
+      print(f"{tool} tool started",flush=True)
 
     if msg:
-      print(("DRY_RUN: " if is_dry_run() else "") + msg + "\n")
+      print(("DRY_RUN: " if is_dry_run() else "") + msg + "\n",flush=True)
 
   lab_status_change(topology,f'{t_success}/{t_count} external tools started')
   if not is_dry_run():
     log.partial_success(t_success,t_count)
-    print(f"{t_success}/{t_count} external tools started")
+    print(f"{t_success}/{t_count} external tools started",flush=True)
 
 """
 Main "lab start" process
