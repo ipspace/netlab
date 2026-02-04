@@ -241,7 +241,7 @@ Deploy initial configuration
 """
 def deploy_initial_config(args: argparse.Namespace, topology: Box) -> None:
   if args.no_config:
-    print(flush=True)
+    print()
     strings.print_colored_text('[SKIPPED] ','yellow',None)
     print("Initial configuration skipped, run 'netlab initial' to configure the devices",flush=True)
     return
@@ -293,7 +293,7 @@ def start_external_tools(args: argparse.Namespace, topology: Box) -> None:
   if not 'tools' in topology:
     return
   if args.no_tools:
-    print(flush=True)
+    print()
     strings.print_colored_text('[SKIPPED] ','yellow',None)
     print("External tools not started, start them manually",flush=True)
     return

@@ -24,11 +24,11 @@ class External(_Provider):
     if log.QUIET:
       return
     
-    print('*** Please make sure your physical topology reflects the following cabling:',flush=True)
-    print('',flush=True)
+    print('*** Please make sure your physical topology reflects the following cabling:')
+    print('')
     with open('external.txt', 'r') as f:
-      print(f.read(),flush=True)
-    print('',flush=True)
+      print(f.read())
+    print('')
     print('*** Please make sure your physical topology reflects the above cabling.',flush=True)
     if input('Do you want to continue [y/n]: ').lower() != 'y':
       status.unlock_directory()

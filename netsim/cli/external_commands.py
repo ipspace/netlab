@@ -15,8 +15,8 @@ from . import is_dry_run, lab_status_log
 
 def print_step(n: int, txt: str, spacing: typing.Optional[bool] = False) -> None:
   if spacing:
-    print(flush=True)
-  print("Step %d: %s" % (n,txt),flush=True)
+    print()
+  print("Step %d: %s" % (n,txt))
   print("=" * 72,flush=True)
 
 def stringify(cmd : typing.Union[str,list]) -> str:
