@@ -277,6 +277,22 @@ def add_templates_to_binds(node: Box) -> None:
     append_to_list(node.clab,'binds',b_item)
 
 '''
+Get all configuration snippets with the specified mode
+'''
+def get_templates_with_mode(n: Box, mode: typing.Optional[str]) -> list:
+  return [ item for item in n.get('clab.config_templates',[])   # Collect config template items
+              if 'mode' in item and                             # ... that have mode set
+                 item.mode == mode or mode is None]             # ... and match the requested mode (None == all modes)
+
+'''
+Add startup configuration point if the node has config_templates with 'startup' mode
+'''
+def add_startup_config(n: Box) -> None:
+  if not get_templates_with_mode(n,'startup'):
+    return
+  n.clab['startup-config'] = f'node_files/{n.name}/startup.partial.config'
+
+'''
 check_node_binds: ensure all files mapped into a container exist
 '''
 def check_node_binds(node: Box) -> None:
@@ -291,6 +307,33 @@ def check_node_binds(node: Box) -> None:
       f'File {bind_item.source} mapped to {bind_item.target} on node {node.name} does not exist',
       category=log.IncorrectValue,
       module='clab')
+
+'''
+Generate node startup configuration from configuration snippets with 'startup' mode
+in node_files/node/startup-config
+'''
+def generate_startup_config(n: Box) -> None:
+  startup_snippets = get_templates_with_mode(n,'startup')
+  if not startup_snippets:                        # No startup config snippets
+    return
+
+  startup_path = n.clab['startup-config']
+  try:
+    with pathlib.Path(startup_path).open("w") as startup_cfg:
+      for item in startup_snippets:
+        startup_cfg.write(pathlib.Path(f"node_files/{n.name}/{item.source}").read_text())
+        startup_cfg.write("\n")
+  except Exception as ex:
+    log.error(
+      'Cannot open/write startup configuration file {startup_path}',
+      more_data=[ str(ex) ],
+      module='clab')
+    return
+
+  if not log.QUIET:
+    log.status_created()
+    print(f"startup configuration for {n.name}",flush=True)
+  n.clab['startup-config'] = startup_path
 
 class Containerlab(_Provider):
   
@@ -307,14 +350,17 @@ class Containerlab(_Provider):
     normalize_clab_filemaps(node)
     validate_mgmt_ip(node,required=True,provider='clab',mgmt=topology.addressing.mgmt)
     add_templates_to_binds(node)
+    add_startup_config(node)
 
   def post_configuration_create(self, topology: Box) -> None:
     if use_ovs_bridge(topology):
       check_ovs_installation()
 
     for n in topology.nodes.values():
-      if devices.get_provider(n,topology.defaults) == 'clab':
-        check_node_binds(n)
+      if devices.get_provider(n,topology.defaults) != 'clab':
+        continue
+      check_node_binds(n)
+      generate_startup_config(n)
 
   def pre_start_lab(self, topology: Box) -> None:
     log.print_verbose('pre-start hook for Containerlab - create any bridges and load kernel modules')
@@ -455,6 +501,9 @@ class Containerlab(_Provider):
           break
         config_cmd = f'docker exec {node_name} {cfg_item.target}' # Container-side script
         log.info(f'Executing {mod_name} configuration for node {node.name}')
+      elif f_type == 'startup':                                 # Is this part of startup config?
+        append_to_list(node._deploy,'startup',mod_name)
+
       if not config_cmd:                                        # Not an executable file?
         continue
 

@@ -44,27 +44,28 @@ Print the results of the internal script deployments. Has to be called
 after the Ansible playbook has completed, or it would be buried deep
 into that noise.
 """
-def print_internal_stats(topology: Box) -> None:
+def print_internal_stats(topology: Box, top_margin: bool = False) -> None:
   print_legend = True
   for n_name, n_data in topology.nodes.items():
     if "_deploy" not in n_data:
       continue
     if print_legend:
+      if top_margin:
+        print()
       print("Results of configuration script deployments")
       print("=" * strings.rich_width)
       print_legend = False
 
     failed_list = n_data.get("_deploy.failed", [])
     strings.print_colored_text(f"{n_name:29}", "red" if failed_list else "green")
-    n_success = n_data.get("_deploy.success", [])
-    if len(n_success):
-      if failed_list:
-        ok_txt = f"OK: {','.join(n_success)} "
-      else:
-        ok_txt = f"OK: {len(n_data._deploy.success)} "
-      strings.print_colored_text(f"{ok_txt:8}", "green")
-    else:
-      print(" " * 8, end="")
+    for kw,report,min_len in [('success','Script:  ',12),('startup','Startup: ',14)]:
+      n_success = n_data.get(f"_deploy.{kw}", [])
+      if len(n_success):
+        if failed_list:
+          ok_txt = f"{report}{','.join(n_success)} "
+        else:
+          ok_txt = f"{report}{len(n_success)} "
+        strings.print_colored_text(f"{ok_txt.ljust(min_len)}", "green")
     if failed_list:
       strings.print_colored_text("Failed: " + ",".join(n_data._deploy.failed), "red")
     print()
@@ -129,16 +130,18 @@ def run(topology: Box, args: argparse.Namespace, rest: list) -> None:
   (used_internal, status_internal) = deploy_provider_config(nodeset, topology, args)
 
   ansible_skip_list = utils.nodeset_ansible_skip(nodeset, topology, args)
+  used_ansible = False
   if len(ansible_skip_list) != len(nodeset):
     utils.ansible_skip_group(ansible_skip_list)
     if used_internal:
       log.info("Starting Ansible playbook to deploy the rest of the configurations")
     status_ansible = deploy_ansible_playbook(topology,rest + utils.ansible_args(args))
+    used_ansible = True
     utils.ansible_skip_group([])
   else:
     status_ansible = True
 
-  print_internal_stats(topology)
+  print_internal_stats(topology,not used_ansible)
 
   if not status_internal or not status_ansible:
     error_and_exit("Configuration deployment failed")
