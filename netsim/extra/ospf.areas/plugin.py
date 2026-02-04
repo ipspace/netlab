@@ -45,7 +45,12 @@ def normalize_area_data(parent: Box,pname: str) -> bool:
     if a_data.kind in ['nssa','stub']:                      # For NSSA/stub areas
       if 'inter_area' not in a_data:                        # ... assume we want to advertise inter-area LSAs
         a_data.inter_area = True
-
+    elif 'inter_area' in a_data:                            # Cannot use 'inter_area' with regular areas
+      log.error(
+        f'The inter_area attribute cannot be used with regular area ({pname}.ospf.areas[{a_idx}])',
+        category=log.IncorrectAttr,
+        module=_config_name)
+      a_OK = False
     for kw in ['external_filter','external_range']:         # External filter/range is applicable only to NSSA areas
       if kw not in a_data:
         continue
