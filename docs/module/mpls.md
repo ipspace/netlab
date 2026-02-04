@@ -28,8 +28,7 @@ The following table describes the per-platform support of individual MPLS label 
 | Aruba AOS-CX          |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Cisco IOSv/IOS XE[^xe] |   ✅ |   ✅    |   ❌  |   ❌  |   ❌  |
 | FRR                   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
-| Juniper vMX           |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
-| Juniper vPTX          |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
+| Junos[^Junos]         |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Mikrotik RouterOS 6   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Mikrotik RouterOS 7   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Nokia SR Linux        |   [❗](caveats-srlinux)  |   ❌    |   ✅  |   ❌  |   ❌  |
@@ -39,6 +38,8 @@ The following table describes the per-platform support of individual MPLS label 
 [^xe]: Cisco Catalyst 8000v, Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco IOS on Linux (IOL) and IOL layer-2 image.
 
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
+
+[^Junos]: Includes vPTX, vJunos-switch, vJunos-Router, vMX and vSRX. vMX and vSRX are not tested.
 
 **Notes:**
 * LDP is enabled on all non-VRF intra-AS interfaces with IPv4 addresses.
@@ -68,8 +69,7 @@ The following table describes the per-platform support of individual MPLS label 
 | Aruba AOS-CX          |   [❗](caveats-aruba)  |   ❌  |
 | Cisco IOSv/IOS XE[^xe] |  ✅  |   ✅  |
 | FRR                   |   ✅  |   ✅  |
-| Juniper vMX           |   ✅  |   ✅  |
-| Juniper vPTX          |   ✅  |   ✅  |
+| Junos[^Junos]         |   ✅  |   ✅  |
 | Mikrotik RouterOS 6   |   ✅  |   ❌  |
 | Mikrotik RouterOS 7   |   ✅  |   ❌  |
 | Nokia SR OS[^SROS]    |   ✅  |   ✅  |
