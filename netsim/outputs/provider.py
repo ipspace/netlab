@@ -29,7 +29,6 @@ class ProviderConfiguration(_TopologyOutput):
     # Creates a "ghost clean" topology after transformation
     # (AKA, remove unmanaged devices)
     topology = output_common.create_adjusted_topology(nodes.ghost_buster(topology),ignore=[],template_vars=True)
-    topology._create_node_files = True
     p_module = providers.get_provider_module(topology,topology.provider)
     providers.mark_providers(topology)
     p_module.call('pre_output_transform',topology)
