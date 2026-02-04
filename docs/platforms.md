@@ -358,7 +358,7 @@ These devices support additional control-plane protocols or BGP address families
 | Arista EOS            | ✅  | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  | ✅  | ✅  | ✅  |
 | Cisco CSR 1000v       | ✅  |  ❌  | ✅  | ✅  |
-| Cisco Catalyst 8000v  | ✅  |  ❌  |  ❌  | ✅  |
+| Cisco Catalyst 8000v  | ✅  |  ❌  | ✅  | ✅  |
 | Cisco IOSv/IOSvL2     | ✅  |  ❌  | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  | ✅  |  ❌  | ✅  |
 | Cumulus Linux         | ✅  | ✅  |  ❌  | ✅  |
@@ -366,9 +366,9 @@ These devices support additional control-plane protocols or BGP address families
 | FRR                   | ✅  | ✅  | ✅  |  ❌  |
 | Juniper vMX           | ✅  |  ❌  | ✅  | ✅  |
 | Juniper vPTX          | ✅  |  ❌  | ✅  | ✅  |
-| Juniper vSRX 3.0      | ✅  |  ❌  |  ❌  | ✅  |
-| vJunos-switch         | ✅  |  ✅ |  ❌  | ✅  |
-| vJunos-router         | ✅  |  ❌  |  ❌  | ✅  |
+| Juniper vSRX 3.0      | ✅  |  ❌  | ✅  | ✅  |
+| vJunos-switch         | ✅  |  ✅ | ✅  | ✅  |
+| vJunos-router         | ✅  |  ❌  | ✅  | ✅  |
 | Mikrotik RouterOS 6   | ✅  |  ❌  | ✅  |  ❌  |
 | Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  |  ❌  |
 | Nokia SR Linux        | ✅  | ✅  |  ❌  | ✅  |
