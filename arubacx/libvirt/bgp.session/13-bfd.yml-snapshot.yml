@@ -10,161 +10,6 @@ module:
 - bfd
 - bgp
 defaults:
-  daemons:
-    bird:
-      daemon_config:
-        bgp@session: /etc/bird/bgp.session.conf
-        bird: /etc/bird/bird.conf
-        bfd: /etc/bird/bfd.conf
-        bgp: /etc/bird/bgp.mod.conf
-        ospf: /etc/bird/ospf.mod.conf
-        routing: /etc/bird/routing.mod.conf
-      features:
-        bgp:
-          bfd: true
-          default_originate: true
-          gtsm: true
-          passive: true
-          password: true
-          remove_private_as: true
-          rs: true
-          rs_client: true
-          timers: true
-          activate_af: true
-          ipv6_lla: false
-          rfc8950: true
-          local_as: true
-          local_as_ibgp: true
-          community:
-            standard:
-            - standard
-            - large
-            large:
-            - large
-            extended:
-            - extended
-            2octet:
-            - standard
-          import:
-          - ospf
-          - connected
-          - static
-        bfd: true
-        ospf:
-          import:
-          - bgp
-          - connected
-          - static
-          password: true
-          priority: true
-          timers: true
-          unnumbered: true
-        routing:
-          static:
-            discard: true
-        dhcp: false
-        initial:
-          ipv4:
-            unnumbered: peer
-          ipv6:
-            lla: true
-          reload: false
-          roles:
-          - host
-          - router
-      description: BIRD Internet Routing Daemon
-      group_vars:
-        netlab_import_map:
-          bgp: RTS_BGP
-          ospf: RTS_OSPF
-          connected: RTS_DEVICE
-          static: RTS_STATIC_DEVICE,RTS_STATIC
-      packages:
-        bird: bird
-      clab:
-        group_vars:
-          netlab_show_command:
-          - birdc
-          - show $@
-          docker_shell: bash -il
-          netlab_config_mode: sh
-        image: netlab/bird:latest
-        build: true
-        features:
-          initial:
-            roles:
-            - host
-            - router
-      libvirt:
-        image:
-      virtualbox:
-        image:
-    dnsmasq:
-      description: DNSmasq - DNS and DHCP server
-      packages:
-        dnsmasq: dnsmasq
-      daemon_config:
-        dnsmasq: /etc/dnsmasq.conf
-        dhcp: /etc/dhcp.ignore
-      node:
-        module:
-        - dhcp
-      clab:
-        group_vars:
-          docker_shell: bash -il
-        image: netlab/dnsmasq:latest
-        build: true
-        features:
-          initial:
-            roles:
-            - host
-      libvirt:
-        image:
-      virtualbox:
-        image:
-      features:
-        dhcp:
-          server: true
-        initial:
-          reload: false
-          roles:
-          - host
-      dhcp:
-        server: true
-      module:
-      - dhcp
-    kind:
-      description: Kubernetes in Docker (KinD) cluster
-      parent: linux
-      role: router
-      plugin:
-      - kind
-      attributes:
-        node:
-          kind:
-            workers: int
-      initial:
-        ipv4:
-          unnumbered: false
-        ipv6:
-          lla: true
-          use_ra: true
-      clab:
-        roles:
-        - host
-        node:
-          kind: k8s-kind
-        features:
-          lag: false
-          vlan: false
-          initial:
-            roles:
-            - host
-            - router
-        daemon_config:
-          initial: /tmp/kind
-          routing: /tmp/routing
-        image: kindest/node:v1.34.3
   attributes:
     exbs_timers:
       keepalive:
@@ -4286,6 +4131,7 @@ defaults:
           as_override: true
           bfd: true
           default_originate: true
+          description: true
           gtsm: true
           passive: true
           password: true
@@ -5944,16 +5790,8 @@ defaults:
           roles:
           - host
           - router
+        bfd: {}
         bgp:
-          bfd: true
-          default_originate: true
-          gtsm: true
-          passive: true
-          password: true
-          remove_private_as: true
-          rs: true
-          rs_client: true
-          timers: true
           activate_af: true
           ipv6_lla: false
           rfc8950: true
@@ -5973,7 +5811,15 @@ defaults:
           - ospf
           - connected
           - static
-        bfd: {}
+          bfd: true
+          default_originate: true
+          gtsm: true
+          passive: true
+          password: true
+          remove_private_as: true
+          rs: true
+          rs_client: true
+          timers: true
         ospf:
           import:
           - bgp
@@ -6053,15 +5899,15 @@ defaults:
         image: none
       graphite:
         icon: server
+      packages:
+        bird: bird
       daemon_config:
-        bgp@session: /etc/bird/bgp.session.conf
         bird: /etc/bird/bird.conf
         bfd: /etc/bird/bfd.conf
         bgp: /etc/bird/bgp.mod.conf
+        bgp@session: /etc/bird/bgp.session.conf
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
-      packages:
-        bird: bird
       daemon: true
       daemon_parent: linux
       _parents:
@@ -6261,6 +6107,161 @@ defaults:
       daemon_parent: linux
       _parents:
       - linux
+  daemons:
+    bird:
+      description: BIRD Internet Routing Daemon
+      group_vars:
+        netlab_import_map:
+          bgp: RTS_BGP
+          ospf: RTS_OSPF
+          connected: RTS_DEVICE
+          static: RTS_STATIC_DEVICE,RTS_STATIC
+      packages:
+        bird: bird
+      daemon_config:
+        bird: /etc/bird/bird.conf
+        bfd: /etc/bird/bfd.conf
+        bgp: /etc/bird/bgp.mod.conf
+        bgp@session: /etc/bird/bgp.session.conf
+        ospf: /etc/bird/ospf.mod.conf
+        routing: /etc/bird/routing.mod.conf
+      clab:
+        group_vars:
+          netlab_show_command:
+          - birdc
+          - show $@
+          docker_shell: bash -il
+          netlab_config_mode: sh
+        image: netlab/bird:latest
+        build: true
+        features:
+          initial:
+            roles:
+            - host
+            - router
+      libvirt:
+        image:
+      virtualbox:
+        image:
+      features:
+        bfd: true
+        bgp:
+          activate_af: true
+          ipv6_lla: false
+          rfc8950: true
+          local_as: true
+          local_as_ibgp: true
+          community:
+            standard:
+            - standard
+            - large
+            large:
+            - large
+            extended:
+            - extended
+            2octet:
+            - standard
+          import:
+          - ospf
+          - connected
+          - static
+          bfd: true
+          default_originate: true
+          gtsm: true
+          passive: true
+          password: true
+          remove_private_as: true
+          rs: true
+          rs_client: true
+          timers: true
+        ospf:
+          import:
+          - bgp
+          - connected
+          - static
+          password: true
+          priority: true
+          timers: true
+          unnumbered: true
+        routing:
+          static:
+            discard: true
+        dhcp: false
+        initial:
+          ipv4:
+            unnumbered: peer
+          ipv6:
+            lla: true
+          reload: false
+          roles:
+          - host
+          - router
+    dnsmasq:
+      description: DNSmasq - DNS and DHCP server
+      packages:
+        dnsmasq: dnsmasq
+      daemon_config:
+        dnsmasq: /etc/dnsmasq.conf
+        dhcp: /etc/dhcp.ignore
+      node:
+        module:
+        - dhcp
+      clab:
+        group_vars:
+          docker_shell: bash -il
+        image: netlab/dnsmasq:latest
+        build: true
+        features:
+          initial:
+            roles:
+            - host
+      libvirt:
+        image:
+      virtualbox:
+        image:
+      features:
+        dhcp:
+          server: true
+        initial:
+          reload: false
+          roles:
+          - host
+      dhcp:
+        server: true
+      module:
+      - dhcp
+    kind:
+      description: Kubernetes in Docker (KinD) cluster
+      parent: linux
+      role: router
+      plugin:
+      - kind
+      attributes:
+        node:
+          kind:
+            workers: int
+      initial:
+        ipv4:
+          unnumbered: false
+        ipv6:
+          lla: true
+          use_ra: true
+      clab:
+        roles:
+        - host
+        node:
+          kind: k8s-kind
+        features:
+          lag: false
+          vlan: false
+          initial:
+            roles:
+            - host
+            - router
+        daemon_config:
+          initial: /tmp/kind
+          routing: /tmp/routing
+        image: kindest/node:v1.34.3
   outputs:
     d2:
       command: d2 {gfile} {gname}.{gtype}
@@ -6804,6 +6805,7 @@ defaults:
       ldp_adj: 30
       stp_forwarding: 40
       lacp_setup: 10
+      bfd_init: 6
       xr:
         bgp_v4_originate: 80
         bgp_v6_originate: 80
@@ -6827,6 +6829,8 @@ defaults:
       vptx:
         ldp_adj: 180
         ibgp_session: 40
+      arubacx:
+        bfd_init: 10
   hints:
     evpn:
       irb_group: >
@@ -6957,12 +6961,12 @@ defaults:
     - /home/pipi/netlab_gh/netsim/validate
     plugin:
     - /work/netlab_cicd
-    - /home/pipi/net101/tools/tests/integration/bgp.session
+    - /home/pipi/netlab_gh/tests/integration/bgp.session
     - /home/pipi/.netlab
     - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
-      - /home/pipi/net101/tools/tests/integration/bgp.session
+      - /home/pipi/netlab_gh/tests/integration/bgp.session
       - /work/netlab_cicd
       - /home/pipi/.netlab
       - /home/pipi/netlab_gh/netsim/extra
@@ -8849,7 +8853,7 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1770188910.9960175
+    timestamp: 1770192335.9548042
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
@@ -9141,7 +9145,7 @@ validate:
   name: session_v4
 - description: Check BFD peer on X1
   wait_msg: Waiting for BFD to start
-  wait: 3
+  wait: 10
   nodes:
   - x1
   show:
@@ -9154,9 +9158,9 @@ validate:
   devices:
   - eos
 input:
-- /home/pipi/net101/tools/tests/integration/bgp.session/13-bfd.yml
-- /home/pipi/net101/tools/tests/integration/wait_times.yml
-- /home/pipi/net101/tools/tests/integration/warnings.yml
+- /home/pipi/netlab_gh/tests/integration/bgp.session/13-bfd.yml
+- /home/pipi/netlab_gh/tests/integration/wait_times.yml
+- /home/pipi/netlab_gh/tests/integration/warnings.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 name: ml-17
