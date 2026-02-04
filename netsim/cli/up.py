@@ -214,7 +214,7 @@ def start_provider_lab(topology: Box, pname: str, sname: typing.Optional[str] = 
 
   exec_list = exec_command if isinstance(exec_command,list) else [ exec_command ]
   for cmd in exec_list:
-    print(f"provider {p_name}: executing {cmd}")
+    print(f"provider {p_name}: executing {cmd}",flush=True)
     if not external_commands.run_command(cmd):
       log.fatal(f"{cmd} failed, aborting...","netlab up")
 

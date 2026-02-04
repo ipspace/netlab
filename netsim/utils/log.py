@@ -420,7 +420,7 @@ def status_green(stat: str, txt: str) -> None:
   strings.print_colored_text(f'{stat:10s}','green',txt)
 
 def status_created() -> None:
-  status_green('CREATED','Created')
+  status_green('CREATED','Created ')
 
 def status_success() -> None:
   status_green('SUCCESS','OK: ')
@@ -438,7 +438,7 @@ def partial_success(s_cnt: int, t_cnt: int) -> None:
 
 def section_header(label: str, text: str, color: str = 'green') -> None:
   if not strings.rich_color:
-    print(f'{label} {text}')
+    print(f'{label} {text}',flush=True)
   else:
     print()
     table = rich.table.Table(show_header=False)
