@@ -214,7 +214,7 @@ def start_provider_lab(topology: Box, pname: str, sname: typing.Optional[str] = 
 
   exec_list = exec_command if isinstance(exec_command,list) else [ exec_command ]
   for cmd in exec_list:
-    print(f"provider {p_name}: executing {cmd}",flush=True)
+    print(f"provider {p_name}: executing {cmd}")
     if not external_commands.run_command(cmd):
       log.fatal(f"{cmd} failed, aborting...","netlab up")
 
@@ -319,7 +319,10 @@ def start_external_tools(args: argparse.Namespace, topology: Box) -> None:
       print(f"{tool} tool started",flush=True)
 
     if msg:
-      print(("DRY_RUN: " if is_dry_run() else "") + msg + "\n",flush=True)
+      if is_dry_run():
+        print(f"DRY_RUN: {msg}\n")
+      else:
+        print(f"{msg}\n",flush=True)
 
   lab_status_change(topology,f'{t_success}/{t_count} external tools started')
   if not is_dry_run():

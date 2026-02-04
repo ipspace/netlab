@@ -96,7 +96,7 @@ def run_command(
     if run_always:
       print(f"RUNNING: {cmd}",flush=True)
     else:
-      print(f"DRY RUN: {cmd}",flush=True)
+      print(f"DRY RUN: {cmd}")
       return True
 
   if log.VERBOSE or log.debug_active('external'):

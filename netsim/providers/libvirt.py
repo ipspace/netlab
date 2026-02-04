@@ -159,7 +159,7 @@ def create_vagrant_network(topology: typing.Optional[Box] = None) -> None:
 
 def get_linux_bridge_name(virsh_bridge: str) -> typing.Optional[str]:
   if is_dry_run():
-    print(f"DRY RUN: Assuming Linux bridge name {virsh_bridge} for libvirt network {virsh_bridge}",flush=True)
+    print(f"DRY RUN: Assuming Linux bridge name {virsh_bridge} for libvirt network {virsh_bridge}")
     return virsh_bridge
   result = external_commands.run_command(
     ['virsh','net-info',virsh_bridge],check_result=True,return_stdout=True)
@@ -180,7 +180,7 @@ def get_linux_bridge_name(virsh_bridge: str) -> typing.Optional[str]:
 def check_uplink_name(link: Box) -> None:
   ifname = link.get('libvirt.uplink','eth0')
   if is_dry_run():
-    print(f"DRY RUN: Assuming interface {ifname} exists",flush=True)
+    print(f"DRY RUN: Assuming interface {ifname} exists")
     return
   
   if not external_commands.run_command(['ip','link','show',ifname],ignore_errors=True,check_result=True):
