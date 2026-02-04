@@ -85,7 +85,7 @@ def load_plugin_from_path(path: str, plugin: str, topology: Box) -> typing.Optio
     assert(modspec.loader is not None)
     modspec.loader.exec_module(pymodule)
   except:
-    print(f"Failed to load plugin {module_name} from {module_path}\nError reported by module loader: {str(sys.exc_info()[1])}",flush=True)
+    print(f"Failed to load plugin {module_name} from {module_path}\nError reported by module loader: {str(sys.exc_info()[1])}")
     log.fatal('Aborting the transformation process','plugin')
 
   redirect = getattr(pymodule,'_redirect',None)
@@ -103,7 +103,7 @@ def load_plugin_from_path(path: str, plugin: str, topology: Box) -> typing.Optio
       merge_plugin_defaults(_read.read_yaml(defaults_file),topology)
 
   if log.VERBOSE:
-    print(f"loaded plugin {module_name}",flush=True)
+    print(f"loaded plugin {module_name}")
   return pymodule
 
 '''
@@ -235,7 +235,7 @@ def init(topology: Box) -> None:
 
   sort_plugins(topology)
   if log.debug_active('plugin'):
-    print(f'plug INIT: {topology.Plugin}',flush=True)
+    print(f'plug INIT: {topology.Plugin}')
 
 '''
 plugin_requires_check: given a plugin, check whether it has the _requires
@@ -274,7 +274,7 @@ def execute_plugin_hook(action: str, plugin: object, topology: Box) -> None:
   if hasattr(plugin,action):                                # Does the plugin have the required action?
     func = getattr(plugin,action)                           # ... yes, fetch the function to call
     if log.debug_active('plugin'):                          # ... do some logging to help the poor debugging souls
-      print(f'plug {action}: {plugin}',flush=True)
+      print(f'plug {action}: {plugin}')
     func(topology)                                          # ... and execute the plugin function
 
 '''
@@ -289,7 +289,7 @@ def execute(action: str, topology: Box) -> None:
     return
 
   if log.debug_active('plugin'):
-    print(f'plug hook: {action}',flush=True)
+    print(f'plug hook: {action}')
 
   for plugin in topology.Plugin:                              # Iterate over the loaded plugin modules
     execute_plugin_hook(action,plugin,topology)               # ... and try to execute the hook

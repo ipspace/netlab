@@ -275,7 +275,7 @@ def get_pool_prefix(pools: Box, p: str, n: typing.Optional[int] = None) -> Box:
           'addressing')
 
   if log.debug_active('addressing'):
-    print(f'get_pool_prefix: {p} => {prefixes}',flush=True)
+    print(f'get_pool_prefix: {p} => {prefixes}')
   return prefixes
 
 def get(pools: Box, pool_list: typing.Optional[typing.List[str]] = None, n: typing.Optional[int] = None) -> Box:
@@ -294,7 +294,7 @@ def setup(topology: Box) -> None:
   addrs = setup_pools(defaults.addressing + topology.addressing,defaults)
 
   if log.debug_active('addressing'):
-    print("addressing:",flush=True)
+    print("addressing:")
     strings.print_structured_dict(addrs,'.. ')
 
   validate_pools(addrs,topology)
@@ -304,7 +304,7 @@ def setup(topology: Box) -> None:
   topology.addressing = addrs
 
   if log.debug_active('addressing'):
-    print("pools:",flush=True)
+    print("pools:")
     strings.print_structured_dict(topology.pools,'.. ')
 
   log.exit_on_error(prior_errors)
@@ -334,7 +334,7 @@ def evaluate_named_prefix(topology: Box, pname: str) -> Box:
     if af in pool_pfx:
       pool_pfx[af] = str(pool_pfx[af])
   if log.debug_active('addr'):                     # pragma: no cover (debugging printout)
-    print(f'named prefix {pname} pool allocation {pool_pfx}',flush=True)
+    print(f'named prefix {pname} pool allocation {pool_pfx}')
   topology.prefix[pname] = topology.prefix[pname] + pool_pfx
   topology.prefix[pname].pop('pool')
   return topology.prefix[pname]
@@ -349,7 +349,7 @@ def setup_prefixes(topology: Box) -> None:
 
 def parse_prefix(prefix: typing.Union[str,Box],path: str = 'links') -> Box:
   if log.debug_active('addr'):                     # pragma: no cover (debugging printout)
-    print(f"parse prefix: {prefix} type={type(prefix)}",flush=True)
+    print(f"parse prefix: {prefix} type={type(prefix)}")
 
   empty_box = get_empty_box()
   if not prefix:
