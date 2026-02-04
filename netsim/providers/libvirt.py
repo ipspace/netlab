@@ -84,7 +84,7 @@ def get_libvirt_mgmt_template() -> str:
 def create_network_template(topology: Box) -> str:
   net_template_xml = get_libvirt_mgmt_template()
   if log.debug_active('libvirt'):
-    print(f"Template XML: {net_template_xml}")
+    print(f"Template XML: {net_template_xml}",flush=True)
 
   mgmt = topology.addressing.mgmt
   try:
@@ -128,7 +128,7 @@ def create_vagrant_network(topology: typing.Optional[Box] = None) -> None:
       create_net = not mgmt_net in net_list
   else:
     if log.debug_active('libvirt'):
-      print(f"Deleting libvirt management network {mgmt_net}")
+      print(f"Deleting libvirt management network {mgmt_net}",flush=True)
     
     # Remove management network if it exists
     external_commands.run_command(
@@ -143,7 +143,7 @@ def create_vagrant_network(topology: typing.Optional[Box] = None) -> None:
 
   if not log.QUIET:
     strings.print_colored_text('[CREATED] ','green',None)
-    print(f'creating libvirt management network {mgmt_net}')
+    print(f'creating libvirt management network {mgmt_net}',flush=True)
 
   if topology is None:
     net_template = get_libvirt_mgmt_template()                    # When called without topology data use the default template
@@ -415,7 +415,7 @@ class Libvirt(_Provider):
         continue
 
       if log.debug_active('libvirt'):
-        print(f'libvirt post_start_lab: fixing Linux bridge {brname} for link {l._linkname}')
+        print(f'libvirt post_start_lab: fixing Linux bridge {brname} for link {l._linkname}',flush=True)
 
       linux_bridge = get_linux_bridge_name(brname)
       if linux_bridge is None:

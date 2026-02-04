@@ -29,7 +29,7 @@ class External(_Provider):
     with open('external.txt', 'r') as f:
       print(f.read())
     print('')
-    print('*** Please make sure your physical topology reflects the above cabling.')
+    print('*** Please make sure your physical topology reflects the above cabling.',flush=True)
     if input('Do you want to continue [y/n]: ').lower() != 'y':
       status.unlock_directory()
       status.remove_lab_status(topology)

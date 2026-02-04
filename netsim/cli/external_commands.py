@@ -17,7 +17,7 @@ def print_step(n: int, txt: str, spacing: typing.Optional[bool] = False) -> None
   if spacing:
     print()
   print("Step %d: %s" % (n,txt))
-  print("=" * 72)
+  print("=" * 72,flush=True)
 
 def stringify(cmd : typing.Union[str,list]) -> str:
   if isinstance(cmd,list):
@@ -36,11 +36,11 @@ def add_netlab_path() -> None:
     return
 
   if log.VERBOSE or log.debug_active('external'):
-    print(f"Adding {netlab_path} to system PATH")
+    print(f"Adding {netlab_path} to system PATH",flush=True)
   os.environ['PATH'] = netlab_path + ":" + os.environ['PATH']
 
   if log.VERBOSE or log.debug_active('external'):
-    print(f"New system path: {os.environ['PATH']}")
+    print(f"New system path: {os.environ['PATH']}",flush=True)
 
   return
 
@@ -94,13 +94,13 @@ def run_command(
 
   if is_dry_run():
     if run_always:
-      print(f"RUNNING: {cmd}")
+      print(f"RUNNING: {cmd}",flush=True)
     else:
       print(f"DRY RUN: {cmd}")
       return True
 
   if log.VERBOSE or log.debug_active('external'):
-    print(f"run_command executing: {cmd}")
+    print(f"run_command executing: {cmd}",flush=True)
 
   add_netlab_path()
   if isinstance(cmd,str):
@@ -116,7 +116,7 @@ def run_command(
                 check=not return_exitcode,
                 text=True)
     if log.debug_active('external') or log.VERBOSE >= 3:
-      print(f'... run result: {result}')
+      print(f'... run result: {result}',flush=True)
     if check_result:
       CAPTURED_STDOUT = result.stdout
       CAPTURED_STDERR = result.stderr
@@ -135,7 +135,7 @@ def run_command(
   except Exception as ex:
     log_command(cmd,'ERROR')
     if not log.QUIET and not ignore_errors:
-      print(f"Error executing {stringify(cmd)}:\n  {ex}")
+      print(f"Error executing {stringify(cmd)}:\n  {ex}",flush=True)
     return False
 
 def test_probe(p : typing.Union[str,list,Box],quiet : bool = False) -> bool:
@@ -171,13 +171,13 @@ def run_probes(settings: Box, provider: str, step: int = 0) -> None:
   if step:
     print_step(step,f"Checking virtualization provider installation: {provider}",spacing = True)
   elif log.VERBOSE:
-    print("Checking virtualization provider installation")
+    print("Checking virtualization provider installation",flush=True)
   for p in settings.providers[provider].probe:
     if not test_probe(p):
       log.fatal("%s failed, aborting" % p)
   if not is_dry_run() and not log.QUIET:
     log.status_success()
-    print(f'{provider} installed and working correctly')
+    print(f'{provider} installed and working correctly',flush=True)
 
 def start_lab(settings: Box, provider: str, step: int = 2, cli_command: str = "test", exec_command: typing.Optional[str] = None) -> None:
   if exec_command is None:
@@ -204,7 +204,7 @@ def deploy_configs(
     log.fatal("netlab initial failed, aborting...",command)
 
   log.status_success()
-  print("Lab devices configured")
+  print("Lab devices configured",flush=True)
 
 def custom_configs(config : str, group: str, step : int = 4, command: str = "test") -> None:
   print_step(step,"deploying custom configuration template %s for group %s" % (config,group))
@@ -227,14 +227,14 @@ def get_tool_runtime_param(tool: str, param: str, verbose: bool, topology: Box) 
   runtime = tdata.runtime or 'docker'
   if not runtime in tdata:
     if verbose:
-      print(f"... skipping {tool} tool, no {runtime} runtime configuration")
+      print(f"... skipping {tool} tool, no {runtime} runtime configuration",flush=True)
     return None
 
   tdata = tdata[runtime] + tdata
   topology[tool] = tdata                       # Enable 'tool.param' syntax in tool commands
   if not tdata[param]:
     if verbose:
-      print(f"... skipping {tool} tool, no {runtime} {param} command")
+      print(f"... skipping {tool} tool, no {runtime} {param} command",flush=True)
     return None
 
   return tdata[param]

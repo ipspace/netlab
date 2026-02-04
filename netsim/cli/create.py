@@ -168,7 +168,7 @@ def run(cli_args: typing.List[str],
 
   if args.unlock and os.path.exists('netlab.lock'):
     strings.print_colored_text("WARNING: ","bright_red",stderr=True)
-    print("removing netlab.lock file, you're on your own",file=sys.stderr)
+    print("removing netlab.lock file, you're on your own",file=sys.stderr,flush=True)
     os.remove('netlab.lock')
     lab_status_log(topology,'Configuration files have been recreated')
 

@@ -122,10 +122,10 @@ class _Provider(Callback):
     _files.create_file_from_text(fname,r_text)
     if fname != '-':
       log.status_created()
-      print(f"provider configuration file: {fname}")
+      print(f"provider configuration file: {fname}",flush=True)
       self.post_configuration_create(topology)
     else:
-      print("\n")
+      print("\n",flush=True)
 
   def post_start_lab(self, topology: Box) -> None:
     pass
