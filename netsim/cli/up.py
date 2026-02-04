@@ -152,7 +152,7 @@ machine, or 'netlab down' to shut down the other lab running in this directory.
 
 If you are sure that no other lab is running in this directory, remove the
 netlab.lock file manually and retry.
-''',flush=True)
+''')
   log.fatal('Cannot start another lab in the same directory')
 
 """
@@ -179,7 +179,7 @@ netlab status -i {lab_id} --cleanup
 
 If you think your netlab status file is corrupt, use 'netlab status --reset' to
 delete it.
-''',flush=True)
+''')
   log.fatal(f'aborting "netlab up" request')
 
 """

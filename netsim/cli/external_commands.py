@@ -89,7 +89,7 @@ def run_command(
   CAPTURED_STDERR = ''
 
   if log.debug_active('cli'):
-    print(f"Not running: {cmd}",flush=True)
+    print(f"Not running: {cmd}")
     return True
 
   if is_dry_run():
@@ -312,7 +312,7 @@ def get_tool_message(tool: str, topology: Box) -> typing.Optional[str]:
 # Keyboard interrupt handler
 #
 def interrupted(cmd: str, hint: str = 'interrupt') -> typing.NoReturn:
-  print(flush=True)
+  print()
   msg = f'{cmd} command was interrupted'
   log.error(
     msg,
