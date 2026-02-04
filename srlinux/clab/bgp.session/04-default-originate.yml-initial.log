@@ -1,48 +1,23 @@
-Warning in ansible: You're using Ansible version 12.x or higher; netlab might not work correctly
-... Ansible core version 2.19 introduced breaking changes in templates and playbooks
-... We tested netlab core with Ansible version 12.x but not every device template
-... You might want to downgrade Ansible to version 11.10 or lower.
-... Use 'netlab install ansible' on Ubuntu to do that
-... Finally, please open a GitHub issue if you experience errors/crashes
-... Set defaults.ansible.warnings.ver12 to False to hide this warning
- [INFO] Checking for updates in configuration templates
- [INFO] Creating configuration snippets
-[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
-[WARNING]: Found variable using reserved name 'hosts'.
-Origin: /work/netlab_cicd/group_vars/all/topology.yml:159:1
-
-157     ipv4: 10.2.0.0/24
-158     prefix: 32
-159 hosts:
-    ^ column 1
-
+Creating Device configuration snippets
+[CREATED] dut: initial,bgp,vrf,bgp.session
+[CREATED] x1: initial,bgp
+[CREATED] x2: initial,bgp
+Config Deploying device configurations
+ [INFO] Executing initial configuration for node x1
+ [INFO] Executing initial configuration for node x2
+ [INFO] Executing bgp configuration for node x1
+ [INFO] Executing bgp configuration for node x2
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
-ok: [x1]
-ok: [x2]
-
-TASK [Generic readiness tests] *************************************************
-skipping: [dut]
-skipping: [x1]
-skipping: [x2]
-
-TASK [Find device readiness script] ********************************************
-ok: [dut]
-ok: [x1]
-ok: [x2]
-
-TASK [Wait for device to become ready] *****************************************
-skipping: [dut]
-skipping: [x1]
-skipping: [x2]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -61,47 +36,9 @@ skipping: [dut]
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [dut]
-
-TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [x1]
-
-TASK [Find configuration template for normalize] *******************************
-ok: [x1]
-
-TASK [fail] ********************************************************************
-skipping: [x1]
-
-TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [x1]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [x1]
-
-TASK [Deploy normalize configuration] ******************************************
-skipping: [x1]
-
-TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [x2]
-
-TASK [Find configuration template for normalize] *******************************
-ok: [x2]
-
-TASK [fail] ********************************************************************
-skipping: [x2]
-
-TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [x2]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [x2]
-
-TASK [Deploy normalize configuration] ******************************************
-skipping: [x2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -132,102 +69,14 @@ changed: [dut]
 TASK [debug] *******************************************************************
 skipping: [dut]
 
-TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [x1]
-
-TASK [Find configuration template for initial] *********************************
-ok: [x1]
-
-TASK [fail] ********************************************************************
-skipping: [x1]
-
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [x1]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [x1] => {
-    "msg": "initial configuration for x1\n=========================================\n#!/bin/bash\n#\nset -e\nset -x\n#\n# Create bash profile script\n#\ncat <<SCRIPT >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)# \"\necho\necho \"Use vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)\n#\n# FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands\n#\nsysctl -w net.ipv4.ip_forward=1\nsysctl -w net.ipv6.conf.all.forwarding=1\n#\n#\n# Get the current next hop for the default route\n#\ndef_nh=$(ip route list default|awk '{ print $3 }')\n#\n# Create the management VRF and add eth0 to it\n#\nif [ ! -e /sys/devices/virtual/net/mgmt ]; then\n  ip link add mgmt type vrf table 42\nfi\nip link set mgmt up\nsysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1\nip link set eth0 master mgmt\n#\n# Reinstall the default route if we had it before\n#\nif [[ -n \"$def_nh\" ]]; then\n  ip route add 0.0.0.0/0 vrf mgmt via $def_nh\nfi\n#\n# Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)\n#\n\n# Set system defaults\n#\n# Send ARP requests from a sane source IP address\n#\nsysctl -w net.ipv4.conf.all.arp_announce=2\n\n#\n# Create loopbacks, stub and lag/bond devices\n#\nif [ ! -e /sys/class/net/lo ]; then\n  if [ ! -e /sys/devices/virtual/net/lo ]; then\n    ip link add lo type dummy\n    ip link set dev lo up\n  fi\nfi\n\n# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)\n#\nip link set eth1 down\nsysctl -qw net.ipv6.conf.eth1.autoconf=0\nsysctl -qw net.ipv6.conf.eth1.accept_ra=0\nip link set dev eth1 mtu 1500\nip link set eth1 up\n\n#\n# Add vtysh.conf file\necho \"service integrated-vtysh-config\" >/etc/frr/vtysh.conf\n\n#\n# Rest of initial configuration done through VTYSH\n#\ncat >/tmp/config <<CONFIG\nhostname x1\n!\nlog file /tmp/logging\n\n!\nip forwarding\nipv6 forwarding\nvrf mgmt\n exit-vrf\n!\nfrr defaults datacenter\n!\ninterface lo\n no shutdown\n ip address 10.0.0.2/32\n!\ninterface eth1\n no shutdown\n description x1 -> dut [external]\n ip address 10.1.0.2/30\n ipv6 address 2001:db8:3::2/64\n ipv6 nd ra-interval 5\n no ipv6 nd suppress-ra\n!\ndo write\nCONFIG\nvtysh -f /tmp/config\n!\nexit 0\n"
-}
-
-TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x1
-
-TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x1 -> localhost]
-
-TASK [Disable FRR management VRF when modprobe fails] **************************
-skipping: [x1]
-
-TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1
-
-TASK [template] ****************************************************************
-changed: [x1]
-
-TASK [set_fact] ****************************************************************
-ok: [x1]
-
-TASK [run /tmp/config.sh to deploy initial config from /work/netlab_cicd/node_files/x1/initial] ***
-changed: [x1]
-
-TASK [run vtysh to import initial config from /work/netlab_cicd/node_files/x1/initial] ***
-skipping: [x1]
-
-TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [x2]
-
-TASK [Find configuration template for initial] *********************************
-ok: [x2]
-
-TASK [fail] ********************************************************************
-skipping: [x2]
-
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [x2]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [x2] => {
-    "msg": "initial configuration for x2\n=========================================\n#!/bin/bash\n#\nset -e\nset -x\n#\n# Create bash profile script\n#\ncat <<SCRIPT >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)# \"\necho\necho \"Use vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)\n#\n# FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands\n#\nsysctl -w net.ipv4.ip_forward=1\nsysctl -w net.ipv6.conf.all.forwarding=1\n#\n#\n# Get the current next hop for the default route\n#\ndef_nh=$(ip route list default|awk '{ print $3 }')\n#\n# Create the management VRF and add eth0 to it\n#\nif [ ! -e /sys/devices/virtual/net/mgmt ]; then\n  ip link add mgmt type vrf table 42\nfi\nip link set mgmt up\nsysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1\nip link set eth0 master mgmt\n#\n# Reinstall the default route if we had it before\n#\nif [[ -n \"$def_nh\" ]]; then\n  ip route add 0.0.0.0/0 vrf mgmt via $def_nh\nfi\n#\n# Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)\n#\n\n# Set system defaults\n#\n# Send ARP requests from a sane source IP address\n#\nsysctl -w net.ipv4.conf.all.arp_announce=2\n\n#\n# Create loopbacks, stub and lag/bond devices\n#\nif [ ! -e /sys/class/net/lo ]; then\n  if [ ! -e /sys/devices/virtual/net/lo ]; then\n    ip link add lo type dummy\n    ip link set dev lo up\n  fi\nfi\n\n# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)\n#\nip link set eth1 down\nsysctl -qw net.ipv6.conf.eth1.autoconf=0\nsysctl -qw net.ipv6.conf.eth1.accept_ra=0\nip link set dev eth1 mtu 1500\nip link set eth1 up\n\n#\n# Add vtysh.conf file\necho \"service integrated-vtysh-config\" >/etc/frr/vtysh.conf\n\n#\n# Rest of initial configuration done through VTYSH\n#\ncat >/tmp/config <<CONFIG\nhostname x2\n!\nlog file /tmp/logging\n\n!\nip forwarding\nipv6 forwarding\nvrf mgmt\n exit-vrf\n!\nfrr defaults datacenter\n!\ninterface lo\n no shutdown\n ip address 10.0.0.3/32\n!\ninterface eth1\n no shutdown\n description x2 -> dut [external]\n ip address 10.1.0.6/30\n ipv6 address 2001:db8:3:1::2/64\n ipv6 nd ra-interval 5\n no ipv6 nd suppress-ra\n!\ndo write\nCONFIG\nvtysh -f /tmp/config\n!\nexit 0\n"
-}
-
-TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x2
-
-TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x2 -> localhost]
-
-TASK [Disable FRR management VRF when modprobe fails] **************************
-skipping: [x2]
-
-TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x2
-
-TASK [template] ****************************************************************
-changed: [x2]
-
-TASK [set_fact] ****************************************************************
-ok: [x2]
-
-TASK [run /tmp/config.sh to deploy initial config from /work/netlab_cicd/node_files/x2/initial] ***
-changed: [x2]
-
-TASK [run vtysh to import initial config from /work/netlab_cicd/node_files/x2/initial] ***
-skipping: [x2]
-
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
-ok: [x1]
-ok: [x2]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=bgp)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=vrf)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1 => (item=bgp)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1 => (item=vrf)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x2 => (item=bgp)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x2 => (item=vrf)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
@@ -253,16 +102,6 @@ TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [dut]
 
 TASK [Update SRL bgp node configuration (template=/work/netlab_cicd/node_files/dut/bgp)] ***
-[WARNING]: Found duplicate mapping key 'afi-safi'.
-Origin: /work/netlab_cicd/node_files/dut/bgp:62:5
-
-60     - afi-safi-name: ipv4-unicast
-61       admin-state: enable
-62     afi-safi:
-       ^ column 5
-
-Using last defined value only.
-
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -292,120 +131,10 @@ TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [dut]
 
 TASK [Update SRL vrf node configuration (template=/work/netlab_cicd/node_files/dut/vrf)] ***
-[WARNING]: Found duplicate mapping key 'afi-safi'.
-Origin: /work/netlab_cicd/node_files/dut/vrf:53:5
-
-51     - afi-safi-name: ipv4-unicast
-52       admin-state: enable
-53     afi-safi:
-       ^ column 5
-
-Using last defined value only.
-
 changed: [dut]
 
 TASK [debug] *******************************************************************
 skipping: [dut]
-
-TASK [Figure out whether to deploy the module bgp on current device] ***********
-ok: [x1]
-
-TASK [Find configuration template for bgp] *************************************
-ok: [x1]
-
-TASK [fail] ********************************************************************
-skipping: [x1]
-
-TASK [Find configuration deployment deploy_script for bgp] *********************
-ok: [x1]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [x1] => {
-    "msg": "bgp configuration for x1\n=========================================\n!\nrouter bgp 65100\n  no bgp ebgp-requires-policy\n  no bgp default ipv4-unicast\n  bgp default show-hostname\n  bgp default show-nexthop-hostname\n  ! Consider AS paths of same length but with different AS as ECMP candidates\n  bgp bestpath as-path multipath-relax\n\n  bgp router-id 10.0.0.2\n!\n  neighbor 10.1.0.1 remote-as 65000\n  neighbor 10.1.0.1 description dut\n!\n  neighbor 2001:db8:3::1 remote-as 65000\n  neighbor 2001:db8:3::1 description dut\n!\n address-family ipv4 unicast\n!\n\n!\n  neighbor 10.1.0.1 activate\n  no neighbor 10.1.0.1 send-community all\n  neighbor 10.1.0.1 send-community standard\n  neighbor 10.1.0.1 send-community large\n!\n address-family ipv6 unicast\n!\n\n!\n  neighbor 2001:db8:3::1 activate\n  no neighbor 2001:db8:3::1 send-community all\n  neighbor 2001:db8:3::1 send-community standard\n  neighbor 2001:db8:3::1 send-community large\n!\n!\n!\ndo write\n"
-}
-
-TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1
-
-TASK [template] ****************************************************************
-changed: [x1]
-
-TASK [set_fact] ****************************************************************
-ok: [x1]
-
-TASK [run /tmp/config.sh to deploy bgp config from /work/netlab_cicd/node_files/x1/bgp] ***
-skipping: [x1]
-
-TASK [run vtysh to import bgp config from /work/netlab_cicd/node_files/x1/bgp] ***
-changed: [x1]
-
-TASK [Figure out whether to deploy the module vrf on current device] ***********
-ok: [x1]
-
-TASK [Find configuration template for vrf] *************************************
-skipping: [x1]
-
-TASK [fail] ********************************************************************
-skipping: [x1]
-
-TASK [Find configuration deployment deploy_script for vrf] *********************
-skipping: [x1]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [x1]
-
-TASK [Deploy vrf configuration] ************************************************
-skipping: [x1]
-
-TASK [Figure out whether to deploy the module bgp on current device] ***********
-ok: [x2]
-
-TASK [Find configuration template for bgp] *************************************
-ok: [x2]
-
-TASK [fail] ********************************************************************
-skipping: [x2]
-
-TASK [Find configuration deployment deploy_script for bgp] *********************
-ok: [x2]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [x2] => {
-    "msg": "bgp configuration for x2\n=========================================\n!\nrouter bgp 65200\n  no bgp ebgp-requires-policy\n  no bgp default ipv4-unicast\n  bgp default show-hostname\n  bgp default show-nexthop-hostname\n  ! Consider AS paths of same length but with different AS as ECMP candidates\n  bgp bestpath as-path multipath-relax\n\n  bgp router-id 10.0.0.3\n!\n  neighbor 10.1.0.5 remote-as 65000\n  neighbor 10.1.0.5 description dut\n!\n  neighbor 2001:db8:3:1::1 remote-as 65000\n  neighbor 2001:db8:3:1::1 description dut\n!\n address-family ipv4 unicast\n!\n\n!\n  neighbor 10.1.0.5 activate\n  no neighbor 10.1.0.5 send-community all\n  neighbor 10.1.0.5 send-community standard\n  neighbor 10.1.0.5 send-community large\n!\n address-family ipv6 unicast\n!\n\n!\n  neighbor 2001:db8:3:1::1 activate\n  no neighbor 2001:db8:3:1::1 send-community all\n  neighbor 2001:db8:3:1::1 send-community standard\n  neighbor 2001:db8:3:1::1 send-community large\n!\n!\n!\ndo write\n"
-}
-
-TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x2
-
-TASK [template] ****************************************************************
-changed: [x2]
-
-TASK [set_fact] ****************************************************************
-ok: [x2]
-
-TASK [run /tmp/config.sh to deploy bgp config from /work/netlab_cicd/node_files/x2/bgp] ***
-skipping: [x2]
-
-TASK [run vtysh to import bgp config from /work/netlab_cicd/node_files/x2/bgp] ***
-changed: [x2]
-
-TASK [Figure out whether to deploy the module vrf on current device] ***********
-ok: [x2]
-
-TASK [Find configuration template for vrf] *************************************
-skipping: [x2]
-
-TASK [fail] ********************************************************************
-skipping: [x2]
-
-TASK [Find configuration deployment deploy_script for vrf] *********************
-skipping: [x2]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [x2]
-
-TASK [Deploy vrf configuration] ************************************************
-skipping: [x2]
 
 PLAY [Deploy custom deployment templates] **************************************
 
@@ -443,16 +172,12 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=38   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-x1                         : ok=29   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-x2                         : ok=29   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+dut                        : ok=37   changed=4    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
 
-
-Warning: The following warnings were generated during the 'netlab initial' processing
-Warning: ansible: You're using Ansible version 12.x or higher; netlab might not work correctly
-[CREATED] dut: initial,bgp,vrf,bgp.session
-[CREATED] x1: initial,bgp
-[CREATED] x2: initial,bgp
+Results of configuration script deployments
+================================================================================
+x1                           OK: 2   
+x2                           OK: 2   
 
 
 This lab tests the BGP default route origination. The DUT should advertise a default route to X1.
