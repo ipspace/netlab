@@ -282,7 +282,7 @@ Get all configuration snippets with the specified mode
 def get_templates_with_mode(n: Box, mode: typing.Optional[str]) -> list:
   return [ item for item in n.get('clab.config_templates',[])   # Collect config template items
               if 'mode' in item and                             # ... that have mode set
-                 item.mode == mode or mode is None]             # ... and match the requested mode (None == all modes)
+                 (item.mode == mode or mode is None) ]          # ... and match the requested mode (None == all modes)
 
 '''
 Add startup configuration point if the node has config_templates with 'startup' mode
@@ -310,7 +310,7 @@ def check_node_binds(node: Box) -> None:
 
 '''
 Generate node startup configuration from configuration snippets with 'startup' mode
-in node_files/node/startup-config
+in node_files/node folder into the file specified in n.clab.startup-config
 '''
 def generate_startup_config(n: Box) -> None:
   startup_snippets = get_templates_with_mode(n,'startup')
@@ -325,7 +325,7 @@ def generate_startup_config(n: Box) -> None:
         startup_cfg.write("\n")
   except Exception as ex:
     log.error(
-      'Cannot open/write startup configuration file {startup_path}',
+      f'Cannot open/write startup configuration file {startup_path}',
       more_data=[ str(ex) ],
       module='clab')
     return
@@ -333,7 +333,6 @@ def generate_startup_config(n: Box) -> None:
   if not log.QUIET:
     log.status_created()
     print(f"startup configuration for {n.name}",flush=True)
-  n.clab['startup-config'] = startup_path
 
 class Containerlab(_Provider):
   
