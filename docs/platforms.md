@@ -215,6 +215,41 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 
 [^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
 
+_netlab_ uses Ansible playbooks and device-specific task lists to deploy device configuration snippets onto most devices, with these notable exceptions:
+
+| Device | Provider | Configuration deployment method |
+|--------|----------|---------------------------------|
+| bird   | clab     | **bash** scripts or daemon configuration files[^BBS] |
+| dnsmasq | clab    | **bash** scripts or daemon configuration files[^DBS] |
+| FRRouting    | clab     | **bash** or **vtysh** scripts[^FRRBV] |
+| linux  | clab     | host- or container-side **bash** scripts[^LBS] |
+| KinD   | clab     | **bash** scripts copied into and executed in containers |
+
+[^FRRBV]: Configurations starting with a *shebang* are assumed to be Linux scripts; all other configurations are assumed to be **vtysh** scripts and get a `#!/usr/bin/vtysh -f` shebang prepended to them.
+
+[^LBS]: Initial device configurations, static routes, VLANs, and interface bonding are configured with host-side scripts executed in the container namespace. Custom configuration templates are assumed to be Linux scripts executed within the container ([more details](generic-linux-devices)).
+
+[^BBS]: Initial device configurations, VLANs, and link aggregation are configured with **bash** scripts. All other features are configured with the Bird configuration files.
+
+[^DBS]: Initial device configurations, VLANs, static routes, and link aggregation are configured with **bash** scripts. All other features are configured with the dnsmasq configuration files.
+
+Several other devices can use alternate (faster) configuration methods that are not enabled by default; you have to set the **netlab_config_mode** group variable[^NCMGV] or node parameter to use them:
+
+| Device    | containerlab<br> deployment method |
+|-----------|------------------------------------|
+| Arista EOS | **sh** |
+| Aruba CX  | **startup** |
+| Cisco IOS/IOS XE[^18v] | **startup** |
+| Dell OS10 | **startup** |
+| Junos[^Junos] | **startup** |
+
+**Notes:**
+
+* Arista EOS device configurations are converted into FastCli scripts and executed as Linux scripts within the cEOS container
+* The **startup** deployment method uses *containerlab* `startup-config` parameter with partial device configurations.    This is an experimental method that won't report errors in device configurations.
+
+[^NCMGV]: For example, set the **defaults.devices.iol.clab.group_vars.netlab_config_mode** [topology default](topo-defaults) to **startup** to use startup configuration with Cisco IOL nodes
+
 ## Initial Device Configurations
 
 The following system-wide features are configured on supported network operating systems as part of the initial device configuration; hostname and hosts table are configured on daemons.
