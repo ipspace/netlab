@@ -393,7 +393,8 @@ These devices support additional control-plane protocols or BGP address families
 | Arista EOS            | ✅  | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  | ✅  | ✅  | ✅  |
 | Cisco CSR 1000v       | ✅  |  ❌  | ✅  | ✅  |
-| Cisco Catalyst 8000v  | ✅  |  ❌  | ✅  | ✅  |
+| Cisco Catalyst 8000v  | ✅  | ✅  | ✅  | ✅  |
+| Cisco IOL/IOLL2       | ✅  | ✅  | ✅  | ✅  |
 | Cisco IOSv/IOSvL2     | ✅  |  ❌  | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  | ✅  |  ❌  | ✅  |
 | Cumulus Linux         | ✅  | ✅  |  ❌  | ✅  |
@@ -438,7 +439,7 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | Cisco 8000v (IOS/XR)  | ✅ | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
 | Cisco Catalyst 8000v  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cisco CSR 1000v       | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
-| Cisco IOL (IOS/XE)    | ✅ | ✅ |  ❌ | ✅ | ✅ | ✅ |
+| Cisco IOL/IOLL2       | ✅ | ✅ | ✅[❗](caveats-iol) | ✅ | ✅ | ✅ |
 | Cisco IOSv/IOSvL2     | ✅ | ✅ |  ❌ | ✅ |  ❌ |  ❌ |
 | Cisco Nexus OS        | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ | 
 | Cumulus Linux         | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |

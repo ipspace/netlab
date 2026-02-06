@@ -192,6 +192,8 @@ Additionally, you might have to execute `sudo update-crypto-policies --set LEGAC
 * You need Containerlab 0.59.0 or greater to run these images.
 * You cannot use VLANs 1002 through 1005 with the Cisco IOL layer-2 image
 * Cisco IOL layer-2 image cannot configure tagged VLAN 1 in a trunk. Internal VLAN 1002 is used as a fake native VLAN on interfaces that have tagged VLAN 1 in a trunk.
+* Cisco IOL/IOLL2 cannot set the interface MTU (which is fixed at 1500 bytes). IOLL2 cannot set the IP MTU.
+* VXLAN with static ingress replication does not work on IOL/IOLL2, but works with the EVPN control plane.
 * [_netlab_ external tools](tools-intro) (connected to the same management network as lab devices) cannot open an SSH session to IOL devices; IOL is reporting TCP checksum errors.
 
 See also [common Cisco IOS](caveats-iosv) caveats.

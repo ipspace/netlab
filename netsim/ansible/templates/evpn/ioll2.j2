@@ -1,0 +1,20 @@
+{#
+  Cisco IOS/XE MAC-VRF data-plane configuration for platforms
+  using "vlan configuration" (IOLL2)
+#}
+{% if vlans is defined %}
+{%   for vname,vlan in vlans.items() if vlan.evpn.evi is defined %}
+! 
+vlan configuration {{ vlan.id }}
+ member evpn-instance {{ vlan.evpn.evi }} vni {{ vlan.vni }}
+{%     if vlan.mode|default('irb') != 'bridge' %}
+{%       for intf in interfaces if intf.type == 'svi' and intf.vlan.name|default('') == vname %}
+!
+interface {{ intf.ifname }}
+ no autostate
+{%       endfor %}
+{%     endif %}
+{%   endfor %}
+{% endif %}
+{# Control-plane configuration #}
+{% include 'ios-common.j2' %}

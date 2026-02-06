@@ -25,6 +25,7 @@ The following table describes the per-platform support of individual EVPN/VXLAN 
 | ------------------ | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  |  ✅  | ✅  | ✅  |
 | Aruba AOS-CX       | ✅  |  ✅  | ✅  | ✅[❗](caveats-aruba)  |
+| Cisco IOS/XE[^XE]  | ✅  |  ❌  | ✅  |  ❌  |
 | Cisco Nexus OS     | ✅  |  ❌  | ✅  | ✅  |
 | Cumulus Linux 4.x  | ✅  |  ❌  | ✅  | ✅  |
 | Cumulus 5.x (NVUE) | ✅  |  ❌  | ✅  | ✅  |
@@ -36,6 +37,8 @@ The following table describes the per-platform support of individual EVPN/VXLAN 
 | VyOS               | ✅  |  ❌  | ✅  | ✅  |
 
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
+
+[^XE]: Includes Catalyst 8000v, Cisco IOL, Cisco IOLL2, but **not** CSR.
 
 The following table describes the per-platform support of individual EVPN/MPLS features:
 
@@ -61,6 +64,7 @@ EVPN module supports IBGP- and EBGP-based EVPN:
 | ------------------ | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  | ✅  | ✅  | ✅  |
 | Aruba AOS-CX       | ✅  | ✅  | ❌   | ❌   |
+| Cisco IOS/XE[^XE]  | ✅  | ✅  | ✅  | ❌   |
 | Cisco Nexus OS     | ✅  | ✅  | ✅  | ❌   |
 | Cumulus Linux 4.x  | ✅  | ✅  | ✅  | ✅  |
 | Cumulus 5.x (NVUE) | ✅  | ✅  | ✅  | ✅  |
@@ -80,6 +84,7 @@ With additional nerd knobs ([more details](evpn-weird-designs)), it's possible t
 | ------------------ | :-: | :-: |
 | Arista EOS         | ✅  | ✅  |
 | Aruba AOS-CX       | ✅  | ✅  |
+| Cisco IOS/XE[^XE]  | ✅  | ✅  |
 | Cisco Nexus OS     | ❌   | ❌   |
 | Cumulus Linux 4.x  | ✅  | ✅  |
 | Cumulus 5.x (NVUE) | ✅  | ✅  |
