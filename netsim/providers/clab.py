@@ -151,7 +151,6 @@ def add_default_config_mode(node: Box, topology: Box) -> None:
 
   d_features = devices.get_device_features(node,topology.defaults)
   if cfg_mode not in d_features.get('initial.config_mode',[]):
-    print(d_features)
     log.error(
       f'Configuration mode {cfg_mode} is not valid for device {node.device} (node {node.name})',
       module='clab',

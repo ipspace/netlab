@@ -317,7 +317,11 @@ class Libvirt(_Provider):
     if node.get('_set_ifindex'):
       pad_node_interfaces(node,topology)
     validate_mgmt_ip(node,required=True,v4only=True,provider='libvirt',mgmt=topology.addressing.mgmt)
-    if devices.get_node_group_var(node,'netlab_config_mode',topology.defaults):
+
+    # libvirt does not support netlab_config_mode parameter yet, but we have
+    # to make it work with "none" device to pass CI/CD integration tests.
+    #
+    if devices.get_node_group_var(node,'netlab_config_mode',topology.defaults) and node.device != 'none':
       log.error(
         'netlab_config_mode parameter is not usable with libvirt provider',
         category=log.IncorrectAttr)
