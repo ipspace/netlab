@@ -149,6 +149,14 @@ def add_default_config_mode(node: Box, topology: Box) -> None:
   if not cfg_mode:
     return
 
+  d_features = devices.get_device_features(node,topology.defaults)
+  if cfg_mode not in d_features.get('initial.config_mode',[]):
+    print(d_features)
+    log.error(
+      f'Configuration mode {cfg_mode} is not valid for device {node.device} (node {node.name})',
+      module='clab',
+      category=log.IncorrectValue)
+
   # Get what's already been processed and the list of configuration snippets. That list
   # has to include initial configuration, all modules, and custom config templates
   #

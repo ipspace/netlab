@@ -317,6 +317,10 @@ class Libvirt(_Provider):
     if node.get('_set_ifindex'):
       pad_node_interfaces(node,topology)
     validate_mgmt_ip(node,required=True,v4only=True,provider='libvirt',mgmt=topology.addressing.mgmt)
+    if devices.get_node_group_var(node,'netlab_config_mode',topology.defaults):
+      log.error(
+        'netlab_config_mode parameter is not usable with libvirt provider',
+        category=log.IncorrectAttr)
 
   def transform_node_images(self, topology: Box) -> None:
     self.node_image_version(topology)
