@@ -243,7 +243,8 @@ class AnsibleInventory(_TopologyOutput):
     valid_ftype = ['json','yml','yaml']
     if filetype not in valid_ftype:
       log.fatal(
-        f'defaults.ansible.output.filetype parameter must have one of these values: {",".join(valid_ftype)}')
+        f'defaults.outputs.ansible.filetype parameter must have one of these values: {",".join(valid_ftype)}',
+        module='ansible')
 
     if hasattr(self,'filenames'):
       hostfile = self.filenames[0]
