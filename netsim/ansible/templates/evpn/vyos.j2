@@ -1,22 +1,9 @@
-#!/bin/vbash
-source /opt/vyatta/etc/functions/script-template
-
-if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-    exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-fi
-
-# Configuration items start here
-configure
-
 # Configure Generic EVPN Stuff
 set protocols bgp address-family l2vpn-evpn advertise-svi-ip
 set protocols bgp address-family l2vpn-evpn advertise-all-vni
 
 {% for n in bgp.neighbors if n.evpn|default(False) %}
 {%   set peer = n.local_if|default(n[n.evpn]) %}
-{%   if n.type == 'ibgp' %}
-set protocols bgp neighbor {{ peer }} address-family l2vpn-evpn nexthop-self
-{%   endif %}
 set protocols bgp neighbor {{ peer }} address-family l2vpn-evpn soft-reconfiguration inbound
 
 {%   if n.rr_client|default(False) %}
@@ -69,8 +56,7 @@ set interfaces bridge br{{l3vni}} vrf '{{ n }}'
 
 {% endif %}
 
-# Commit, save and exit from subshell
-
 commit
 save
-exit
+
+vtysh -c 'clear bgp *'
