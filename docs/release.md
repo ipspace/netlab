@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+**Release 26.02 (2026-02-11)**
+
+* Support for [Kubernetes (KinD) clusters](plugin-kind) based on work by [@wnagele](https://github.com/wnagele)
+* Layer-2 EVPN/VXLAN support on Cat8000v, IOL, IOLL2
+* Containers can be [configured with Linux scripts or *containerlab* startup-config parameter](platform-config-mode) instead of with an Ansible playbook.
+* **[netlab graph](netlab-graph)** command can create graphs from a subset of nodes or links
+
+[More details](release-26.02) and [a tiny breaking changes](release-26.02-breaking)
+
 **Release 26.01.01 (2026-01-14)**
 
 Release 26.01.01 is a bug-fix release [fixing](bug-fixes-26.01.01) the **[netlab status](netlab-status)** crash.
@@ -102,6 +111,7 @@ For older releases, check the [release notes archive](release-archive.md).
    :caption: Individual release notes
    :maxdepth: 1
 
+   release/26.02.md
    release/26.01.md
    release/25.12.md
    release/25.11.md
