@@ -12,7 +12,7 @@ A single formatting modifier can be used to modify the distribution of informati
 
 The same parameter can be set using the **defaults.outputs.ansible.hostvars** [topology default](topo-defaults).
 
-The Ansible inventory files (apart from `hosts.yml`) are created in JSON format. If you need YAML-formatted inventory files, set the **defaults.outputs.ansible.filetype** [topology default](topo-defaults) to `yaml` or `yml` (depending on the desired file type).
+The Ansible inventory files (apart from `hosts.yml`) are created in JSON format by default. If you need YAML-formatted inventory files, set the **defaults.outputs.ansible.filetype** [topology default](topo-defaults) to `yaml` or `yml` (depending on the desired file type).
 
 [^1]: **netlab create** also invokes the *provider* output module when no output formats are specified in the **netlab create** command.
 
