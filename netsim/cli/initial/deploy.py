@@ -46,6 +46,7 @@ into that noise.
 """
 def print_internal_stats(topology: Box, top_margin: bool = False) -> None:
   print_legend = True
+  max_name_len = max([len(n_name) for n_name in topology.nodes ] + [ 16 ]) + 1
   for n_name, n_data in topology.nodes.items():
     if "_deploy" not in n_data:
       continue
@@ -57,18 +58,20 @@ def print_internal_stats(topology: Box, top_margin: bool = False) -> None:
       print_legend = False
 
     failed_list = n_data.get("_deploy.failed", [])
-    strings.print_colored_text(f"{n_name:29}", "red" if failed_list else "green")
-    for kw,report,min_len in [('success','Script:  ',12),('startup','Startup: ',14)]:
-      n_success = n_data.get(f"_deploy.{kw}", [])
-      if len(n_success):
-        if failed_list:
-          ok_txt = f"{report}{','.join(n_success)} "
-        else:
-          ok_txt = f"{report}{len(n_success)} "
-        strings.print_colored_text(f"{ok_txt.ljust(min_len)}", "green")
-    if failed_list:
-      strings.print_colored_text("Failed: " + ",".join(n_data._deploy.failed), "red")
-    print()
+    strings.print_colored_text(f"{n_name.ljust(max_name_len,' ')}", "red" if failed_list else "green")
+    first_line = True
+    for kw,report,color in [
+          ('failed','Failed:  ','red'),
+          ('success','Script:  ','green'),
+          ('startup','Startup: ','green')]:
+      n_result = n_data.get(f"_deploy.{kw}", [])
+      if not n_result:
+        continue
+      if not first_line:
+        print(" "*max_name_len,end="")
+      first_line = False
+      strings.print_colored_text(f"{report}{','.join(n_result)}", color)
+      print()
 
   print()
 
