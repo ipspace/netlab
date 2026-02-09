@@ -124,20 +124,30 @@ def dump(data: Box) -> None:
   inventory = create(data)
   print(strings.get_yaml_string(inventory))
 
-def write_inventory_file(data: Box, fname: str, header: str) -> None:
+def write_inventory_file(data: Box, fname: str, header: str, filetype: typing.Optional[str] = None) -> None:
+  if not filetype:
+    filetype = 'yaml' if fname.endswith('.yml') or fname.endswith('.yaml') else 'json'
+  else:
+    fname += '.' + filetype
+
   dirname = os.path.dirname(fname)
   if dirname and not os.path.exists(dirname):
     os.makedirs(dirname)
 
-  if fname.endswith('.json'):
-    contents = data.to_json()
-  else:
+  if filetype in ['yaml','yml']:
     contents = header+"\n"+strings.get_yaml_string(data)
+  else:
+    contents = data.to_json()
   _files.create_file_from_text(fname,contents)
 
 min_inventory_data = [ 'id','ansible_host','ansible_port','ansible_connection','ansible_user','ansible_ssh_pass' ]
 
-def ansible_inventory(topology: Box, fname: typing.Optional[str] = 'hosts.yml', hostvars: typing.Optional[str] = 'dirs') -> None:
+def ansible_inventory(
+      topology: Box,
+      fname: typing.Optional[str] = 'hosts.yml',
+      hostvars: typing.Optional[str] = 'dirs',
+      filetype: str = 'json') -> None:
+
   inventory = create(topology)
 
 #  import ipdb; ipdb.set_trace()
@@ -157,7 +167,7 @@ def ansible_inventory(topology: Box, fname: typing.Optional[str] = 'hosts.yml', 
   for g in inventory.keys():
     gvars = inventory[g].pop('vars',None)
     if gvars:
-      write_inventory_file(gvars,f'group_vars/{g}/topology.json',header)
+      write_inventory_file(gvars,f'group_vars/{g}/topology',header,filetype)
       if not log.QUIET:
         strings.print_colored_text('[GROUPS]  ','bright_cyan','Created ')
         print(f"group_vars for {g}")
@@ -176,7 +186,7 @@ def ansible_inventory(topology: Box, fname: typing.Optional[str] = 'hosts.yml', 
           else:
             vars_host[item] = hosts[h][item]
 
-        write_inventory_file(vars_host,f'host_vars/{h}/topology.json',header)
+        write_inventory_file(vars_host,f'host_vars/{h}/topology',header,filetype)
         if log.VERBOSE:
           strings.print_colored_text('[HOSTS]   ','bright_cyan','Created ')
           print(f"host_vars for {h}")
@@ -195,7 +205,9 @@ def ansible_inventory(topology: Box, fname: typing.Optional[str] = 'hosts.yml', 
   log.status_created()
   print(f"minimized Ansible inventory {fname}")
 
-def ansible_config(config_file: typing.Union[str,None] = 'ansible.cfg', inventory_file: typing.Union[str,None] = 'hosts.yml') -> None:
+def ansible_config(
+      config_file: typing.Union[str,None] = 'ansible.cfg',
+      inventory_file: typing.Union[str,None] = 'hosts.yml') -> None:
   if not config_file:
     config_file = 'ansible.cfg'
   if not inventory_file:
@@ -223,10 +235,10 @@ class AnsibleInventory(_TopologyOutput):
 
   def write(self, topology: Box) -> None:
     check_writeable('Ansible inventory')
-    hostfile = self.settings.hostfile or 'hosts.yml'
-    configfile = self.settings.configfile or 'ansible.cfg'
-    output_format = None
-
+    hostfile = self.settings.get('hostfile','hosts.yml')
+    configfile = self.settings.get('configfile','ansible.cfg')
+    hostvars = self.settings.get('hostvars',None)
+    filetype = self.settings.get('filetype','json')
     if hasattr(self,'filenames'):
       hostfile = self.filenames[0]
       if len(self.filenames) > 1:
@@ -235,11 +247,11 @@ class AnsibleInventory(_TopologyOutput):
         log.error('Extra output filename(s) ignored: %s' % str(self.filenames[2:]),log.IncorrectValue,'ansible')
 
     if self.format:
-      output_format = self.format[0]
+      hostvars = self.format[0]
     
     # Creates a "ghost clean" topology
     # (AKA, remove unmanaged devices)
     ansible_topology = nodes.ghost_buster(topology)
 
-    ansible_inventory(ansible_topology,hostfile,output_format)
+    ansible_inventory(ansible_topology,hostfile,hostvars,filetype)
     ansible_config(configfile,hostfile)
