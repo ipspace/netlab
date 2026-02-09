@@ -239,6 +239,12 @@ class AnsibleInventory(_TopologyOutput):
     configfile = self.settings.get('configfile','ansible.cfg')
     hostvars = self.settings.get('hostvars',None)
     filetype = self.settings.get('filetype','json')
+
+    valid_ftype = ['json','yml','yaml']
+    if filetype not in valid_ftype:
+      log.fatal(
+        f'defaults.ansible.output.filetype parameter must have one of these values: {",".join(valid_ftype)}')
+
     if hasattr(self,'filenames'):
       hostfile = self.filenames[0]
       if len(self.filenames) > 1:
