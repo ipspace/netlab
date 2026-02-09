@@ -1,10 +1,719 @@
 %YAML 1.1
 ---
-message: The test creates all three types of libvirt links (stub, p2p, 
-  multi-access) and checks that we can run OSPF on FRR over them.
-provider: libvirt
+message: The test checks creation of KinD clusters
+provider: clab
+plugin:
+- kind
+- multilab
+nodes:
+  sw:
+    device: frr
+    name: sw
+    interfaces:
+    - ipv4: 172.16.0.1/24
+      linkindex: 1
+      type: lan
+      bridge: ml-17_1
+      name: sw -> kc-control-plane
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.0.3/24
+        ifname: eth1
+        node: kc-control-plane
+    - ipv4: 172.16.1.1/24
+      linkindex: 2
+      type: lan
+      bridge: ml-17_2
+      name: sw -> kc-worker
+      ifindex: 2
+      ifname: eth2
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.1.4/24
+        ifname: eth1
+        node: kc-worker
+    - ipv4: 172.16.2.1/24
+      linkindex: 3
+      type: lan
+      bridge: ml-17_3
+      name: sw -> kc-worker2
+      ifindex: 3
+      ifname: eth3
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.2.5/24
+        ifname: eth1
+        node: kc-worker2
+    - ipv4: 172.16.3.1/24
+      linkindex: 4
+      type: lan
+      bridge: ml-17_4
+      name: sw -> kc-worker3
+      ifindex: 4
+      ifname: eth4
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.3.6/24
+        ifname: eth1
+        node: kc-worker3
+    clab:
+      kind: linux
+      config_templates:
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: daemons
+        target: /etc/frr/daemons
+      - source: hosts
+        target: /etc/hosts
+        mode: shared
+      exec:
+      - sleep 1
+      binds:
+      - target: /etc/config/01-initial.sh
+        source: node_files/sw/initial
+      - target: /etc/frr/daemons
+        source: node_files/sw/daemons
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
+    box: quay.io/frrouting/frr:10.5.1
+    id: 1
+    role: router
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:01:00:00
+      ipv4: 192.168.17.101
+    hostname: clab-ml-17-sw
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.1/32
+    netlab_ansible_skip_module:
+    - initial
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+  kc:
+    device: kind
+    kind:
+      workers: 3
+    name: kc
+    interfaces: []
+    module: []
+    clab:
+      kind: k8s-kind
+      config_templates:
+      - source: initial
+        target: /tmp/kind
+      - source: hosts
+        target: /etc/hosts
+        mode: shared
+      startup-config: node_files/kc/initial
+      binds:
+      - target: /tmp/kind
+        source: node_files/kc/initial
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
+    box: kindest/node:v1.34.3
+    id: 2
+    role: router
+    mtu: 1500
+    _daemon: true
+    _daemon_parent: linux
+    _daemon_config:
+      initial: /tmp/kind
+    _node_config:
+      initial: :ns
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:02:00:00
+      ipv4: 192.168.17.102
+    hostname: clab-ml-17-kc
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.2/32
+    netlab_ansible_skip_module:
+    - initial
+  kc-control-plane:
+    name: kc-control-plane
+    clab:
+      kind: ext-container
+      name: kc-control-plane
+      config_templates:
+      - source: initial
+        target: /etc/01-initial.sh
+        mode: cp_sh
+      - source: routing
+        target: /etc/02-routing.sh
+        mode: cp_sh
+      binds:
+      - target: /etc/01-initial.sh
+        source: node_files/kc-control-plane/initial
+      - target: /etc/02-routing.sh
+        source: node_files/kc-control-plane/routing
+    device: kind-node
+    interfaces:
+    - ipv4: 172.16.0.3/24
+      linkindex: 1
+      type: lan
+      bridge: ml-17_1
+      name: kc-control-plane -> sw
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.0.1/24
+        ifname: eth1
+        node: sw
+      gateway:
+        ipv4: 172.16.0.1/24
+    box: kindest/node:v1.34.3
+    id: 3
+    role: host
+    mtu: 1500
+    kind: ext-container
+    _daemon: true
+    _daemon_parent: linux
+    _node_config:
+      initial: /etc/01-initial.sh:cp_sh
+      routing: /etc/02-routing.sh:cp_sh
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:03:00:00
+      ipv4: 192.168.17.103
+    hostname: kc-control-plane
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          ipv4: 172.16.0.1
+          intf: eth1
+          idx: 0
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          ipv4: 172.16.0.1
+          intf: eth1
+          idx: 0
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          ipv4: 172.16.0.1
+          intf: eth1
+          idx: 0
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          ipv4: 172.16.0.1
+          intf: eth1
+          idx: 0
+    module:
+    - routing
+    netlab_ansible_skip_module:
+    - initial
+    - routing
+  kc-worker:
+    name: kc-worker
+    clab:
+      kind: ext-container
+      name: kc-worker
+      config_templates:
+      - source: initial
+        target: /etc/01-initial.sh
+        mode: cp_sh
+      - source: routing
+        target: /etc/02-routing.sh
+        mode: cp_sh
+      binds:
+      - target: /etc/01-initial.sh
+        source: node_files/kc-worker/initial
+      - target: /etc/02-routing.sh
+        source: node_files/kc-worker/routing
+    device: kind-node
+    interfaces:
+    - ipv4: 172.16.1.4/24
+      linkindex: 2
+      type: lan
+      bridge: ml-17_2
+      name: kc-worker -> sw
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.1.1/24
+        ifname: eth2
+        node: sw
+      gateway:
+        ipv4: 172.16.1.1/24
+    box: kindest/node:v1.34.3
+    id: 4
+    role: host
+    mtu: 1500
+    kind: ext-container
+    _daemon: true
+    _daemon_parent: linux
+    _node_config:
+      initial: /etc/01-initial.sh:cp_sh
+      routing: /etc/02-routing.sh:cp_sh
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:04:00:00
+      ipv4: 192.168.17.104
+    hostname: kc-worker
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          ipv4: 172.16.1.1
+          intf: eth1
+          idx: 0
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          ipv4: 172.16.1.1
+          intf: eth1
+          idx: 0
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          ipv4: 172.16.1.1
+          intf: eth1
+          idx: 0
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          ipv4: 172.16.1.1
+          intf: eth1
+          idx: 0
+    module:
+    - routing
+    netlab_ansible_skip_module:
+    - initial
+    - routing
+  kc-worker2:
+    name: kc-worker2
+    clab:
+      kind: ext-container
+      name: kc-worker2
+      config_templates:
+      - source: initial
+        target: /etc/01-initial.sh
+        mode: cp_sh
+      - source: routing
+        target: /etc/02-routing.sh
+        mode: cp_sh
+      binds:
+      - target: /etc/01-initial.sh
+        source: node_files/kc-worker2/initial
+      - target: /etc/02-routing.sh
+        source: node_files/kc-worker2/routing
+    device: kind-node
+    interfaces:
+    - ipv4: 172.16.2.5/24
+      linkindex: 3
+      type: lan
+      bridge: ml-17_3
+      name: kc-worker2 -> sw
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.2.1/24
+        ifname: eth3
+        node: sw
+      gateway:
+        ipv4: 172.16.2.1/24
+    box: kindest/node:v1.34.3
+    id: 5
+    role: host
+    mtu: 1500
+    kind: ext-container
+    _daemon: true
+    _daemon_parent: linux
+    _node_config:
+      initial: /etc/01-initial.sh:cp_sh
+      routing: /etc/02-routing.sh:cp_sh
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:05:00:00
+      ipv4: 192.168.17.105
+    hostname: kc-worker2
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          ipv4: 172.16.2.1
+          intf: eth1
+          idx: 0
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          ipv4: 172.16.2.1
+          intf: eth1
+          idx: 0
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          ipv4: 172.16.2.1
+          intf: eth1
+          idx: 0
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          ipv4: 172.16.2.1
+          intf: eth1
+          idx: 0
+    module:
+    - routing
+    netlab_ansible_skip_module:
+    - initial
+    - routing
+  kc-worker3:
+    name: kc-worker3
+    clab:
+      kind: ext-container
+      name: kc-worker3
+      config_templates:
+      - source: initial
+        target: /etc/01-initial.sh
+        mode: cp_sh
+      - source: routing
+        target: /etc/02-routing.sh
+        mode: cp_sh
+      binds:
+      - target: /etc/01-initial.sh
+        source: node_files/kc-worker3/initial
+      - target: /etc/02-routing.sh
+        source: node_files/kc-worker3/routing
+    device: kind-node
+    interfaces:
+    - ipv4: 172.16.3.6/24
+      linkindex: 4
+      type: lan
+      bridge: ml-17_4
+      name: kc-worker3 -> sw
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.3.1/24
+        ifname: eth4
+        node: sw
+      gateway:
+        ipv4: 172.16.3.1/24
+    box: kindest/node:v1.34.3
+    id: 6
+    role: host
+    mtu: 1500
+    kind: ext-container
+    _daemon: true
+    _daemon_parent: linux
+    _node_config:
+      initial: /etc/01-initial.sh:cp_sh
+      routing: /etc/02-routing.sh:cp_sh
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:06:00:00
+      ipv4: 192.168.17.106
+    hostname: kc-worker3
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          ipv4: 172.16.3.1
+          intf: eth1
+          idx: 0
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          ipv4: 172.16.3.1
+          intf: eth1
+          idx: 0
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          ipv4: 172.16.3.1
+          intf: eth1
+          idx: 0
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          ipv4: 172.16.3.1
+          intf: eth1
+          idx: 0
+    module:
+    - routing
+    netlab_ansible_skip_module:
+    - initial
+    - routing
+links:
+- interfaces:
+  - node: sw
+    ipv4: 172.16.0.1/24
+    ifindex: 1
+    ifname: eth1
+  - node: kc-control-plane
+    ipv4: 172.16.0.3/24
+    ifindex: 1
+    ifname: eth1
+  _linkname: links[1][1]
+  linkindex: 1
+  node_count: 2
+  type: lan
+  bridge: ml-17_1
+  prefix:
+    ipv4: 172.16.0.0/24
+- interfaces:
+  - node: sw
+    ipv4: 172.16.1.1/24
+    ifindex: 2
+    ifname: eth2
+  - node: kc-worker
+    ipv4: 172.16.1.4/24
+    ifindex: 1
+    ifname: eth1
+  _linkname: links[1][2]
+  linkindex: 2
+  node_count: 2
+  type: lan
+  bridge: ml-17_2
+  prefix:
+    ipv4: 172.16.1.0/24
+- interfaces:
+  - node: sw
+    ipv4: 172.16.2.1/24
+    ifindex: 3
+    ifname: eth3
+  - node: kc-worker2
+    ipv4: 172.16.2.5/24
+    ifindex: 1
+    ifname: eth1
+  _linkname: links[1][3]
+  linkindex: 3
+  node_count: 2
+  type: lan
+  bridge: ml-17_3
+  prefix:
+    ipv4: 172.16.2.0/24
+- interfaces:
+  - node: sw
+    ipv4: 172.16.3.1/24
+    ifindex: 4
+    ifname: eth4
+  - node: kc-worker3
+    ipv4: 172.16.3.6/24
+    ifindex: 1
+    ifname: eth1
+  _linkname: links[1][4]
+  linkindex: 4
+  node_count: 2
+  type: lan
+  bridge: ml-17_4
+  prefix:
+    ipv4: 172.16.3.0/24
+validate:
+- plugin: ping(nodes['kc-worker'].interfaces[0].ipv4,src=node.loopback.ipv4)
+  pass: Kind worker can communicate with the adjacent switch
+  wait: 3
+  nodes:
+  - sw
+  name: ping
+input:
+- /home/pipi/net101/tools/tests/platform-integration/clab/04-kind.yml
+- /home/pipi/.netlab.yml
+- package:topology-defaults.yml
 defaults:
-  provider: libvirt
+  daemons:
+    kind-node:
+      parent: linux
+      description: Node in a KinD cluster
+      clab:
+        kind: ext-container
+        features:
+          initial:
+            roles:
+            - host
+            - router
+            config_mode:
+            - cp_sh
+          lag: false
+          vlan: false
+        node_config:
+          initial: /etc/01-initial.sh:cp_sh
+          routing: /etc/02-routing.sh:cp_sh
+        group_vars:
+          netlab_ip_forwarding: true
+          netlab_config_mode: cp_sh
+    bird:
+      description: BIRD Internet Routing Daemon
+      group_vars:
+        netlab_import_map:
+          bgp: RTS_BGP
+          ospf: RTS_OSPF
+          connected: RTS_DEVICE
+          static: RTS_STATIC_DEVICE,RTS_STATIC
+      packages:
+        bird: bird
+      daemon_config:
+        bird: /etc/bird/bird.conf
+        bfd: /etc/bird/bfd.conf
+        bgp: /etc/bird/bgp.mod.conf
+        bgp@session: /etc/bird/bgp.session.conf
+        ospf: /etc/bird/ospf.mod.conf
+        routing: /etc/bird/routing.mod.conf
+      clab:
+        group_vars:
+          netlab_show_command:
+          - birdc
+          - show $@
+          docker_shell: bash -il
+          netlab_config_mode: sh
+        image: netlab/bird:latest
+        build: true
+        features:
+          initial:
+            roles:
+            - host
+            - router
+            config_mode:
+            - sh
+      libvirt:
+        image:
+      virtualbox:
+        image:
+      features:
+        bfd: true
+        bgp:
+          activate_af: true
+          ipv6_lla: false
+          rfc8950: true
+          local_as: true
+          local_as_ibgp: true
+          community:
+            standard:
+            - standard
+            - large
+            large:
+            - large
+            extended:
+            - extended
+            2octet:
+            - standard
+          import:
+          - ospf
+          - connected
+          - static
+          bfd: true
+          default_originate: true
+          gtsm: true
+          passive: true
+          password: true
+          remove_private_as: true
+          rs: true
+          rs_client: true
+          timers: true
+        ospf:
+          import:
+          - bgp
+          - connected
+          - static
+          password: true
+          priority: true
+          timers: true
+          unnumbered: true
+        routing:
+          static:
+            discard: true
+        dhcp: false
+        initial:
+          ipv4:
+            unnumbered: peer
+          ipv6:
+            lla: true
+          reload: false
+          roles:
+          - host
+          - router
+    dnsmasq:
+      description: DNSmasq - DNS and DHCP server
+      packages:
+        dnsmasq: dnsmasq
+      daemon_config:
+        dnsmasq: /etc/dnsmasq.conf
+        dhcp: /etc/dhcp.ignore
+      node:
+        module:
+        - dhcp
+      clab:
+        group_vars:
+          docker_shell: bash -il
+        image: netlab/dnsmasq:latest
+        build: true
+        features:
+          initial:
+            roles:
+            - host
+            config_mode:
+            - sh
+      libvirt:
+        image:
+      virtualbox:
+        image:
+      features:
+        dhcp:
+          server: true
+        initial:
+          reload: false
+          roles:
+          - host
+      dhcp:
+        server: true
+      module:
+      - dhcp
+    kind:
+      description: Kubernetes in Docker (KinD) cluster
+      parent: linux
+      role: router
+      plugin:
+      - kind
+      attributes:
+        node:
+          kind:
+            workers: int
+      initial:
+        ipv4:
+          unnumbered: false
+        ipv6:
+          lla: true
+          use_ra: true
+      clab:
+        roles:
+        - host
+        node:
+          kind: k8s-kind
+        features:
+          lag: false
+          vlan: false
+          initial:
+            roles:
+            - host
+            - router
+        daemon_config:
+          initial: /tmp/kind
+          routing: /tmp/routing
+        image: kindest/node:v1.34.3
+  provider: clab
   providers:
     clab:
       description: containerlab with Docker
@@ -4710,6 +5419,90 @@ defaults:
         image: none
       graphite:
         icon: router
+    kind-node:
+      description: Node in a KinD cluster
+      interface_name: eth{ifindex}
+      lag_interface_name: bond{lag.ifindex}
+      loopback_interface_name: lo{ifindex if ifindex else ""}
+      mgmt_if: eth0
+      role: host
+      features:
+        lag:
+          passive: false
+        routing:
+          static: true
+        initial:
+          reload: false
+          ipv4:
+            unnumbered: peer
+          ipv6:
+            lla: true
+            use_ra: true
+          roles:
+          - host
+      libvirt:
+        image: bento/ubuntu-24.04
+        group_vars:
+          netlab_linux_distro: ubuntu
+        features:
+          dhcp:
+            client:
+              ipv4: true
+              ipv6: true
+            server: true
+            relay:
+              ipv4: true
+            _provider: libvirt
+      virtualbox:
+        image: bento/ubuntu-24.04
+        group_vars:
+          netlab_linux_distro: ubuntu
+      group_vars:
+        ansible_network_os: linux
+        ansible_connection: paramiko
+        ansible_user: vagrant
+        ansible_ssh_pass: vagrant
+        docker_shell: sh -il
+        ansible_python_interpreter: auto_silent
+        netlab_lldp_enable: false
+        netlab_net_tools: false
+        netlab_device_type: kind-node
+      clab:
+        node_config:
+          initial: /etc/01-initial.sh:cp_sh
+          lag: :ns
+          vlan: :ns
+          routing: /etc/02-routing.sh:cp_sh
+        features:
+          initial:
+            roles:
+            - host
+            - router
+            generate_mac:
+            - svi
+            config_mode:
+            - cp_sh
+        image: python:3.13-alpine
+        mtu: 1500
+        node:
+          kind: linux
+          config_templates:
+            hosts: /etc/hosts:shared
+        group_vars:
+          ansible_connection: docker
+          ansible_user: root
+          netlab_linux_distro: vanilla
+          netlab_ip_forwarding: true
+          netlab_config_mode: cp_sh
+        kind: ext-container
+      external:
+        image: none
+      graphite:
+        icon: server
+      daemon: true
+      daemon_parent: linux
+      _parents:
+      - linux
     bird:
       description: BIRD Internet Routing Daemon
       interface_name: eth{ifindex}
@@ -5056,165 +5849,6 @@ defaults:
       daemon_parent: linux
       _parents:
       - linux
-  daemons:
-    bird:
-      description: BIRD Internet Routing Daemon
-      group_vars:
-        netlab_import_map:
-          bgp: RTS_BGP
-          ospf: RTS_OSPF
-          connected: RTS_DEVICE
-          static: RTS_STATIC_DEVICE,RTS_STATIC
-      packages:
-        bird: bird
-      daemon_config:
-        bird: /etc/bird/bird.conf
-        bfd: /etc/bird/bfd.conf
-        bgp: /etc/bird/bgp.mod.conf
-        bgp@session: /etc/bird/bgp.session.conf
-        ospf: /etc/bird/ospf.mod.conf
-        routing: /etc/bird/routing.mod.conf
-      clab:
-        group_vars:
-          netlab_show_command:
-          - birdc
-          - show $@
-          docker_shell: bash -il
-          netlab_config_mode: sh
-        image: netlab/bird:latest
-        build: true
-        features:
-          initial:
-            roles:
-            - host
-            - router
-            config_mode:
-            - sh
-      libvirt:
-        image:
-      virtualbox:
-        image:
-      features:
-        bfd: true
-        bgp:
-          activate_af: true
-          ipv6_lla: false
-          rfc8950: true
-          local_as: true
-          local_as_ibgp: true
-          community:
-            standard:
-            - standard
-            - large
-            large:
-            - large
-            extended:
-            - extended
-            2octet:
-            - standard
-          import:
-          - ospf
-          - connected
-          - static
-          bfd: true
-          default_originate: true
-          gtsm: true
-          passive: true
-          password: true
-          remove_private_as: true
-          rs: true
-          rs_client: true
-          timers: true
-        ospf:
-          import:
-          - bgp
-          - connected
-          - static
-          password: true
-          priority: true
-          timers: true
-          unnumbered: true
-        routing:
-          static:
-            discard: true
-        dhcp: false
-        initial:
-          ipv4:
-            unnumbered: peer
-          ipv6:
-            lla: true
-          reload: false
-          roles:
-          - host
-          - router
-    dnsmasq:
-      description: DNSmasq - DNS and DHCP server
-      packages:
-        dnsmasq: dnsmasq
-      daemon_config:
-        dnsmasq: /etc/dnsmasq.conf
-        dhcp: /etc/dhcp.ignore
-      node:
-        module:
-        - dhcp
-      clab:
-        group_vars:
-          docker_shell: bash -il
-        image: netlab/dnsmasq:latest
-        build: true
-        features:
-          initial:
-            roles:
-            - host
-            config_mode:
-            - sh
-      libvirt:
-        image:
-      virtualbox:
-        image:
-      features:
-        dhcp:
-          server: true
-        initial:
-          reload: false
-          roles:
-          - host
-      dhcp:
-        server: true
-      module:
-      - dhcp
-    kind:
-      description: Kubernetes in Docker (KinD) cluster
-      parent: linux
-      role: router
-      plugin:
-      - kind
-      attributes:
-        node:
-          kind:
-            workers: int
-      initial:
-        ipv4:
-          unnumbered: false
-        ipv6:
-          lla: true
-          use_ra: true
-      clab:
-        roles:
-        - host
-        node:
-          kind: k8s-kind
-        features:
-          lag: false
-          vlan: false
-          initial:
-            roles:
-            - host
-            - router
-        daemon_config:
-          initial: /tmp/kind
-          routing: /tmp/routing
-        image: kindest/node:v1.34.3
   outputs:
     d2:
       command: d2 {gfile} {gname}.{gtype}
@@ -6582,12 +7216,12 @@ defaults:
     - /home/pipi/netlab_gh/netsim/validate
     plugin:
     - /work/netlab_cicd
-    - /home/pipi/net101/tools/tests/platform-integration/libvirt
+    - /home/pipi/net101/tools/tests/platform-integration/clab
     - /home/pipi/.netlab
     - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
-      - /home/pipi/net101/tools/tests/platform-integration/libvirt
+      - /home/pipi/net101/tools/tests/platform-integration/clab
       - /work/netlab_cicd
       - /home/pipi/.netlab
       - /home/pipi/netlab_gh/netsim/extra
@@ -7038,6 +7672,8 @@ defaults:
       iosv: true
       iosvl2: true
       kind:
+        libvirt: true
+      kind-node:
         libvirt: true
       linux:
         libvirt: true
@@ -7534,6 +8170,7 @@ defaults:
       ioll2: true
       iosvl2: true
       kind: true
+      kind-node: true
       linux: true
       none: true
       vjunos-switch: true
@@ -8162,6 +8799,7 @@ defaults:
         - prefix
         - nexthop
         - aspath
+      node_copy: {}
     features:
       policy:
         set: Route map SET attributes
@@ -8191,6 +8829,7 @@ defaults:
       iosxr: true
       junos: true
       kind: true
+      kind-node: true
       linux: true
       none: true
       openbsd: true
@@ -8674,9 +9313,8 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1770653719.4312692
+    timestamp: 1770653512.4248736
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
-  device: frr
   sources:
     list: []
     extra: []
@@ -8705,449 +9343,9 @@ defaults:
     - vlan
     - vrf
     - vxlan
-  module:
-  - ospf
   name: ml-17
-module:
-- ospf
-ospf:
-  area: 0.0.0.0
-  timers:
-    hello: 1
-nodes:
-  r1:
-    name: r1
-    interfaces:
-    - ipv4: 10.42.42.1/24
-      linkindex: 1
-      role: stub
-      type: stub
-      bridge: ml-17_1
-      name: r1 -> stub
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors: []
-      ospf:
-        area: 0.0.0.0
-        timers:
-          hello: 1
-          dead: 4
-        passive: true
-    - ipv4: 10.1.0.1/30
-      linkindex: 2
-      type: p2p
-      name: r1 -> r2
-      ifindex: 2
-      ifname: eth2
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.2/30
-        ifname: eth1
-        node: r2
-      ospf:
-        area: 0.0.0.0
-        timers:
-          hello: 1
-          dead: 4
-        passive: false
-        network_type: point-to-point
-    - ipv4: 10.1.0.5/30
-      type: lan
-      linkindex: 3
-      bridge: ml-17_3
-      name: r1 -> r5
-      ifindex: 3
-      ifname: eth3
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.6/30
-        ifname: eth1
-        node: r5
-      ospf:
-        area: 0.0.0.0
-        timers:
-          hello: 1
-          dead: 4
-        passive: false
-        network_type: point-to-point
-    device: frr
-    box: netlab/frr
-    module:
-    - ospf
-    ospf:
-      area: 0.0.0.0
-      timers:
-        hello: 1
-      router_id: 10.0.0.1
-      af:
-        ipv4: true
-      areas:
-      - area: 0.0.0.0
-        _area_int: 0
-        kind: regular
-    id: 1
-    role: router
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:01:00:00
-      ipv4: 192.168.17.101
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.1/32
-      ospf:
-        area: 0.0.0.0
-        passive: false
-  r2:
-    name: r2
-    interfaces:
-    - ipv4: 10.1.0.2/30
-      linkindex: 2
-      type: p2p
-      name: r2 -> r1
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.1/30
-        ifname: eth2
-        node: r1
-      ospf:
-        area: 0.0.0.0
-        timers:
-          hello: 1
-          dead: 4
-        passive: false
-        network_type: point-to-point
-    - ipv4: 172.16.0.2/24
-      ospf:
-        area: 0.0.0.0
-        timers:
-          hello: 1
-          dead: 4
-        network_type: point-to-multipoint
-        passive: false
-      linkindex: 4
-      type: lan
-      bridge: ml-17_4
-      name: r2 -> [r3,r4]
-      ifindex: 2
-      ifname: eth2
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.0.3/24
-        ifname: eth1
-        node: r3
-      - ipv4: 172.16.0.4/24
-        ifname: eth1
-        node: r4
-    device: frr
-    box: netlab/frr
-    module:
-    - ospf
-    ospf:
-      area: 0.0.0.0
-      timers:
-        hello: 1
-      router_id: 10.0.0.2
-      af:
-        ipv4: true
-      areas:
-      - area: 0.0.0.0
-        _area_int: 0
-        kind: regular
-    id: 2
-    role: router
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:02:00:00
-      ipv4: 192.168.17.102
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.2/32
-      ospf:
-        area: 0.0.0.0
-        passive: false
-  r3:
-    name: r3
-    interfaces:
-    - ipv4: 172.16.0.3/24
-      ospf:
-        area: 0.0.0.0
-        timers:
-          hello: 1
-          dead: 4
-        network_type: point-to-multipoint
-        passive: false
-      linkindex: 4
-      type: lan
-      bridge: ml-17_4
-      name: r3 -> [r2,r4]
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.0.2/24
-        ifname: eth2
-        node: r2
-      - ipv4: 172.16.0.4/24
-        ifname: eth1
-        node: r4
-    device: frr
-    box: netlab/frr
-    module:
-    - ospf
-    ospf:
-      area: 0.0.0.0
-      timers:
-        hello: 1
-      router_id: 10.0.0.3
-      af:
-        ipv4: true
-      areas:
-      - area: 0.0.0.0
-        _area_int: 0
-        kind: regular
-    id: 3
-    role: router
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:03:00:00
-      ipv4: 192.168.17.103
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.3/32
-      ospf:
-        area: 0.0.0.0
-        passive: false
-  r4:
-    name: r4
-    interfaces:
-    - ipv4: 172.16.0.4/24
-      ospf:
-        area: 0.0.0.0
-        timers:
-          hello: 1
-          dead: 4
-        network_type: point-to-multipoint
-        passive: false
-      linkindex: 4
-      type: lan
-      bridge: ml-17_4
-      name: r4 -> [r2,r3]
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.0.2/24
-        ifname: eth2
-        node: r2
-      - ipv4: 172.16.0.3/24
-        ifname: eth1
-        node: r3
-    device: frr
-    box: netlab/frr
-    module:
-    - ospf
-    ospf:
-      area: 0.0.0.0
-      timers:
-        hello: 1
-      router_id: 10.0.0.4
-      af:
-        ipv4: true
-      areas:
-      - area: 0.0.0.0
-        _area_int: 0
-        kind: regular
-    id: 4
-    role: router
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:04:00:00
-      ipv4: 192.168.17.104
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.4/32
-      ospf:
-        area: 0.0.0.0
-        passive: false
-  r5:
-    name: r5
-    interfaces:
-    - ipv4: 10.1.0.6/30
-      type: lan
-      linkindex: 3
-      bridge: ml-17_3
-      name: r5 -> r1
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.5/30
-        ifname: eth3
-        node: r1
-      ospf:
-        area: 0.0.0.0
-        timers:
-          hello: 1
-          dead: 4
-        passive: false
-        network_type: point-to-point
-    device: frr
-    box: netlab/frr
-    module:
-    - ospf
-    ospf:
-      area: 0.0.0.0
-      timers:
-        hello: 1
-      router_id: 10.0.0.5
-      af:
-        ipv4: true
-      areas:
-      - area: 0.0.0.0
-        _area_int: 0
-        kind: regular
-    id: 5
-    role: router
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:05:00:00
-      ipv4: 192.168.17.105
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.5/32
-      ospf:
-        area: 0.0.0.0
-        passive: false
-links:
-- _linkname: links[1]
-  prefix:
-    ipv4: 10.42.42.0/24
-  interfaces:
-  - node: r1
-    ipv4: 10.42.42.1/24
-    ifindex: 1
-    ifname: eth1
-  linkindex: 1
-  node_count: 1
-  role: stub
-  type: stub
-  bridge: ml-17_1
-- _linkname: links[2]
-  interfaces:
-  - node: r1
-    ipv4: 10.1.0.1/30
-    ifindex: 2
-    ifname: eth2
-  - node: r2
-    ipv4: 10.1.0.2/30
-    ifindex: 1
-    ifname: eth1
-  linkindex: 2
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.0/30
-- _linkname: links[3]
-  type: lan
-  interfaces:
-  - node: r1
-    ipv4: 10.1.0.5/30
-    ifindex: 3
-    ifname: eth3
-  - node: r5
-    ipv4: 10.1.0.6/30
-    ifindex: 1
-    ifname: eth1
-  linkindex: 3
-  node_count: 2
-  bridge: ml-17_3
-  prefix:
-    ipv4: 10.1.0.4/30
-- _linkname: links[4]
-  ospf:
-    network_type: point-to-multipoint
-  interfaces:
-  - node: r2
-    ipv4: 172.16.0.2/24
-    ifindex: 2
-    ifname: eth2
-  - node: r3
-    ipv4: 172.16.0.3/24
-    ifindex: 1
-    ifname: eth1
-  - node: r4
-    ipv4: 172.16.0.4/24
-    ifindex: 1
-    ifname: eth1
-  linkindex: 4
-  node_count: 3
-  type: lan
-  bridge: ml-17_4
-  prefix:
-    ipv4: 172.16.0.0/24
-validate:
-- plugin: ospf_neighbor(nodes.r2.ospf.router_id)
-  wait: 15
-  nodes:
-  - r1
-  - r3
-  - r4
-  name: adj_r2
-- plugin: ospf_neighbor(nodes.r1.ospf.router_id)
-  wait: 15
-  nodes:
-  - r5
-  name: adj_r1
-- plugin: ospf_prefix(links[0].prefix.ipv4)
-  wait: 10
-  nodes:
-  - r3
-  - r4
-  name: pfx
-input:
-- /home/pipi/net101/tools/tests/platform-integration/libvirt/01-links.yml
-- /home/pipi/.netlab.yml
-- package:topology-defaults.yml
-plugin:
-- multilab
+  module:
+  - routing
 name: ml-17
 addressing:
   lan:
@@ -9173,4 +9371,14 @@ addressing:
   vrf_loopback:
     ipv4: 10.2.0.0/24
     prefix: 32
+groups:
+  netlab_no_reload:
+    members:
+    - kc
+    - kc-control-plane
+    - kc-worker
+    - kc-worker2
+    - kc-worker3
+module:
+- routing
 _netlab_version: 26.01.01
