@@ -1,5 +1,5 @@
 #
-# Cisco IOS-XE quirks
+# Catalyst 8000v quirks
 #
 from box import Box
 
