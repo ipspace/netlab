@@ -17,8 +17,23 @@ def check_srv6_sid(node: Box, topology: Box) -> None:
       more_hints=['Set the srv6.allocate_loopback parameter to False'],
       category=log.IncorrectValue)
 
+def check_vni(node: Box, topology: Box) -> None:
+  if 'vxlan' not in node.get('module',[]):
+    return
+  for vname,vdata in node.get('vlans',{}).items():
+    vni = vdata.get('vni',None)
+    if not vni:
+      continue
+    if vni < 4096:
+      report_quirk(
+        f'Cisco IOS-XE cannot use VNI values below 4096 (VLAN {vname} on node {node.name})',
+        node,
+        quirk='vxlan.vni',
+        category=log.IncorrectValue)
+
 class IOSXE(_Quirks):
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
     check_ripng_passive(node,topology)
     check_srv6_sid(node,topology)
+    check_vni(node,topology)

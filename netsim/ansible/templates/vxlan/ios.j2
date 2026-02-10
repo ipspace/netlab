@@ -1,17 +1,25 @@
 {% if vxlan.vlans is defined %}
+{%   set evpn_cp = vxlan.flooding|default('') == 'evpn' %}
 interface nve1
  no shutdown
  source-interface {{ vxlan.vtep_interface|default('Loopback0') }}
+{%   if evpn_cp %}
+ host-reachability protocol bgp
+{%   endif %}
 {%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
 {%     set vlan = vlans[vname] %}
+{%     if evpn_cp %}
+ member vni {{ vlan.vni }} ingress-replication
+{%     else %}
  member vni {{ vlan.vni }}
-{%     if vlan.vtep_list is defined %}
-{%       for remote_vtep in vlan.vtep_list %}
+{%       if vlan.vtep_list is defined %}
+{%         for remote_vtep in vlan.vtep_list %}
   ingress-replication {{ remote_vtep }}
-{%       endfor %}
+{%         endfor %}
+{%       endif %}
 {%     endif %}
 {%   endfor %}
-{%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
+{%   for vname in vxlan.vlans if vlans[vname].vni is defined and not evpn_cp %}
 {%     set vlan = vlans[vname] %}
 !
 bridge-domain {{ vlan.id }}
