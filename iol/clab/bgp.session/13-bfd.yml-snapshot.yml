@@ -10,161 +10,6 @@ module:
 - bfd
 - bgp
 defaults:
-  daemons:
-    bird:
-      daemon_config:
-        bgp@session: /etc/bird/bgp.session.conf
-        bird: /etc/bird/bird.conf
-        bfd: /etc/bird/bfd.conf
-        bgp: /etc/bird/bgp.mod.conf
-        ospf: /etc/bird/ospf.mod.conf
-        routing: /etc/bird/routing.mod.conf
-      features:
-        bgp:
-          bfd: true
-          default_originate: true
-          gtsm: true
-          passive: true
-          password: true
-          remove_private_as: true
-          rs: true
-          rs_client: true
-          timers: true
-          activate_af: true
-          ipv6_lla: false
-          rfc8950: true
-          local_as: true
-          local_as_ibgp: true
-          community:
-            standard:
-            - standard
-            - large
-            large:
-            - large
-            extended:
-            - extended
-            2octet:
-            - standard
-          import:
-          - ospf
-          - connected
-          - static
-        bfd: true
-        ospf:
-          import:
-          - bgp
-          - connected
-          - static
-          password: true
-          priority: true
-          timers: true
-          unnumbered: true
-        routing:
-          static:
-            discard: true
-        dhcp: false
-        initial:
-          ipv4:
-            unnumbered: peer
-          ipv6:
-            lla: true
-          reload: false
-          roles:
-          - host
-          - router
-      description: BIRD Internet Routing Daemon
-      group_vars:
-        netlab_import_map:
-          bgp: RTS_BGP
-          ospf: RTS_OSPF
-          connected: RTS_DEVICE
-          static: RTS_STATIC_DEVICE,RTS_STATIC
-      packages:
-        bird: bird
-      clab:
-        group_vars:
-          netlab_show_command:
-          - birdc
-          - show $@
-          docker_shell: bash -il
-          netlab_config_mode: sh
-        image: netlab/bird:latest
-        build: true
-        features:
-          initial:
-            roles:
-            - host
-            - router
-      libvirt:
-        image:
-      virtualbox:
-        image:
-    dnsmasq:
-      description: DNSmasq - DNS and DHCP server
-      packages:
-        dnsmasq: dnsmasq
-      daemon_config:
-        dnsmasq: /etc/dnsmasq.conf
-        dhcp: /etc/dhcp.ignore
-      node:
-        module:
-        - dhcp
-      clab:
-        group_vars:
-          docker_shell: bash -il
-        image: netlab/dnsmasq:latest
-        build: true
-        features:
-          initial:
-            roles:
-            - host
-      libvirt:
-        image:
-      virtualbox:
-        image:
-      features:
-        dhcp:
-          server: true
-        initial:
-          reload: false
-          roles:
-          - host
-      dhcp:
-        server: true
-      module:
-      - dhcp
-    kind:
-      description: Kubernetes in Docker (KinD) cluster
-      parent: linux
-      role: router
-      plugin:
-      - kind
-      attributes:
-        node:
-          kind:
-            workers: int
-      initial:
-        ipv4:
-          unnumbered: false
-        ipv6:
-          lla: true
-          use_ra: true
-      clab:
-        roles:
-        - host
-        node:
-          kind: k8s-kind
-        features:
-          lag: false
-          vlan: false
-          initial:
-            roles:
-            - host
-            - router
-        daemon_config:
-          initial: /tmp/kind
-          routing: /tmp/routing
-        image: kindest/node:v1.34.3
   attributes:
     exbs_timers:
       keepalive:
@@ -1448,6 +1293,10 @@ defaults:
           netlab_check_delay: 15
           netlab_ready:
           - ssh
+        features:
+          initial:
+            config_mode:
+            - startup
       group_vars:
         ansible_network_os: arubanetworks.aoscx.aoscx
         ansible_connection: network_cli
@@ -1644,6 +1493,10 @@ defaults:
           netlab_check_retries: 50
           netlab_ready:
           - ssh
+        features:
+          initial:
+            config_mode:
+            - startup
         image: vrnetlab/cisco_c8000v:17.16.01a
         node:
           kind: cisco_c8000v
@@ -1809,6 +1662,9 @@ defaults:
           bgp: false
           isis: true
           vpn: true
+        evpn:
+          asymmetrical_irb: true
+          irb: false
       external:
         image: none
       graphite:
@@ -1966,6 +1822,10 @@ defaults:
           netlab_check_retries: 50
           netlab_ready:
           - ssh
+        features:
+          initial:
+            config_mode:
+            - startup
         image: vrnetlab/cisco_csr1000v:17.03.08
         node:
           kind: cisco_csr1000v
@@ -2585,6 +2445,10 @@ defaults:
           - sleep 15
           netlab_ready:
           - ssh
+        features:
+          initial:
+            config_mode:
+            - startup
       libvirt:
         image: dell/os10
         build: https://netlab.tools/labs/dellos10/
@@ -2804,6 +2668,9 @@ defaults:
               ipv4: false
               ipv6: false
             _provider: clab
+          initial:
+            config_mode:
+            - sh
         interface:
           name: et{ifindex}
         node:
@@ -2952,6 +2819,10 @@ defaults:
           netlab_default_shebang: '#!/usr/bin/vtysh -f'
           netlab_config_exec:
           - sleep 1
+        features:
+          initial:
+            config_mode:
+            - sh
         image: quay.io/frrouting/frr:10.5.1
         kmods:
           initial:
@@ -3207,12 +3078,19 @@ defaults:
           netlab_ready:
           - ssh
           netlab_device_type: iol
+          netlab_config_mode: startup
+        features:
+          initial:
+            config_mode:
+            - startup
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
         image: vrnetlab/cisco_iol:17.16.01a
         node:
           kind: cisco_iol
+          config_templates:
+            ifstate: /iol/ifstate.cfg
       role: router
       routing:
         _rm_per_af: true
@@ -3369,6 +3247,12 @@ defaults:
           bgp: false
           isis: true
           vpn: true
+        vxlan:
+          requires:
+          - evpn
+        evpn:
+          asymmetrical_irb: true
+          irb: false
       external:
         image: none
       graphite:
@@ -3410,12 +3294,19 @@ defaults:
           netlab_ready:
           - ssh
           netlab_device_type: ioll2
+          netlab_config_mode: startup
+        features:
+          initial:
+            config_mode:
+            - startup
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
         image: vrnetlab/cisco_iol:L2-17.16.01a
         node:
           kind: cisco_iol
+          config_templates:
+            ifstate: /iol/ifstate.cfg
           type: l2
         mtu: 1500
       role: router
@@ -3578,6 +3469,12 @@ defaults:
           bgp: false
           isis: true
           vpn: true
+        vxlan:
+          requires:
+          - evpn
+        evpn:
+          asymmetrical_irb: true
+          irb: false
         stp:
           supported_protocols:
           - stp
@@ -3635,6 +3532,10 @@ defaults:
           netlab_check_retries: 50
           netlab_ready:
           - ssh
+        features:
+          initial:
+            config_mode:
+            - startup
         image: vrnetlab/cisco_vios:15.9.3
         node:
           kind: cisco_vios
@@ -3841,9 +3742,14 @@ defaults:
           netlab_check_retries: 50
           netlab_ready:
           - ssh
-        image: vrnetlab/cisco_viosl2:15.2
+        features:
+          initial:
+            config_mode:
+            - startup
+        image: vrnetlab/cisco_vios:L2-15.2
         node:
           kind: cisco_vios
+          type: switch
         interface:
           name: eth{ifindex}
         build: https://github.com/srl-labs/vrnetlab/tree/master/viosl2
@@ -4195,6 +4101,8 @@ defaults:
             - bridge
             generate_mac:
             - svi
+            config_mode:
+            - sh
           vlan:
             mixed_trunk: true
             model: router
@@ -4287,6 +4195,7 @@ defaults:
           as_override: true
           bfd: true
           default_originate: true
+          description: true
           gtsm: true
           passive: true
           password: true
@@ -5295,6 +5204,10 @@ defaults:
       external:
         image: none
       clab:
+        features:
+          initial:
+            config_mode:
+            - startup
         group_vars:
           netlab_ready:
           - ssh
@@ -5418,6 +5331,10 @@ defaults:
       external:
         image: none
       clab:
+        features:
+          initial:
+            config_mode:
+            - startup
         group_vars:
           netlab_ready:
           - ssh
@@ -5535,6 +5452,10 @@ defaults:
       external:
         image: none
       clab:
+        features:
+          initial:
+            config_mode:
+            - startup
         group_vars:
           netlab_ready:
           - ssh
@@ -5648,6 +5569,10 @@ defaults:
       external:
         image: none
       clab:
+        features:
+          initial:
+            config_mode:
+            - startup
         group_vars:
           netlab_ready:
           - ssh
@@ -5767,6 +5692,10 @@ defaults:
       external:
         image: none
       clab:
+        features:
+          initial:
+            config_mode:
+            - startup
         group_vars:
           netlab_ready:
           - ssh
@@ -5945,16 +5874,8 @@ defaults:
           roles:
           - host
           - router
+        bfd: {}
         bgp:
-          bfd: true
-          default_originate: true
-          gtsm: true
-          passive: true
-          password: true
-          remove_private_as: true
-          rs: true
-          rs_client: true
-          timers: true
           activate_af: true
           ipv6_lla: false
           rfc8950: true
@@ -5974,7 +5895,15 @@ defaults:
           - ospf
           - connected
           - static
-        bfd: {}
+          bfd: true
+          default_originate: true
+          gtsm: true
+          passive: true
+          password: true
+          remove_private_as: true
+          rs: true
+          rs_client: true
+          timers: true
         ospf:
           import:
           - bgp
@@ -6027,6 +5956,8 @@ defaults:
             - router
             generate_mac:
             - svi
+            config_mode:
+            - sh
           vlan:
             mixed_trunk: true
             model: router
@@ -6054,15 +5985,15 @@ defaults:
         image: none
       graphite:
         icon: server
+      packages:
+        bird: bird
       daemon_config:
-        bgp@session: /etc/bird/bgp.session.conf
         bird: /etc/bird/bird.conf
         bfd: /etc/bird/bfd.conf
         bgp: /etc/bird/bgp.mod.conf
+        bgp@session: /etc/bird/bgp.session.conf
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
-      packages:
-        bird: bird
       daemon: true
       daemon_parent: linux
       _parents:
@@ -6127,6 +6058,8 @@ defaults:
             - host
             generate_mac:
             - svi
+            config_mode:
+            - sh
           vlan:
             mixed_trunk: true
             model: router
@@ -6227,6 +6160,8 @@ defaults:
             - router
             generate_mac:
             - svi
+            config_mode:
+            - sh
         image: kindest/node:v1.34.3
         mtu: 1500
         node:
@@ -6262,6 +6197,165 @@ defaults:
       daemon_parent: linux
       _parents:
       - linux
+  daemons:
+    bird:
+      description: BIRD Internet Routing Daemon
+      group_vars:
+        netlab_import_map:
+          bgp: RTS_BGP
+          ospf: RTS_OSPF
+          connected: RTS_DEVICE
+          static: RTS_STATIC_DEVICE,RTS_STATIC
+      packages:
+        bird: bird
+      daemon_config:
+        bird: /etc/bird/bird.conf
+        bfd: /etc/bird/bfd.conf
+        bgp: /etc/bird/bgp.mod.conf
+        bgp@session: /etc/bird/bgp.session.conf
+        ospf: /etc/bird/ospf.mod.conf
+        routing: /etc/bird/routing.mod.conf
+      clab:
+        group_vars:
+          netlab_show_command:
+          - birdc
+          - show $@
+          docker_shell: bash -il
+          netlab_config_mode: sh
+        image: netlab/bird:latest
+        build: true
+        features:
+          initial:
+            roles:
+            - host
+            - router
+            config_mode:
+            - sh
+      libvirt:
+        image:
+      virtualbox:
+        image:
+      features:
+        bfd: true
+        bgp:
+          activate_af: true
+          ipv6_lla: false
+          rfc8950: true
+          local_as: true
+          local_as_ibgp: true
+          community:
+            standard:
+            - standard
+            - large
+            large:
+            - large
+            extended:
+            - extended
+            2octet:
+            - standard
+          import:
+          - ospf
+          - connected
+          - static
+          bfd: true
+          default_originate: true
+          gtsm: true
+          passive: true
+          password: true
+          remove_private_as: true
+          rs: true
+          rs_client: true
+          timers: true
+        ospf:
+          import:
+          - bgp
+          - connected
+          - static
+          password: true
+          priority: true
+          timers: true
+          unnumbered: true
+        routing:
+          static:
+            discard: true
+        dhcp: false
+        initial:
+          ipv4:
+            unnumbered: peer
+          ipv6:
+            lla: true
+          reload: false
+          roles:
+          - host
+          - router
+    dnsmasq:
+      description: DNSmasq - DNS and DHCP server
+      packages:
+        dnsmasq: dnsmasq
+      daemon_config:
+        dnsmasq: /etc/dnsmasq.conf
+        dhcp: /etc/dhcp.ignore
+      node:
+        module:
+        - dhcp
+      clab:
+        group_vars:
+          docker_shell: bash -il
+        image: netlab/dnsmasq:latest
+        build: true
+        features:
+          initial:
+            roles:
+            - host
+            config_mode:
+            - sh
+      libvirt:
+        image:
+      virtualbox:
+        image:
+      features:
+        dhcp:
+          server: true
+        initial:
+          reload: false
+          roles:
+          - host
+      dhcp:
+        server: true
+      module:
+      - dhcp
+    kind:
+      description: Kubernetes in Docker (KinD) cluster
+      parent: linux
+      role: router
+      plugin:
+      - kind
+      attributes:
+        node:
+          kind:
+            workers: int
+      initial:
+        ipv4:
+          unnumbered: false
+        ipv6:
+          lla: true
+          use_ra: true
+      clab:
+        roles:
+        - host
+        node:
+          kind: k8s-kind
+        features:
+          lag: false
+          vlan: false
+          initial:
+            roles:
+            - host
+            - router
+        daemon_config:
+          initial: /tmp/kind
+          routing: /tmp/routing
+        image: kindest/node:v1.34.3
   outputs:
     d2:
       command: d2 {gfile} {gname}.{gtype}
@@ -6805,6 +6899,7 @@ defaults:
       ldp_adj: 30
       stp_forwarding: 40
       lacp_setup: 10
+      bfd_init: 6
       xr:
         bgp_v4_originate: 80
         bgp_v6_originate: 80
@@ -6828,6 +6923,8 @@ defaults:
       vptx:
         ldp_adj: 180
         ibgp_session: 40
+      arubacx:
+        bfd_init: 10
   hints:
     evpn:
       irb_group: >
@@ -7337,11 +7434,14 @@ defaults:
       multi_rt: Multiple import/export route targets
     supported_on:
       arubacx: true
+      cat8000v: true
       cumulus: true
       cumulus_nvue: true
       dellos10: true
       eos: true
       frr: true
+      iol: true
+      ioll2: true
       none: true
       nxos: true
       srlinux: true
@@ -8841,6 +8941,8 @@ defaults:
       dellos10: true
       eos: true
       frr: true
+      iol: true
+      ioll2: true
       none: true
       nxos: true
       srlinux: true
@@ -8850,7 +8952,7 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1770137499.7253997
+    timestamp: 1770721998.005354
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
@@ -8960,6 +9062,25 @@ nodes:
     device: iol
     clab:
       kind: cisco_iol
+      config_templates:
+      - source: initial
+        target: ''
+        mode: startup
+      - source: bgp
+        target: ''
+        mode: startup
+      - source: bfd
+        target: ''
+        mode: startup
+      - source: bgp.session
+        target: ''
+        mode: startup
+      - source: ifstate
+        target: /iol/ifstate.cfg
+      binds:
+      - target: /iol/ifstate.cfg
+        source: node_files/dut/ifstate
+      startup-config: node_files/dut/startup.partial.config
     box: vrnetlab/cisco_iol:17.16.01a
     module:
     - bgp
@@ -8988,6 +9109,16 @@ nodes:
         advertise: true
     config:
     - bgp.session
+    netlab_ansible_skip_module:
+    - initial
+    - bgp
+    - bfd
+    - bgp.session
+    _node_config:
+      initial: :startup
+      bgp: :startup
+      bfd: :startup
+      bgp@session: :startup
   x1:
     bgp:
       advertise_loopback: true
@@ -9141,7 +9272,7 @@ validate:
   name: session_v4
 - description: Check BFD peer on X1
   wait_msg: Waiting for BFD to start
-  wait: 3
+  wait: 6
   nodes:
   - x1
   show:
