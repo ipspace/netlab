@@ -137,7 +137,7 @@ def write_inventory_file(data: Box, fname: str, header: str, filetype: typing.Op
   if filetype in ['yaml','yml']:
     contents = header+"\n"+strings.get_yaml_string(data)
   else:
-    contents = data.to_json()
+    contents = data.to_json(indent=2)
   _files.create_file_from_text(fname,contents)
 
 min_inventory_data = [ 'id','ansible_host','ansible_port','ansible_connection','ansible_user','ansible_ssh_pass' ]
