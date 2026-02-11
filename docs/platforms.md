@@ -215,6 +215,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 
 [^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
 
+(platform-config-mode)=
 _netlab_ uses Ansible playbooks and device-specific task lists to deploy device configuration snippets onto most devices, with these notable exceptions:
 
 | Device | Provider | Configuration deployment method |

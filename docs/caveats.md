@@ -115,12 +115,17 @@ nodes:
 **Licensing:**
 
 * Catalyst 8000v uses a boot-level license to enable additional features. The *netlab*-built Vagrant box configures the **premier** license, while the older versions of *vrnetlab* built containers without the add-on license. Set the default parameter **defaults.devices.cat8000v.clab.cat8000v.license** to *none* if you're using Catalyst 8000v containers without the **premier** license.
-* The **premier** license is required for new-style VLAN configuration (see below), VXLAN, MPLS, SR-MPLS, and SRv6.
+* The **premier** license is required for new-style VLAN configuration (see below), VXLAN, EVPN, MPLS, SR-MPLS, and SRv6.
 
 **VLAN caveats:**
 
 * You cannot use reserved VLANs (1002..1005) on Catalyst 8000v
 * _netlab_ uses new-style VLAN configuration (service instance configured as a **member** of the **bridge-domain**) on Catalyst 8000v nodes with the **premier** license, and old-style VLAN configuration (**bridge-domain** configured under **service instance**) on other Catalyst 8000v nodes.
+
+**EVPN/VXLAN caveats:**
+
+* The layer-3 EVPN functionality (transit VNI, type-5 routes) is not supported by _netlab_
+* Cisco IOS/XE does not accept VXLAN VNI values below 4096
 
 **Container caveats:**
 
@@ -135,7 +140,7 @@ See also [CSR 1000v](caveats-csr) and [Cisco IOSv](caveats-iosv) caveats.
 ## Cisco CSR 1000v
 
 * Cisco CSR 1000v does not support an interface MTU lower than 1500 bytes or an IP MTU higher than 1500 bytes.
-* The minimum VXLAN VNI accepted by Cisco CSR 1000v is 4096. Using lower VNI values triggers a configuration error that is not caught by Ansible, resulting in a weird failure of the **netlab initial** command.
+* Cisco IOS/XE does not accept VXLAN VNI values below 4096
 
 See also [Cisco IOSv](caveats-iosv) SSH, OSPF, RIPng, and BGP caveats.
 
@@ -167,7 +172,7 @@ The Cisco IOS/IOS-XE SSH implementation uses RSA keys and older encryption algor
 
 That wasn't a problem for Ansible users until October 2025, when the new version of the `ansible-pylibssh` package (installed with Ansible) was released. `ansible-pylibssh` release 1.3.0 uses `libssh` release 0.11.0, which [no longer supports legacy SSH algorithms](https://github.com/ipspace/netlab/discussions/2759).
 
-You could downgrade `ansible-pylibssh` to release 1.2.2 with a command similar to `pip3 install --upgrade ansible-pylibssh==1.2.2` (you might have to prefix the command with `sudo` or add the `--break-system-packages` argument to the **pip3** command). Alternatively, you can tell Ansible to use the **paramiko** SSH library with:
+_netlab_ automatically tells Ansible to use the **paramiko** library when it detects a newer version of the `ansible-pylibssh` library. You could also downgrade `ansible-pylibssh` to release 1.2.2 with a command similar to `pip3 install --upgrade ansible-pylibssh==1.2.2` (you might have to prefix the command with `sudo` or add the `--break-system-packages` argument to the **pip3** command). Alternatively, you can tell Ansible to use the **paramiko** SSH library with:
 
 ```
 $ export ANSIBLE_NETWORK_CLI_SSH_TYPE=paramiko
@@ -191,6 +196,8 @@ Additionally, you might have to execute `sudo update-crypto-policies --set LEGAC
 * The Cisco IOL and IOL L2 images work only as containers created with Roman Dodin's fork of [vrnetlab](https://github.com/srl-labs/vrnetlab).
 * You need Containerlab 0.59.0 or greater to run these images.
 * You cannot use VLANs 1002 through 1005 with the Cisco IOL layer-2 image
+* The layer-3 EVPN functionality (transit VNI, type-5 routes) is not supported by _netlab_
+* Cisco IOS/XE does not accept VXLAN VNI values below 4096
 * Cisco IOL layer-2 image cannot configure tagged VLAN 1 in a trunk. Internal VLAN 1002 is used as a fake native VLAN on interfaces that have tagged VLAN 1 in a trunk.
 * Cisco IOL/IOLL2 cannot set the interface MTU (which is fixed at 1500 bytes). IOLL2 cannot set the IP MTU.
 * VXLAN with static ingress replication does not work on IOL/IOLL2, but works with the EVPN control plane.

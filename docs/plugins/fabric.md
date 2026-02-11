@@ -1,3 +1,4 @@
+(plugin-fabric)=
 # Build a Leaf-and-Spine Fabric
 
 The *fabric* plugin builds a leaf-and-spine topology and adds the generated groups, nodes, and links to the lab topology.
