@@ -72,7 +72,7 @@ defaults:
           _keys:
             binds:
             kind: str
-            config_templates:
+            config_templates: dict
             type: str
             cmd: str
             dns:
@@ -1578,7 +1578,16 @@ defaults:
           - -c
           - show $@
           netlab_mgmt_vrf: true
-        image: quay.io/frrouting/frr:10.5.0
+          netlab_config_mode: sh
+          netlab_config_wrapper: |
+            {% if not netlab_config_text.startswith("#!") %}
+            #!/usr/bin/vtysh -f
+            #
+            {% endif %}
+            {{ netlab_config_text }}
+          netlab_config_exec:
+          - sleep 1
+        image: quay.io/frrouting/frr:10.5.1
         kmods:
         node:
           kind: linux
@@ -2666,6 +2675,7 @@ defaults:
         routing:
           static: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -2700,11 +2710,6 @@ defaults:
         netlab_lldp_enable: false
         netlab_net_tools: false
       clab:
-        node_config:
-          initial: :ns
-          lag: :ns
-          vlan: :ns
-          routing: :ns
         features:
           initial:
             roles:
@@ -2730,6 +2735,7 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+          netlab_config_mode: ns
       external:
         image: none
       graphite:
@@ -2749,6 +2755,7 @@ defaults:
           ipv4:
       mtu: 1500
       clab:
+        build: true
         image: netlab/netscaler
         node:
           kind: linux
@@ -3040,12 +3047,13 @@ defaults:
         routing:
           static: true
         initial:
-          roles:
-          - host
-          - router
           ipv6:
             use_ra: true
             lla: true
+          reload: false
+          roles:
+          - host
+          - router
         ospf:
           unnumbered: false
           import:
@@ -3210,6 +3218,7 @@ defaults:
             unnumbered: true
           ipv6:
             lla: true
+          reload: false
         bgp:
           activate_af: true
           ipv6_lla: true
@@ -4312,6 +4321,7 @@ defaults:
           static:
             discard: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -4381,11 +4391,6 @@ defaults:
           static: RTS_STATIC_DEVICE,RTS_STATIC
         netlab_device_type: bird
       clab:
-        node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
-          routing: :ns
         features:
           initial:
             roles:
@@ -4410,11 +4415,12 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+          netlab_config_mode: sh
           netlab_show_command:
           - birdc
           - show $@
           docker_shell: bash -il
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
       external:
         image: none
       graphite:
@@ -4443,6 +4449,7 @@ defaults:
         routing:
           static: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -4478,11 +4485,6 @@ defaults:
         netlab_net_tools: false
         netlab_device_type: dnsmasq
       clab:
-        node_config:
-          initial: :ns
-          lag: :ns
-          vlan: :ns
-          routing: :ns
         features:
           initial:
             roles:
@@ -4506,8 +4508,9 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+          netlab_config_mode: ns
           docker_shell: bash -il
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
       external:
         image: none
       graphite:
@@ -4545,17 +4548,14 @@ defaults:
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
       clab:
-        node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
         group_vars:
           netlab_show_command:
           - birdc
           - show $@
           docker_shell: bash -il
+          netlab_config_mode: sh
         image: netlab/bird:latest
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
         features:
           initial:
             roles:
@@ -4605,6 +4605,7 @@ defaults:
             unnumbered: peer
           ipv6:
             lla: true
+          reload: false
           roles:
           - host
           - router
@@ -4622,7 +4623,7 @@ defaults:
         group_vars:
           docker_shell: bash -il
         image: netlab/dnsmasq:latest
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
         features:
           initial:
             roles:
@@ -4635,6 +4636,7 @@ defaults:
         dhcp:
           server: true
         initial:
+          reload: false
           roles:
           - host
       dhcp:
@@ -4888,6 +4890,11 @@ defaults:
         - width
     config: {}
     provider: {}
+    pickle: {}
+    tools: {}
+    ansible:
+      hostfile: {}
+      configfile: {}
     yaml=netlab:
       snapshot:
         yml: {}
@@ -5292,6 +5299,7 @@ defaults:
             configuration template(s)
         _alt_types:
         - list
+      skip_config: list
       group: list
       role:
         type: str
@@ -5918,6 +5926,12 @@ defaults:
         ping_irb: 40
       vjunos-router:
         ping_irb: 90
+      nxos:
+        bgp_v4_redist: 40
+        bgp_v6_redist: 40
+      vptx:
+        ldp_adj: 180
+        ibgp_session: 40
   hints:
     evpn:
       irb_group: >
@@ -6031,7 +6045,15 @@ defaults:
       - svg
       - jpg
       - jpeg
-    create: {}
+    create:
+      output:
+        config:
+        provider:
+        pickle:
+        tools:
+        ansible: dirs
+        yaml:
+          output: netlab.snapshot.yml
   paths:
     validate:
     - /home/pipi/netlab_gh/netsim/validate
@@ -6123,6 +6145,7 @@ defaults:
       - deploy-config/{ ansible_network_os }.yml
     templates:
       dirs:
+      - /work/netlab_cicd/templates
       - /home/pipi/netlab_gh/netsim/daemons
       - /home/pipi/netlab_gh/netsim/ansible/templates
     t_files:
@@ -8129,7 +8152,7 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1768034416.1278083
+    timestamp: 1768646438.957605
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
@@ -8201,6 +8224,15 @@ groups:
       netlab_show_config: true
     members: []
     _default_group: true
+  netlab_no_reload:
+    members:
+    - h1
+    - h2
+    - h3
+    - h4
+    - h5
+    - h6
+    - s1
 vlans:
   red:
     mode: bridge
@@ -8507,9 +8539,6 @@ nodes:
     id: 1
     role: host
     mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
     af:
       ipv4: true
     mgmt:
@@ -8524,6 +8553,9 @@ nodes:
     netlab_ansible_skip_module:
     - initial
     - routing
+    _node_config:
+      initial: :ns
+      routing: :ns
   h2:
     name: h2
     interfaces:
@@ -8571,9 +8603,6 @@ nodes:
     id: 2
     role: host
     mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
     af:
       ipv4: true
     mgmt:
@@ -8588,6 +8617,9 @@ nodes:
     netlab_ansible_skip_module:
     - initial
     - routing
+    _node_config:
+      initial: :ns
+      routing: :ns
   h3:
     name: h3
     interfaces:
@@ -8635,9 +8667,6 @@ nodes:
     id: 3
     role: host
     mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
     af:
       ipv4: true
     mgmt:
@@ -8652,6 +8681,9 @@ nodes:
     netlab_ansible_skip_module:
     - initial
     - routing
+    _node_config:
+      initial: :ns
+      routing: :ns
   h4:
     name: h4
     interfaces:
@@ -8699,9 +8731,6 @@ nodes:
     id: 4
     role: host
     mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
     af:
       ipv4: true
     mgmt:
@@ -8716,6 +8745,9 @@ nodes:
     netlab_ansible_skip_module:
     - initial
     - routing
+    _node_config:
+      initial: :ns
+      routing: :ns
   h5:
     name: h5
     interfaces:
@@ -8763,9 +8795,6 @@ nodes:
     id: 5
     role: host
     mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
     af:
       ipv4: true
     mgmt:
@@ -8780,6 +8809,9 @@ nodes:
     netlab_ansible_skip_module:
     - initial
     - routing
+    _node_config:
+      initial: :ns
+      routing: :ns
   h6:
     name: h6
     interfaces:
@@ -8827,9 +8859,6 @@ nodes:
     id: 6
     role: host
     mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
     af:
       ipv4: true
     mgmt:
@@ -8844,6 +8873,9 @@ nodes:
     netlab_ansible_skip_module:
     - initial
     - routing
+    _node_config:
+      initial: :ns
+      routing: :ns
   s1:
     name: s1
     interfaces:
@@ -9005,7 +9037,7 @@ nodes:
         target: /etc/config/01-initial.sh
         mode: sh
       - source: vlan
-        target: /etc/config/20-vlan.sh
+        target: /etc/config/02-vlan.sh
         mode: sh
       - source: bird
         target: /etc/bird/bird.conf
@@ -9015,7 +9047,7 @@ nodes:
       binds:
       - target: /etc/config/01-initial.sh
         source: node_files/s1/initial
-      - target: /etc/config/20-vlan.sh
+      - target: /etc/config/02-vlan.sh
         source: node_files/s1/vlan
       - target: /etc/bird/bird.conf
         source: node_files/s1/bird
@@ -9030,9 +9062,6 @@ nodes:
     _daemon_parent: linux
     _daemon_config:
       bird: /etc/bird/bird.conf
-    _node_config:
-      initial: /etc/config/01-initial.sh:sh
-      vlan: /etc/config/20-vlan.sh:sh
     af: {}
     mgmt:
       ifname: eth0
@@ -9067,6 +9096,9 @@ nodes:
     - bird
     - initial
     - vlan
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      vlan: /etc/config/02-vlan.sh:sh
   s2:
     name: s2
     interfaces:
@@ -9281,4 +9313,4 @@ provider: clab
 module:
 - vlan
 - routing
-_netlab_version: 25.12.03
+_netlab_version: 26.01.01

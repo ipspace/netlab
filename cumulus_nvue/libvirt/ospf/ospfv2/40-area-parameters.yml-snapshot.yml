@@ -233,6 +233,8 @@ defaults:
         ansible_network_os: cumulus_nvue
         ansible_connection: paramiko
         ansible_python_interpreter: auto_silent
+        netlab_ready:
+        - ansible
       clab:
         kmods:
           initial:
@@ -362,7 +364,10 @@ defaults:
           ansible_ssh_pass: admin
           netlab_check_retries: 40
           netlab_check_delay: 10
-          netlab_initial_delay: 30
+          netlab_start_exec:
+          - sleep 15
+          netlab_ready:
+          - ssh
       libvirt:
         image: dell/os10
         build: https://netlab.tools/labs/dellos10/
@@ -577,15 +582,24 @@ defaults:
           - -c
           - show $@
           netlab_mgmt_vrf: true
-        image: quay.io/frrouting/frr:10.5.0
+          netlab_config_mode: sh
+          netlab_default_shebang: '#!/usr/bin/vtysh -f'
+          netlab_config_exec:
+          - sleep 1
+        image: quay.io/frrouting/frr:10.5.1
         kmods:
+          initial:
+          - vrf?
         node:
           kind: linux
           config_templates:
             daemons: /etc/frr/daemons
             hosts: /etc/hosts:shared
       libvirt:
-        image: debian/bookworm64
+        image: netlab/frr
+        create_image: netlab/frr
+        create_template: frr.xml.j2
+        create_iso: frr
         group_vars:
           ansible_connection: paramiko
           ansible_user: vagrant
@@ -597,6 +611,7 @@ defaults:
           - vtysh
           - -c
           - show $@
+          netlab_mgmt_vrf: true
       virtualbox:
         image: generic/ubuntu2004
         group_vars:
@@ -665,6 +680,7 @@ defaults:
           mgmt_vrf: true
           generate_mac:
           - ethernet
+          normalize: true
         bfd: {}
         bgp:
           activate_af: true
@@ -701,6 +717,7 @@ defaults:
           bundle:
           - vlan_aware
           irb: true
+          ipv6: true
         gateway:
           protocol:
           - anycast
@@ -822,6 +839,17 @@ defaults:
           ansible_become_method: enable
           netlab_ready:
           - ssh
+          netlab_config_path: /mnt/flash/
+          netlab_config_wrapper: |
+            {% if netlab_need_shebang %}
+            #!/usr/bin/FastCli
+            configure terminal
+            {% endif %}
+            {{ netlab_config_text }}
+            {% if netlab_need_shebang %}
+            end
+            {% endif %}
+          netlab_config_mode: sh
       libvirt:
         build: https://netlab.tools/labs/eos/
         image: arista/veos
@@ -1102,6 +1130,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -1212,6 +1241,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox: {}
@@ -1246,6 +1277,20 @@ defaults:
         ansible_ssh_pass: cisco123
         ansible_become_password: cisco123
         netlab_device_type: cisco8000v
+      clab:
+        group_vars:
+          netlab_ready:
+          - ssh
+          netlab_check_retries: 50
+        kmods:
+          initial:
+          - openvswitch
+        node:
+          kind: cisco_c8000
+        interface:
+          name: FH0_0_0_{ifindex}
+        image: cisco/cisco-8201-32fh:24.4.1
+        build: https://containerlab.dev/manual/kinds/c8000/
       features:
         initial:
           ipv4:
@@ -1313,20 +1358,6 @@ defaults:
         level: minimal
       node:
         min_mtu: 1500
-      clab:
-        group_vars:
-          netlab_check_retries: 50
-          netlab_ready:
-          - ssh
-        kmods:
-          initial:
-          - openvswitch
-        node:
-          kind: cisco_c8000
-        interface:
-          name: FH0_0_0_{ifindex}
-        image: cisco/cisco-8201-32fh:24.4.1
-        build: https://containerlab.dev/manual/kinds/c8000/
       _parents:
       - xr
     csr:
@@ -1412,6 +1443,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -1508,6 +1540,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox:
@@ -1567,6 +1601,25 @@ defaults:
         - -c
         - show $@
         netlab_initial: always
+        netlab_frr_daemons:
+          bfd:
+          - bfdd
+          bgp:
+          - bgpd
+          ospf:
+          - ospfd
+          - ospf6d
+          ripv2:
+          - ripd
+          - ripngd
+          isis:
+          - isisd
+          vrf:
+          - bgpd
+          gateway:
+          - vrrpd
+          mpls:
+          - ldpd
       evpn:
         _start_transit_vlan: 3900
       features:
@@ -1721,6 +1774,8 @@ defaults:
         ansible_httpapi_validate_certs: 'no'
         ansible_httpapi_port: 80
         netlab_console_connection: ssh
+        netlab_ready:
+        - ansible
       external:
         image: none
       features:
@@ -1813,6 +1868,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -1909,6 +1965,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       _parents:
       - ios
@@ -1977,6 +2035,7 @@ defaults:
           generate_mac:
           - ethernet
           - svi
+          normalize: true
         isis:
           circuit_type: true
           import:
@@ -1998,6 +2057,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2107,6 +2167,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       _parents:
       - ios
@@ -2195,6 +2257,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2289,6 +2352,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet0/{ifindex}
       libvirt:
         image: cisco/iosv
@@ -2385,6 +2450,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
           import:
           - bgp
           - isis
@@ -2444,6 +2510,7 @@ defaults:
         lag:
           mlag: false
           passive: true
+        normalize: {}
       description: IOSv L2 image
       attributes:
         global:
@@ -2490,6 +2557,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        paramiko: false
       interface_name: GigabitEthernet{ifindex // 4}/{ifindex % 4}
       libvirt:
         image: cisco/iosvl2
@@ -2518,6 +2587,21 @@ defaults:
           netlab_check_retries: 120
           netlab_ready:
           - ssh
+      clab:
+        group_vars:
+          netlab_ready:
+          - ssh
+          ansible_user: clab
+          ansible_ssh_pass: clab@123
+          ansible_become_password: clab@123
+        node:
+          kind: cisco_xrd
+          runtime: docker
+        mgmt_if: MgmtEth0/RP0/CPU0/0
+        interface:
+          name: Gi0-0-0-{ifindex}
+        image: ios-xr/xrd-control-plane:7.11.1
+        build: https://containerlab.dev/manual/kinds/xrd/
       features:
         initial:
           ipv4:
@@ -2588,19 +2672,6 @@ defaults:
           --arch=x86_64 --vcpus=2 --ram=8192 --virt-type=kvm --disk 
           path=vm.qcow2,format=qcow2,device=disk,bus=ide --graphics none 
           --import
-      clab:
-        node:
-          kind: cisco_xrd
-          runtime: docker
-        mgmt_if: MgmtEth0/RP0/CPU0/0
-        interface:
-          name: Gi0-0-0-{ifindex}
-        image: ios-xr/xrd-control-plane:7.11.1
-        build: https://containerlab.dev/manual/kinds/xrd/
-        group_vars:
-          ansible_user: clab
-          ansible_ssh_pass: clab@123
-          ansible_become_password: clab@123
       _parents:
       - xr
     linux:
@@ -2616,6 +2687,7 @@ defaults:
         routing:
           static: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -2680,6 +2752,42 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+      external:
+        image: none
+      graphite:
+        icon: server
+    netscaler:
+      description: Citrix Netscaler ADC CPX
+      support:
+        level: minimal
+      interface_name: 0/{ifindex+2}
+      mgmt_if: 0/2
+      role: router
+      group_vars:
+        ansible_network_os: netscaler
+        ansible_python_interpreter: auto_silent
+      features:
+        initial:
+          ipv4:
+      mtu: 1500
+      clab:
+        build: true
+        image: netlab/netscaler
+        node:
+          kind: linux
+        interface:
+          name: eth{ifindex}
+        group_vars:
+          ansible_user: clab
+          ansible_ssh_pass: clab@123
+          ansible_connection: docker
+          netlab_show_command:
+          - nscli
+          - -U
+          - 127.0.0.1:clab:clab@123
+          - show $@
+          netlab_ready:
+          - ansible
       external:
         image: none
       graphite:
@@ -2752,6 +2860,7 @@ defaults:
           bundle:
           - vlan_aware
           multi_rt: true
+          ipv6: true
         gateway:
           protocol:
           - anycast
@@ -2881,6 +2990,7 @@ defaults:
           ansible_user: admin
           netlab_ready:
           - ssh
+          - ansible
         image: vrnetlab/vr-n9kv:9.3.10
         node:
           kind: cisco_n9kv
@@ -2894,6 +3004,8 @@ defaults:
         ansible_connection: network_cli
         netlab_check_retries: 50
         netlab_check_delay: 10
+        netlab_ready:
+        - ansible
         netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group14-sha1 -o 
           PubkeyAcceptedKeyTypes=+ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
       bfd:
@@ -2956,12 +3068,13 @@ defaults:
         routing:
           static: true
         initial:
-          roles:
-          - host
-          - router
           ipv6:
             use_ra: true
             lla: true
+          reload: false
+          roles:
+          - host
+          - router
         ospf:
           unnumbered: false
           import:
@@ -3045,7 +3158,7 @@ defaults:
         level: minimal
       interface_name: ether{ifindex}
       mgmt_if: ether1
-      loopback_interface_name: loopback{ifindex}
+      loopback_interface_name: loopback{ifindex if ifindex else ""}
       ifindex_offset: 2
       libvirt:
         image: mikrotik/chr7
@@ -3126,6 +3239,7 @@ defaults:
             unnumbered: true
           ipv6:
             lla: true
+          reload: false
         bgp:
           activate_af: true
           ipv6_lla: true
@@ -3161,6 +3275,8 @@ defaults:
         ansible_network_os: sros
         ansible_connection: paramiko_ssh
         netlab_console_connection: ssh
+        netlab_ready:
+        - ansible
         sros_use_openconfig: false
         netlab_match_protomap:
           ospf:
@@ -3233,6 +3349,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
         routing:
           policy:
             set:
@@ -3288,6 +3405,8 @@ defaults:
         ansible_network_os: sros
         ansible_connection: paramiko_ssh
         netlab_console_connection: ssh
+        netlab_ready:
+        - ansible
         sros_use_openconfig: false
         netlab_match_protomap:
           ospf:
@@ -3370,6 +3489,7 @@ defaults:
           ipv4: true
           ipv6: true
           passive: true
+          unnumbered: true
         routing:
           policy:
             set:
@@ -3519,6 +3639,8 @@ defaults:
         ansible_network_os: junos
         ansible_connection: netconf
         netlab_console_connection: ssh
+        netlab_ready:
+        - ansible
         netlab_device_type: vjunos-router
         netlab_check_retries: 20
         netlab_license_url: 
@@ -3526,15 +3648,16 @@ defaults:
       external:
         image: none
       clab:
-        image: vrnetlab/juniper_vjunos-router:23.4R2-S2.1
-        build: https://containerlab.dev/manual/kinds/vr-vjunosrouter/
         group_vars:
           netlab_ready:
           - ssh
+          - ansible
           ansible_user: admin
           ansible_ssh_pass: admin@123
           netlab_check_retries: 60
           netlab_check_delay: 10
+        image: vrnetlab/juniper_vjunos-router:23.4R2-S2.1
+        build: https://containerlab.dev/manual/kinds/vr-vjunosrouter/
         node:
           kind: juniper_vjunosrouter
         interface:
@@ -3631,10 +3754,20 @@ defaults:
         ansible_network_os: junos
         ansible_connection: netconf
         netlab_console_connection: ssh
+        netlab_ready:
+        - ansible
         netlab_device_type: vjunos-switch
       external:
         image: none
       clab:
+        group_vars:
+          netlab_ready:
+          - ssh
+          - ansible
+          ansible_user: admin
+          ansible_ssh_pass: admin@123
+          netlab_check_retries: 40
+          netlab_check_delay: 10
         image: vrnetlab/juniper_vjunos-switch:23.4R2-S2.1
         build: https://containerlab.dev/manual/kinds/vr-vjunosswitch/
         mtu: 1500
@@ -3642,13 +3775,6 @@ defaults:
           kind: juniper_vjunosswitch
         interface:
           name: eth{ifindex+1}
-        group_vars:
-          ansible_user: admin
-          ansible_ssh_pass: admin@123
-          netlab_check_retries: 40
-          netlab_check_delay: 10
-          netlab_ready:
-          - ssh
       graphite:
         icon: switch
       _parents:
@@ -3731,26 +3857,29 @@ defaults:
         ansible_network_os: junos
         ansible_connection: netconf
         netlab_console_connection: ssh
+        netlab_ready:
+        - ansible
         netlab_device_type: vmx
         netlab_check_retries: 20
         netlab_license_url: 
           https://www.juniper.net/content/dam/www/assets/dm/us/en/E421992502.txt
       external:
         image: none
-      support:
-        level: best-effort
-        caveats:
-        - vMX gets all new Junos features, but we don't test them on vMX
       clab:
-        image: vrnetlab/vr-vmx:18.2R1.9
-        build: https://containerlab.dev/manual/kinds/vr-vmx/
         group_vars:
           netlab_ready:
           - ssh
+          - ansible
+        image: vrnetlab/vr-vmx:18.2R1.9
+        build: https://containerlab.dev/manual/kinds/vr-vmx/
         node:
           kind: vr-vmx
         interface:
           name: eth{ifindex+1}
+      support:
+        level: best-effort
+        caveats:
+        - vMX gets all new Junos features, but we don't test them on vMX
       graphite:
         icon: router
       _parents:
@@ -3833,15 +3962,20 @@ defaults:
         ansible_network_os: junos
         ansible_connection: netconf
         netlab_console_connection: ssh
+        netlab_ready:
+        - ansible
         netlab_device_type: vptx
       external:
         image: none
-      libvirt:
-        image: juniper/vptx
-        build: https://netlab.tools/labs/vptx/
-        pre_install: vptx
-        create_template: vptx.xml.j2
       clab:
+        group_vars:
+          netlab_ready:
+          - ssh
+          - ansible
+          ansible_user: admin
+          ansible_ssh_pass: admin@123
+          netlab_check_retries: 40
+          netlab_check_delay: 10
         image: vrnetlab/juniper_vjunosevolved:23.2R2.21-EVO
         build: https://containerlab.dev/manual/kinds/vr-vjunosevolved/
         mtu: 1500
@@ -3849,13 +3983,11 @@ defaults:
           kind: juniper_vjunosevolved
         interface:
           name: eth{ifindex+1}
-        group_vars:
-          ansible_user: admin
-          ansible_ssh_pass: admin@123
-          netlab_check_retries: 40
-          netlab_check_delay: 10
-          netlab_ready:
-          - ssh
+      libvirt:
+        image: juniper/vptx
+        build: https://netlab.tools/labs/vptx/
+        pre_install: vptx
+        create_template: vptx.xml.j2
       graphite:
         icon: switch
       netlab_validate:
@@ -3941,9 +4073,26 @@ defaults:
         ansible_network_os: junos
         ansible_connection: netconf
         netlab_console_connection: ssh
+        netlab_ready:
+        - ansible
         netlab_device_type: vsrx
       external:
         image: none
+      clab:
+        group_vars:
+          netlab_ready:
+          - ssh
+          - ansible
+          ansible_user: admin
+          ansible_ssh_pass: admin@123
+          netlab_check_retries: 60
+          netlab_check_delay: 10
+        image: vrnetlab/juniper_vsrx:junos-vsrx-21.4R1.12
+        build: https://containerlab.dev/manual/kinds/vr-vsrx/
+        node:
+          kind: vr-vsrx
+        interface:
+          name: eth{ifindex+1}
       support:
         level: best-effort
         caveats:
@@ -3960,20 +4109,6 @@ defaults:
           path=bootstrap.iso,device=cdrom,bus=ide --boot hd 
           --network=network:vagrant-libvirt,model=virtio --graphics none 
           --import
-      clab:
-        image: vrnetlab/juniper_vsrx:junos-vsrx-21.4R1.12
-        build: https://containerlab.dev/manual/kinds/vr-vsrx/
-        node:
-          kind: vr-vsrx
-        interface:
-          name: eth{ifindex+1}
-        group_vars:
-          ansible_user: admin
-          ansible_ssh_pass: admin@123
-          netlab_check_retries: 60
-          netlab_check_delay: 10
-          netlab_ready:
-          - ssh
       graphite:
         icon: firewall
       _parents:
@@ -4086,6 +4221,8 @@ defaults:
         group_vars:
           ansible_connection: docker
           ansible_user: vyos
+          netlab_ready:
+          - ansible
         features:
           stub_loopback: {}
       external:
@@ -4106,6 +4243,7 @@ defaults:
           static:
             discard: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -4176,9 +4314,9 @@ defaults:
         netlab_device_type: bird
       clab:
         node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
+          initial: :ns
+          lag: :ns
+          vlan: :ns
           routing: :ns
         features:
           initial:
@@ -4208,7 +4346,8 @@ defaults:
           - birdc
           - show $@
           docker_shell: bash -il
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+          netlab_config_mode: sh
+        build: true
       external:
         image: none
       graphite:
@@ -4217,6 +4356,7 @@ defaults:
         bird: bird
       daemon_config:
         bird: /etc/bird/bird.conf
+        bfd: /etc/bird/bfd.conf
         bgp: /etc/bird/bgp.mod.conf
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
@@ -4237,6 +4377,7 @@ defaults:
         routing:
           static: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -4301,7 +4442,7 @@ defaults:
           ansible_user: root
           netlab_linux_distro: vanilla
           docker_shell: bash -il
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
       external:
         image: none
       graphite:
@@ -4318,6 +4459,102 @@ defaults:
         server: true
       module:
       - dhcp
+      daemon: true
+      daemon_parent: linux
+      _parents:
+      - linux
+    kind:
+      description: Kubernetes in Docker (KinD) cluster
+      interface_name: eth{ifindex}
+      lag_interface_name: bond{lag.ifindex}
+      loopback_interface_name: lo{ifindex if ifindex else ""}
+      mgmt_if: eth0
+      role: router
+      features:
+        lag:
+          passive: false
+        routing:
+          static: true
+        initial:
+          reload: false
+          ipv4:
+            unnumbered: peer
+          ipv6:
+            lla: true
+            use_ra: true
+          roles:
+          - host
+      libvirt:
+        image: bento/ubuntu-24.04
+        group_vars:
+          netlab_linux_distro: ubuntu
+        features:
+          dhcp:
+            client:
+              ipv4: true
+              ipv6: true
+            server: true
+            relay:
+              ipv4: true
+            _provider: libvirt
+      virtualbox:
+        image: bento/ubuntu-24.04
+        group_vars:
+          netlab_linux_distro: ubuntu
+      group_vars:
+        ansible_network_os: linux
+        ansible_connection: paramiko
+        ansible_user: vagrant
+        ansible_ssh_pass: vagrant
+        docker_shell: sh -il
+        ansible_python_interpreter: auto_silent
+        netlab_lldp_enable: false
+        netlab_net_tools: false
+        netlab_device_type: kind
+      clab:
+        node_config:
+          initial: :ns
+          lag: :ns
+          vlan: :ns
+          routing: :ns
+        features:
+          initial:
+            roles:
+            - host
+            - router
+            generate_mac:
+            - svi
+        image: kindest/node:v1.34.3
+        mtu: 1500
+        node:
+          kind: k8s-kind
+          config_templates:
+            hosts: /etc/hosts:shared
+        group_vars:
+          ansible_connection: docker
+          ansible_user: root
+          netlab_linux_distro: vanilla
+        roles:
+        - host
+        daemon_config:
+          initial: /tmp/kind
+          routing: /tmp/routing
+      external:
+        image: none
+      graphite:
+        icon: server
+      plugin:
+      - kind
+      attributes:
+        node:
+          kind:
+            workers: int
+      initial:
+        ipv4:
+          unnumbered: false
+        ipv6:
+          lla: true
+          use_ra: true
       daemon: true
       daemon_parent: linux
       _parents:
@@ -4813,7 +5050,7 @@ defaults:
           _keys:
             binds:
             kind: str
-            config_templates:
+            config_templates: dict
             type: str
             cmd: str
             dns:
@@ -4930,21 +5167,19 @@ defaults:
         bird: bird
       daemon_config:
         bird: /etc/bird/bird.conf
+        bfd: /etc/bird/bfd.conf
         bgp: /etc/bird/bgp.mod.conf
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
       clab:
-        node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
         group_vars:
           netlab_show_command:
           - birdc
           - show $@
           docker_shell: bash -il
+          netlab_config_mode: sh
         image: netlab/bird:latest
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
         features:
           initial:
             roles:
@@ -4994,6 +5229,7 @@ defaults:
             unnumbered: peer
           ipv6:
             lla: true
+          reload: false
           roles:
           - host
           - router
@@ -5011,7 +5247,7 @@ defaults:
         group_vars:
           docker_shell: bash -il
         image: netlab/dnsmasq:latest
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
         features:
           initial:
             roles:
@@ -5024,12 +5260,45 @@ defaults:
         dhcp:
           server: true
         initial:
+          reload: false
           roles:
           - host
       dhcp:
         server: true
       module:
       - dhcp
+    kind:
+      description: Kubernetes in Docker (KinD) cluster
+      parent: linux
+      role: router
+      plugin:
+      - kind
+      attributes:
+        node:
+          kind:
+            workers: int
+      initial:
+        ipv4:
+          unnumbered: false
+        ipv6:
+          lla: true
+          use_ra: true
+      clab:
+        roles:
+        - host
+        node:
+          kind: k8s-kind
+        features:
+          lag: false
+          vlan: false
+          initial:
+            roles:
+            - host
+            - router
+        daemon_config:
+          initial: /tmp/kind
+          routing: /tmp/routing
+        image: kindest/node:v1.34.3
   outputs:
     d2:
       command: d2 {gfile} {gname}.{gtype}
@@ -5249,6 +5518,9 @@ defaults:
             min_value: 1
             max_value: 200
           format: dict
+          class:
+            type: list
+            _subtype: str
         link:
           type: dict
           _keys:
@@ -5270,12 +5542,21 @@ defaults:
               min_value: 1
               max_value: 200
             format: dict
+            class:
+              type: list
+              _subtype: str
         shared:
         - linkorder
         - color
         - fill
         - width
+    config: {}
     provider: {}
+    pickle: {}
+    tools: {}
+    ansible:
+      hostfile: {}
+      configfile: {}
     yaml=netlab:
       snapshot:
         yml: {}
@@ -5680,6 +5961,7 @@ defaults:
             configuration template(s)
         _alt_types:
         - list
+      skip_config: list
       group: list
       role:
         type: str
@@ -5743,6 +6025,8 @@ defaults:
           - essential
           - advantage
           - premier
+      kind:
+        workers: int
     loopback:
       ipv4:
         type: ipv4
@@ -6228,6 +6512,9 @@ defaults:
       - group_vars
       - host_vars
       - config
+    configs:
+      cleanup:
+      - node_files
   const:
     routing_protocols:
     - bgp
@@ -6270,6 +6557,7 @@ defaults:
       ospf_import: 20
       ebgp_session: 30
       ibgp_session: 30
+      bgp_af_activate: 5
       bgp_scan_time: 5
       bgp_scan_long: 15
       bgp_v4_originate: 15
@@ -6299,8 +6587,16 @@ defaults:
       cisco8000v:
         ping_irb: 90
         ping_long: 15
+      vjunos-switch:
+        ping_irb: 40
       vjunos-router:
         ping_irb: 90
+      nxos:
+        bgp_v4_redist: 40
+        bgp_v6_redist: 40
+      vptx:
+        ldp_adj: 180
+        ibgp_session: 40
   hints:
     evpn:
       irb_group: >
@@ -6389,9 +6685,9 @@ defaults:
         storage prices keep falling
   multilab:
     change:
-      name: ml_17
+      name: ml-17
       defaults:
-        name: ml_17
+        name: ml-17
         providers:
           libvirt:
             tunnel_id: '17'
@@ -6414,7 +6710,18 @@ defaults:
       - svg
       - jpg
       - jpeg
-    create: {}
+    create:
+      output:
+        config:
+        provider:
+        pickle:
+        tools:
+        ansible: dirs
+        yaml:
+          output: netlab.snapshot.yml
+    initial:
+      ready:
+        ssh: internal
   paths:
     validate:
     - /home/pipi/netlab_gh/netsim/validate
@@ -6430,26 +6737,20 @@ defaults:
       - /home/pipi/.netlab
       - /home/pipi/netlab_gh/netsim/extra
       files:
-      - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
-        '-' + node_provider + '.j2' }}"
-      - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
-        '.j2' }}"
-      - "{{ custom_config + '/' + inventory_hostname + '.j2' }}"
-      - "{{ custom_config + '/' + inventory_hostname + '.cfg' }}"
-      - "{{ custom_config + '/' + netlab_device_type + '-' + node_provider + '.j2'
-        }}"
-      - "{{ custom_config + '/' + netlab_device_type + '.j2' }}"
-      - "{{ custom_config + '/' + ansible_network_os + '-' + node_provider + '.j2'
-        }}"
-      - "{{ custom_config + '/' + ansible_network_os + '.j2' }}"
-      - "{{ custom_config + '.' + inventory_hostname + '.' + netlab_device_type +
-        '.j2' }}"
-      - "{{ custom_config + '.' + inventory_hostname + '.' + ansible_network_os +
-        '.j2' }}"
-      - "{{ custom_config + '.' + inventory_hostname + '.j2' }}"
-      - "{{ custom_config + '.' + netlab_device_type + '.j2' }}"
-      - "{{ custom_config + '.' + ansible_network_os + '.j2' }}"
-      - "{{ custom_config + '.j2' }}"
+      - '{{custom_config}}/{{inventory_hostname}}.{{netlab_device_type}}-{{node_provider}}.j2'
+      - '{{custom_config}}/{{inventory_hostname}}.{{netlab_device_type}}.j2'
+      - '{{custom_config}}/{{inventory_hostname}}.j2'
+      - '{{custom_config}}/{{inventory_hostname}}.cfg'
+      - '{{custom_config}}/{{netlab_device_type}}-{{node_provider}}.j2'
+      - '{{custom_config}}/{{netlab_device_type}}.j2'
+      - '{{custom_config}}/{{ansible_network_os}}-{{node_provider}}.j2'
+      - '{{custom_config}}/{{ansible_network_os}}.j2'
+      - '{{custom_config}}.{{inventory_hostname}}.{{netlab_device_type}}.j2'
+      - '{{custom_config}}.{{inventory_hostname}}.{{ansible_network_os}}.j2'
+      - '{{custom_config}}.{{inventory_hostname}}.j2'
+      - '{{custom_config}}.{{netlab_device_type}}.j2'
+      - '{{custom_config}}.{{ansible_network_os}}.j2'
+      - '{{custom_config}}.j2'
       tasks:
       - '{{ custom_config }}/deploy-{{ inventory_hostname }}.yml'
       - '{{ custom_config }}/deploy.{{ netlab_device_type }}-{{ node_provider }}.yml'
@@ -6458,26 +6759,20 @@ defaults:
       - '{{ custom_config }}/deploy.{{ ansible_network_os }}.yml'
       - '{{ custom_config }}/deploy.yml'
       f_files:
-      - "{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type + '-'
-        + node_provider + '.j2' }"
-      - "{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type + '.j2'
-        }"
-      - "{ custom_config + '/' + inventory_hostname + '.j2' }"
-      - "{ custom_config + '/' + inventory_hostname + '.cfg' }"
-      - "{ custom_config + '/' + netlab_device_type + '-' + node_provider + '.j2'
-        }"
-      - "{ custom_config + '/' + netlab_device_type + '.j2' }"
-      - "{ custom_config + '/' + ansible_network_os + '-' + node_provider + '.j2'
-        }"
-      - "{ custom_config + '/' + ansible_network_os + '.j2' }"
-      - "{ custom_config + '.' + inventory_hostname + '.' + netlab_device_type + '.j2'
-        }"
-      - "{ custom_config + '.' + inventory_hostname + '.' + ansible_network_os + '.j2'
-        }"
-      - "{ custom_config + '.' + inventory_hostname + '.j2' }"
-      - "{ custom_config + '.' + netlab_device_type + '.j2' }"
-      - "{ custom_config + '.' + ansible_network_os + '.j2' }"
-      - "{ custom_config + '.j2' }"
+      - '{custom_config}/{inventory_hostname}.{netlab_device_type}-{node_provider}.j2'
+      - '{custom_config}/{inventory_hostname}.{netlab_device_type}.j2'
+      - '{custom_config}/{inventory_hostname}.j2'
+      - '{custom_config}/{inventory_hostname}.cfg'
+      - '{custom_config}/{netlab_device_type}-{node_provider}.j2'
+      - '{custom_config}/{netlab_device_type}.j2'
+      - '{custom_config}/{ansible_network_os}-{node_provider}.j2'
+      - '{custom_config}/{ansible_network_os}.j2'
+      - '{custom_config}.{inventory_hostname}.{netlab_device_type}.j2'
+      - '{custom_config}.{inventory_hostname}.{ansible_network_os}.j2'
+      - '{custom_config}.{inventory_hostname}.j2'
+      - '{custom_config}.{netlab_device_type}.j2'
+      - '{custom_config}.{ansible_network_os}.j2'
+      - '{custom_config}.j2'
       f_tasks:
       - '{ custom_config }/deploy-{ inventory_hostname }.yml'
       - '{ custom_config }/deploy.{ netlab_device_type }-{ node_provider }.yml'
@@ -6518,6 +6813,7 @@ defaults:
       - deploy-config/{ ansible_network_os }.yml
     templates:
       dirs:
+      - /work/netlab_cicd/templates
       - /home/pipi/netlab_gh/netsim/daemons
       - /home/pipi/netlab_gh/netsim/ansible/templates
     t_files:
@@ -6888,6 +7184,8 @@ defaults:
       ios: true
       iosv: true
       iosvl2: true
+      kind:
+        libvirt: true
       linux:
         libvirt: true
       none: true
@@ -7382,6 +7680,7 @@ defaults:
       frr: true
       ioll2: true
       iosvl2: true
+      kind: true
       linux: true
       none: true
       vjunos-switch: true
@@ -7783,6 +8082,7 @@ defaults:
       iosvl2: true
       iosxr: true
       junos: true
+      kind: true
       linux: true
       none: true
       openbsd: true
@@ -8267,7 +8567,7 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1765716107.0449452
+    timestamp: 1770191066.2290256
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
@@ -8276,18 +8576,14 @@ defaults:
     list: []
     user: []
     system: []
+  workdir: /work/netlab_cicd
+  device: cumulus_nvue
   groups:
-    external:
-      device: frr
-      members: []
-      _default_group: true
     all:
       vars:
         netlab_show_config: true
       members: []
       _default_group: true
-  workdir: /work/netlab_cicd
-  device: cumulus_nvue
   plugin:
   - multilab
   _globals:
@@ -8314,7 +8610,7 @@ defaults:
   - routing
   - ospf
   - vrf
-  name: ml_17
+  name: ml-17
 plugin:
 - ospf.areas
 - multilab
@@ -8362,6 +8658,9 @@ ospf:
       ipv4: 10.19.3.0/24
     _area_int: 22
     inter_area: true
+  - area: 0.0.0.0
+    _area_int: 0
+    kind: regular
 groups:
   probes:
     device: frr
@@ -8377,10 +8676,6 @@ groups:
       provider: clab
       clab:
         image: quay.io/frrouting/frr:10.2.2
-  external:
-    device: frr
-    members: []
-    _default_group: true
   all:
     vars:
       netlab_show_config: true
@@ -8409,46 +8704,6 @@ nodes:
         - '65000:1'
         ospf:
           area: 0.0.0.0
-          router_id: 10.1.0.1
-          active: true
-          interfaces:
-          - ipv4: 10.1.0.21/30
-            ospf:
-              area: 0.0.0.11
-              passive: false
-              network_type: point-to-point
-            vrf: tenant
-            linkindex: 9
-            type: lan
-            bridge: ml_17_9
-            name: dut -> v1
-            ifindex: 6
-            ifname: swp6
-            neighbors:
-            - ipv4: 10.1.0.22/30
-              ifname: eth1
-              node: v1
-          - ipv4: 10.1.0.25/30
-            ospf:
-              area: 0.0.0.21
-              passive: false
-              network_type: point-to-point
-            vrf: tenant
-            linkindex: 10
-            type: lan
-            bridge: ml_17_10
-            name: dut -> v2
-            ifindex: 7
-            ifname: swp7
-            neighbors:
-            - ipv4: 10.1.0.26/30
-              ifname: eth1
-              node: v2
-          af:
-            ipv4: true
-          import:
-            connected:
-              auto: true
           areas:
           - area: 0.0.0.11
             kind: stub
@@ -8464,6 +8719,46 @@ nodes:
             kind: nssa
             inter_area: false
             _area_int: 21
+          router_id: 10.1.0.1
+          active: true
+          interfaces:
+          - ipv4: 10.1.0.21/30
+            ospf:
+              area: 0.0.0.11
+              passive: false
+              network_type: point-to-point
+            vrf: tenant
+            linkindex: 9
+            type: lan
+            bridge: ml-17_9
+            name: dut -> v1
+            ifindex: 6
+            ifname: swp6
+            neighbors:
+            - ipv4: 10.1.0.22/30
+              ifname: eth1
+              node: v1
+          - ipv4: 10.1.0.25/30
+            ospf:
+              area: 0.0.0.21
+              passive: false
+              network_type: point-to-point
+            vrf: tenant
+            linkindex: 10
+            type: lan
+            bridge: ml-17_10
+            name: dut -> v2
+            ifindex: 7
+            ifname: swp7
+            neighbors:
+            - ipv4: 10.1.0.26/30
+              ifname: eth1
+              node: v2
+          af:
+            ipv4: true
+          import:
+            connected:
+              auto: true
           _abr: true
         af:
           ipv4: true
@@ -8478,7 +8773,7 @@ nodes:
         network_type: point-to-point
       linkindex: 1
       type: lan
-      bridge: ml_17_1
+      bridge: ml-17_1
       name: dut -> r11
       ifindex: 1
       ifname: swp1
@@ -8494,7 +8789,7 @@ nodes:
         network_type: point-to-point
       linkindex: 2
       type: lan
-      bridge: ml_17_2
+      bridge: ml-17_2
       name: dut -> r12
       ifindex: 2
       ifname: swp2
@@ -8509,7 +8804,7 @@ nodes:
         network_type: point-to-point
       linkindex: 3
       type: lan
-      bridge: ml_17_3
+      bridge: ml-17_3
       name: dut -> r21
       ifindex: 3
       ifname: swp3
@@ -8525,7 +8820,7 @@ nodes:
         network_type: point-to-point
       linkindex: 4
       type: lan
-      bridge: ml_17_4
+      bridge: ml-17_4
       name: dut -> r22
       ifindex: 4
       ifname: swp4
@@ -8536,7 +8831,7 @@ nodes:
     - ipv4: 10.1.0.17/30
       linkindex: 5
       type: lan
-      bridge: ml_17_5
+      bridge: ml-17_5
       name: dut -> rb
       ifindex: 5
       ifname: swp5
@@ -8552,7 +8847,7 @@ nodes:
       vrf: tenant
       linkindex: 9
       type: lan
-      bridge: ml_17_9
+      bridge: ml-17_9
       name: dut -> v1
       ifindex: 6
       ifname: swp6
@@ -8564,7 +8859,7 @@ nodes:
       vrf: tenant
       linkindex: 10
       type: lan
-      bridge: ml_17_10
+      bridge: ml-17_10
       name: dut -> v2
       ifindex: 7
       ifname: swp7
@@ -8576,9 +8871,6 @@ nodes:
     box: CumulusCommunity/cumulus-vx:5.10.0
     ospf:
       area: 0.0.0.0
-      router_id: 10.0.0.1
-      af:
-        ipv4: true
       areas:
       - area: 0.0.0.11
         kind: stub
@@ -8613,6 +8905,12 @@ nodes:
         - *id004
         _area_int: 22
         inter_area: true
+      - area: 0.0.0.0
+        _area_int: 0
+        kind: regular
+      router_id: 10.0.0.1
+      af:
+        ipv4: true
       _abr: true
     vrf:
       as: 65000
@@ -8641,29 +8939,41 @@ nodes:
     clab:
       kind: linux
       config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      image: quay.io/frrouting/frr:10.2.2
-      _template_cache:
-      - fname: daemons
-        fpath: 
-          /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
-        output: clab_files/rb/daemons
-        mapping: /etc/frr/daemons
-      - fname: hosts
-        fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
-        output: clab_files/-shared-hosts
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: ospf
+        target: /etc/config/02-ospf.sh
+        mode: sh
+      - source: ospf.areas
+        target: /etc/config/03-ospf@areas.sh
+        mode: sh
+      - source: daemons
+        target: /etc/frr/daemons
+      - source: hosts
+        target: /etc/hosts
         mode: shared
-        mapping: /etc/hosts:ro
+      image: quay.io/frrouting/frr:10.2.2
+      exec:
+      - sleep 1
       binds:
-      - clab_files/rb/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
+      - target: /etc/config/01-initial.sh
+        source: node_files/rb/initial
+      - target: /etc/config/02-ospf.sh
+        source: node_files/rb/ospf
+      - target: /etc/config/03-ospf@areas.sh
+        source: node_files/rb/ospf.areas
+      - target: /etc/frr/daemons
+        source: node_files/rb/daemons
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
     name: rb
     interfaces:
     - ipv4: 10.1.0.18/30
       linkindex: 5
       type: lan
-      bridge: ml_17_5
+      bridge: ml-17_5
       name: rb -> dut
       ifindex: 1
       ifname: eth1
@@ -8677,11 +8987,15 @@ nodes:
         passive: false
         network_type: point-to-point
     device: frr
-    box: quay.io/frrouting/frr:10.5.0
+    box: quay.io/frrouting/frr:10.5.1
     module:
     - ospf
     ospf:
       area: 0.0.0.0
+      areas:
+      - area: 0.0.0.0
+        _area_int: 0
+        kind: regular
       router_id: 10.0.0.2
       af:
         ipv4: true
@@ -8694,7 +9008,7 @@ nodes:
       ifname: eth0
       mac: ca:fe:00:02:00:00
       ipv4: 192.168.17.102
-    hostname: clab-ml_17-rb
+    hostname: clab-ml-17-rb
     loopback:
       type: loopback
       neighbors: []
@@ -8705,33 +9019,52 @@ nodes:
       ospf:
         area: 0.0.0.0
         passive: false
+    config:
+    - ospf.areas
+    netlab_ansible_skip_module:
+    - initial
+    - ospf
+    - ospf.areas
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      ospf: /etc/config/02-ospf.sh:sh
+      ospf@areas: /etc/config/03-ospf@areas.sh:sh
   r11:
     provider: clab
     clab:
       kind: linux
       config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      image: quay.io/frrouting/frr:10.2.2
-      _template_cache:
-      - fname: daemons
-        fpath: 
-          /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
-        output: clab_files/r11/daemons
-        mapping: /etc/frr/daemons
-      - fname: hosts
-        fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
-        output: clab_files/-shared-hosts
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: ospf
+        target: /etc/config/02-ospf.sh
+        mode: sh
+      - source: ospf.areas
+        target: /etc/config/03-ospf@areas.sh
+        mode: sh
+      - source: daemons
+        target: /etc/frr/daemons
+      - source: hosts
+        target: /etc/hosts
         mode: shared
-        mapping: /etc/hosts:ro
+      image: quay.io/frrouting/frr:10.2.2
+      exec:
+      - sleep 1
       binds:
-      - clab_files/r11/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
+      - target: /etc/config/01-initial.sh
+        source: node_files/r11/initial
+      - target: /etc/config/02-ospf.sh
+        source: node_files/r11/ospf
+      - target: /etc/config/03-ospf@areas.sh
+        source: node_files/r11/ospf.areas
+      - target: /etc/frr/daemons
+        source: node_files/r11/daemons
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
     ospf:
       area: 0.0.0.11
-      router_id: 10.0.0.3
-      af:
-        ipv4: true
       areas:
       - area: 0.0.0.11
         kind: stub
@@ -8743,6 +9076,9 @@ nodes:
         filter:
         - *id002
         _area_int: 11
+      router_id: 10.0.0.3
+      af:
+        ipv4: true
     name: r11
     interfaces:
     - ipv4: 10.1.0.2/30
@@ -8752,7 +9088,7 @@ nodes:
         network_type: point-to-point
       linkindex: 1
       type: lan
-      bridge: ml_17_1
+      bridge: ml-17_1
       name: r11 -> dut
       ifindex: 1
       ifname: eth1
@@ -8764,7 +9100,7 @@ nodes:
     - ipv4: 10.17.1.1/24
       linkindex: 6
       type: lan
-      bridge: ml_17_6
+      bridge: ml-17_6
       role: stub
       name: r11 -> stub
       ifindex: 2
@@ -8777,7 +9113,7 @@ nodes:
     - ipv4: 10.18.1.1/24
       linkindex: 7
       type: lan
-      bridge: ml_17_7
+      bridge: ml-17_7
       role: stub
       name: r11 -> stub
       ifindex: 3
@@ -8790,7 +9126,7 @@ nodes:
     - ipv4: 10.19.1.1/24
       linkindex: 8
       type: lan
-      bridge: ml_17_8
+      bridge: ml-17_8
       role: stub
       name: r11 -> stub
       ifindex: 4
@@ -8801,7 +9137,7 @@ nodes:
         area: 0.0.0.11
         passive: true
     device: frr
-    box: quay.io/frrouting/frr:10.5.0
+    box: quay.io/frrouting/frr:10.5.1
     module:
     - ospf
     id: 3
@@ -8813,7 +9149,7 @@ nodes:
       ifname: eth0
       mac: ca:fe:00:03:00:00
       ipv4: 192.168.17.103
-    hostname: clab-ml_17-r11
+    hostname: clab-ml-17-r11
     loopback:
       type: loopback
       neighbors: []
@@ -8826,33 +9162,50 @@ nodes:
         passive: false
     config:
     - ospf.areas
+    netlab_ansible_skip_module:
+    - initial
+    - ospf
+    - ospf.areas
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      ospf: /etc/config/02-ospf.sh:sh
+      ospf@areas: /etc/config/03-ospf@areas.sh:sh
   r12:
     provider: clab
     clab:
       kind: linux
       config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      image: quay.io/frrouting/frr:10.2.2
-      _template_cache:
-      - fname: daemons
-        fpath: 
-          /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
-        output: clab_files/r12/daemons
-        mapping: /etc/frr/daemons
-      - fname: hosts
-        fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
-        output: clab_files/-shared-hosts
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: ospf
+        target: /etc/config/02-ospf.sh
+        mode: sh
+      - source: ospf.areas
+        target: /etc/config/03-ospf@areas.sh
+        mode: sh
+      - source: daemons
+        target: /etc/frr/daemons
+      - source: hosts
+        target: /etc/hosts
         mode: shared
-        mapping: /etc/hosts:ro
+      image: quay.io/frrouting/frr:10.2.2
+      exec:
+      - sleep 1
       binds:
-      - clab_files/r12/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
+      - target: /etc/config/01-initial.sh
+        source: node_files/r12/initial
+      - target: /etc/config/02-ospf.sh
+        source: node_files/r12/ospf
+      - target: /etc/config/03-ospf@areas.sh
+        source: node_files/r12/ospf.areas
+      - target: /etc/frr/daemons
+        source: node_files/r12/daemons
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
     ospf:
       area: 0.0.0.12
-      router_id: 10.0.0.4
-      af:
-        ipv4: true
       areas:
       - area: 0.0.0.12
         kind: stub
@@ -8860,6 +9213,9 @@ nodes:
           cost: 15
         _area_int: 12
         inter_area: true
+      router_id: 10.0.0.4
+      af:
+        ipv4: true
     name: r12
     interfaces:
     - ipv4: 10.1.0.6/30
@@ -8870,7 +9226,7 @@ nodes:
         network_type: point-to-point
       linkindex: 2
       type: lan
-      bridge: ml_17_2
+      bridge: ml-17_2
       name: r12 -> dut
       ifindex: 1
       ifname: eth1
@@ -8880,7 +9236,7 @@ nodes:
         ifname: swp2
         node: dut
     device: frr
-    box: quay.io/frrouting/frr:10.5.0
+    box: quay.io/frrouting/frr:10.5.1
     module:
     - ospf
     id: 4
@@ -8892,7 +9248,7 @@ nodes:
       ifname: eth0
       mac: ca:fe:00:04:00:00
       ipv4: 192.168.17.104
-    hostname: clab-ml_17-r12
+    hostname: clab-ml-17-r12
     loopback:
       type: loopback
       neighbors: []
@@ -8905,38 +9261,58 @@ nodes:
         passive: false
     config:
     - ospf.areas
+    netlab_ansible_skip_module:
+    - initial
+    - ospf
+    - ospf.areas
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      ospf: /etc/config/02-ospf.sh:sh
+      ospf@areas: /etc/config/03-ospf@areas.sh:sh
   r21:
     provider: clab
     clab:
       kind: linux
       config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      image: quay.io/frrouting/frr:10.2.2
-      _template_cache:
-      - fname: daemons
-        fpath: 
-          /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
-        output: clab_files/r21/daemons
-        mapping: /etc/frr/daemons
-      - fname: hosts
-        fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
-        output: clab_files/-shared-hosts
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: ospf
+        target: /etc/config/02-ospf.sh
+        mode: sh
+      - source: ospf.areas
+        target: /etc/config/03-ospf@areas.sh
+        mode: sh
+      - source: daemons
+        target: /etc/frr/daemons
+      - source: hosts
+        target: /etc/hosts
         mode: shared
-        mapping: /etc/hosts:ro
+      image: quay.io/frrouting/frr:10.2.2
+      exec:
+      - sleep 1
       binds:
-      - clab_files/r21/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
+      - target: /etc/config/01-initial.sh
+        source: node_files/r21/initial
+      - target: /etc/config/02-ospf.sh
+        source: node_files/r21/ospf
+      - target: /etc/config/03-ospf@areas.sh
+        source: node_files/r21/ospf.areas
+      - target: /etc/frr/daemons
+        source: node_files/r21/daemons
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
     ospf:
       area: 0.0.0.21
-      router_id: 10.0.0.5
-      af:
-        ipv4: true
       areas:
       - area: 0.0.0.21
         kind: nssa
         inter_area: false
         _area_int: 21
+      router_id: 10.0.0.5
+      af:
+        ipv4: true
     name: r21
     interfaces:
     - ipv4: 10.1.0.10/30
@@ -8946,7 +9322,7 @@ nodes:
         network_type: point-to-point
       linkindex: 3
       type: lan
-      bridge: ml_17_3
+      bridge: ml-17_3
       name: r21 -> dut
       ifindex: 1
       ifname: eth1
@@ -8956,7 +9332,7 @@ nodes:
         ifname: swp3
         node: dut
     device: frr
-    box: quay.io/frrouting/frr:10.5.0
+    box: quay.io/frrouting/frr:10.5.1
     module:
     - ospf
     id: 5
@@ -8968,7 +9344,7 @@ nodes:
       ifname: eth0
       mac: ca:fe:00:05:00:00
       ipv4: 192.168.17.105
-    hostname: clab-ml_17-r21
+    hostname: clab-ml-17-r21
     loopback:
       type: loopback
       neighbors: []
@@ -8981,28 +9357,53 @@ nodes:
         passive: false
     config:
     - ospf.areas
+    netlab_ansible_skip_module:
+    - initial
+    - ospf
+    - ospf.areas
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      ospf: /etc/config/02-ospf.sh:sh
+      ospf@areas: /etc/config/03-ospf@areas.sh:sh
   r22:
     provider: clab
     clab:
       kind: linux
       config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      image: quay.io/frrouting/frr:10.2.2
-      _template_cache:
-      - fname: daemons
-        fpath: 
-          /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
-        output: clab_files/r22/daemons
-        mapping: /etc/frr/daemons
-      - fname: hosts
-        fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
-        output: clab_files/-shared-hosts
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: routing
+        target: /etc/config/02-routing.sh
+        mode: sh
+      - source: ospf
+        target: /etc/config/03-ospf.sh
+        mode: sh
+      - source: ospf.areas
+        target: /etc/config/04-ospf@areas.sh
+        mode: sh
+      - source: daemons
+        target: /etc/frr/daemons
+      - source: hosts
+        target: /etc/hosts
         mode: shared
-        mapping: /etc/hosts:ro
+      image: quay.io/frrouting/frr:10.2.2
+      exec:
+      - sleep 1
       binds:
-      - clab_files/r22/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
+      - target: /etc/config/01-initial.sh
+        source: node_files/r22/initial
+      - target: /etc/config/02-routing.sh
+        source: node_files/r22/routing
+      - target: /etc/config/03-ospf.sh
+        source: node_files/r22/ospf
+      - target: /etc/config/04-ospf@areas.sh
+        source: node_files/r22/ospf.areas
+      - target: /etc/frr/daemons
+        source: node_files/r22/daemons
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
     module:
     - routing
     - ospf
@@ -9010,9 +9411,6 @@ nodes:
       area: 0.0.0.22
       import:
         static: {}
-      router_id: 10.0.0.6
-      af:
-        ipv4: true
       areas:
       - area: 0.0.0.22
         kind: nssa
@@ -9027,6 +9425,9 @@ nodes:
         - *id004
         _area_int: 22
         inter_area: true
+      router_id: 10.0.0.6
+      af:
+        ipv4: true
     routing:
       _rm_per_af: true
       static:
@@ -9056,7 +9457,7 @@ nodes:
         network_type: point-to-point
       linkindex: 4
       type: lan
-      bridge: ml_17_4
+      bridge: ml-17_4
       name: r22 -> dut
       ifindex: 1
       ifname: eth1
@@ -9066,7 +9467,7 @@ nodes:
         ifname: swp4
         node: dut
     device: frr
-    box: quay.io/frrouting/frr:10.5.0
+    box: quay.io/frrouting/frr:10.5.1
     id: 6
     role: router
     mtu: 1500
@@ -9076,7 +9477,7 @@ nodes:
       ifname: eth0
       mac: ca:fe:00:06:00:00
       ipv4: 192.168.17.106
-    hostname: clab-ml_17-r22
+    hostname: clab-ml-17-r22
     loopback:
       type: loopback
       neighbors: []
@@ -9089,33 +9490,52 @@ nodes:
         passive: false
     config:
     - ospf.areas
+    netlab_ansible_skip_module:
+    - initial
+    - routing
+    - ospf
+    - ospf.areas
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      routing: /etc/config/02-routing.sh:sh
+      ospf: /etc/config/03-ospf.sh:sh
+      ospf@areas: /etc/config/04-ospf@areas.sh:sh
   v1:
     provider: clab
     clab:
       kind: linux
       config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      image: quay.io/frrouting/frr:10.2.2
-      _template_cache:
-      - fname: daemons
-        fpath: 
-          /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
-        output: clab_files/v1/daemons
-        mapping: /etc/frr/daemons
-      - fname: hosts
-        fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
-        output: clab_files/-shared-hosts
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: ospf
+        target: /etc/config/02-ospf.sh
+        mode: sh
+      - source: ospf.areas
+        target: /etc/config/03-ospf@areas.sh
+        mode: sh
+      - source: daemons
+        target: /etc/frr/daemons
+      - source: hosts
+        target: /etc/hosts
         mode: shared
-        mapping: /etc/hosts:ro
+      image: quay.io/frrouting/frr:10.2.2
+      exec:
+      - sleep 1
       binds:
-      - clab_files/v1/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
+      - target: /etc/config/01-initial.sh
+        source: node_files/v1/initial
+      - target: /etc/config/02-ospf.sh
+        source: node_files/v1/ospf
+      - target: /etc/config/03-ospf@areas.sh
+        source: node_files/v1/ospf.areas
+      - target: /etc/frr/daemons
+        source: node_files/v1/daemons
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
     ospf:
       area: 0.0.0.11
-      router_id: 10.0.0.7
-      af:
-        ipv4: true
       areas:
       - area: 0.0.0.11
         kind: stub
@@ -9127,6 +9547,9 @@ nodes:
         filter:
         - *id002
         _area_int: 11
+      router_id: 10.0.0.7
+      af:
+        ipv4: true
     name: v1
     interfaces:
     - ipv4: 10.1.0.22/30
@@ -9136,7 +9559,7 @@ nodes:
         network_type: point-to-point
       linkindex: 9
       type: lan
-      bridge: ml_17_9
+      bridge: ml-17_9
       name: v1 -> dut
       ifindex: 1
       ifname: eth1
@@ -9147,7 +9570,7 @@ nodes:
         ifname: swp6
         node: dut
     device: frr
-    box: quay.io/frrouting/frr:10.5.0
+    box: quay.io/frrouting/frr:10.5.1
     module:
     - ospf
     id: 7
@@ -9159,7 +9582,7 @@ nodes:
       ifname: eth0
       mac: ca:fe:00:07:00:00
       ipv4: 192.168.17.107
-    hostname: clab-ml_17-v1
+    hostname: clab-ml-17-v1
     loopback:
       type: loopback
       neighbors: []
@@ -9172,38 +9595,58 @@ nodes:
         passive: false
     config:
     - ospf.areas
+    netlab_ansible_skip_module:
+    - initial
+    - ospf
+    - ospf.areas
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      ospf: /etc/config/02-ospf.sh:sh
+      ospf@areas: /etc/config/03-ospf@areas.sh:sh
   v2:
     provider: clab
     clab:
       kind: linux
       config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      image: quay.io/frrouting/frr:10.2.2
-      _template_cache:
-      - fname: daemons
-        fpath: 
-          /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/daemons.j2
-        output: clab_files/v2/daemons
-        mapping: /etc/frr/daemons
-      - fname: hosts
-        fpath: /home/pipi/netlab_gh/netsim/templates/provider/clab/frr/hosts.j2
-        output: clab_files/-shared-hosts
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: ospf
+        target: /etc/config/02-ospf.sh
+        mode: sh
+      - source: ospf.areas
+        target: /etc/config/03-ospf@areas.sh
+        mode: sh
+      - source: daemons
+        target: /etc/frr/daemons
+      - source: hosts
+        target: /etc/hosts
         mode: shared
-        mapping: /etc/hosts:ro
+      image: quay.io/frrouting/frr:10.2.2
+      exec:
+      - sleep 1
       binds:
-      - clab_files/v2/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
+      - target: /etc/config/01-initial.sh
+        source: node_files/v2/initial
+      - target: /etc/config/02-ospf.sh
+        source: node_files/v2/ospf
+      - target: /etc/config/03-ospf@areas.sh
+        source: node_files/v2/ospf.areas
+      - target: /etc/frr/daemons
+        source: node_files/v2/daemons
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
     ospf:
       area: 0.0.0.21
-      router_id: 10.0.0.8
-      af:
-        ipv4: true
       areas:
       - area: 0.0.0.21
         kind: nssa
         inter_area: false
         _area_int: 21
+      router_id: 10.0.0.8
+      af:
+        ipv4: true
     name: v2
     interfaces:
     - ipv4: 10.1.0.26/30
@@ -9213,7 +9656,7 @@ nodes:
         network_type: point-to-point
       linkindex: 10
       type: lan
-      bridge: ml_17_10
+      bridge: ml-17_10
       name: v2 -> dut
       ifindex: 1
       ifname: eth1
@@ -9224,7 +9667,7 @@ nodes:
         ifname: swp7
         node: dut
     device: frr
-    box: quay.io/frrouting/frr:10.5.0
+    box: quay.io/frrouting/frr:10.5.1
     module:
     - ospf
     id: 8
@@ -9236,7 +9679,7 @@ nodes:
       ifname: eth0
       mac: ca:fe:00:08:00:00
       ipv4: 192.168.17.108
-    hostname: clab-ml_17-v2
+    hostname: clab-ml-17-v2
     loopback:
       type: loopback
       neighbors: []
@@ -9249,6 +9692,14 @@ nodes:
         passive: false
     config:
     - ospf.areas
+    netlab_ansible_skip_module:
+    - initial
+    - ospf
+    - ospf.areas
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      ospf: /etc/config/02-ospf.sh:sh
+      ospf@areas: /etc/config/03-ospf@areas.sh:sh
 links:
 - interfaces:
   - node: dut
@@ -9267,7 +9718,7 @@ links:
     provider:
       clab: true
   type: lan
-  bridge: ml_17_1
+  bridge: ml-17_1
   node_count: 2
   prefix:
     ipv4: 10.1.0.0/30
@@ -9289,7 +9740,7 @@ links:
     provider:
       clab: true
   type: lan
-  bridge: ml_17_2
+  bridge: ml-17_2
   node_count: 2
   prefix:
     ipv4: 10.1.0.4/30
@@ -9310,7 +9761,7 @@ links:
     provider:
       clab: true
   type: lan
-  bridge: ml_17_3
+  bridge: ml-17_3
   node_count: 2
   prefix:
     ipv4: 10.1.0.8/30
@@ -9332,7 +9783,7 @@ links:
     provider:
       clab: true
   type: lan
-  bridge: ml_17_4
+  bridge: ml-17_4
   node_count: 2
   prefix:
     ipv4: 10.1.0.12/30
@@ -9351,7 +9802,7 @@ links:
     provider:
       clab: true
   type: lan
-  bridge: ml_17_5
+  bridge: ml-17_5
   node_count: 2
   prefix:
     ipv4: 10.1.0.16/30
@@ -9366,7 +9817,7 @@ links:
     provider:
       clab: true
   type: lan
-  bridge: ml_17_6
+  bridge: ml-17_6
   node_count: 1
   role: stub
   prefix:
@@ -9382,7 +9833,7 @@ links:
     provider:
       clab: true
   type: lan
-  bridge: ml_17_7
+  bridge: ml-17_7
   node_count: 1
   role: stub
   prefix:
@@ -9398,7 +9849,7 @@ links:
     provider:
       clab: true
   type: lan
-  bridge: ml_17_8
+  bridge: ml-17_8
   node_count: 1
   role: stub
   prefix:
@@ -9421,7 +9872,7 @@ links:
     provider:
       clab: true
   type: lan
-  bridge: ml_17_9
+  bridge: ml-17_9
   node_count: 2
   prefix:
     ipv4: 10.1.0.20/30
@@ -9443,7 +9894,7 @@ links:
     provider:
       clab: true
   type: lan
-  bridge: ml_17_10
+  bridge: ml-17_10
   node_count: 2
   prefix:
     ipv4: 10.1.0.24/30
@@ -9594,7 +10045,7 @@ input:
 - /home/pipi/net101/tools/tests/integration/warnings.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
-name: ml_17
+name: ml-17
 addressing:
   lan:
     ipv4: 172.16.0.0/16
@@ -9629,4 +10080,4 @@ prefix:
   any:
     ipv4: 0.0.0.0/0
     ipv6: ::/0
-_netlab_version: 25.12.03
+_netlab_version: 26.01.01

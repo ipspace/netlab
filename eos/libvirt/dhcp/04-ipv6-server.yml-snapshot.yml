@@ -61,7 +61,7 @@ defaults:
           _keys:
             binds:
             kind: str
-            config_templates:
+            config_templates: dict
             type: str
             cmd: str
             dns:
@@ -1333,6 +1333,7 @@ defaults:
           bundle:
           - vlan_aware
           irb: true
+          ipv6: true
         gateway:
           protocol:
           - anycast
@@ -1451,6 +1452,17 @@ defaults:
           ansible_become_method: enable
           netlab_ready:
           - ssh
+          netlab_config_mode: sh
+          netlab_config_path: /mnt/flash/
+          netlab_config_wrapper: |
+            {% if netlab_config_mode == 'sh' %}
+            #!/usr/bin/FastCli
+            configure terminal
+            {% endif %}
+            {{ netlab_config_text }}
+            {% if netlab_config_mode == 'sh' %}
+            end
+            {% endif %}
       libvirt:
         build: https://netlab.tools/labs/eos/
         image: arista/veos
@@ -1567,8 +1579,19 @@ defaults:
           - -c
           - show $@
           netlab_mgmt_vrf: true
-        image: quay.io/frrouting/frr:10.5.0
+          netlab_config_mode: sh
+          netlab_config_wrapper: |
+            {% if netlab_config_mode == 'sh' and netlab_config_text and not netlab_config_text.startswith("#!") %}
+            #!/usr/bin/vtysh -f
+            #
+            {% endif %}
+            {{ netlab_config_text }}
+          netlab_config_exec:
+          - sleep 1
+        image: quay.io/frrouting/frr:10.5.1
         kmods:
+          initial:
+          - vrf?
         node:
           kind: linux
           config_templates:
@@ -2655,6 +2678,7 @@ defaults:
         routing:
           static: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -2689,11 +2713,6 @@ defaults:
         netlab_lldp_enable: false
         netlab_net_tools: false
       clab:
-        node_config:
-          initial: :ns
-          lag: :ns
-          vlan: :ns
-          routing: :ns
         features:
           initial:
             roles:
@@ -2719,6 +2738,41 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+          netlab_config_mode: ns
+      external:
+        image: none
+      graphite:
+        icon: server
+    netscaler:
+      description: Citrix Netscaler ADC CPX
+      support:
+        level: minimal
+      interface_name: 0/{ifindex+2}
+      mgmt_if: 0/2
+      role: router
+      group_vars:
+        ansible_network_os: netscaler
+        ansible_python_interpreter: auto_silent
+      features:
+        initial:
+          ipv4:
+      mtu: 1500
+      clab:
+        build: true
+        image: netlab/netscaler
+        node:
+          kind: linux
+        interface:
+          name: eth{ifindex}
+        group_vars:
+          ansible_user: clab
+          ansible_ssh_pass: clab@123
+          ansible_connection: docker
+          netlab_show_command:
+          - nscli
+          - -U
+          - 127.0.0.1:clab:clab@123
+          - show $@
       external:
         image: none
       graphite:
@@ -2791,6 +2845,7 @@ defaults:
           bundle:
           - vlan_aware
           multi_rt: true
+          ipv6: true
         gateway:
           protocol:
           - anycast
@@ -2995,12 +3050,13 @@ defaults:
         routing:
           static: true
         initial:
-          roles:
-          - host
-          - router
           ipv6:
             use_ra: true
             lla: true
+          reload: false
+          roles:
+          - host
+          - router
         ospf:
           unnumbered: false
           import:
@@ -3165,6 +3221,7 @@ defaults:
             unnumbered: true
           ipv6:
             lla: true
+          reload: false
         bgp:
           activate_af: true
           ipv6_lla: true
@@ -4267,6 +4324,7 @@ defaults:
           static:
             discard: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -4336,11 +4394,6 @@ defaults:
           static: RTS_STATIC_DEVICE,RTS_STATIC
         netlab_device_type: bird
       clab:
-        node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
-          routing: :ns
         features:
           initial:
             roles:
@@ -4365,11 +4418,12 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+          netlab_config_mode: sh
           netlab_show_command:
           - birdc
           - show $@
           docker_shell: bash -il
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
       external:
         image: none
       graphite:
@@ -4398,6 +4452,7 @@ defaults:
         routing:
           static: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -4433,11 +4488,6 @@ defaults:
         netlab_net_tools: false
         netlab_device_type: dnsmasq
       clab:
-        node_config:
-          initial: :ns
-          lag: :ns
-          vlan: :ns
-          routing: :ns
         features:
           initial:
             roles:
@@ -4461,8 +4511,9 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+          netlab_config_mode: ns
           docker_shell: bash -il
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
       external:
         image: none
       graphite:
@@ -4500,17 +4551,14 @@ defaults:
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
       clab:
-        node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
         group_vars:
           netlab_show_command:
           - birdc
           - show $@
           docker_shell: bash -il
+          netlab_config_mode: sh
         image: netlab/bird:latest
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
         features:
           initial:
             roles:
@@ -4560,6 +4608,7 @@ defaults:
             unnumbered: peer
           ipv6:
             lla: true
+          reload: false
           roles:
           - host
           - router
@@ -4577,7 +4626,7 @@ defaults:
         group_vars:
           docker_shell: bash -il
         image: netlab/dnsmasq:latest
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
         features:
           initial:
             roles:
@@ -4590,6 +4639,7 @@ defaults:
         dhcp:
           server: true
         initial:
+          reload: false
           roles:
           - host
       dhcp:
@@ -4843,6 +4893,11 @@ defaults:
         - width
     config: {}
     provider: {}
+    pickle: {}
+    tools: {}
+    ansible:
+      hostfile: {}
+      configfile: {}
     yaml=netlab:
       snapshot:
         yml: {}
@@ -5247,6 +5302,7 @@ defaults:
             configuration template(s)
         _alt_types:
         - list
+      skip_config: list
       group: list
       role:
         type: str
@@ -5869,8 +5925,16 @@ defaults:
       cisco8000v:
         ping_irb: 90
         ping_long: 15
+      vjunos-switch:
+        ping_irb: 40
       vjunos-router:
         ping_irb: 90
+      nxos:
+        bgp_v4_redist: 40
+        bgp_v6_redist: 40
+      vptx:
+        ldp_adj: 180
+        ibgp_session: 40
   hints:
     evpn:
       irb_group: >
@@ -5959,9 +6023,9 @@ defaults:
         storage prices keep falling
   multilab:
     change:
-      name: ml_17
+      name: ml-17
       defaults:
-        name: ml_17
+        name: ml-17
         providers:
           libvirt:
             tunnel_id: '17'
@@ -5984,7 +6048,15 @@ defaults:
       - svg
       - jpg
       - jpeg
-    create: {}
+    create:
+      output:
+        config:
+        provider:
+        pickle:
+        tools:
+        ansible: dirs
+        yaml:
+          output: netlab.snapshot.yml
   paths:
     validate:
     - /home/pipi/netlab_gh/netsim/validate
@@ -6076,6 +6148,7 @@ defaults:
       - deploy-config/{ ansible_network_os }.yml
     templates:
       dirs:
+      - /work/netlab_cicd/templates
       - /home/pipi/netlab_gh/netsim/daemons
       - /home/pipi/netlab_gh/netsim/ansible/templates
     t_files:
@@ -8080,7 +8153,7 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1767599957.1084797
+    timestamp: 1768730989.911194
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
@@ -8119,7 +8192,7 @@ defaults:
     - vlan
     - vrf
     - vxlan
-  name: ml_17
+  name: ml-17
   module:
   - dhcp
 addressing:
@@ -8169,7 +8242,7 @@ nodes:
           ipv6: true
       linkindex: 1
       type: lan
-      bridge: ml_17_1
+      bridge: ml-17_1
       name: c1 -> [c2,server]
       ifindex: 1
       ifname: Ethernet0/1
@@ -8200,7 +8273,7 @@ nodes:
       ifname: Ethernet0/0
       mac: ca:fe:00:01:00:00
       ipv4: 192.168.17.101
-    hostname: clab-ml_17-c1
+    hostname: clab-ml-17-c1
     loopback:
       type: loopback
       neighbors: []
@@ -8217,7 +8290,7 @@ nodes:
           ipv6: true
       linkindex: 1
       type: lan
-      bridge: ml_17_1
+      bridge: ml-17_1
       name: c2 -> [c1,server]
       ifindex: 1
       ifname: Ethernet0/1
@@ -8248,7 +8321,7 @@ nodes:
       ifname: Ethernet0/0
       mac: ca:fe:00:02:00:00
       ipv4: 192.168.17.102
-    hostname: clab-ml_17-c2
+    hostname: clab-ml-17-c2
     loopback:
       type: loopback
       neighbors: []
@@ -8273,7 +8346,7 @@ nodes:
     - ipv6: 2001:db8:cafe::3/64
       linkindex: 1
       type: lan
-      bridge: ml_17_1
+      bridge: ml-17_1
       name: server -> [c1,c2]
       ifindex: 1
       ifname: Ethernet1
@@ -8339,7 +8412,7 @@ links:
     provider:
       clab: true
   type: lan
-  bridge: ml_17_1
+  bridge: ml-17_1
   node_count: 3
   prefix:
     ipv6: 2001:db8:cafe::/64
@@ -8367,7 +8440,7 @@ input:
 - package:topology-defaults.yml
 plugin:
 - multilab
-name: ml_17
+name: ml-17
 provider: libvirt
 libvirt:
   providers:
@@ -8382,4 +8455,4 @@ dhcp:
       ipv6:
       - 2001:db8:cafe::3
     clean_name: links_1_
-_netlab_version: 25.12.03
+_netlab_version: 26.01.01

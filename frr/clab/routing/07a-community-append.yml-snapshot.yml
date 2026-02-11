@@ -196,7 +196,7 @@ defaults:
             INTFTYPE: et
             CLAB_MGMT_VRF: management
         mgmt_if: Management0
-        image: ceos:4.35.0.1F
+        image: ceos:4.34.2F
         group_vars:
           ansible_user: admin
           ansible_ssh_pass: admin
@@ -427,6 +427,15 @@ defaults:
           - -c
           - show $@
           netlab_mgmt_vrf: true
+          netlab_config_mode: sh
+          netlab_config_wrapper: |
+            {% if not netlab_config_text.startswith("#!") %}
+            #!/usr/bin/vtysh -f
+            #
+            {% endif %}
+            {{ netlab_config_text }}
+          netlab_config_exec:
+          - sleep 1
         image: quay.io/frrouting/frr:10.5.1
         kmods:
         node:
@@ -769,7 +778,7 @@ defaults:
       lag_interface_name: port-channel{lag.ifindex}
       mtu: 1500
       clab:
-        image: vrnetlab/dell_ftos10v:10.5.6.6
+        image: vrnetlab/vr-ftosv
         build: https://containerlab.dev/manual/kinds/vr-ftosv/
         node:
           kind: vr-ftosv
@@ -2939,11 +2948,6 @@ defaults:
         netlab_lldp_enable: false
         netlab_net_tools: false
       clab:
-        node_config:
-          initial: :ns
-          lag: :ns
-          vlan: :ns
-          routing: :ns
         features:
           initial:
             roles:
@@ -2969,6 +2973,7 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+          netlab_config_mode: ns
       external:
         image: none
       graphite:
@@ -3317,7 +3322,7 @@ defaults:
         min_tx: 100
         min_rx: 100
       clab:
-        image: ghcr.io/nokia/srlinux:25.10.1
+        image: ghcr.io/nokia/srlinux:25.3.2
         node:
           kind: srl
           type: ixr-d2
@@ -4001,7 +4006,7 @@ defaults:
         pre_install: vptx
         create_template: vptx.xml.j2
       clab:
-        image: vrnetlab/juniper_vjunosevolved:23.2R2.21-EVO
+        image: vrnetlab/juniper_vjunosevolved:25.2R1.8-EVO
         build: https://containerlab.dev/manual/kinds/vr-vjunosevolved/
         mtu: 1500
         node:
@@ -4338,11 +4343,6 @@ defaults:
           static: RTS_STATIC_DEVICE,RTS_STATIC
         netlab_device_type: bird
       clab:
-        node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
-          routing: :ns
         features:
           initial:
             roles:
@@ -4367,6 +4367,7 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+          netlab_config_mode: sh
           netlab_show_command:
           - birdc
           - show $@
@@ -4436,11 +4437,6 @@ defaults:
         netlab_net_tools: false
         netlab_device_type: dnsmasq
       clab:
-        node_config:
-          initial: :ns
-          lag: :ns
-          vlan: :ns
-          routing: :ns
         features:
           initial:
             roles:
@@ -4464,6 +4460,7 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+          netlab_config_mode: ns
           docker_shell: bash -il
         build: true
       external:
@@ -4831,7 +4828,7 @@ defaults:
           _keys:
             binds:
             kind: str
-            config_templates:
+            config_templates: dict
             type: str
             cmd: str
             dns:
@@ -4952,15 +4949,12 @@ defaults:
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
       clab:
-        node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
         group_vars:
           netlab_show_command:
           - birdc
           - show $@
           docker_shell: bash -il
+          netlab_config_mode: sh
         image: netlab/bird:latest
         build: true
         features:
@@ -6465,18 +6459,18 @@ defaults:
           output: netlab.snapshot.yml
   paths:
     validate:
-    - /home/pipi/net101/tools/netsim/validate
+    - /home/pipi/netlab_gh/netsim/validate
     plugin:
     - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/routing
     - /home/pipi/.netlab
-    - /home/pipi/net101/tools/netsim/extra
+    - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/routing
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/net101/tools/netsim/extra
+      - /home/pipi/netlab_gh/netsim/extra
       files:
       - '{{custom_config}}/{{inventory_hostname}}.{{netlab_device_type}}-{{node_provider}}.j2'
       - '{{custom_config}}/{{inventory_hostname}}.{{netlab_device_type}}.j2'
@@ -6523,7 +6517,7 @@ defaults:
       - '{ custom_config }/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks
+      - /home/pipi/netlab_gh/netsim/ansible/tasks
       tasks_generic:
       - deploy-config/{{ netlab_device_type }}-{{ node_provider }}.yml
       - deploy-config/{{ netlab_device_type }}.yml
@@ -6555,8 +6549,8 @@ defaults:
     templates:
       dirs:
       - /work/netlab_cicd/templates
-      - /home/pipi/net101/tools/netsim/daemons
-      - /home/pipi/net101/tools/netsim/ansible/templates
+      - /home/pipi/netlab_gh/netsim/daemons
+      - /home/pipi/netlab_gh/netsim/ansible/templates
     t_files:
       files:
       - '{{config_module}}/{{netlab_device_type}}-{{node_provider}}.j2'
@@ -6576,7 +6570,7 @@ defaults:
       - '{netlab_device_type}/{config_module}.j2'
     ready:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{node_provider}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -6589,7 +6583,7 @@ defaults:
       - '{ansible_network_os}.yml'
     collect:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
   ports:
     ssh: 22
     http: 80
@@ -8356,8 +8350,8 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1768218923.3320527
-    source: /home/pipi/net101/tools/netsim/topology-defaults.yml
+    timestamp: 1768661344.688467
+    source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
     - ../wait_times.yml
@@ -8514,12 +8508,34 @@ nodes:
     clab:
       kind: linux
       config_templates:
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: routing
+        target: /etc/config/02-routing.sh
+        mode: sh
+      - source: bgp
+        target: /etc/config/03-bgp.sh
+        mode: sh
+      - source: bgp.policy
+        target: /etc/config/04-bgp@policy.sh
+        mode: sh
       - source: daemons
         target: /etc/frr/daemons
       - source: hosts
         target: /etc/hosts
         mode: shared
+      exec:
+      - sleep 1
       binds:
+      - target: /etc/config/01-initial.sh
+        source: node_files/dut/initial
+      - target: /etc/config/02-routing.sh
+        source: node_files/dut/routing
+      - target: /etc/config/03-bgp.sh
+        source: node_files/dut/bgp
+      - target: /etc/config/04-bgp@policy.sh
+        source: node_files/dut/bgp.policy
       - target: /etc/frr/daemons
         source: node_files/dut/daemons
       - target: /etc/hosts
@@ -8550,6 +8566,16 @@ nodes:
         advertise: true
     config:
     - bgp.policy
+    netlab_ansible_skip_module:
+    - initial
+    - routing
+    - bgp
+    - bgp.policy
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      routing: /etc/config/02-routing.sh:sh
+      bgp: /etc/config/03-bgp.sh:sh
+      bgp@policy: /etc/config/04-bgp@policy.sh:sh
   probe:
     bgp:
       advertise_loopback: true
@@ -8598,12 +8624,29 @@ nodes:
     clab:
       kind: linux
       config_templates:
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: routing
+        target: /etc/config/02-routing.sh
+        mode: sh
+      - source: bgp
+        target: /etc/config/03-bgp.sh
+        mode: sh
       - source: daemons
         target: /etc/frr/daemons
       - source: hosts
         target: /etc/hosts
         mode: shared
+      exec:
+      - sleep 1
       binds:
+      - target: /etc/config/01-initial.sh
+        source: node_files/probe/initial
+      - target: /etc/config/02-routing.sh
+        source: node_files/probe/routing
+      - target: /etc/config/03-bgp.sh
+        source: node_files/probe/bgp
       - target: /etc/frr/daemons
         source: node_files/probe/daemons
       - target: /etc/hosts
@@ -8635,6 +8678,14 @@ nodes:
       ipv4: 10.0.0.2/32
       bgp:
         advertise: true
+    netlab_ansible_skip_module:
+    - initial
+    - routing
+    - bgp
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      routing: /etc/config/02-routing.sh:sh
+      bgp: /etc/config/03-bgp.sh:sh
   x1:
     bgp:
       advertise_loopback: true
@@ -8697,12 +8748,34 @@ nodes:
     clab:
       kind: linux
       config_templates:
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: routing
+        target: /etc/config/02-routing.sh
+        mode: sh
+      - source: bgp
+        target: /etc/config/03-bgp.sh
+        mode: sh
+      - source: bgp.policy
+        target: /etc/config/04-bgp@policy.sh
+        mode: sh
       - source: daemons
         target: /etc/frr/daemons
       - source: hosts
         target: /etc/hosts
         mode: shared
+      exec:
+      - sleep 1
       binds:
+      - target: /etc/config/01-initial.sh
+        source: node_files/x1/initial
+      - target: /etc/config/02-routing.sh
+        source: node_files/x1/routing
+      - target: /etc/config/03-bgp.sh
+        source: node_files/x1/bgp
+      - target: /etc/config/04-bgp@policy.sh
+        source: node_files/x1/bgp.policy
       - target: /etc/frr/daemons
         source: node_files/x1/daemons
       - target: /etc/hosts
@@ -8734,6 +8807,16 @@ nodes:
         advertise: true
     config:
     - bgp.policy
+    netlab_ansible_skip_module:
+    - initial
+    - routing
+    - bgp
+    - bgp.policy
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      routing: /etc/config/02-routing.sh:sh
+      bgp: /etc/config/03-bgp.sh:sh
+      bgp@policy: /etc/config/04-bgp@policy.sh:sh
 links:
 - _linkname: links[1]
   interfaces:
@@ -8847,4 +8930,4 @@ prefix:
   any:
     ipv4: 0.0.0.0/0
     ipv6: ::/0
-_netlab_version: 25.12.03
+_netlab_version: 26.01.01

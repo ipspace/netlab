@@ -1564,7 +1564,7 @@ defaults:
           - -c
           - show $@
           netlab_mgmt_vrf: true
-        image: quay.io/frrouting/frr:10.5.0
+        image: quay.io/frrouting/frr:10.5.1
         kmods:
         node:
           kind: linux
@@ -2652,6 +2652,7 @@ defaults:
         routing:
           static: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -2686,11 +2687,7 @@ defaults:
         netlab_lldp_enable: false
         netlab_net_tools: false
       clab:
-        node_config:
-          initial: :ns
-          lag: :ns
-          vlan: :ns
-          routing: :ns
+        config_mode: ns
         features:
           initial:
             roles:
@@ -2735,6 +2732,7 @@ defaults:
           ipv4:
       mtu: 1500
       clab:
+        build: true
         image: netlab/netscaler
         node:
           kind: linux
@@ -3026,12 +3024,13 @@ defaults:
         routing:
           static: true
         initial:
-          roles:
-          - host
-          - router
           ipv6:
             use_ra: true
             lla: true
+          reload: false
+          roles:
+          - host
+          - router
         ospf:
           unnumbered: false
           import:
@@ -3196,6 +3195,7 @@ defaults:
             unnumbered: true
           ipv6:
             lla: true
+          reload: false
         bgp:
           activate_af: true
           ipv6_lla: true
@@ -4298,6 +4298,7 @@ defaults:
           static:
             discard: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -4367,11 +4368,7 @@ defaults:
           static: RTS_STATIC_DEVICE,RTS_STATIC
         netlab_device_type: bird
       clab:
-        node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
-          routing: :ns
+        config_mode: sh
         features:
           initial:
             roles:
@@ -4400,7 +4397,7 @@ defaults:
           - birdc
           - show $@
           docker_shell: bash -il
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
       external:
         image: none
       graphite:
@@ -4429,6 +4426,7 @@ defaults:
         routing:
           static: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -4464,11 +4462,7 @@ defaults:
         netlab_net_tools: false
         netlab_device_type: dnsmasq
       clab:
-        node_config:
-          initial: :ns
-          lag: :ns
-          vlan: :ns
-          routing: :ns
+        config_mode: ns
         features:
           initial:
             roles:
@@ -4493,7 +4487,7 @@ defaults:
           ansible_user: root
           netlab_linux_distro: vanilla
           docker_shell: bash -il
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
       external:
         image: none
       graphite:
@@ -4531,17 +4525,14 @@ defaults:
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
       clab:
-        node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
+        config_mode: sh
         group_vars:
           netlab_show_command:
           - birdc
           - show $@
           docker_shell: bash -il
         image: netlab/bird:latest
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
         features:
           initial:
             roles:
@@ -4591,6 +4582,7 @@ defaults:
             unnumbered: peer
           ipv6:
             lla: true
+          reload: false
           roles:
           - host
           - router
@@ -4608,7 +4600,7 @@ defaults:
         group_vars:
           docker_shell: bash -il
         image: netlab/dnsmasq:latest
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
         features:
           initial:
             roles:
@@ -4621,6 +4613,7 @@ defaults:
         dhcp:
           server: true
         initial:
+          reload: false
           roles:
           - host
       dhcp:
@@ -4874,6 +4867,11 @@ defaults:
         - width
     config: {}
     provider: {}
+    pickle: {}
+    tools: {}
+    ansible:
+      hostfile: {}
+      configfile: {}
     yaml=netlab:
       snapshot:
         yml: {}
@@ -5278,6 +5276,7 @@ defaults:
             configuration template(s)
         _alt_types:
         - list
+      skip_config: list
       group: list
       role:
         type: str
@@ -5904,6 +5903,12 @@ defaults:
         ping_irb: 40
       vjunos-router:
         ping_irb: 90
+      nxos:
+        bgp_v4_redist: 40
+        bgp_v6_redist: 40
+      vptx:
+        ldp_adj: 180
+        ibgp_session: 40
   hints:
     evpn:
       irb_group: >
@@ -6017,7 +6022,15 @@ defaults:
       - svg
       - jpg
       - jpeg
-    create: {}
+    create:
+      output:
+        config:
+        provider:
+        pickle:
+        tools:
+        ansible: dirs
+        yaml:
+          output: netlab.snapshot.yml
   paths:
     validate:
     - /home/pipi/netlab_gh/netsim/validate
@@ -8114,7 +8127,7 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1768035588.3816147
+    timestamp: 1768485925.2311854
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
@@ -8207,6 +8220,11 @@ groups:
       netlab_show_config: true
     members: []
     _default_group: true
+  netlab_no_reload:
+    members:
+    - r
+    - h1
+    - h2
 nodes:
   r:
     loopback:
@@ -8299,9 +8317,6 @@ nodes:
     _daemon_config:
       dnsmasq: /etc/dnsmasq.conf
       dhcp: /etc/dhcp.ignore
-    _node_config:
-      initial: :ns
-      routing: :ns
     af:
       ipv4: true
       ipv6: true
@@ -8317,6 +8332,9 @@ nodes:
     - dhcp
     - initial
     - routing
+    _node_config:
+      initial: :ns
+      routing: :ns
   h1:
     routing:
       static:
@@ -8384,9 +8402,6 @@ nodes:
     id: 2
     role: host
     mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
     af:
       ipv4: true
       ipv6: true
@@ -8398,6 +8413,9 @@ nodes:
     netlab_ansible_skip_module:
     - initial
     - routing
+    _node_config:
+      initial: :ns
+      routing: :ns
   h2:
     routing:
       static:
@@ -8465,9 +8483,6 @@ nodes:
     id: 3
     role: host
     mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
     af:
       ipv4: true
       ipv6: true
@@ -8479,6 +8494,9 @@ nodes:
     netlab_ansible_skip_module:
     - initial
     - routing
+    _node_config:
+      initial: :ns
+      routing: :ns
 links:
 - _linkname: links[1]
   interfaces:
@@ -8582,4 +8600,4 @@ prefix:
     ipv6: ::/0
 dhcp:
   pools: []
-_netlab_version: 25.12.03
+_netlab_version: 26.01.01

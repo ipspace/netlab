@@ -62,7 +62,7 @@ defaults:
           _keys:
             binds:
             kind: str
-            config_templates:
+            config_templates: dict
             type: str
             cmd: str
             dns:
@@ -1568,15 +1568,26 @@ defaults:
           - -c
           - show $@
           netlab_mgmt_vrf: true
+          netlab_config_mode: sh
+          netlab_config_wrapper: |
+            {% if netlab_config_mode == 'sh' and netlab_config_text and not netlab_config_text.startswith("#!") %}
+            #!/usr/bin/vtysh -f
+            #
+            {% endif %}
+            {{ netlab_config_text }}
+          netlab_config_exec:
+          - sleep 1
         image: quay.io/frrouting/frr:10.5.1
         kmods:
+          initial:
+          - vrf?
         node:
           kind: linux
           config_templates:
             daemons: /etc/frr/daemons
             hosts: /etc/hosts:shared
       libvirt:
-        image: debian/bookworm64
+        image: netlab/frr
         group_vars:
           ansible_connection: paramiko
           ansible_user: vagrant
@@ -4378,9 +4389,9 @@ defaults:
         netlab_device_type: bird
       clab:
         node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
+          initial: :ns
+          lag: :ns
+          vlan: :ns
           routing: :ns
         features:
           initial:
@@ -4410,6 +4421,7 @@ defaults:
           - birdc
           - show $@
           docker_shell: bash -il
+          netlab_config_mode: sh
         build: true
       external:
         image: none
@@ -4542,15 +4554,12 @@ defaults:
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
       clab:
-        node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
         group_vars:
           netlab_show_command:
           - birdc
           - show $@
           docker_shell: bash -il
+          netlab_config_mode: sh
         image: netlab/bird:latest
         build: true
         features:
@@ -5890,6 +5899,7 @@ defaults:
       ospf_import: 20
       ebgp_session: 30
       ibgp_session: 30
+      bgp_af_activate: 5
       bgp_scan_time: 5
       bgp_scan_long: 15
       bgp_v4_originate: 15
@@ -6053,18 +6063,18 @@ defaults:
           output: netlab.snapshot.yml
   paths:
     validate:
-    - /home/pipi/net101/tools/netsim/validate
+    - /home/pipi/netlab_gh/netsim/validate
     plugin:
     - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/vlan
     - /home/pipi/.netlab
-    - /home/pipi/net101/tools/netsim/extra
+    - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/vlan
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/net101/tools/netsim/extra
+      - /home/pipi/netlab_gh/netsim/extra
       files:
       - '{{custom_config}}/{{inventory_hostname}}.{{netlab_device_type}}-{{node_provider}}.j2'
       - '{{custom_config}}/{{inventory_hostname}}.{{netlab_device_type}}.j2'
@@ -6111,7 +6121,7 @@ defaults:
       - '{ custom_config }/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks
+      - /home/pipi/netlab_gh/netsim/ansible/tasks
       tasks_generic:
       - deploy-config/{{ netlab_device_type }}-{{ node_provider }}.yml
       - deploy-config/{{ netlab_device_type }}.yml
@@ -6143,8 +6153,8 @@ defaults:
     templates:
       dirs:
       - /work/netlab_cicd/templates
-      - /home/pipi/net101/tools/netsim/daemons
-      - /home/pipi/net101/tools/netsim/ansible/templates
+      - /home/pipi/netlab_gh/netsim/daemons
+      - /home/pipi/netlab_gh/netsim/ansible/templates
     t_files:
       files:
       - '{{config_module}}/{{netlab_device_type}}-{{node_provider}}.j2'
@@ -6164,7 +6174,7 @@ defaults:
       - '{netlab_device_type}/{config_module}.j2'
     ready:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{node_provider}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -6177,7 +6187,7 @@ defaults:
       - '{ansible_network_os}.yml'
     collect:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
   ports:
     ssh: 22
     http: 80
@@ -8149,8 +8159,8 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1768217613.8779478
-    source: /home/pipi/net101/tools/netsim/topology-defaults.yml
+    timestamp: 1769500698.8508704
+    source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
     - ../wait_times.yml
@@ -8577,12 +8587,24 @@ nodes:
     clab:
       kind: linux
       config_templates:
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: vlan
+        target: /etc/config/02-vlan.sh
+        mode: sh
       - source: daemons
         target: /etc/frr/daemons
       - source: hosts
         target: /etc/hosts
         mode: shared
+      exec:
+      - sleep 1
       binds:
+      - target: /etc/config/01-initial.sh
+        source: node_files/s1/initial
+      - target: /etc/config/02-vlan.sh
+        source: node_files/s1/vlan
       - target: /etc/frr/daemons
         source: node_files/s1/daemons
       - target: /etc/hosts
@@ -8617,6 +8639,12 @@ nodes:
         bridge_group: 1
     vlan:
       max_bridge_group: 1
+    netlab_ansible_skip_module:
+    - initial
+    - vlan
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      vlan: /etc/config/02-vlan.sh:sh
 addressing:
   lan:
     ipv4: 172.16.0.0/16
@@ -8645,4 +8673,4 @@ provider: clab
 module:
 - vlan
 - routing
-_netlab_version: 25.12.03
+_netlab_version: 26.01.01

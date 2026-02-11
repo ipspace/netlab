@@ -59,7 +59,7 @@ defaults:
           _keys:
             binds:
             kind: str
-            config_templates:
+            config_templates: dict
             type: str
             cmd: str
             dns:
@@ -1565,15 +1565,29 @@ defaults:
           - -c
           - show $@
           netlab_mgmt_vrf: true
+          netlab_config_mode: sh
+          netlab_config_wrapper: |
+            {% if netlab_config_mode == 'sh' and netlab_config_text and not netlab_config_text.startswith("#!") %}
+            #!/usr/bin/vtysh -f
+            #
+            {% endif %}
+            {{ netlab_config_text }}
+          netlab_config_exec:
+          - sleep 1
         image: quay.io/frrouting/frr:10.5.1
         kmods:
+          initial:
+          - vrf?
         node:
           kind: linux
           config_templates:
             daemons: /etc/frr/daemons
             hosts: /etc/hosts:shared
       libvirt:
-        image: debian/bookworm64
+        image: netlab/frr
+        create_image: netlab/frr
+        create_template: frr.xml.j2
+        create_iso: frr
         group_vars:
           ansible_connection: paramiko
           ansible_user: vagrant
@@ -2689,11 +2703,6 @@ defaults:
         netlab_lldp_enable: false
         netlab_net_tools: false
       clab:
-        node_config:
-          initial: :ns
-          lag: :ns
-          vlan: :ns
-          routing: :ns
         features:
           initial:
             roles:
@@ -2719,6 +2728,7 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+          netlab_config_mode: ns
       external:
         image: none
       graphite:
@@ -4374,11 +4384,6 @@ defaults:
           static: RTS_STATIC_DEVICE,RTS_STATIC
         netlab_device_type: bird
       clab:
-        node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
-          routing: :ns
         features:
           initial:
             roles:
@@ -4403,6 +4408,7 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+          netlab_config_mode: sh
           netlab_show_command:
           - birdc
           - show $@
@@ -4472,11 +4478,6 @@ defaults:
         netlab_net_tools: false
         netlab_device_type: dnsmasq
       clab:
-        node_config:
-          initial: :ns
-          lag: :ns
-          vlan: :ns
-          routing: :ns
         features:
           initial:
             roles:
@@ -4500,6 +4501,7 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+          netlab_config_mode: ns
           docker_shell: bash -il
         build: true
       external:
@@ -4539,15 +4541,12 @@ defaults:
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
       clab:
-        node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
         group_vars:
           netlab_show_command:
           - birdc
           - show $@
           docker_shell: bash -il
+          netlab_config_mode: sh
         image: netlab/bird:latest
         build: true
         features:
@@ -5887,6 +5886,7 @@ defaults:
       ospf_import: 20
       ebgp_session: 30
       ibgp_session: 30
+      bgp_af_activate: 5
       bgp_scan_time: 5
       bgp_scan_long: 15
       bgp_v4_originate: 15
@@ -8144,7 +8144,7 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1768220325.0773652
+    timestamp: 1769163396.5874295
     source: /home/pipi/net101/tools/netsim/topology-defaults.yml
   sources:
     extra:
@@ -8282,7 +8282,7 @@ nodes:
         ifname: eth1
         node: h4
     device: frr
-    box: debian/bookworm64
+    box: netlab/frr
     id: 1
     mtu: 1500
     provider: libvirt
@@ -8367,12 +8367,19 @@ nodes:
     clab:
       kind: linux
       config_templates:
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
       - source: daemons
         target: /etc/frr/daemons
       - source: hosts
         target: /etc/hosts
         mode: shared
+      exec:
+      - sleep 1
       binds:
+      - target: /etc/config/01-initial.sh
+        source: node_files/rtr/initial
       - target: /etc/frr/daemons
         source: node_files/rtr/daemons
       - target: /etc/hosts
@@ -8398,6 +8405,10 @@ nodes:
       ifname: lo
       ipv4: 10.0.0.2/32
       ipv6: 2001:db8:0:2::1/64
+    netlab_ansible_skip_module:
+    - initial
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
   h1:
     provider: clab
     routing:
@@ -8458,9 +8469,6 @@ nodes:
     id: 3
     role: host
     mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
     af:
       ipv4: true
       ipv6: true
@@ -8472,6 +8480,9 @@ nodes:
     netlab_ansible_skip_module:
     - initial
     - routing
+    _node_config:
+      initial: :ns
+      routing: :ns
   h2:
     provider: clab
     routing:
@@ -8528,9 +8539,6 @@ nodes:
     id: 4
     role: host
     mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
     af:
       ipv4: true
       ipv6: true
@@ -8542,6 +8550,9 @@ nodes:
     netlab_ansible_skip_module:
     - initial
     - routing
+    _node_config:
+      initial: :ns
+      routing: :ns
   h3:
     provider: clab
     routing:
@@ -8602,9 +8613,6 @@ nodes:
     id: 5
     role: host
     mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
     af:
       ipv4: true
       ipv6: true
@@ -8616,6 +8624,9 @@ nodes:
     netlab_ansible_skip_module:
     - initial
     - routing
+    _node_config:
+      initial: :ns
+      routing: :ns
   h4:
     provider: clab
     name: h4
@@ -8662,9 +8673,6 @@ nodes:
     id: 6
     role: host
     mtu: 1500
-    _node_config:
-      initial: :ns
-      routing: :ns
     af:
       ipv4: true
       ipv6: true
@@ -8678,6 +8686,9 @@ nodes:
     netlab_ansible_skip_module:
     - initial
     - routing
+    _node_config:
+      initial: :ns
+      routing: :ns
 prefix:
   any:
     ipv4: 0.0.0.0/0
@@ -8836,4 +8847,4 @@ libvirt:
     clab: true
 module:
 - routing
-_netlab_version: 25.12.03
+_netlab_version: 26.01.01

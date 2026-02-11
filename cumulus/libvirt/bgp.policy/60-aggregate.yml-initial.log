@@ -1,0 +1,259 @@
+Creating Device configuration snippets
+[CREATED] dut: initial,routing,bgp,vrf,bgp.policy
+[CREATED] x1: initial,routing,bgp
+[CREATED] x2: initial,bgp
+[CREATED] v1: initial,routing,bgp
+[CREATED] v2: initial,bgp
+Config Deploying device configurations
+ [INFO] Executing initial configuration for node x1
+ [INFO] Executing initial configuration for node x2
+ [INFO] Executing initial configuration for node v1
+ [INFO] Executing initial configuration for node v2
+ [INFO] Executing bgp configuration for node v2
+ [INFO] Executing routing configuration for node v1
+ [INFO] Executing bgp configuration for node x2
+ [INFO] Executing routing configuration for node x1
+ [INFO] Executing bgp configuration for node v1
+ [INFO] Executing bgp configuration for node x1
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "initial configuration for dut\n=========================================\n#!/bin/bash\n#\nset -e\n#\n# Create bash profile script\n#\ncat <<SCRIPT >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)#\"\necho \"Use vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# Build hosts file\n#\necho \"INIT: setting hostname\"\nhostname dut\n#\n#\n# Build hosts file\n#\n#\ncat <<SCRIPT >/tmp/hosts\n#\n# Created by netlab initial\n#\n10.0.0.1 dut\n2001:db8:1:1::1 dut\n10.1.0.1 swp1.dut\n2001:db8:3::1 swp1.dut\n10.1.0.5 swp2.dut\n2001:db8:3:1::1 swp2.dut\n10.1.0.10 swp3.tenant.dut\n2001:db8:3:2::1 swp3.tenant.dut\n10.1.0.13 swp4.tenant.dut\n2001:db8:3:3::1 swp4.tenant.dut\n10.0.0.4 v1\n2001:db8:1:4::1 v1\n10.1.0.9 eth1.v1\n2001:db8:3:2::4 eth1.v1\n10.0.0.5 v2\n2001:db8:1:5::1 v2\n10.1.0.14 eth1.v2\n2001:db8:3:3::5 eth1.v2\n10.0.0.2 x1\n2001:db8:1:2::1 x1\n10.1.0.2 eth1.x1\n2001:db8:3::2 eth1.x1\n10.0.0.3 x2\n2001:db8:1:3::1 x2\n10.1.0.6 eth1.x2\n2001:db8:3:1::3 eth1.x2\nSCRIPT\ngrep \"Created by netlab\" /etc/hosts || uniq /tmp/hosts >>/etc/hosts\n#\n# Disable ZTP\n#\nztp --disable\n#\n#\n\necho \"INIT: Configuring system wide default MTU policy\"\ncat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG\n{ \"address\": { \"defaults\": { \"mtu\": \"1500\" } } }\nCONFIG\n#\necho \"INIT: creating loopback interface\"\n#\n# Create loopback interface entry\n#\ncat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG\nauto lo\niface lo inet loopback\n  address 10.0.0.1/32\niface lo inet6 loopback\n  address 2001:db8:1:1::1/64\n\nCONFIG\n#\nuntil ifreload -a; do\n  sleep 1\ndone\n#\necho \"INIT: creating other interface\"\ncat >/etc/network/interfaces.d/11-physical.intf <<CONFIG\nauto swp1\n\niface swp1 inet static\n  address 10.1.0.1/30\n\niface swp1 inet6 static\n  address 2001:db8:3::1/64\nauto swp2\n\niface swp2 inet static\n  address 10.1.0.5/30\n\niface swp2 inet6 static\n  address 2001:db8:3:1::1/64\nauto swp3\n\niface swp3 inet static\n  address 10.1.0.10/30\n\niface swp3 inet6 static\n  address 2001:db8:3:2::1/64\nauto swp4\n\niface swp4 inet static\n  address 10.1.0.13/30\n\niface swp4 inet6 static\n  address 2001:db8:3:3::1/64\nCONFIG\n#\necho \"INIT: executing ifreload\"\nuntil ifreload -a; do\n  sleep 1\ndone\n#\n# For whatever crazy reason, I had to enable IPv6 in containers\n#\nsysctl -qw net.ipv6.conf.swp1.disable_ipv6=0\nsysctl -qw net.ipv6.conf.swp2.disable_ipv6=0\nsysctl -qw net.ipv6.conf.swp3.disable_ipv6=0\nsysctl -qw net.ipv6.conf.swp4.disable_ipv6=0\n#\n# Enable FRR modules for ['routing', 'bgp', 'vrf']\n#\n#\n# Enable FRR daemons\n#\necho \"bgpd=yes\" >>/etc/frr/daemons\necho \"bgpd=yes\" >>/etc/frr/daemons\n\nsystemctl enable frr.service\nsystemctl start frr.service\nsystemctl reload frr.service\n#\n# Rest of initial configuration done through VTYSH\n#\ncat >/tmp/config <<CONFIG\nipv6 forwarding\n!\ninterface swp1\n! no shutdown\n description dut -> x1 [external]\n ipv6 nd ra-interval 5\n no ipv6 nd suppress-ra\n!\ninterface swp2\n! no shutdown\n description dut -> x2 [external]\n ipv6 nd ra-interval 5\n no ipv6 nd suppress-ra\n!\ninterface swp3\n! no shutdown\n description dut -> v1 [external]\n ipv6 nd ra-interval 5\n no ipv6 nd suppress-ra\n!\ninterface swp4\n! no shutdown\n description dut -> v2 [external]\n ipv6 nd ra-interval 5\n no ipv6 nd suppress-ra\n!\ndo write\nCONFIG\nvtysh -f /tmp/config\n#\n# Enable LLDP\n#\necho \"INIT: enabling LLDP\"\ncat <<CONFIG >/etc/lldpd.d/system.conf\nconfigure lldp tx-interval 30\nconfigure lldp tx-hold 3\nconfigure system interface pattern *,!eth0,swp*\nCONFIG\nservice lldpd restart\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+
+TASK [Render device configuration from /work/netlab_cicd/node_files/dut/initial] ***
+ok: [dut]
+
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create initial config script in local temporary file] ********************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
+changed: [dut]
+
+TASK [Remove temporary file /tmp/ansible.dut.wusyfbcftemp] *********************
+changed: [dut -> localhost]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=vrf)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for routing] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "routing configuration for dut\n=========================================\n!\n!\nroute-map med_73-ipv4 permit 10\n  set metric 73\n\n!\nroute-map med_73-ipv6 permit 10\n  set metric 73\n\n!\nroute-map med_73-vpnv4 permit 10\n  set metric 73\n\n!\nroute-map med_73-vpnv6 permit 10\n  set metric 73\n\n!\nroute-map suppress_2-ipv4 permit 10\n  match ip address prefix-list suppress_2-ipv4\n\n!\nroute-map suppress_2-ipv6 permit 10\n  match ipv6 address prefix-list suppress_2-ipv6\n\n!\nroute-map suppress_2-vpnv4 permit 10\n  match ipv6 address prefix-list suppress_2-vpnv4\n\n!\nroute-map suppress_2-vpnv6 permit 10\n  match ipv6 address prefix-list suppress_2-vpnv6\n\n!\nip prefix-list suppress_2-ipv4 seq 10 permit 10.4.2.0/24\n!\nipv6 prefix-list suppress_2-ipv6 seq 10 permit 2001:db8:1004:2::/64\n!\n"
+}
+
+TASK [Deploy routing configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+
+TASK [Render device configuration from /work/netlab_cicd/node_files/dut/routing] ***
+ok: [dut]
+
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create routing config script in local temporary file] ********************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
+changed: [dut]
+
+TASK [Remove temporary file /tmp/ansible.dut.cbyeaphgtemp] *********************
+changed: [dut -> localhost]
+
+TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [dut]
+
+TASK [Find configuration template for bgp] *************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "bgp configuration for dut\n=========================================\n!\nrouter bgp 65000\n  no bgp ebgp-requires-policy\n  no bgp default ipv4-unicast\n  bgp default show-hostname\n  bgp default show-nexthop-hostname\n  ! Consider AS paths of same length but with different AS as ECMP candidates\n  bgp bestpath as-path multipath-relax\n\n  bgp router-id 10.0.0.1\n!\n  neighbor 10.1.0.2 remote-as 65100\n  neighbor 10.1.0.2 description x1\n!\n  neighbor 10.1.0.6 remote-as 65101\n  neighbor 10.1.0.6 description x2\n!\n  neighbor 2001:db8:3::2 remote-as 65100\n  neighbor 2001:db8:3::2 description x1\n!\n  neighbor 2001:db8:3:1::3 remote-as 65101\n  neighbor 2001:db8:3:1::3 description x2\n!\n address-family ipv4 unicast\n!\n\n!\n! Originate networks from connected subnets\n!\n  network 10.0.0.1/32\n!\n  neighbor 10.1.0.2 activate\n  no neighbor 10.1.0.2 send-community all\n  neighbor 10.1.0.2 send-community standard\n  neighbor 10.1.0.2 send-community large\n!\n  neighbor 10.1.0.6 activate\n  no neighbor 10.1.0.6 send-community all\n  neighbor 10.1.0.6 send-community standard\n  neighbor 10.1.0.6 send-community large\n!\n address-family ipv6 unicast\n!\n\n!\n! Originate networks from connected subnets\n!\n  network 2001:db8:1:1::/64\n!\n  neighbor 2001:db8:3::2 activate\n  no neighbor 2001:db8:3::2 send-community all\n  neighbor 2001:db8:3::2 send-community standard\n  neighbor 2001:db8:3::2 send-community large\n!\n  neighbor 2001:db8:3:1::3 activate\n  no neighbor 2001:db8:3:1::3 send-community all\n  neighbor 2001:db8:3:1::3 send-community standard\n  neighbor 2001:db8:3:1::3 send-community large\n!\n!\n!\ndo write\n"
+}
+
+TASK [Deploy bgp configuration] ************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+
+TASK [Render device configuration from /work/netlab_cicd/node_files/dut/bgp] ***
+ok: [dut]
+
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create bgp config script in local temporary file] ************************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
+changed: [dut]
+
+TASK [Remove temporary file /tmp/ansible.dut.pke_0567temp] *********************
+changed: [dut -> localhost]
+
+TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [dut]
+
+TASK [Find configuration template for vrf] *************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "vrf configuration for dut\n=========================================\n#!/bin/bash\n#\nset -e # Exit immediately when any command fails\n#\ncat >/etc/network/interfaces.d/70-vrf.intf <<CONFIG\nauto tenant\niface tenant\n    vrf-table 1010\n#\nauto swp3\niface swp3\n    vrf tenant\n#\nauto swp4\niface swp4\n    vrf tenant\n#\nCONFIG\nifreload -a\n#\ncat >/tmp/vrf_config <<CONFIG\nvrf tenant\n exit-vrf\n!\nrouter bgp 65000\n!\n!\nrouter bgp 65000 vrf tenant\n no bgp ebgp-requires-policy\n no bgp default ipv4-unicast\n bgp router-id 10.0.0.1\n neighbor 10.1.0.9 remote-as 65200\n neighbor 10.1.0.9 description v1\n neighbor 2001:db8:3:2::4 remote-as 65200\n neighbor 2001:db8:3:2::4 description v1\n neighbor 10.1.0.14 remote-as 65201\n neighbor 10.1.0.14 description v2\n neighbor 2001:db8:3:3::5 remote-as 65201\n neighbor 2001:db8:3:3::5 description v2\n address-family ipv4 unicast\n  redistribute connected\n\n  label vpn export auto\n  export vpn\n  import vpn\n  rd vpn export 65000:1\n  rt vpn import 65000:1\n  rt vpn export 65000:1\n  neighbor 10.1.0.9 activate\n  neighbor 10.1.0.9 send-community standard\n  neighbor 10.1.0.9 send-community large\n  neighbor 10.1.0.14 activate\n  neighbor 10.1.0.14 send-community standard\n  neighbor 10.1.0.14 send-community large\n exit-address-family\n address-family ipv6 unicast\n  redistribute connected\n\n  label vpn export auto\n  export vpn\n  import vpn\n  rd vpn export 65000:1\n  rt vpn import 65000:1\n  rt vpn export 65000:1\n  neighbor 2001:db8:3:2::4 activate\n  neighbor 2001:db8:3:2::4 send-community standard\n  neighbor 2001:db8:3:2::4 send-community large\n  neighbor 2001:db8:3:3::5 activate\n  neighbor 2001:db8:3:3::5 send-community standard\n  neighbor 2001:db8:3:3::5 send-community large\n exit-address-family\n!\n!\ndo write\n!\nCONFIG\nvtysh -f /tmp/vrf_config\nexit $?\n"
+}
+
+TASK [Deploy vrf configuration] ************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+
+TASK [Render device configuration from /work/netlab_cicd/node_files/dut/vrf] ***
+ok: [dut]
+
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create vrf config script in local temporary file] ************************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
+changed: [dut]
+
+TASK [Remove temporary file /tmp/ansible.dut.a0mixkkhtemp] *********************
+changed: [dut -> localhost]
+
+PLAY [Deploy custom deployment templates] **************************************
+
+TASK [Run custom configuration deployment scripts] *****************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=bgp.policy)
+
+TASK [Find configuration template] *********************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Check is the configuration template is a file] ***************************
+ok: [dut -> localhost]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Process template /work/netlab_cicd/node_files/dut/bgp.policy for dut] ****
+skipping: [dut]
+
+TASK [Find custom configuration deployment script] *****************************
+ok: [dut]
+
+TASK [Run the configuration deployment script] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+
+TASK [Render device configuration from /work/netlab_cicd/node_files/dut/bgp.policy] ***
+ok: [dut]
+
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create bgp.policy config script in local temporary file] *****************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
+changed: [dut]
+
+TASK [Remove temporary file /tmp/ansible.dut.mp5vonibtemp] *********************
+changed: [dut -> localhost]
+
+PLAY RECAP *********************************************************************
+dut                        : ok=60   changed=20   unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+
+Results of configuration script deployments
+================================================================================
+x1                           OK: 3   
+x2                           OK: 2   
+v1                           OK: 3   
+v2                           OK: 2   
+
+
+This lab checks the "bgp.aggregate" part of the "bgp.policy" plugin. It checks:
+
+* The generation of aggregate prefixes
+* The suppression of more-specific prefixes
+* The attributes applied to the aggregate with a routing policy
+* The use of routing policy as a suppress map
+

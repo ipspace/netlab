@@ -1,21 +1,21 @@
- [INFO] Creating configuration snippets
+Creating Device configuration snippets
 [CREATED] r: initial,routing
 [CREATED] h1: initial,routing
 [CREATED] h2: initial,routing
 [CREATED] h3: initial,routing
+Config Deploying device configurations
  [INFO] Executing initial configuration for node h1 (namespace clab-
           ml-17-h1)
  [INFO] Executing initial configuration for node h2 (namespace clab-
           ml-17-h2)
  [INFO] Executing initial configuration for node h3 (namespace clab-
           ml-17-h3)
- [INFO] Executing routing configuration for node h3 (namespace clab-
-          ml-17-h3)
  [INFO] Executing routing configuration for node h1 (namespace clab-
           ml-17-h1)
+ [INFO] Executing routing configuration for node h3 (namespace clab-
+          ml-17-h3)
  [INFO] Executing routing configuration for node h2 (namespace clab-
           ml-17-h2)
-
  [INFO] Starting Ansible playbook to deploy the rest of the
           configurations
 [WARNING]: Found variable using reserved name: hosts
@@ -24,15 +24,6 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r]
-
-TASK [Generic readiness tests] *************************************************
-skipping: [r]
-
-TASK [Find device readiness script] ********************************************
-ok: [r]
-
-TASK [Wait for device to become ready] *****************************************
-skipping: [r]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r
@@ -72,7 +63,7 @@ ok: [r]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r] => {
-    "msg": "initial configuration for r\n=========================================\n#!/bin/bash\n#\nset -e\n#\n# Create bash profile script\n#\ncat <<SCRIPT >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)$ \"\nSCRIPT\nhostname r\n#\n# Build hosts file\n#\n#\ncat <<SCRIPT >/tmp/hosts\n#\n# Created by netlab initial\n#\n172.16.0.1 h1 eth1.h1\n2001:db8:1::1 h1 eth1.h1\n172.16.1.2 h2 eth1.h2\n2001:db8:1:1::2 h2 eth1.h2\n172.16.2.3 h3 eth1.h3\n2001:db8:1:2::3 h3 eth1.h3\n10.0.0.132 r\n2001:db8:0:84::1 r\n172.16.0.132 eth1.r\n2001:db8:1::84 eth1.r\n172.16.1.132 eth2.r\n2001:db8:1:1::84 eth2.r\n172.16.2.132 eth3.r\n2001:db8:1:2::84 eth3.r\nSCRIPT\ngrep \"Created by netlab\" /etc/hosts || uniq /tmp/hosts >>/etc/hosts\n# It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.\n# This is annoying on a network with filtered DNS.\n# DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.\n# Let's use that.\n#\n# (Overwrite netplan config to remove DNS stuff)\necho -n 'Starting initial config ' && date\ncat <<SCRIPT >/etc/netplan/01-netcfg.yaml\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    eth0:\n      dhcp4: true\n      dhcp6: false\n      optional: true\nSCRIPT\nnetplan apply\n\n# (Overwrite resolved config to remove DNS stuff)\ncat <<SCRIPT > /etc/systemd/resolved.conf \n[Resolve]\nDNS=\nFallbackDNS=\nDomains=\nDNSOverTLS=no\nCache=yes\nDNSStubListener=yes\nSCRIPT\n\nsystemctl restart systemd-resolved\n\n# Set persistent hostname\nhostnamectl set-hostname r\n\nNEED_APT_UPDATE=YES\n\n# Loopback addressing\ncat <<SCRIPT > /etc/netplan/02-loopback.yaml\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    lo:\n      addresses:\n        - 10.0.0.132/32\n        - 2001:db8:0:84::1/64\nSCRIPT\n\n# Interface addressing and bonds, including any static routes\ncat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    eth1:\n      addresses:\n        - 172.16.0.132/24\n        - 2001:db8:1::84/64\nSCRIPT\ncat <<SCRIPT > /etc/netplan/03-eth-eth2.yaml\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    eth2:\n      addresses:\n        - 172.16.1.132/24\n        - 2001:db8:1:1::84/64\nSCRIPT\ncat <<SCRIPT > /etc/netplan/03-eth-eth3.yaml\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    eth3:\n      addresses:\n        - 172.16.2.132/24\n        - 2001:db8:1:2::84/64\nSCRIPT\n\n# Disable auto-negotiation on Ethernet interfaces, needed to make LACP work correctly\ncat <<SCRIPT > /etc/systemd/network/98-eth.link\n\n[Match]\nOriginalName=eth*\n\n[Link]\nBitsPerSecond=1G\nAutoNegotiation=no\nDuplex=full\nSCRIPT\n\nchmod 400 /etc/netplan/*\n\necho -n 'Starting netplan generate ' && date\nnetplan generate\necho -n 'Starting netplan apply ' && date\nnetplan apply\n\n#\n# Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA\n# Do this after 'netplan apply', e.g. bond devices won't exist before that\n#\ncat <<SCRIPT > /etc/sysctl.d/10-netsim.conf\nnet.ipv4.conf.all.arp_announce=2\nnet.ipv4.ip_forward=0\nnet.ipv6.conf.all.forwarding=0\n\nnet.ipv6.conf.lo.disable_ipv6=0\nnet.ipv6.conf.eth1.disable_ipv6=0\nnet.ipv6.conf.eth2.disable_ipv6=0\nnet.ipv6.conf.eth3.disable_ipv6=0\n\nSCRIPT\nsysctl -p /etc/sysctl.d/10-netsim.conf\n"
+    "msg": "initial configuration for r\n=========================================\n#!/bin/bash\n#\nset -e\n#\n# Create bash profile script\n#\ncat <<'SCRIPT' >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)$ \"\nSCRIPT\nhostname r\n#\n# Build hosts file\n#\n#\ncat <<'SCRIPT' >/tmp/hosts\n#\n# Created by netlab initial\n#\n172.16.0.1 h1 eth1.h1\n2001:db8:1::1 h1 eth1.h1\n172.16.1.2 h2 eth1.h2\n2001:db8:1:1::2 h2 eth1.h2\n172.16.2.3 h3 eth1.h3\n2001:db8:1:2::3 h3 eth1.h3\n10.0.0.132 r\n2001:db8:0:84::1 r\n172.16.0.132 eth1.r\n2001:db8:1::84 eth1.r\n172.16.1.132 eth2.r\n2001:db8:1:1::84 eth2.r\n172.16.2.132 eth3.r\n2001:db8:1:2::84 eth3.r\nSCRIPT\ngrep \"Created by netlab\" /etc/hosts || uniq /tmp/hosts >>/etc/hosts\n# It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.\n# This is annoying on a network with filtered DNS.\n# DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.\n# Let's use that.\n#\n# (Overwrite netplan config to remove DNS stuff)\necho -n 'Starting initial config ' && date\ncat <<'SCRIPT' >/etc/netplan/01-netcfg.yaml\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    eth0:\n      dhcp4: true\n      dhcp6: false\n      optional: true\nSCRIPT\nnetplan apply\n\n# (Overwrite resolved config to remove DNS stuff)\ncat <<'SCRIPT' > /etc/systemd/resolved.conf \n[Resolve]\nDNS=\nFallbackDNS=\nDomains=\nDNSOverTLS=no\nCache=yes\nDNSStubListener=yes\nSCRIPT\n\nsystemctl restart systemd-resolved\n\n# Set persistent hostname\nhostnamectl set-hostname r\n\nNEED_APT_UPDATE=YES\n\n# Loopback addressing\ncat <<'SCRIPT' > /etc/netplan/02-loopback.yaml\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    lo:\n      addresses:\n        - 10.0.0.132/32\n        - 2001:db8:0:84::1/64\nSCRIPT\n\n# Interface addressing and bonds, including any static routes\ncat <<'SCRIPT' > /etc/netplan/03-eth-eth1.yaml\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    eth1:\n      addresses:\n        - 172.16.0.132/24\n        - 2001:db8:1::84/64\nSCRIPT\ncat <<'SCRIPT' > /etc/netplan/03-eth-eth2.yaml\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    eth2:\n      addresses:\n        - 172.16.1.132/24\n        - 2001:db8:1:1::84/64\nSCRIPT\ncat <<'SCRIPT' > /etc/netplan/03-eth-eth3.yaml\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    eth3:\n      addresses:\n        - 172.16.2.132/24\n        - 2001:db8:1:2::84/64\nSCRIPT\n\n# Disable auto-negotiation on Ethernet interfaces, needed to make LACP work correctly\ncat <<'SCRIPT' > /etc/systemd/network/98-eth.link\n\n[Match]\nOriginalName=eth*\n\n[Link]\nBitsPerSecond=1G\nAutoNegotiation=no\nDuplex=full\nSCRIPT\n\nchmod 400 /etc/netplan/*\n\necho -n 'Starting netplan generate ' && date\nnetplan generate\necho -n 'Starting netplan apply ' && date\nnetplan apply\n\n#\n# Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA\n# Do this after 'netplan apply', e.g. bond devices won't exist before that\n#\ncat <<'SCRIPT' > /etc/sysctl.d/10-netsim.conf\nnet.ipv4.conf.all.arp_announce=2\nnet.ipv4.ip_forward=0\nnet.ipv6.conf.all.forwarding=0\n\nnet.ipv6.conf.lo.disable_ipv6=0\nnet.ipv6.conf.eth1.disable_ipv6=0\nnet.ipv6.conf.eth2.disable_ipv6=0\nnet.ipv6.conf.eth3.disable_ipv6=0\n\nSCRIPT\nsysctl -p /etc/sysctl.d/10-netsim.conf\n"
 }
 
 TASK [Deploy initial configuration] ********************************************
@@ -122,13 +113,13 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-r                          : ok=23   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+r                          : ok=22   changed=4    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================
-h1                           OK: 2   
-h2                           OK: 2   
-h3                           OK: 2   
+h1               Script:  initial,routing
+h2               Script:  initial,routing
+h3               Script:  initial,routing
 
 
 This scenario tests basic interface, IPv4, and IPv6 configuration, including generation of IPv6 Router Advertisements

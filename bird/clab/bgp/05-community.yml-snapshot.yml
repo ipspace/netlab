@@ -209,6 +209,7 @@ defaults:
             configuration template(s)
         _alt_types:
         - list
+      skip_config: list
       group: list
       role:
         type: str
@@ -805,7 +806,7 @@ defaults:
           _keys:
             binds:
             kind: str
-            config_templates:
+            config_templates: dict
             type: str
             cmd: str
             dns:
@@ -2311,7 +2312,16 @@ defaults:
           - -c
           - show $@
           netlab_mgmt_vrf: true
-        image: quay.io/frrouting/frr:10.5.0
+          netlab_config_mode: sh
+          netlab_config_wrapper: |
+            {% if not netlab_config_text.startswith("#!") %}
+            #!/usr/bin/vtysh -f
+            #
+            {% endif %}
+            {{ netlab_config_text }}
+          netlab_config_exec:
+          - sleep 1
+        image: quay.io/frrouting/frr:10.5.1
         kmods:
         node:
           kind: linux
@@ -3399,6 +3409,7 @@ defaults:
         routing:
           static: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -3433,11 +3444,6 @@ defaults:
         netlab_lldp_enable: false
         netlab_net_tools: false
       clab:
-        node_config:
-          initial: :ns
-          lag: :ns
-          vlan: :ns
-          routing: :ns
         features:
           initial:
             roles:
@@ -3463,6 +3469,7 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+          netlab_config_mode: ns
       external:
         image: none
       graphite:
@@ -3482,6 +3489,7 @@ defaults:
           ipv4:
       mtu: 1500
       clab:
+        build: true
         image: netlab/netscaler
         node:
           kind: linux
@@ -3773,12 +3781,13 @@ defaults:
         routing:
           static: true
         initial:
-          roles:
-          - host
-          - router
           ipv6:
             use_ra: true
             lla: true
+          reload: false
+          roles:
+          - host
+          - router
         ospf:
           unnumbered: false
           import:
@@ -3943,6 +3952,7 @@ defaults:
             unnumbered: true
           ipv6:
             lla: true
+          reload: false
         bgp:
           activate_af: true
           ipv6_lla: true
@@ -5045,6 +5055,7 @@ defaults:
           static:
             discard: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -5114,11 +5125,6 @@ defaults:
           static: RTS_STATIC_DEVICE,RTS_STATIC
         netlab_device_type: bird
       clab:
-        node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
-          routing: :ns
         features:
           initial:
             roles:
@@ -5143,11 +5149,12 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+          netlab_config_mode: sh
           netlab_show_command:
           - birdc
           - show $@
           docker_shell: bash -il
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
       external:
         image: none
       graphite:
@@ -5176,6 +5183,7 @@ defaults:
         routing:
           static: true
         initial:
+          reload: false
           ipv4:
             unnumbered: peer
           ipv6:
@@ -5211,11 +5219,6 @@ defaults:
         netlab_net_tools: false
         netlab_device_type: dnsmasq
       clab:
-        node_config:
-          initial: :ns
-          lag: :ns
-          vlan: :ns
-          routing: :ns
         features:
           initial:
             roles:
@@ -5239,8 +5242,9 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
+          netlab_config_mode: ns
           docker_shell: bash -il
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
       external:
         image: none
       graphite:
@@ -5278,17 +5282,14 @@ defaults:
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
       clab:
-        node_config:
-          initial: /etc/config/01-initial.sh:sh
-          lag: /etc/config/10-lag.sh:sh
-          vlan: /etc/config/20-vlan.sh:sh
         group_vars:
           netlab_show_command:
           - birdc
           - show $@
           docker_shell: bash -il
+          netlab_config_mode: sh
         image: netlab/bird:latest
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
         features:
           initial:
             roles:
@@ -5338,6 +5339,7 @@ defaults:
             unnumbered: peer
           ipv6:
             lla: true
+          reload: false
           roles:
           - host
           - router
@@ -5355,7 +5357,7 @@ defaults:
         group_vars:
           docker_shell: bash -il
         image: netlab/dnsmasq:latest
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        build: true
         features:
           initial:
             roles:
@@ -5368,6 +5370,7 @@ defaults:
         dhcp:
           server: true
         initial:
+          reload: false
           roles:
           - host
       dhcp:
@@ -5621,6 +5624,11 @@ defaults:
         - width
     config: {}
     provider: {}
+    pickle: {}
+    tools: {}
+    ansible:
+      hostfile: {}
+      configfile: {}
     yaml=netlab:
       snapshot:
         yml: {}
@@ -5922,6 +5930,12 @@ defaults:
         ping_irb: 40
       vjunos-router:
         ping_irb: 90
+      nxos:
+        bgp_v4_redist: 40
+        bgp_v6_redist: 40
+      vptx:
+        ldp_adj: 180
+        ibgp_session: 40
   hints:
     evpn:
       irb_group: >
@@ -6037,6 +6051,14 @@ defaults:
       - jpeg
     create:
       output:
+        config:
+        provider:
+        pickle:
+        tools:
+        ansible: dirs
+        yaml:
+          output: netlab.snapshot.yml
+      plugin:
       - files
   paths:
     validate:
@@ -6129,6 +6151,7 @@ defaults:
       - deploy-config/{ ansible_network_os }.yml
     templates:
       dirs:
+      - /work/netlab_cicd/templates
       - /home/pipi/netlab_gh/netsim/daemons
       - /home/pipi/netlab_gh/netsim/ansible/templates
     t_files:
@@ -8133,7 +8156,7 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1768034050.429461
+    timestamp: 1768645929.109399
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
@@ -8206,6 +8229,9 @@ groups:
   as65101:
     members:
     - x1
+  netlab_no_reload:
+    members:
+    - dut
 nodes:
   dut:
     bgp:
@@ -8345,8 +8371,6 @@ nodes:
       bird: /etc/bird/bird.conf
       bgp: /etc/bird/bgp.mod.conf
       ospf: /etc/bird/ospf.mod.conf
-    _node_config:
-      initial: /etc/config/01-initial.sh:sh
     af:
       ipv4: true
     mgmt:
@@ -8371,6 +8395,8 @@ nodes:
     - bgp
     - ospf
     - initial
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
   rc:
     id: 10
     bgp:
@@ -8432,18 +8458,40 @@ nodes:
     clab:
       kind: linux
       config_templates:
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: ospf
+        target: /etc/config/02-ospf.sh
+        mode: sh
+      - source: bgp
+        target: /etc/config/03-bgp.sh
+        mode: sh
+      - source: frr-community
+        target: /etc/config/04-frr-community.sh
+        mode: sh
       - source: daemons
         target: /etc/frr/daemons
       - source: hosts
         target: /etc/hosts
         mode: shared
+      exec:
+      - sleep 1
       binds:
+      - target: /etc/config/01-initial.sh
+        source: node_files/rc/initial
+      - target: /etc/config/02-ospf.sh
+        source: node_files/rc/ospf
+      - target: /etc/config/03-bgp.sh
+        source: node_files/rc/bgp
+      - target: /etc/config/04-frr-community.sh
+        source: node_files/rc/frr-community
       - target: /etc/frr/daemons
         source: node_files/rc/daemons
       - target: /etc/hosts
         source: node_files/-shared-hosts
         mode: ro
-    box: quay.io/frrouting/frr:10.5.0
+    box: quay.io/frrouting/frr:10.5.1
     mtu: 1500
     module:
     - ospf
@@ -8477,6 +8525,16 @@ nodes:
       ospf:
         area: 0.0.0.0
         passive: false
+    netlab_ansible_skip_module:
+    - initial
+    - ospf
+    - bgp
+    - frr-community
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      ospf: /etc/config/02-ospf.sh:sh
+      bgp: /etc/config/03-bgp.sh:sh
+      frr-community: /etc/config/04-frr-community.sh:sh
   r2:
     name: r2
     interfaces:
@@ -8514,18 +8572,35 @@ nodes:
     clab:
       kind: linux
       config_templates:
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: ospf
+        target: /etc/config/02-ospf.sh
+        mode: sh
+      - source: bgp
+        target: /etc/config/03-bgp.sh
+        mode: sh
       - source: daemons
         target: /etc/frr/daemons
       - source: hosts
         target: /etc/hosts
         mode: shared
+      exec:
+      - sleep 1
       binds:
+      - target: /etc/config/01-initial.sh
+        source: node_files/r2/initial
+      - target: /etc/config/02-ospf.sh
+        source: node_files/r2/ospf
+      - target: /etc/config/03-bgp.sh
+        source: node_files/r2/bgp
       - target: /etc/frr/daemons
         source: node_files/r2/daemons
       - target: /etc/hosts
         source: node_files/-shared-hosts
         mode: ro
-    box: quay.io/frrouting/frr:10.5.0
+    box: quay.io/frrouting/frr:10.5.1
     mtu: 1500
     module:
     - ospf
@@ -8594,6 +8669,14 @@ nodes:
       ospf:
         area: 0.0.0.0
         passive: false
+    netlab_ansible_skip_module:
+    - initial
+    - ospf
+    - bgp
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      ospf: /etc/config/02-ospf.sh:sh
+      bgp: /etc/config/03-bgp.sh:sh
   x1:
     module:
     - bgp
@@ -8641,18 +8724,30 @@ nodes:
     clab:
       kind: linux
       config_templates:
+      - source: initial
+        target: /etc/config/01-initial.sh
+        mode: sh
+      - source: bgp
+        target: /etc/config/02-bgp.sh
+        mode: sh
       - source: daemons
         target: /etc/frr/daemons
       - source: hosts
         target: /etc/hosts
         mode: shared
+      exec:
+      - sleep 1
       binds:
+      - target: /etc/config/01-initial.sh
+        source: node_files/x1/initial
+      - target: /etc/config/02-bgp.sh
+        source: node_files/x1/bgp
       - target: /etc/frr/daemons
         source: node_files/x1/daemons
       - target: /etc/hosts
         source: node_files/-shared-hosts
         mode: ro
-    box: quay.io/frrouting/frr:10.5.0
+    box: quay.io/frrouting/frr:10.5.1
     mtu: 1500
     id: 3
     role: router
@@ -8672,6 +8767,12 @@ nodes:
       ipv4: 10.0.0.3/32
       bgp:
         advertise: true
+    netlab_ansible_skip_module:
+    - initial
+    - bgp
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+      bgp: /etc/config/02-bgp.sh:sh
 links:
 - interfaces:
   - node: dut
@@ -8830,4 +8931,4 @@ ospf:
 _cleanup:
   files:
   - frr-community.j2
-_netlab_version: 25.12.03
+_netlab_version: 26.01.01
