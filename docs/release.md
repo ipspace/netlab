@@ -8,7 +8,7 @@ Release Notes
 * Containers can be [configured with Linux scripts or *containerlab* startup-config parameter](platform-config-mode) instead of with an Ansible playbook.
 * **[netlab graph](netlab-graph)** command can create graphs from a subset of nodes or links
 
-[More details](release-26.02) and [a tiny breaking changes](release-26.02-breaking)
+[More details](release-26.02) and [a tiny breaking change](release-26.02-breaking)
 
 **Release 26.01.01 (2026-01-14)**
 
