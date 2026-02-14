@@ -25,7 +25,9 @@ The following table describes the per-platform support of individual EVPN/VXLAN 
 | ------------------ | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  |  ✅  | ✅  | ✅  |
 | Aruba AOS-CX       | ✅  |  ✅  | ✅  | ✅[❗](caveats-aruba)  |
-| Cisco IOS/XE[^XE]  | ✅  |  ❌  | ✅  |  ❌  |
+| Cisco Catalyst 8000v | ✅  |  ❌  | ✅  | ✅  |
+| Cisco IOL          | ✅  |  ❌  | ✅  | ✅  |
+| Cisco IOL L2       | ✅  |  ❌  | ✅  |  ❌  |
 | Cisco Nexus OS     | ✅  |  ❌  | ✅  | ✅  |
 | Cumulus Linux 4.x  | ✅  |  ❌  | ✅  | ✅  |
 | Cumulus 5.x (NVUE) | ✅  |  ❌  | ✅  | ✅  |
