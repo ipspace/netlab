@@ -3,7 +3,6 @@
 #
 from box import Box
 
-from ..augment import devices
 from ..utils import log
 from . import _Quirks, report_quirk
 from .iosv import check_ripng_passive
@@ -37,7 +36,7 @@ def evpn_transit_vlan(node: Box, topology: Box) -> None:
     return
   
   vlan_set = { vdata.id for vdata in node.get('vlans',{}).values() }
-  xvlan_id = devices.get_node_group_var(node,'netlab_evpn_transit_vlan',topology.defaults) or 3700
+  xvlan_id = node.get('evpn._start_transit_vlan',3800)
 
   for vdata in node.get('vrfs',{}).values():
     if 'evpn.transit_vni' not in vdata:
@@ -45,6 +44,7 @@ def evpn_transit_vlan(node: Box, topology: Box) -> None:
     while xvlan_id in vlan_set:
       xvlan_id += 1
     vdata.evpn._transit_vlan = xvlan_id
+    vlan_set.add(xvlan_id)
 
 class IOSXE(_Quirks):
   @classmethod
