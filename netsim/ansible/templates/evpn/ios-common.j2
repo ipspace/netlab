@@ -21,16 +21,47 @@ l2vpn evpn instance {{ vlan.evpn.evi }} vlan-based
 {%     endfor %}
 {%   endfor %}
 {% endif %}
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.evpn.evi is defined %}
+!
+vrf definition {{ vname }}
+{%     for af in ['ipv4','ipv6'] if af in vdata.af %}
+ address-family {{ af }}
+{%       for kw in ['import','export'] if kw in vdata %}
+{%         for rt in vdata[kw] %}
+  route-target {{ kw }} {{ rt }} stitching
+{%         endfor %}
+{%       endfor %}
+ exit-address-family
+{%     endfor %}
+{%   endfor %}
+{%   for vname,vdata in vrfs.items() if vdata.evpn.transit_vni is defined %}
+{%     if loop.first %}
+!
+interface nve1
+ no shutdown
+ source-interface {{ vxlan.vtep_interface|default('Loopback0') }}
+ host-reachability protocol bgp
+{%     endif %}
+ member vni {{ vdata.evpn.transit_vni }} vrf {{ vname }}
+{%   endfor %}
+{% endif %}
+{% for n in bgp.neighbors if n.evpn is defined and n.type == 'ebgp' %}
+{%   if loop.first %}
 !
 route-map evpn_nh_unchanged permit 10
  set ip next-hop unchanged
+{%   endif %}
+{% endfor %}
 !
 router bgp {{ bgp.as }}
 {% for n in bgp.neighbors if n.evpn|default(False) and n.type == 'ebgp' %}
  neighbor {{ n[n.evpn] }} ebgp-multihop
 {% endfor %}
  address-family l2vpn evpn
+  bgp scan-time 5
 {% for n in bgp.neighbors if n.evpn|default(False) %}
+  neighbor {{ n[n.evpn] }} encap vxlan
   neighbor {{ n[n.evpn] }} activate
   neighbor {{ n[n.evpn] }} send-community both
 {%   if n.rr_client|default(False) %}

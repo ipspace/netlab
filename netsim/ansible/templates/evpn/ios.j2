@@ -9,5 +9,17 @@ bridge-domain {{ vlan.id }}
  member evpn-instance {{ vlan.evpn.evi }} vni {{ vlan.vni }}
 {%   endfor %}
 {% endif %}
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.evpn.transit_vni is defined %}
+!
+bridge-domain {{ vdata.evpn._transit_vlan }}
+ member vni {{ vdata.evpn.transit_vni }}
+!
+interface BDI{{ vdata.evpn._transit_vlan }}
+ vrf forwarding {{ vname }}
+ ip unnumbered {{ vxlan.vtep_interface|default('Loopback0') }}
+ no shutdown
+{%   endfor %}
+{% endif %}
 {# Control-plane configuration #}
 {% include 'ios-common.j2' %}

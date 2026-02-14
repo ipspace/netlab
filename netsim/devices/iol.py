@@ -31,9 +31,25 @@ def check_vni(node: Box, topology: Box) -> None:
         quirk='vxlan.vni',
         category=log.IncorrectValue)
 
+def evpn_transit_vlan(node: Box, topology: Box) -> None:
+  if 'evpn' not in node.get('module',[]):
+    return
+  
+  vlan_set = { vdata.id for vdata in node.get('vlans',{}).values() }
+  xvlan_id = node.get('evpn._start_transit_vlan',3800)
+
+  for vdata in node.get('vrfs',{}).values():
+    if 'evpn.transit_vni' not in vdata:
+      continue
+    while xvlan_id in vlan_set:
+      xvlan_id += 1
+    vdata.evpn._transit_vlan = xvlan_id
+    vlan_set.add(xvlan_id)
+
 class IOSXE(_Quirks):
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
     check_ripng_passive(node,topology)
     check_srv6_sid(node,topology)
     check_vni(node,topology)
+    evpn_transit_vlan(node,topology)

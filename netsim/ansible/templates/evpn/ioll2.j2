@@ -16,5 +16,21 @@ interface {{ intf.ifname }}
 {%     endif %}
 {%   endfor %}
 {% endif %}
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.evpn.transit_vni is defined %}
+!
+vlan {{ vdata.evpn._transit_vlan }}
+ name VRF_{{ vname }}_TRANSIT
+!
+vlan configuration {{ vdata.evpn._transit_vlan }}
+ member vni {{ vdata.evpn.transit_vni }}
+!
+interface Vlan{{ vdata.evpn._transit_vlan }}
+ vrf forwarding {{ vname }}
+ ip unnumbered {{ vxlan.vtep_interface|default('Loopback0') }}
+ no shutdown
+ no autostate
+{%   endfor %}
+{% endif %}
 {# Control-plane configuration #}
 {% include 'ios-common.j2' %}
