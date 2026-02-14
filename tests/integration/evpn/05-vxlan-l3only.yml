@@ -14,7 +14,7 @@ plugin: [ fix_mtu ]
 groups:
   _auto_create: True
   hosts:
-    members: [ h1, h2 ]
+    members: [ hr1, hr2, hb1, hb2 ]
     device: linux
     provider: clab
   switches:
@@ -30,14 +30,12 @@ bgp.as: 65000
 vrfs:
   customer:
     evpn.transit_vni: 5042
+    links: [ hr1-dut, hr2-s2 ]
+  other:
+    evpn.transit_vni: 5067
+    links: [ hb1-dut, hb2-s2 ]
 
 links:
-- dut:
-  h1:
-  vrf: customer
-- s2:
-  h2:
-  vrf: customer
 - dut:
   s2:
   mtu: 1600
@@ -63,11 +61,18 @@ validate:
     description: Pinging default gateway
     wait_msg: Waiting for STP and IRB to wake up
     wait: ping_irb
-    nodes: [ h1 ]
-    plugin: ping(nodes.h1.interfaces[0].gateway.ipv4)
+    nodes: [ hr1, hb1 ]
+    plugin: ping(node.interfaces[0].gateway.ipv4)
 
-  ping_vlan:
-    description: End-to-end Intra-VRF ping-based reachability test
-    wait: ping
-    nodes: [ h1 ]
-    plugin: ping('h2')
+  ping_cust:
+    description: End-to-end reachability in Customer VRF
+    wait: ping_evpn
+    wait_msg: Waiting for EVPN route redistribution to work
+    nodes: [ hr1 ]
+    plugin: ping('hr2')
+
+  ping_other:
+    description: End-to-end reachability in other VRF
+    wait: ping_evpn
+    nodes: [ hb1 ]
+    plugin: ping('hb2')

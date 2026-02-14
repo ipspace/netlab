@@ -14,26 +14,33 @@ vrfs:
   tenant:
     evpn.transit_vni: 5042
     links: [ ce1-dut, ce2-s2 ]
+  other:
+    evpn.transit_vni: 5067
+    links: [ ce3-dut, ce4-s2 ]
 
 evpn.vrfs: [ tenant ]
 
 groups:
   _auto_create: True
   ce:
-    members: [ ce1, ce2 ]
+    members: [ ce1, ce2, ce3, ce4 ]
     module: [ bgp ]
   switches:
     members: [ dut, s2 ]
   x_devices:
-    members: [ s2, ce1, ce2 ]
+    members: [ s2, ce ]
     device: frr
     provider: clab
 
 nodes:
   ce1:
-    bgp.as: 65100
-  ce2:
     bgp.as: 65101
+  ce2:
+    bgp.as: 65102
+  ce3:
+    bgp.as: 65103
+  ce4:
+    bgp.as: 65104
 
 links:
 - dut:
@@ -45,14 +52,14 @@ validate:
     description: Check EBGP sessions CE1-DUT
     wait: ebgp_session
     wait_msg: Waiting for BGP sessions to start
-    nodes: [ ce1 ]
+    nodes: [ ce1, ce3 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
     stop_on_error: true
   ebgp_s2:
     description: Check EBGP sessions CE2-S2
     wait: ebgp_session
     wait_msg: Waiting for BGP sessions to start
-    nodes: [ ce2 ]
+    nodes: [ ce2, ce4 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'s2')
     stop_on_error: true
   ospf:
@@ -87,9 +94,11 @@ validate:
     stop_on_error: True
   ping_ce2:
     description: Ping-based CE-to-CE reachability test (CE2)
+    wait: ping
     nodes: [ ce1 ]
-    plugin: ping('ce2')
-  ping_ce1:
-    description: Ping-based CE-to-CE reachability test (CE1)
-    nodes: [ ce2 ]
-    plugin: ping('ce1')
+    plugin: ping('ce2',src=node.loopback.ipv4)
+  ping_ce4:
+    description: Ping-based CE-to-CE reachability test (CE4)
+    wait: ping
+    nodes: [ ce3 ]
+    plugin: ping('ce4',src=node.loopback.ipv4)
