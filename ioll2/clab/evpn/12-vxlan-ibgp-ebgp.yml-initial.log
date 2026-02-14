@@ -6,18 +6,18 @@ Creating Device configuration snippets
 [CREATED] spine: normalize,initial,bgp,evpn
 Checking Are lab devices ready to be configured?
  [INFO] Checking SSH server(s) on l1,spine
+[SSH]     SSH server on node l1 (device ioll2) is ready after 7.3 seconds
 [SSH]     SSH server on node spine (device ioll2) is ready after 7.3 seconds
-[SSH]     SSH server on node l1 (device ioll2) is ready after 9.3 seconds
 Config Deploying device configurations
  [INFO] Executing initial configuration for node h1 (namespace clab-
           ml-17-h1)
  [INFO] Executing initial configuration for node h2 (namespace clab-
           ml-17-h2)
  [INFO] Executing initial configuration for node l2
- [INFO] Executing routing configuration for node h2 (namespace clab-
-          ml-17-h2)
  [INFO] Executing routing configuration for node h1 (namespace clab-
           ml-17-h1)
+ [INFO] Executing routing configuration for node h2 (namespace clab-
+          ml-17-h2)
  [INFO] Executing vlan configuration for node l2
  [INFO] Executing bgp configuration for node l2
  [INFO] Executing vxlan configuration for node l2
@@ -247,10 +247,10 @@ ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [l1] => {
-    "msg": "evpn configuration for l1\n=========================================\n! \nvlan configuration 1000\n member evpn-instance 1000 vni 6000\n!\nl2vpn evpn instance 1000 vlan-based\n encapsulation vxlan\n replication-type ingress\n rd 10.0.0.3:1000\n route-target import 65000:1000\n route-target export 65000:1000\n!\nroute-map evpn_nh_unchanged permit 10\n set ip next-hop unchanged\n!\nrouter bgp 65000\n address-family l2vpn evpn\n  neighbor 10.0.0.5 activate\n  neighbor 10.0.0.5 send-community both\n"
+    "msg": "evpn configuration for l1\n=========================================\n! \nvlan configuration 1000\n member evpn-instance 1000 vni 6000\n!\nl2vpn evpn instance 1000 vlan-based\n encapsulation vxlan\n replication-type ingress\n rd 10.0.0.3:1000\n route-target import 65000:1000\n route-target export 65000:1000\n!\nrouter bgp 65000\n address-family l2vpn evpn\n  neighbor 10.0.0.5 encap vxlan\n  neighbor 10.0.0.5 activate\n  neighbor 10.0.0.5 send-community both\n"
 }
 ok: [spine] => {
-    "msg": "evpn configuration for spine\n=========================================\n!\nroute-map evpn_nh_unchanged permit 10\n set ip next-hop unchanged\n!\nrouter bgp 65000\n address-family l2vpn evpn\n  neighbor 10.0.0.3 activate\n  neighbor 10.0.0.3 send-community both\n  neighbor 10.0.0.3 route-reflector-client\n  neighbor 10.0.0.4 activate\n  neighbor 10.0.0.4 send-community both\n  neighbor 10.0.0.4 route-reflector-client\n"
+    "msg": "evpn configuration for spine\n=========================================\n!\nrouter bgp 65000\n address-family l2vpn evpn\n  neighbor 10.0.0.3 encap vxlan\n  neighbor 10.0.0.3 activate\n  neighbor 10.0.0.3 send-community both\n  neighbor 10.0.0.3 route-reflector-client\n  neighbor 10.0.0.4 encap vxlan\n  neighbor 10.0.0.4 activate\n  neighbor 10.0.0.4 send-community both\n  neighbor 10.0.0.4 route-reflector-client\n"
 }
 
 TASK [Deploy evpn configuration] ***********************************************
@@ -269,9 +269,9 @@ spine                      : ok=36   changed=4    unreachable=0    failed=0    s
 
 Results of configuration script deployments
 ================================================================================
-h1                           Script:  2  
-h2                           Script:  2  
-l2                           Script:  5  
+h1               Script:  initial,routing
+h2               Script:  initial,routing
+l2               Script:  initial,vlan,bgp,vxlan,evpn
 
 
 The devices under test are an EVPN PE-device and an EVPN route reflector. The
