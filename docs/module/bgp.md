@@ -45,11 +45,11 @@ _netlab_ BGP configuration module supports these features:
 
 Even more BGP features are implemented in the following plugins:
 
-* [bgp.session](../plugins/bgp.session.md): implements numerous BGP session features, including session protection and AS-path manipulation.
-* [bgp.policy](../plugins/bgp.policy.md): implements simple BGP routing policies, including weights, local preference, and MED.
-* [bgp.originate](../plugins/bgp.originate.md): creates loopback interfaces instead of static routes to originate additional IPv4 or IPv6 prefixes
-* [ebgp.multihop](../plugins/ebgp.multihop.md): implements multihop EBGP sessions.
-* [bgp.domain](../plugins/bgp.domain.md): allows you to build topologies that reuse the same BGP ASN in different network parts.
+* [bgp.session](plugin-bgp-session): implements numerous BGP session features, including session protection and AS-path manipulation.
+* [bgp.policy](plugin-bgp-policy): implements simple BGP routing policies, including weights, local preference, and MED.
+* [bgp.originate](plugin-bgp-originate): creates loopback interfaces instead of static routes to originate additional IPv4 or IPv6 prefixes
+* [ebgp.multihop](plugin-ebgp-multihop): implements multihop EBGP sessions.
+* [bgp.domain](plugin-bgp-domain): allows you to build topologies that reuse the same BGP ASN in different network parts.
 
 (bgp-platform)=
 ## Platform Support
@@ -310,9 +310,14 @@ defaults:
 An IP prefix assigned to a link with the **‌role** set to **‌stub** will not be advertised in BGP if there's more than one router or daemon attached to that link. The BGP module checks only the membership in the **‌defaults.bgp.advertise_roles** list for all other values of the **‌role** attribute.
 ```
 
+(module-bgp-originate)=
 ### Using bgp.originate Node Attribute
 
 When a node has the **bgp.originate** parameter, _netlab_ adds discard static routes for the IPv4 prefixes listed in that parameter (the static routes point to *Null0*) and configures the corresponding BGP prefix.
+
+```{tip}
+Use the [](plugin-bgp-originate) to originate additional IPv6 prefixes
+```
 
 For example, PE1 advertises `172.16.0.0/19' in the following topology. Please note that while the prefix is advertised via BGP, it does not have reachable IP addresses (the BGP prefix is based on a discard-everything static route).
 

@@ -1,11 +1,13 @@
 (plugin-bgp-originate)=
 # BGP Network Origination Plugin
 
-The **bgp.originate** modifies the way _netlab_ configures BGP network origination. The [](../module/bgp.md) configures static routes to the Null interface to originate additional IPv4 prefixes and IPv6 prefixes.
+The **bgp.originate** plugin modifies the way _netlab_ implements the origination of BGP prefixes.
 
-This plugin creates a loopback interface for every originated prefix, which can be either an IPv4 or an IPv6 prefix. The loopback interface gets the first IP address in the advertised prefix.
+The [](module-bgp) configures static routes to the Null interface to originate additional IPv4 prefixes specified in the **[bgp.originate](module-bgp-originate)** attribute. Without this plugin, that attribute cannot contain IPv6 prefixes.
 
-The plugin works with all platforms supporting the [](../module/bgp.md) and [loopback interfaces](platform-initial-interfaces).
+This plugin recognizes IPv4 and IPv6 prefixes in the **bgp.originate** node attribute and creates a loopback interface for every originated prefix. The loopback interface gets the first IP address in the advertised prefix.
+
+The plugin works with all platforms supporting the [](module-bgp) and [loopback interfaces](platform-initial-interfaces).
 
 | Modified attributes      | Meaning |
 |--------------------------|---------|
@@ -13,7 +15,7 @@ The plugin works with all platforms supporting the [](../module/bgp.md) and [loo
 
 ## Example
 
-In the following topology, R1 originates three prefixes -- its loopback IP address, another IPv4 prefix, and an IPv6 prefix.
+In the following topology, R1 originates four prefixes -- its loopback IP address, the stub prefix, and the two prefixes (an IPv4 and an IPv6 prefix) specified in the **bgp.originate** list.
 
 ```
 defaults.device: eos
