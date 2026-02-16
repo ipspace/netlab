@@ -1,11 +1,66 @@
 {#
   vPTX (Junos EVO) VXLAN configuration
 
-  On EVO, 'protocols evpn encapsulation vxlan' at the global level is NOT supported.
-  The encapsulation is set inside each mac-vrf routing-instance by the evpn template.
+  On EVO, static VXLAN uses a single virtual-switch routing-instance (evpn-switch).
+  For EVPN, the mac-vrf instances are created by the evpn template.
 #}
 forwarding-options {
     tunnel-termination;
 }
-{# Common Junos VXLAN configuration (ECMP, switch-options, vlans, flooding) #}
-{% include 'junos-common.j2' %}
+policy-options {
+    policy-statement ecmp {
+        then {
+            load-balance per-flow;
+        }
+    }
+}
+routing-options {
+    forwarding-table {
+        export ecmp;
+    }
+}
+
+{% if vxlan.vlans is defined and vxlan.flooding|default('') == 'static' %}
+{# Delete VLANs from global level -- they move into the virtual-switch instance #}
+vlans {
+{%   for vname in vxlan.vlans if vlans[vname].vni is defined and vlans[vname].evpn.bundle is not defined %}
+    delete: {{ vname }};
+{%   endfor %}
+}
+
+{# Single virtual-switch routing instance for static VXLAN flooding #}
+routing-instances {
+    evpn-switch {
+        instance-type virtual-switch;
+        vtep-source-interface {{ vxlan.vtep_interface }};
+{%   for remote_vtep in vxlan.vtep_list %}
+        remote-vtep-list {{ remote_vtep }};
+{%   endfor %}
+{%   for vname in vxlan.vlans if vlans[vname].vni is defined and vlans[vname].evpn.bundle is not defined %}
+{%     for intf in interfaces if intf.vlan.access|default('') == vname %}
+        interface {{ intf.ifname }};
+{%     endfor %}
+{%   endfor %}
+        vlans {
+{%   for vname in vxlan.vlans if vlans[vname].vni is defined and vlans[vname].evpn.bundle is not defined %}
+{%     set vlan = vlans[vname] %}
+            {{ vname }} {
+                vlan-id {{ vlan.id }};
+{%     if vlan.mode|default('') == 'irb' %}
+                l3-interface irb.{{ vlan.id }};
+{%     endif %}
+                vxlan {
+                    vni {{ vlan.vni }};
+                    ingress-node-replication;
+{%     if vlan.vtep_list is defined %}
+{%       for vtep in vlan.vtep_list %}
+                    static-remote-vtep-list {{ vtep }};
+{%       endfor %}
+{%     endif %}
+                }
+            }
+{%   endfor %}
+        }
+    }
+}
+{% endif %}
