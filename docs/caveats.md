@@ -223,13 +223,13 @@ See also [common Cisco IOS](caveats-iosv) caveats.
 
 ### Cisco XRd
 
-* The `cisco.iosxr` Ansible Galaxy collection, used to initialize the device and push configurations, is currently incompatible with IOS XRd. A [pull request](https://github.com/ansible-collections/cisco.iosxr/pull/510) exists to fix this, but it has not been merged yet. Until then, you can utilize the following command to install the fork:
+* Older versions of the `cisco.iosxr` Ansible Galaxy collection did not work with XRd because they tried to execute the `show inventory` command. If you experience that error, upgrade the collection with:
 
 ```shell
-ansible-galaxy collection install git+https://github.com/jmussmann/ansible_collection_cisco.iosxr.git,issue/509
+ansible-galaxy collection install --upgrade cisco.iosxr
 ```
 
-* The IOS XRd container seems to be a resource hog. If you experience errors during the initial device configuration, reduce the number of parallel configuration processes -- set the ANSIBLE_FORKS environment variable to one with `export ANSIBLE_FORKS=1`.
+* Starting numerous IOS XRd containers could overload your server. If you experience errors during the initial device configuration, reduce the number of parallel configuration processes -- set the ANSIBLE_FORKS environment variable to one with `export ANSIBLE_FORKS=1`.
 
 (caveats-cisco8000v)=
 ## Cisco 8000v
