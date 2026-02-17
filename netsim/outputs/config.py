@@ -39,14 +39,15 @@ class ConfigurationFiles(_TopologyOutput):
       cur_dir = Path('.').resolve()
       try:
         node_files.resolve().relative_to(cur_dir)       # Check if node_files is within current directory
+      except ValueError:
+        log.error("Cannot clean 'node_files' directory outside of the lab directory")
+      else:
         if log.VERBOSE:
           log.info("Cleaning up the 'node_files' directory")
         try:
           shutil.rmtree(node_files)
         except Exception as ex:
           log.error("Failed to remove directory 'node_files'", more_data=[str(ex)])
-      except ValueError:
-        log.error("Cannot clean 'node_files' directory outside of the lab directory")
 
     # Creates a "ghost clean" topology after transformation
     # (AKA, remove unmanaged devices)
