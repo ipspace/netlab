@@ -1,6 +1,6 @@
 # Segment Routing (MPLS) Configuration Module
 
-This configuration module configures SR-MPLS within IS-IS routing process on Cisco IOS XE (CSR), Arista EOS, Juniper vSRX, Nokia SR Linux and Nokia SR OS.
+This configuration module configures SR-MPLS within the IS-IS routing process on Arista EOS, Cisco IOS XE (CSR), FRR, Junos, Nokia SR Linux, and Nokia SR OS.
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -15,8 +15,8 @@ Supported Segment Routing features:
 
 * IPv4 and IPv6 (see [](sr-mpls-platforms))
 * IS-IS routing protocol
-* IPv4 Node SID: set to node ID
-* IPv6 Node SID: set to node ID + 100
+* IPv4 Node SID
+* IPv6 Node SID
 
 The module depends on the IS-IS module and will trigger a configuration error if the **isis** module is not enabled in the network topology.
 
@@ -40,9 +40,32 @@ SR-MPLS is implemented on the following platforms:
 
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
-## Parameters
+## Global Parameters
 
-The SR-MPLS module has no configurable parameters.
+The SR-MPLS module configures Node SIDs for the IPv4 and IPv6 address families (AFs). The values of the AF Node SID are generated from node identifiers and AF-specific offsets. These offsets are controlled with two global parameters:
+
+* **sr.node_sid_offset.ipv4** (default: 0) -- Node SID offset for IPv4 loopback prefix
+* **sr.node_sid_offset.ipv6** (default: 100) -- Node SID offset for IPv6 loopback prefix
+
+## Device Parameters
+
+Some devices (Nokia SR OS, Nokia SR Linux) have a configurable Segment Routing Global Block (SRGB). The SRGB can be configured with these device- or node attributes:
+
+* **sr.srgb.start** -- the start of SRGB
+* **sr.srgb.size** -- the size of SRGB
+
+You can set these parameters as node attributes or change device [defaults](topo-defaults), for example:
+
+```
+defaults.devices.srsim.sr.srgb.start: 200000
+```
+
+## Node Parameters
+
+You can configure Node SIDs (mapped to loopback IPv4/IPv6 prefixes) with these node parameters:
+
+* **sr.node_sid.ipv4** (default: node identifier) -- IPv4 Node SID
+* **sr.node_sid.ipv6** (default: node identifier + 100) -- IPv6 Node SID
 
 ## Example
 
