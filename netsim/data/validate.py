@@ -807,7 +807,7 @@ Legacy attributes: given a path to an object and the object namespace, warn abou
 migrated attributes
 """
 def legacy_attributes(
-      object: Box,                                # Object to work on: topology, node, link...
+      t_object: Box,                              # Object to work on: topology, node, link...
       topology: Box, 
       o_path: str,                                # Path to the object (used in error messages)
       module: typing.Optional[str] = None,        # Module or core attributes?
@@ -816,8 +816,8 @@ def legacy_attributes(
   if module:
     attrs = topology.defaults[module].attributes[attr_namespace]
   else:
-    attrs = topology.attributes[attr_namespace]
-  mod_settings = object.get(module,{}) if module else object
+    attrs = topology.defaults.attributes[attr_namespace]
+  mod_settings = t_object.get(module,{}) if module else t_object
 
   mod_path = module +'.' if module else ''
   msg_path = o_path or 'topology'
@@ -845,5 +845,6 @@ def legacy_attributes(
         f"{msg_path} has duplicate attributes {mod_path}{a_name} and {mod_path}{a_rename}",
         category=log.IncorrectAttr,
         module=module)
-    mod_settings[a_rename] = mod_settings[a_name]
+    else:
+      mod_settings[a_rename] = mod_settings[a_name]
     mod_settings.pop(a_name)
