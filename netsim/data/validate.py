@@ -801,3 +801,49 @@ def get_object_attributes(object_type_list: typing.List[str], topology: Box) -> 
           attrs[kw][o_name] = None
 
   return attrs
+
+"""
+Legacy attributes: given a path to an object and the object namespace, warn about the deprecated and
+migrated attributes
+"""
+def legacy_attributes(
+      object: Box,                                # Object to work on: topology, node, link...
+      topology: Box, 
+      o_path: str,                                # Path to the object (used in error messages)
+      module: typing.Optional[str] = None,        # Module or core attributes?
+      attr_namespace: str = 'global') -> None:    # Attribute namespace
+
+  if module:
+    attrs = topology.defaults[module].attributes[attr_namespace]
+  else:
+    attrs = topology.attributes[attr_namespace]
+  mod_settings = object.get(module,{}) if module else object
+
+  mod_path = module +'.' if module else ''
+  msg_path = o_path or 'topology'
+
+  for a_name, a_msg in attrs.get('_obsolete',{}).items():
+    if not a_name in mod_settings:
+      continue
+    log.warning(
+      text=f"{attr_namespace} attribute {mod_path}{a_name} used in {msg_path} is obsolete",
+      module=module,
+      flag='obsolete',
+      more_hints = [ a_msg ])
+    mod_settings.pop(a_name)
+
+  for a_name, a_rename in attrs.get('_migrate',{}).items():
+    if not a_name in mod_settings:
+      continue
+    log.warning(
+      text=f"{attr_namespace} attribute {mod_path}{a_name} used in {msg_path} "+\
+           f"has been renamed to {mod_path}{a_rename}",
+      module=module,
+      flag='migrated')
+    if a_rename in mod_settings:
+      log.error(
+        f"{msg_path} has duplicate attributes {mod_path}{a_name} and {mod_path}{a_rename}",
+        category=log.IncorrectAttr,
+        module=module)
+    mod_settings[a_rename] = mod_settings[a_name]
+    mod_settings.pop(a_name)
