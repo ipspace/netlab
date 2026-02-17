@@ -1,0 +1,153 @@
+Creating Device configuration snippets
+[CREATED] dut: initial,ospf,bgp
+[CREATED] rc: initial,ospf,bgp,frr-community
+[CREATED] r2: initial,ospf,bgp
+[CREATED] x1: initial,bgp
+Checking Are lab devices ready to be configured?
+ [INFO] Checking SSH server(s) on dut
+[SSH]     SSH server on node dut (device iosxr) is ready after 26.0 seconds
+Config Deploying device configurations
+ [INFO] Executing initial configuration for node rc
+ [INFO] Executing initial configuration for node r2
+ [INFO] Executing initial configuration for node x1
+ [INFO] Executing bgp configuration for node x1
+ [INFO] Executing ospf configuration for node rc
+ [INFO] Executing ospf configuration for node r2
+ [INFO] Executing bgp configuration for node rc
+ [INFO] Executing bgp configuration for node r2
+ [INFO] Executing frr-community configuration for node rc
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "initial configuration for dut\n=========================================\nhostname dut\n!\ndomain lookup disable\n!\nlldp\n no management enable\n!\ndomain ipv4 host rc 10.0.0.10\ndomain ipv4 host r2 10.0.0.2\ndomain ipv4 host x1 10.0.0.3\n!\ninterface Loopback0\n no shutdown\n ipv4 address 10.0.0.1 255.255.255.255\n!\ninterface GigabitEthernet0/0/0/0\n no shutdown\n description dut -> r2\n mtu 1514\n ipv4 address 10.1.0.1 255.255.255.252\n!\ninterface GigabitEthernet0/0/0/1\n no shutdown\n description dut -> x1 [external]\n mtu 1514\n ipv4 address 10.1.0.9 255.255.255.252\n!\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/iosxr.yml for dut
+
+TASK [iosxr_config: deploying initial from /work/netlab_cicd/node_files/dut/initial] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=bgp)
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "ospf configuration for dut\n=========================================\n!\nrouter ospf 1\n!\n! These throttle timers are probably too aggressive for a production network but\n! make labs run better ;)\n!\n timers throttle spf 10 20 100\n timers throttle lsa all 10 20 100\n router-id 10.0.0.1\n\n loopback stub-network enable\n area 0.0.0.0\n  interface Loopback0\n  interface GigabitEthernet0/0/0/0\n   network point-to-point\n\n"
+}
+
+TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/iosxr.yml for dut
+
+TASK [iosxr_config: deploying ospf from /work/netlab_cicd/node_files/dut/ospf] ***
+changed: [dut]
+
+TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [dut]
+
+TASK [Find configuration template for bgp] *************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "bgp configuration for dut\n=========================================\n!\n!\nrouter bgp 65000\n bgp unsafe-ebgp-policy\n bgp scan-time 5\n bgp update-delay 5\n bgp router-id 10.0.0.1\n bgp cluster-id 10.0.0.1\n\n!\n address-family ipv4 unicast\n  bgp scan-time 5\n!\n  network 10.0.0.1/32\n!\n!\n neighbor 10.0.0.10\n  remote-as 65000\n  description rc\n  update-source Loopback0\n  address-family ipv4 unicast\n   next-hop-self\n   route-reflector-client\n\n!\n neighbor 10.0.0.2\n  remote-as 65000\n  description r2\n  update-source Loopback0\n  address-family ipv4 unicast\n   next-hop-self\n   route-reflector-client\n\n!\n neighbor 10.1.0.10\n  remote-as 65101\n  description x1\n  address-family ipv4 unicast\n   send-community-ebgp\n\n"
+}
+
+TASK [Deploy bgp configuration] ************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/iosxr.yml for dut
+
+TASK [iosxr_config: deploying bgp from /work/netlab_cicd/node_files/dut/bgp] ***
+changed: [dut]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut                        : ok=27   changed=3    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+
+Results of configuration script deployments
+================================================================================
+rc               Script:  initial,ospf,bgp,frr-community
+r2               Script:  initial,ospf,bgp
+x1               Script:  initial,bgp
+
+
+Use this topology to test the BGP community propagation. The device under test
+is a BGP route reflector that should propagate standard and extended
+communities to IBGP neighbors but only standard communities to EBGP neighbors
+(the default setting).
+
+Three BGP communities are attached to the prefix advertised by RC: a standard
+one, an extended one, and a long one (standard communitiy using 4-octet AS)
+
