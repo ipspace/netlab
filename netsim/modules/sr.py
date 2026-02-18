@@ -36,8 +36,8 @@ class SR(_Module):
     sr_feature = devices.get_device_features(node,topology.defaults).get('sr',False)
     _routing.node_proto_af(node,'sr',None)                  # Create SR-MPLS AF if needed
 
-    for af in log.AF_LIST:                                  # Find active address families
-      if af not in sr_data.af:
+    for af in log.AF_LIST:                                  # Find address families
+      if af not in sr_data.af or af not in node.af:         # ... that are used on the node and enabled in sr.af
         continue
       if isinstance(sr_feature,Box) and 'af' in sr_feature: # Do we need to check AF support?
         if af not in sr_feature.af:

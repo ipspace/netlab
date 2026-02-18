@@ -48,10 +48,10 @@ The SR-MPLS module configures Node SIDs for the IPv4 and IPv6 address families (
 * **sr.node_sid_offset.ipv6** (default: 100) -- Node SID offset for IPv6 loopback prefix
 
 (sr-mpls-af)=
-You can also control which address families participate in SR-MPLS with the global **sr.af** dictionary:
+You can also control which address families participate in SR-MPLS with the global **sr.af** dictionary. If **sr.af** is not defined, SR-MPLS is enabled for all address families configured on the node.
 
-* **sr.af.ipv4** (default: True) -- SR-MPLS is used with IPv4
-* **sr.af.ipv6** (default: True) -- SR-MPLS is used with IPv6
+* **sr.af.ipv4** (boolean) -- Enable or disable SR-MPLS for IPv4
+* **sr.af.ipv6** (boolean) -- Enable or disable SR-MPLS for IPv6 
 
 ## Device Parameters
 
