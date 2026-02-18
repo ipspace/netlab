@@ -4,6 +4,7 @@
 
 from box import Box
 
+from ..augment import devices
 from ..data import validate
 from ..utils import log
 from . import _Module
@@ -32,9 +33,19 @@ class SR(_Module):
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
     sr_data = node.sr                                       # Note: this will create node.sr dictionary if needed
+    sr_feature = devices.get_device_features(node,topology.defaults).get('sr',False)
+    if 'af' not in sr_data:                                 # Create SR-MPLS AF if needed
+      sr_data.af = node.af
     for af in log.AF_LIST:                                  # Find active address families
-      if af not in node.af:
+      if af not in sr_data.af:
         continue
-      if af not in sr_data.node_sid:                        #  Is node SID statically defined (or empty)?
+      if isinstance(sr_feature,Box) and 'af' in sr_feature: # Do we need to check AF support?
+        if af not in sr_feature.af:
+          log.error(
+            f'Device {node.device} (node {node.name}) does not support SR-MPLS for {af}',
+            category=log.IncorrectValue,
+            module='sr')
+          continue
+      if af not in sr_data.node_sid:                        # Is node SID statically defined (or empty)?
         af_offset = topology.get(f'sr.node_sid_offset.{af}',100 if af == 'ipv6' else 0)
         node.sr.node_sid[af] = node.id + af_offset          # Set node SID to node ID plus AF offset

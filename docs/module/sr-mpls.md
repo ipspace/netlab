@@ -47,6 +47,12 @@ The SR-MPLS module configures Node SIDs for the IPv4 and IPv6 address families (
 * **sr.node_sid_offset.ipv4** (default: 0) -- Node SID offset for IPv4 loopback prefix
 * **sr.node_sid_offset.ipv6** (default: 100) -- Node SID offset for IPv6 loopback prefix
 
+(sr-mpls-af)=
+You can also control which address families participate in SR-MPLS with the global **sr.af** dictionary:
+
+* **sr.af.ipv4** (default: True) -- SR-MPLS is used with IPv4
+* **sr.af.ipv6** (default: True) -- SR-MPLS is used with IPv6
+
 ## Device Parameters
 
 Some devices (Nokia SR OS, Nokia SR Linux) have a configurable Segment Routing Global Block (SRGB). The SRGB can be configured with these device- or node attributes:
@@ -66,6 +72,10 @@ You can configure Node SIDs (mapped to loopback IPv4/IPv6 prefixes) with these n
 
 * **sr.node_sid.ipv4** (default: node identifier) -- IPv4 Node SID
 * **sr.node_sid.ipv6** (default: node identifier + 100) -- IPv6 Node SID
+
+You can limit the SR-MPLS address families for an individual node with the **sr.af** node dictionary ([details](sr-mpls-af)). Use this parameter in dual-stack labs with devices that do not support SR-MPLS for IPv6. Without an explicit **sr.af** definition, SR-MPLS is configured for all address families[^v46] used by the node.
+
+[^v46]: IPv4 and/or IPv6
 
 ## Example
 
