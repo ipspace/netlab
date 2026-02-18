@@ -33,7 +33,7 @@ SR-MPLS is implemented on the following platforms:
 | Juniper vMX           |   ✅  |  ✅  |  ✅   |  ❌   |
 | Juniper vPTX          |   ✅  |  ✅  |  ✅   |  ❌   |
 | Juniper vSRX          |   ✅  |  ✅  |  ✅   |  ❌   |
-| Nokia SR Linux [❗](caveats-srlinux) |   ✅  |  ✅  |  ✅   |  ❌   |
+| Nokia SR Linux [❗](caveats-srlinux) |   ✅  |  ❌   |  ✅   |  ❌   |
 | Nokia SR OS[^SROS]    |   ✅  |  ✅  |  ✅   |  ❌   |
 
 [^xe]: Catalyst 8000v, Cisco CSR 1000v, Cisco IOS on Linux (IOL) and IOL layer-2 image.
@@ -46,6 +46,12 @@ The SR-MPLS module configures Node SIDs for the IPv4 and IPv6 address families (
 
 * **sr.node_sid_offset.ipv4** (default: 0) -- Node SID offset for IPv4 loopback prefix
 * **sr.node_sid_offset.ipv6** (default: 100) -- Node SID offset for IPv6 loopback prefix
+
+(sr-mpls-af)=
+You can also control which address families participate in SR-MPLS with the global **sr.af** dictionary. If **sr.af** is not defined, SR-MPLS is enabled for all address families configured on the node.
+
+* **sr.af.ipv4** (boolean) -- Enable or disable SR-MPLS for IPv4
+* **sr.af.ipv6** (boolean) -- Enable or disable SR-MPLS for IPv6
 
 ## Device Parameters
 
@@ -66,6 +72,10 @@ You can configure Node SIDs (mapped to loopback IPv4/IPv6 prefixes) with these n
 
 * **sr.node_sid.ipv4** (default: node identifier) -- IPv4 Node SID
 * **sr.node_sid.ipv6** (default: node identifier + 100) -- IPv6 Node SID
+
+You can limit the SR-MPLS address families for an individual node with the **sr.af** node dictionary ([details](sr-mpls-af)). Use this parameter in dual-stack labs with devices that do not support SR-MPLS for IPv6. Without an explicit **sr.af** definition, SR-MPLS is configured for all address families[^v46] used by the node.
+
+[^v46]: IPv4 and/or IPv6
 
 ## Example
 

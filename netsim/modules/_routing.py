@@ -19,6 +19,32 @@ from ..utils import routing as _rp_utils
 from . import get_effective_module_attribute
 from .routing.policy import check_routing_policy, import_routing_policy
 
+"""
+Build protocol address families for protocols that are not enabled on individual interfaces
+
+Handles edge cases like:
+
+* No proto.af => use node.af
+* proto.af = None => use node.af (used to override group settings)
+* proto.af = True => use node.af
+* proto.af = False => No AFs
+"""
+def node_proto_af(
+      node: Box,
+      proto: str,
+      features: typing.Optional[Box] = None) -> None:
+
+  if 'af' in node[proto] and node[proto].af is None:
+    node[proto].pop('af',None)
+
+  if 'af' not in node[proto]:
+    node[proto].af = node.af
+
+  proto_af = node[proto].af
+  if proto_af is False:
+    node[proto].af = {}
+  elif proto_af is True:
+    node[proto].af = node.af
 
 # Build routing protocol address families
 #
