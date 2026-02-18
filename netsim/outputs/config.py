@@ -36,18 +36,13 @@ class ConfigurationFiles(_TopologyOutput):
     # Clean up the node_files directory to remove any old configuration files
     node_files = Path('node_files')
     if node_files.exists():
-      cur_dir = Path('.').resolve()
       try:
-        node_files.resolve().relative_to(cur_dir)       # Check if node_files is within current directory
-      except ValueError:
-        log.error("Cannot clean 'node_files' directory outside of the lab directory")
-      else:
-        if log.VERBOSE:
-          log.info("Cleaning up the 'node_files' directory")
-        try:
-          shutil.rmtree(node_files)
-        except Exception as ex:
-          log.error("Failed to remove directory 'node_files'", more_data=[str(ex)])
+        shutil.rmtree(node_files)
+      except Exception as ex:
+        log.error(
+          "Failed to remove directory 'node_files'",
+          more_data=[str(ex)],
+          module='config')
 
     # Creates a "ghost clean" topology after transformation
     # (AKA, remove unmanaged devices)
@@ -81,8 +76,9 @@ class ConfigurationFiles(_TopologyOutput):
             create_list.append(cfg_source)
         else:
           cfg_path = f'{n_name}/{cfg_source}'
-          if do_config(cfg_source,cfg_path,cfg_mode):
-            create_list.append(cfg_source)
+          if not do_config(cfg_source,cfg_path,cfg_mode):
+            continue
+          create_list.append(cfg_source)
           if cfg_mode in ('sh','cp_sh'):
             (node_files / cfg_path).chmod(0o755)
 
