@@ -409,6 +409,8 @@ defaults:
       role: router
       routing:
         _rm_per_af: true
+      evpn:
+        _start_transit_vlan: 3800
       features:
         bfd: {}
         bgp:
@@ -565,7 +567,7 @@ defaults:
           vpn: true
         evpn:
           asymmetrical_irb: true
-          irb: false
+          irb: true
       external:
         image: none
       graphite:
@@ -736,6 +738,8 @@ defaults:
       role: router
       routing:
         _rm_per_af: true
+      evpn:
+        _start_transit_vlan: 3800
       features:
         bfd: {}
         bgp:
@@ -1979,7 +1983,6 @@ defaults:
           netlab_ready:
           - ssh
           netlab_device_type: iol
-          netlab_config_mode: startup
         features:
           initial:
             config_mode:
@@ -1995,6 +1998,8 @@ defaults:
       role: router
       routing:
         _rm_per_af: true
+      evpn:
+        _start_transit_vlan: 3800
       features:
         bfd: {}
         bgp:
@@ -2153,7 +2158,7 @@ defaults:
           - evpn
         evpn:
           asymmetrical_irb: true
-          irb: false
+          irb: true
       external:
         image: none
       graphite:
@@ -2195,7 +2200,6 @@ defaults:
           netlab_ready:
           - ssh
           netlab_device_type: ioll2
-          netlab_config_mode: startup
         features:
           initial:
             config_mode:
@@ -2213,6 +2217,8 @@ defaults:
       role: router
       routing:
         _rm_per_af: true
+      evpn:
+        _start_transit_vlan: 3800
       features:
         bfd: {}
         bgp:
@@ -2375,7 +2381,7 @@ defaults:
           - evpn
         evpn:
           asymmetrical_irb: true
-          irb: false
+          irb: true
         stp:
           supported_protocols:
           - stp
@@ -2446,6 +2452,8 @@ defaults:
       role: router
       routing:
         _rm_per_af: true
+      evpn:
+        _start_transit_vlan: 3800
       features:
         bfd: {}
         bgp:
@@ -2657,6 +2665,8 @@ defaults:
       role: router
       routing:
         _rm_per_af: true
+      evpn:
+        _start_transit_vlan: 3800
       features:
         bfd: {}
         bgp:
@@ -2868,7 +2878,7 @@ defaults:
         mgmt_if: MgmtEth0/RP0/CPU0/0
         interface:
           name: Gi0-0-0-{ifindex}
-        image: ios-xr/xrd-control-plane:7.11.1
+        image: ios-xr/xrd-control-plane:25.2.1
         build: https://containerlab.dev/manual/kinds/xrd/
       features:
         initial:
@@ -3566,14 +3576,14 @@ defaults:
           isis:
           - isis
       sr:
-        srgb_range_start: 500000
-        srgb_range_size: 1000
-        ipv6_sid_offset: 100
+        srgb:
+          start: 500000
+          size: 1000
       bfd:
         min_tx: 100
         min_rx: 100
       clab:
-        image: ghcr.io/nokia/srlinux:25.10.1
+        image: ghcr.io/nokia/srlinux:25.10.2
         node:
           kind: srl
           type: ixr-d2
@@ -3715,9 +3725,9 @@ defaults:
           isis:
           - isis
       sr:
-        srgb_range_start: 500000
-        srgb_range_size: 1000
-        ipv6_sid_offset: 100
+        srgb:
+          start: 500000
+          size: 1000
       bfd:
         min_tx: 100
         min_rx: 100
@@ -3865,9 +3875,9 @@ defaults:
           - mda-slot: 2
             mda-type: me12-100gb-qsfp28
       sr:
-        srgb_range_start: 500000
-        srgb_range_size: 1000
-        ipv6_sid_offset: 100
+        srgb:
+          start: 500000
+          size: 1000
       bfd:
         min_tx: 100
         min_rx: 100
@@ -5261,6 +5271,9 @@ defaults:
           routing: /tmp/routing
         image: kindest/node:v1.34.3
   outputs:
+    ansible:
+      hostvars: dirs
+      filetype: json
     d2:
       command: d2 {gfile} {gname}.{gtype}
       node_address_label: true
@@ -5515,9 +5528,6 @@ defaults:
     provider: {}
     pickle: {}
     tools: {}
-    ansible:
-      hostfile: {}
-      configfile: {}
     yaml=netlab:
       snapshot:
         yml: {}
@@ -6510,6 +6520,7 @@ defaults:
       vxlan_ping: 20
       ping_stp: 45
       ping_irb: 10
+      ping_evpn: 5
       ra_send: 30
       ospfv2_adj_p2p: 30
       ospfv2_adj_lan: 50
@@ -6550,8 +6561,12 @@ defaults:
         ebgp_session: 90
         ping_vrf: 20
         bgp_scan_long: 30
+        isis_spf: 30
       ios:
         bgp_v6_redist: 60
+        ping_evpn: 70
+      iol:
+        bgp_scan_long: 30
       cisco8000v:
         ping_irb: 90
         ping_long: 15
@@ -6686,7 +6701,7 @@ defaults:
         provider:
         pickle:
         tools:
-        ansible: dirs
+        ansible:
         yaml:
           output: netlab.snapshot.yml
     initial:
@@ -8330,27 +8345,52 @@ defaults:
     - isis
     transform_after:
     - vlan
+    no_propagate:
+      node_sid_offset:
+    node_sid_offset:
+      ipv4: 0
+      ipv6: 100
     attributes:
       global:
-        srgb_range_start:
-          type: int
-          min_value: 1
-        srgb_range_size:
-          type: int
-          min_value: 1
-        ipv6_sid_offset:
-          type: int
-          min_value: 1
+        node_sid_offset:
+          ipv4:
+            type: int
+            min_value: 1
+          ipv6:
+            type: int
+            min_value: 1
+        _obsolete:
+          srgb_range_size: The SRGB range is device-specific and must be set on 
+            node or device
+          srgb_range_start: The SRGB range is device-specific and must be set on
+            node or device
+        _migrate:
+          ipv6_sid_offset: node_sid_offset.ipv6
       node:
-        srgb_range_start:
-          type: int
-          min_value: 1
-        srgb_range_size:
-          type: int
-          min_value: 1
-        ipv6_sid_offset:
-          type: int
-          min_value: 1
+        srgb:
+          start:
+            type: int
+            min_value: 1
+          size:
+            type: int
+            min_value: 1
+        node_sid:
+          ipv4:
+            type: int
+            min_value: 1
+            _alt_types:
+            - NoneType
+          ipv6:
+            type: int
+            min_value: 1
+            _alt_types:
+            - NoneType
+        _migrate:
+          srgb_range_start: srgb.start
+          srgb_range_size: srgb.size
+        _obsolete:
+          ipv6_sid_offset: The SR sid_offset must be set globally to be 
+            consistent across notes
       node_copy: {}
     supported_on:
       cat8000v: true
@@ -8798,7 +8838,7 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1770726421.1393113
+    timestamp: 1771356123.5854983
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
@@ -9258,6 +9298,10 @@ nodes:
       ipv6: 2001:db8:1::3/128
       isis:
         passive: false
+    sr:
+      node_sid:
+        ipv4: 3
+        ipv6: 103
     netlab_ansible_skip_module:
     - initial
     - isis
@@ -9414,6 +9458,10 @@ nodes:
       ipv6: 2001:db8:1::4/128
       isis:
         passive: false
+    sr:
+      node_sid:
+        ipv4: 4
+        ipv6: 104
     netlab_ansible_skip_module:
     - initial
     - isis
@@ -9464,21 +9512,11 @@ nodes:
     clab:
       kind: cisco_iol
       config_templates:
-      - source: initial
-        target: ''
-        mode: startup
-      - source: isis
-        target: ''
-        mode: startup
-      - source: sr
-        target: ''
-        mode: startup
       - source: ifstate
         target: /iol/ifstate.cfg
       binds:
       - target: /iol/ifstate.cfg
         source: node_files/dut/ifstate
-      startup-config: node_files/dut/startup.partial.config
     box: vrnetlab/cisco_iol:17.16.01a
     isis:
       area: '49.0001'
@@ -9511,14 +9549,10 @@ nodes:
       ipv6: 2001:db8:1::5/128
       isis:
         passive: false
-    netlab_ansible_skip_module:
-    - initial
-    - isis
-    - sr
-    _node_config:
-      initial: :startup
-      isis: :startup
-      sr: :startup
+    sr:
+      node_sid:
+        ipv4: 5
+        ipv6: 105
   p2:
     name: p2
     interfaces:
@@ -9617,6 +9651,10 @@ nodes:
       ipv6: 2001:db8:1::6/128
       isis:
         passive: false
+    sr:
+      node_sid:
+        ipv4: 6
+        ipv6: 106
     netlab_ansible_skip_module:
     - initial
     - isis
@@ -9660,4 +9698,4 @@ isis:
   area: '49.0001'
   type: level-2
   instance: Gandalf
-_netlab_version: 26.01.01
+_netlab_version: '26.02'
