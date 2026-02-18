@@ -51,7 +51,7 @@ The SR-MPLS module configures Node SIDs for the IPv4 and IPv6 address families (
 You can also control which address families participate in SR-MPLS with the global **sr.af** dictionary. If **sr.af** is not defined, SR-MPLS is enabled for all address families configured on the node.
 
 * **sr.af.ipv4** (boolean) -- Enable or disable SR-MPLS for IPv4
-* **sr.af.ipv6** (boolean) -- Enable or disable SR-MPLS for IPv6 
+* **sr.af.ipv6** (boolean) -- Enable or disable SR-MPLS for IPv6
 
 ## Device Parameters
 
