@@ -7,7 +7,7 @@ from box import Box
 from ..augment import devices
 from ..data import validate
 from ..utils import log
-from . import _Module
+from . import _Module, _routing
 
 
 class SR(_Module):
@@ -34,8 +34,8 @@ class SR(_Module):
   def node_post_transform(self, node: Box, topology: Box) -> None:
     sr_data = node.sr                                       # Note: this will create node.sr dictionary if needed
     sr_feature = devices.get_device_features(node,topology.defaults).get('sr',False)
-    if 'af' not in sr_data:                                 # Create SR-MPLS AF if needed
-      sr_data.af = node.af
+    _routing.node_proto_af(node,'sr',None)                  # Create SR-MPLS AF if needed
+
     for af in log.AF_LIST:                                  # Find active address families
       if af not in sr_data.af:
         continue
