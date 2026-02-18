@@ -1,20 +1,5 @@
-bgp:
-  advertise_loopback: true
-  community:
-    ebgp:
-    - standard
-    ibgp:
-    - standard
-    - extended
-  next_hop_self: true
-groups:
-  as65000:
-    members:
-    - c1
-    - e1
-    - e2
 input:
-- coverage/input/module-reorder.yml
+- coverage/input/migrated-attr.yml
 - package:topology-defaults.yml
 isis:
   area: '49.0001'
@@ -23,12 +8,12 @@ isis:
 links:
 - _linkname: links[1]
   interfaces:
-  - ifindex: 2
-    ifname: GigabitEthernet2
+  - ifindex: 1
+    ifname: eth1
     ipv4: 10.1.0.2/30
     node: e1
-  - ifindex: 2
-    ifname: GigabitEthernet2
+  - ifindex: 1
+    ifname: eth1
     ipv4: 10.1.0.1/30
     node: c1
   linkindex: 1
@@ -38,12 +23,12 @@ links:
   type: p2p
 - _linkname: links[2]
   interfaces:
-  - ifindex: 3
-    ifname: GigabitEthernet3
+  - ifindex: 2
+    ifname: eth2
     ipv4: 10.1.0.6/30
     node: e1
   - ifindex: 1
-    ifname: Ethernet1
+    ifname: eth1
     ipv4: 10.1.0.5/30
     node: c2
   linkindex: 2
@@ -54,11 +39,11 @@ links:
 - _linkname: links[3]
   interfaces:
   - ifindex: 1
-    ifname: Ethernet1
+    ifname: eth1
     ipv4: 10.1.0.10/30
     node: e2
-  - ifindex: 3
-    ifname: GigabitEthernet3
+  - ifindex: 2
+    ifname: eth2
     ipv4: 10.1.0.9/30
     node: c1
   linkindex: 3
@@ -69,11 +54,11 @@ links:
 - _linkname: links[4]
   interfaces:
   - ifindex: 2
-    ifname: Ethernet2
+    ifname: eth2
     ipv4: 10.1.0.14/30
     node: e2
   - ifindex: 2
-    ifname: Ethernet2
+    ifname: eth2
     ipv4: 10.1.0.13/30
     node: c2
   linkindex: 4
@@ -83,63 +68,19 @@ links:
   type: p2p
 module:
 - isis
-- bgp
 - sr
 name: input
 nodes:
   c1:
     af:
       ipv4: true
-    bgp:
-      advertise_loopback: true
-      as: 65000
-      community:
-        ebgp:
-        - standard
-        ibgp:
-        - standard
-        - extended
-        localas_ibgp:
-        - standard
-        - extended
-      ipv4: true
-      neighbors:
-      - _source_intf:
-          ifindex: 0
-          ifname: Loopback0
-          ipv4: 10.0.0.1/32
-          neighbors: []
-          type: loopback
-          virtual_interface: true
-        activate:
-          ipv4: true
-        as: 65000
-        ipv4: 10.0.0.3
-        name: e1
-        next_hop_self: ebgp
-        type: ibgp
-      - _source_intf:
-          ifindex: 0
-          ifname: Loopback0
-          ipv4: 10.0.0.1/32
-          neighbors: []
-          type: loopback
-          virtual_interface: true
-        activate:
-          ipv4: true
-        as: 65000
-        ipv4: 10.0.0.4
-        name: e2
-        next_hop_self: ebgp
-        type: ibgp
-      next_hop_self: true
-      router_id: 10.0.0.1
-    box: cisco/csr1000v
-    device: csr
+      ipv6: true
+    box: none
+    device: none
     id: 1
     interfaces:
-    - ifindex: 2
-      ifname: GigabitEthernet2
+    - ifindex: 1
+      ifname: eth1
       ipv4: 10.1.0.1/30
       isis:
         network_type: point-to-point
@@ -147,12 +88,12 @@ nodes:
       linkindex: 1
       name: c1 -> e1
       neighbors:
-      - ifname: GigabitEthernet2
+      - ifname: eth1
         ipv4: 10.1.0.2/30
         node: e1
       type: p2p
-    - ifindex: 3
-      ifname: GigabitEthernet3
+    - ifindex: 2
+      ifname: eth2
       ipv4: 10.1.0.9/30
       isis:
         network_type: point-to-point
@@ -160,13 +101,14 @@ nodes:
       linkindex: 3
       name: c1 -> e2
       neighbors:
-      - ifname: Ethernet1
+      - ifname: eth1
         ipv4: 10.1.0.10/30
         node: e2
       type: p2p
     isis:
       af:
         ipv4: true
+        ipv6: true
       area: '49.0001'
       instance: Gandalf
       net: 49.0001.0000.0000.0001.00
@@ -174,68 +116,67 @@ nodes:
       system_id: 0000.0000.0001
       type: level-2
     loopback:
-      bgp:
-        advertise: true
       ifindex: 0
       ifname: Loopback0
       ipv4: 10.0.0.1/32
+      ipv6: 2001:db8:42:1::1/64
       isis:
         passive: false
       neighbors: []
       type: loopback
       virtual_interface: true
     mgmt:
-      ifname: GigabitEthernet1
+      ifname: eth0
       ipv4: 192.168.121.101
       mac: ca:fe:00:01:00:00
-    min_mtu: 1500
     module:
     - isis
-    - bgp
     - sr
     name: c1
-    role: router
     sr:
       node_sid:
         ipv4: 1
+        ipv6: 101
+      srgb:
+        start: 100000
   c2:
     af:
       ipv4: true
-    box: arista/veos
-    device: eos
+      ipv6: true
+    box: none
+    device: none
     id: 2
     interfaces:
     - ifindex: 1
-      ifname: Ethernet1
+      ifname: eth1
       ipv4: 10.1.0.5/30
       isis:
         network_type: point-to-point
         passive: false
       linkindex: 2
-      mac_address: caf0.0002.0001
       name: c2 -> e1
       neighbors:
-      - ifname: GigabitEthernet3
+      - ifname: eth2
         ipv4: 10.1.0.6/30
         node: e1
       type: p2p
     - ifindex: 2
-      ifname: Ethernet2
+      ifname: eth2
       ipv4: 10.1.0.13/30
       isis:
         network_type: point-to-point
         passive: false
       linkindex: 4
-      mac_address: caf0.0002.0002
       name: c2 -> e2
       neighbors:
-      - ifname: Ethernet2
+      - ifname: eth2
         ipv4: 10.1.0.14/30
         node: e2
       type: p2p
     isis:
       af:
         ipv4: true
+        ipv6: true
       area: '49.0001'
       instance: Gandalf
       net: 49.0001.0000.0000.0002.00
@@ -246,76 +187,36 @@ nodes:
       ifindex: 0
       ifname: Loopback0
       ipv4: 10.0.0.2/32
+      ipv6: 2001:db8:42:2::1/64
       isis:
         passive: false
       neighbors: []
       type: loopback
       virtual_interface: true
     mgmt:
-      ifname: Management1
+      ifname: eth0
       ipv4: 192.168.121.102
       mac: ca:fe:00:02:00:00
     module:
     - isis
     - sr
     name: c2
-    role: router
     sr:
       node_sid:
-        ipv4: 2
+        ipv4: 42
+        ipv6: 102
+      srgb:
+        start: 100000
   e1:
     af:
       ipv4: true
-    bgp:
-      advertise_loopback: true
-      as: 65000
-      community:
-        ebgp:
-        - standard
-        ibgp:
-        - standard
-        - extended
-        localas_ibgp:
-        - standard
-        - extended
-      ipv4: true
-      neighbors:
-      - _source_intf:
-          ifindex: 0
-          ifname: Loopback0
-          ipv4: 10.0.0.3/32
-          neighbors: []
-          type: loopback
-          virtual_interface: true
-        activate:
-          ipv4: true
-        as: 65000
-        ipv4: 10.0.0.1
-        name: c1
-        next_hop_self: ebgp
-        type: ibgp
-      - _source_intf:
-          ifindex: 0
-          ifname: Loopback0
-          ipv4: 10.0.0.3/32
-          neighbors: []
-          type: loopback
-          virtual_interface: true
-        activate:
-          ipv4: true
-        as: 65000
-        ipv4: 10.0.0.4
-        name: e2
-        next_hop_self: ebgp
-        type: ibgp
-      next_hop_self: true
-      router_id: 10.0.0.3
-    box: cisco/csr1000v
-    device: csr
+      ipv6: true
+    box: none
+    device: none
     id: 3
     interfaces:
-    - ifindex: 2
-      ifname: GigabitEthernet2
+    - ifindex: 1
+      ifname: eth1
       ipv4: 10.1.0.2/30
       isis:
         network_type: point-to-point
@@ -323,12 +224,12 @@ nodes:
       linkindex: 1
       name: e1 -> c1
       neighbors:
-      - ifname: GigabitEthernet2
+      - ifname: eth1
         ipv4: 10.1.0.1/30
         node: c1
       type: p2p
-    - ifindex: 3
-      ifname: GigabitEthernet3
+    - ifindex: 2
+      ifname: eth2
       ipv4: 10.1.0.6/30
       isis:
         network_type: point-to-point
@@ -336,13 +237,14 @@ nodes:
       linkindex: 2
       name: e1 -> c2
       neighbors:
-      - ifname: Ethernet1
+      - ifname: eth1
         ipv4: 10.1.0.5/30
         node: c2
       type: p2p
     isis:
       af:
         ipv4: true
+        ipv6: true
       area: '49.0001'
       instance: Gandalf
       net: 49.0001.0000.0000.0003.00
@@ -350,124 +252,67 @@ nodes:
       system_id: 0000.0000.0003
       type: level-2
     loopback:
-      bgp:
-        advertise: true
       ifindex: 0
       ifname: Loopback0
       ipv4: 10.0.0.3/32
+      ipv6: 2001:db8:42:3::1/64
       isis:
         passive: false
       neighbors: []
       type: loopback
       virtual_interface: true
     mgmt:
-      ifname: GigabitEthernet1
+      ifname: eth0
       ipv4: 192.168.121.103
       mac: ca:fe:00:03:00:00
-    min_mtu: 1500
     module:
     - isis
-    - bgp
     - sr
     name: e1
-    role: router
     sr:
       node_sid:
         ipv4: 3
+        ipv6: 142
+      srgb:
+        start: 100000
   e2:
     af:
       ipv4: true
-    bgp:
-      _cprop_order:
-      - standard
-      - extended
-      - large
-      - link-bandwidth
-      advertise_loopback: true
-      as: 65000
-      community:
-        ebgp:
-        - standard
-        - large
-        ibgp:
-        - standard
-        - large
-        - extended
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      ipv4: true
-      neighbors:
-      - _source_intf:
-          ifindex: 0
-          ifname: Loopback0
-          ipv4: 10.0.0.4/32
-          isis:
-            passive: false
-          neighbors: []
-          type: loopback
-          virtual_interface: true
-        activate:
-          ipv4: true
-        as: 65000
-        ipv4: 10.0.0.1
-        name: c1
-        next_hop_self: ebgp
-        type: ibgp
-      - _source_intf:
-          ifindex: 0
-          ifname: Loopback0
-          ipv4: 10.0.0.4/32
-          isis:
-            passive: false
-          neighbors: []
-          type: loopback
-          virtual_interface: true
-        activate:
-          ipv4: true
-        as: 65000
-        ipv4: 10.0.0.3
-        name: e1
-        next_hop_self: ebgp
-        type: ibgp
-      next_hop_self: true
-      router_id: 10.0.0.4
-    box: arista/veos
-    device: eos
+      ipv6: true
+    box: none
+    device: none
     id: 4
     interfaces:
     - ifindex: 1
-      ifname: Ethernet1
+      ifname: eth1
       ipv4: 10.1.0.10/30
       isis:
         network_type: point-to-point
         passive: false
       linkindex: 3
-      mac_address: caf0.0004.0001
       name: e2 -> c1
       neighbors:
-      - ifname: GigabitEthernet3
+      - ifname: eth2
         ipv4: 10.1.0.9/30
         node: c1
       type: p2p
     - ifindex: 2
-      ifname: Ethernet2
+      ifname: eth2
       ipv4: 10.1.0.14/30
       isis:
         network_type: point-to-point
         passive: false
       linkindex: 4
-      mac_address: caf0.0004.0002
       name: e2 -> c2
       neighbors:
-      - ifname: Ethernet2
+      - ifname: eth2
         ipv4: 10.1.0.13/30
         node: c2
       type: p2p
     isis:
       af:
         ipv4: true
+        ipv6: true
       area: '49.0001'
       instance: Gandalf
       net: 49.0001.0000.0000.0004.00
@@ -475,27 +320,27 @@ nodes:
       system_id: 0000.0000.0004
       type: level-2
     loopback:
-      bgp:
-        advertise: true
       ifindex: 0
       ifname: Loopback0
       ipv4: 10.0.0.4/32
+      ipv6: 2001:db8:42:4::1/64
       isis:
         passive: false
       neighbors: []
       type: loopback
       virtual_interface: true
     mgmt:
-      ifname: Management1
+      ifname: eth0
       ipv4: 192.168.121.104
       mac: ca:fe:00:04:00:00
     module:
     - isis
-    - bgp
     - sr
     name: e2
-    role: router
     sr:
       node_sid:
         ipv4: 4
+        ipv6: 104
+      srgb:
+        start: 100000
 provider: libvirt

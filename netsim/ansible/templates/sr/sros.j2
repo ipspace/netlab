@@ -6,8 +6,8 @@ updates:
   val:
     static-label-range: 18400 # default, lower bound of dynamic label range
     sr-labels: # SRGB, required for SR-ISIS
-      start: {{ sr.srgb_range_start }} # Minimum value: static-label-range+32
-      end: {{ sr.srgb_range_start + sr.srgb_range_size }}
+      start: {{ sr.srgb.start }} # Minimum value: static-label-range+32
+      end: {{ sr.srgb.start + sr.srgb.size }}
 
 - path: configure/router[router-name=Base]/isis[isis-instance=0]
   val:
@@ -24,14 +24,10 @@ updates:
 {%   endif %}
     interface:
     - interface-name: system
-{% if 'ipv4' in loopback %}
-      ipv4-node-sid:
-        index: "{{ id }}"
-{% endif %}
-{% if 'ipv6' in loopback %}
-      ipv6-node-sid:
-        index: "{{ id+sr.ipv6_sid_offset }}"
-{% endif %}
+{% for af in ['ipv4','ipv6'] if af in loopback and sr.node_sid[af]|default(False) %}
+      {{ af }}-node-sid:
+        index: "{{ sr.node_sid[af] }}"
+{% endfor %}
 
 {% if 'bgp' in module and 'isis' in module %}
 {# Configure BGP shortcuts via SR-ISIS #}

@@ -478,7 +478,6 @@ def get_effective_module_attribute(
 
   return composite_value
 
-
 """
 Callback transformation routines
 
