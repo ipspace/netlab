@@ -1,0 +1,14 @@
+router isis {{ isis.instance }}
+{% for af in ['ipv4','ipv6'] if sr.node_sid[af]|default(False) %}
+  address-family {{ af }} unicast
+    metric-style wide
+    segment-routing mpls sr-prefer
+  exit
+{% endfor %}
+{% for af in ['ipv4','ipv6'] if af in loopback and sr.node_sid[af]|default(False) %}
+{%   if loop.first %}
+  interface {{ loopback.ifname }}
+{%   endif %}
+    address-family {{ af }} unicast
+      prefix-sid index {{ sr.node_sid[af] }}
+{% endfor %}
