@@ -1,6 +1,6 @@
 # Segment Routing (MPLS) Configuration Module
 
-This configuration module configures SR-MPLS within the IS-IS routing process on Arista EOS, Cisco IOS XE (CSR), FRR, Junos, Nokia SR Linux, and Nokia SR OS.
+This configuration module configures Segment Routing with MPLS encapsulation (SR-MPLS) and Node SIDs within the IS-IS or OSPFv2 routing process.
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -11,25 +11,25 @@ This configuration module configures SR-MPLS within the IS-IS routing process on
 
 ## Supported Features
 
-Supported Segment Routing features:
+Supported Segment Routing features (see also [](sr-mpls-platforms)):
 
-* IPv4 and IPv6 (see [](sr-mpls-platforms))
-* IS-IS routing protocol
+* IPv4 and IPv6
+* IS-IS and OSPFv2 routing protocols
 * IPv4 Node SID
-* IPv6 Node SID
+* IPv6 Node SID (IS-IS only)
 
-The module depends on the IS-IS module and will trigger a configuration error if the **isis** module is not enabled in the network topology.
+The module depends on the [IS-IS](module-isis) or [OSPF](module-ospf) configuration module and will report an error if the required IGP configuration module is not enabled.
 
 (sr-mpls-platforms)=
 ## Supported Platforms
 
 SR-MPLS is implemented on the following platforms:
 
-| Operating system      | IPv4  | IPv6 | IS-IS | OSPF |
-| ----------------------| :---: | :--: | :---: | :--: |
-| Arista EOS            |   ✅  |  ✅  |  ✅   |  ❌   |
+| Operating system      | IPv4  | IPv6 | IS-IS | OSPFv2 |
+| ----------------------| :---: | :--: | :---: | :----: |
+| Arista EOS            |   ✅  |  ✅  |  ✅   |  ✅   |
 | Cisco IOS XE[^xe]     |   ✅  |  ❌   |  ✅   |  ❌   |
-| FRRouting             |   ✅  |  ✅  |  ✅   |  ❌   |
+| FRRouting             |   ✅  |  ✅  |  ✅   |  ✅   |
 | Juniper vMX           |   ✅  |  ✅  |  ✅   |  ❌   |
 | Juniper vPTX          |   ✅  |  ✅  |  ✅   |  ❌   |
 | Juniper vSRX          |   ✅  |  ✅  |  ✅   |  ❌   |
@@ -41,6 +41,10 @@ SR-MPLS is implemented on the following platforms:
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
 ## Global Parameters
+
+You can use IS-IS or OSPFv2 as the IGP with SR-MPLS. Specify the lab-wide SR-MPLS protocol(s) with the **sr.protocol** global parameter. The default value is **isis**, valid values are **isis** and **ospfv2**. You can also specify a list of IGP protocols to support more complex scenarios[^MPU].
+
+[^MPU]: We did not test those scenarios. The behavior when running SR-MPLS with OSPFv2 and IS-IS on the same device is probably device-dependent.
 
 The SR-MPLS module configures Node SIDs for the IPv4 and IPv6 address families (AFs). The values of the AF Node SID are generated from node identifiers and AF-specific offsets. These offsets are controlled with two global parameters:
 
@@ -68,12 +72,14 @@ defaults.devices.srsim.sr.srgb.start: 200000
 
 ## Node Parameters
 
+The SR-MPLS-enabled nodes inherit the **sr.protocol** settings from the lab topology. You can overwrite that setting with the node **sr.protocol** attribute.
+
 You can configure Node SIDs (mapped to loopback IPv4/IPv6 prefixes) with these node parameters:
 
 * **sr.node_sid.ipv4** (default: node identifier) -- IPv4 Node SID
 * **sr.node_sid.ipv6** (default: node identifier + 100) -- IPv6 Node SID
 
-You can limit the SR-MPLS address families for an individual node with the **sr.af** node dictionary ([details](sr-mpls-af)). Use this parameter in dual-stack labs with devices that do not support SR-MPLS for IPv6. Without an explicit **sr.af** definition, SR-MPLS is configured for all address families[^v46] used by the node.
+You can limit the SR-MPLS address families for an individual node with the **sr.af** node dictionary ([details](sr-mpls-af)). Use this parameter in dual-stack labs with devices that do not support SR-MPLS for IPv6 or when running SR-MPLS with OSPFv2. Without an explicit **sr.af** definition, SR-MPLS is configured for all address families[^v46] used by the node.
 
 [^v46]: IPv4 and/or IPv6
 
