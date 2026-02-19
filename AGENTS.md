@@ -151,3 +151,4 @@ When you don't have to change the code for other reasons:
 * Do not explain the lab topology attributes, they have their own documentation.
 * Find the relevant tests in the `tests/integration` directory tree and mention them
 * Do not use `jinja2` syntax highlighter, it does not work.
+* Mention where the configuration templates should be stored, and how the platform name is calculated (based on `netlab_device_type` or `ansible_network_os` variable)

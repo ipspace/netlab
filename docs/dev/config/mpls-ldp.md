@@ -26,7 +26,7 @@ mpls:
 
 ## Template Architecture
 
-The MPLS configuration uses a two-tier template structure:
+The MPLS configuration uses a two-tier template structure. The templates should be stored in the `netsim/templates/mpls/` directory.
 
 ### Main MPLS Template
 
@@ -44,6 +44,10 @@ The `<platform>.j2` template (e.g., `eos.j2`) includes LDP and other MPLS sub-fe
 {% endif %}
 ```
 
+```{tip}
+The `<platform>` is the value of the `netlab_device_type` or `ansible_network_os` variable.
+```
+
 ### LDP-Specific Template
 
 The `<platform>.ldp.j2` template contains the actual LDP configuration commands.
@@ -58,10 +62,8 @@ The following variables are available in LDP configuration templates:
 |----------|------|-------------|
 | `ldp.router_id` | string | LDP router ID (IPv4 address) |
 | `ldp.explicit_null` | bool | Enable explicit null labels (default: False) |
-| `ldp.af.ipv4` | bool | IPv4 address family enabled |
-| `ldp.af.ipv6` | bool | IPv6 address family enabled (FRR only) |
-| `loopback.ipv4` | IPv4 | Loopback IPv4 address |
-| `loopback.ipv6` | IPv6 | Loopback IPv6 address (FRR) |
+| `ldp.af.ipv4` | bool | Enable LDP |
+| `ldp.af.ipv6` | bool | Enable LDPv6 (optional, not tested) |
 
 ### Interface Variables
 
@@ -78,6 +80,10 @@ interface {{ l.ifname }}
 |----------|-------------|
 | `l.ifname` | Interface name |
 | `l.ldp.passive` | LDP is not enabled on this interface |
+
+```{tip}
+There is no **‌ldp.passive** interface attribute. The **‌ldp.passive** attribute is set internally on stub links and links with **‌role** set to **‌passive**. For LDP, **‌passive** is functionally identical to *‌do not run LDP on this interface*.
+```
 
 ## Template Examples
 
@@ -111,7 +117,7 @@ Key points:
 - Global `mpls ip` enables MPLS forwarding
 - LDP router ID and transport address (usually loopback)
 - Enable LDP on loopback interface
-- Enable LDP on all non-passive interfaces
+- Enable LDP on all relevant interfaces (interface must have **ldp** dictionary, but should not have **ldp.passive** set to True)
 
 ### Cisco IOS
 
@@ -160,32 +166,6 @@ FRR supports:
 - IPv4 and IPv6 address families
 - Dual-stack transport connections
 - Per-AF transport addresses
-
-## Link/Interface Attributes
-
-LDP can be enabled or disabled on individual interfaces using link attributes:
-
-### `mpls.ldp` (link attribute)
-
-```yaml
-links:
-- nodes: [router1, router2]
-  mpls.ldp: true    # Enable LDP on this link
-```
-
-### `ldp.passive` (interface attribute)
-
-Passive LDP interfaces receive label bindings but do not initiate LDP sessions:
-
-```yaml
-links:
-- nodes: [router1, router2]
-  router1:
-    mpls.ldp: true
-  router2:
-    mpls.ldp: true
-    ldp.passive: true   # router2 is passive
-```
 
 ## VRF/LDP CSC Support (WIP)
 
