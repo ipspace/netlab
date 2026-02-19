@@ -13,6 +13,7 @@ The following implementation notes for configuration deployment, initial device 
    bgp.md
    gateway.md
    mpls-ldp.md
+   mpls-vpn.md
    ospf.md
    ospf.areas.md
    rip.md
