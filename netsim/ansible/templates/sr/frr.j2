@@ -10,16 +10,29 @@ sysctl -w net.mpls.platform_labels=1048575
 sysctl -w net.mpls.conf.{{ l.ifname }}.input=1
 {%   endfor %}
 {% endfor %}
-cat >/tmp/config <<CONFIG
+cat >/tmp/config <<'CONFIG'
 !
+{% if 'isis' in sr.protocol %}
 router isis {{ isis.instance }}
   segment-routing on
-{% if isis.router_id is defined %}
+{%   if isis.router_id is defined %}
   mpls-te router-address {{ isis.router_id }}
-{% endif %}
-{% for af in ['ipv4','ipv6'] if af in loopback and sr.node_sid[af]|default(False) %}
+{%   endif %}
+{%   for af in ['ipv4','ipv6'] if af in loopback and sr.node_sid[af]|default(False) %}
   segment-routing prefix {{ loopback[af] }} index {{ sr.node_sid[af] }}
-{% endfor %}
+{%   endfor %}
+{% endif %}
+{% if 'ospfv2' in sr.protocol %}
+router ospf
+  capability opaque
+  segment-routing on
+{%   if sr.srgb.start is defined %}
+  segment-routing global-block {{ sr.srgb.start }} {{ sr.srgb.start + sr.srgb.size|default(8000) - 1 }}
+{%   endif %}
+{%   if 'ipv4' in loopback and sr.node_sid.ipv4 is defined %}
+  segment-routing prefix {{ loopback.ipv4 }} index {{ sr.node_sid.ipv4 }}
+{%   endif %}
+{% endif %}
 do write
 CONFIG
 vtysh -f /tmp/config

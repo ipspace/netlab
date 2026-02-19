@@ -1,12 +1,21 @@
 mpls ip
 mpls icmp ttl-exceeded tunneling
 !
+{% if 'isis' in sr.protocol %}
+!
 router isis {{ isis.instance }}
-{% if isis.router_id is defined %}
+{%   if isis.router_id is defined %}
   router-id ipv4 {{ isis.router_id }}
-{% endif %}
+{%   endif %}
   segment-routing mpls
     no shutdown
+{% endif %}
+{% if 'ospfv2' in sr.protocol %}
+!
+router ospf {{ ospf.process|default(1) }}
+  segment-routing mpls
+    no shutdown
+{% endif %}
 !
 interface Loopback0
 {% for af in ['ipv4','ipv6'] if af in loopback and sr.node_sid[af]|default(False) %}
