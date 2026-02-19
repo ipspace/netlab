@@ -24,23 +24,6 @@ mpls:
   6pe: true      # 6PE (IPv6 over MPLS)
 ```
 
-### Supported Platforms
-
-The following platforms have LDP support enabled:
-
-| Device | Device YAML | Template |
-|--------|-------------|----------|
-| Arista EOS | `mpls.ldp: true` | `eos.ldp.j2` |
-| Cisco IOS | `mpls.ldp: true` | `ios.ldp.j2` |
-| Cisco IOS-XR | `mpls.ldp: true` | (uses IOS template) |
-| FRRouting | `mpls: [ ldpd ]` | `frr.ldp.j2` |
-| Juniper Junos | `mpls.ldp: true` | `junos.ldp.j2` |
-| Nokia SROS | `mpls.ldp: true` | `sros.ldp.j2` |
-| Aruba CX | `mpls.ldp: true` | `arubacx.ldp.j2` |
-| VyOS | `mpls.ldp: true` | `vyos.ldp.j2` |
-| RouterOS | `mpls.ldp: true` | `routeros.ldp.j2` |
-| SR Linux | `mpls.ldp: true` (7250 IXR only) | `srlinux.ldp.j2` |
-
 ## Template Architecture
 
 The MPLS configuration uses a two-tier template structure:
@@ -49,7 +32,7 @@ The MPLS configuration uses a two-tier template structure:
 
 The `<platform>.j2` template (e.g., `eos.j2`) includes LDP and other MPLS sub-feature templates:
 
-```jinja2
+```
 {% if ldp is defined %}
 {%   include 'eos.ldp.j2' +%}
 {% endif %}
@@ -84,7 +67,7 @@ The following variables are available in LDP configuration templates:
 
 When iterating over interfaces, use this pattern to find LDP-enabled interfaces:
 
-```jinja2
+```
 {% for l in interfaces if ('ldp' in l) and not l.ldp.passive %}
 interface {{ l.ifname }}
   mpls ip
@@ -94,13 +77,13 @@ interface {{ l.ifname }}
 | Variable | Description |
 |----------|-------------|
 | `l.ifname` | Interface name |
-| `l.ldp.passive` | Passive LDP interface (receives labels but does not advertise) |
+| `l.ldp.passive` | LDP is not enabled on this interface |
 
 ## Template Examples
 
 ### Arista EOS
 
-```jinja2
+```
 !
 mpls ip
 mpls icmp ttl-exceeded tunneling
@@ -132,7 +115,7 @@ Key points:
 
 ### Cisco IOS
 
-```jinja2
+```
 !
 mpls ldp router-id Loopback0
 mpls ldp logging neighbor-changes
@@ -149,7 +132,7 @@ interface {{ l.ifname }}
 
 ### FRRouting
 
-```jinja2
+```
 !
 mpls ldp
   router-id {{ ldp.router_id }}
@@ -178,57 +161,6 @@ FRR supports:
 - Dual-stack transport connections
 - Per-AF transport addresses
 
-### Juniper Junos
-
-```jinja2
-interfaces {
-{% for l in interfaces if ('ldp' in l) and not l.ldp.passive %}
-  {{ l.ifname }} {
-    family mpls;
-  }
-{% endfor %}
-}
-
-protocols {
-  mpls {
-{% for l in interfaces if ('ldp' in l) and not l.ldp.passive %}
-    interface {{ l.ifname }};
-{% endfor %}
-  }
-  ldp {
-{% if ldp.explicit_null|default(False) %}
-    explicit-null;
-{% endif %}
-{% for l in interfaces if ('ldp' in l) and not l.ldp.passive %}
-    interface {{ l.ifname }};
-{% endfor %}
-  }
-}
-```
-
-### Nokia SROS
-
-```julan
-- path: system/mpls
-  val:
-   - path: admin-state
-     val: enable
-   - path: path-vector-limit
-     val: 100
-
-- path: router[router-name=Base]/ldp
-   val:
-    admin-state: enable
-    implicit-null-label: {{ not ldp.explicit_null|default(False) }}
-{%  for l in interfaces if ('ldp' in l) and not l.ldp.passive %}
-    interface: {{ l.ifname }}
-{%  endfor %}
-{% if not ldp.igp_sync|default(True) %}
-- path: router[router-name=Base]/ldp/sync-igp
-    ldp-sync: False
-{% endif %}
-```
-
 ## Link/Interface Attributes
 
 LDP can be enabled or disabled on individual interfaces using link attributes:
@@ -255,20 +187,7 @@ links:
     ldp.passive: true   # router2 is passive
 ```
 
-## Requirements and Dependencies
-
-LDP has the following requirements:
-
-1. **IPv4**: LDP requires IPv4 address family on the node
-2. **IGP**: An IGP (OSPF, IS-IS, or EIGRP) must be running on the node
-3. **Loopback**: LDP router ID is typically derived from the loopback interface
-
-These requirements are validated in the Python transformation code (`netsim/modules/mpls.py`):
-
-- `node_adjust_ldp()` checks for IPv4 address family
-- `node_pre_transform()` verifies an IGP is present
-
-## VRF/LDP CSC Support
+## VRF/LDP CSC Support (WIP)
 
 LDP can be used within VRFs (LDP Carrier Supporting Carrier - CsC). This requires:
 
@@ -277,30 +196,7 @@ LDP can be used within VRFs (LDP Carrier Supporting Carrier - CsC). This require
 
 ## Testing
 
-When adding LDP support to a new platform:
+Use these integration tests (in `tests/integration/mpls` directory) when adding LDP support to a new platform:
 
-1. Create a test topology with LDP enabled
-2. Verify LDP adjacencies form between devices
-3. Test `explicit_null` option
-4. Test passive interface configuration
-5. Test interoperability with other platforms
-
-Example test topology:
-
-```yaml
-provider: libvirt
-
-nodes:
-  router1:
-    device: eos
-  router2:
-    device: ios
-
-module: [ mpls, ospf ]
-
-mpls:
-  ldp: true
-
-links:
-- router1-router2
-```
+* `01-ldp-p` -- LDP functionality on P-device (establishing LDP adjacency, exchanging labels, building working LSPs)
+* `02-ldp-pe` -- LDP functionality on PE-device (use LDP to assign labels to BGP next hops)
