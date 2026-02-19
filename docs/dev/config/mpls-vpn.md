@@ -22,7 +22,7 @@ The `mpls.vpn` parameter supports multiple formats:
   ```yaml
   mpls:
     vpn:
-      ipv4: True
+      ipv4: true
   ```
 
 ## Template Architecture
