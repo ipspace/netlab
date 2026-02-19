@@ -27,6 +27,7 @@ The following table describes the per-platform support of individual MPLS label 
 | Arista EOS            |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Aruba AOS-CX          |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Cisco IOSv/IOS XE[^xe] |   ✅ |   ✅    |   ❌  |   ❌  |   ❌  |
+| Cisco IOS XR[^xr]     |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | FRR                   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Junos[^Junos]         |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Mikrotik RouterOS 6   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
@@ -36,6 +37,8 @@ The following table describes the per-platform support of individual MPLS label 
 | VyOS                  |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 
 [^xe]: Cisco Catalyst 8000v, Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco IOS on Linux (IOL) and IOL layer-2 image.
+
+[^xr]: Cisco IOS XRv, XRd, and Cisco 8000v
 
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
