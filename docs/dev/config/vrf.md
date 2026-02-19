@@ -7,7 +7,7 @@ This document assumes you're using an Ansible task list that is able to deploy d
 
 **Notes:**
 
-* The device configuration template (in Jinja2 format) should be stored in `netsim/templates/vrf/<nos>.j2` with **nos** being the value of **netlab_device_type** or **ansible_network_os** variable (see [Using Your Devices with Ansible Playbooks](../devices.md#using-your-device-with-ansible-playbooks) for more details.
+* The device configuration template (in Jinja2 format) should be stored in `netsim/ansible/templates/vrf/<nos>.j2` with **nos** being the value of **netlab_device_type** or **ansible_network_os** variable (see [Using Your Devices with Ansible Playbooks](../devices.md#using-your-device-with-ansible-playbooks) for more details.
 * Most of the data model attributes are optional. Use `if sth is defined`, `sth|default(value)` or `if 'sth' in ifdata` in your Jinja2 templates to check for presence of optional attributes. Try to be consistent ;)
 
 ```eval_rst
@@ -53,14 +53,14 @@ Many network devices lose interface IP addresses when you configure a VRF on the
 
 In most cases, you have to create VRFs before you can use them in interface configuration. The best way to configure VRFs is thus:
 
-* Create VRFs in `netsim/templates/initial/<nos>.vrf.j2` template.
-* Invoke that template in `netsim/templates/initial/<nos>.j2` template whenever the device data contains **vrfs** dictionary.
+* Create VRFs in `netsim/ansible/templates/initial/<nos>.vrf.j2` template.
+* Invoke that template in `netsim/ansible/templates/initial/<nos>.j2` template whenever the device data contains **vrfs** dictionary.
 * Configure interface VRF membership as part of the standard interface configuration
-* Configure other VRF features (OSPF, BGP) in `netsim/templates/vrf/<nos>.j2` template
+* Configure other VRF features (OSPF, BGP) in `netsim/ansible/templates/vrf/<nos>.j2` template
 
 ## Create VRFs
 
-In the _create VRF_ template (stored in `netsim/templates/initial/<nos>.vrf.j2`) iterate over the **vrfs** dictionary and configure VRFs.
+In the _create VRF_ template (stored in `netsim/ansible/templates/initial/<nos>.vrf.j2`) iterate over the **vrfs** dictionary and configure VRFs.
 
 Cisco IOS configures most VRF parameters (RD, RT) in the VRF definition, and uses address families within VRF definition to enable IPv6 and/or IPv6 in the VRF:
 
@@ -101,7 +101,7 @@ ipv6 routing vrf {{ vname }}
 {% endfor %}
 ```
 
-Include the VRF creation template in `netsim/templates/initial/<nos>.j2` template:
+Include the VRF creation template in `netsim/ansible/templates/initial/<nos>.j2` template:
 
 ```
 {% if vrfs is defined %}
@@ -109,7 +109,7 @@ Include the VRF creation template in `netsim/templates/initial/<nos>.j2` templat
 {% endif %}
 ```
 
-Finally, put interfaces into VRFs based on **vrf** interface parameter within the interface configuration part of `netsim/templates/initial/<nos>.j2`. For example:
+Finally, put interfaces into VRFs based on **vrf** interface parameter within the interface configuration part of `netsim/ansible/templates/initial/<nos>.j2`. For example:
 
 ```
 {% for l in interfaces|default([]) %}
@@ -126,11 +126,11 @@ interface {{ l.ifname }}
 
 Depending on the VRF-aware routing protocols supported by your platform, you might have to configure per-VRF OSPF routing processes or VRF BGP address families.
 
-You can configure all of these features in `netsim/templates/vrf/<nos>.j2` template, or use a more structured approach:
+You can configure all of these features in `netsim/ansible/templates/vrf/<nos>.j2` template, or use a more structured approach:
 
-* Configure per-VRF OSPF routing process in `netsim/templates/vrf/<nos>.ospfv2.j2` and/or `netsim/templates/vrf/<nos>.ospfv3.j2`
-* Configure VRF BGP address families in `netsim/templates/vrf/<nos>.bgp.j2`
-* Include these templates in `netsim/templates/vrf/<nos>.j2` template based on presence of **bgp.as** attribute (the device is running BGP) or **ospf** attribute of a VRF dictionary (VRF is running OSPF)
+* Configure per-VRF OSPF routing process in `netsim/ansible/templates/vrf/<nos>.ospfv2.j2` and/or `netsim/ansible/templates/vrf/<nos>.ospfv3.j2`
+* Configure VRF BGP address families in `netsim/ansible/templates/vrf/<nos>.bgp.j2`
+* Include these templates in `netsim/ansible/templates/vrf/<nos>.j2` template based on presence of **bgp.as** attribute (the device is running BGP) or **ospf** attribute of a VRF dictionary (VRF is running OSPF)
 
 Even better, use routing protocol configuration macros (example in [](dev-ospf-macro)).
 

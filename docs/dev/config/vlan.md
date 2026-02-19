@@ -20,7 +20,7 @@ Finally, it's highly recommended to run all relevant VLAN integration test cases
 
 **Notes:**
 
-* The device configuration template (in Jinja2 format) should be stored in `netsim/templates/vlan/<nos>.j2` with **nos** being the value of **netlab_device_type** or **ansible_network_os** variable (see [Using Your Devices with Ansible Playbooks](../devices.md#using-your-device-with-ansible-playbooks) for more details).
+* The device configuration template (in Jinja2 format) should be stored in `netsim/ansible/templates/vlan/<nos>.j2` with **nos** being the value of **netlab_device_type** or **ansible_network_os** variable (see [Using Your Devices with Ansible Playbooks](../devices.md#using-your-device-with-ansible-playbooks) for more details).
 * Most of the data model attributes are optional. Use `if sth is defined`, `sth|default(value)` or `if 'sth' in ifdata` in your Jinja2 templates to check for presence of optional attributes. Try to be consistent ;)
 
 ```eval_rst
@@ -41,7 +41,7 @@ Data model:
   * VLAN/SVI/BVI interface have **type** set to *svi*
   * Routed VLAN subinterfaces have **type** set to ‌*vlan_member*
 
-VLAN-related interfaces are included in the **node.interfaces** list and are thus best configured in *initial* configuration template[^FC]. The other VLAN-related parameters should be configured in `netsim/templates/vlan/<nos>.j2` template (or corresponding Ansible task list).
+VLAN-related interfaces are included in the **node.interfaces** list and are thus best configured in *initial* configuration template[^FC]. The other VLAN-related parameters should be configured in `netsim/ansible/templates/vlan/<nos>.j2` template (or corresponding Ansible task list).
 
 [^FC]: You might have to include further VLAN-related configuration in that configuration template to make them work.
 
@@ -113,7 +113,7 @@ devices:
 
 ## Interface Configuration
 
-It's easiest to create VLAN interfaces and subinterfaces in the `netsim/templates/initial/<nos>.j2` configuration template. Use **virtual_interface** attribute to skip configuration parameters that apply only to physical interfaces. For example, you cannot configure **switchport** or **mac-address** on an Arista EOS VLAN interface.
+It's easiest to create VLAN interfaces and subinterfaces in the `netsim/ansible/templates/initial/<nos>.j2` configuration template. Use **virtual_interface** attribute to skip configuration parameters that apply only to physical interfaces. For example, you cannot configure **switchport** or **mac-address** on an Arista EOS VLAN interface.
 
 Arista EOS interface configuration template:
 ```
