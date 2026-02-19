@@ -440,7 +440,11 @@ Exceptions:
 """
 
 @type_test(false_value=[],empty_value=[])
-def must_be_list(value: typing.Any, make_list: bool = False, split_lines: bool = False) -> dict:
+def must_be_list(
+      value: typing.Any,
+      make_list: bool = False,                          # Make anything (not just scalars) into a list
+      split_lines: bool = False,                        # Split lines in a string into list items
+      empty: bool = True) -> dict:                      # Is it OK to have an empty list?
 
   def transform_to_list(value: typing.Any) -> list:
     if isinstance(value,str) and split_lines:
@@ -449,6 +453,9 @@ def must_be_list(value: typing.Any, make_list: bool = False, split_lines: bool =
     return [ value ]
 
   if isinstance(value,list):                            # A list is what we want to have ;)
+    if not empty and not value:                         # Do we have an unacceptable empty list?
+      return { '_value': 'a scalar or a non-empty list'}
+
     return { '_valid': True }
 
   # Handle scalar-to-list transformations with a callback function
