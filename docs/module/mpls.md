@@ -71,6 +71,7 @@ The following table describes the per-platform support of individual MPLS label 
 | Arista EOS            |   ✅  |   ✅  |
 | Aruba AOS-CX          |   [❗](caveats-aruba)  |   ❌  |
 | Cisco IOSv/IOS XE[^xe] |  ✅  |   ✅  |
+| Cisco IOS XR[^xr]     |   ✅  |   ✅  |
 | FRR                   |   ✅  |   ✅  |
 | Junos[^Junos]         |   ✅  |   ✅  |
 | Mikrotik RouterOS 6   |   ✅  |   ❌  |

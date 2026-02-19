@@ -397,6 +397,7 @@ These devices support additional control-plane protocols or BGP address families
 | Cisco Catalyst 8000v  | ✅  | ✅  | ✅  | ✅  |
 | Cisco IOL/IOLL2       | ✅  | ✅  | ✅  | ✅  |
 | Cisco IOSv/IOSvL2     | ✅  |  ❌  | ✅  | ✅  |
+| Cisco IOS XR[^XR]     |  ❌  |  ❌  | ✅  |  ❌  |
 | Cisco Nexus OS        | ✅  | ✅  |  ❌  | ✅  |
 | Cumulus Linux         | ✅  | ✅  |  ❌  | ✅  |
 | Dell OS10             | ✅  | ✅  |  ❌  |  ❌  |
