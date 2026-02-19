@@ -28,7 +28,8 @@ SR-MPLS is implemented on the following platforms:
 | Operating system      | IPv4  | IPv6 | IS-IS | OSPFv2 |
 | ----------------------| :---: | :--: | :---: | :----: |
 | Arista EOS            |   ✅  |  ✅  |  ✅   |  ✅   |
-| Cisco IOS XE[^xe]     |   ✅  |  ❌   |  ✅   |  ❌   |
+| Cisco IOS XE[^xe]     |   ✅  |  ❌   |  ✅   |  ✅   |
+| Cisco IOS XR[^XR]     |   ✅  |  ✅  |  ✅   |  ✅   |
 | FRRouting             |   ✅  |  ✅  |  ✅   |  ✅   |
 | Juniper vMX           |   ✅  |  ✅  |  ✅   |  ❌   |
 | Juniper vPTX          |   ✅  |  ✅  |  ✅   |  ❌   |
@@ -37,6 +38,8 @@ SR-MPLS is implemented on the following platforms:
 | Nokia SR OS[^SROS]    |   ✅  |  ✅  |  ✅   |  ❌   |
 
 [^xe]: Catalyst 8000v, Cisco CSR 1000v, Cisco IOS on Linux (IOL) and IOL layer-2 image.
+
+[^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
 
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
