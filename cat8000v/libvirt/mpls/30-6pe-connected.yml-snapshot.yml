@@ -9,7 +9,7 @@ message: |
   The validation test checks end-to-end IPv6 connectivity between Linux hosts
   attached to the PE-routers across a BGP-free MPLS core using 6PE.
 defaults:
-  provider: clab
+  provider: libvirt
   providers:
     clab:
       description: containerlab with Docker
@@ -603,6 +603,7 @@ defaults:
       _parents:
       - ios
       - csr
+      provider: libvirt
     cisco8000v:
       description: Cisco 8000v (IOS/XR)
       mgmt_if: MgmtEth0/RP0/CPU0/0
@@ -2212,7 +2213,6 @@ defaults:
       warnings:
         paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
-      provider: clab
       _parents:
       - ios
     ioll2:
@@ -2451,7 +2451,6 @@ defaults:
       warnings:
         paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
-      provider: clab
       _parents:
       - ios
       - iol
@@ -8992,7 +8991,7 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1771586942.694532
+    timestamp: 1771586401.8249695
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
@@ -9002,7 +9001,7 @@ defaults:
     user: []
     system: []
   workdir: /work/netlab_cicd
-  device: iol
+  device: cat8000v
   groups:
     all:
       vars:
@@ -9118,17 +9117,21 @@ groups:
 links:
 - interfaces:
   - node: dut
-    ipv4: 10.1.0.2/30
-    ifindex: 1
-    ifname: Ethernet0/1
-  - node: core
     ipv4: 10.1.0.1/30
+    ifindex: 2
+    ifname: GigabitEthernet2
+  - node: core
+    ipv4: 10.1.0.2/30
     ifindex: 1
     ifname: eth1
   _linkname: links[core][1]
   linkindex: 1
+  libvirt:
+    provider:
+      clab: true
+  type: lan
+  bridge: ml-30_1
   node_count: 2
-  type: p2p
   prefix:
     ipv4: 10.1.0.0/30
 - interfaces:
@@ -9142,8 +9145,12 @@ links:
     ifname: Ethernet1
   _linkname: links[core][2]
   linkindex: 2
+  libvirt:
+    provider:
+      clab: true
+  type: lan
+  bridge: ml-30_2
   node_count: 2
-  type: p2p
   prefix:
     ipv4: 10.1.0.4/30
 - pool: edge
@@ -9152,18 +9159,21 @@ links:
     ra:
       slaac: true
     ipv6: 2001:db8:42::3/64
-    ifindex: 2
-    ifname: Ethernet0/2
+    ifindex: 3
+    ifname: GigabitEthernet3
   - node: h1
     ipv6: 2001:db8:42::1/64
     ifindex: 1
     ifname: eth1
   _linkname: links[edge][1]
   linkindex: 3
-  node_count: 2
-  role: stub
+  libvirt:
+    provider:
+      clab: true
   type: lan
   bridge: ml-30_3
+  node_count: 2
+  role: stub
   prefix:
     ipv6: 2001:db8:42::/64
 - pool: edge
@@ -9180,10 +9190,13 @@ links:
     ifname: eth1
   _linkname: links[edge][2]
   linkindex: 4
-  node_count: 2
-  role: stub
+  libvirt:
+    provider:
+      clab: true
   type: lan
   bridge: ml-30_4
+  node_count: 2
+  role: stub
   prefix:
     ipv6: 2001:db8:42:1::/64
 validate:
@@ -9241,21 +9254,22 @@ plugin:
 name: ml-30
 nodes:
   h1:
+    provider: clab
     name: h1
     interfaces:
     - ipv6: 2001:db8:42::1/64
       pool: edge
       linkindex: 3
-      role: stub
       type: lan
       bridge: ml-30_3
+      role: stub
       name: h1 -> dut
       ifindex: 1
       ifname: eth1
       mtu: 1500
       neighbors:
       - ipv6: 2001:db8:42::3/64
-        ifname: Ethernet0/2
+        ifname: GigabitEthernet3
         node: dut
     device: linux
     clab:
@@ -9287,14 +9301,15 @@ nodes:
     netlab_ansible_skip_module:
     - initial
   h2:
+    provider: clab
     name: h2
     interfaces:
     - ipv6: 2001:db8:42:1::2/64
       pool: edge
       linkindex: 4
-      role: stub
       type: lan
       bridge: ml-30_4
+      role: stub
       name: h2 -> pe2
       ifindex: 1
       ifname: eth1
@@ -9373,16 +9388,15 @@ nodes:
       ipv6: true
     name: dut
     interfaces:
-    - ipv4: 10.1.0.2/30
+    - ipv4: 10.1.0.1/30
       linkindex: 1
-      type: p2p
+      type: lan
+      bridge: ml-30_1
       name: dut -> core
-      ifindex: 1
-      ifname: Ethernet0/1
-      clab:
-        name: Ethernet0/1
+      ifindex: 2
+      ifname: GigabitEthernet2
       neighbors:
-      - ipv4: 10.1.0.1/30
+      - ipv4: 10.1.0.2/30
         ifname: eth1
         node: core
       ospf:
@@ -9396,14 +9410,12 @@ nodes:
       ipv6: 2001:db8:42::3/64
       pool: edge
       linkindex: 3
-      role: stub
       type: lan
       bridge: ml-30_3
+      role: stub
       name: dut -> h1
-      ifindex: 2
-      ifname: Ethernet0/2
-      clab:
-        name: Ethernet0/2
+      ifindex: 3
+      ifname: GigabitEthernet3
       neighbors:
       - ipv6: 2001:db8:42::1/64
         ifname: eth1
@@ -9418,16 +9430,8 @@ nodes:
     - ospf
     - bgp
     - mpls
-    device: iol
-    clab:
-      kind: cisco_iol
-      config_templates:
-      - source: ifstate
-        target: /iol/ifstate.cfg
-      binds:
-      - target: /iol/ifstate.cfg
-        source: node_files/dut/ifstate
-    box: vrnetlab/cisco_iol:17.16.01a
+    device: cat8000v
+    box: cisco/cat8000v
     ospf:
       area: 0.0.0.0
       router_id: 10.0.0.3
@@ -9440,15 +9444,17 @@ nodes:
         kind: regular
     id: 3
     role: router
-    provider: clab
+    provider: libvirt
+    cat8000v:
+      license: premier
+    min_mtu: 1500
     af:
       ipv4: true
       ipv6: true
     mgmt:
-      ifname: Ethernet0/0
+      ifname: GigabitEthernet1
       mac: ca:fe:00:03:00:00
       ipv4: 192.168.30.103
-    hostname: clab-ml-30-dut
     loopback:
       type: loopback
       neighbors: []
@@ -9466,6 +9472,7 @@ nodes:
       af:
         ipv4: true
   pe2:
+    provider: clab
     mpls:
       6pe:
       - ibgp
@@ -9516,7 +9523,8 @@ nodes:
     interfaces:
     - ipv4: 10.1.0.6/30
       linkindex: 2
-      type: p2p
+      type: lan
+      bridge: ml-30_2
       name: pe2 -> core
       ifindex: 1
       ifname: Ethernet1
@@ -9538,9 +9546,9 @@ nodes:
       ipv6: 2001:db8:42:1::4/64
       pool: edge
       linkindex: 4
-      role: stub
       type: lan
       bridge: ml-30_4
+      role: stub
       name: pe2 -> h2
       ifindex: 2
       ifname: Ethernet2
@@ -9645,18 +9653,20 @@ nodes:
       mpls: /mnt/flash/05-mpls.sh:sh
   core:
     mpls: {}
+    provider: clab
     name: core
     interfaces:
-    - ipv4: 10.1.0.1/30
+    - ipv4: 10.1.0.2/30
       linkindex: 1
-      type: p2p
+      type: lan
+      bridge: ml-30_1
       name: core -> dut
       ifindex: 1
       ifname: eth1
       mtu: 1500
       neighbors:
-      - ipv4: 10.1.0.2/30
-        ifname: Ethernet0/1
+      - ipv4: 10.1.0.1/30
+        ifname: GigabitEthernet2
         node: dut
       ospf:
         area: 0.0.0.0
@@ -9666,7 +9676,8 @@ nodes:
         passive: false
     - ipv4: 10.1.0.5/30
       linkindex: 2
-      type: p2p
+      type: lan
+      bridge: ml-30_2
       name: core -> pe2
       ifindex: 2
       ifname: eth2
@@ -9758,7 +9769,10 @@ nodes:
       initial: /etc/config/01-initial.sh:sh
       ospf: /etc/config/02-ospf.sh:sh
       mpls: /etc/config/03-mpls.sh:sh
-provider: clab
+provider: libvirt
+libvirt:
+  providers:
+    clab: true
 module:
 - ospf
 - bgp
