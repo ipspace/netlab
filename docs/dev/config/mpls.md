@@ -3,7 +3,7 @@
 
 This document describes how to create configuration templates for the **[mpls](module-mpls)** configuration module to implement LDP, MPLS/VPN, 6PE, or BGP-LU.
 
-## Enabling MPLS/VPN Support on a Device
+## Enabling MPLS Support on a Device
 
 To enable MPLS features on a device, add the `mpls` dictionary to the device YAML file (`netsim/devices/<device>.yml`). Enable individual features within that file, for example:
 
