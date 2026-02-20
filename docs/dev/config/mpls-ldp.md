@@ -14,7 +14,7 @@ mpls:
   ldp: true
 ```
 
-The LDP configuration template should be stored in the `netsim/ansible/templates/mpls/` directory (name `<platform>.ldp.j2`) or within the `netsim/ansible/templates/mpls/<platform>` directory (name: `ldp.j2`)
+The LDP configuration template should be stored in the `netsim/ansible/templates/mpls/` directory (name `<platform>.ldp.j2`) or within the `netsim/ansible/templates/mpls/<platform>` directory (name: `ldp.j2`).
 
 ## Template Variables
 
