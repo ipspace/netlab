@@ -1,0 +1,83 @@
+message: |
+  The tested device (DUT) is a PE-router running 6PE (IPv6 over BGP-LU with IPv4 next hops).
+  It runs OSPFv2 and LDP with a P-router over an IPv4-only core,
+  and has an IPv4 IBGP session with another PE-router. The hosts are attached
+  via IPv6-only links and communicate using IPv6 across the MPLS core.
+
+  The validation test checks end-to-end IPv6 connectivity between Linux hosts
+  attached to the PE-routers across a BGP-free MPLS core using 6PE .
+
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
+addressing:
+  edge:
+    ipv4: false
+    ipv6: 2001:db8:42::/48
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2 ]
+    device: linux
+    provider: clab
+  pe:
+    members: [ dut, pe2 ]
+    module: [ ospf, bgp, mpls ]
+    mpls.ldp: True
+    mpls.6pe: True
+    bgp.as: 65001
+  p:
+    members: [ core ]
+    module: [ ospf, mpls ]
+    mpls.ldp: True
+    device: frr
+    provider: clab
+  x_pe:
+    members: [ pe2 ]
+    device: eos
+    provider: clab
+
+links:
+- group: core
+  members: [ dut-core, core-pe2 ]
+- group: edge
+  pool: edge
+  members: [ dut-h1, pe2-h2 ]
+
+validate:
+  ospf:
+    description: Check OSPF sessions with DUT (wait up to 30 seconds)
+    wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPF adjacency
+    nodes: [ core ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+    stop_on_error: true
+  ldp:
+    description: Check LDP session
+    wait: ldp_adj
+    wait_msg: Waiting for LDP to start
+    nodes: [ core ]
+    show:
+      frr: mpls ldp neighbor {{ hostvars.dut.ldp.router_id }} json
+    valid: |
+      neighbors[0].state == 'OPERATIONAL'
+  ibgp:
+    description: Check IBGP session
+    wait: ibgp_session
+    wait_msg: Waiting for IBGP sessions to start
+    nodes: [ pe2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+    stop_on_error: true
+  af_6pe:
+    description: Check 6PE AF on IBGP session
+    wait: ibgp_session
+    wait_msg: Waiting for IBGP sessions to start
+    nodes: [ pe2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',activate='ipv6')
+    stop_on_error: true
+  ping:
+    description: IPv6 ping-based end-to-end reachability test
+    wait_msg: We might have to wait a bit longer
+    wait: ping_long
+    nodes: [ h1 ]
+    plugin: ping('h2',af='ipv6')
