@@ -1,21 +1,17 @@
- [INFO] Creating configuration snippets
+Creating Device configuration snippets
 [CREATED] dut: initial,ospf
 [CREATED] x1: initial,ospf
 [CREATED] x2: initial,ospf
 [CREATED] x3: initial,ospf
+Config Deploying device configurations
  [INFO] Executing initial configuration for node x1
  [INFO] Executing initial configuration for node x2
  [INFO] Executing initial configuration for node x3
- [INFO] Executing ospf configuration for node x2
  [INFO] Executing ospf configuration for node x3
+ [INFO] Executing ospf configuration for node x2
  [INFO] Executing ospf configuration for node x1
-
  [INFO] Starting Ansible playbook to deploy the rest of the
           configurations
-/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
-  "cipher": algorithms.TripleDES,
-/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
-  "class": algorithms.TripleDES,
 [WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
@@ -23,17 +19,8 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 
-TASK [Generic readiness tests] *************************************************
-skipping: [dut]
-
-TASK [Find device readiness script] ********************************************
-ok: [dut]
-
-TASK [Wait for device to become ready] *****************************************
-skipping: [dut]
-
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -54,7 +41,7 @@ TASK [Deploy normalize configuration] ******************************************
 skipping: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -70,11 +57,11 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "initial configuration for dut\n=========================================\n#!/bin/bash\n#\nset -e\nset -x\n#\n# Create bash profile script\n#\ncat <<SCRIPT >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)# \"\necho\necho \"Use vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)\n#\n# FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands\n#\nsysctl -w net.ipv4.ip_forward=1\nsysctl -w net.ipv6.conf.all.forwarding=0\n#\ncat <<SCRIPT >.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)$ \"\nexport PATH=$PATH:/usr/sbin\necho \necho \"Use sudo vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# Build hosts file\n#\n#\ncat <<SCRIPT >/tmp/hosts\n#\n# Created by netlab initial\n#\n10.0.0.1 dut\n10.1.0.1 eth1.dut\n10.1.0.5 eth2.dut\n10.1.0.9 eth3.dut\n10.0.0.2 x1\n10.1.0.2 eth1.x1\n10.0.0.3 x2\n10.1.0.6 eth1.x2\n10.0.0.4 x3\n10.1.0.10 eth1.x3\nSCRIPT\ngrep \"Created by netlab\" /etc/hosts || uniq /tmp/hosts >>/etc/hosts\n#\n# Configure system defaults on Ubuntu\n#\nhostnamectl set-hostname dut\nAPT_INSTALL=\n#\nif which gpg; then\n  echo \"Package gnupg already installed\"\nelse\n  APT_INSTALL=\"$APT_INSTALL gnupg\"\nfi\n#\nif which curl; then\n  echo \"Package curl already installed\"\nelse\n  APT_INSTALL=\"$APT_INSTALL curl\"\nfi\n#\nif which bridge; then\n  echo \"Package iproute2 already installed\"\nelse\n  APT_INSTALL=\"$APT_INSTALL iproute2\"\nfi\n#\n# APT_INSTALL always starts with a blank, so we can't just check if it's empty\n# The following hack turns a string that contains only whitespaces into\n# an empty string and removes leading whitespaces\n#\nAPT_INSTALL=`echo $APT_INSTALL`\nif [ -n \"$APT_INSTALL\" ]; then\n  echo \"Installing packages $APT_INSTALL\"\n  apt-get update -qq && apt-get install -qq $APT_INSTALL\nfi\n#\n# Install FRR on a Ubuntu VM if needed\n#\nif which /usr/lib/frr/frrinit.sh; then\n  echo \"FRR already installed, skipping installation\"\nelse\n  curl -s https://deb.frrouting.org/frr/keys.asc >/etc/apt/trusted.gpg.d/frr.asc\n  FRRVER=\"frr-stable\"\n  echo deb https://deb.frrouting.org/frr $(lsb_release -s -c) $FRRVER > /etc/apt/sources.list.d/frr.list\n  apt-get update -qq && apt-get install -qq frr frr-pythontools bridge-utils ethtool\nfi\n#\n# Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)\n#\n#\n# Enable FRR daemons\n#\necho \"ospfd=yes\" >>/etc/frr/daemons\necho \"ospf6d=yes\" >>/etc/frr/daemons\n\n/usr/lib/frr/frrinit.sh restart\n\n# Set system defaults\n#\n# Send ARP requests from a sane source IP address\n#\nsysctl -w net.ipv4.conf.all.arp_announce=2\n\n#\n# Create loopbacks, stub and lag/bond devices\n#\nif [ ! -e /sys/class/net/lo ]; then\n  if [ ! -e /sys/devices/virtual/net/lo ]; then\n    ip link add lo type dummy\n    ip link set dev lo up\n  fi\nfi\n\n# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)\n#\nip link set eth1 down\nsysctl -qw net.ipv6.conf.eth1.disable_ipv6=1\nip link set dev eth1 mtu 1500\nip link set eth1 up\nip link set eth2 down\nsysctl -qw net.ipv6.conf.eth2.disable_ipv6=1\nip link set dev eth2 mtu 1500\nip link set eth2 up\nip link set eth3 down\nsysctl -qw net.ipv6.conf.eth3.disable_ipv6=1\nip link set dev eth3 mtu 1500\nip link set eth3 up\n\n#\n# Add vtysh.conf file\necho \"service integrated-vtysh-config\" >/etc/frr/vtysh.conf\n\n#\n# Rest of initial configuration done through VTYSH\n#\ncat >/tmp/config <<CONFIG\nhostname dut\n!\nlog file /tmp/logging\n\n!\nip forwarding\nfrr defaults datacenter\n!\ninterface lo\n no shutdown\n ip address 10.0.0.1/32\n!\ninterface eth1\n no shutdown\n description dut -> x1\n ip address 10.1.0.1/30\n!\ninterface eth2\n no shutdown\n description dut -> x2\n ip address 10.1.0.5/30\n!\ninterface eth3\n no shutdown\n description dut -> x3\n ip address 10.1.0.9/30\n!\ndo write\nCONFIG\nvtysh -f /tmp/config\n!\nexit 0\n"
+    "msg": "initial configuration for dut\n=========================================\n#!/bin/bash\n#\nset -e\nset -x\n#\n# Create bash profile script\n#\ncat <<'SCRIPT' >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)# \"\necho\necho \"Use vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)\n#\n# FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands\n#\nsysctl -w net.ipv4.ip_forward=1\nsysctl -w net.ipv6.conf.all.forwarding=0\n#\ncat <<SCRIPT >.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)$ \"\nexport PATH=$PATH:/usr/sbin\necho \necho \"Use sudo vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# Build hosts file\n#\n#\ncat <<'SCRIPT' >/tmp/hosts\n#\n# Created by netlab initial\n#\n10.0.0.1 dut\n10.1.0.1 eth1.dut\n10.1.0.5 eth2.dut\n10.1.0.9 eth3.dut\n10.0.0.2 x1\n10.1.0.2 eth1.x1\n10.0.0.3 x2\n10.1.0.6 eth1.x2\n10.0.0.4 x3\n10.1.0.10 eth1.x3\nSCRIPT\ngrep \"Created by netlab\" /etc/hosts || uniq /tmp/hosts >>/etc/hosts\n#\n# Configure system defaults on Ubuntu\n#\nhostnamectl set-hostname dut\nAPT_INSTALL=\n#\nif which gpg; then\n  echo \"Package gnupg already installed\"\nelse\n  APT_INSTALL=\"$APT_INSTALL gnupg\"\nfi\n#\nif which curl; then\n  echo \"Package curl already installed\"\nelse\n  APT_INSTALL=\"$APT_INSTALL curl\"\nfi\n#\nif which bridge; then\n  echo \"Package iproute2 already installed\"\nelse\n  APT_INSTALL=\"$APT_INSTALL iproute2\"\nfi\n#\n# APT_INSTALL always starts with a blank, so we can't just check if it's empty\n# The following hack turns a string that contains only whitespaces into\n# an empty string and removes leading whitespaces\n#\nAPT_INSTALL=`echo $APT_INSTALL`\nif [ -n \"$APT_INSTALL\" ]; then\n  echo \"Installing packages $APT_INSTALL\"\n  apt-get update -qq && apt-get install -qq $APT_INSTALL\nfi\n#\n# Install FRR on a Ubuntu VM if needed\n#\nif which /usr/lib/frr/frrinit.sh; then\n  echo \"FRR already installed, skipping installation\"\nelse\n  curl -s https://deb.frrouting.org/frr/keys.asc >/etc/apt/trusted.gpg.d/frr.asc\n  FRRVER=\"frr-stable\"\n  echo deb https://deb.frrouting.org/frr $(lsb_release -s -c) $FRRVER > /etc/apt/sources.list.d/frr.list\n  apt-get update -qq && apt-get install -qq frr frr-pythontools bridge-utils ethtool\nfi\n#\n# Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)\n#\n#\n# Enable FRR daemons\n#\necho \"ospfd=yes\" >>/etc/frr/daemons\necho \"ospf6d=yes\" >>/etc/frr/daemons\n\n/usr/lib/frr/frrinit.sh restart\n\n# Set system defaults\n#\n# Send ARP requests from a sane source IP address\n#\nsysctl -w net.ipv4.conf.all.arp_announce=2\n\n#\n# Create loopbacks, stub and lag/bond devices\n#\nif [ ! -e /sys/class/net/lo ]; then\n  if [ ! -e /sys/devices/virtual/net/lo ]; then\n    ip link add lo type dummy\n    ip link set dev lo up\n  fi\nfi\n\n# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)\n#\nip link set eth1 down\nsysctl -qw net.ipv6.conf.eth1.disable_ipv6=1\nip link set dev eth1 mtu 1500\nip link set eth1 up\nip link set eth2 down\nsysctl -qw net.ipv6.conf.eth2.disable_ipv6=1\nip link set dev eth2 mtu 1500\nip link set eth2 up\nip link set eth3 down\nsysctl -qw net.ipv6.conf.eth3.disable_ipv6=1\nip link set dev eth3 mtu 1500\nip link set eth3 up\n\n#\n# Add vtysh.conf file\necho \"service integrated-vtysh-config\" >/etc/frr/vtysh.conf\n\n#\n# Rest of initial configuration done through VTYSH\n#\ncat >/tmp/config <<CONFIG\nhostname dut\n!\nlog file /tmp/logging\n\n!\nip forwarding\nfrr defaults datacenter\n!\ninterface lo\n no shutdown\n ip address 10.0.0.1/32\n!\ninterface eth1\n no shutdown\n description dut -> x1\n ip address 10.1.0.1/30\n!\ninterface eth2\n no shutdown\n description dut -> x2\n ip address 10.1.0.5/30\n!\ninterface eth3\n no shutdown\n description dut -> x3\n ip address 10.1.0.9/30\n!\ndo write\nCONFIG\nvtysh -f /tmp/config\n!\nexit 0\n"
 }
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for dut
 
 TASK [template] ****************************************************************
 changed: [dut]
@@ -94,7 +81,7 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -114,7 +101,7 @@ ok: [dut] => {
 }
 
 TASK [Deploy ospf configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for dut
 
 TASK [template] ****************************************************************
 changed: [dut]
@@ -132,13 +119,13 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=25   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+dut                        : ok=24   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================
-x1                           OK: 2   
-x2                           OK: 2   
-x3                           OK: 2   
+x1               Script:  initial,ospf
+x2               Script:  initial,ospf
+x3               Script:  initial,ospf
 
 
 This lab tests the OSPF areas. The device under test has three interfaces
