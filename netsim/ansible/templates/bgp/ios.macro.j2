@@ -1,5 +1,21 @@
 !
 {#
+   BGP community propagation configuration
+#}
+{% macro neighbor_community(n,ip,bgp) %}
+{% if n.type in bgp.community|default({}) %}
+{%   set c_list = bgp.community[n.type] %}
+{#   Deal with IOS/XE regression to the 90s #}
+{%   if 'standard' in c_list and 'extended' in c_list %}
+  neighbor {{ ip }} send-community both
+{%   else %}
+{%     for c_type in c_list %}
+  neighbor {{ ip }} send-community {{ c_type }}
+{%     endfor %}
+{%   endif %}
+{% endif %}
+{%- endmacro -%}
+{#
    Global BGP neighbor definition
 #}
 {% macro neighbor_global(n,ip) %}
@@ -25,17 +41,7 @@
 {% if n.rr_client|default(False) %}
   neighbor {{ ip }} route-reflector-client
 {% endif %}
-{% if n.type in bgp.community|default({}) %}
-{%   set c_list = bgp.community[n.type] %}
-{#   Deal with IOS/XE regression to the 90s #}
-{%   if 'standard' in c_list and 'extended' in c_list %}
-  neighbor {{ ip }} send-community both
-{%   else %}
-{%     for c_type in c_list %}
-  neighbor {{ ip }} send-community {{ c_type }}
-{%     endfor %}
-{%   endif %}
-{% endif %}
+{{ neighbor_community(n,ip,bgp) }}
 {%- endmacro -%}
 {#
    BGP network statement
