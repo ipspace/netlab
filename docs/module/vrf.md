@@ -1,3 +1,4 @@
+(module-vrf)=
 # Virtual Routing and Forwarding (VRF) Tables
 
 This configuration module implements the VRF planning and configuration logic and is used together with [BGP](bgp.md), [OSPF](ospf.md), and [IS-IS](isis.md) configuration modules to implement VRF-aware routing protocols.
