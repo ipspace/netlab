@@ -25,7 +25,7 @@ The `mpls.vpn` parameter supports multiple formats:
       ipv4: true
   ```
 
-The MPLS/VPN configuration template should be stored in the `netsim/ansible/templates/mpls/` directory (name `<platform>.mplsvpn.j2`) or within the `netsim/ansible/templates/mpls/<platform>` directory (name: `mplsvpn.j2`)
+The MPLS/VPN configuration template should be stored in the `netsim/ansible/templates/mpls/` directory (name `<platform>.mplsvpn.j2`) or within the `netsim/ansible/templates/mpls/<platform>` directory (name: `mplsvpn.j2`).
 
 It usually enables BGP VPNv4/VPNv6 address families and activates them on BGP neighbors that have been configured for VPN AF exchange. The VRF configuration and route redistribution are done within the VRF configuration template.
 
