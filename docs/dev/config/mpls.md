@@ -46,4 +46,5 @@ The `<platform>` is the value of the `netlab_device_type` or `ansible_network_os
 
    mpls-ldp.md
    mpls-vpn.md
+   mpls-6pe.md
 ```
