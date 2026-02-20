@@ -1,13 +1,11 @@
 %YAML 1.1
 ---
 message: |
-  The tested device (DUT) is a PE-router running 6PE (IPv6 over BGP-LU with IPv4 next hops).
-  It runs OSPFv2 and LDP with a P-router over an IPv4-only core,
-  and has an IPv4 IBGP session with another PE-router. The hosts are attached
-  via IPv6-only links and communicate using IPv6 across the MPLS core.
-
-  The validation test checks end-to-end IPv6 connectivity between Linux hosts
-  attached to the PE-routers across a BGP-free MPLS core using 6PE.
+  The tested device (DUT) is a BGP route reflector for 6PE (IPv6 over BGP-LU
+  with IPv4 next hops). It runs OSPFv2 and LDP with a P-router over an IPv4-only
+  core, and has IPv4 IBGP sessions with PE routers (RR clients) another
+  PE-router. The hosts are attached via IPv6-only links and communicate using
+  IPv6 across the MPLS core.
 defaults:
   provider: clab
   providers:
@@ -2212,7 +2210,6 @@ defaults:
       warnings:
         paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
-      provider: clab
       _parents:
       - ios
     ioll2:
@@ -2451,7 +2448,6 @@ defaults:
       warnings:
         paramiko: false
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
-      provider: clab
       _parents:
       - ios
       - iol
@@ -4074,6 +4070,7 @@ defaults:
         icon: router
       warnings:
         loopback_ipv6: false
+      provider: clab
       _parents:
       - sros
     unknown:
@@ -8993,7 +8990,7 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1771602890.5273898
+    timestamp: 1771603201.0046575
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
@@ -9003,7 +9000,7 @@ defaults:
     user: []
     system: []
   workdir: /work/netlab_cicd
-  device: iol
+  device: srsim
   groups:
     all:
       vars:
@@ -9073,8 +9070,9 @@ groups:
       provider: clab
   pe:
     members:
-    - dut
+    - pe1
     - pe2
+    - dut
     module:
     - ospf
     - bgp
@@ -9099,6 +9097,7 @@ groups:
       provider: clab
   x_pe:
     members:
+    - pe1
     - pe2
     device: eos
     node_data:
@@ -9111,199 +9110,160 @@ groups:
   as65001:
     members:
     - dut
+    - pe1
     - pe2
   netlab_no_reload:
     members:
     - h1
     - h2
-links:
-- interfaces:
-  - node: dut
-    ipv4: 10.1.0.2/30
-    ifindex: 1
-    ifname: Ethernet0/1
-  - node: core
-    ipv4: 10.1.0.1/30
-    ifindex: 1
-    ifname: eth1
-  _linkname: links[core][1]
-  linkindex: 1
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.0/30
-- interfaces:
-  - node: core
-    ipv4: 10.1.0.5/30
-    ifindex: 2
-    ifname: eth2
-  - node: pe2
-    ipv4: 10.1.0.6/30
-    ifindex: 1
-    ifname: Ethernet1
-  _linkname: links[core][2]
-  linkindex: 2
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.4/30
-- pool: edge
-  interfaces:
-  - node: dut
-    ra:
-      slaac: true
-    ipv6: 2001:db8:42::3/64
-    ifindex: 2
-    ifname: Ethernet0/2
-  - node: h1
-    ipv6: 2001:db8:42::1/64
-    ifindex: 1
-    ifname: eth1
-  _linkname: links[edge][1]
-  linkindex: 3
-  node_count: 2
-  role: stub
-  type: lan
-  bridge: ml-17_3
-  prefix:
-    ipv6: 2001:db8:42::/64
-- pool: edge
-  interfaces:
-  - node: pe2
-    ra:
-      slaac: true
-    ipv6: 2001:db8:42:1::4/64
-    ifindex: 2
-    ifname: Ethernet2
-  - node: h2
-    ipv6: 2001:db8:42:1::2/64
-    ifindex: 1
-    ifname: eth1
-  _linkname: links[edge][2]
-  linkindex: 4
-  node_count: 2
-  role: stub
-  type: lan
-  bridge: ml-17_4
-  prefix:
-    ipv6: 2001:db8:42:1::/64
-validate:
-- description: Check OSPF sessions with DUT (wait up to 30 seconds)
-  wait: 30
-  wait_msg: Waiting for OSPF adjacency
-  nodes:
-  - core
-  plugin: ospf_neighbor(nodes.dut.ospf.router_id)
-  stop_on_error: true
-  name: ospf
-- description: Check LDP session
-  wait: 30
-  wait_msg: Waiting for LDP to start
-  nodes:
-  - core
-  show:
-    frr: mpls ldp neighbor {{ hostvars.dut.ldp.router_id }} json
-  valid: |
-    neighbors[0].state == 'OPERATIONAL'
-  name: ldp
-  devices:
-  - frr
-- description: Check IBGP session
-  wait: 30
-  wait_msg: Waiting for IBGP sessions to start
-  nodes:
-  - pe2
-  plugin: bgp_neighbor(node.bgp.neighbors,'dut')
-  stop_on_error: true
-  name: ibgp
-- description: Check 6PE AF on IBGP session
-  wait: 30
-  wait_msg: Waiting for IBGP sessions to start
-  nodes:
-  - pe2
-  plugin: bgp_neighbor(node.bgp.neighbors,'dut',activate='ipv6')
-  stop_on_error: true
-  name: af_6pe
-- description: IPv6 ping-based end-to-end reachability test
-  wait_msg: We might have to wait a bit longer
-  wait: 15
-  nodes:
-  - h1
-  plugin: ping('h2',af='ipv6')
-  name: ping
-input:
-- /home/pipi/net101/tools/tests/integration/mpls/30-6pe-connected.yml
-- /home/pipi/net101/tools/tests/integration/wait_times.yml
-- /home/pipi/net101/tools/tests/integration/warnings.yml
-- /home/pipi/.netlab.yml
-- package:topology-defaults.yml
-plugin:
-- multilab
-name: ml-17
 nodes:
+  dut:
+    mpls:
+      6pe:
+      - ibgp
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - extended
+        ebgp:
+        - standard
+        localas_ibgp:
+        - standard
+        - extended
+      next_hop_self: true
+      as: 65001
+      rr: true
+      router_id: 10.0.0.1
+      rr_cluster_id: 10.0.0.1
+      neighbors:
+      - name: pe1
+        as: 65001
+        type: ibgp
+        ipv4: 10.0.0.4
+        _source_intf:
+          type: loopback
+          neighbors: []
+          virtual_interface: true
+          ifindex: 0
+          ifname: system
+          ipv4: 10.0.0.1/32
+          ospf:
+            area: 0.0.0.0
+            passive: false
+        next_hop_self: ebgp
+        rr_client: true
+        activate:
+          ipv4: true
+        6pe: true
+      - name: pe2
+        as: 65001
+        type: ibgp
+        ipv4: 10.0.0.5
+        _source_intf:
+          type: loopback
+          neighbors: []
+          virtual_interface: true
+          ifindex: 0
+          ifname: system
+          ipv4: 10.0.0.1/32
+          ospf:
+            area: 0.0.0.0
+            passive: false
+        next_hop_self: ebgp
+        rr_client: true
+        activate:
+          ipv4: true
+        6pe: true
+      ipv4: true
+    name: dut
+    interfaces:
+    - ipv4: 10.1.0.2/30
+      linkindex: 1
+      type: p2p
+      name: dut -> core
+      ifindex: 1
+      ifname: eth-1/1/c1
+      clab:
+        name: 1/1/c1/1
+      mtu: 1500
+      neighbors:
+      - ipv4: 10.1.0.1/30
+        ifname: eth1
+        node: core
+      ospf:
+        area: 0.0.0.0
+        passive: false
+        network_type: point-to-point
+      ldp:
+        passive: false
+      _port_mode: network
+    module:
+    - ospf
+    - bgp
+    - mpls
+    device: srsim
+    clab:
+      kind: nokia_srsim
+      type: sr-1
+      license: ~/.netlab/license_srsim25.txt
+      env:
+        NOKIA_SROS_MDA_1: me12-100gb-qsfp28
+        NOKIA_SROS_MDA_2: me12-100gb-qsfp28
+    box: nokia_srsim:25.7.R1
+    ospf:
+      area: 0.0.0.0
+      router_id: 10.0.0.1
+      af:
+        ipv4: true
+      areas:
+      - area: 0.0.0.0
+        _area_int: 0
+        kind: regular
+    id: 1
+    mtu: 1500
+    provider: clab
+    af:
+      ipv4: true
+    mgmt:
+      ifname: A/1
+      mac: ca:fe:00:01:00:00
+      ipv4: 192.168.17.101
+    hostname: clab-ml-17-dut
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: system
+      ipv4: 10.0.0.1/32
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      bgp:
+        advertise: true
+    ldp:
+      router_id: 10.0.0.1
+      af:
+        ipv4: true
   h1:
     name: h1
     interfaces:
-    - ipv6: 2001:db8:42::1/64
-      pool: edge
-      linkindex: 3
-      role: stub
-      type: lan
-      bridge: ml-17_3
-      name: h1 -> dut
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv6: 2001:db8:42::3/64
-        ifname: Ethernet0/2
-        node: dut
-    device: linux
-    clab:
-      kind: linux
-      config_templates:
-      - source: initial
-        target: ''
-        mode: ns
-      - source: hosts
-        target: /etc/hosts
-        mode: shared
-      binds:
-      - target: /etc/hosts
-        source: node_files/-shared-hosts
-        mode: ro
-    box: python:3.13-alpine
-    id: 1
-    role: host
-    mtu: 1500
-    _node_config:
-      initial: :ns
-    af:
-      ipv6: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:01:00:00
-      ipv4: 192.168.17.101
-    hostname: clab-ml-17-h1
-    netlab_ansible_skip_module:
-    - initial
-  h2:
-    name: h2
-    interfaces:
-    - ipv6: 2001:db8:42:1::2/64
+    - ipv6: 2001:db8:42::2/64
       pool: edge
       linkindex: 4
       role: stub
       type: lan
       bridge: ml-17_4
-      name: h2 -> pe2
+      name: h1 -> pe1
       ifindex: 1
       ifname: eth1
       mtu: 1500
       neighbors:
-      - ipv6: 2001:db8:42:1::4/64
+      - ipv6: 2001:db8:42::4/64
         ifname: Ethernet2
-        node: pe2
+        node: pe1
     device: linux
     clab:
       kind: linux
@@ -9330,143 +9290,56 @@ nodes:
       ifname: eth0
       mac: ca:fe:00:02:00:00
       ipv4: 192.168.17.102
+    hostname: clab-ml-17-h1
+    netlab_ansible_skip_module:
+    - initial
+  h2:
+    name: h2
+    interfaces:
+    - ipv6: 2001:db8:42:1::3/64
+      pool: edge
+      linkindex: 5
+      role: stub
+      type: lan
+      bridge: ml-17_5
+      name: h2 -> pe2
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv6: 2001:db8:42:1::5/64
+        ifname: Ethernet2
+        node: pe2
+    device: linux
+    clab:
+      kind: linux
+      config_templates:
+      - source: initial
+        target: ''
+        mode: ns
+      - source: hosts
+        target: /etc/hosts
+        mode: shared
+      binds:
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
+    box: python:3.13-alpine
+    id: 3
+    role: host
+    mtu: 1500
+    _node_config:
+      initial: :ns
+    af:
+      ipv6: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:03:00:00
+      ipv4: 192.168.17.103
     hostname: clab-ml-17-h2
     netlab_ansible_skip_module:
     - initial
-  dut:
-    mpls:
-      6pe:
-      - ibgp
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - extended
-        ebgp:
-        - standard
-        localas_ibgp:
-        - standard
-        - extended
-      next_hop_self: true
-      as: 65001
-      router_id: 10.0.0.3
-      neighbors:
-      - name: pe2
-        as: 65001
-        type: ibgp
-        ipv4: 10.0.0.4
-        _source_intf:
-          type: loopback
-          neighbors: []
-          virtual_interface: true
-          ifindex: 0
-          ifname: Loopback0
-          ipv4: 10.0.0.3/32
-          ospf:
-            area: 0.0.0.0
-            passive: false
-        next_hop_self: ebgp
-        activate:
-          ipv4: true
-        6pe: true
-      ipv4: true
-      ipv6: true
-    name: dut
-    interfaces:
-    - ipv4: 10.1.0.2/30
-      linkindex: 1
-      type: p2p
-      name: dut -> core
-      ifindex: 1
-      ifname: Ethernet0/1
-      clab:
-        name: Ethernet0/1
-      neighbors:
-      - ipv4: 10.1.0.1/30
-        ifname: eth1
-        node: core
-      ospf:
-        area: 0.0.0.0
-        passive: false
-        network_type: point-to-point
-      ldp:
-        passive: false
-    - ra:
-        slaac: true
-      ipv6: 2001:db8:42::3/64
-      pool: edge
-      linkindex: 3
-      role: stub
-      type: lan
-      bridge: ml-17_3
-      name: dut -> h1
-      ifindex: 2
-      ifname: Ethernet0/2
-      clab:
-        name: Ethernet0/2
-      neighbors:
-      - ipv6: 2001:db8:42::1/64
-        ifname: eth1
-        node: h1
-      ospf:
-        area: 0.0.0.0
-        passive: true
-        network_type: point-to-point
-      bgp:
-        advertise: true
-    module:
-    - ospf
-    - bgp
-    - mpls
-    device: iol
-    clab:
-      kind: cisco_iol
-      config_templates:
-      - source: ifstate
-        target: /iol/ifstate.cfg
-      binds:
-      - target: /iol/ifstate.cfg
-        source: node_files/dut/ifstate
-    box: vrnetlab/cisco_iol:17.16.01a
-    ospf:
-      area: 0.0.0.0
-      router_id: 10.0.0.3
-      af:
-        ipv4: true
-        ipv6: true
-      areas:
-      - area: 0.0.0.0
-        _area_int: 0
-        kind: regular
-    id: 3
-    role: router
-    provider: clab
-    af:
-      ipv4: true
-      ipv6: true
-    mgmt:
-      ifname: Ethernet0/0
-      mac: ca:fe:00:03:00:00
-      ipv4: 192.168.17.103
-    hostname: clab-ml-17-dut
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: Loopback0
-      ipv4: 10.0.0.3/32
-      ospf:
-        area: 0.0.0.0
-        passive: false
-      bgp:
-        advertise: true
-    ldp:
-      router_id: 10.0.0.3
-      af:
-        ipv4: true
-  pe2:
+  pe1:
     mpls:
       6pe:
       - ibgp
@@ -9493,10 +9366,11 @@ nodes:
       as: 65001
       router_id: 10.0.0.4
       neighbors:
-      - name: dut
+      - rr: true
+        name: dut
         as: 65001
         type: ibgp
-        ipv4: 10.0.0.3
+        ipv4: 10.0.0.1
         _source_intf:
           type: loopback
           neighbors: []
@@ -9513,12 +9387,12 @@ nodes:
         6pe: true
       ipv4: true
       ipv6: true
-    name: pe2
+    name: pe1
     interfaces:
     - ipv4: 10.1.0.6/30
       linkindex: 2
       type: p2p
-      name: pe2 -> core
+      name: pe1 -> core
       ifindex: 1
       ifname: Ethernet1
       mac_address: caf0.0004.0001
@@ -9536,20 +9410,199 @@ nodes:
         passive: false
     - ra:
         slaac: true
-      ipv6: 2001:db8:42:1::4/64
+      ipv6: 2001:db8:42::4/64
       pool: edge
       linkindex: 4
       role: stub
       type: lan
       bridge: ml-17_4
-      name: pe2 -> h2
+      name: pe1 -> h1
       ifindex: 2
       ifname: Ethernet2
       mac_address: caf0.0004.0002
       clab:
         name: et2
       neighbors:
-      - ipv6: 2001:db8:42:1::2/64
+      - ipv6: 2001:db8:42::2/64
+        ifname: eth1
+        node: h1
+      ospf:
+        area: 0.0.0.0
+        passive: true
+        network_type: point-to-point
+      bgp:
+        advertise: true
+    device: eos
+    module:
+    - ospf
+    - bgp
+    - mpls
+    clab:
+      kind: ceos
+      env:
+        INTFTYPE: et
+        CLAB_MGMT_VRF: management
+      config_templates:
+      - source: normalize
+        target: /mnt/flash/01-normalize.sh
+        mode: sh
+      - source: initial
+        target: /mnt/flash/02-initial.sh
+        mode: sh
+      - source: ospf
+        target: /mnt/flash/03-ospf.sh
+        mode: sh
+      - source: bgp
+        target: /mnt/flash/04-bgp.sh
+        mode: sh
+      - source: mpls
+        target: /mnt/flash/05-mpls.sh
+        mode: sh
+      binds:
+      - target: /mnt/flash/01-normalize.sh
+        source: node_files/pe1/normalize
+      - target: /mnt/flash/02-initial.sh
+        source: node_files/pe1/initial
+      - target: /mnt/flash/03-ospf.sh
+        source: node_files/pe1/ospf
+      - target: /mnt/flash/04-bgp.sh
+        source: node_files/pe1/bgp
+      - target: /mnt/flash/05-mpls.sh
+        source: node_files/pe1/mpls
+    box: ceos:4.35.0.1F
+    ospf:
+      area: 0.0.0.0
+      router_id: 10.0.0.4
+      af:
+        ipv4: true
+        ipv6: true
+      areas:
+      - area: 0.0.0.0
+        _area_int: 0
+        kind: regular
+    id: 4
+    role: router
+    af:
+      ipv4: true
+      ipv6: true
+    mgmt:
+      ifname: Management0
+      mac: ca:fe:00:04:00:00
+      ipv4: 192.168.17.104
+    hostname: clab-ml-17-pe1
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.4/32
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      bgp:
+        advertise: true
+    ldp:
+      router_id: 10.0.0.4
+      af:
+        ipv4: true
+    netlab_ansible_skip_module:
+    - normalize
+    - initial
+    - ospf
+    - bgp
+    - mpls
+    _node_config:
+      normalize: /mnt/flash/01-normalize.sh:sh
+      initial: /mnt/flash/02-initial.sh:sh
+      ospf: /mnt/flash/03-ospf.sh:sh
+      bgp: /mnt/flash/04-bgp.sh:sh
+      mpls: /mnt/flash/05-mpls.sh:sh
+  pe2:
+    mpls:
+      6pe:
+      - ibgp
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      _cprop_order:
+      - standard
+      - extended
+      - large
+      - link-bandwidth
+      as: 65001
+      router_id: 10.0.0.5
+      neighbors:
+      - rr: true
+        name: dut
+        as: 65001
+        type: ibgp
+        ipv4: 10.0.0.1
+        _source_intf:
+          type: loopback
+          neighbors: []
+          virtual_interface: true
+          ifindex: 0
+          ifname: Loopback0
+          ipv4: 10.0.0.5/32
+          ospf:
+            area: 0.0.0.0
+            passive: false
+        next_hop_self: ebgp
+        activate:
+          ipv4: true
+        6pe: true
+      ipv4: true
+      ipv6: true
+    name: pe2
+    interfaces:
+    - ipv4: 10.1.0.10/30
+      linkindex: 3
+      type: p2p
+      name: pe2 -> core
+      ifindex: 1
+      ifname: Ethernet1
+      mac_address: caf0.0005.0001
+      clab:
+        name: et1
+      neighbors:
+      - ipv4: 10.1.0.9/30
+        ifname: eth3
+        node: core
+      ospf:
+        area: 0.0.0.0
+        passive: false
+        network_type: point-to-point
+      ldp:
+        passive: false
+    - ra:
+        slaac: true
+      ipv6: 2001:db8:42:1::5/64
+      pool: edge
+      linkindex: 5
+      role: stub
+      type: lan
+      bridge: ml-17_5
+      name: pe2 -> h2
+      ifindex: 2
+      ifname: Ethernet2
+      mac_address: caf0.0005.0002
+      clab:
+        name: et2
+      neighbors:
+      - ipv6: 2001:db8:42:1::3/64
         ifname: eth1
         node: h2
       ospf:
@@ -9598,7 +9651,7 @@ nodes:
     box: ceos:4.35.0.1F
     ospf:
       area: 0.0.0.0
-      router_id: 10.0.0.4
+      router_id: 10.0.0.5
       af:
         ipv4: true
         ipv6: true
@@ -9606,15 +9659,15 @@ nodes:
       - area: 0.0.0.0
         _area_int: 0
         kind: regular
-    id: 4
+    id: 5
     role: router
     af:
       ipv4: true
       ipv6: true
     mgmt:
       ifname: Management0
-      mac: ca:fe:00:04:00:00
-      ipv4: 192.168.17.104
+      mac: ca:fe:00:05:00:00
+      ipv4: 192.168.17.105
     hostname: clab-ml-17-pe2
     loopback:
       type: loopback
@@ -9622,14 +9675,14 @@ nodes:
       virtual_interface: true
       ifindex: 0
       ifname: Loopback0
-      ipv4: 10.0.0.4/32
+      ipv4: 10.0.0.5/32
       ospf:
         area: 0.0.0.0
         passive: false
       bgp:
         advertise: true
     ldp:
-      router_id: 10.0.0.4
+      router_id: 10.0.0.5
       af:
         ipv4: true
     netlab_ansible_skip_module:
@@ -9657,7 +9710,7 @@ nodes:
       mtu: 1500
       neighbors:
       - ipv4: 10.1.0.2/30
-        ifname: Ethernet0/1
+        ifname: eth-1/1/c1
         node: dut
       ospf:
         area: 0.0.0.0
@@ -9668,12 +9721,29 @@ nodes:
     - ipv4: 10.1.0.5/30
       linkindex: 2
       type: p2p
-      name: core -> pe2
+      name: core -> pe1
       ifindex: 2
       ifname: eth2
       mtu: 1500
       neighbors:
       - ipv4: 10.1.0.6/30
+        ifname: Ethernet1
+        node: pe1
+      ospf:
+        area: 0.0.0.0
+        passive: false
+        network_type: point-to-point
+      ldp:
+        passive: false
+    - ipv4: 10.1.0.9/30
+      linkindex: 3
+      type: p2p
+      name: core -> pe2
+      ifindex: 3
+      ifname: eth3
+      mtu: 1500
+      neighbors:
+      - ipv4: 10.1.0.10/30
         ifname: Ethernet1
         node: pe2
       ospf:
@@ -9720,22 +9790,22 @@ nodes:
     box: quay.io/frrouting/frr:10.5.1
     ospf:
       area: 0.0.0.0
-      router_id: 10.0.0.5
+      router_id: 10.0.0.6
       af:
         ipv4: true
       areas:
       - area: 0.0.0.0
         _area_int: 0
         kind: regular
-    id: 5
+    id: 6
     role: router
     mtu: 1500
     af:
       ipv4: true
     mgmt:
       ifname: eth0
-      mac: ca:fe:00:05:00:00
-      ipv4: 192.168.17.105
+      mac: ca:fe:00:06:00:00
+      ipv4: 192.168.17.106
     hostname: clab-ml-17-core
     loopback:
       type: loopback
@@ -9743,12 +9813,12 @@ nodes:
       virtual_interface: true
       ifindex: 0
       ifname: lo
-      ipv4: 10.0.0.5/32
+      ipv4: 10.0.0.6/32
       ospf:
         area: 0.0.0.0
         passive: false
     ldp:
-      router_id: 10.0.0.5
+      router_id: 10.0.0.6
       af:
         ipv4: true
     netlab_ansible_skip_module:
@@ -9759,6 +9829,147 @@ nodes:
       initial: /etc/config/01-initial.sh:sh
       ospf: /etc/config/02-ospf.sh:sh
       mpls: /etc/config/03-mpls.sh:sh
+links:
+- interfaces:
+  - node: dut
+    ipv4: 10.1.0.2/30
+    ifindex: 1
+    ifname: eth-1/1/c1
+  - node: core
+    ipv4: 10.1.0.1/30
+    ifindex: 1
+    ifname: eth1
+  _linkname: links[core][1]
+  linkindex: 1
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.0/30
+- interfaces:
+  - node: pe1
+    ipv4: 10.1.0.6/30
+    ifindex: 1
+    ifname: Ethernet1
+  - node: core
+    ipv4: 10.1.0.5/30
+    ifindex: 2
+    ifname: eth2
+  _linkname: links[core][2]
+  linkindex: 2
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.4/30
+- interfaces:
+  - node: pe2
+    ipv4: 10.1.0.10/30
+    ifindex: 1
+    ifname: Ethernet1
+  - node: core
+    ipv4: 10.1.0.9/30
+    ifindex: 3
+    ifname: eth3
+  _linkname: links[core][3]
+  linkindex: 3
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.8/30
+- pool: edge
+  interfaces:
+  - node: pe1
+    ra:
+      slaac: true
+    ipv6: 2001:db8:42::4/64
+    ifindex: 2
+    ifname: Ethernet2
+  - node: h1
+    ipv6: 2001:db8:42::2/64
+    ifindex: 1
+    ifname: eth1
+  _linkname: links[edge][1]
+  linkindex: 4
+  node_count: 2
+  role: stub
+  type: lan
+  bridge: ml-17_4
+  prefix:
+    ipv6: 2001:db8:42::/64
+- pool: edge
+  interfaces:
+  - node: pe2
+    ra:
+      slaac: true
+    ipv6: 2001:db8:42:1::5/64
+    ifindex: 2
+    ifname: Ethernet2
+  - node: h2
+    ipv6: 2001:db8:42:1::3/64
+    ifindex: 1
+    ifname: eth1
+  _linkname: links[edge][2]
+  linkindex: 5
+  node_count: 2
+  role: stub
+  type: lan
+  bridge: ml-17_5
+  prefix:
+    ipv6: 2001:db8:42:1::/64
+validate:
+- description: Check OSPF sessions with DUT (wait up to 30 seconds)
+  wait: 30
+  wait_msg: Waiting for OSPF adjacency
+  nodes:
+  - core
+  plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  stop_on_error: true
+  name: ospf
+- description: Check LDP session
+  wait: 30
+  wait_msg: Waiting for LDP to start
+  nodes:
+  - core
+  show:
+    frr: mpls ldp neighbor {{ hostvars.dut.ldp.router_id }} json
+  valid: |
+    neighbors[0].state == 'OPERATIONAL'
+  name: ldp
+  devices:
+  - frr
+- description: Check IBGP session
+  wait: 30
+  wait_msg: Waiting for IBGP sessions to start
+  nodes:
+  - pe1
+  - pe2
+  plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  stop_on_error: true
+  name: ibgp
+- description: Check 6PE AF on IBGP session
+  wait: 30
+  wait_msg: Waiting for IBGP sessions to start
+  nodes:
+  - pe1
+  - pe2
+  plugin: bgp_neighbor(node.bgp.neighbors,'dut',activate='ipv6')
+  stop_on_error: true
+  name: af_6pe
+- description: IPv6 ping-based end-to-end reachability test
+  wait_msg: We might have to wait a bit longer
+  wait: 15
+  nodes:
+  - h1
+  plugin: ping('h2',af='ipv6')
+  name: ping
+input:
+- /home/pipi/net101/tools/tests/integration/mpls/31-6pe-rr.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
+- /home/pipi/.netlab.yml
+- package:topology-defaults.yml
+plugin:
+- multilab
+name: ml-17
 provider: clab
 module:
 - ospf

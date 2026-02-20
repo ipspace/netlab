@@ -1,26 +1,31 @@
 Creating Device configuration snippets
+[CREATED] dut: initial,ospf,bgp,mpls
 [CREATED] h1: initial
 [CREATED] h2: initial
-[CREATED] dut: initial,ospf,bgp,mpls
+[CREATED] pe1: normalize,initial,ospf,bgp,mpls
 [CREATED] pe2: normalize,initial,ospf,bgp,mpls
 [CREATED] core: initial,ospf,mpls
 Checking Are lab devices ready to be configured?
- [INFO] Checking SSH server(s) on dut,pe2
-[SSH]     SSH server on node pe2 (device eos) is ready after 6.2 seconds
-[SSH]     SSH server on node dut (device iol) is ready after 12.3 seconds
+ [INFO] Checking SSH server(s) on dut,pe1,pe2
+[SSH]     SSH server on node dut (device iol) is ready after 6.3 seconds
 Config Deploying device configurations
  [INFO] Executing initial configuration for node h1 (namespace clab-
           ml-17-h1)
  [INFO] Executing initial configuration for node h2 (namespace clab-
           ml-17-h2)
+ [INFO] Executing normalize configuration for node pe1
  [INFO] Executing normalize configuration for node pe2
  [INFO] Executing initial configuration for node core
  [INFO] Executing ospf configuration for node core
  [INFO] Executing mpls configuration for node core
  [INFO] Executing initial configuration for node pe2
+ [INFO] Executing initial configuration for node pe1
  [INFO] Executing ospf configuration for node pe2
+ [INFO] Executing ospf configuration for node pe1
  [INFO] Executing bgp configuration for node pe2
+ [INFO] Executing bgp configuration for node pe1
  [INFO] Executing mpls configuration for node pe2
+ [INFO] Executing mpls configuration for node pe1
  [INFO] Starting Ansible playbook to deploy the rest of the
           configurations
 [WARNING]: Found variable using reserved name: hosts
@@ -68,7 +73,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "initial configuration for dut\n=========================================\nhostname dut\n!\nno ip domain lookup\nlogging buffered 256000\n\n!\nlldp run\n!\nip host core 10.0.0.5 10.1.0.1 10.1.0.5\nip host h1 2001:db8:42::1\nip host h2 2001:db8:42:1::2\nip host pe2 10.0.0.4 10.1.0.6 2001:db8:42:1::4\n!\nip routing\n!\nipv6 unicast-routing\n!\n!\ninterface Loopback0\n ip address 10.0.0.3 255.255.255.255\n!\ninterface Ethernet0/0\n no lldp transmit\n no lldp receive\n!\ninterface Ethernet0/1\n description dut -> core\n ip address 10.1.0.2 255.255.255.252\n no shutdown\n!\ninterface Ethernet0/2\n description dut -> h1 [stub]\n ipv6 nd ra interval 5\n ipv6 address 2001:DB8:42::3/64\n no shutdown\n!\n!\nline vty 0 4\n exec-timeout 0 0 \n!\nno banner exec\nno banner login\nno banner incoming\n"
+    "msg": "initial configuration for dut\n=========================================\nhostname dut\n!\nno ip domain lookup\nlogging buffered 256000\n\n!\nlldp run\n!\nip host core 10.0.0.6 10.1.0.1 10.1.0.5 10.1.0.9\nip host h1 2001:db8:42::2\nip host h2 2001:db8:42:1::3\nip host pe1 10.0.0.4 10.1.0.6 2001:db8:42::4\nip host pe2 10.0.0.5 10.1.0.10 2001:db8:42:1::5\n!\nip routing\n!\nno ipv6 unicast-routing\n!\n!\ninterface Loopback0\n ip address 10.0.0.1 255.255.255.255\n!\ninterface Ethernet0/0\n no lldp transmit\n no lldp receive\n!\ninterface Ethernet0/1\n description dut -> core\n ip address 10.1.0.2 255.255.255.252\n no shutdown\n!\n!\nline vty 0 4\n exec-timeout 0 0 \n!\nno banner exec\nno banner login\nno banner incoming\n"
 }
 
 TASK [Deploy initial configuration] ********************************************
@@ -104,7 +109,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "ospf configuration for dut\n=========================================\nrouter ospf 1\n router-id 10.0.0.3\n passive-interface Ethernet0/2\n\n!\ninterface Loopback0\n! \n ip ospf 1 area 0.0.0.0\n!\ninterface Ethernet0/1\n! dut -> core\n ip ospf 1 area 0.0.0.0\n ip ospf network point-to-point\n!\n\nrouter ospfv3 1\n router-id 10.0.0.3\n address-family ipv6 unicast\n  passive-interface Ethernet0/2\n!\ninterface Ethernet0/2\n! dut -> h1\n ospfv3 1 ipv6 area 0.0.0.0\n ospfv3 network point-to-point\n!\n\n"
+    "msg": "ospf configuration for dut\n=========================================\nrouter ospf 1\n router-id 10.0.0.1\n\n!\ninterface Loopback0\n! \n ip ospf 1 area 0.0.0.0\n!\ninterface Ethernet0/1\n! dut -> core\n ip ospf 1 area 0.0.0.0\n ip ospf network point-to-point\n!\n\n"
 }
 
 TASK [Deploy ospf configuration] ***********************************************
@@ -127,7 +132,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "bgp configuration for dut\n=========================================\n!\nip bgp-community new-format\n!\nrouter bgp 65001\n no bgp default ipv4-unicast\n bgp update-delay 5\n bgp nopeerup-delay cold-boot 1\n bgp nopeerup-delay user-initiated 1\n bgp router-id 10.0.0.3\n  neighbor 10.0.0.4 remote-as 65001\n  neighbor 10.0.0.4 description pe2\n  neighbor 10.0.0.4 update-source Loopback0\n\n!\n address-family ipv4\n  bgp scan-time 5\n!\n!\n! Originate networks from connected subnets\n!\n  network 10.0.0.3 mask 255.255.255.255\n\n!\n  neighbor 10.0.0.4 activate\n  neighbor 10.0.0.4 advertisement-interval 0\n  neighbor 10.0.0.4 next-hop-self\n  neighbor 10.0.0.4 send-community both\n\n address-family ipv6\n  bgp scan-time 5\n!\n!\n! Originate networks from connected subnets\n!\n  network 2001:db8:42::/64\n\n!\n!\n"
+    "msg": "bgp configuration for dut\n=========================================\n!\nip bgp-community new-format\n!\nrouter bgp 65001\n no bgp default ipv4-unicast\n bgp update-delay 5\n bgp nopeerup-delay cold-boot 1\n bgp nopeerup-delay user-initiated 1\n bgp router-id 10.0.0.1\n bgp cluster-id 10.0.0.1\n  neighbor 10.0.0.4 remote-as 65001\n  neighbor 10.0.0.4 description pe1\n  neighbor 10.0.0.4 update-source Loopback0\n\n  neighbor 10.0.0.5 remote-as 65001\n  neighbor 10.0.0.5 description pe2\n  neighbor 10.0.0.5 update-source Loopback0\n\n!\n address-family ipv4\n  bgp scan-time 5\n!\n!\n! Originate networks from connected subnets\n!\n  network 10.0.0.1 mask 255.255.255.255\n\n!\n  neighbor 10.0.0.4 activate\n  neighbor 10.0.0.4 advertisement-interval 0\n  neighbor 10.0.0.4 next-hop-self\n  neighbor 10.0.0.4 route-reflector-client\n  neighbor 10.0.0.4 send-community both\n\n  neighbor 10.0.0.5 activate\n  neighbor 10.0.0.5 advertisement-interval 0\n  neighbor 10.0.0.5 next-hop-self\n  neighbor 10.0.0.5 route-reflector-client\n  neighbor 10.0.0.5 send-community both\n\n!\n"
 }
 
 TASK [Deploy bgp configuration] ************************************************
@@ -150,7 +155,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "mpls configuration for dut\n=========================================\n!\nmpls ldp router-id Loopback0\nmpls ldp logging neighbor-changes\n!\ninterface Ethernet0/1\n mpls ip\n!\n!\n! Have to turn on IPv6 routing for route reflector deployments\n!\nipv6 unicast-routing\n!\nrouter bgp 65001\n address-family ipv6\n!\n  neighbor 10.0.0.4 activate\n  neighbor 10.0.0.4 send-label\n  neighbor 10.0.0.4 send-community both\n\n\n"
+    "msg": "mpls configuration for dut\n=========================================\n!\nmpls ldp router-id Loopback0\nmpls ldp logging neighbor-changes\n!\ninterface Ethernet0/1\n mpls ip\n!\n!\n! Have to turn on IPv6 routing for route reflector deployments\n!\nipv6 unicast-routing\n!\nrouter bgp 65001\n address-family ipv6\n!\n  neighbor 10.0.0.4 activate\n  neighbor 10.0.0.4 send-label\n  neighbor 10.0.0.4 route-reflector-client\n  neighbor 10.0.0.4 send-community both\n\n  neighbor 10.0.0.5 activate\n  neighbor 10.0.0.5 send-label\n  neighbor 10.0.0.5 route-reflector-client\n  neighbor 10.0.0.5 send-community both\n\n\n"
 }
 
 TASK [Deploy mpls configuration] ***********************************************
@@ -169,15 +174,14 @@ Results of configuration script deployments
 ================================================================================
 h1               Script:  initial
 h2               Script:  initial
+pe1              Script:  normalize,initial,ospf,bgp,mpls
 pe2              Script:  normalize,initial,ospf,bgp,mpls
 core             Script:  initial,ospf,mpls
 
 
-The tested device (DUT) is a PE-router running 6PE (IPv6 over BGP-LU with IPv4 next hops).
-It runs OSPFv2 and LDP with a P-router over an IPv4-only core,
-and has an IPv4 IBGP session with another PE-router. The hosts are attached
-via IPv6-only links and communicate using IPv6 across the MPLS core.
-
-The validation test checks end-to-end IPv6 connectivity between Linux hosts
-attached to the PE-routers across a BGP-free MPLS core using 6PE.
+The tested device (DUT) is a BGP route reflector for 6PE (IPv6 over BGP-LU
+with IPv4 next hops). It runs OSPFv2 and LDP with a P-router over an IPv4-only
+core, and has IPv4 IBGP sessions with PE routers (RR clients) another
+PE-router. The hosts are attached via IPv6-only links and communicate using
+IPv6 across the MPLS core.
 
