@@ -71,7 +71,7 @@ def valid_ospf6_neighbor(id: str, present: bool = True,vrf: str = 'default') -> 
 def show_ospf_prefix(pfx: str, vrf: str = 'default', **kwargs: typing.Any) -> str:
   return f'ip route vrf {vrf} ospf detail | json'
 
-def get_ospf_prefix(pfx: str, data: Box) -> typing.Optional[Box]:
+def get_ospf_prefix(pfx: str, data: Box, **kwargs: typing.Any) -> typing.Optional[Box]:
   for v in data.get('vrfs',{}).values():
     return v.get('routes',{}).get(pfx,None)
   
