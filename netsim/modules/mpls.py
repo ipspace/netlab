@@ -126,9 +126,6 @@ def node_adjust_bgplu(node: Box, topology: Box, features: Box) -> None:
         n[af+'_label'] = True
 
 def node_adjust_6pe(node: Box, topology: Box, features: Box) -> None:
-  if not validate_mpls_bgp_parameter(node,'bgp'):
-    return
-
   if not 'ipv4' in node.bgp:
     log.error(
       f'6PE feature used on {node.name} needs IPv4 address family configured within BGP process',
@@ -136,7 +133,7 @@ def node_adjust_6pe(node: Box, topology: Box, features: Box) -> None:
       'mpls')
     return
     
-  if 'bgp' in node.mpls and 'ipv6' in node.mpls.bgp:
+  if node.get('mpls.bgp.ipv6',False):
     log.error(
       f'6PE and IPv6 BGP Labeled Unicast cannot be used at the same time on {node.name}',
       log.IncorrectValue,
@@ -268,7 +265,6 @@ class MPLS(_Module):
       return
 
     features = devices.get_device_features(node,topology.defaults)
-
     if 'ldp' in node.mpls:
       node_adjust_ldp(node,topology,features)
 
