@@ -3,7 +3,7 @@
 
 This document describes how to create or modify MPLS/VPN (L3VPN) configuration templates for network devices supported by *netlab*.
 
-MPLS/VPN is a sub-feature of the MPLS module. It requires the [VRF module](module-vrf) to be enabled and uses BGP VPN address families to exchange routing information between PE routers.
+MPLS/VPN is a sub-feature of the [MPLS module](dev-mpls). It requires the [VRF module](module-vrf) to be enabled and uses BGP VPN address families to exchange routing information between PE routers.
 
 ## Enabling MPLS/VPN Support on a Device
 
@@ -25,27 +25,9 @@ The `mpls.vpn` parameter supports multiple formats:
       ipv4: true
   ```
 
-## Template Architecture
+The MPLS/VPN configuration template should be stored in the `netsim/ansible/templates/mpls/` directory (name `<platform>.mplsvpn.j2`) or within the `netsim/ansible/templates/mpls/<platform>` directory (name: `mplsvpn.j2`).
 
-The MPLS configuration uses a two-tier template structure. The templates should be stored in the `netsim/ansible/templates/mpls/` directory.
-
-### Main MPLS Template
-
-The `<platform>.j2` template (e.g., `eos.j2`) includes the MPLS/VPN sub-feature template:
-
-```
-{% if mpls.vpn is defined %}
-{%   include 'eos.mplsvpn.j2' +%}
-{% endif %}
-```
-
-```{tip}
-The `<platform>` is the value of the `netlab_device_type` or `ansible_network_os` variable.
-```
-
-### MPLS/VPN Configuration Template
-
-The `<platform>.mplsvpn.j2` template contains the actual MPLS/VPN configuration commands. It enables BGP VPNv4/VPNv6 address families on BGP neighbors that have been configured for VPN AF exchange.
+It usually enables BGP VPNv4/VPNv6 address families and activates them on BGP neighbors that have been configured for VPN AF exchange. The VRF configuration and route redistribution are done within the VRF configuration template.
 
 ## Template Variables
 

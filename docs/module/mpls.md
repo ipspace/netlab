@@ -1,3 +1,4 @@
+(module-mpls)=
 # MPLS Configuration Module
 
 The MPLS configuration module implements:
