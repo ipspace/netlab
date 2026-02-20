@@ -14,7 +14,7 @@ mpls:
 
 ## Template Architecture
 
-The MPLS configuration uses a two-tier template structure. The templates should be stored in the `netsim/ansible/templates/mpls/` directory. Feature-specific templates can also be stored within the `netsim/ansible/templates/mpls/<platform>` directory (example: IOS XR)
+The MPLS configuration uses a two-tier template structure. The templates should be stored in the `netsim/ansible/templates/mpls/` directory. Feature-specific templates can also be stored within the `netsim/ansible/templates/mpls/<platform>` directory (example: IOS XR).
 
 ### Main MPLS Template
 
