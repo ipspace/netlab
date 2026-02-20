@@ -86,12 +86,12 @@ The following table describes the per-platform support of individual MPLS label 
 
 ### 6PE
 
-| Operating system      | 6PE |
-| ----------------------| :-: |
-| Arista EOS            | ✅  |
-| Cisco IOSv/IOS XE[^xe] | ✅ |
-| Cisco IOS XR[^xr]     | ✅  |
-| Nokia SR OS[^SROS]    | ✅  |
+| Operating system      | 6PE | 6PE<br>RR |
+| ----------------------| :-: | :-: |
+| Arista EOS            | ✅  | ✅  |
+| Cisco IOSv/IOS XE[^xe] | ✅ | ✅  |
+| Cisco IOS XR[^xr]     | ✅  | ✅  |
+| Nokia SR OS[^SROS]    | ✅  | ✅  |
 
 **Notes**
 

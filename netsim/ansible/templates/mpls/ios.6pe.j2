@@ -1,3 +1,8 @@
+{% import "templates/bgp/ios.macro.j2" as bgpcfg %}
+!
+! Enable IPv6 routing on 6PE nodes that otherwise wouldn't have IPv6 configured (e.g. RR-only nodes)
+!
+ipv6 unicast-routing
 !
 router bgp {{ bgp.as }}
  address-family ipv6
@@ -5,4 +10,8 @@ router bgp {{ bgp.as }}
 {% for n in bgp.neighbors if n.ipv4 is defined and n['6pe']|default(False) %}
   neighbor {{ n.ipv4 }} activate
   neighbor {{ n.ipv4 }} send-label
+{%   if n.rr_client|default(False) %}
+  neighbor {{ n.ipv4 }} route-reflector-client
+{%   endif %}
+{{ bgpcfg.neighbor_community(n,n.ipv4,bgp) }}
 {% endfor %}
