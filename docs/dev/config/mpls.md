@@ -5,7 +5,7 @@ This document describes how to create configuration templates for the **[mpls](m
 
 ## Enabling MPLS/VPN Support on a Device
 
-To enable MPLS features on a device, add `mpls` dictionary to the device YAML file (`netsim/devices/<device>.yml`). Enable individual features within that file, for example:
+To enable MPLS features on a device, add the `mpls` dictionary to the device YAML file (`netsim/devices/<device>.yml`). Enable individual features within that file, for example:
 
 ```yaml
 mpls:
