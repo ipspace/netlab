@@ -3,7 +3,7 @@
 
 This document describes how to create or modify MPLS LDP configuration templates for network devices supported by *netlab*.
 
-MPLS LDP (Label Distribution Protocol) is a sub-feature of the MPLS module. It is enabled alongside other MPLS features (BGP-LU, VPN, 6PE) but has its own configuration template.
+MPLS LDP (Label Distribution Protocol) is a sub-feature of the [MPLS module](mpls.md). It is enabled alongside other MPLS features (BGP-LU, VPN, 6PE) but has its own configuration template.
 
 ## Enabling LDP Support on a Device
 
@@ -14,43 +14,7 @@ mpls:
   ldp: true
 ```
 
-Some devices support additional LDP-related features:
-
-```yaml
-mpls:
-  ldp: true
-  bgp: true      # BGP Labeled Unicast
-  vpn: true      # MPLS/VPN
-  6pe: true      # 6PE (IPv6 over MPLS)
-```
-
-## Template Architecture
-
-The MPLS configuration uses a two-tier template structure. The templates should be stored in the `netsim/ansible/templates/mpls/` directory.
-
-### Main MPLS Template
-
-The `<platform>.j2` template (e.g., `eos.j2`) includes LDP and other MPLS sub-feature templates:
-
-```
-{% if ldp is defined %}
-{%   include 'eos.ldp.j2' +%}
-{% endif %}
-{% if mpls.bgp is defined %}
-{%   include 'eos.bgp-lu.j2' +%}
-{% endif %}
-{% if mpls.vpn is defined %}
-{%   include 'eos.mplsvpn.j2' +%}
-{% endif %}
-```
-
-```{tip}
-The `<platform>` is the value of the `netlab_device_type` or `ansible_network_os` variable.
-```
-
-### LDP-Specific Template
-
-The `<platform>.ldp.j2` template contains the actual LDP configuration commands.
+The LDP configuration template should be stored in the `netsim/ansible/templates/mpls/` directory (name `<platform>.ldp.j2`) or within the `netsim/ansible/templates/mpls/<platform>` directory (name: `ldp.j2`)
 
 ## Template Variables
 
