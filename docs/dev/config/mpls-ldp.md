@@ -3,7 +3,7 @@
 
 This document describes how to create or modify MPLS LDP configuration templates for network devices supported by *netlab*.
 
-MPLS LDP (Label Distribution Protocol) is a sub-feature of the [MPLS module](mpls.md). It is enabled alongside other MPLS features (BGP-LU, VPN, 6PE) but has its own configuration template.
+MPLS LDP (Label Distribution Protocol) is a sub-feature of the [MPLS module](dev-mpls). It is enabled alongside other MPLS features (BGP-LU, VPN, 6PE) but has its own configuration template.
 
 ## Enabling LDP Support on a Device
 
