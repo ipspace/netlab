@@ -3,7 +3,7 @@
 
 This document describes how to create or modify MPLS/VPN (L3VPN) configuration templates for network devices supported by *netlab*.
 
-MPLS/VPN is a sub-feature of the [MPLS module](mpls.md). It requires the [VRF module](module-vrf) to be enabled and uses BGP VPN address families to exchange routing information between PE routers.
+MPLS/VPN is a sub-feature of the [MPLS module](dev-mpls). It requires the [VRF module](module-vrf) to be enabled and uses BGP VPN address families to exchange routing information between PE routers.
 
 ## Enabling MPLS/VPN Support on a Device
 
