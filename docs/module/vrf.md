@@ -36,7 +36,7 @@ VRFs are supported on these platforms:
 
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL) and IOL Layer-2 image
 
-[^Junos]: Includes vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
+[^Junos]: Includes vMX, vSRX, vPTX, vJunos-switch, and vJunos-router but not cRPD
 
 [^SRRL]: Nokia SR OS supports inter-VRF route leaking, but it's not yet implemented in _netlab_
 

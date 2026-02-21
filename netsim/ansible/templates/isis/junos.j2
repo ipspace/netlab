@@ -1,94 +1,10 @@
-{% macro disable_level(l_type) %}
-{%   for level in ['1','2'] if level not in l_type|default('1-2') %}
-    level {{ level }} disable;
-{%   endfor %}
-{% endmacro %}
-
-protocols {
-  delete: isis;
-}
-protocols {
-  isis {
-{% if 'ipv6' in isis.af %}
-    topologies {
-      ipv6-unicast;
-    }
-{% endif %}
-{{ disable_level(isis.type) }}
-    level 1 wide-metrics-only;
-    level 2 wide-metrics-only;
-    interface lo0.0;
-{% for l in interfaces|default([]) if 'isis' in l %}
-    interface {{ l.ifname }} {
-{%   if l.isis.network_type is defined %}
-      {{ l.isis.network_type }};
-{%   endif %}
-{%   if '1-2' not in l.isis.type|default('1-2') %}
-{{     disable_level(l.isis.type)|indent(2,first=True) }}
-{%   endif %}
-{%   if l.isis.passive %}
-      passive;
-{%   endif %}
-{%   if l.isis.bfd.ipv4|default(False) %}
-        family inet {
-          bfd-liveness-detection {
-            minimum-receive-interval {{ l.bfd.min_rx|default(bfd.min_rx)|default(500) }};
-            multiplier {{ l.bfd.multiplier|default(bfd.multiplier)|default(3) }};
-            transmit-interval {
-              minimum-interval {{ l.bfd.min_tx|default(bfd.min_tx)|default(500) }};
-            }
-          }
-        }
-{%   endif %}
-{%   if l.isis.bfd.ipv6|default(False) %}
-        family inet6 {
-          bfd-liveness-detection {
-            minimum-receive-interval {{ l.bfd.min_rx|default(bfd.min_rx)|default(500) }};
-            multiplier {{ l.bfd.multiplier|default(bfd.multiplier)|default(3) }};
-            transmit-interval {
-              minimum-interval {{ l.bfd.min_tx|default(bfd.min_tx)|default(500) }};
-            }
-          }
-        }
-{%   endif %}
-{%   if l.isis.metric is defined or l.isis.cost is defined %}
-      level 1 metric {{ l.isis.metric|default(l.isis.cost) }};
-      level 2 metric {{ l.isis.metric|default(l.isis.cost) }};
-{%     if 'ipv6' in isis.af and 'ipv6' in l %}
-      level 1 ipv6-unicast-metric {{ l.isis.metric|default(l.isis.cost) }};
-      level 2 ipv6-unicast-metric {{ l.isis.metric|default(l.isis.cost) }};
-{%     endif %}
-{%   endif %}
-    }
-{% endfor %}
-  }
-}
-
-{% if netlab_device_type|default('') == 'vsrx' %}
-security {
-  forwarding-options {
-    family {
-      iso {
-        mode packet-based;
-      }
-    }
-  }
-}
-{% endif %}
+{# Regular Junos devices need IS-IS configuration and ISO family on Ethernet interfaces #}
+{% include 'junos.isis.j2' %}
 
 interfaces {
-  lo0 {
-    unit 0 {
-      family iso {
-        address {{ isis.net }}
-      }
-    }
-  }
 {% for l in interfaces|default([]) if 'isis' in l %}
-  {{ l.ifname }} {
-    
+  {{ l.ifname }} {    
       family iso;
-    
   }
 {% endfor %}
 }
