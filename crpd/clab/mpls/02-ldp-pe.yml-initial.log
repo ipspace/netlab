@@ -73,7 +73,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "initial configuration for dut\n=========================================\ninterfaces {\n  lo0 {\n    unit 0 {\n      family inet {\n        address 10.0.0.3/32;\n      }\n    }\n  }\n  eth1 {\n    description \"dut -> h1 [stub]\";\n    unit 0 {\n      family inet {\n        address 172.16.0.3/24;\n      }\n    }\n  }\n  eth2 {\n    description \"dut -> p1\";\n    unit 0 {\n      family inet {\n        address 10.1.0.1/30;\n      }\n    }\n  }\n}\nprotocols {\n  lldp {\n    interface eth0 {\n      disable;\n    }\n    interface all;\n  }\n}\n"
+    "msg": "initial configuration for dut\n=========================================\ninterfaces {\n  lo0 {\n    unit 0 {\n      family inet {\n        address 10.0.0.3/32;\n      }\n    }\n  }\n  eth1 {\n    mtu 1500;\n    description \"dut -> h1 [stub]\";\n    unit 0 {\n      family inet {\n        address 172.16.0.3/24;\n      }\n    }\n  }\n  eth2 {\n    mtu 1500;\n    description \"dut -> p1\";\n    unit 0 {\n      family inet {\n        address 10.1.0.1/30;\n      }\n    }\n  }\n}\nprotocols {\n  lldp {\n    interface eth0 {\n      disable;\n    }\n    interface all;\n  }\n}\n"
 }
 
 TASK [Deploy initial configuration] ********************************************
@@ -172,19 +172,21 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "mpls configuration for dut\n=========================================\n\n\n\ninterfaces {\n  eth2 {\n    family mpls;\n  }\n}\n\nprotocols {\n  mpls {\n    interface eth2;\n  }\n  ldp {\n    interface eth2;\n  }\n}\n\n"
+    "msg": "mpls configuration for dut\n=========================================\n\n\n\ninterfaces {\n  eth2 {\n      unit 0 {\n    family mpls;\n      }\n  }\n}\n\nprotocols {\n  mpls {\n    interface eth2;\n  }\n  ldp {\n    interface eth2;\n  }\n}\n\n"
 }
 
 TASK [Deploy mpls configuration] ***********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
 TASK [junos_config: deploying mpls from /work/netlab_cicd/node_files/dut/mpls] ***
-fatal: [dut]: FAILED! => {"changed": false, "msg": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><rpc-reply xmlns=\"urn:ietf:params:xml:ns:netconf:base:1.0\" xmlns:junos=\"http://xml.juniper.net/junos/24.4R0/junos\" xmlns:nc=\"urn:ietf:params:xml:ns:netconf:base:1.0\" message-id=\"urn:uuid:ecfc1e5a-6a5c-4f9b-b005-a3c0e310bcff\">\n<load-configuration-results>\n<rpc-error>\n<error-type>protocol</error-type>\n<error-tag>operation-failed</error-tag>\n<error-severity>error</error-severity>\n<error-message>syntax error</error-message>\n<error-info>\n<bad-element>family</bad-element>\n</error-info>\n</rpc-error>\n<rpc-error>\n<error-severity>warning</error-severity>\n<error-path>[edit interfaces]</error-path>\n<error-message>mgd: statement has no contents; ignored</error-message>\n<error-info>\n<bad-element>eth2</bad-element>\n</error-info>\n</rpc-error>\n</load-configuration-results>\n</rpc-reply>"}
+changed: [dut]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=35   changed=3    unreachable=0    failed=1    skipped=12   rescued=0    ignored=0   
+dut                        : ok=36   changed=4    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
 
-FatalError in initial: Configuration deployment failed
 Results of configuration script deployments
 ================================================================================
 h1               Script:  initial,routing
@@ -192,4 +194,12 @@ h2               Script:  initial,routing
 pe2              Script:  initial,ospf,bgp,mpls
 p1               Script:  initial,ospf,mpls
 p2               Script:  initial,ospf,mpls
+
+
+The tested device (DUT) is a PE-router. It runs OSPF and LDP with a P-router
+and an IBGP session with another PE-router. It has to perform IP-to-MPLS
+encapsulation to get the traffic across the BGP-free MPLS core.
+
+The validation test checks end-to-end connectivity across a BGP-free MPLS core
+between a set of linux hosts attached to the PE-routers.
 

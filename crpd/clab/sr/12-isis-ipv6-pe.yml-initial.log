@@ -1,8 +1,8 @@
 Creating Device configuration snippets
 [CREATED] h1: initial
 [CREATED] h2: initial
-[CREATED] dut: initial,isis,sr,bgp
-[CREATED] pe2: initial,isis,sr,bgp
+[CREATED] dut: initial,isis,bgp,sr
+[CREATED] pe2: initial,isis,bgp,sr
 [CREATED] p1: initial,isis,sr
 [CREATED] p2: initial,isis,sr
 Checking Are lab devices ready to be configured?
@@ -13,15 +13,15 @@ Config Deploying device configurations
  [INFO] Executing initial configuration for node h2 (namespace clab-
           ml-17-h2)
  [INFO] Executing initial configuration for node pe2
- [INFO] Executing initial configuration for node p1
  [INFO] Executing initial configuration for node p2
- [INFO] Executing isis configuration for node p1
- [INFO] Executing isis configuration for node pe2
+ [INFO] Executing initial configuration for node p1
  [INFO] Executing isis configuration for node p2
- [INFO] Executing sr configuration for node pe2
- [INFO] Executing sr configuration for node p2
+ [INFO] Executing isis configuration for node pe2
+ [INFO] Executing isis configuration for node p1
  [INFO] Executing bgp configuration for node pe2
+ [INFO] Executing sr configuration for node pe2
  [INFO] Executing sr configuration for node p1
+ [INFO] Executing sr configuration for node p2
  [INFO] Starting Ansible playbook to deploy the rest of the
           configurations
 [WARNING]: Found variable using reserved name: hosts
@@ -69,7 +69,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "initial configuration for dut\n=========================================\ninterfaces {\n  lo0 {\n    unit 0 {\n      family inet {\n        address 10.0.0.3/32;\n      }\n      family inet6 {\n        address 2001:db8:1::3/128;\n      }\n    }\n  }\n  eth1 {\n    description \"dut -> h1 [stub]\";\n    unit 0 {\n      family inet6 {\n        address 2001:db8:2::3/64;\n      }\n    }\n  }\n  eth2 {\n    description \"dut -> p1\";\n    unit 0 {\n      family inet6 {\n      }\n    }\n  }\n}\nprotocols {\n  lldp {\n    interface eth0 {\n      disable;\n    }\n    interface all;\n  }\n  router-advertisement {\n    interface eth1;\n    interface eth2;\n  }\n}\n"
+    "msg": "initial configuration for dut\n=========================================\ninterfaces {\n  lo0 {\n    unit 0 {\n      family inet {\n        address 10.0.0.3/32;\n      }\n      family inet6 {\n        address 2001:db8:1::3/128;\n      }\n    }\n  }\n  eth1 {\n    mtu 1500;\n    description \"dut -> h1 [stub]\";\n    unit 0 {\n      family inet6 {\n        address 2001:db8:2::3/64;\n      }\n    }\n  }\n  eth2 {\n    mtu 1500;\n    description \"dut -> p1\";\n    unit 0 {\n      family inet6 {\n      }\n    }\n  }\n}\nprotocols {\n  lldp {\n    interface eth0 {\n      disable;\n    }\n    interface all;\n  }\n  router-advertisement {\n    interface eth1;\n    interface eth2;\n  }\n}\n"
 }
 
 TASK [Deploy initial configuration] ********************************************
@@ -85,8 +85,8 @@ ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=isis)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=sr)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=sr)
 
 TASK [Figure out whether to deploy the module isis on current device] **********
 ok: [dut]
@@ -102,24 +102,82 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "isis configuration for dut\n=========================================\n\nprotocols {\n  delete: isis;\n}\nprotocols {\n  isis {\n    topologies {\n      ipv6-unicast;\n    }\n    level 1 disable;\n\n    level 1 wide-metrics-only;\n    level 2 wide-metrics-only;\n    interface lo0.0;\n    interface eth2 {\n      point-to-point;\n    }\n  }\n}\n\n\ninterfaces {\n  lo0 {\n    unit 0 {\n      family iso {\n        address 49.0001.0000.0000.0003.00\n      }\n    }\n  }\n  eth2 {\n    \n      family iso;\n    \n  }\n}\n"
+    "msg": "isis configuration for dut\n=========================================\n\nprotocols {\n  delete: isis;\n}\nprotocols {\n  isis {\n    topologies {\n      ipv6-unicast;\n    }\n    level 1 disable;\n\n    level 1 wide-metrics-only;\n    level 2 wide-metrics-only;\n    interface lo0.0;\n    interface eth2 {\n      point-to-point;\n    }\n  }\n}\n\ninterfaces {\n  lo0 {\n    unit 0 {\n      family iso {\n        address 49.0001.0000.0000.0003.00\n      }\n    }\n  }\n}\n"
 }
 
 TASK [Deploy isis configuration] ***********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
 TASK [junos_config: deploying isis from /work/netlab_cicd/node_files/dut/isis] ***
-fatal: [dut]: FAILED! => {"changed": false, "msg": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><rpc-reply xmlns=\"urn:ietf:params:xml:ns:netconf:base:1.0\" xmlns:junos=\"http://xml.juniper.net/junos/24.4R0/junos\" xmlns:nc=\"urn:ietf:params:xml:ns:netconf:base:1.0\" message-id=\"urn:uuid:946067d3-646b-4a2b-998c-5c7cacd72531\">\n<load-configuration-results>\n<rpc-error>\n<error-severity>warning</error-severity>\n<error-message>\nstatement not found\n</error-message>\n</rpc-error>\n<rpc-error>\n<error-type>protocol</error-type>\n<error-tag>operation-failed</error-tag>\n<error-severity>error</error-severity>\n<error-message>syntax error</error-message>\n<error-info>\n<bad-element>family</bad-element>\n</error-info>\n</rpc-error>\n<rpc-error>\n<error-severity>warning</error-severity>\n<error-path>[edit interfaces]</error-path>\n<error-message>mgd: statement has no contents; ignored</error-message>\n<error-info>\n<bad-element>eth2</bad-element>\n</error-info>\n</rpc-error>\n</load-configuration-results>\n</rpc-reply>"}
+[WARNING]:  statement not found
+changed: [dut]
+
+TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [dut]
+
+TASK [Find configuration template for bgp] *************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "bgp configuration for dut\n=========================================\n\nrouting-options {\n  autonomous-system 65001;\n  router-id 10.0.0.3\n}\n\n\npolicy-options community x-route-permit-mark members large:65535:0:65536;\n\npolicy-options {\n  delete: policy-statement bgp-advertise;\n  delete: policy-statement bgp-redistribute;\n  delete: policy-statement next-hop-ebgp-ipv4;\n  delete: policy-statement next-hop-all-ipv4;\n  delete: policy-statement next-hop-ebgp-ipv6;\n  delete: policy-statement next-hop-all-ipv6;\n  delete: route-filter-list bgp-announce;\n}\n\npolicy-options {\n\n  route-filter-list bgp-announce {\n  }\n\n  policy-statement next-hop-ebgp-ipv4 {\n    term next-hop-self-ipv4 {\n      from {\n        family inet;\n        route-type external;\n      }\n      then {\n        next-hop self;\n      }\n    }\n  }\n\n  policy-statement next-hop-all-ipv4 {\n    term next-hop-self-ipv4 {\n      from {\n        family inet;\n      }\n      then {\n        next-hop self;\n      }\n    }\n  }\n\n  policy-statement next-hop-ebgp-ipv6 {\n    term next-hop-self-ipv6 {\n      from {\n        family inet6;\n        route-type external;\n      }\n      then {\n        next-hop self;\n      }\n    }\n  }\n\n  policy-statement next-hop-all-ipv6 {\n    term next-hop-self-ipv6 {\n      from {\n        family inet6;\n      }\n      then {\n        next-hop self;\n      }\n    }\n  }\n\n\n  policy-statement bgp-advertise {\n    term advertise {\n      from {\n        protocol direct;\n        interface [ \n          eth1\n ];\n      }\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n\n    term originate {\n      from {\n        protocol static;\n        route-filter-list bgp-announce;\n      }\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n\n  }\n\n  policy-statement bgp-redistribute {\n    term redis_bgp {\n      from protocol bgp;\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n  }\n\n  policy-statement bgp-final {\n    term final-option {\n      from community x-route-permit-mark;\n      then {\n        community delete x-route-permit-mark;\n        accept;\n      }\n    }\n    term default-reject {\n      then reject;\n    }\n  }\n\n  policy-statement bgp-initial {\n    term initial-cleanup {\n      from community x-route-permit-mark;\n      then {\n        community delete x-route-permit-mark;\n        next policy;\n      }\n    }\n  }\n\n}\nprotocols {\n  delete: bgp;\n}\nprotocols {\n  bgp {\n    group ibgp-peers-ipv4 {\n      type internal;\n      export [ \n          next-hop-ebgp-ipv4 next-hop-ebgp-ipv6 bgp-advertise bgp-redistribute bgp-final\n        ];\n      advertise-inactive;\n      neighbor 10.0.0.4 {\n\n        local-address 10.0.0.3;\n        description pe2;\n        family inet {\n          unicast;\n        }\n      }\n    }\n    group ibgp-peers-ipv6 {\n      type internal;\n      export [ \n          next-hop-ebgp-ipv4 next-hop-ebgp-ipv6 bgp-advertise bgp-redistribute bgp-final\n        ];\n      advertise-inactive;\n      neighbor 2001:db8:1::4 {\n\n        local-address 2001:db8:1::3;\n        description pe2;\n        family inet6 {\n          unicast;\n        }\n      }\n    }\n    group ebgp-peers {\n      export [ \n          bgp-advertise bgp-redistribute bgp-final\n        ];\n      advertise-inactive;\n    }\n  }\n}\n"
+}
+
+TASK [Deploy bgp configuration] ************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
+
+TASK [junos_config: deploying bgp from /work/netlab_cicd/node_files/dut/bgp] ***
+changed: [dut]
+
+TASK [Figure out whether to deploy the module sr on current device] ************
+ok: [dut]
+
+TASK [Find configuration template for sr] **************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for sr] **********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "sr configuration for dut\n=========================================\ninterfaces {\n    eth1 {\n      unit 0 {\n        family mpls;\n      }\n    }\n    eth2 {\n      unit 0 {\n        family mpls;\n      }\n    }\n}\nprotocols {\n    isis {\n        interface eth1 {\n            level 2 {\n                post-convergence-lfa {\n                    node-protection cost 16777214;\n                }\n            }\n        }\n        interface eth2 {\n            level 2 {\n                post-convergence-lfa {\n                    node-protection cost 16777214;\n                }\n            }\n        }\n        source-packet-routing {\n            node-segment {\n                ipv4-index 3;\n                ipv6-index 103;\n            }\n        }\n        level 1 disable;\n        level 2 wide-metrics-only;\n        backup-spf-options {\n            use-post-convergence-lfa maximum-backup-paths 2;\n            use-source-packet-routing;\n        }\n    }\n    mpls {\n        interface eth1;\n        interface eth2;\n    }\n}\n"
+}
+
+TASK [Deploy sr configuration] *************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
+
+TASK [junos_config: deploying sr from /work/netlab_cicd/node_files/dut/sr] *****
+changed: [dut]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=21   changed=1    unreachable=0    failed=1    skipped=5    rescued=0    ignored=0   
+dut                        : ok=34   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 
-FatalError in initial: Configuration deployment failed
 Results of configuration script deployments
 ================================================================================
 h1               Script:  initial
 h2               Script:  initial
-pe2              Script:  initial,isis,sr,bgp
+pe2              Script:  initial,isis,bgp,sr
 p1               Script:  initial,isis,sr
 p2               Script:  initial,isis,sr
+
+
+The tested device (DUT) is a PE-router. It runs IS-IS and SR-MPLS in an
+IPv6-only network and has an IBGP session with another PE-router. It has to
+perform IP-to-MPLS encapsulation to get the traffic across the BGP-free MPLS
+core.
+
+The validation test checks end-to-end connectivity across a BGP-free MPLS core
+between a set of linux hosts attached to the PE-routers.
 
