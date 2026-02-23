@@ -1,0 +1,156 @@
+Creating Device configuration snippets
+[CREATED] dut: initial,ospf,bgp
+[CREATED] rc: initial,ospf,bgp,frr-community
+[CREATED] r2: initial,ospf,bgp
+[CREATED] x1: initial,bgp
+Config Deploying device configurations
+ [INFO] Executing initial configuration for node rc
+ [INFO] Executing initial configuration for node r2
+ [INFO] Executing initial configuration for node x1
+ [INFO] Executing ospf configuration for node rc
+ [INFO] Executing bgp configuration for node x1
+ [INFO] Executing ospf configuration for node r2
+ [INFO] Executing bgp configuration for node rc
+ [INFO] Executing bgp configuration for node r2
+ [INFO] Executing frr-community configuration for node rc
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "initial configuration for dut\n=========================================\n#!/bin/sh\n#\nset -e\nset -x\n\nhostname dut\n#\n# Build hosts file\n#\n#\ncat <<'SCRIPT' >/tmp/hosts\n#\n# Created by netlab initial\n#\n10.0.0.1 dut\n10.1.0.1 vio1.dut\n10.1.0.9 vio2.dut\n10.0.0.2 r2\n10.1.0.2 eth1.r2\n10.1.0.5 eth2.r2\n10.0.0.10 rc\n10.1.0.6 eth1.rc\n10.0.0.3 x1\n10.1.0.10 eth1.x1\nSCRIPT\ngrep \"Created by netlab\" /etc/hosts || uniq /tmp/hosts >>/etc/hosts\n\n#\n# Enable forwarding\n#\nsysctl net.inet.ip.forwarding=1\nsysctl net.inet6.ip6.forwarding=1\necho -n > /etc/rad.conf\n\n#\n# Interface configuration\n#\nifconfig lo0 inet 10.0.0.1/32 alias\n\nifconfig vio1 -inet\nifconfig vio1 -inet6\nifconfig vio1 inet 10.1.0.1/30 \nifconfig vio1 mtu 1500\nifconfig vio1 description \"dut -> r2\"\n\nifconfig vio2 -inet\nifconfig vio2 -inet6\nifconfig vio2 inet 10.1.0.9/30 \nifconfig vio2 mtu 1500\nifconfig vio2 description \"dut -> x1\"\n\n\n#\n# (re-)start RA daemon\n#\npkill -q rad || true\nrad\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/openbsd.yml for dut
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [Execute /tmp/config.sh to deploy initial config from /work/netlab_cicd/node_files/dut/initial] ***
+changed: [dut]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=bgp)
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "ospf configuration for dut\n=========================================\n#!/bin/sh\ncat <<'OSPFD_CONF' >/etc/ospfd.conf\nrouter-id 10.0.0.1\nspf-delay msec 100\nspf-holdtime msec 200\n\narea 0.0.0.0 {\n    interface lo0:10.0.0.1 {\n    }\n    interface vio1 {\n        type p2p\n    }\n}\n \nOSPFD_CONF\n\nchmod 640 /etc/ospfd.conf\nrcctl enable ospfd\nrcctl restart ospfd\n\n"
+}
+
+TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/openbsd.yml for dut
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [Execute /tmp/config.sh to deploy ospf config from /work/netlab_cicd/node_files/dut/ospf] ***
+changed: [dut]
+
+TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [dut]
+
+TASK [Find configuration template for bgp] *************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "bgp configuration for dut\n=========================================\n#!/bin/sh\n\ncat <<BGPD_CONF >/etc/bgpd.conf\nAS 65000\nrouter-id 10.0.0.1\nlog updates\n\n## network announcements\n\nnetwork 10.0.0.1/32\n\n## neighbors and groups\n\nneighbor 10.0.0.10 {\n    remote-as 65000\n    descr \"rc\"\n    local-address 10.0.0.1\n    route-reflector 10.0.0.1\n}\nneighbor 10.0.0.2 {\n    remote-as 65000\n    descr \"r2\"\n    local-address 10.0.0.1\n    route-reflector 10.0.0.1\n}\nneighbor 10.1.0.10 {\n    remote-as 65101\n    descr \"x1\"\n}\n\n## rules\n\nmatch from ebgp set { nexthop self }\nmatch to ebgp set { ext-community delete * * }\n\nallow from any\nallow to any\n\nBGPD_CONF\n\nchmod 640 /etc/bgpd.conf\nrcctl enable bgpd\nrcctl restart bgpd\n\n"
+}
+
+TASK [Deploy bgp configuration] ************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/openbsd.yml for dut
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [Execute /tmp/config.sh to deploy bgp config from /work/netlab_cicd/node_files/dut/bgp] ***
+changed: [dut]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut                        : ok=30   changed=6    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+
+Results of configuration script deployments
+================================================================================
+rc               Script:  initial,ospf,bgp,frr-community
+r2               Script:  initial,ospf,bgp
+x1               Script:  initial,bgp
+
+
+Use this topology to test the BGP community propagation. The device under test
+is a BGP route reflector that should propagate standard and extended
+communities to IBGP neighbors but only standard communities to EBGP neighbors
+(the default setting).
+
+Three BGP communities are attached to the prefix advertised by RC: a standard
+one, an extended one, and a long one (standard communitiy using 4-octet AS)
+
