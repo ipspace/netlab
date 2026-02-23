@@ -132,17 +132,20 @@ def write_inventory_file(data: Box, fname: str, header: str, filetype: typing.Op
     fname += '.' + filetype
 
   dirname = os.path.dirname(fname)
-  if dirname and not os.path.exists(dirname):
+  if dirname and not os.path.exists(dirname):               # Make an empty directory if needed
     os.makedirs(dirname)
-  else:
-    similar_names = os.path.splitext(fname)[0] + ".*"
+  elif dirname:                                             # Otherwise, delete similar files (different extension)
+    similar_names = os.path.splitext(fname)[0] + ".*"       # ... from the existing directories
     for similar in glob.glob(similar_names):
       try:
+        if log.VERBOSE:
+          print(f'Removing existing inventory file {similar}')
         os.remove(similar)
-      except Exception as ex:
-        log.warning(
+      except Exception as ex:                               # A failure to remove a similar file is not catastrophic
+        log.warning(                                        # ... but deserves a warning
           text=f'Tried to remove inventory file {similar} but failed: {str(ex)}',
           module='ansible')
+
   if filetype in ['yaml','yml']:
     contents = header+"\n"+strings.get_yaml_string(data)
   else:
