@@ -377,7 +377,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Mikrotik RouterOS 7   | ✅   |   ❌   |   ❌  | ✅  |   ❌  |
 | Nokia SR Linux        | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
 | Nokia SR OS[^SROS]    | ✅   |  ✅   |   ❌  | ✅  | ✅  |
-| OpenBSD               | ✅   |   ❌   |   ❌  |  ❌  | ✅   |
+| OpenBSD               | ✅   |   ❌   |   ❌  | ✅   | ✅   |
 | Sonic                 |  ❌   |   ❌   |   ❌  | ✅  |   ❌  |
 | VyOS                  | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
 
@@ -502,6 +502,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Mikrotik RouterOS 7   | ✅ | ❌ | ❌ | ✅ | ❌ |
 | Nokia SR Linux        | ✅ | ✅ | ❌ | ✅ | ✅ |
 | Nokia SR OS[^SROS]    | ✅ | ✅ | ❌ | ✅ | ✅ |
+| OpenBSD               | ✅ | ❌ | ❌ | ✅ | ❌ |
 | Sonic                 |  ❌ | ❌ | ❌ | ✅ | ❌ |
 | VyOS                  | ✅ | ✅ | ❌ | ✅ | ❌ |
 

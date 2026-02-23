@@ -111,6 +111,7 @@ These devices support BGP local-AS functionality to build EBGP or IBGP sessions:
 | JunOS                    |  ✅ |  ✅ |
 | Nokia SR Linux           |  ✅ |  ✅ |
 | Nokia SR OS[^SROS]       |  ✅ |  ✅ |
+| OpenBSD                  |  ✅ |  ❌  |
 | Sonic                    |  ✅ |  ✅ |
 | VyOS                     |  ✅ |  ❌  |
 
