@@ -1,6 +1,7 @@
 #
 # Create Ansible inventory
 #
+import glob
 import os
 import typing
 
@@ -133,7 +134,15 @@ def write_inventory_file(data: Box, fname: str, header: str, filetype: typing.Op
   dirname = os.path.dirname(fname)
   if dirname and not os.path.exists(dirname):
     os.makedirs(dirname)
-
+  else:
+    similar_names = os.path.splitext(fname)[0] + ".*"
+    for similar in glob.glob(similar_names):
+      try:
+        os.remove(similar)
+      except Exception as ex:
+        log.warning(
+          text=f'Tried to remove inventory file {similar} but failed: {str(ex)}',
+          module='ansible')
   if filetype in ['yaml','yml']:
     contents = header+"\n"+strings.get_yaml_string(data)
   else:
