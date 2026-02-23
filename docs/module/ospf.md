@@ -81,7 +81,7 @@ The following table describes the per-platform support of individual router-leve
 
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
-[^Junos]: Includes vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
+[^Junos]: Includes cRPD, vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
 
 [^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
 

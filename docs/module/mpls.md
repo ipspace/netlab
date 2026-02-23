@@ -43,7 +43,7 @@ The following table describes the per-platform support of individual MPLS label 
 
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
-[^Junos]: Includes vPTX, vJunos-switch, vJunos-router, vMX, and vSRX. vMX and vSRX are not tested.
+[^Junos]: Includes cRPD, vPTX, vJunos-switch, vJunos-router, vMX, and vSRX. vMX and vSRX are not tested.
 
 **Notes:**
 * LDP is enabled on all non-VRF intra-AS interfaces with IPv4 addresses.
