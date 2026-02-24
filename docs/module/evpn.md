@@ -3,7 +3,7 @@
 This configuration module configures the BGP EVPN address family to implement L2VPN or L3VPN. It supports:
 
 * VXLAN-based transport over IPv4 and IPv6
-* MPLS-based transport
+* MPLS-based transport using LDP- or SR-MPLS-assigned labels
 * VLAN-Based Service (bridging of a single VLAN within an EVPN Instance)
 * VLAN-Aware Bundle Service (bridging of multiple related VLANs inside a single EVPN Instance)
 * Symmetric and asymmetric IRB
@@ -116,7 +116,7 @@ Most EVPN/VXLAN implementations support only IPv4 VXLAN transport; some can run 
 
 EVPN module supports these default/global/node parameters:
 
-* **evpn.transport** (global): Transport to use, `vxlan` (default) or `mpls`
+* **evpn.transport** (global): Transport to use, `vxlan` (default), `mpls` (MPLS with LDP-assigned labels), or `sr` (MPLS with SR-MPLS-assigned labels)
 * **evpn.vrfs** (global or node parameter): A list of EVPN-enabled VRFs. The default value with VXLAN transport: all global VRFs with **evpn.transit_vni** parameter. There is no default value with MPLS transport.
 * **evpn.vlans** (global or node parameter): A list of EVPN-enabled VLANs. The default value with VXLAN transport: all global VLANs with the **vni** parameter. There is no default value with MPLS transport.
 * **evpn.session** (global or node parameter): A list of BGP session types on which the EVPN address family is enabled (default: `ibgp`)
