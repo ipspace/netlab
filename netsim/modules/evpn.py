@@ -9,7 +9,7 @@ from ..utils import log
 from ..utils import routing as _rp_utils
 from . import _dataplane, _Module, _routing
 
-VALID_TRANSPORTS = [ 'vxlan', 'mpls' ] # In order of preference
+VALID_TRANSPORTS: list
 
 """
 validate_evpn_list
@@ -536,14 +536,38 @@ def remove_vlan_ebgp_neighbors(node: Box,topology: Box) -> None:
       if 'neighbors' in bgp:
         bgp.neighbors = [ ngb for ngb in bgp.neighbors if '_must_remove' not in ngb ]
 
+"""
+Check whether the node supports the evpn.transport setting used in lab topology
+"""
+def check_node_transport(node: Box, topology: Box) -> bool:
+  features = devices.get_device_features(node,topology.defaults)
+  transport = node.get('evpn.transport','vxlan')
+  s_trans  = features.get('evpn.transport',['vxlan'])       # Missing feature means VXLAN only
+  if transport not in s_trans:                              # Is the requested transport supported by the device?
+    log.error(
+      f'Device {node.device} (node {node.name}) does not support EVPN transport {transport}',
+      module='evpn',
+      category=log.IncorrectValue)
+    return False
+
+  if transport == 'sr':                                     # SR-MPLS and MPLS are identical from EVPN perspective
+    node.evpn.transport = 'mpls'
+  else:
+    node.evpn.transport = transport                         # Make sure node evpn.transport is always set
+
+  return True
+
 class EVPN(_Module):
 
   def module_init(self, topology: Box) -> None:
+    global VALID_TRANSPORTS
+
+    VALID_TRANSPORTS = topology.defaults.evpn.attributes['global'].transport.valid_values
     topology.defaults.vxlan.flooding = 'evpn'
 
   def module_pre_transform(self, topology: Box) -> None:
     register_static_transit_vni(topology)
-    if check_evpn_transport(topology)=='mpls':
+    if check_evpn_transport(topology) in ['sr','mpls']:
       check_no_vnis_for_mpls(topology)
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
@@ -569,9 +593,12 @@ class EVPN(_Module):
 
   """
   def node_post_transform(self, node: Box, topology: Box) -> None:
-    enable_evpn_af(node,topology)
-    _routing.router_id(node,'bgp',topology.pools)                 # Make sure we have a usable router ID
     copy_global_evpn_lists(node,topology)
+    if not check_node_transport(node,topology):
+      return
+
+    enable_evpn_af(node,topology)                           # Enable transport-specific EVPN AFs
+    _routing.router_id(node,'bgp',topology.pools)           # Make sure we have a usable router ID
     check_node_vrf_irb(node,topology)
     check_node_vrf_bundle(node,topology)
     check_vlan_rt_values(node,topology)
