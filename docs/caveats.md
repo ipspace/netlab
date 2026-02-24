@@ -397,16 +397,9 @@ Implementation limitations in import/export route filters (reported as errors th
 (caveats-crpd)=
 ## Juniper cRPD
 
-* cRPD requires a license file. A trial license is available from https://www.juniper.net/us/en/dm/jcnr-free-trial.html with a valid Juniper account.
-
-You can change the location of the license file with two variables:
-
-* **netlab_license_file** -- the name of a local file containing the relevant vMX license.
-* **netlab_license_url** -- the URL of a license file. The license file will be downloaded and installed on the vMX device. This parameter is used only when the local license file is not specified.
-
-You can change the license file parameters within a node definition or with **defaults.devices.vmx.group_vars._parameter_name_** [system default](topo-defaults).
-
-* VRF route leaking does not work correctly
+* cRPD might require a license file to unlock additional features. You can specify the location of the license file with the **clab.license** node parameter or **defaults.devices.crpd.clab.node.license** [device default](topo-defaults).
+* Inter-VRF route leaking does not work correctly
+* VRRPv3 for IPv4 implementation uses the [checksum calculation that is incompatible with most other VRRP implementations](https://blog.ipspace.net/2025/01/sturgeon-law-vrrp-edition/). The `checksum-without-pseudoheader` configuration command does not seem to be available.
 * Anycast gateway is unsupported
 
 (caveats-vmx)=
