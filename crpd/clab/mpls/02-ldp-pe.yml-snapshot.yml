@@ -750,6 +750,9 @@ defaults:
           _default_locpref: false
           multihop:
             vrf: true
+        gateway:
+          protocol:
+          - vrrp
         isis:
           circuit_type: true
           unnumbered:
@@ -794,6 +797,12 @@ defaults:
           - ipv6
           protocol:
           - isis
+        vrf:
+          ospfv2: true
+          ospfv3: true
+          bgp: true
+        evpn:
+          irb: true
       external:
         image: none
       clab:
@@ -801,12 +810,19 @@ defaults:
         group_vars:
           netlab_ready:
           - ssh
+          netlab_show_command:
+          - cli
+          - -c
+          - show $@
           netlab_check_command: who
           netlab_config_path: /config/netlab/
         image: crpd:24.4R1.9
         build: https://containerlab.dev/manual/kinds/crpd/
         node:
           kind: juniper_crpd
+          config_templates:
+            hosts: /etc/hosts:shared
+          license: ~/.netlab/crpd-license.lic
         interface:
           name: eth{ifindex+1}
       support:
@@ -3556,6 +3572,28 @@ defaults:
           import:
           - connected
           - static
+        bgp:
+          local_as: true
+          community:
+            standard:
+            - standard
+            - large
+            large:
+            - large
+            extended:
+            - extended
+            2octet:
+            - standard
+          allowas_in: true
+          as_override: true
+          default_originate: true
+          description: true
+          gtsm: true
+          passive: true
+          password: true
+          rs: true
+          rs_client: true
+          timers: true
       libvirt:
         create_template: openbsd.xml.j2
         image: netlab/openbsd
@@ -7312,6 +7350,7 @@ defaults:
       junos: true
       none: true
       nxos: true
+      openbsd: true
       routeros: true
       routeros7: true
       sonic: true
@@ -7504,6 +7543,7 @@ defaults:
     supported_on:
       arubacx: true
       cat8000v: true
+      crpd: true
       cumulus: true
       cumulus_nvue: true
       dellos10: true
@@ -7598,6 +7638,7 @@ defaults:
     supported_on:
       arubacx: true
       cat8000v: true
+      crpd: true
       csr: true
       cumulus: true
       cumulus_nvue: true
@@ -9027,6 +9068,7 @@ defaults:
       arubacx: true
       cat8000v: true
       cisco8000v: true
+      crpd: true
       csr: true
       cumulus: true
       cumulus_nvue: true
@@ -9113,7 +9155,7 @@ defaults:
       vjunos-switch: true
       vyos: true
   _cache:
-    timestamp: 1771748140.9924312
+    timestamp: 1771922622.1130347
     source: /home/pipi/netlab_gh/netsim/topology-defaults.yml
   sources:
     extra:
@@ -9579,6 +9621,15 @@ nodes:
     device: crpd
     clab:
       kind: juniper_crpd
+      config_templates:
+      - source: hosts
+        target: /etc/hosts
+        mode: shared
+      license: ~/.netlab/crpd-license.lic
+      binds:
+      - target: /etc/hosts
+        source: node_files/-shared-hosts
+        mode: ro
     box: crpd:24.4R1.9
     ospf:
       area: 0.0.0.0
