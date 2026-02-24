@@ -108,18 +108,26 @@ def get_usable_evpn_asn(topology: Box) -> int:
     'evpn',hint='asn')
   return 0
 
-def vlan_based_service(vlan: Box, vname: str, topology: Box) -> None:
-  evpn  = vlan.evpn
-  epath = f'vlans.{vname}.evpn'
-  evpn.evi = evpn.evi or vlan.id                                    # Default EVI value: VLAN ID
+def create_evpn_service(obj: Box, oname: str, topology: Box, opath: str, set_rt: bool = True) -> None:
+  evpn  = obj.evpn
   asn = get_usable_evpn_asn(topology)
   must_be_int(
-    evpn,'evi',epath,
+    evpn,'evi',opath,
     module='evpn',
     min_value=1,max_value=65535)                                    # Check EVI data type in range
+  if not set_rt:                                                    # Early exit for VRFs
+    return
   for rt in ('import','export'):                                    # Default RT value
     if not rt in evpn:                                              # ... BGP ASN:vlan ID
       evpn[rt] = [ f"{asn}:{evpn.evi}" ]
+
+def vlan_based_service(vlan: Box, vname: str, topology: Box) -> None:
+  vlan.evpn.evi = vlan.get('evpn.evi',vlan.id)                      # Default EVI value: VLAN ID
+  create_evpn_service(vlan,vname,topology,f'vlans.{vname}.evpn',set_rt=True)
+
+def ip_vrf_service(vrf: Box, vname: str, topology: Box) -> None:
+  vrf.evpn.evi = vrf.get('evpn.evi',vrf.id + 5000)                  # Use default range above VLANs
+  create_evpn_service(vrf,vname,topology,f'vrfs.{vname}.evpn',set_rt=False)
 
 def vlan_aware_bundle_service(vlan: Box, vname: str, topology: Box) -> None:
   vrf_name = vlan.vrf
@@ -577,6 +585,9 @@ class EVPN(_Module):
     validate_evpn_lists(topology,'topology',topology,create=True)
     for n in topology.nodes.values():
       validate_evpn_lists(n,f'nodes.{n.name}',topology,create=False)
+
+    for vname in topology.get('evpn.vrfs',[]):
+      ip_vrf_service(topology.vrfs[vname],vname,topology)
 
     vrf_transit_vni(topology)
     for vname in topology.get('evpn.vlans',[]):
