@@ -1,0 +1,175 @@
+bgp:
+  advertise_loopback: true
+  as_list:
+    100:
+      members:
+      - r1
+    301:
+      members:
+      - r3a
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  confederation:
+    300:
+      members:
+      - 301
+  next_hop_self: true
+groups:
+  as100:
+    members:
+    - r1
+  as301:
+    members:
+    - r3a
+input:
+- topology/input/bgp-confederation-aslist.yml
+- package:topology-defaults.yml
+links:
+- _linkname: links[1]
+  interfaces:
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.1/30
+    node: r1
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.2/30
+    node: r3a
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  role: external
+  type: p2p
+module:
+- bgp
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 100
+      community:
+        confed_ebgp:
+        - standard
+        - extended
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 300
+        ifindex: 1
+        ipv4: 10.1.0.2
+        name: r3a
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.1
+    box: none
+    device: none
+    id: 1
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      name: r1 -> r3a
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.2/30
+        node: r3a
+      role: external
+      type: p2p
+    loopback:
+      bgp:
+        advertise: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.101
+      mac: ca:fe:00:01:00:00
+    module:
+    - bgp
+    name: r1
+  r3a:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 301
+      community:
+        confed_ebgp:
+        - standard
+        - extended
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      confederation:
+        as: 300
+        peers: []
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 100
+        ifindex: 1
+        ipv4: 10.1.0.1
+        name: r1
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.2
+    box: none
+    device: none
+    id: 2
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      name: r3a -> r1
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.1/30
+        node: r1
+      role: external
+      type: p2p
+    loopback:
+      bgp:
+        advertise: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.102
+      mac: ca:fe:00:02:00:00
+    module:
+    - bgp
+    name: r3a
+provider: libvirt

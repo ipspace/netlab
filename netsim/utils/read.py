@@ -195,13 +195,56 @@ class UniqueKeyLoader(yaml.SafeLoader):
       mapping.append(key)
     return super().construct_mapping(node, deep)
 
+"""
+merge_dotted_keys: pre-process a raw YAML dictionary to merge dotted string keys with
+their plain counterparts.
+
+When python-box with box_dots=True initializes from a dict containing both 'bgp.confederation'
+and 'bgp' as separate keys, the plain 'bgp' key assignment overwrites the nested 'confederation'
+value set by the dotted key.  This function merges them into a single nested dict before Box
+initialization, so both the dotted and plain keys are preserved.
+"""
+def _deep_merge(d_to: dict, d_from: dict) -> dict:
+  for k, v in d_from.items():
+    if k in d_to and isinstance(d_to[k], dict) and isinstance(v, dict):
+      _deep_merge(d_to[k], v)
+    else:
+      d_to[k] = v
+  return d_to
+
+def merge_dotted_keys(d: typing.Any) -> typing.Any:
+  if not isinstance(d, dict):
+    return d
+
+  result: dict = {}
+  for k, v in d.items():
+    v = merge_dotted_keys(v)
+    if isinstance(k, str) and '.' in k:
+      parent, child = k.split('.', 1)
+      if parent not in result:
+        result[parent] = {}
+      if isinstance(result[parent], dict):
+        _deep_merge(result[parent], merge_dotted_keys({child: v}))
+    else:
+      if k in result and isinstance(result[k], dict) and isinstance(v, dict):
+        _deep_merge(result[k], v)
+      else:
+        result[k] = v
+  return result
+
+BOX_ARGS: typing.Final[dict] = { 'default_box': True, 'box_dots': True, 'default_box_none_transform': False }
+
+def yaml_to_box(raw: typing.Optional[dict]) -> typing.Optional[Box]:
+  if raw is None:
+    return None
+  return Box(merge_dotted_keys(raw), **BOX_ARGS)
+
 def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str] = None) -> typing.Optional[Box]:
   global read_cache
 
   if string is not None:
     try:
-      yaml_data = Box().from_yaml(yaml_string=string,default_box=True,box_dots=True,default_box_none_transform=False,Loader=UniqueKeyLoader)
-      return yaml_data
+      return yaml_to_box(yaml.load(string, Loader=UniqueKeyLoader))
     except:                                                                    # pragma: no cover -- can't get here unless there's a package error
       log.fatal("Cannot parse YAML string: %s " % (str(sys.exc_info()[1])))
       return None
@@ -213,7 +256,7 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
     print(f"Reading {filename}")
 
   if filename in read_cache:
-    return Box(read_cache[filename],default_box=True,box_dots=True,default_box_none_transform=False)
+    return Box(read_cache[filename],**BOX_ARGS)
 
   pickle_data = read_from_pickle(filename)
   if pickle_data:
@@ -234,9 +277,11 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
         print(f"YAML file {filename} does not exist") # pragma: no cover -- too hard to test to bother
       return None
     try:
-      yaml_data = Box().from_yaml(filename=filename,default_box=True,box_dots=True,default_box_none_transform=False,Loader=UniqueKeyLoader)
-      include_yaml(yaml_data,filename)
-      read_cache[filename] = Box(yaml_data)
+      with open(filename, 'r') as fid:
+        yaml_data = yaml_to_box(yaml.load(fid, Loader=UniqueKeyLoader))
+      if yaml_data is not None:
+        include_yaml(yaml_data,filename)
+        read_cache[filename] = Box(yaml_data)
     except Exception as ex:
       log.fatal(f"Cannot read YAML from {filename}: {str(ex)}")
 
