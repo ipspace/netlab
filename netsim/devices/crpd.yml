@@ -17,16 +17,23 @@ loopback_interface_name: "lo0"
 mtu: 1500
 
 features:
+  initial:
+    ipv4:
+      unnumbered: false               # The 'unnumbered-address' family inet command does not work on cRPD
   vlan: false
   vxlan: false
-  vrf: false
-  gateway: false
+  evpn:
+    irb: true
+  gateway:
+    protocol: [ vrrp ]
 
 clab:
   image: crpd:24.4R1.9
   build: https://containerlab.dev/manual/kinds/crpd/
   node:
     kind: juniper_crpd
+    config_templates:
+      hosts: /etc/hosts:shared
   interface:
     name: eth{ifindex+1}
   features:
@@ -34,6 +41,7 @@ clab:
 #      config_mode: [ sh ]
   group_vars:
 #    netlab_config_mode: sh
+    netlab_show_command: [ cli, -c, 'show $@' ]
     netlab_check_command: who
     netlab_ready: [ ssh ]
 #    ansible_connection: docker

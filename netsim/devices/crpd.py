@@ -3,8 +3,30 @@
 #
 from box import Box
 
-from . import _Quirks
+from ..utils import log
+from . import _Quirks, report_quirk
 
+
+def vrf_route_leaking(node: Box) -> None:
+  for vname,vdata in node.get('vrfs',{}).items():
+    if '_leaked_routes' in vdata:
+      report_quirk(
+        text=f'Inter-VRF route leaking does not work on cRPD (node {node.name} vrf {vname})',
+        node=node,
+        category=log.IncorrectValue,
+        quirk='vrf_route_leak')
+
+def vpnv6_data_plane(node: Box) -> None:
+  if not node.get('mpls.vpn.ipv6',None):
+    return
+
+  for vname,vdata in node.get('vrfs',{}).items():
+    if vdata.get('af.ipv6',False):
+      report_quirk(
+        text=f'MPLS VPNv6 data plane does not work on cRPD (node {node.name} vrf {vname})',
+        node=node,
+        category=log.IncorrectValue,
+        quirk='vpnv6_fwd')
 
 class CRPD(_Quirks):
 
@@ -20,3 +42,5 @@ class CRPD(_Quirks):
     junos.community_set_quirk(node,topology)
     junos.default_originate_check(node,topology)
     junos.build_bgp_import_export_policy_chain(node,topology)
+    vrf_route_leaking(node)
+    vpnv6_data_plane(node)
