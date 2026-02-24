@@ -110,13 +110,14 @@ def get_usable_evpn_asn(topology: Box) -> int:
 
 def create_evpn_service(obj: Box, oname: str, topology: Box, opath: str, set_rt: bool = True) -> None:
   evpn  = obj.evpn
-  asn = get_usable_evpn_asn(topology)
   must_be_int(
     evpn,'evi',opath,
     module='evpn',
     min_value=1,max_value=65535)                                    # Check EVI data type in range
   if not set_rt:                                                    # Early exit for VRFs
     return
+
+  asn = get_usable_evpn_asn(topology)
   for rt in ('import','export'):                                    # Default RT value
     if not rt in evpn:                                              # ... BGP ASN:vlan ID
       evpn[rt] = [ f"{asn}:{evpn.evi}" ]
