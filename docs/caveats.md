@@ -160,7 +160,7 @@ These caveats apply only to Cisco IOSv and IOSvL2
 
 * Cisco IOS release 15.x does not support unnumbered interfaces. Use Cisco CSR 1000v.
 * Multiple OSPFv2 processes on Cisco IOS cannot have the same OSPF router ID. By default, _netlab_ generates the same router ID for global and VRF OSPF processes, resulting in non-fatal configuration errors that Ansible silently ignores.
-* You cannot use VLANs 1002 through 1005 with Cisco IOSvL2 image 
+* You cannot use VLANs 1002 through 1005 with Cisco IOSvL2 image
 * Cisco IOSv does not support VRRPv3 on BVI interfaces
 * Cisco IOSv cannot use tagged VLAN 1 in a trunk
 * Cisco IOSvL2 cannot configure tagged VLAN 1 in a trunk. Internal VLAN 1002 is used as a fake native VLAN on interfaces that have tagged VLAN 1 in a trunk.
@@ -316,7 +316,7 @@ Netlab enables VRRPv3 by default on Dell OS10, overriding any platform defaults.
 * You have to build the *dnsmasq* container image with the **netlab clab build dnsmasq** command.
 
 (caveats-fortios)=
-## Fortinet FortiOS 
+## Fortinet FortiOS
 
 * Use a recent version of Ansible and **fortinet.fortios** Ansible Galaxy collection (version 2.3.6 or later)
 * _netlab_ tries to configure Fortinet devices with configuration scripts uploaded through the FortiOS Monitor API calls using username/password authentication.
@@ -393,6 +393,21 @@ Implementation limitations in import/export route filters (reported as errors th
 
 * When prepending an AS number different than the local one, JunOS puts the prepended AS at the beginning of the *AS_PATH* while other vendors perform the prepending and then add the device's own AS at the beginning. Most EBGP peers deny a BGP update that does not have the neighbor's AS number at the beginning of the *AS_PATH*. If needed, _netlab_ automatically adds the *local-as* to the prepend list to get it at the beginning of the *AS_PATH*.
 * *as-path* regex syntax for JunOS has different rules than other vendors. For example, a *null as-path* is represented as `()`. netlab tries some as-path conversion, but sometimes it could be wrong.
+
+(caveats-crpd)=
+## Juniper cRPD
+
+* cRPD requires a license file. A trial license is available from https://www.juniper.net/us/en/dm/jcnr-free-trial.html with a valid Juniper account.
+
+You can change the location of the license file with two variables:
+
+* **netlab_license_file** -- the name of a local file containing the relevant vMX license.
+* **netlab_license_url** -- the URL of a license file. The license file will be downloaded and installed on the vMX device. This parameter is used only when the local license file is not specified.
+
+You can change the license file parameters within a node definition or with **defaults.devices.vmx.group_vars._parameter_name_** [system default](topo-defaults).
+
+* VRF route leaking does not work correctly
+* Anycast gateway is unsupported
 
 (caveats-vmx)=
 ## Juniper vMX
