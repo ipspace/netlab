@@ -38,14 +38,36 @@ clab:
     name: eth{ifindex+1}
   features:
     initial:
-#      config_mode: [ sh ]
+     config_mode: [ sh ]
   group_vars:
-#    netlab_config_mode: sh
+    netlab_config_mode: sh
     netlab_show_command: [ cli, -c, 'show $@' ]
     netlab_check_command: who
     netlab_ready: [ ssh ]
 #    ansible_connection: docker
 #    netlab_console_connection: docker
     netlab_config_path: /config/netlab/
+    netlab_config_wrapper: |
+      #!/bin/bash
+      cat > {{ netlab_config_path}}/output.conf <<EOF
+      {{ netlab_config_text }}
+      EOF
+      cat <<CONFIG | cli | tee /tmp/cli-status
+      configure
+      load merge {{ netlab_config_path }}/output.conf
+      CONFIG
+      if grep -i error /tmp/cli-status >/dev/null; then
+        echo "Configuration load failed, aborting"
+        exit 1
+      else
+        cat <<CONFIG | cli | tee /tmp/cli-status
+      configure
+      commit and-quit
+      CONFIG
+        if grep -i error /tmp/cli-status >/dev/null; then
+          echo "Commit failed, aborting"
+          exit 1
+        fi
+      fi
 
 graphite.icon: router
