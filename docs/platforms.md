@@ -209,7 +209,9 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 
 **Note:** *netlab* can deploy daemon configurations, but cannot collect them. Use the **netlab initial -o** command to create daemon configuration files in a custom directory.
 
-[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL) and IOL Layer-2 image
+[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOSv, Cisco IOSv layer-2 image, Cisco IOS-on-Linux (IOL) and IOL Layer-2 image
+
+[^XE]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL) and IOL Layer-2 image
 
 [^Junos]: Includes cRPD, vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
 
@@ -322,7 +324,7 @@ The following interface addresses are supported on various platforms; most daemo
 | Aruba AOS-CX          | ✅  | ✅  | ✅  |  ❌  |
 | Cisco ASAv            | ✅  | ✅  |  ❌  |  ❌  |
 | Cisco IOSv/IOSvL2     | ✅  | ✅  |  ❌  | ✅  |
-| Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  | ✅  |
+| Cisco IOS XE[^XE]     | ✅  | ✅  | ✅  | ✅  |
 | Cisco IOS XR[^XR]     | ✅  | ✅  | ✅  |  ❌  |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  |  ❌  |
 | Cumulus Linux         | ✅  | ✅  | ✅  |  ❌  |
@@ -368,8 +370,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Arista EOS            | ✅   |  ✅  |   ❌  |  ✅  |  ✅  |
 | Aruba AOS-CX          | ✅   |  ❌   |   ❌  |  ✅  |   ❌  |
 | Cisco ASAv            | ✅ [❗](caveats-asav) | ✅ [❗](caveats-asav) | ❌ | ✅ | ❌ |
-| Cisco IOSv/IOSvL2     | ✅   |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cisco IOS XE[^18v]    | ✅   |  ✅  |  ✅  |  ✅  |  ✅  |
+| Cisco IOS/IOS XE[^18v]| ✅   |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco IOS XR[^XR]     | ✅   |  ✅  |   ❌  |  ✅  |   ❌  |
 | Cisco Nexus OS        | ✅   |  ✅  |  ✅  |  ✅  |   ❌  |
 | Cumulus Linux         | ✅   |   ❌  |   ❌  |  ✅  |  ✅  |
@@ -398,9 +399,7 @@ These devices support additional control-plane protocols or BGP address families
 | --------------------- | :-: | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  | ✅  | ✅  | ✅  |
-| Cisco CSR 1000v       | ✅  |  ❌  | ✅  | ✅  |
-| Cisco Catalyst 8000v  | ✅  | ✅  | ✅  | ✅  |
-| Cisco IOL/IOLL2       | ✅  | ✅  | ✅  | ✅  |
+| Cisco IOS XE[^XE]     | ✅  | ✅  | ✅  | ✅  |
 | Cisco IOSv/IOSvL2     | ✅  |  ❌  | ✅  | ✅  |
 | Cisco IOS XR[^XR]     |  ❌  |  ❌  | ✅  |  ❌  |
 | Cisco Nexus OS        | ✅  | ✅  |  ❌  | ✅  |
@@ -496,8 +495,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Arista EOS            | ✅ | ✅ | ❌ | ✅ | ✅ |
 | Aruba AOS-CX          | ✅ | ❌ | ❌ | ✅ | ❌ |
 | Cisco ASAv            | ❌ | ✅ | ❌ | ✅ | ❌ |
-| Cisco IOSv/IOSvL2     | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Cisco IOS XE[^18v]    | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Cisco IOS/IOS XE[^18v]| ✅ | ✅ | ✅ | ✅ | ❌ |
 | Cisco IOS XR[^XR]     | ✅ | ✅ | ❌ | ✅ | ✅ |
 | Cisco Nexus OS        | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Cumulus Linux 4.x     | ✅ | ❌ | ❌ | ✅ | ❌ |

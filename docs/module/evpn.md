@@ -25,7 +25,7 @@ The following table describes the per-platform support of individual EVPN/VXLAN 
 | ------------------ | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  |  ✅  | ✅  | ✅  |
 | Aruba AOS-CX       | ✅  |  ✅  | ✅  | ✅[❗](caveats-aruba)  |
-| Cisco IOS/XE[^XE]  | ✅  |  ❌  | ✅  | ✅  |
+| Cisco IOS/XE[^XEV] | ✅  |  ❌  | ✅  | ✅  |
 | Cisco Nexus OS     | ✅  |  ❌  | ✅  | ✅  |
 | Cumulus Linux 4.x  | ✅  |  ❌  | ✅  | ✅  |
 | Cumulus 5.x (NVUE) | ✅  |  ❌  | ✅  | ✅  |
@@ -38,17 +38,16 @@ The following table describes the per-platform support of individual EVPN/VXLAN 
 
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
-[^XE]: Includes Catalyst 8000v, Cisco IOL, Cisco IOLL2, but **not** CSR.
+[^XEV]: Includes Catalyst 8000v, Cisco IOL, Cisco IOLL2, but **not** CSR.
 
 The following table describes the per-platform support of individual EVPN/MPLS features:
 
 | Operating system   | VLAN-based<br>service | VLAN Bundle<br>service | Asymmetric<br>IRB | Symmetric<br>IRB |
 | ------------------ | :-: | :-: | :-: | :-: |
-| Arista EOS         | ✅  | ✅  |  ❌  |  ❌  |
+| Arista EOS         | ✅  | ✅  | ✅[❗](caveats-eos) | ✅  |
+| Cisco IOS XE[^XEM] | ✅  |  ❌  | ✅  | ✅  |
 
-```{note}
-* Arista EOS requires an anycast gateway for EVPN/MPLS symmetric IRB configuration.
-```
+[^XEM]: Includes CSR 1000v, Catalyst 8000v, Cisco IOL, and Cisco IOLL2
 
 Devices supporting [EVPN VLAN bundle services](evpn-bundle-service) implement the following bundle service types (see RFC 7432 section 6 for more details):
 
@@ -64,7 +63,7 @@ EVPN module supports IBGP- and EBGP-based EVPN:
 | ------------------ | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  | ✅  | ✅  | ✅  |
 | Aruba AOS-CX       | ✅  | ✅  | ❌   | ❌   |
-| Cisco IOS/XE[^XE]  | ✅  | ✅  | ✅  | ❌   |
+| Cisco IOS/XE[^XEM] | ✅  | ✅  | ✅  | ❌   |
 | Cisco Nexus OS     | ✅  | ✅  | ✅  | ❌   |
 | Cumulus Linux 4.x  | ✅  | ✅  | ✅  | ✅  |
 | Cumulus 5.x (NVUE) | ✅  | ✅  | ✅  | ✅  |
@@ -84,7 +83,7 @@ With additional nerd knobs ([more details](evpn-weird-designs)), it's possible t
 | ------------------ | :-: | :-: |
 | Arista EOS         | ✅  | ✅  |
 | Aruba AOS-CX       | ✅  | ✅  |
-| Cisco IOS/XE[^XE]  | ✅  | ✅  |
+| Cisco IOS/XE[^XEM] | ✅  | ✅  |
 | Cisco Nexus OS     | ❌   | ❌   |
 | Cumulus Linux 4.x  | ✅  | ✅  |
 | Cumulus 5.x (NVUE) | ✅  | ✅  |

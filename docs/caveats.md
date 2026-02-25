@@ -48,6 +48,7 @@ nodes:
 ### Other Arista EOS Caveats
 
 * Routed VLANs cannot be used in EVPN MPLS VLAN bundles
+* Inter-VLAN forwarding with EVPN MPLS-based MAC VRFs works only with anycast gateways
 * Arista EOS uses an [invalid value for the suboption 150 of the DHCP option 82](https://blog.ipspace.net/2023/03/netlab-vrf-dhcp-relay.html#vendor-interoperability-is-fun) when doing inter-VRF DHCPv4 relaying.
 * The DHCP client on Arista EOS is finicky. When the DHCP state changes on one of the data-plane Ethernet interfaces, the management interface might lose its IPv4 address.
 * Arista EOS cannot configure OSPF NSSA type-7 address ranges.
@@ -124,7 +125,6 @@ nodes:
 
 **EVPN/VXLAN caveats:**
 
-* The layer-3 EVPN functionality (transit VNI, type-5 routes) is not supported by _netlab_
 * Cisco IOS/XE does not accept VXLAN VNI values below 4096
 
 **Container caveats:**
@@ -140,6 +140,7 @@ See also [CSR 1000v](caveats-csr) and [Cisco IOSv](caveats-iosv) caveats.
 ## Cisco CSR 1000v
 
 * Cisco CSR 1000v does not support an interface MTU lower than 1500 bytes or an IP MTU higher than 1500 bytes.
+* Cisco CSR 1000v supports VXLAN with ingress replication and EVPN with MPLS encapsulation, but not EVPN with VXLAN encapsulation
 * Cisco IOS/XE does not accept VXLAN VNI values below 4096
 
 See also [Cisco IOSv](caveats-iosv) SSH, OSPF, RIPng, and BGP caveats.
@@ -196,7 +197,6 @@ Additionally, you might have to execute `sudo update-crypto-policies --set LEGAC
 * The Cisco IOL and IOL L2 images work only as containers created with Roman Dodin's fork of [vrnetlab](https://github.com/srl-labs/vrnetlab).
 * You need Containerlab 0.59.0 or greater to run these images.
 * You cannot use VLANs 1002 through 1005 with the Cisco IOL layer-2 image
-* The layer-3 EVPN functionality (transit VNI, type-5 routes) is not supported by _netlab_
 * Cisco IOS/XE does not accept VXLAN VNI values below 4096
 * Cisco IOL layer-2 image cannot configure tagged VLAN 1 in a trunk. Internal VLAN 1002 is used as a fake native VLAN on interfaces that have tagged VLAN 1 in a trunk.
 * Cisco IOL/IOLL2 cannot set the interface MTU (which is fixed at 1500 bytes). IOLL2 cannot set the IP MTU.
