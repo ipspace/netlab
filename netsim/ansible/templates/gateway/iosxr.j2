@@ -1,0 +1,26 @@
+{% for intf in interfaces if intf.gateway.protocol is defined %}
+{%   if loop.first %}
+router vrrp
+{%   endif %}
+  interface {{ intf.ifname }}
+{%   if intf.gateway.protocol == 'vrrp' %}
+{%     for af in 'ipv4','ipv6' if af in intf.gateway %}
+    address-family {{ af }}
+      vrrp {{ intf.gateway.vrrp.group }}{% if af == 'ipv4' %} version 3{% endif +%}
+{%       if af == 'ipv4' %}
+        address {{ intf.gateway[af]|ansible.utils.ipaddr('address') }}
+{%       else %}
+        address linklocal autoconfig
+        address global {{ intf.gateway[af]|ansible.utils.ipaddr('address') }}
+{%       endif %}
+{%       if 'priority' in intf.gateway.vrrp %}
+        priority {{ intf.gateway.vrrp.priority }}
+{%       endif %}
+{%       if intf.gateway.vrrp.preempt|default(True) %}
+        preempt delay 1
+{%       else %}
+        preempt disable
+{%       endif %}
+{%     endfor %}
+{%   endif %}
+{% endfor %}
