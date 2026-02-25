@@ -36,7 +36,7 @@ clab:
       hosts: /etc/hosts:shared
       netlab-config: /config/netlab/config.sh
     exec:
-      - chmod +x /config/netlab/config.sh
+    - chmod +x /config/netlab/config.sh
   interface:
     name: eth{ifindex+1}
   features:
@@ -47,8 +47,16 @@ clab:
     netlab_show_command: [ cli, -c, 'show $@' ]
     netlab_check_command: who
     netlab_ready: [ ssh ]
-    netlab_default_shebang: '#!/config/netlab/config.sh'
-
+    netlab_config_wrapper: |
+      {% if netlab_config_mode == 'sh' and netlab_config_text and not "# Created by netlab" in netlab_config_text %}
+      #!/bin/bash
+      cat > {{ netlab_config_path}}/output.conf <<EOF
+      {{ netlab_config_text }}
+      EOF
+      {{ netlab_config_path}}/config.sh {{ netlab_config_path}}/output.conf
+      {% else %}
+      {{ netlab_config_text }}
+      {% endif %}
 #    ansible_connection: docker
 #    netlab_console_connection: docker
     netlab_config_path: /config/netlab/
