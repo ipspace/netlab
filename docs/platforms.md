@@ -401,7 +401,7 @@ These devices support additional control-plane protocols or BGP address families
 | Aruba AOS-CX          | ✅  | ✅  | ✅  | ✅  |
 | Cisco IOS XE[^XE]     | ✅  | ✅  | ✅  | ✅  |
 | Cisco IOSv/IOSvL2     | ✅  |  ❌  | ✅  | ✅  |
-| Cisco IOS XR[^XR]     |  ❌  |  ❌  | ✅  |  ❌  |
+| Cisco IOS XR[^XR]     |  ❌  |  ❌  | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  | ✅  |  ❌  | ✅  |
 | Cumulus Linux         | ✅  | ✅  |  ❌  | ✅  |
 | Dell OS10             | ✅  | ✅  |  ❌  |  ❌  |
