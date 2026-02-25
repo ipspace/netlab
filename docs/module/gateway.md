@@ -21,8 +21,8 @@ The module is supported on these platforms:
 | --------------------- | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  | ✅  | ✅  |
-| Cisco IOS/XE[^18v]    |  ❌  | ✅  | ✅  |
-| Cisco IOS/XR[^XR]     |  ❌  | ✅  | ✅  |
+| Cisco IOS XE[^18v]    |  ❌  | ✅  | ✅  |
+| Cisco IOS XR[^XR]     |  ❌  | ✅  | ✅  |
 | Cisco Nexus OS        |  ❌  | ✅  | ✅  |
 | Cumulus Linux 4.x     | ✅  | ✅  | ✅  |
 | Cumulus 5.x (NVUE)    | ✅ | ✅ |  ✅ |
