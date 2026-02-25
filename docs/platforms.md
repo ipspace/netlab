@@ -225,8 +225,9 @@ _netlab_ uses Ansible playbooks and device-specific task lists to deploy device 
 | bird   | clab     | **bash** scripts or daemon configuration files[^BBS] |
 | dnsmasq | clab    | **bash** scripts or daemon configuration files[^DBS] |
 | FRRouting    | clab     | **bash** or **vtysh** scripts[^FRRBV] |
-| linux  | clab     | host- or container-side **bash** scripts[^LBS] |
+| Junos cRPD | clab | **bash** scripts[^cRBS] |
 | KinD   | clab     | **bash** scripts copied into and executed in containers |
+| linux  | clab     | host- or container-side **bash** scripts[^LBS] |
 
 [^FRRBV]: Configurations starting with a *shebang* are assumed to be Linux scripts; all other configurations are assumed to be **vtysh** scripts and get a `#!/usr/bin/vtysh -f` shebang prepended to them.
 
@@ -235,6 +236,8 @@ _netlab_ uses Ansible playbooks and device-specific task lists to deploy device 
 [^BBS]: Initial device configurations, VLANs, and link aggregation are configured with **bash** scripts. All other features are configured with the Bird configuration files.
 
 [^DBS]: Initial device configurations, VLANs, static routes, and link aggregation are configured with **bash** scripts. All other features are configured with the dnsmasq configuration files.
+
+[^cRBS]: The configuration deployment uses a custom **bash** script that calls **cli** command to execute **load merge** followed by **commit**. The custom script is used as the *shebang* interpreter for the configuration snippets.
 
 Several other devices can use alternate (faster) configuration methods that are not enabled by default; you have to set the **netlab_config_mode** group variable[^NCMGV] or node parameter to use them:
 
