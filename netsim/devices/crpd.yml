@@ -34,6 +34,9 @@ clab:
     kind: juniper_crpd
     config_templates:
       hosts: /etc/hosts:shared
+      netlab-config: /config/netlab/config.sh
+    exec:
+      - chmod +x /config/netlab/config.sh
   interface:
     name: eth{ifindex+1}
   features:
@@ -44,30 +47,10 @@ clab:
     netlab_show_command: [ cli, -c, 'show $@' ]
     netlab_check_command: who
     netlab_ready: [ ssh ]
+    netlab_default_shebang: '#!/config/netlab/config.sh'
+
 #    ansible_connection: docker
 #    netlab_console_connection: docker
     netlab_config_path: /config/netlab/
-    netlab_config_wrapper: |
-      #!/bin/bash
-      cat > {{ netlab_config_path}}/output.conf <<EOF
-      {{ netlab_config_text }}
-      EOF
-      cat <<CONFIG | cli | tee /tmp/cli-status
-      configure
-      load merge {{ netlab_config_path }}/output.conf
-      CONFIG
-      if grep -i error /tmp/cli-status >/dev/null; then
-        echo "Configuration load failed, aborting"
-        exit 1
-      else
-        cat <<CONFIG | cli | tee /tmp/cli-status
-      configure
-      commit and-quit
-      CONFIG
-        if grep -i error /tmp/cli-status >/dev/null; then
-          echo "Commit failed, aborting"
-          exit 1
-        fi
-      fi
 
 graphite.icon: router
