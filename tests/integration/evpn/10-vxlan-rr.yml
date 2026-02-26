@@ -10,7 +10,7 @@ message: |
   STP learning phase
 
 defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
-plugin: [ files, fix_mtu ]
+plugin: [ files, fix_mtu, evpn-transport ]
 
 addressing:
   loopback.ipv6: 2001:db8:cafe::/48
@@ -32,21 +32,20 @@ groups:
   x_switches:
     members: [ s1, s2 ]
     provider: clab
+    device: eos
 
 bgp.as: 65000
 
 nodes:
   dut:
   s1:
-    device: eos
     config.inline: |
       router bgp {{ bgp.as }}
         address-family evpn
-      {% for ngb in bgp.neighbors if ngb.ipv6 is defined %}
+      {% for ngb in bgp.neighbors if ngb.ipv6 is defined and evpn.transport == 'vxlan' %}
           neighbor {{ ngb.ipv6 }} activate
       {% endfor %}
   s2:
-    device: frr
 
 vlans:
   red:
@@ -57,11 +56,10 @@ vlans:
 
 links:
 - s1:
-  dut:
+  s2:
   mtu: 1600
-- s2:
-  dut:
-  mtu: 1600
+- s1-dut
+- s2-dut
 
 validate:
   ospf_ipv4:
