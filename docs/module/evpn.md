@@ -25,7 +25,7 @@ The following table describes the per-platform support of individual EVPN/VXLAN 
 | ------------------ | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  |  ✅  | ✅  | ✅  |
 | Aruba AOS-CX       | ✅  |  ✅  | ✅  | ✅[❗](caveats-aruba)  |
-| Cisco IOS/XE[^XEV] | ✅  |  ❌  | ✅  | ✅  |
+| Cisco IOS XE[^XEV] | ✅  |  ❌  | ✅  | ✅  |
 | Cisco Nexus OS     | ✅  |  ❌  | ✅  | ✅  |
 | Cumulus Linux 4.x  | ✅  |  ❌  | ✅  | ✅  |
 | Cumulus 5.x (NVUE) | ✅  |  ❌  | ✅  | ✅  |
@@ -46,6 +46,8 @@ The following table describes the per-platform support of individual EVPN/MPLS f
 | ------------------ | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  | ✅  | ✅[❗](caveats-eos) | ✅  |
 | Cisco IOS XE[^XEM] | ✅  |  ❌  | ✅  | ✅  |
+| Cisco 8000v        | ✅  |  ❌  |  ❌  | ✅  |
+| Cisco IOS XR       |  ❌  |  ❌  |  ❌  | ✅  |
 
 [^XEM]: Includes CSR 1000v, Catalyst 8000v, Cisco IOL, and Cisco IOLL2
 
@@ -63,7 +65,8 @@ EVPN module supports IBGP- and EBGP-based EVPN:
 | ------------------ | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  | ✅  | ✅  | ✅  |
 | Aruba AOS-CX       | ✅  | ✅  | ❌   | ❌   |
-| Cisco IOS/XE[^XEM] | ✅  | ✅  | ✅  | ❌   |
+| Cisco IOS XE[^XEM] | ✅  | ✅  | ✅  | ❌   |
+| Cisco IOS XR[^XR]  | ✅  | ✅  | ❌   | ❌   |
 | Cisco Nexus OS     | ✅  | ✅  | ✅  | ❌   |
 | Cumulus Linux 4.x  | ✅  | ✅  | ✅  | ✅  |
 | Cumulus 5.x (NVUE) | ✅  | ✅  | ✅  | ✅  |
@@ -73,6 +76,8 @@ EVPN module supports IBGP- and EBGP-based EVPN:
 | Nokia SR OS[^SROS] | ✅  | ✅  | ✅  |  ❌  |
 | vJunos-switch      | ✅  | ✅  |  ❌  |  ❌  |
 | VyOS               | ✅  | ✅  |  ❌  | ✅  |
+
+[^XR]: Includes Cisco 8000v, Cisco IOS XRd and Cisco IOS XRv
 
 With additional nerd knobs ([more details](evpn-weird-designs)), it's possible to implement the more convoluted designs, including:
 
