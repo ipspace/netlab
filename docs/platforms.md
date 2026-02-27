@@ -24,7 +24,7 @@
 | Cisco IOS-on-Linux L2 image (IOL L2)[❗](caveats-iol) | ioll2               | full |
 | Cisco IOSv [❗](caveats-iosv)      | iosv   | full          |
 | [Cisco IOSvL2](https://developer.cisco.com/docs/modeling-labs/iosvl2/#iosvl2) [❗](caveats-iosv)   | iosvl2 | full |
-| Cisco IOS XRv  [❗](caveats-iosxr) | iosxr  | minimal       |
+| Cisco IOS XRv/XRd [❗](caveats-iosxr) | iosxr  | minimal       |
 | Cisco Nexus 9300v [❗](caveats-nxos) | nxos | best effort   |
 | Cumulus Linux 4.x/5.x [❗](caveats-cumulus) | cumulus | end of life |
 | Cumulus Linux 5.x (NVUE) [❗](caveats-cumulus-nvue) | cumulus_nvue | minimal |
@@ -120,7 +120,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Cisco IOL L2       |  ❌ | ❌  |  ✅[❗](clab-vrnetlab) |
 | Cisco IOSv         | [✅](build-iosv)  | ✅  |  ✅[❗](clab-vrnetlab) |
 | Cisco IOSvL2       | [✅](build-iosvl2)|  ❌  | ✅[❗](clab-vrnetlab) |
-| Cisco IOS XRv      | [✅](build-iosxr) |  ❌  | ✅  |
+| Cisco IOS XRv/XRd  | [✅](build-iosxr) |  ❌  | ✅  |
 | Cisco Nexus 9300v  | [✅](build-nxos) [❗](caveats-nxos) | ✅  |  ✅[❗](clab-vrnetlab)  |
 | Cumulus Linux      | ✅  | ✅  | ✅[❗](caveats-cumulus) |
 | Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ✅[❗](caveats-cumulus) |
@@ -225,7 +225,7 @@ _netlab_ uses Ansible playbooks and device-specific task lists to deploy device 
 | Device | Provider | Configuration deployment method |
 |--------|----------|---------------------------------|
 | bird   | clab     | **bash** scripts or daemon configuration files[^BBS] |
-| Cisco XRD | clab | **bash** scripts[^xRBS] |
+| Cisco IOS XRd | clab | **bash** scripts[^xRBS] |
 | dnsmasq | clab    | **bash** scripts or daemon configuration files[^DBS] |
 | FRRouting    | clab     | **bash** or **vtysh** scripts[^FRRBV] |
 | Junos cRPD | clab | **bash** scripts[^cRBS] |
