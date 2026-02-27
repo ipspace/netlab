@@ -225,7 +225,6 @@ _netlab_ uses Ansible playbooks and device-specific task lists to deploy device 
 | Device | Provider | Configuration deployment method |
 |--------|----------|---------------------------------|
 | bird   | clab     | **bash** scripts or daemon configuration files[^BBS] |
-| Cisco IOS XRd | clab | **bash** scripts[^xRBS] |
 | dnsmasq | clab    | **bash** scripts or daemon configuration files[^DBS] |
 | FRRouting    | clab     | **bash** or **vtysh** scripts[^FRRBV] |
 | Junos cRPD | clab | **bash** scripts[^cRBS] |
@@ -242,22 +241,24 @@ _netlab_ uses Ansible playbooks and device-specific task lists to deploy device 
 
 [^cRBS]: The configuration deployment uses a custom **bash** script that calls **cli** command to execute **load merge** followed by **commit**. The custom script is used as the *shebang* interpreter for the configuration snippets.
 
-[^xRBS]: The configuration deployment uses a custom **bash** script that calls **xrapply** ZTP command to load and commit a configuration file. The custom script is used as the *shebang* interpreter for the configuration snippets.
-
 Several other devices can use alternate (faster) configuration methods that are not enabled by default; you have to set the **netlab_config_mode** group variable[^NCMGV] or node parameter to use them:
 
 | Device    | containerlab<br> deployment method |
 |-----------|------------------------------------|
-| Arista EOS | **sh** |
+| Arista EOS | **sh**[^EOSSH] |
 | Aruba CX  | **startup** |
 | Cisco IOS/IOS XE[^18v] | **startup** |
+| Cisco IOS XRd | **sh**[^XRDSH] |
 | Dell OS10 | **startup** |
 | Junos[^Junos] | **startup** |
 
+[^EOSSH]: Arista EOS device configurations are converted into FastCli scripts and executed as Linux scripts within the cEOS container
+
+[^XRDSH]: The Cisco IOS XRd deployment uses a custom **bash** script that calls **xrapply** ZTP command to load and commit a configuration file. The custom script is used as the *shebang* interpreter for the configuration snippets. This deployment method *does not work* on XRv virtual machines packaged into *vrnetlab* containers.
+
 **Notes:**
 
-* Arista EOS device configurations are converted into FastCli scripts and executed as Linux scripts within the cEOS container
-* The **startup** deployment method uses *containerlab* `startup-config` parameter with partial device configurations.    This is an experimental method that won't report errors in device configurations.
+* The **startup** deployment method uses *containerlab* `startup-config` parameter with partial device configurations. This is an experimental method that won't report errors in device configurations ([more details](https://blog.ipspace.net/2026/02/netlab-startup-config-caveats/)).
 
 [^NCMGV]: For example, set the **defaults.devices.iol.clab.group_vars.netlab_config_mode** [topology default](topo-defaults) to **startup** to use startup configuration with Cisco IOL nodes
 
