@@ -24,17 +24,17 @@
 | Cisco IOS-on-Linux L2 image (IOL L2)[❗](caveats-iol) | ioll2               | full |
 | Cisco IOSv [❗](caveats-iosv)      | iosv   | full          |
 | [Cisco IOSvL2](https://developer.cisco.com/docs/modeling-labs/iosvl2/#iosvl2) [❗](caveats-iosv)   | iosvl2 | full |
-| Cisco IOS XRv  [❗](caveats-iosxr) | iosxr  | minimal       |
+| Cisco IOS XRv/XRd [❗](caveats-iosxr) | iosxr  | minimal       |
 | Cisco Nexus 9300v [❗](caveats-nxos) | nxos | best effort   |
 | Cumulus Linux 4.x/5.x [❗](caveats-cumulus) | cumulus | end of life |
 | Cumulus Linux 5.x (NVUE) [❗](caveats-cumulus-nvue) | cumulus_nvue | minimal |
-| Dell OS10 [❗](caveats-os10) | dellos10     | full          | 
+| Dell OS10 [❗](caveats-os10) | dellos10     | full          |
 | Fortinet FortiOS [❗](caveats-fortios) | fortios | minimal  |
 | FRRouting (FRR) [❗](caveats-frr) | frr     | full          |
 | [Generic Linux host](generic-linux-devices) | linux | full          |
 | Juniper cRPD | crpd | best effort |
 | Juniper vMX [❗](caveats-vmx) | vmx         | best effort   |
-| Juniper vPTX (vJunos EVO) [❗](caveats-vptx) | vptx | full  |              
+| Juniper vPTX (vJunos EVO) [❗](caveats-vptx) | vptx | full  |
 | Juniper vSRX 3.0 [❗](caveats-vsrx) | vsrx  | best effort   |
 | vJunos-switch [❗](caveats-vjunos-switch) | vjunos-switch | full |
 | vJunos-router [❗](caveats-vjunos-router) | vjunos-router | full |
@@ -120,7 +120,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Cisco IOL L2       |  ❌ | ❌  |  ✅[❗](clab-vrnetlab) |
 | Cisco IOSv         | [✅](build-iosv)  | ✅  |  ✅[❗](clab-vrnetlab) |
 | Cisco IOSvL2       | [✅](build-iosvl2)|  ❌  | ✅[❗](clab-vrnetlab) |
-| Cisco IOS XRv      | [✅](build-iosxr) |  ❌  | ✅  |
+| Cisco IOS XRv/XRd  | [✅](build-iosxr) |  ❌  | ✅  |
 | Cisco Nexus 9300v  | [✅](build-nxos) [❗](caveats-nxos) | ✅  |  ✅[❗](clab-vrnetlab)  |
 | Cumulus Linux      | ✅  | ✅  | ✅[❗](caveats-cumulus) |
 | Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ✅[❗](caveats-cumulus) |
@@ -136,12 +136,12 @@ You cannot use all supported network devices with all virtualization providers. 
 | vJunos-router       |  ❌  |  ❌  | ✅[❗](clab-vrnetlab) |
 | Mikrotik RouterOS 6 | ✅  |  ❌  |  ❌  |
 | Mikrotik RouterOS 7 | [✅](build-chr7)  |  ❌  |  ❌  |
-| Netscaler CPX       |  ❌  |  ❌  | ✅  | 
+| Netscaler CPX       |  ❌  |  ❌  | ✅  |
 | Nokia SR Linux      |  ❌  |  ❌  | ✅  |
 | Nokia SR OS         |  ❌  |  ❌  | ✅  |
 | Nokia SR-SIM        |  ❌  |  ❌  | ✅  |
 | OpenBSD             | [✅](build-openbsd)  |  ❌  | [✅](clab-vrnetlab) |
-| Sonic               | [✅](build-sonic)  |  ❌  |  ❌  | 
+| Sonic               | [✅](build-sonic)  |  ❌  |  ❌  |
 | VyOS                | ✅  |  ❌  | ✅[❗](caveats-vyos) |
 
 **Note:**
@@ -225,6 +225,7 @@ _netlab_ uses Ansible playbooks and device-specific task lists to deploy device 
 | Device | Provider | Configuration deployment method |
 |--------|----------|---------------------------------|
 | bird   | clab     | **bash** scripts or daemon configuration files[^BBS] |
+| Cisco IOS XRd | clab | **bash** scripts[^xRBS] |
 | dnsmasq | clab    | **bash** scripts or daemon configuration files[^DBS] |
 | FRRouting    | clab     | **bash** or **vtysh** scripts[^FRRBV] |
 | Junos cRPD | clab | **bash** scripts[^cRBS] |
@@ -240,6 +241,8 @@ _netlab_ uses Ansible playbooks and device-specific task lists to deploy device 
 [^DBS]: Initial device configurations, VLANs, static routes, and link aggregation are configured with **bash** scripts. All other features are configured with the dnsmasq configuration files.
 
 [^cRBS]: The configuration deployment uses a custom **bash** script that calls **cli** command to execute **load merge** followed by **commit**. The custom script is used as the *shebang* interpreter for the configuration snippets.
+
+[^xRBS]: The configuration deployment uses a custom **bash** script that calls **xrapply** ZTP command to load and commit a configuration file. The custom script is used as the *shebang* interpreter for the configuration snippets.
 
 Several other devices can use alternate (faster) configuration methods that are not enabled by default; you have to set the **netlab_config_mode** group variable[^NCMGV] or node parameter to use them:
 
@@ -277,7 +280,7 @@ The following system-wide features are configured on supported network operating
 | Fortinet FortiOS         | ✅  |  ❌  | ✅  | ✅  | ✅  |
 | FRR                      | ✅  | ✅[^HIF]  |  ❌  | ✅  | ✅  |
 | Generic Linux            | ✅  | ✅[^HIF]  |  ✅[❗](linux-lldp) | ✅  | ✅  |
-| Junos[^Junos]            | ✅  |  ❌  | ✅  | ✅  | ✅  | 
+| Junos[^Junos]            | ✅  |  ❌  | ✅  | ✅  | ✅  |
 | Mikrotik RouterOS 6      | ✅  | ✅  | ✅[❗](caveats-routeros6) | ✅ | ✅ |
 | Mikrotik RouterOS 7      | ✅ | ✅ | ✅[❗](caveats-routeros7) | ✅ | ✅ |
 | Netscaler CPX            | ✅  |  ❌  |  ❌  |  ❌  |  ❌  |
@@ -449,14 +452,14 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | Cisco IOL/IOLL2       | ✅ | ✅ | ✅[❗](caveats-iol) | ✅ | ✅ | ✅ |
 | Cisco IOSv/IOSvL2     | ✅ | ✅ |  ❌ | ✅ |  ❌ |  ❌ |
 | Cisco IOS XR          |  ❌ | ✅ |  ❌ | ✅ | ✅ |  ❌ |
-| Cisco Nexus OS        | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ | 
+| Cisco Nexus OS        | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
 | Cumulus Linux         | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
 | Cumulus Linux 5.x (NVUE) | ✅ |[❗](module-vrf-platform-support)| ❌ | ❌ | ❌ | ❌ |
-| Dell OS10             | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ | 
+| Dell OS10             | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
 | FRR                   | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Juniper cRPD          |  ❌ |  ❌ |   ❌ | ✅ | ✅ |  ❌ | 
-| Juniper vMX           | ✅ | ✅ |  ❌ | ✅ | ✅ |  ❌ | 
-| Juniper vPTX          | ✅ | ✅ |  ❌ | ✅ | ✅ |  ❌ | 
+| Juniper cRPD          |  ❌ |  ❌ |   ❌ | ✅ | ✅ |  ❌ |
+| Juniper vMX           | ✅ | ✅ |  ❌ | ✅ | ✅ |  ❌ |
+| Juniper vPTX          | ✅ | ✅ |  ❌ | ✅ | ✅ |  ❌ |
 | Juniper vSRX 3.0      | ❌  | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
 | vJunos-switch         | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
 | vJunos-router         | ❌  | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
