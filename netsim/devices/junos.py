@@ -9,6 +9,7 @@ import copy
 
 from box import Box
 
+from ..modules import vrf
 from ..utils import log, strings
 from . import _Quirks, report_quirk
 
@@ -373,6 +374,21 @@ def build_bgp_import_export_policy_chain(node: Box, topology: Box) -> None:
 
   return
 
+def macvrf_unique_rd_for_vlan_bundle(node: Box, topology: Box) -> None:
+  if 'evpn' not in node.get('module',[]):
+    return
+  if 'vrf' not in node.get('module',[]):
+    return
+  asn = vrf.get_rd_as_number(node, topology)
+  if asn is None:
+    return
+
+  for vname,vdata in node.vrfs.items():
+    if vdata.get('evpn.bundle'):
+      # in that case we need to generate a new RD for the mac-vrf (cannot be the same of L3 VRF)
+      free_vrf_idx = vrf.get_next_vrf_id(asn)
+      vdata._junos_l2vrf_rd = free_vrf_idx[1]
+
 class JUNOS(_Quirks):
 
   @classmethod
@@ -388,3 +404,5 @@ class JUNOS(_Quirks):
     community_set_quirk(node,topology)
     default_originate_check(node,topology)
     build_bgp_import_export_policy_chain(node,topology)
+    macvrf_unique_rd_for_vlan_bundle(node,topology)
+
