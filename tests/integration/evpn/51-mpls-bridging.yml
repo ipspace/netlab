@@ -1,0 +1,102 @@
+---
+message: |
+  The device under test is an EVPN PE-device bridging two VLANs over MPLS. The
+  other EVPN PE-device is an Arista cEOS.
+
+  Both VLANs are using the same IP prefix to identify potential inter-VLAN
+  leaking.
+
+  * h1 and h2 should be able to ping each other
+  * h3 and h4 should be able to ping each other
+  * h1 should not be able to reach h3 or h4
+
+  Please note it might take a while for the lab to work due to STP learning
+  phase
+
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+plugin: [ fix_mtu ]
+mpls.ldp: True
+evpn.transport: mpls
+evpn.vlans: [ red, blue ]
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+    provider: clab
+  switches:
+    members: [ dut, s2 ]
+    module: [ vlan, mpls, ospf, bgp, evpn ]
+  core:
+    members: [ p ]
+    module: [ ospf, mpls ]
+    device: frr
+    provider: clab
+#  x_switches:
+#    members: [ s2 ]
+#    device: eos
+#    provider: clab
+
+bgp.as: 65000
+
+vlans:
+  red:
+    mode: bridge
+    prefix:
+      ipv4: 172.31.1.0/24
+    links: [ dut-h1, s2-h2 ]
+  blue:
+    mode: bridge
+    prefix:
+      ipv4: 172.31.1.0/24
+    links: [ dut-h3, s2-h4 ]
+
+links:
+- interfaces: [ dut, p ]
+  mtu: 1600
+- interfaces: [ p, s2 ]
+  mtu: 1600
+
+validate:
+  ospf_adj_s1:
+    description: Check OSPF adjacencies with DUT
+    wait: ospfv2_adj_p2p
+    nodes: [ p ]
+    wait_msg: Waiting for OSPF adjacency process to complete
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+
+#  ibgp_adj_s1:
+#    description: Check IBGP adjacencies with DUT
+#    wait: ibgp_session
+#    nodes: [ s2 ]
+#    wait_msg: Waiting for IBGP session
+#    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+#
+#  ipv4_adj_s1:
+#    description: Check IPv4 AF on IBGP adjacencies with DUT
+#    nodes: [ s2 ]
+#    plugin: bgp_neighbor(node.bgp.neighbors,'dut',activate='ipv4')
+#
+#  evpn_adj_s1:
+#    description: Check EVPN AF on IBGP adjacencies with DUT
+#    nodes: [ s2 ]
+#    plugin: bgp_neighbor(node.bgp.neighbors,'dut',activate='evpn')
+#    stop_on_error: True
+  ping_red:
+    description: Ping-based reachability test in VLAN red
+    wait_msg: Waiting for STP to wake up
+    wait: ping_stp
+    nodes: [ h1 ]
+    plugin: ping('h2')
+  ping_blue:
+    description: Ping-based reachability test in VLAN blue
+    wait_msg: We might have to wait a bit longer
+    wait: ping_long
+    nodes: [ h3 ]
+    plugin: ping('h4')
+  inter_vlan:
+    description: Ping-based reachability test between blue and red VLANs
+    nodes: [ h1 ]
+    devices: [ linux ]
+    plugin: ping('h4',expect='fail')

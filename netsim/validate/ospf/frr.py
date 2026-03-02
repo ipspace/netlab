@@ -75,7 +75,7 @@ def valid_ospf6_neighbor(id: str, present: bool = True) -> bool:
 def show_ospf_prefix(pfx: str, **kwargs: typing.Any) -> str:
   return f'ip ospf route json'
 
-def get_ospf_prefix(pfx: str, data: Box) -> typing.Optional[Box]:
+def get_ospf_prefix(pfx: str, data: Box, **kwargs: typing.Any) -> typing.Optional[Box]:
   return data.get(pfx,None)
 
 def check_ospf_cost(data: list, value: typing.Any, **kwargs: typing.Any) -> list:

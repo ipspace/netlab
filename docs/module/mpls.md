@@ -1,3 +1,4 @@
+(module-mpls)=
 # MPLS Configuration Module
 
 The MPLS configuration module implements:
@@ -27,6 +28,7 @@ The following table describes the per-platform support of individual MPLS label 
 | Arista EOS            |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Aruba AOS-CX          |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Cisco IOSv/IOS XE[^xe] |   ✅ |   ✅    |   ❌  |   ❌  |   ❌  |
+| Cisco IOS XR[^xr]     |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | FRR                   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Junos[^Junos]         |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Mikrotik RouterOS 6   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
@@ -37,9 +39,11 @@ The following table describes the per-platform support of individual MPLS label 
 
 [^xe]: Cisco Catalyst 8000v, Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco IOS on Linux (IOL) and IOL layer-2 image.
 
+[^xr]: Cisco IOS XRv, XRd, and Cisco 8000v
+
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
-[^Junos]: Includes vPTX, vJunos-switch, vJunos-router, vMX, and vSRX. vMX and vSRX are not tested.
+[^Junos]: Includes cRPD, vPTX, vJunos-switch, vJunos-router, vMX, and vSRX. vMX and vSRX are not tested.
 
 **Notes:**
 * LDP is enabled on all non-VRF intra-AS interfaces with IPv4 addresses.
@@ -68,6 +72,7 @@ The following table describes the per-platform support of individual MPLS label 
 | Arista EOS            |   ✅  |   ✅  |
 | Aruba AOS-CX          |   [❗](caveats-aruba)  |   ❌  |
 | Cisco IOSv/IOS XE[^xe] |  ✅  |   ✅  |
+| Cisco IOS XR[^xr]     |   ✅  |   ✅  |
 | FRR                   |   ✅  |   ✅  |
 | Junos[^Junos]         |   ✅  |   ✅  |
 | Mikrotik RouterOS 6   |   ✅  |   ❌  |
@@ -81,11 +86,12 @@ The following table describes the per-platform support of individual MPLS label 
 
 ### 6PE
 
-| Operating system      | 6PE |
-| ----------------------| :-: |
-| Arista EOS            | ✅  |
-| Cisco IOSv/IOS XE[^xe] | ✅ |
-| Nokia SR OS[^SROS]    | ✅  |
+| Operating system      | 6PE | 6PE<br>RR |
+| ----------------------| :-: | :-: |
+| Arista EOS            | ✅  | ✅  |
+| Cisco IOSv/IOS XE[^xe] | ✅ | ✅  |
+| Cisco IOS XR[^xr]     | ✅  | ✅  |
+| Nokia SR OS[^SROS]    | ✅  | ✅  |
 
 **Notes**
 

@@ -12,6 +12,7 @@ The following implementation notes for configuration deployment, initial device 
    bfd.md
    bgp.md
    gateway.md
+   mpls.md
    ospf.md
    ospf.areas.md
    rip.md

@@ -2,6 +2,7 @@
 # Create device configuration files
 #
 
+import shutil
 from pathlib import Path
 
 from box import Box
@@ -32,11 +33,21 @@ class ConfigurationFiles(_TopologyOutput):
 
     check_writeable('device configuration files')
 
+    # Clean up the node_files directory to remove any old configuration files
+    node_files = Path('node_files')
+    if node_files.exists():
+      try:
+        shutil.rmtree(node_files)
+      except Exception as ex:
+        log.error(
+          "Failed to remove directory 'node_files'",
+          more_data=[str(ex)],
+          module='config')
+
     # Creates a "ghost clean" topology after transformation
     # (AKA, remove unmanaged devices)
     topology = output_common.create_adjusted_topology(nodes.ghost_buster(topology),ignore=[],template_vars=True)
     shared_list = []
-    node_files = Path('node_files')
     if 'unprovisioned' in topology.groups:
       unprovisioned = groups.group_members(topology,'unprovisioned')
     else:
@@ -65,8 +76,9 @@ class ConfigurationFiles(_TopologyOutput):
             create_list.append(cfg_source)
         else:
           cfg_path = f'{n_name}/{cfg_source}'
-          if do_config(cfg_source,cfg_path,cfg_mode):
-            create_list.append(cfg_source)
+          if not do_config(cfg_source,cfg_path,cfg_mode):
+            continue
+          create_list.append(cfg_source)
           if cfg_mode in ('sh','cp_sh'):
             (node_files / cfg_path).chmod(0o755)
 

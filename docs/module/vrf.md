@@ -1,3 +1,4 @@
+(module-vrf)=
 # Virtual Routing and Forwarding (VRF) Tables
 
 This configuration module implements the VRF planning and configuration logic and is used together with [BGP](bgp.md), [OSPF](ospf.md), and [IS-IS](isis.md) configuration modules to implement VRF-aware routing protocols.
@@ -26,7 +27,7 @@ VRFs are supported on these platforms:
 | Cumulus 5.x (NVUE)    | ✅  |  ✅ [❗](caveats-cumulus-nvue) |  ✅  |
 | Dell OS10             | ✅  | ✅  | ✅  |
 | FRR [❗](caveats-frr) | ✅  | ✅  | ✅  |
-| Junos[^Junos]         | ✅  | ✅  | ✅  |
+| Junos[^Junos]         | ✅  | ✅ [❗](caveats-crpd) | ✅  |
 | Mikrotik RouterOS 6   | ✅  | ✅  |  ❌  |
 | Mikrotik RouterOS 7   | ✅  | ✅  | ✅  |
 | Nokia SR Linux        | ✅  | ✅ [❗](caveats-srlinux) | ✅  |
@@ -35,7 +36,7 @@ VRFs are supported on these platforms:
 
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL) and IOL Layer-2 image
 
-[^Junos]: Includes vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
+[^Junos]: Includes cRPD, vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
 
 [^SRRL]: Nokia SR OS supports inter-VRF route leaking, but it's not yet implemented in _netlab_
 
@@ -269,7 +270,7 @@ Consider the simplest possible topology with a switch (s1) and two hosts (h1 and
 ```
 vrfs:
   example:
-  
+
 links:
 - h1:
   s1:

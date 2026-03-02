@@ -5,7 +5,7 @@ This document describes the device data model parameters to consider when creati
 
 Most of the document assumes you have already created an Ansible task list that can deploy device configuration from a template. If you plan to use Ansible modules to build initial device configuration, see the [Using Ansible Configuration Modules](initial-ansible-config) section at the bottom of this document.
 
-The device configuration template (in Jinja2 format) should be stored in `netsim/templates/initial/<nos>.j2` with **nos** being the value of **netlab_device_type** or  **ansible_network_os** Ansible variable (see [Using Your Devices with Ansible Playbooks](../devices.md#using-your-device-with-ansible-playbooks) for more details.
+The device configuration template (in Jinja2 format) should be stored in `netsim/ansible/templates/initial/<nos>.j2` with **nos** being the value of **netlab_device_type** or  **ansible_network_os** Ansible variable (see [Using Your Devices with Ansible Playbooks](../devices.md#using-your-device-with-ansible-playbooks) for more details.
 
 ```eval_rst
 .. contents:: Table of Contents

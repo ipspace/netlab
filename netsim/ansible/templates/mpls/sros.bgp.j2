@@ -29,8 +29,23 @@
    group: "{{ peer_group }}" 
    peer-as: {{ n.as }}
    family:
-{%     set _af = 'ipv6' if n['6pe']|default(False) else af %}
-    {{ _af }}: True
-    label-{{ _af }}: True
+{%     if af == 'ipv4' and n['6pe']|default(False) %}
+    ipv4: True
+    label-ipv6: True
+{%     else %}
+    {{ af }}: True
+    label-{{ af }}: True
+{%     endif %}
 {%   endfor %}
 {% endfor %}
+
+{# Add an entry to the default BGP export policy to send labeled routes to BGP peers #}
+- path: configure/policy-options/policy-statement[name=bgp_default_export]
+  val:
+    entry:
+    - entry-id: 300
+      from:
+        protocol:
+          name: [ bgp-label ]
+      action:
+        action-type: accept

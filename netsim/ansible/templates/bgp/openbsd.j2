@@ -1,0 +1,111 @@
+#!/bin/sh
+
+cat <<BGPD_CONF >/etc/bgpd.conf
+AS {{ bgp.as }}
+{% if bgp.router_id|ipv4 %}
+router-id {{ bgp.router_id }}
+{% endif %}
+log updates
+
+## network announcements
+
+{% for pfx in bgp.originate|default([]) %}
+network {{ pfx|ansible.utils.ipaddr('0') }}
+{% endfor %}
+{% for intf in netlab_interfaces %}
+{%   if intf.bgp.advertise|default(False) %}
+{%     if intf.ipv4|default(False) %}
+network {{ intf.ipv4|ansible.utils.ipaddr('0') }}
+{%     endif %}
+{%     if intf.ipv6|default(False) %}
+network {{ intf.ipv6|ansible.utils.ipaddr('0') }}
+{%     endif %}
+{%   endif %}
+{% endfor %}
+
+## neighbors and groups
+
+{% for n in bgp.neighbors %}
+{%   for af in ['ipv4', 'ipv6'] %}
+{%     if n[af]|default(False) %}
+neighbor {{ n[af] }} {
+    remote-as {{ n.as }}
+    descr "{{ n.name }}"
+{%       if n.local_as|default(False) %}
+    local-as {{ n.local_as }}
+{%       endif %}
+{%       if n.allowas_in|default(False) %}
+    enforce local-as no
+{%       endif %}
+{%       if n.as_override|default(False) %}
+    as-override yes
+{%       endif %}
+{%       if n._source_intf|default(False) %}
+    local-address {{ n._source_intf[af]|ipaddr('address') }}
+{%       endif %}
+{%       if n.rr_client|default(False) %}
+    route-reflector{% if bgp.rr_cluster_id|default(False) %} {{ bgp.rr_cluster_id }}{% endif +%}
+{%       endif %}
+{%       if n.default_originate|default(False) %}
+    export default-route
+{%       endif %}
+{%       if n.gtsm|default(False) %}
+    ttl-security yes
+{%       endif %}
+{%       if n.passive|default(False) %}
+    passive
+{%       endif %}
+{%       if n.password|default(False) %}
+    tcp md5sig password {{ n.password }}
+{%       endif %}
+{%       if n.timers|default(False) %}
+    holdtime {{ n.timers.hold|default(180) }}
+    holdtime min {{ n.timers.min_hold|default(3) }}
+{%       endif %}
+{%       if n.rs_client|default(False) %}
+    enforce neighbor-as no
+{%       endif %}
+{%       if n.rs|default(False) %}
+    transparent-as yes
+{%       endif %}
+}
+{%     endif %}
+{%   endfor %}
+{% endfor %}
+
+## rules
+
+{% if bgp.next_hop_self|default(False) %}
+match from ebgp set { nexthop self }
+{% endif %}
+{# delete communities that should not be advertised #}
+{% set c_types = ['standard', 'large', 'extended'] %}
+{% for key, values in bgp.community.items() %}
+{%   if key in ['ebgp', 'ibgp'] %}
+{%     for ct in c_types %}
+{%       if ct not in values %}
+match to {{ key }} set
+{%-        if ct == 'standard' %}
+ { community delete *:* }
+{%         elif ct == 'large' %}
+ { large-community delete *:*:* }
+{%         elif ct == 'extended' %}
+ { ext-community delete * * }
+{%         endif %}
+{%       endif %}
+{%     endfor %}
+{%   endif %}
+{% endfor %}
+
+allow from any
+allow to any
+
+BGPD_CONF
+
+chmod 640 /etc/bgpd.conf
+rcctl enable bgpd
+rcctl restart bgpd
+
+{% for pfx in bgp.originate|default([]) %}
+route add -blackhole {{ pfx|ipaddr('0') }} -priority 63 localhost
+{% endfor %}

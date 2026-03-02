@@ -21,20 +21,24 @@ The module is supported on these platforms:
 | --------------------- | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  | ✅  | ✅  |
-| Cisco IOS/XE[^18v]    |  ❌  | ✅  | ✅  |
+| Cisco IOS XE[^18v]    |  ❌  | ✅  | ✅  |
+| Cisco IOS XR[^XR]     |  ❌  | ✅  | ✅  |
 | Cisco Nexus OS        |  ❌  | ✅  | ✅  |
 | Cumulus Linux 4.x     | ✅  | ✅  | ✅  |
 | Cumulus 5.x (NVUE)    | ✅ | ✅ |  ✅ |
 | Dell OS10             | ✅ [❗](caveats-os10) | ✅ [❗](caveats-os10) | ✅ [❗](caveats-os10)  |
 | FRRouting             | ✅  | ✅  | ✅  |
 | Junos[^Junos]         | ✅ [❗](caveats-junos)  | ✅  | ✅  |
+| Juniper cRPD          |  ❌ [❗](caveats-crpd) | ✅  | ✅  |
 | Nokia SR OS[^SROS]    | ✅  | ✅  | ✅  |
 | Nokia SR Linux        | ✅  | ❌  | ❌  |
 | VyOS                  | ❌  | ✅  | ✅  |
 
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOSv, Cisco IOSv Layer-2 image, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
-[^Junos]: Includes vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
+[^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
+
+[^Junos]: Includes vMX, vSRX, vPTX, vJunos-switch, and vJunos-router, but not cRPD
 
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 

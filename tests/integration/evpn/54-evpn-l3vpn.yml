@@ -1,0 +1,135 @@
+message: |
+  The devices under test are layer-3 EVPN/VXLAN routers implementing L3VPN with
+  EVPN control plane and running OSPF and BGP with external devices.
+
+  Assuming the 53-evpn-l3only test passed, this test checks the propagation of
+  VRF BGP routes into EVPN type-5 routes and the propagation of EVPN type-5
+  routes into VRF BGP table and the redistribution into VRF OSPF instances
+
+  External devices should be able to ping each other
+
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+plugin: [ fix_mtu ]
+
+mpls.ldp: True
+bgp.as: 65000
+
+vrfs:
+  tenant:
+    links:
+    - ce1o:
+      dut:
+    - ce1b:
+      dut:
+    - ce2o:
+      s2:
+    - ce2b:
+      s2:
+
+evpn.vrfs: [ tenant ]
+evpn.transport: mpls
+
+groups:
+  _auto_create: True
+  ce_o:
+    members: [ ce1o, ce2o ]
+    module: [ ospf ]
+  ce_b:
+    members: [ ce1b, ce2b ]
+    module: [ bgp ]
+  switches:
+    members: [ dut, s2 ]
+    module: [ mpls, ospf, bgp, evpn, vrf ]
+  core:
+    members: [ p ]
+    module: [ mpls, ospf ]
+  x_devices:
+    members: [ p, ce1o, ce2o, ce1b, ce2b ]
+    device: frr
+    provider: clab
+
+nodes:
+  ce1b.bgp.as: 65201
+  ce2b.bgp.as: 65202
+
+links:
+- interfaces: [ dut, p ]
+  mtu: 1600
+- interfaces: [ s2, p ]
+  mtu: 1600
+
+validate:
+  ospf_dut:
+    description: Check OSPF sessions with DUT
+    wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPF sessions to start
+    nodes: [ ce1o ]
+    plugin: ospf_neighbor(nodes.dut.vrfs.tenant.ospf.router_id)
+    stop_on_error: true
+  ospf_s2:
+    description: Check OSPF sessions with S2
+    wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPF sessions to start
+    nodes: [ ce2o ]
+    plugin: ospf_neighbor(nodes.s2.vrfs.tenant.ospf.router_id)
+    stop_on_error: true
+  bgp_dut:
+    description: Check BGP sessions with DUT
+    wait: ebgp_session
+    wait_msg: Waiting for BGP sessions to start
+    nodes: [ ce1b ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+    stop_on_error: true
+  bgp_s2:
+    description: Check BGP sessions with S2
+    wait: ebgp_session
+    wait_msg: Waiting for BGP sessions to start
+    nodes: [ ce2b ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'s2')
+    stop_on_error: true
+  ospf_p_dut:
+    description: Check core OSPF sessions with DUT
+    wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPF sessions to start
+    nodes: [ p ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+    stop_on_error: true
+  ospf_p_s2:
+    description: Check core OSPF sessions with S2
+    wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPF sessions to start
+    nodes: [ p ]
+    plugin: ospf_neighbor(nodes.s2.ospf.router_id)
+    stop_on_error: true
+  pfx_ce2_o:
+    description: Check CE2O loopback on CE1O
+    wait: ospfv2_spf_long
+    wait_msg: Waiting for BGP/OSPF convergence
+    nodes: [ ce1o ]
+    plugin: ospf_prefix(nodes.ce2o.loopback.ipv4)
+  pfx_ce2_b:
+    description: Check CE2O loopback on CE1B
+    wait: ospfv2_spf_long
+    wait_msg: Waiting for BGP/OSPF convergence
+    nodes: [ ce1b ]
+    plugin: bgp_prefix(nodes.ce2o.loopback.ipv4)
+  pfx_ce1_o:
+    description: Check CE1 loopback on CE2O
+    wait: ospfv2_spf_long
+    wait_msg: Waiting for BGP/OSPF convergence
+    nodes: [ ce2o ]
+    plugin: ospf_prefix(nodes.ce1o.loopback.ipv4)
+  pfx_ce1_b:
+    description: Check CE1 loopback on CE2B
+    wait: ospfv2_spf_long
+    wait_msg: Waiting for BGP/OSPF convergence
+    nodes: [ ce2b ]
+    plugin: bgp_prefix(nodes.ce2o.loopback.ipv4)
+  rp_check:
+    description: Check for correct BGP/OSPF behavior
+    wait: 0
+    stop_on_error: True
+  ping:
+    description: Ping-based CE-to-CE reachability test (CE2)
+    nodes: [ ce1o, ce1b, ce2b ]
+    plugin: ping('ce2o',src=node.loopback.ipv4)

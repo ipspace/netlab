@@ -1,13 +1,56 @@
 # SR-MPLS default settings and attributes
 #
-requires: [ isis ]
-transform_after: [ vlan ]
+transform_after: [ vlan, ospf, isis ]
+config_after: [ vlan, ospf, isis ]
+
+no_propagate:
+  node_sid_offset:
+
+node_sid_offset.ipv4: 0
+node_sid_offset.ipv6: 100
+protocol: [ isis ]
+
 attributes:
+  _proto_map:
+    isis:
+      module: isis
+      af: [ ipv4, ipv6 ]
+    ospfv2:
+      module: ospf
+      af: [ ipv4 ]
   global:
-    srgb_range_start: { type: int, min_value: 1 }
-    srgb_range_size: { type: int, min_value: 1 }
-    ipv6_sid_offset: { type: int, min_value: 1 }
+    af:
+      _list_to_dict: True
+      _alt_types: [ NoneType ]
+      ipv4: bool
+      ipv6: bool
+    node_sid_offset:
+      ipv4: { type: int, min_value: 0 }
+      ipv6: { type: int, min_value: 0 }
+    protocol:
+      type: list
+      _subtype: { type: str, valid_values: [ isis, ospfv2 ] }
+      empty: False
+      create_empty: True
+    _obsolete:
+      srgb_range_size: The SRGB range is device-specific and must be set on node or device
+      srgb_range_start: The SRGB range is device-specific and must be set on node or device
+    _migrate:
+      ipv6_sid_offset: node_sid_offset.ipv6
   node:
-    srgb_range_start:
-    srgb_range_size:
-    ipv6_sid_offset:
+    af:
+    srgb:
+      start: { type: int, min_value: 1 }
+      size: { type: int, min_value: 1 }
+    node_sid:
+      ipv4: { type: int, min_value: 1, _alt_types: [ NoneType ] }
+      ipv6: { type: int, min_value: 1, _alt_types: [ NoneType ] }
+    protocol: { copy: global }
+    _migrate:
+      srgb_range_start: srgb.start
+      srgb_range_size: srgb.size
+    _obsolete:
+      ipv6_sid_offset: The SR SID offset must be set globally to be consistent across nodes
+
+features:
+  af: Address family support

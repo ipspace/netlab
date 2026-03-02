@@ -1,0 +1,84 @@
+message:
+  The tested device (DUT) is a BGP route reflector for the VPNv4 addres family
+
+  It runs OSPF with the P-router and exchanges VPNv4 prefixes with PE-routers.
+
+  The validation tests check VRF IPv4 prefixes on the PE-routers and perform
+  end-to-end connectivity tests.
+
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
+bgp.as: 65001
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2 ]
+    device: linux
+    provider: clab
+  pe:
+    members: [ pe1, pe2 ]
+    module: [ ospf, bgp, mpls, vrf ]
+    mpls.ldp: True
+    mpls.vpn: True
+    device: eos
+    provider: clab
+  p:
+    members: [ core ]
+    module: [ ospf, mpls ]
+    mpls.ldp: True
+    device: frr
+    provider: clab
+  rr:
+    members: [ dut ]
+    module: [ ospf, bgp, mpls ]
+    mpls.ldp: True
+    mpls.vpn.ipv4: [ ibgp ]
+    bgp.rr: True
+
+vrfs:
+  tenant:
+    links:
+    - interfaces: [ h1, pe1 ]
+      prefix: 172.16.0.0/24
+    - interfaces: [ h2, pe2 ]
+      prefix: 172.16.1.0/24
+
+links: [ dut-core, pe1-core, pe2-core ]
+
+defaults.devices.vptx.netlab_validate.pe_ibgp.wait: 240
+
+validate:
+  pe_ospf:
+    description: Check OSPF sessions with DUT (wait up to 30 seconds)
+    wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPF adjacency
+    nodes: [ core ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+    stop_on_error: true
+  pe_ibgp:
+    description: Check IBGP session between PE-routers
+    wait: ibgp_session
+    wait_msg: Waiting for IBGP sessions to start
+    nodes: [ pe1, pe2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+    stop_on_error: true
+  pe_vpnv4:
+    description: Check VPNv4 AF on IBGP session between PE-routers
+    wait: bgp_scan_time
+    wait_msg: Waiting for VPNv4 AF negotiation
+    nodes: [ pe1, pe2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',activate='vpnv4')
+    stop_on_error: true
+  pfx_tenant:
+    description: Check for tenant PE1 prefix on PE2
+    wait: bgp_scan_long
+    wait_msg: Waiting for VPNv4 prefix propagation
+    nodes: [ pe2 ]
+    plugin: bgp_prefix('172.16.0.0/24',vrf='tenant')
+  vrf_ping:
+    description: Ping-based end-to-end reachability test in tenant VRF
+    wait_msg: We might have to wait a bit longer
+    wait: ping_long
+    nodes: [ h1 ]
+    plugin: ping('h2')

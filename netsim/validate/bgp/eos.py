@@ -237,9 +237,9 @@ BGP prefix validation function:
 * Use single-prefix show command
 * Use the run_prefix_checks framework for validation
 """
-def show_bgp_prefix(pfx: str, af: str = 'ipv4', **kwargs: typing.Any) -> str:
+def show_bgp_prefix(pfx: str, af: str = 'ipv4', vrf: str = 'default', **kwargs: typing.Any) -> str:
   pfx = _rp_utils.get_prefix(pfx)
-  return f"bgp {af} unicast {pfx} | json"
+  return f"bgp {af} unicast {pfx} vrf {vrf} | json"
 
 def valid_bgp_prefix(
       pfx: str,*,

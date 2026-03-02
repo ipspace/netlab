@@ -7,7 +7,7 @@ Most of the document assumes you already created an Ansible task list that is ab
 
 **Notes:**
 
-* The device configuration template (in Jinja2 format) should be stored in `netsim/templates/ospf/<nos>.j2` with **nos** being the value of **netlab_device_type** or **ansible_network_os** variable (see [Using Your Devices with Ansible Playbooks](../devices.md#using-your-device-with-ansible-playbooks) for more details.
+* The device configuration template (in Jinja2 format) should be stored in `netsim/ansible/templates/ospf/<nos>.j2` with **nos** being the value of **netlab_device_type** or **ansible_network_os** variable (see [Using Your Devices with Ansible Playbooks](../devices.md#using-your-device-with-ansible-playbooks) for more details.
 * Most of the data model attributes are optional. Use `if sth is defined`, `sth|default(value)` or `if 'sth' in ifdata` in your Jinja2 templates to check for presence of optional attributes. Try to be consistent ;)
 * If you want to support OSPFv2 and OSPFv3, start with the [](dev-ospf-af) section.
 
@@ -40,9 +40,9 @@ You can use the following device **features.ospf** [device features](dev-device-
 
 OSPFv2 and OSPFv3 are usually configured as separate routing protocols. If your device follows the same paradigm, and if you wish to implement OSPFv2 and OSPFv3:
 
-* Start with a stub template in `netsim/templates/ospf/<nos>.j2`
-* Configure OSPFv2 in `netsim/templates/ospf/<nos>.ospfv2.j2`
-* Configure OSPFv3 in `netsim/templates/ospf/<nos>.ospfv3.j2`
+* Start with a stub template in `netsim/ansible/templates/ospf/<nos>.j2`
+* Configure OSPFv2 in `netsim/ansible/templates/ospf/<nos>.ospfv2.j2`
+* Configure OSPFv3 in `netsim/ansible/templates/ospf/<nos>.ospfv3.j2`
 
 Use something similar to the following example as the stub template:
 

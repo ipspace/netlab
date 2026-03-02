@@ -105,7 +105,7 @@ def valid_bgp_neighbor_details(
 """
 BGP prefix checks, starting with 'get a BGP prefix from JSON results'
 """
-def get_bgp_prefix(pfx: str, data: Box) -> typing.Optional[typing.Union[Box,BoxList]]:
+def get_bgp_prefix(pfx: str, data: Box, **kwargs: typing.Any) -> typing.Optional[typing.Union[Box,BoxList]]:
   if 'prefix' not in data:
     return None
 

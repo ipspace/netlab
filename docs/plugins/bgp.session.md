@@ -67,6 +67,7 @@ The plugin implements generic BGP session features for the following platforms:
 | Mikrotik RouterOS 7 |  ✅  |   ❌  |   ❌  |   ❌  |
 | Nokia SR Linux      |  ✅  |  ✅  |  ✅  |  ✅  |
 | Nokia SR OS         |  ✅  |   ❌  |   ❌  |   ❌  |
+| OpenBSD             |  ✅  |  ✅  |   ❌  |  ✅  |
 | VyOS                |  ✅  |   ❌  |   ❌  |   ❌  |
 
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
@@ -100,6 +101,7 @@ BGP session security features are available on these platforms:
 | Mikrotik RouterOS 7 |    ✅    | ❌  |  ❌  |
 | Nokia SR Linux      |    ✅    | ❌  |  ❌  |
 | Nokia SR OS         |    ✅    | ❌  |  ✅  |
+| OpenBSD             |    ✅    | ✅  |  ❌  |
 
 BGP session security features are also available on these daemons:
 
@@ -126,6 +128,7 @@ The plugin implements AS-path-mangling nerd knobs for the following platforms:
 | Mikrotik RouterOS 7 |  ✅  |  ✅  |   ❌  |   ❌  |   ❌  |
 | Nokia SR Linux      |  ✅  |  ✅  |  ✅  |   ❌  |  ✅  |
 | Nokia SR OS         |  ✅  |  ✅  |   ❌  |   ❌  |   ❌  |
+| OpenBSD.            |  ✅  |  ✅  |   ❌  |  ✅  |  ✅  |
 | VyOS                |  ✅  |  ✅  |   ❌  |   ❌  |   ❌  |
 
 (bgp-session-apply)=

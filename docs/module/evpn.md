@@ -3,7 +3,7 @@
 This configuration module configures the BGP EVPN address family to implement L2VPN or L3VPN. It supports:
 
 * VXLAN-based transport over IPv4 and IPv6
-* MPLS-based transport
+* MPLS-based transport using LDP- or SR-MPLS-assigned labels
 * VLAN-Based Service (bridging of a single VLAN within an EVPN Instance)
 * VLAN-Aware Bundle Service (bridging of multiple related VLANs inside a single EVPN Instance)
 * Symmetric and asymmetric IRB
@@ -25,7 +25,7 @@ The following table describes the per-platform support of individual EVPN/VXLAN 
 | ------------------ | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  |  ✅  | ✅  | ✅  |
 | Aruba AOS-CX       | ✅  |  ✅  | ✅  | ✅[❗](caveats-aruba)  |
-| Cisco IOS/XE[^XE]  | ✅  |  ❌  | ✅  | ✅  |
+| Cisco IOS XE[^XEV] | ✅  |  ❌  | ✅  | ✅  |
 | Cisco Nexus OS     | ✅  |  ❌  | ✅  | ✅  |
 | Cumulus Linux 4.x  | ✅  |  ❌  | ✅  | ✅  |
 | Cumulus 5.x (NVUE) | ✅  |  ❌  | ✅  | ✅  |
@@ -39,17 +39,18 @@ The following table describes the per-platform support of individual EVPN/VXLAN 
 
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
-[^XE]: Includes Catalyst 8000v, Cisco IOL, Cisco IOLL2, but **not** CSR.
+[^XEV]: Includes Catalyst 8000v, Cisco IOL, Cisco IOLL2, but **not** CSR.
 
 The following table describes the per-platform support of individual EVPN/MPLS features:
 
 | Operating system   | VLAN-based<br>service | VLAN Bundle<br>service | Asymmetric<br>IRB | Symmetric<br>IRB |
 | ------------------ | :-: | :-: | :-: | :-: |
-| Arista EOS         | ✅  | ✅  |  ❌  |  ❌  |
+| Arista EOS         | ✅  | ✅  | ✅[❗](caveats-eos) | ✅  |
+| Cisco IOS XE[^XEM] | ✅  |  ❌  | ✅  | ✅  |
+| Cisco 8000v        | ✅  |  ❌  |  ❌  | ✅  |
+| Cisco IOS XR       |  ❌  |  ❌  |  ❌  | ✅  |
 
-```{note}
-* Arista EOS requires an anycast gateway for EVPN/MPLS symmetric IRB configuration.
-```
+[^XEM]: Includes CSR 1000v, Catalyst 8000v, Cisco IOL, and Cisco IOLL2
 
 Devices supporting [EVPN VLAN bundle services](evpn-bundle-service) implement the following bundle service types (see RFC 7432 section 6 for more details):
 
@@ -67,7 +68,8 @@ EVPN module supports IBGP- and EBGP-based EVPN:
 | ------------------ | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  | ✅  | ✅  | ✅  |
 | Aruba AOS-CX       | ✅  | ✅  | ❌   | ❌   |
-| Cisco IOS/XE[^XE]  | ✅  | ✅  | ✅  | ❌   |
+| Cisco IOS XE[^XEM] | ✅  | ✅  | ✅  | ❌   |
+| Cisco IOS XR[^XR]  | ✅  | ✅  | ❌   | ❌   |
 | Cisco Nexus OS     | ✅  | ✅  | ✅  | ❌   |
 | Cumulus Linux 4.x  | ✅  | ✅  | ✅  | ✅  |
 | Cumulus 5.x (NVUE) | ✅  | ✅  | ✅  | ✅  |
@@ -80,6 +82,8 @@ EVPN module supports IBGP- and EBGP-based EVPN:
 
 [^JN]: Includes vJunos-switch and vPTX (vJunos-Evo)
 
+[^XR]: Includes Cisco 8000v, Cisco IOS XRd and Cisco IOS XRv
+
 With additional nerd knobs ([more details](evpn-weird-designs)), it's possible to implement the more convoluted designs, including:
 
 * IBGP EVPN AF session established between loopback interfaces, advertised with underlay EBGP IPv4 AF
@@ -89,7 +93,7 @@ With additional nerd knobs ([more details](evpn-weird-designs)), it's possible t
 | ------------------ | :-: | :-: |
 | Arista EOS         | ✅  | ✅  |
 | Aruba AOS-CX       | ✅  | ✅  |
-| Cisco IOS/XE[^XE]  | ✅  | ✅  |
+| Cisco IOS/XE[^XEM] | ✅  | ✅  |
 | Cisco Nexus OS     | ❌   | ❌   |
 | Cumulus Linux 4.x  | ✅  | ✅  |
 | Cumulus 5.x (NVUE) | ✅  | ✅  |
@@ -121,7 +125,7 @@ Most EVPN/VXLAN implementations support only IPv4 VXLAN transport; some can run 
 
 EVPN module supports these default/global/node parameters:
 
-* **evpn.transport** (global): Transport to use, `vxlan` (default) or `mpls`
+* **evpn.transport** (global): Transport to use, `vxlan` (default), `mpls` (MPLS with LDP-assigned labels), or `sr` (MPLS with SR-MPLS-assigned labels)
 * **evpn.vrfs** (global or node parameter): A list of EVPN-enabled VRFs. The default value with VXLAN transport: all global VRFs with **evpn.transit_vni** parameter. There is no default value with MPLS transport.
 * **evpn.vlans** (global or node parameter): A list of EVPN-enabled VLANs. The default value with VXLAN transport: all global VLANs with the **vni** parameter. There is no default value with MPLS transport.
 * **evpn.session** (global or node parameter): A list of BGP session types on which the EVPN address family is enabled (default: `ibgp`)

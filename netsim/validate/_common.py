@@ -32,9 +32,10 @@ def check_for_prefix(
       lookup: typing.Callable,
       data: typing.Union[Box,list],
       table: str = 'routing table',
-      state: str = 'present') -> typing.Union[Box,BoxList]:
+      state: str = 'present',
+      **rest: typing.Any) -> typing.Union[Box,BoxList]:
 
-  result = lookup(pfx,data)
+  result = lookup(pfx,data,**rest)
   if result is None:
     report_state(
       exit_msg=f'The prefix {pfx} is not in the {table}',
@@ -57,7 +58,7 @@ def run_prefix_checks(
       **rest: typing.Any) -> str:
   
   pfx = _rp_utils.get_prefix(pfx)
-  data = check_for_prefix(pfx=pfx,lookup=lookup,data=data,table=table,state=state)
+  data = check_for_prefix(pfx=pfx,lookup=lookup,data=data,table=table,state=state,**rest)
 
   keys = list(checks.keys())
   for k in kwargs:

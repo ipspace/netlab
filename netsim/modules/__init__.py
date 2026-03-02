@@ -378,7 +378,7 @@ def check_module_dependencies(topology:  Box) -> None:
         features = fcache.get(n.name) or \
                      devices.get_device_features(n,topology.defaults)
         fcache[n.name] = features                         # Get device features and save them in per-node cache
-        if m in features:                                 # If the module has device feature flags, add device requirements to global ones
+        if m in features and isinstance(features[m],Box): # If the module has device feature flags, add device requirements to global ones
           node_requires = mod_requires + features[m].get('requires',[])
         else:
           node_requires = mod_requires                    # ... otherwise use global module requirements
@@ -477,7 +477,6 @@ def get_effective_module_attribute(
       composite_value = value
 
   return composite_value
-
 
 """
 Callback transformation routines

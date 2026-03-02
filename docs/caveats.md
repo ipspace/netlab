@@ -48,6 +48,7 @@ nodes:
 ### Other Arista EOS Caveats
 
 * Routed VLANs cannot be used in EVPN MPLS VLAN bundles
+* Inter-VLAN forwarding with EVPN MPLS-based MAC VRFs works only with anycast gateways
 * Arista EOS uses an [invalid value for the suboption 150 of the DHCP option 82](https://blog.ipspace.net/2023/03/netlab-vrf-dhcp-relay.html#vendor-interoperability-is-fun) when doing inter-VRF DHCPv4 relaying.
 * The DHCP client on Arista EOS is finicky. When the DHCP state changes on one of the data-plane Ethernet interfaces, the management interface might lose its IPv4 address.
 * Arista EOS cannot configure OSPF NSSA type-7 address ranges.
@@ -124,7 +125,6 @@ nodes:
 
 **EVPN/VXLAN caveats:**
 
-* The layer-3 EVPN functionality (transit VNI, type-5 routes) is not supported by _netlab_
 * Cisco IOS/XE does not accept VXLAN VNI values below 4096
 
 **Container caveats:**
@@ -140,6 +140,7 @@ See also [CSR 1000v](caveats-csr) and [Cisco IOSv](caveats-iosv) caveats.
 ## Cisco CSR 1000v
 
 * Cisco CSR 1000v does not support an interface MTU lower than 1500 bytes or an IP MTU higher than 1500 bytes.
+* Cisco CSR 1000v supports VXLAN with ingress replication and EVPN with MPLS encapsulation, but not EVPN with VXLAN encapsulation
 * Cisco IOS/XE does not accept VXLAN VNI values below 4096
 
 See also [Cisco IOSv](caveats-iosv) SSH, OSPF, RIPng, and BGP caveats.
@@ -160,7 +161,7 @@ These caveats apply only to Cisco IOSv and IOSvL2
 
 * Cisco IOS release 15.x does not support unnumbered interfaces. Use Cisco CSR 1000v.
 * Multiple OSPFv2 processes on Cisco IOS cannot have the same OSPF router ID. By default, _netlab_ generates the same router ID for global and VRF OSPF processes, resulting in non-fatal configuration errors that Ansible silently ignores.
-* You cannot use VLANs 1002 through 1005 with Cisco IOSvL2 image 
+* You cannot use VLANs 1002 through 1005 with Cisco IOSvL2 image
 * Cisco IOSv does not support VRRPv3 on BVI interfaces
 * Cisco IOSv cannot use tagged VLAN 1 in a trunk
 * Cisco IOSvL2 cannot configure tagged VLAN 1 in a trunk. Internal VLAN 1002 is used as a fake native VLAN on interfaces that have tagged VLAN 1 in a trunk.
@@ -196,7 +197,6 @@ Additionally, you might have to execute `sudo update-crypto-policies --set LEGAC
 * The Cisco IOL and IOL L2 images work only as containers created with Roman Dodin's fork of [vrnetlab](https://github.com/srl-labs/vrnetlab).
 * You need Containerlab 0.59.0 or greater to run these images.
 * You cannot use VLANs 1002 through 1005 with the Cisco IOL layer-2 image
-* The layer-3 EVPN functionality (transit VNI, type-5 routes) is not supported by _netlab_
 * Cisco IOS/XE does not accept VXLAN VNI values below 4096
 * Cisco IOL layer-2 image cannot configure tagged VLAN 1 in a trunk. Internal VLAN 1002 is used as a fake native VLAN on interfaces that have tagged VLAN 1 in a trunk.
 * Cisco IOL/IOLL2 cannot set the interface MTU (which is fixed at 1500 bytes). IOLL2 cannot set the IP MTU.
@@ -316,7 +316,7 @@ Netlab enables VRRPv3 by default on Dell OS10, overriding any platform defaults.
 * You have to build the *dnsmasq* container image with the **netlab clab build dnsmasq** command.
 
 (caveats-fortios)=
-## Fortinet FortiOS 
+## Fortinet FortiOS
 
 * Use a recent version of Ansible and **fortinet.fortios** Ansible Galaxy collection (version 2.3.6 or later)
 * _netlab_ tries to configure Fortinet devices with configuration scripts uploaded through the FortiOS Monitor API calls using username/password authentication.
@@ -393,6 +393,14 @@ Implementation limitations in import/export route filters (reported as errors th
 
 * When prepending an AS number different than the local one, JunOS puts the prepended AS at the beginning of the *AS_PATH* while other vendors perform the prepending and then add the device's own AS at the beginning. Most EBGP peers deny a BGP update that does not have the neighbor's AS number at the beginning of the *AS_PATH*. If needed, _netlab_ automatically adds the *local-as* to the prepend list to get it at the beginning of the *AS_PATH*.
 * *as-path* regex syntax for JunOS has different rules than other vendors. For example, a *null as-path* is represented as `()`. netlab tries some as-path conversion, but sometimes it could be wrong.
+
+(caveats-crpd)=
+## Juniper cRPD
+
+* cRPD might require a license file to unlock additional features. You can specify the location of the license file with the **clab.license** node parameter or **defaults.devices.crpd.clab.node.license** [device default](topo-defaults).
+* Inter-VRF route leaking does not work correctly
+* VRRPv3 for IPv4 implementation uses the [checksum calculation that is incompatible with most other VRRP implementations](https://blog.ipspace.net/2025/01/sturgeon-law-vrrp-edition/). The `checksum-without-pseudoheader` configuration command does not seem to be available.
+* Anycast gateway is unsupported
 
 (caveats-vmx)=
 ## Juniper vMX
