@@ -412,7 +412,7 @@ These devices support additional control-plane protocols or BGP address families
 | FRR                   | ✅  | ✅  | ✅  |  ❌  |
 | Juniper cRPD          | ✅  |  ❌  | ✅  |  ❌  |
 | Juniper vMX           | ✅  |  ❌  | ✅  | ✅  |
-| Juniper vPTX          | ✅  |  ❌  | ✅  | ✅  |
+| Juniper vPTX          | ✅  | ✅  | ✅  | ✅  |
 | Juniper vSRX 3.0      | ✅  |  ❌  | ✅  | ✅  |
 | vJunos-switch         | ✅  |  ✅ | ✅  | ✅  |
 | vJunos-router         | ✅  |  ❌  | ✅  | ✅  |
@@ -459,8 +459,8 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | Dell OS10             | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
 | FRR                   | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Juniper cRPD          |  ❌ |  ❌ |   ❌ | ✅ | ✅ |  ❌ |
-| Juniper vMX           | ✅ | ✅ |  ❌ | ✅ | ✅ |  ❌ |
-| Juniper vPTX          | ✅ | ✅ |  ❌ | ✅ | ✅ |  ❌ |
+| Juniper vMX           | ✅ | ✅ |  ❌ | ✅ | ✅ |  ❌ | 
+| Juniper vPTX          | ✅ | ✅ | ✅ [❗](caveats-vptx) | ✅ | ✅ |  ❌ | 
 | Juniper vSRX 3.0      | ❌  | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
 | vJunos-switch         | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
 | vJunos-router         | ❌  | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |

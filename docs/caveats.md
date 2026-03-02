@@ -423,7 +423,9 @@ You can change the license file parameters within a node definition or with **de
 * _netlab_ can start virtual machines running vJunosEvolved release 24.1+ (which requires UEFI BIOS - previous releases do not work with UEFI BIOS). Use the vrnetlab-generated container as a workaround if you want to run older vJunosEvolved releases.
 * _netlab_ supports the [vrnetlab-generated](https://containerlab.dev/manual/kinds/vr-vjunosevolved/) vJunosEvolved container, not the cJunosEvolved container. The differences between the two make it impossible to run both container versions as the same virtual device, and cJunosEvolved offers no significant advantages at the moment.
 * The vJunosEvolved container runs on Intel and AMD CPU.
-* The virtual MAC address of the anycast gateway is ignored. _netlab_, therefore, does not support the anycast gateway on vPTX.
+* The virtual MAC address of the anycast gateway is ignored. _netlab_, therefore, cannot implement the usually expected functionality of an anycast gateway on vPTX.
+* VXLAN encapsulation works only with the EVPN control plane
+* _netlab_ does not configure all the necessary nerd knobs to make centralized EVPN/VXLAN routing work with vPTX
 
 The rest of this section lists information you might find helpful if you're a long-time Junos user:
 

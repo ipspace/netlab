@@ -33,7 +33,8 @@ The following table describes the per-platform support of individual EVPN/VXLAN 
 | FRR                | ✅  |  ❌  | ✅  | ✅  |
 | Nokia SR Linux     | ✅  |  ✅  | ✅  | ✅  |
 | Nokia SR OS[^SROS] | ✅  |  ❌  | ✅  | ✅  |
-| vJunos-switch [❗](caveats-vjunos-switch) | ✅  |  ❌  | ✅  | ✅  |
+| vJunos-switch [❗](caveats-vjunos-switch) | ✅  | ✅  | ✅  | ✅  |
+| Juniper vPTX [❗](caveats-vptx) | ✅  | ✅  | ✅  | ✅  |
 | VyOS               | ✅  |  ❌  | ✅  | ✅  |
 
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
@@ -57,6 +58,8 @@ Devices supporting [EVPN VLAN bundle services](evpn-bundle-service) implement th
 | ------------------ | :-: | :-: | :-: | :-: |
 | Arista EOS         |  ❌  |  ❌  | ✅  |  ❌  |
 | Aruba AOS-CX       |  ❌  |  ❌  | ✅  |  ❌  |
+| vJunos-switch      |  ❌  |  ❌  | ✅  |  ❌  |
+| Juniper vPTX       |  ❌  |  ❌  | ✅  |  ❌  |
 | Nokia SR Linux     |  ❌  |  ❌  | ✅  |  ❌  |
 
 EVPN module supports IBGP- and EBGP-based EVPN:
@@ -72,10 +75,12 @@ EVPN module supports IBGP- and EBGP-based EVPN:
 | Cumulus 5.x (NVUE) | ✅  | ✅  | ✅  | ✅  |
 | Dell OS 10 [❗](caveats-os10) | ✅  | ✅  | ✅  | ✅  |
 | FRR                | ✅  | ✅  | ✅  | ✅  |
+| Junos[^JN]         | ✅  | ✅  |  ❌  |  ❌  |
 | Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  |
 | Nokia SR OS[^SROS] | ✅  | ✅  | ✅  |  ❌  |
-| vJunos-switch      | ✅  | ✅  |  ❌  |  ❌  |
 | VyOS               | ✅  | ✅  |  ❌  | ✅  |
+
+[^JN]: Includes vJunos-switch and vPTX (vJunos-Evo)
 
 [^XR]: Includes Cisco 8000v, Cisco IOS XRd and Cisco IOS XRv
 
@@ -94,9 +99,9 @@ With additional nerd knobs ([more details](evpn-weird-designs)), it's possible t
 | Cumulus 5.x (NVUE) | ✅  | ✅  |
 | Dell OS 10         | ✅  | ❌   |
 | FRR                | ✅  | ✅  |
+| Junos[^JN]         | ✅  | ✅   |
 | Nokia SR Linux     | ✅  | ✅  |
 | Nokia SR OS[^SROS] | ✅  | ✅  |
-| vJunos-switch      | ✅  | ✅   |
 | VyOS               | ✅  | ❌   |
 
 Most EVPN/VXLAN implementations support only IPv4 VXLAN transport; some can run VXLAN-over-IPv6:
@@ -110,9 +115,9 @@ Most EVPN/VXLAN implementations support only IPv4 VXLAN transport; some can run 
 | Cumulus 5.x (NVUE) | ✅  | ❌   |
 | Dell OS 10         | ✅  | ❌   |
 | FRR                | ✅  | ❌ [❗](caveats-frr)  |
+| Junos[^JN]         | ✅  | ❌   |
 | Nokia SR Linux     | ✅  | ❌   |
 | Nokia SR OS[^SROS] | ✅  | ❌   |
-| vJunos-switch      | ✅  | ❌   |
 | VyOS               | ✅  | ❌ [❗](caveats-vyos) |
 
 (evpn-global-parameters)=
