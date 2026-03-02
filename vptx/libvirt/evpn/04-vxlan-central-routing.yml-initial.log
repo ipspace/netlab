@@ -1,0 +1,387 @@
+Creating Device configuration snippets
+[CREATED] h1: initial,routing
+[CREATED] h2: initial,routing
+[CREATED] h3: initial,routing
+[CREATED] h4: initial,routing
+[CREATED] l1: initial,vlan,ospf,bgp,vrf,vxlan,evpn
+[CREATED] l2: initial,vlan,ospf,bgp,vrf,vxlan,evpn
+[CREATED] spine: initial,vlan,ospf,bgp,vrf,vxlan,evpn
+Checking Are lab devices ready to be configured?
+ [INFO] Checking lab devices with an Ansible playbook
+[WARNING]: Could not match supplied host pattern, ignoring: netlab_ready_ssh
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Wait for SSH servers] ****************************************************
+skipping: no hosts matched
+
+PLAY [Wait for device-specific conditions] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [l1]
+ok: [spine]
+
+TASK [Find device readiness script] ********************************************
+ok: [l1]
+ok: [spine]
+
+TASK [Wait for device to become ready] *****************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/junos.yml for l1, spine
+
+TASK [set_fact] ****************************************************************
+ok: [l1]
+ok: [spine]
+
+TASK [Wait for first interface (et-0/0/0)] *************************************
+ok: [spine]
+ok: [l1]
+
+PLAY RECAP *********************************************************************
+l1                         : ok=5    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+spine                      : ok=5    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+Config Deploying device configurations
+ [INFO] Executing initial configuration for node h1 (namespace clab-
+          ml-17-h1)
+ [INFO] Executing initial configuration for node h2 (namespace clab-
+          ml-17-h2)
+ [INFO] Executing initial configuration for node h3 (namespace clab-
+          ml-17-h3)
+ [INFO] Executing initial configuration for node h4 (namespace clab-
+          ml-17-h4)
+ [INFO] Executing initial configuration for node l2
+ [INFO] Executing routing configuration for node h4 (namespace clab-
+          ml-17-h4)
+ [INFO] Executing routing configuration for node h2 (namespace clab-
+          ml-17-h2)
+ [INFO] Executing routing configuration for node h1 (namespace clab-
+          ml-17-h1)
+ [INFO] Executing routing configuration for node h3 (namespace clab-
+          ml-17-h3)
+ [INFO] Executing vlan configuration for node l2
+ [INFO] Executing ospf configuration for node l2
+ [INFO] Executing bgp configuration for node l2
+ [INFO] Executing vrf configuration for node l2
+ [INFO] Executing vxlan configuration for node l2
+ [INFO] Executing evpn configuration for node l2
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [l1]
+ok: [spine]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [l1]
+ok: [spine]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [l1]
+ok: [spine]
+
+TASK [fail] ********************************************************************
+skipping: [l1]
+skipping: [spine]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [l1]
+ok: [spine]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [l1]
+skipping: [spine]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [l1]
+skipping: [spine]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [l1]
+ok: [spine]
+
+TASK [Find configuration template for initial] *********************************
+ok: [l1]
+ok: [spine]
+
+TASK [fail] ********************************************************************
+skipping: [l1]
+skipping: [spine]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [l1]
+ok: [spine]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [l1] => {
+    "msg": "initial configuration for l1\n=========================================\nsystem {\n  host-name l1;\n  static-host-mapping {\n    h1 inet 172.16.0.1;\n    h2 inet 172.16.0.2;\n    h3 inet 172.16.1.3;\n    h4 inet 172.16.1.4;\n    l2 inet 10.0.0.6;\n    spine inet 10.0.0.7;\n  }\n}\n\n\n\n\npolicy-options {\n  community tg_65000_1 members target:65000:1;\n}\n\n\n\npolicy-options {\n  policy-statement vrf-customer-rt-export {\n    term 1 {\n      then {\n        community add tg_65000_1;\n        accept;\n      }\n    }\n  }\n\n\n  policy-statement vrf-customer-rt-import {\n    term 1 {\n      from community [ tg_65000_1 ];\n      then accept;\n    }\n    term default {\n      then reject;\n    }\n  }\n}\n\nrouting-instances {\n\n  customer {\n    instance-type vrf;\n    route-distinguisher 65000:1;\n\n    vrf-import vrf-customer-rt-import;\n    vrf-export vrf-customer-rt-export;\n\n    routing-options {\n      auto-export;\n    }\n\n    interface irb.1000;\n    interface irb.1001;\n\n  }\n\n}\ninterfaces {\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n}\ninterfaces {\n  et-0/0/0 {\n    mtu 1614;\n  }\n\n  lo0.0 {\n    \n      family inet {\n        address 10.0.0.5/32;\n      }\n    \n  }\n  et-0/0/0.0 {\n    description \"l1 -> spine\";\n    \n      family inet {\n        address 10.1.0.1/30;\n      }\n    \n  }\n  et-0/0/1.0 {\n    description \"[Access VLAN red] l1 -> h1\";\n    \n    \n  }\n  et-0/0/2.0 {\n    description \"[Access VLAN blue] l1 -> h3\";\n    \n    \n  }\n  irb.1000 {\n    description \"VLAN red (1000) -> [h1,h2,l2,spine] [external]\";\n    \n    \n  }\n  irb.1001 {\n    description \"VLAN blue (1001) -> [h3,h4,l2,spine] [external]\";\n    \n    \n  }\n}\nprotocols {\n  lldp {\n    interface re0:mgmt-0 {\n      disable;\n    }\n    interface all;\n  }\n}\n"
+}
+ok: [spine] => {
+    "msg": "initial configuration for spine\n=========================================\nsystem {\n  host-name spine;\n  static-host-mapping {\n    h1 inet 172.16.0.1;\n    h2 inet 172.16.0.2;\n    h3 inet 172.16.1.3;\n    h4 inet 172.16.1.4;\n    l1 inet 10.0.0.5;\n    l2 inet 10.0.0.6;\n  }\n}\n\n\n\n\npolicy-options {\n  community tg_65000_1 members target:65000:1;\n}\n\n\n\npolicy-options {\n  policy-statement vrf-customer-rt-export {\n    term 1 {\n      then {\n        community add tg_65000_1;\n        accept;\n      }\n    }\n  }\n\n\n  policy-statement vrf-customer-rt-import {\n    term 1 {\n      from community [ tg_65000_1 ];\n      then accept;\n    }\n    term default {\n      then reject;\n    }\n  }\n}\n\nrouting-instances {\n\n  customer {\n    instance-type vrf;\n    route-distinguisher 65000:1;\n\n    vrf-import vrf-customer-rt-import;\n    vrf-export vrf-customer-rt-export;\n\n    routing-options {\n      auto-export;\n    }\n\n    interface irb.1000;\n    interface irb.1001;\n\n  }\n\n}\ninterfaces {\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n}\ninterfaces {\n  et-0/0/0 {\n    mtu 1614;\n  }\n  et-0/0/1 {\n    mtu 1614;\n  }\n\n  lo0.0 {\n    \n      family inet {\n        address 10.0.0.7/32;\n      }\n    \n  }\n  et-0/0/0.0 {\n    description \"spine -> l1\";\n    \n      family inet {\n        address 10.1.0.2/30;\n      }\n    \n  }\n  et-0/0/1.0 {\n    description \"spine -> l2\";\n    \n      family inet {\n        address 10.1.0.6/30;\n      }\n    \n  }\n  irb.1000 {\n    description \"VLAN red (1000) -> [h1,l1,h2,l2] [external]\";\n    \n      family inet {\n        address 172.16.0.7/24;\n      }\n    \n  }\n  irb.1001 {\n    description \"VLAN blue (1001) -> [h3,l1,h4,l2] [external]\";\n    \n      family inet {\n        address 172.16.1.7/24;\n      }\n    \n  }\n}\nprotocols {\n  lldp {\n    interface re0:mgmt-0 {\n      disable;\n    }\n    interface all;\n  }\n}\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for l1, spine
+
+TASK [junos_config: deploying initial from /work/netlab_cicd/node_files/l1/initial] ***
+[WARNING]: mgd: statement has no contents; ignored
+changed: [l1]
+changed: [spine]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [spine]
+ok: [l1]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine => (item=vrf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine => (item=vxlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine => (item=evpn)
+
+TASK [Figure out whether to deploy the module vlan on current device] **********
+ok: [l1]
+ok: [spine]
+
+TASK [Find configuration template for vlan] ************************************
+ok: [l1]
+ok: [spine]
+
+TASK [fail] ********************************************************************
+skipping: [l1]
+skipping: [spine]
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
+ok: [l1]
+ok: [spine]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [l1] => {
+    "msg": "vlan configuration for l1\n=========================================\nvlans {\n  red {\n    vlan-id 1000;\n\n\n  }\n  blue {\n    vlan-id 1001;\n\n\n  }\n}\n\ninterfaces {\n\n\n  et-0/0/1.0 {\n    family ethernet-switching {\n\n      vlan {\n        members red;\n      }\n\n    }\n  }\n\n\n\n  et-0/0/2.0 {\n    family ethernet-switching {\n\n      vlan {\n        members blue;\n      }\n\n    }\n  }\n\n\n}\n"
+}
+ok: [spine] => {
+    "msg": "vlan configuration for spine\n=========================================\nvlans {\n  red {\n    vlan-id 1000;\n\n    l3-interface irb.1000;\n\n  }\n  blue {\n    vlan-id 1001;\n\n    l3-interface irb.1001;\n\n  }\n}\n\ninterfaces {\n\n}\n"
+}
+
+TASK [Deploy vlan configuration] ***********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for l1, spine
+
+TASK [junos_config: deploying vlan from /work/netlab_cicd/node_files/l1/vlan] ***
+changed: [spine]
+changed: [l1]
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [l1]
+ok: [spine]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [l1]
+skipping: [spine]
+
+TASK [fail] ********************************************************************
+skipping: [l1]
+skipping: [spine]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [l1]
+skipping: [spine]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [l1]
+skipping: [spine]
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [l1]
+skipping: [spine]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [l1]
+ok: [spine]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [l1]
+ok: [spine]
+
+TASK [fail] ********************************************************************
+skipping: [l1]
+skipping: [spine]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [l1]
+ok: [spine]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [l1] => {
+    "msg": "ospf configuration for l1\n=========================================\nrouting-options {\n  router-id 10.0.0.5\n}\nprotocols {\n  delete: ospf;\n}\n\nprotocols {\n  ospf {\n    area 0.0.0.0 {\n      interface lo0.0 {\n      }\n    }\n    area 0.0.0.0 {\n      interface et-0/0/0.0 {\n        interface-type p2p;\n      }\n    }\n  }\n}\n\n"
+}
+ok: [spine] => {
+    "msg": "ospf configuration for spine\n=========================================\nrouting-options {\n  router-id 10.0.0.7\n}\nprotocols {\n  delete: ospf;\n}\n\nprotocols {\n  ospf {\n    area 0.0.0.0 {\n      interface lo0.0 {\n      }\n    }\n    area 0.0.0.0 {\n      interface et-0/0/0.0 {\n        interface-type p2p;\n      }\n    }\n    area 0.0.0.0 {\n      interface et-0/0/1.0 {\n        interface-type p2p;\n      }\n    }\n  }\n}\n\n"
+}
+
+TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for l1, spine
+
+TASK [junos_config: deploying ospf from /work/netlab_cicd/node_files/l1/ospf] ***
+[WARNING]:  statement not found
+changed: [l1]
+changed: [spine]
+
+TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [l1]
+ok: [spine]
+
+TASK [Find configuration template for bgp] *************************************
+ok: [l1]
+ok: [spine]
+
+TASK [fail] ********************************************************************
+skipping: [l1]
+skipping: [spine]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [l1]
+ok: [spine]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [l1] => {
+    "msg": "bgp configuration for l1\n=========================================\n\nrouting-options {\n  autonomous-system 65000;\n  router-id 10.0.0.5\n}\n\n\npolicy-options community x-route-permit-mark members large:65535:0:65536;\n\npolicy-options {\n  delete: policy-statement bgp-advertise;\n  delete: policy-statement bgp-redistribute;\n  delete: policy-statement next-hop-ebgp-ipv4;\n  delete: policy-statement next-hop-all-ipv4;\n  delete: policy-statement next-hop-ebgp-ipv6;\n  delete: policy-statement next-hop-all-ipv6;\n  delete: route-filter-list bgp-announce;\n}\n\npolicy-options {\n\n  route-filter-list bgp-announce {\n  }\n\n  policy-statement next-hop-ebgp-ipv4 {\n    term next-hop-self-ipv4 {\n      from {\n        family inet;\n        route-type external;\n      }\n      then {\n        next-hop self;\n      }\n    }\n  }\n\n  policy-statement next-hop-all-ipv4 {\n    term next-hop-self-ipv4 {\n      from {\n        family inet;\n      }\n      then {\n        next-hop self;\n      }\n    }\n  }\n\n  policy-statement next-hop-ebgp-ipv6 {\n    term next-hop-self-ipv6 {\n      from {\n        family inet6;\n        route-type external;\n      }\n      then {\n        next-hop self;\n      }\n    }\n  }\n\n  policy-statement next-hop-all-ipv6 {\n    term next-hop-self-ipv6 {\n      from {\n        family inet6;\n      }\n      then {\n        next-hop self;\n      }\n    }\n  }\n\n\n  policy-statement bgp-advertise {\n    term advertise {\n      from {\n        protocol direct;\n        interface [ \n lo0.0  ];\n      }\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n\n    term originate {\n      from {\n        protocol static;\n        route-filter-list bgp-announce;\n      }\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n\n  }\n\n  policy-statement bgp-redistribute {\n    term redis_bgp {\n      from protocol bgp;\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n  }\n\n  policy-statement bgp-final {\n    term final-option {\n      from community x-route-permit-mark;\n      then {\n        community delete x-route-permit-mark;\n        accept;\n      }\n    }\n    term default-reject {\n      then reject;\n    }\n  }\n\n  policy-statement bgp-initial {\n    term initial-cleanup {\n      from community x-route-permit-mark;\n      then {\n        community delete x-route-permit-mark;\n        next policy;\n      }\n    }\n  }\n\n}\nprotocols {\n  delete: bgp;\n}\nprotocols {\n  bgp {\n    group ibgp-peers-ipv4 {\n      type internal;\n      export [ \n          next-hop-ebgp-ipv4 bgp-advertise bgp-redistribute bgp-final\n        ];\n      advertise-inactive;\n      neighbor 10.0.0.7 {\n\n        local-address 10.0.0.5;\n        description spine;\n        family inet {\n          unicast;\n        }\n      }\n    }\n    group ebgp-peers {\n      export [ \n          bgp-advertise bgp-redistribute bgp-final\n        ];\n      advertise-inactive;\n    }\n  }\n}\n"
+}
+ok: [spine] => {
+    "msg": "bgp configuration for spine\n=========================================\n\nrouting-options {\n  autonomous-system 65000;\n  router-id 10.0.0.7\n}\n\n\npolicy-options community x-route-permit-mark members large:65535:0:65536;\n\npolicy-options {\n  delete: policy-statement bgp-advertise;\n  delete: policy-statement bgp-redistribute;\n  delete: policy-statement next-hop-ebgp-ipv4;\n  delete: policy-statement next-hop-all-ipv4;\n  delete: policy-statement next-hop-ebgp-ipv6;\n  delete: policy-statement next-hop-all-ipv6;\n  delete: route-filter-list bgp-announce;\n}\n\npolicy-options {\n\n  route-filter-list bgp-announce {\n  }\n\n  policy-statement next-hop-ebgp-ipv4 {\n    term next-hop-self-ipv4 {\n      from {\n        family inet;\n        route-type external;\n      }\n      then {\n        next-hop self;\n      }\n    }\n  }\n\n  policy-statement next-hop-all-ipv4 {\n    term next-hop-self-ipv4 {\n      from {\n        family inet;\n      }\n      then {\n        next-hop self;\n      }\n    }\n  }\n\n  policy-statement next-hop-ebgp-ipv6 {\n    term next-hop-self-ipv6 {\n      from {\n        family inet6;\n        route-type external;\n      }\n      then {\n        next-hop self;\n      }\n    }\n  }\n\n  policy-statement next-hop-all-ipv6 {\n    term next-hop-self-ipv6 {\n      from {\n        family inet6;\n      }\n      then {\n        next-hop self;\n      }\n    }\n  }\n\n\n  policy-statement bgp-advertise {\n    term advertise {\n      from {\n        protocol direct;\n        interface [ \n lo0.0  ];\n      }\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n\n    term originate {\n      from {\n        protocol static;\n        route-filter-list bgp-announce;\n      }\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n\n  }\n\n  policy-statement bgp-redistribute {\n    term redis_bgp {\n      from protocol bgp;\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n  }\n\n  policy-statement bgp-final {\n    term final-option {\n      from community x-route-permit-mark;\n      then {\n        community delete x-route-permit-mark;\n        accept;\n      }\n    }\n    term default-reject {\n      then reject;\n    }\n  }\n\n  policy-statement bgp-initial {\n    term initial-cleanup {\n      from community x-route-permit-mark;\n      then {\n        community delete x-route-permit-mark;\n        next policy;\n      }\n    }\n  }\n\n}\nprotocols {\n  delete: bgp;\n}\nprotocols {\n  bgp {\n    group ibgp-peers-ipv4 {\n      type internal;\n      export [ \n          next-hop-ebgp-ipv4 bgp-advertise bgp-redistribute bgp-final\n        ];\n      advertise-inactive;\n      cluster 10.0.0.7;\n      neighbor 10.0.0.5 {\n\n        local-address 10.0.0.7;\n        description l1;\n        family inet {\n          unicast;\n        }\n      }\n      neighbor 10.0.0.6 {\n\n        local-address 10.0.0.7;\n        description l2;\n        family inet {\n          unicast;\n        }\n      }\n    }\n    group ebgp-peers {\n      export [ \n          bgp-advertise bgp-redistribute bgp-final\n        ];\n      advertise-inactive;\n    }\n  }\n}\n"
+}
+
+TASK [Deploy bgp configuration] ************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for l1, spine
+
+TASK [junos_config: deploying bgp from /work/netlab_cicd/node_files/l1/bgp] ****
+changed: [l1]
+changed: [spine]
+
+TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [l1]
+ok: [spine]
+
+TASK [Find configuration template for vrf] *************************************
+ok: [l1]
+ok: [spine]
+
+TASK [fail] ********************************************************************
+skipping: [l1]
+skipping: [spine]
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+ok: [l1]
+ok: [spine]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [l1] => {
+    "msg": "vrf configuration for l1\n=========================================\n\n\npolicy-options {\n  community x-route-permit-mark members large:65535:0:65536;\n\n  policy-statement vrf-customer-bgp-export {\n    term redis_bgp {\n      from {\n        protocol bgp;\n      }\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n    term redis_direct {\n      from {\n        protocol direct;\n      }\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n    term redis_ospf {\n      from {\n        protocol ospf;\n      }\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n    term redis_ospf3 {\n      from {\n        protocol ospf3;\n      }\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n  }\n\n}\n\n\nrouting-instances {\n\n  customer {\n    routing-options {\n      autonomous-system 65000;\n      router-id 10.0.0.5\n    }\n\n    protocols {\n      bgp {\n\n        group ebgp-peers {\n          export [ vrf-customer-bgp-export bgp-final ];\n          advertise-inactive;\n        }\n      }\n    }\n  }\n\n}\n"
+}
+ok: [spine] => {
+    "msg": "vrf configuration for spine\n=========================================\n\n\npolicy-options {\n  community x-route-permit-mark members large:65535:0:65536;\n\n  policy-statement vrf-customer-bgp-export {\n    term redis_bgp {\n      from {\n        protocol bgp;\n      }\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n    term redis_direct {\n      from {\n        protocol direct;\n      }\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n    term redis_ospf {\n      from {\n        protocol ospf;\n      }\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n    term redis_ospf3 {\n      from {\n        protocol ospf3;\n      }\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n  }\n\n}\n\n\nrouting-instances {\n\n  customer {\n    routing-options {\n      autonomous-system 65000;\n      router-id 10.0.0.7\n    }\n\n    protocols {\n      bgp {\n\n        group ebgp-peers {\n          export [ vrf-customer-bgp-export bgp-final ];\n          advertise-inactive;\n        }\n      }\n    }\n  }\n\n}\n"
+}
+
+TASK [Deploy vrf configuration] ************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for l1, spine
+
+TASK [junos_config: deploying vrf from /work/netlab_cicd/node_files/l1/vrf] ****
+changed: [l1]
+changed: [spine]
+
+TASK [Figure out whether to deploy the module vxlan on current device] *********
+ok: [l1]
+ok: [spine]
+
+TASK [Find configuration template for vxlan] ***********************************
+ok: [l1]
+ok: [spine]
+
+TASK [fail] ********************************************************************
+skipping: [l1]
+skipping: [spine]
+
+TASK [Find configuration deployment deploy_script for vxlan] *******************
+ok: [l1]
+ok: [spine]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [l1] => {
+    "msg": "vxlan configuration for l1\n=========================================\nforwarding-options {\n    tunnel-termination;\n}\npolicy-options {\n    policy-statement ecmp {\n        then {\n            load-balance per-flow;\n        }\n    }\n}\nrouting-options {\n    forwarding-table {\n        export ecmp;\n    }\n}\n\n"
+}
+ok: [spine] => {
+    "msg": "vxlan configuration for spine\n=========================================\nforwarding-options {\n    tunnel-termination;\n}\npolicy-options {\n    policy-statement ecmp {\n        then {\n            load-balance per-flow;\n        }\n    }\n}\nrouting-options {\n    forwarding-table {\n        export ecmp;\n    }\n}\n\n"
+}
+
+TASK [Deploy vxlan configuration] **********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for l1, spine
+
+TASK [junos_config: deploying vxlan from /work/netlab_cicd/node_files/l1/vxlan] ***
+changed: [l1]
+changed: [spine]
+
+TASK [Figure out whether to deploy the module evpn on current device] **********
+ok: [l1]
+ok: [spine]
+
+TASK [Find configuration template for evpn] ************************************
+ok: [l1]
+ok: [spine]
+
+TASK [fail] ********************************************************************
+skipping: [l1]
+skipping: [spine]
+
+TASK [Find configuration deployment deploy_script for evpn] ********************
+ok: [l1]
+ok: [spine]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [l1] => {
+    "msg": "evpn configuration for l1\n=========================================\n\nprotocols {\n  bgp {\n    group ibgp-peers-ipv4 {\n      neighbor 10.0.0.7 {\n        delete: shutdown;\n        family evpn {\n          signaling;\n        }\n      }\n    }\n    group ebgp-peers {\n    }\n  }\n}\n\npolicy-options {\n}\n\nvlans {\n  delete: red;\n  delete: blue;\n}\n\nrouting-instances {\n  vlan_red {\n    instance-type mac-vrf;\n    service-type vlan-based;\n    vtep-source-interface lo0.0;\n    route-distinguisher 10.0.0.5:1000;\n    vrf-target import target:65000:1000;\n    vrf-target export target:65000:1000;\n    interface et-0/0/1.0;\n    vlans {\n      red {\n        vlan-id 1000;\n        vxlan {\n          vni 6000;\n        }\n      }\n    }\n    protocols {\n      evpn {\n        encapsulation vxlan;\n        default-gateway no-gateway-community;\n        extended-vni-list all;\n      }\n    }\n  }\n  vlan_blue {\n    instance-type mac-vrf;\n    service-type vlan-based;\n    vtep-source-interface lo0.0;\n    route-distinguisher 10.0.0.5:1001;\n    vrf-target import target:65000:1001;\n    vrf-target export target:65000:1001;\n    interface et-0/0/2.0;\n    vlans {\n      blue {\n        vlan-id 1001;\n        vxlan {\n          vni 6001;\n        }\n      }\n    }\n    protocols {\n      evpn {\n        encapsulation vxlan;\n        default-gateway no-gateway-community;\n        extended-vni-list all;\n      }\n    }\n  }\n}\n\nrouting-instances {\n}\n\nrouting-instances {\n\n\n}\n\npolicy-options {\n}\n\ninterfaces {\n}\n\n"
+}
+ok: [spine] => {
+    "msg": "evpn configuration for spine\n=========================================\n\nprotocols {\n  bgp {\n    group ibgp-peers-ipv4 {\n      neighbor 10.0.0.5 {\n        delete: shutdown;\n        family evpn {\n          signaling;\n        }\n      }\n      neighbor 10.0.0.6 {\n        delete: shutdown;\n        family evpn {\n          signaling;\n        }\n      }\n    }\n    group ebgp-peers {\n    }\n  }\n}\n\npolicy-options {\n}\n\nvlans {\n  delete: red;\n  delete: blue;\n}\n\nrouting-instances {\n  vlan_red {\n    instance-type mac-vrf;\n    service-type vlan-based;\n    vtep-source-interface lo0.0;\n    route-distinguisher 10.0.0.7:1000;\n    vrf-target import target:65000:1000;\n    vrf-target export target:65000:1000;\n    vlans {\n      red {\n        vlan-id 1000;\n        l3-interface irb.1000;\n        vxlan {\n          vni 6000;\n        }\n      }\n    }\n    protocols {\n      evpn {\n        encapsulation vxlan;\n        default-gateway no-gateway-community;\n        extended-vni-list all;\n      }\n    }\n  }\n  vlan_blue {\n    instance-type mac-vrf;\n    service-type vlan-based;\n    vtep-source-interface lo0.0;\n    route-distinguisher 10.0.0.7:1001;\n    vrf-target import target:65000:1001;\n    vrf-target export target:65000:1001;\n    vlans {\n      blue {\n        vlan-id 1001;\n        l3-interface irb.1001;\n        vxlan {\n          vni 6001;\n        }\n      }\n    }\n    protocols {\n      evpn {\n        encapsulation vxlan;\n        default-gateway no-gateway-community;\n        extended-vni-list all;\n      }\n    }\n  }\n}\n\nrouting-instances {\n}\n\nrouting-instances {\n\n\n}\n\npolicy-options {\n}\n\ninterfaces {\n    irb.1000 {\n        proxy-macip-advertisement;\n    }\n    irb.1001 {\n        proxy-macip-advertisement;\n    }\n}\n\n"
+}
+
+TASK [Deploy evpn configuration] ***********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for l1, spine
+
+TASK [junos_config: deploying evpn from /work/netlab_cicd/node_files/l1/evpn] ***
+changed: [spine]
+changed: [l1]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+l1                         : ok=57   changed=7    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+spine                      : ok=57   changed=7    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+
+Results of configuration script deployments
+================================================================================
+h1               Script:  initial,routing
+h2               Script:  initial,routing
+h3               Script:  initial,routing
+h4               Script:  initial,routing
+l2               Script:  initial,vlan,ospf,bgp,vrf,vxlan,evpn
+
+
+The devices under test are a layer-2 leaf and a spine performing centralized
+routing.
+
+All hosts should be able to ping each other and all switch loopback IPs
+
+Please note it might take a while for the lab to work due to STP learning
+phase.
+
