@@ -7,10 +7,11 @@ message: |
   * The attributes applied to the aggregate with a routing policy
   * The use of routing policy as a suppress map
 
-plugin: [ bgp.policy, test.vrf_check ]
+plugin: [ bgp.policy, test.vrf_check, adjust_test ]
 module: [ bgp ]
 
 defaults.sources.extra: [ defaults-ds.yml, ../wait_times.yml, ../warnings.yml ]
+defaults.paths.prepend.plugin: [ "topology:../plugin" ]
 
 groups:
   probes:
@@ -22,11 +23,33 @@ vrfs:
   tenant:
     links: [ v1-dut, dut-v2 ]
 
+_adjust:
+- nodes: [ dut ]              # Remove 'suppress map' test if the device does not support prefix lists
+  features:
+  - key: routing.policy.match.prefix
+    value: true
+  - key: routing.prefix
+    value: true
+  warning: Prefix list matching in routing policy is not implemented on device {device}
+  remove:
+  - nodes.dut.bgp.aggregate[0]
+  - nodes.dut.routing.prefix
+  - nodes.dut.routing.policy.suppress_2
+  - validate.pfx_s4a_v4
+  - validate.pfx_s4a_v6
+  - validate.pfx_s4s_v4
+  - validate.pfx_s4s_v6
+  - validate.pfx_a4_v4
+  - validate.pfx_a4_v6
+
 nodes:
   dut:
     module: [ bgp, vrf, routing ]
     bgp.as: 65000
     bgp.aggregate:
+    - ipv4: 10.4.0.0/16
+      ipv6: 2001:db8:1004::/48
+      suppress_policy: suppress_2
     - 10.1.0.0/16
     - 2001:db8:1001::/48
     - ipv4: 10.2.0.0/16
@@ -36,9 +59,6 @@ nodes:
       ipv6: 2001:db8:1003::/48
       summary_only: True
       attributes: med_73
-    - ipv4: 10.4.0.0/16
-      ipv6: 2001:db8:1004::/48
-      suppress_policy: suppress_2
 
     routing.prefix:
       suppress_2:
@@ -134,7 +154,7 @@ validate:
     description: Check for IPv4 V1 LB prefix on v2
     wait_msg: Waiting for the propagation of BGP updates
     fail: DUT is not propagating simple IPv4 BGP prefixes
-    wait: bgp_scan_time
+    wait: bgp_scan_long
     stop_on_error: True
     nodes: [ v2 ]
     plugin: bgp_prefix(nodes.v1.loopback.ipv4)
@@ -143,7 +163,7 @@ validate:
     description: Check for IPv6 V1 LB prefix on v2
     wait_msg: Waiting for the propagation of BGP updates
     fail: DUT is not propagating simple IPv6 BGP prefixes
-    wait: bgp_scan_time
+    wait: bgp_scan_long
     stop_on_error: True
     nodes: [ v2 ]
     plugin: bgp_prefix(nodes.v1.loopback.ipv6,af='ipv6')
