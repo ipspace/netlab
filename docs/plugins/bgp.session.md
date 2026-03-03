@@ -58,7 +58,8 @@ The plugin implements generic BGP session features for the following platforms:
 | Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  |
 | Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |   ❌  |
 | Cisco IOSv/IOSvL2   |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cisco IOS-XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |
+| Cisco IOS XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |
+| Cisco IOS XR[^XR]   |  ✅  |  ✅  |   ❌  |  ✅  |
 | Cisco Nexus OS      |  ✅  |  ✅  |   ❌  |  ✅  |
 | Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |
 | Dell OS10           |  ✅  |  ✅  |  ✅  |  ❌  |
@@ -71,6 +72,8 @@ The plugin implements generic BGP session features for the following platforms:
 | VyOS                |  ✅  |   ❌  |   ❌  |   ❌  |
 
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
+
+[^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
 
 [^Junos]: Includes vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
 
@@ -92,7 +95,8 @@ BGP session security features are available on these platforms:
 | Arista EOS          |    ✅    | ✅  |  ✅  |
 | Aruba AOS-CX        |    ✅    | ✅  |  ❌  |
 | Cisco IOSv/IOSvL2   |    ✅    | ✅  |  ❌  |
-| Cisco IOS-XE[^18v]  |    ✅    | ✅  |  ✅  |
+| Cisco IOS XE[^18v]  |    ✅    | ✅  |  ✅  |
+| Cisco IOS XR[^XR]   |    ✅    | ✅  |  ❌  |
 | Cisco Nexus OS      |    ✅    | ✅  |  ❌  |
 | Cumulus Linux       |    ✅    | ✅  |  ❌  |
 | Dell OS10           |    ✅    | ❌  |  ❌  |
@@ -118,7 +122,8 @@ The plugin implements AS-path-mangling nerd knobs for the following platforms:
 | Aruba AOS-CX        |  ✅  |  ❌   |  ✅  |   ❌  |   ❌  |
 | Bird                |   ❌  |   ❌  |   ✅  |  ✅  |  ✅  |
 | Cisco IOSv/IOSvL2   |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cisco IOS-XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
+| Cisco IOS XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
+| Cisco IOS XR[^XR]   |  ✅  |  ✅  |  ✅  |   ❌  |  ✅  |
 | Cisco Nexus OS      |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
 | Cumulus Linux 4.x   |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cumulus 5.x (NVUE)  |  ✅  |  ❌  |  ❌  |  ❌  |  ❌  |

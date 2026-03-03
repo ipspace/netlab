@@ -1,11 +1,17 @@
 {% macro ebgp_session(n,af,bgp) -%}
 neighbor {{ n[af] }}
-{% if bgp.rs_client|default(False) %}
-enforce-first-as disable
+{#
+   passive is implemented in BGP template to ensure the BGP session is not started
+#}
+{% if n.rs_client|default(False) %}
+  enforce-first-as disable
 {% endif %}
 {%   if n.tcp_ao is defined %}
+{#
+   Not implemented yet
 {%     set idx = bgp._ao_secrets.index(n.password) + 1 %}
   neighbor {{ n[af] }} ao tcp-ao-{{ idx }}
+#}
 {%   elif n.password is defined %}
   password clear {{ n.password }}
 {%   endif %}
@@ -18,12 +24,10 @@ enforce-first-as disable
 {%   if n.bfd|default(False) %}
   neighbor {{ n[af] }} fall-over bfd
 {%   endif %}
-{%   if n.passive|default(False) %}
-  session-open-mode passive-only
-{%   endif %}
+
 {%- endmacro %}
 !
-{% macro ebgp_neighbor(n,af) -%}
+{% macro ebgp_neighbor(n) -%}
 {%     if n.allowas_in is defined %}
 allowas-in {{ n.allowas_in }}
 {%     endif %}
@@ -34,7 +38,7 @@ as-override
 default-originate
 {%     endif %}
 {%   if n.remove_private_as|default([]) %}
-remove-private-AS{{ " entire-aspath" if n.remove_private_as == 'all' else "" }}
+remove-private-AS{{ " entire-aspath" if 'all' in n.remove_private_as else "" }}
 {%   endif %}
 {%- endmacro %}
 !
@@ -52,22 +56,22 @@ router bgp {{ bgp.as }}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
 {{     ebgp_session(n,af,bgp)|indent(width=2,first=True) }}
     address-family {{ af }} unicast
-{{     ebgp_neighbor(n,af)|indent(width=6,first=True) }}
-{%     if n.evpn|default(False) == n[af] %}
+{{     ebgp_neighbor(n)|indent(width=6,first=True) }}
+{%     if n.evpn|default(False) == af %}
     address-family l2vpn evpn
-{{       ebgp_neighbor(n,af)|indent(width=6,first=True) }}
+{{       ebgp_neighbor(n)|indent(width=6,first=True) }}
 {%     endif %}
 {%   endfor %}
 {% endfor %}
 {% if vrfs is defined %}
 {%   for vname,vdata in vrfs.items() if vdata.bgp.neighbors is defined %}
 !
-  vrf vrf {{ vname }}
+  vrf {{ vname }}
 {%     for af in ['ipv4','ipv6'] if vdata.af[af] is defined %}
 {%       for n in vdata.bgp.neighbors if n[af] is defined %}
 {{         ebgp_session(n,af,bgp)|indent(width=4,first=True) }}
       address-family {{ af }} unicast
-{{         ebgp_neighbor(n,af)|indent(width=8,first=True) }}
+{{         ebgp_neighbor(n)|indent(width=8,first=True) }}
 {%       endfor %}
 {%     endfor %}
 {%   endfor %}

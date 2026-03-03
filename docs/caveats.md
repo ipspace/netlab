@@ -208,6 +208,8 @@ See also [common Cisco IOS](caveats-iosv) caveats.
 (caveats-iosxr)=
 ## Cisco IOS XR
 
+* Cisco IOS XR cannot configure the minimum TTL when configuring BGP TTL security. The value of the **bgp.gtsm** interface parameter is ignored.
+
 ### Cisco IOS XRv
 
 * netlab was tested with IOS XR release 7.4. Earlier releases might use a different management interface name. In that case, you must set **defaults.devices.iosxr.mgmt_if** parameter to the name of the management interface
@@ -237,6 +239,8 @@ ansible-galaxy collection install --upgrade cisco.iosxr
 Cisco 8000v is a VM-in-container emulator of the Cisco 8000 platform. It's running IOS XR and is a completely different device from the [Catalyst 8000v](caveats-cat8000v).
 
 * Cisco 8000v container uses Open vSwitch ([more details](https://containerlab.dev/manual/kinds/c8000/#host-server-requirements)). _netlab_ tries to load the Open vSwitch kernel module when starting a Cisco 8000v device, but does not install the Open vSwitch package. You have to install that package on your Linux server before using the Cisco 8000v device.
+
+See also [common IOS XR caveats](caveats-iosxr)
 
 (caveats-nxos)=
 ## Cisco Nexus OS
