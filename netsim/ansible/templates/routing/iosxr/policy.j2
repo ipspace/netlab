@@ -1,0 +1,41 @@
+{% for pname,pdata in routing.policy|dictsort %}
+!
+route-policy {{ pname }}
+{%   for p_entry in pdata|sort(attribute='sequence') %}
+{#     Process set statements
+#}
+{%     if 'set' in p_entry %}
+{%       if p_entry.set.locpref is defined %}
+    set local-preference {{ p_entry.set.locpref }}
+{%       endif %}
+{%       if p_entry.set.med is defined %}
+    set med {{ p_entry.set.med }}
+{%       endif %}
+{%       if p_entry.set.weight is defined %}
+    set weight {{ p_entry.set.weight }}
+{%       endif %}
+{%       if p_entry.set.prepend is defined %}
+{%         if p_entry.set.prepend.count is defined %}
+    prepend as-path own-as {{ p_entry.set.prepend.count }}
+{%         elif p_entry.set.prepend.path is defined %}
+{%           for asn in p_entry.set.prepend.path.split(' ') if asn %}
+    prepend as-path {{ asn }}
+{%           endfor %}
+{%         endif %}
+{%       endif %}
+{%     endif %}
+{#
+       Process action
+#}
+{%     if p_entry.action|default('permit') == 'deny' %}
+    drop
+{%     elif 'set' not in p_entry %}
+    pass
+{%     endif %}
+{#
+       Emulate route maps -- every matching entry concludes the processing
+#}
+    done
+{%   endfor %}
+end-policy
+{% endfor %}

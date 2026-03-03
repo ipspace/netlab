@@ -1,0 +1,49 @@
+{% macro ebgp_neighbor(n,af) -%}
+neighbor {{ n[af] }}
+  address-family {{ af }} unicast
+{%   if 'weight' in n %}
+    weight {{ n.weight }}
+{%   endif %}
+{%   if 'policy' in n %}
+{%     for direction in [ 'in','out' ] if direction in n.policy %}
+    route-policy {{ n.policy[direction] }} {{ direction }}
+{%     endfor %}
+{%   endif %}
+{%- endmacro %}
+!
+{% macro aggregate(bgp,af) %}
+{%   for a_entry in bgp.aggregate|default([]) if af in a_entry %}
+{%     if loop.first %}
+address-family {{ af }}
+{%     endif %}
+  aggregate-address {{ a_entry[af] }}{%
+       if a_entry.summary_only|default(false) %} summary-only{% endif %}{%
+       if a_entry.suppress_policy|default(false) %} summary-only match-map {{ a_entry.suppress_policy }}-{{ af }}{% endif %}{%
+       if a_entry.attributes|default(false) %} attribute-map {{ a_entry.attributes }}-{{ af }}{% endif +%}
+{%   endfor -%}
+{% endmacro -%}
+!
+router bgp {{ bgp.as }}
+!
+{% for af in ['ipv4','ipv6'] %}
+{%   for n in bgp.neighbors if n[af] is defined %}
+{{     ebgp_neighbor(n,af)|indent(width=2,first=True) }}
+{%   endfor %}
+{% endfor %}
+{% for af in ['ipv4','ipv6'] if bgp.aggregate is defined %}
+{{   aggregate(bgp,af)|indent(width=2,first=True) }}
+{% endfor %}
+{% if vrfs is defined %}
+{% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
+!
+  vrf {{ vname }}
+{%   for af in ['ipv4','ipv6'] %}
+{%     for n in vdata.bgp.neighbors if n[af] is defined %}
+{{       ebgp_neighbor(n,af)|indent(width=4,first=True) }}
+{%     endfor %}
+{%   endfor %}
+{%   for af in ['ipv4','ipv6'] %}
+{{     aggregate(vdata.bgp,af)|indent(width=4,first=True) }}
+{%   endfor %}
+{% endfor %}
+{% endif %}
