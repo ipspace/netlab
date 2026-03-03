@@ -13,7 +13,8 @@ The plugin includes Jinja2 templates for the following platforms:
 | ------------------- | :--: | :--: |
 | Aruba AOS-CX        |  ✅  |  ✅  |
 | Arista EOS          |  ✅  |  ✅  |
-| Cisco IOSv/IOS-XE[^18v] | ✅ | ✅ |
+| Cisco IOSv/IOS XE[^18v] | ✅ | ✅ |
+| Cisco IOS XR[^]     |  ✅  |  ✅  |
 | Cumulus Linux 4.x   |  ✅  |  ✅  |
 | Cumulus 5.x (NVUE)  |  ✅  |  ✅  |
 | Dell OS10            |  ✅  |  ✅  |
@@ -23,6 +24,8 @@ The plugin includes Jinja2 templates for the following platforms:
 | Nokia SR OS         |  ✅  |  ✅  |
 
 [^18v]: Includes Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
+
+[^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
 
 ## Specifying Multihop EBGP Sessions
 
