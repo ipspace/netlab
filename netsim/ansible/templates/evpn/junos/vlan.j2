@@ -1,0 +1,57 @@
+{# vlan template for vptx and vjunos-switch #}
+
+vlans {
+{%   for vname,v in vlans.items() if v.evpn.evi is defined and v.evpn.bundle is not defined %}
+  delete: {{ vname }};
+{%   endfor %}
+}
+
+{# vlan-based MAC VRF #}
+routing-instances {
+{%   for vname,v in vlans.items() if v.evpn.evi is defined and v.evpn.bundle is not defined %}
+  vlan_{{ vname }} {
+{%   for intf in interfaces if intf.vlan.access|default('') == vname %}
+    interface {{ intf.ifname }};
+{%   endfor %}
+    vlans {
+      {{ vname }} {
+        vlan-id {{ v.id }};
+{%   if v.mode == 'irb' %}
+        l3-interface irb.{{ v.id }};
+{%   endif %}
+        vxlan {
+          vni {{ v.vni }};
+        }
+      }
+    }
+  }
+{%   endfor %}
+}
+
+{# vlan-aware MAC VRF #}
+{% if vrfs is defined %}
+routing-instances {
+{%   for n,v in vrfs.items() if v.evpn.vlans is defined %}
+  vlan_aware_{{ n }} {
+{# map vlans and access interfaces #}
+{%     for vname in v.evpn.vlans %}
+{%       for intf in interfaces if intf.vlan.access|default('') == vname %}
+    interface {{ intf.ifname }};
+{%       endfor %}
+    vlans {
+      {{ vname }} {
+        vlan-id {{ vlans[vname].id }};
+{%   if vlans[vname].mode == 'irb' %}
+        l3-interface irb.{{ vlans[vname].id }};
+{%   endif %}
+        vxlan {
+          vni {{ vlans[vname].vni }};
+        }
+      }
+    }
+{%     endfor %}
+  }
+{%   endfor %}
+}
+{% endif %}
+

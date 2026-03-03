@@ -5,65 +5,6 @@
   per-VLAN mac-vrf routing-instances.
 #}
 
-{# vlan config is not common because of bridge domains in vjunos-router #}
-{% if vlans is defined and vxlan is defined and not evpn._junos_default_macvrf|default(False) %}
-vlans {
-{%   for vname,v in vlans.items() if v.evpn.evi is defined and v.evpn.bundle is not defined %}
-  delete: {{ vname }};
-{%   endfor %}
-}
-
-{# vlan-based MAC VRF #}
-routing-instances {
-{%   for vname,v in vlans.items() if v.evpn.evi is defined and v.evpn.bundle is not defined %}
-  vlan_{{ vname }} {
-{%   for intf in interfaces if intf.vlan.access|default('') == vname %}
-    interface {{ intf.ifname }};
-{%   endfor %}
-    vlans {
-      {{ vname }} {
-        vlan-id {{ v.id }};
-{%   if v.mode == 'irb' %}
-        l3-interface irb.{{ v.id }};
-{%   endif %}
-        vxlan {
-          vni {{ v.vni }};
-        }
-      }
-    }
-  }
-{%   endfor %}
-}
-
-{# vlan-aware MAC VRF #}
-{% if vrfs is defined %}
-routing-instances {
-{%   for n,v in vrfs.items() if v.evpn.vlans is defined %}
-  vlan_aware_{{ n }} {
-{# map vlans and access interfaces #}
-{%     for vname in v.evpn.vlans %}
-{%       for intf in interfaces if intf.vlan.access|default('') == vname %}
-    interface {{ intf.ifname }};
-{%       endfor %}
-    vlans {
-      {{ vname }} {
-        vlan-id {{ vlans[vname].id }};
-{%   if vlans[vname].mode == 'irb' %}
-        l3-interface irb.{{ vlans[vname].id }};
-{%   endif %}
-        vxlan {
-          vni {{ vlans[vname].vni }};
-        }
-      }
-    }
-{%     endfor %}
-  }
-{%   endfor %}
-}
-{% endif %}
-
-{% endif %}
-
 {% if vxlan is defined and evpn._junos_default_macvrf|default(False) %}
 protocols {
   evpn {
@@ -85,4 +26,9 @@ protocols {
 {% endif %}
 
 {# Common Junos EVPN configuration (BGP neighbors, MAC-VRF, L3VNI, policy-options) #}
-{% include 'junos-common.j2' %}
+{% include 'junos/common.j2' %}
+{# Common vlan configuration #}
+{% if vlans is defined and vxlan is defined and not evpn._junos_default_macvrf|default(False) %}
+{% include 'junos/vlan.j2' %}
+{% endif %}
+
