@@ -14,7 +14,7 @@ The plugin includes Jinja2 templates for the following platforms:
 | Aruba AOS-CX        |  ✅  |  ✅  |
 | Arista EOS          |  ✅  |  ✅  |
 | Cisco IOSv/IOS XE[^18v] | ✅ | ✅ |
-| Cisco IOS XR[^]     |  ✅  |  ✅  |
+| Cisco IOS XR[^XR]   |  ✅  |  ✅  |
 | Cumulus Linux 4.x   |  ✅  |  ✅  |
 | Cumulus 5.x (NVUE)  |  ✅  |  ✅  |
 | Dell OS10            |  ✅  |  ✅  |
