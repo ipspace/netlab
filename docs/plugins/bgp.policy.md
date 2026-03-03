@@ -59,7 +59,8 @@ The plugin implements BGP routing policies and individual BGP policy attributes 
 | Arista EOS          |✅ |✅ |✅ |✅|✅ |✅| ✅|
 | Aruba AOS-CX        |✅ |✅ |✅ |✅|✅ | ❌ | ❌ |
 | Cisco IOSv/IOSvL2   |✅ |✅ |✅ |✅|✅ |✅[❗](caveats-iosv) |✅|
-| Cisco IOS-XE[^18v]  |✅ |✅ |✅ |✅|✅ |✅[❗](caveats-iosv) |✅|
+| Cisco IOS XE[^18v]  |✅ |✅ |✅ |✅|✅ |✅[❗](caveats-iosv) |✅|
+| Cisco IOS XR[^XR]   |✅ |✅ |✅ |✅|✅ | ❌ |✅|
 | Cumulus Linux       |✅ |✅ |✅ |✅|✅ |✅| ❌ |
 | Dell OS10           |❌ |✅ |✅ |✅| ❌ | ❌ |✅|
 | FRR                 |✅ |✅ |✅ |✅|✅ |✅| ✅|
@@ -69,6 +70,8 @@ The plugin implements BGP routing policies and individual BGP policy attributes 
 | VyOS                |✅ |✅ |✅ | ❌ | ✅ | ❌ | ❌ |
 
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
+
+[^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
 
 ```{tip}
 See [BGP Policies Test Results](https://release.netlab.tools/_html/coverage.bgp.policy) for more details.
