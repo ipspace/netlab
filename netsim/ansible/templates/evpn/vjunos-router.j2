@@ -38,6 +38,33 @@ routing-instances {
 {%   endfor %}
 }
 
+{# vlan-aware MAC VRF #}
+{% if vrfs is defined %}
+routing-instances {
+{%   for n,v in vrfs.items() if v.evpn.vlans is defined %}
+  vlan_aware_{{ n }} {
+{# map vlans and access interfaces #}
+    bridge-domains {
+{%   for vname in v.evpn.vlans %}
+      vlan-{{ vlans[vname].id }} {
+{%     for intf in interfaces if intf.vlan.access|default('') == vname %}
+        interface {{ intf.ifname }};
+{%     endfor %}
+        vlan-id {{ vlans[vname].id }};
+{%   if vlans[vname].mode == 'irb' %}
+        routing-interface irb.{{ vlans[vname].id }};
+{%   endif %}
+        vxlan {
+          vni {{ vlans[vname].vni }};
+        }
+      }
+{%     endfor %}
+    }
+  }
+{%   endfor %}
+}
+{% endif %}
+
 {% endif %}
 
 {# Common Junos EVPN configuration (BGP neighbors, MAC-VRF, L3VNI, policy-options) #}
