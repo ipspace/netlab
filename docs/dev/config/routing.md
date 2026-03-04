@@ -28,7 +28,7 @@ The **policy** capability dictionary has three elements:
 * **set** -- attributes the device can use in **set** parameters (locpref, med, weight, prepend, community)
 * **delete** -- attributes the device can use in **delete** parameters (currently only community)
 
-The **match** and **set** values could be a list of supported attributes or a dictionary of attributes in case you need to specify the capabilities of individual attributes.
+The **match** and **set** values can be a list of supported attributes or a dictionary of attributes, if you need to specify the capabilities of individual attributes.
 
 When using the dictionary format, set the supported attribute values to **true**; the only **set** attribute that might need more details is the **community** attribute.
 
@@ -39,11 +39,13 @@ When using the dictionary format, set the supported attribute values to **true**
 * **extended** -- device can change **extended** communities
 * **append** -- device can append communities to a BGP route
 
-The **delete** attribute controls the ability to delete BGP communities from routes. It can be:
+The **delete** attribute controls whether BGP communities can be deleted from routes. It can be:
 
 * **true** -- device supports direct community deletion
 * **false** -- device does not support community deletion
 * **clist** -- device requires community lists to delete communities
+
+It can also be a dictionary similar to the **set.community** dictionary (with the additional **list** parameter).
 
 For example, this is the capability definition for a device that can only set MED and local preference values:
 
@@ -96,12 +98,10 @@ Each entry in a prefix filter list contains these attributes:
 
 * **action** -- `permit` or `deny`
 * **sequence** -- sequence number.
-* **prefix** (optional) -- Reference to a named prefix defined in topology defaults. Mutually exclusive with **pool**, **ipv4**, and **ipv6**.
-* **pool** (optional) -- Reference to an address pool defined in topology addressing. Mutually exclusive with **prefix**, **ipv4**, and **ipv6**.
 * **ipv4** (optional) -- IPv4 prefix to match
 * **ipv6** (optional) -- IPv6 prefix to match
-* **min** (optional) -- Minimum prefix length to match. Can be an integer (applied to all address families present in the entry) or a dictionary with optional **ipv4** and **ipv6** attributes
-* **max** (optional) -- Maximum prefix length to match. Can be an integer (applied to all address families present in the entry) or a dictionary with optional **ipv4** and **ipv6** attributes
+* **min** (optional) -- Minimum prefix length to match. A dictionary with optional **ipv4** and **ipv6** attributes
+* **max** (optional) -- Maximum prefix length to match. A dictionary with optional **ipv4** and **ipv6** attributes
 
 ```{tip}
 The prefix filter entries are sorted by their sequence numbers. If your platform does not require sequence numbers in prefix filters, you can ignore the **‌sequence** attribute.
@@ -207,7 +207,7 @@ Notes:
 
 [^IOL]: An euphemism for *we copied Cisco IOS CLI, but don't want to call it that way to avoid Cisco lawyers*.
 
-The *address family* complexity can be avoided on platforms that can match IPv4 and IPv6 prefixes in the same prefix filter. Here's the SR Linux template:
+The *address family* complexity can be avoided on platforms that support matching IPv4 and IPv6 prefixes in a single prefix filter (SR Linux, IOS XR). Here's the SR Linux template:
 
 ```
 {% for pf_name,pf_list in routing.prefix|default({})|items %}
@@ -260,7 +260,7 @@ The **match** conditions in a routing policy entry include:
 * **prefix** -- match the route with an IPv4 or IPv6 prefix filter (string filter name)
 * **aspath** -- match a BGP AS-path with an AS-path filter (string filter name)
 * **nexthop** -- match the route next hop with an IPv4 or IPv6 prefix filter (string filter name)
-* **community** -- match BGP communities with a BGP community filter. Can be a string (references a community filter) or a dictionary with **standard**, **extended**, or **large** keys.
+* **community** -- match BGP communities with a BGP community filter. A dictionary with **standard**, **extended**, or **large** keys.
 
 The **set** actions include:
 
@@ -268,14 +268,13 @@ The **set** actions include:
 * **med** -- set route metric (usually used to set BGP MED attribute) (integer)
 * **weight** -- set BGP weight (integer)
 * **prepend** -- do BGP AS-path prepending. A dictionary with:
-  * **count** -- number of times to prepend (integer 1-32)
+  * **count** -- number of times to prepend own AS (integer 1-32)
   * **path** -- AS number(s) to prepend (AS number or string)
 * **community** -- change BGP communities attached to a route. A dictionary with:
   * **standard** -- list of standard BGP communities to set
   * **extended** -- list of extended BGP communities to set
   * **large** -- list of large BGP communities to set
   * **append** -- append communities instead of replacing (boolean)
-  * **delete** -- delete communities from the route
 
 The **delete** actions include:
 
@@ -284,4 +283,3 @@ The **delete** actions include:
   * **extended** -- list of extended BGP communities to delete
   * **large** -- list of large BGP communities to delete
   * **list** -- reference to a BGP community list to delete (a dictionary with **standard**, **extended**, or **large** keys)
-
