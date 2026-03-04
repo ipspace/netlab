@@ -9,8 +9,6 @@ neighbor {{ n[af] }}
     route-policy {{ n.policy[direction] }} {{ direction }}
 {%     endfor %}
 {%   endif %}
-  exit
-exit
 {%- endmacro %}
 !
 {% macro aggregate(bgp,af) %}
@@ -21,33 +19,30 @@ address-family {{ af }} unicast
   aggregate-address {{ a_entry[af] }}{%
        if a_entry.summary_only|default(false) %} summary-only{% endif %}{%
        if a_entry.attributes|default(false) %} route-policy {{ a_entry.attributes }}{% endif +%}
-{%     if loop.last %}
-exit
-{%     endif %}
 {%   endfor -%}
 {% endmacro -%}
 !
 router bgp {{ bgp.as }}
 !
+{% for af in ['ipv4','ipv6'] if bgp.aggregate is defined %}
+{{   aggregate(bgp,af)|indent(width=2,first=True) }}
+{% endfor %}
 {% for af in ['ipv4','ipv6'] %}
 {%   for n in bgp.neighbors if n[af] is defined %}
 {{     ebgp_neighbor(n,af)|indent(width=2,first=True) }}
 {%   endfor %}
-{% endfor %}
-{% for af in ['ipv4','ipv6'] if bgp.aggregate is defined %}
-{{   aggregate(bgp,af)|indent(width=2,first=True) }}
 {% endfor %}
 {% if vrfs is defined %}
 {% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
 !
   vrf {{ vname }}
 {%   for af in ['ipv4','ipv6'] %}
+{{     aggregate(vdata.bgp,af)|indent(width=4,first=True) }}
+{%   endfor %}
+{%   for af in ['ipv4','ipv6'] %}
 {%     for n in vdata.bgp.neighbors if n[af] is defined %}
 {{       ebgp_neighbor(n,af)|indent(width=4,first=True) }}
 {%     endfor %}
-{%   endfor %}
-{%   for af in ['ipv4','ipv6'] %}
-{{     aggregate(vdata.bgp,af)|indent(width=4,first=True) }}
 {%   endfor %}
 {% endfor %}
 {% endif %}
