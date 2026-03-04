@@ -6,6 +6,12 @@ This document describes the implementation details of the [](generic-routing):
 * [Prefix filter data structure](dev-routing-prefix)
 * [Routing policy data structure](dev-routing-policy)
 
+Still missing:
+
+* BGP AS-path filter data structure
+* BGP community filter data structure
+* Static routing data structure
+
 (dev-routing-platform)=
 ## Platform Capabilities
 
