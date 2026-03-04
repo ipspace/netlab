@@ -9,10 +9,14 @@ import typing
 
 from box import Box
 
+from ...data import get_new_box
 from ...utils import log
 
 """
-expand_prefix_entry: Transform 'pool' and 'prefix' keywords into 'ipv4' and 'ipv6'
+expand_prefix_entry:
+
+* Transform 'pool' and 'prefix' keywords into 'ipv4' and 'ipv6'
+* Adjust min/max values to be AF-specific
 """
 def expand_prefix_entry(p_entry: Box, topology: Box) -> Box:
   extra_data = None
@@ -24,10 +28,21 @@ def expand_prefix_entry(p_entry: Box, topology: Box) -> Box:
     extra_data = topology.prefix[p_entry.prefix]
     p_entry.pop('prefix',None)
 
-  if extra_data:
-    for af in ('ipv4','ipv6'):
+  if extra_data:                                  # Did we get any new information?
+    for af in ('ipv4','ipv6'):                    # Replace potential IPv4/IPv6 values with it
       if af in extra_data:
         p_entry[af] = extra_data[af]
+
+  for kw in ('min','max'):                        # Next, normalize the min/max values
+    if kw not in p_entry:
+      continue
+    if isinstance(p_entry[kw],dict):              # Are they already dicts?
+      continue                                    # Cool, move on
+
+    # Create a dict with an identical entry for every AF active in the prefix list entry
+    p_entry[kw] = { af: p_entry[kw] for af in log.AF_LIST if af in p_entry }
+    if not p_entry[kw]:                           # Did we create an empty dict (no AFs?)
+      p_entry.pop(kw,None)
 
   return p_entry
 
@@ -38,14 +53,12 @@ def adjust_pfx_min_max(p_entry: Box, m_kw: str, af: str, p_name: str, node: Box)
   if m_kw not in p_entry:
     return
 
-  if isinstance(p_entry[m_kw],dict):
-    if af not in p_entry[m_kw]:
-      return
-    m_value = p_entry[m_kw][af]
-  else:
-    m_value = p_entry[m_kw]
+  if af not in p_entry[m_kw]:                     # At this point, the values are already dicts due to
+    p_entry.pop(m_kw,None)                        # ... expand_prefix_entry
+    return                                        # ... so we can just pop the unnecessary entry
 
-  if m_value < 0:
+  m_value = p_entry[m_kw].get(af,None)
+  if m_value < 0:                                 
     log.error(
       f'Prefix filter {m_kw} value should be >= 0 (policy {p_name}#{p_entry.sequence} on node {node.name})',
       category=log.IncorrectValue,
@@ -60,13 +73,13 @@ def adjust_pfx_min_max(p_entry: Box, m_kw: str, af: str, p_name: str, node: Box)
       module='routing')
     return
 
-  p_entry[m_kw] = m_value
+  p_entry[m_kw] = m_value                         # Replace the min/max dict with per-AF value
 
 """
 create_af_entry: create AF-specific prefix-list entry
 """
 def create_pfx_af_entry(p_entry: Box, af: str, p_name: str, node: Box) -> Box:
-  af_p_entry = Box(p_entry)                                 # Create a copy of the current p_entry
+  af_p_entry = get_new_box(p_entry)                         # Create a copy of the current p_entry
   for af_x in ('ipv4','ipv6'):                              # ... remove all other address families
     if af_x in p_entry and af_x != af:
       af_p_entry.pop(af_x,None)
