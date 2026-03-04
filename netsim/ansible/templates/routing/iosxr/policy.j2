@@ -33,12 +33,33 @@ route-policy {{ pname }}
 {%       endif %}
 {%     endif %}
 {#
+       Set communities -- implemented with a loop to deal with three community types
+#}
+{%     for c_kw,c_value in p_entry.set.community|default({})|dictsort %}
+{%       set add_kw = ' additive' if p_entry.set.community.append|default(False) else '' %}
+{%       if c_kw == 'standard' %}
+    set community ({{ c_value|join(",") }}){{ add_kw }}
+{%       elif c_kw == 'large' %}
+    set large-community ({{ c_value|join(",") }}){{ add_kw }}
+{%       endif %}
+{%     endfor %}
+{#
+       Delete communities -- implemented with a loop to deal with three community types
+#}
+{%     for c_kw,c_value in p_entry.delete.community|default({})|dictsort %}
+{%       if c_kw == 'standard' %}
+    delete community in ({{ c_value|join(",") }})
+{%       elif c_kw == 'large' %}
+    delete large-community in ({{ c_value|join(",") }})
+{%       endif %}
+{%     endfor %}
+{#
        Process action
 #}
 {%     if p_entry.action|default('permit') == 'deny' %}
     drop
 {%     else %}
-{%       if 'set' not in p_entry %}
+{%       if 'set' not in p_entry and 'delete' not in p_entry %}
     pass
 {%       endif %}
 {#       Emulate route maps -- every matching entry concludes the processing #}
