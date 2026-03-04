@@ -26,7 +26,7 @@ The following table describes high-level per-platform support of generic routing
 | Arista EOS         | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Aruba AOS-CX       | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cisco IOS/XE[^18v] | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Cisco IOS XR[^XR]  | ❌  | ❌  | ❌  | ❌  | ✅ |
+| Cisco IOS XR[^XR]  | ✅ | ✅ | ❌  | ❌  | ✅ |
 | Cumulus Linux      | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cumulus NVUE 5.x   | ❌  | ❌  | ❌  | ❌  | ✅ |
 | Dell OS10          | ✅ | ✅ | ✅ | ✅ | ✅ |
