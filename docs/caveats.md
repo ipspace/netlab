@@ -209,6 +209,7 @@ See also [common Cisco IOS](caveats-iosv) caveats.
 ## Cisco IOS XR
 
 * Cisco IOS XR cannot configure the minimum TTL when configuring BGP TTL security. The value of the **bgp.gtsm** interface parameter is ignored.
+* Cisco IOS XR cannot use prefix lists in routing policies, and the **prefix-sets** cannot implement prefix filters that mix **permit** and **deny** options. When encountering such a filter, _netlab_ generates a warning and does its best (**deny** check followed by **permit** check).
 
 ### Cisco IOS XRv
 

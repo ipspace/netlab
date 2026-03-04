@@ -3,7 +3,7 @@
 #
 from box import Box
 
-from . import _Quirks
+from .iosxr import IOSXR as _IOSXR
 
 """
 IOS XR needs native L2 subinterfaces to make native bridged VLANs work.
@@ -27,8 +27,9 @@ def vlan_native_subif(node: Box) -> None:
       continue
     intf._xr_native_subif = f'.{access_vlan}'         # oops, there goes the native subif
 
-class Cisco8000v(_Quirks):
+class Cisco8000v(_IOSXR):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
     vlan_native_subif(node)
+    super().device_quirks(node,topology)

@@ -1,9 +1,17 @@
 {% for pname,pdata in routing.policy|dictsort %}
 !
 route-policy {{ pname }}
-{%   for p_entry in pdata|sort(attribute='sequence') %}
+{%   for p_entry in pdata %}
 {#     Process set statements
 #}
+{%     for match_kw,match_value in p_entry.match|default({})|dictsort %}
+{%       if loop.first %}  if{% else %} and{% endif %}
+{%       if match_kw == 'prefix'
+           %} destination in {{ match_value }}{% endif %}
+{%       if match_kw == '_xr_prefix'
+           %} not destination in {{ match_value.deny }} and destination in {{ match_value.permit }}{% endif %}
+{%       if loop.last %} then{% endif +%}
+{%     endfor %}
 {%     if 'set' in p_entry %}
 {%       if p_entry.set.locpref is defined %}
     set local-preference {{ p_entry.set.locpref }}
@@ -29,13 +37,18 @@ route-policy {{ pname }}
 #}
 {%     if p_entry.action|default('permit') == 'deny' %}
     drop
-{%     elif 'set' not in p_entry %}
+{%     else %}
+{%       if 'set' not in p_entry %}
     pass
-{%     endif %}
-{#
-       Emulate route maps -- every matching entry concludes the processing
-#}
+{%       endif %}
+{#       Emulate route maps -- every matching entry concludes the processing #}
+{%       if not loop.last %}
     done
-{%   endfor %}
+{%       endif %}
+{%     endif %}
+{%     if 'match' in p_entry %}
+  endif
+{%     endif -%}
+{%   endfor -%}
 end-policy
 {% endfor %}
