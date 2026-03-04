@@ -28,18 +28,18 @@ The **policy** capability dictionary has three elements:
 * **set** -- attributes the device can use in **set** parameters (locpref, med, weight, prepend, community)
 * **delete** -- attributes the device can use in **delete** parameters (currently only community)
 
-The **match** and **set** values can be a list of supported attributes or a dictionary of attributes, if you need to specify the capabilities of individual attributes.
+The **policy.match**, **policy.set**, and **policy.delete** values can be a list of supported attributes or a dictionary of attributes, if you need to specify the capabilities of individual attributes.
 
 When using the dictionary format, set the supported attribute values to **true**; the only **set** attribute that might need more details is the **community** attribute.
 
-**set.community** can be a dictionary with the following values:
+**policy.set.community** can be a dictionary with the following values:
 
 * **standard** -- device can change **standard** communities
 * **large** -- device can change **large** communities
 * **extended** -- device can change **extended** communities
 * **append** -- device can append communities to a BGP route
 
-The **delete** attribute controls whether BGP communities can be deleted from routes. It can be:
+The **policy.delete.community** attribute controls whether BGP communities can be deleted from routes. It can be:
 
 * **true** -- device supports direct community deletion
 * **false** -- device does not support community deletion
@@ -257,10 +257,10 @@ The routing policy entries are sorted by their sequence numbers. If your platfor
 
 The **match** conditions in a routing policy entry include:
 
-* **prefix** -- match the route with an IPv4 or IPv6 prefix filter (string filter name)
-* **aspath** -- match a BGP AS-path with an AS-path filter (string filter name)
-* **nexthop** -- match the route next hop with an IPv4 or IPv6 prefix filter (string filter name)
-* **community** -- match BGP communities with a BGP community filter. A dictionary with **standard**, **extended**, or **large** keys.
+* **prefix** -- match the route with an IPv4 or IPv6 prefix filter (string: filter name)
+* **aspath** -- match a BGP AS-path with an AS-path filter (string: filter name)
+* **nexthop** -- match the route next hop with an IPv4 or IPv6 prefix filter (string: filter name)
+* **community** -- match BGP communities with a BGP community filter. A dictionary with **standard**, **extended**, or **large** keys, where each value is the name of a BGP community filter (string).
 
 The **set** actions include:
 
@@ -269,17 +269,16 @@ The **set** actions include:
 * **weight** -- set BGP weight (integer)
 * **prepend** -- do BGP AS-path prepending. A dictionary with:
   * **count** -- number of times to prepend own AS (integer 1-32)
-  * **path** -- AS number(s) to prepend (AS number or string)
+  * **path** -- AS number(s) to prepend (string of space-separated AS numbers)
 * **community** -- change BGP communities attached to a route. A dictionary with:
   * **standard** -- list of standard BGP communities to set
   * **extended** -- list of extended BGP communities to set
   * **large** -- list of large BGP communities to set
   * **append** -- append communities instead of replacing (boolean)
 
-The **delete** actions include:
+The only **delete** action implemented at the moment is **delete.community**. It's a dictionary with these keys:
 
-* **community** -- delete BGP communities from a route. A dictionary with:
-  * **standard** -- list of standard BGP communities to delete
-  * **extended** -- list of extended BGP communities to delete
-  * **large** -- list of large BGP communities to delete
-  * **list** -- reference to a BGP community list to delete (a dictionary with **standard**, **extended**, or **large** keys)
+* **standard** -- list of standard BGP communities to delete
+* **extended** -- list of extended BGP communities to delete
+* **large** -- list of large BGP communities to delete
+* **list** -- reference to a BGP community list to delete (a dictionary with **standard**, **extended**, or **large** keys). This key is mutually exclusive with the per-type lists; when **list** is used, no other **delete.community** attributes (**standard**, **extended**, or **large**) are present.
