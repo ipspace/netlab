@@ -170,6 +170,8 @@ def process_routing_data(node: Box,o_type: str, topology: Box, dispatch: dict, a
         dispatch[o_type]['check'](p_name,o_type,node,topology)
     if 'related' in dispatch[o_type]:
       dispatch[o_type]['related'](p_name,o_type,node,topology)
+    if 'sort' in dispatch[o_type] and p_name in node.routing[o_type]:
+      node.routing[o_type][p_name] = sorted(node.routing[o_type][p_name],key=lambda O: O.get('sequence',10))
 
   if o_type not in dispatch:                         # pragma: no cover
     log.fatal(f'Invalid routing object {o_type} passed to process_routing_data')

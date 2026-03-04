@@ -34,6 +34,7 @@ Number AS path ACLs (some platforms refer to them by numbers)
 
 def number_aspath_acl(p_name: str,o_name: str,node: Box,topology: Box) -> None:
   numacl = node.routing._numobj[o_name]
+  node.routing[o_name][p_name] = sorted(node.routing[o_name][p_name],key=lambda O: O.get('sequence',10))
   if p_name not in numacl:
     maxacl = max([ 0 ] + [ acl for acl in numacl.values() ])
     numacl[p_name] = maxacl + 1

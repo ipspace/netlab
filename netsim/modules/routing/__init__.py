@@ -101,13 +101,14 @@ expand the prefixes/pools in prefix list.
 """
 transform_dispatch: typing.Dict[str,dict] = {
   'policy': {
-    'import': policy.adjust_routing_policy
+    'import': policy.adjust_routing_policy,
+    'sort': True
   },
   'prefix': {
-    'import': prefix.expand_prefix_list
+    'import': prefix.expand_prefix_list,
   },
   'aspath': {
-    'import': aspath.number_aspath_acl
+    'import': aspath.number_aspath_acl,
   },
   'community': {
     'import' : clist.expand_community_list,

@@ -94,6 +94,7 @@ def expand_prefix_list(p_name: str,o_name: str,node: Box,topology: Box) -> typin
   for (p_idx,p_entry) in enumerate(node.routing[o_name][p_name]):
     node.routing[o_name][p_name][p_idx] = expand_prefix_entry(node.routing[o_name][p_name][p_idx],topology)
 
+  node.routing[o_name][p_name] = sorted(node.routing[o_name][p_name],key=lambda O: O.get('sequence',10))
   af_prefix: dict = {}                                      # Prepare dictionary of per-AF prefix lists
   for af in ('ipv4','ipv6'):                                # Iterate over address families (sorry, no CLNS or IPX)
     af_prefix[af] = []                                      # Start with an emtpy per-AF list
