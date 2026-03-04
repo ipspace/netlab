@@ -39,6 +39,7 @@ The following table describes the per-platform support of individual VXLAN featu
 | Nokia SR Linux     | ✅ [❗](caveats-srlinux)  |  ❌  |  ❌  |
 | Nokia SR OS[^SROS] | ✅  |  ❌  |  ❌  |
 | vJunos-switch      | ✅  | ✅  |  ❌ |
+| vJunos-router      | ✅  | ✅  |  ❌ |
 | VyOS               | ✅  | ✅  | ✅  |
 
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine

@@ -34,6 +34,7 @@ The following table describes the per-platform support of individual EVPN/VXLAN 
 | Nokia SR Linux     | ✅  |  ✅  | ✅  | ✅  |
 | Nokia SR OS[^SROS] | ✅  |  ❌  | ✅  | ✅  |
 | vJunos-switch [❗](caveats-vjunos-switch) | ✅  | ✅  | ✅  | ✅  |
+| vJunos-router      | ✅  | ✅  | ✅  | ✅  |
 | Juniper vPTX [❗](caveats-vptx) | ✅  | ✅  | ✅  | ✅  |
 | VyOS               | ✅  |  ❌  | ✅  | ✅  |
 
@@ -59,6 +60,7 @@ Devices supporting [EVPN VLAN bundle services](evpn-bundle-service) implement th
 | Arista EOS         |  ❌  |  ❌  | ✅  |  ❌  |
 | Aruba AOS-CX       |  ❌  |  ❌  | ✅  |  ❌  |
 | vJunos-switch      |  ❌  |  ❌  | ✅  |  ❌  |
+| vJunos-router      |  ❌  |  ❌  | ✅  |  ❌  |
 | Juniper vPTX       |  ❌  |  ❌  | ✅  |  ❌  |
 | Nokia SR Linux     |  ❌  |  ❌  | ✅  |  ❌  |
 
@@ -80,7 +82,7 @@ EVPN module supports IBGP- and EBGP-based EVPN:
 | Nokia SR OS[^SROS] | ✅  | ✅  | ✅  |  ❌  |
 | VyOS               | ✅  | ✅  |  ❌  | ✅  |
 
-[^JN]: Includes vJunos-switch and vPTX (vJunos-Evo)
+[^JN]: Includes vJunos-switch, vJunos-router, and vPTX (vJunos-Evo)
 
 [^XR]: Includes Cisco 8000v, Cisco IOS XRd and Cisco IOS XRv
 

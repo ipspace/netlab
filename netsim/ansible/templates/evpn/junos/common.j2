@@ -71,11 +71,6 @@ policy-options {
 {% endif %}
 
 {% if vlans is defined and vxlan is defined and not evpn._junos_default_macvrf|default(False) %}
-vlans {
-{%   for vname,v in vlans.items() if v.evpn.evi is defined and v.evpn.bundle is not defined %}
-  delete: {{ vname }};
-{%   endfor %}
-}
 
 {# vlan-based MAC VRF #}
 routing-instances {
@@ -93,20 +88,6 @@ routing-instances {
     vrf-{{ dir }} evpn-vlan-{{ vname }}-{{ dir }};
 {%       endif %}
 {%     endfor %}
-{%   for intf in interfaces if intf.vlan.access|default('') == vname %}
-    interface {{ intf.ifname }};
-{%   endfor %}
-    vlans {
-      {{ vname }} {
-        vlan-id {{ v.id }};
-{%   if v.mode == 'irb' %}
-        l3-interface irb.{{ v.id }};
-{%   endif %}
-        vxlan {
-          vni {{ v.vni }};
-        }
-      }
-    }
     protocols {
       evpn {
         encapsulation vxlan;
@@ -137,23 +118,6 @@ routing-instances {
     vrf-{{ dir }} vrf-{{ n }}-rt-{{ dir }};
 {%       endif %}
 {%     endfor %}
-{# map vlans and access interfaces #}
-{%     for vname in v.evpn.vlans %}
-{%       for intf in interfaces if intf.vlan.access|default('') == vname %}
-    interface {{ intf.ifname }};
-{%       endfor %}
-    vlans {
-      {{ vname }} {
-        vlan-id {{ vlans[vname].id }};
-{%   if vlans[vname].mode == 'irb' %}
-        l3-interface irb.{{ vlans[vname].id }};
-{%   endif %}
-        vxlan {
-          vni {{ vlans[vname].vni }};
-        }
-      }
-    }
-{%     endfor %}
     protocols {
       evpn {
         encapsulation vxlan;
@@ -174,6 +138,7 @@ routing-instances {
     {{ n }} {
         protocols {
             evpn {
+{%     if v.evpn.transit_vni is defined %}
                 irb-symmetric-routing {
                     vni {{ v.evpn.transit_vni }};
                 }
@@ -183,6 +148,7 @@ routing-instances {
                     vni {{ v.evpn.transit_vni }};
                     export [ vrf-{{n}}-bgp-export bgp-final ];
                 }
+{%     endif %}
             }
         }
         route-distinguisher {{ v.evpn.rd }};

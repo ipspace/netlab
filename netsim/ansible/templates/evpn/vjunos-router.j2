@@ -1,0 +1,70 @@
+{#
+  vJunos-router (Junos) EVPN configuration
+
+  Supports both 'default_macvrf' mode (global protocols evpn) and
+  per-VLAN mac-vrf routing-instances.
+#}
+
+{% if vlans is defined and vxlan is defined and not evpn._junos_default_macvrf|default(False) %}
+
+{# remove the bridge domain from the default switch #}
+bridge-domains {
+{%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
+  delete: vlan-{{ vlans[vname].id }};
+{%   endfor %}
+}
+
+{# vlan-based MAC VRF #}
+routing-instances {
+{%   for vname,v in vlans.items() if v.evpn.evi is defined and v.evpn.bundle is not defined %}
+  vlan_{{ vname }} {
+    bridge-domains {
+      vlan-{{ v.id }} {
+        domain-type bridge;
+        vlan-id {{ v.id }};
+{%     for intf in interfaces if intf.vlan.access|default('') == vname %}
+        interface {{ intf.ifname }};
+{%     endfor %}
+{%     if v.mode == 'irb' %}
+        routing-interface irb.{{ v.id }};
+{%     endif %}
+        vxlan {
+          vni {{ v.vni }};
+        }
+      }
+    }
+  }
+{%   endfor %}
+}
+
+{# vlan-aware MAC VRF #}
+{% if vrfs is defined %}
+routing-instances {
+{%   for n,v in vrfs.items() if v.evpn.vlans is defined %}
+  vlan_aware_{{ n }} {
+{# map vlans and access interfaces #}
+    bridge-domains {
+{%   for vname in v.evpn.vlans %}
+      vlan-{{ vlans[vname].id }} {
+{%     for intf in interfaces if intf.vlan.access|default('') == vname %}
+        interface {{ intf.ifname }};
+{%     endfor %}
+        vlan-id {{ vlans[vname].id }};
+{%   if vlans[vname].mode == 'irb' %}
+        routing-interface irb.{{ vlans[vname].id }};
+{%   endif %}
+        vxlan {
+          vni {{ vlans[vname].vni }};
+        }
+      }
+{%     endfor %}
+    }
+  }
+{%   endfor %}
+}
+{% endif %}
+
+{% endif %}
+
+{# Common Junos EVPN configuration (BGP neighbors, MAC-VRF, L3VNI, policy-options) #}
+{% include 'junos/common.j2' %}
