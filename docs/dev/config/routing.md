@@ -6,12 +6,6 @@ This document describes the implementation details of the [](generic-routing):
 * [Prefix filter data structure](dev-routing-prefix)
 * [Routing policy data structure](dev-routing-policy)
 
-Still missing:
-
-* BGP AS-path filter data structure
-* BGP community filter data structure
-* Static routing data structure
-
 (dev-routing-platform)=
 ## Platform Capabilities
 
@@ -22,10 +16,11 @@ The routing policy/filtering capabilities of individual devices are specified in
 * **aspath** -- AS path filters (boolean)
 * **community** -- BGP community filter capabilities. **expanded** key indicates that the device can use regular expressions to match BGP communities.
 
-The **policy** capability dictionary has two elements:
+The **policy** capability dictionary has three elements:
 
 * **match** -- attributes the device can use in **match** conditions (prefix, nexthop, aspath, community)
 * **set** -- attributes the device can use in **set** parameters (locpref, med, weight, prepend, community)
+* **delete** -- attributes the device can use in **delete** parameters (currently only community)
 
 The **match** and **set** values could be a list of supported attributes or a dictionary of attributes in case you need to specify the capabilities of individual attributes.
 
@@ -37,6 +32,12 @@ When using the dictionary format, set the supported attribute values to **true**
 * **large** -- device can change **large** communities
 * **extended** -- device can change **extended** communities
 * **append** -- device can append communities to a BGP route
+
+The **delete** attribute controls the ability to delete BGP communities from routes. It can be:
+
+* **true** -- device supports direct community deletion
+* **false** -- device does not support community deletion
+* **clist** -- device requires community lists to delete communities
 
 For example, this is the capability definition for a device that can only set MED and local preference values:
 
@@ -62,7 +63,15 @@ This is the FRRouting capability definition -- it can do almost everything suppo
           large: True
           extended: True
           append: True
-      match: [ prefix, nexthop, aspath, community ]
+      match:
+        prefix: True
+        nexthop: True
+        aspath: True
+        community:
+          standard: True
+          large: True
+      delete:
+        community: clist
     prefix: True
     aspath: True
     community:
@@ -81,10 +90,12 @@ Each entry in a prefix filter list contains these attributes:
 
 * **action** -- `permit` or `deny`
 * **sequence** -- sequence number.
+* **prefix** (optional) -- Reference to a named prefix defined in topology defaults. Mutually exclusive with **pool**, **ipv4**, and **ipv6**.
+* **pool** (optional) -- Reference to an address pool defined in topology addressing. Mutually exclusive with **prefix**, **ipv4**, and **ipv6**.
 * **ipv4** (optional) -- IPv4 prefix to match
 * **ipv6** (optional) -- IPv6 prefix to match
-* **min** (optional) -- Minimum prefix length to match. A dictionary with optional **ipv4** and **ipv6** attributes
-* **max** (optional) -- Maximum prefix length to match. A dictionary with optional **ipv4** and **ipv6** attributes
+* **min** (optional) -- Minimum prefix length to match. Can be an integer (applied to all address families present in the entry) or a dictionary with optional **ipv4** and **ipv6** attributes
+* **max** (optional) -- Maximum prefix length to match. Can be an integer (applied to all address families present in the entry) or a dictionary with optional **ipv4** and **ipv6** attributes
 
 ```{tip}
 The prefix filter entries are sorted by their sequence numbers. If your platform does not require sequence numbers in prefix filters, you can ignore the **‌sequence** attribute.
@@ -232,6 +243,7 @@ Each entry in a routing policy list contains these attributes:
 * **sequence** -- sequence number.
 * **set** -- a dictionary of **set** actions
 * **match** -- a dictionary of **match** conditions
+* **delete** -- a dictionary of **delete** actions (for deleting BGP communities)
 
 ```{tip}
 The routing policy entries are sorted by their sequence numbers. If your platform does not require sequence numbers in route maps, you can ignore the **‌sequence** attribute.
@@ -239,16 +251,31 @@ The routing policy entries are sorted by their sequence numbers. If your platfor
 
 The **match** conditions in a routing policy entry include:
 
-* **prefix** -- match the route with an IPv4 or IPv6 prefix filter
-* **aspath** -- match a BGP AS-path with an AS-path filter
-* **nexthop** -- match the route next hop with an IPv4 or IPv6 prefix filter
-* **community** -- match BGP communities with a BGP community filter
+* **prefix** -- match the route with an IPv4 or IPv6 prefix filter (string filter name)
+* **aspath** -- match a BGP AS-path with an AS-path filter (string filter name)
+* **nexthop** -- match the route next hop with an IPv4 or IPv6 prefix filter (string filter name)
+* **community** -- match BGP communities with a BGP community filter. Can be a string (references a community filter) or a dictionary with **standard**, **extended**, or **large** keys.
 
 The **set** actions include:
 
-* **locpref** -- set local preference
-* **med** -- set route metric (usually used to set BGP MED attribute)
-* **weight** -- set BGP weight
-* **prepend** -- do BGP AS-path prepending
-* **community** -- change BGP communities attached to a route
+* **locpref** -- set local preference (integer)
+* **med** -- set route metric (usually used to set BGP MED attribute) (integer)
+* **weight** -- set BGP weight (integer)
+* **prepend** -- do BGP AS-path prepending. A dictionary with:
+  * **count** -- number of times to prepend (integer 1-32)
+  * **path** -- AS number(s) to prepend (AS number or string)
+* **community** -- change BGP communities attached to a route. A dictionary with:
+  * **standard** -- list of standard BGP communities to set
+  * **extended** -- list of extended BGP communities to set
+  * **large** -- list of large BGP communities to set
+  * **append** -- append communities instead of replacing (boolean)
+  * **delete** -- delete communities from the route
+
+The **delete** actions include:
+
+* **community** -- delete BGP communities from a route. A dictionary with:
+  * **standard** -- list of standard BGP communities to delete
+  * **extended** -- list of extended BGP communities to delete
+  * **large** -- list of large BGP communities to delete
+  * **list** -- reference to a BGP community list to delete (a dictionary with **standard**, **extended**, or **large** keys)
 
