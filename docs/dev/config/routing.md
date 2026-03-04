@@ -22,21 +22,30 @@ The routing policy/filtering capabilities of individual devices are specified in
 * **aspath** -- AS path filters (boolean)
 * **community** -- BGP community filter capabilities. **expanded** key indicates that the device can use regular expressions to match BGP communities.
 
-The **policy** capability dictionary has two elements:
+The **policy** capability dictionary has three elements:
 
 * **match** -- attributes the device can use in **match** conditions (prefix, nexthop, aspath, community)
 * **set** -- attributes the device can use in **set** parameters (locpref, med, weight, prepend, community)
+* **delete** -- attributes the device can use in **delete** parameters (currently only community)
 
-The **match** and **set** values could be a list of supported attributes or a dictionary of attributes in case you need to specify the capabilities of individual attributes.
+The **policy.match**, **policy.set**, and **policy.delete** values can be a list of supported attributes or a dictionary of attributes, if you need to specify the capabilities of individual attributes.
 
 When using the dictionary format, set the supported attribute values to **true**; the only **set** attribute that might need more details is the **community** attribute.
 
-**set.community** can be a dictionary with the following values:
+**policy.set.community** can be a dictionary with the following values:
 
 * **standard** -- device can change **standard** communities
 * **large** -- device can change **large** communities
 * **extended** -- device can change **extended** communities
 * **append** -- device can append communities to a BGP route
+
+The **policy.delete.community** attribute controls whether BGP communities can be deleted from routes. It can be:
+
+* **true** -- device supports direct community deletion
+* **false** -- device does not support community deletion
+* **clist** -- device requires community lists to delete communities
+
+It can also be a dictionary similar to the **set.community** dictionary (with the additional **list** parameter).
 
 For example, this is the capability definition for a device that can only set MED and local preference values:
 
@@ -62,7 +71,15 @@ This is the FRRouting capability definition -- it can do almost everything suppo
           large: True
           extended: True
           append: True
-      match: [ prefix, nexthop, aspath, community ]
+      match:
+        prefix: True
+        nexthop: True
+        aspath: True
+        community:
+          standard: True
+          large: True
+      delete:
+        community: clist
     prefix: True
     aspath: True
     community:
@@ -190,7 +207,7 @@ Notes:
 
 [^IOL]: An euphemism for *we copied Cisco IOS CLI, but don't want to call it that way to avoid Cisco lawyers*.
 
-The *address family* complexity can be avoided on platforms that can match IPv4 and IPv6 prefixes in the same prefix filter. Here's the SR Linux template:
+The *address family* complexity can be avoided on platforms that support matching IPv4 and IPv6 prefixes in a single prefix filter (SR Linux, IOS XR). Here's the SR Linux template:
 
 ```
 {% for pf_name,pf_list in routing.prefix|default({})|items %}
@@ -232,6 +249,7 @@ Each entry in a routing policy list contains these attributes:
 * **sequence** -- sequence number.
 * **set** -- a dictionary of **set** actions
 * **match** -- a dictionary of **match** conditions
+* **delete** -- a dictionary of **delete** actions (for deleting BGP communities)
 
 ```{tip}
 The routing policy entries are sorted by their sequence numbers. If your platform does not require sequence numbers in route maps, you can ignore the **‌sequence** attribute.
@@ -239,16 +257,28 @@ The routing policy entries are sorted by their sequence numbers. If your platfor
 
 The **match** conditions in a routing policy entry include:
 
-* **prefix** -- match the route with an IPv4 or IPv6 prefix filter
-* **aspath** -- match a BGP AS-path with an AS-path filter
-* **nexthop** -- match the route next hop with an IPv4 or IPv6 prefix filter
-* **community** -- match BGP communities with a BGP community filter
+* **prefix** -- match the route with an IPv4 or IPv6 prefix filter (string: filter name)
+* **aspath** -- match a BGP AS-path with an AS-path filter (string: filter name)
+* **nexthop** -- match the route next hop with an IPv4 or IPv6 prefix filter (string: filter name)
+* **community** -- match BGP communities with a BGP community filter. A dictionary with **standard**, **extended**, or **large** keys, where each value is the name of a BGP community filter (string).
 
 The **set** actions include:
 
-* **locpref** -- set local preference
-* **med** -- set route metric (usually used to set BGP MED attribute)
-* **weight** -- set BGP weight
-* **prepend** -- do BGP AS-path prepending
-* **community** -- change BGP communities attached to a route
+* **locpref** -- set local preference (integer)
+* **med** -- set route metric (usually used to set BGP MED attribute) (integer)
+* **weight** -- set BGP weight (integer)
+* **prepend** -- do BGP AS-path prepending. A dictionary with:
+  * **count** -- number of times to prepend own AS (integer 1-32)
+  * **path** -- AS number(s) to prepend (string of space-separated AS numbers)
+* **community** -- change BGP communities attached to a route. A dictionary with:
+  * **standard** -- list of standard BGP communities to set
+  * **extended** -- list of extended BGP communities to set
+  * **large** -- list of large BGP communities to set
+  * **append** -- append communities instead of replacing (boolean)
 
+The only **delete** action implemented at the moment is **delete.community**. It's a dictionary with these keys:
+
+* **standard** -- list of standard BGP communities to delete
+* **extended** -- list of extended BGP communities to delete
+* **large** -- list of large BGP communities to delete
+* **list** -- reference to a BGP community list to delete (a dictionary with **standard**, **extended**, or **large** keys). This key is mutually exclusive with the per-type lists; when **list** is used, no other **delete.community** attributes (**standard**, **extended**, or **large**) are present.
