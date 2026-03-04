@@ -90,6 +90,7 @@ whether they use regular expressions or not
 def expand_community_list(p_name: str,o_name: str,node: Box,topology: Box) -> typing.Optional[list]:
   p_clist = node.routing[o_name][p_name]                    # Shortcut pointer to current community list
   regexp = False                                            # Figure out whether we need expanded clist
+  p_clist.value = sorted(p_clist.value,key=lambda O: O.get('sequence',10))
   for (p_idx,p_entry) in enumerate(p_clist.value):
     try:
       fix_clist_entry(p_clist.value[p_idx],topology)
