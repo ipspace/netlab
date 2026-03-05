@@ -5,11 +5,11 @@ This document describes the implementation details of the [](generic-routing):
 * [Platform capabilities](dev-routing-platform)
 * [Prefix filter data structure](dev-routing-prefix)
 * [AS-Path filter data structure](dev-routing-aspath)
+* [BGP community filter data structure](dev-routing-community)
 * [Routing policy data structure](dev-routing-policy)
 
 Still missing:
 
-* BGP community filter data structure
 * Static routing data structure
 
 (dev-routing-platform)=
@@ -308,6 +308,104 @@ Here's the template used to generate AS-path access lists for FRR:
 !
 {%     for asp_line in asp_list %}
 bgp as-path access-list {{ asp_name }} {{ asp_line.action }} {{ asp_line.path }}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
+```
+
+(dev-routing-community)=
+## BGP Community Filter Data Structure
+
+The [](generic-routing-communities) are transformed into the **routing.community** dictionary:
+
+* The keys are the BGP community filter names
+* The values are dictionaries containing the community filter definition
+
+The community filter definition contains these attributes:
+
+* **type** -- Community type: `standard`, `extended`, or `large`
+* **cl_type** -- Filter type: `standard` or `expanded`. The `expanded` type indicates that the filter uses regular expressions.
+* **regexp** -- Flag for templates: `regexp` if using regular expressions, empty string otherwise
+* **value** -- List of community filter entries
+
+Each entry in the **value** list contains these attributes:
+
+* **action** -- `permit` or `deny`
+* **sequence** -- sequence number.
+* **_value** -- The community value (string). This can be a simple community (e.g., `65000:100`), a space-separated list of communities, or a regular expression pattern.
+* **regexp** (optional) -- Set to the regex pattern if the value is a regular expression.
+
+```{tip}
+The community filter entries are sorted by their sequence numbers. If your platform does not require sequence numbers in community filters, you can ignore the **sequence** attribute.
+```
+
+For example, the following BGP community filters...
+
+```
+routing.community:
+  customers:
+    type: standard
+    value:
+    - action: permit
+      list:
+      - 65000:100
+      - 65000:200
+    - action: deny
+      regexp: ".*"
+  peers:
+    type: standard
+    value:
+    - action: permit
+      path: 65001:*
+```
+
+... are transformed into the following data structure:
+
+```
+routing.community:
+  customers:
+    type: standard
+    cl_type: expanded
+    regexp: regexp
+    value:
+    - action: permit
+      _value: "65000:100 65000:200"
+      regexp: "65000:100 65000:200"
+      sequence: 10
+    - action: deny
+      _value: ".*"
+      regexp: ".*"
+      sequence: 20
+  peers:
+    type: standard
+    cl_type: standard
+    regexp: ""
+    value:
+    - action: permit
+      _value: "65001:*"
+      sequence: 10
+```
+
+The **type** attribute controls which CLI keyword is used to configure the community list:
+
+* **standard** -- `community-list` (or `ip community-list` on some platforms)
+* **extended** -- `extcommunity-list`
+* **large** -- `large-community-list`
+
+The **cl_type** attribute controls whether the standard or expanded form of the community list is used:
+
+* **standard** -- Simple community list (e.g., `65000:100`)
+* **expanded** -- Regular expression-based community list
+
+Here's the template used to generate BGP community lists for FRR:
+
+```
+{% if routing.community|default({}) %}
+{%   set clist_kw = { 'standard': 'community-list', 'extended': 'extcommunity-list', 'large': 'large-community-list' } %}
+{%   for c_name,c_value in routing.community.items() %}
+!
+{%     for c_line in c_value.value %}
+bgp {{ clist_kw[c_value.type] }} {{ c_value.cl_type }} {{ c_name }} {{ c_line.action }} {{ c_line._value }}
 {%     endfor %}
 {%   endfor %}
 {% endif %}
