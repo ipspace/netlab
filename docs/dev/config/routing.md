@@ -356,7 +356,7 @@ routing.community:
     type: standard
     value:
     - action: permit
-      path: 65001:*
+      path: 65001:.*
 ```
 
 ... are transformed into the following data structure:
@@ -365,25 +365,25 @@ routing.community:
 routing.community:
   customers:
     type: standard
+    value:
+    - action: permit
+      sequence: 10
+      _value: 65000:100 65000:200
+    - action: deny
+      regexp: .*
+      sequence: 20
+      _value: .*
     cl_type: expanded
     regexp: regexp
-    value:
-    - action: permit
-      _value: "65000:100 65000:200"
-      regexp: "65000:100 65000:200"
-      sequence: 10
-    - action: deny
-      _value: ".*"
-      regexp: ".*"
-      sequence: 20
   peers:
     type: standard
-    cl_type: standard
-    regexp: ""
     value:
     - action: permit
-      _value: "65001:*"
       sequence: 10
+      _value: 65001:*
+      regexp: 65001:*
+    cl_type: expanded
+    regexp: regexp
 ```
 
 The **type** attribute controls which CLI keyword is used to configure the community list:
