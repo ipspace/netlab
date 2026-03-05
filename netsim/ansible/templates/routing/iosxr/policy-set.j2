@@ -1,0 +1,29 @@
+{% if p_entry.set.locpref is defined %}
+    set local-preference {{ p_entry.set.locpref }}
+{% endif %}
+{% if p_entry.set.med is defined %}
+    set med {{ p_entry.set.med }}
+{% endif %}
+{% if p_entry.set.weight is defined %}
+    set weight {{ p_entry.set.weight }}
+{% endif %}
+{% if p_entry.set.prepend is defined %}
+{%   if p_entry.set.prepend.count is defined %}
+    prepend as-path own-as {{ p_entry.set.prepend.count }}
+{%   elif p_entry.set.prepend.path is defined %}
+{%     for asn in p_entry.set.prepend.path.split(' ') if asn %}
+    prepend as-path {{ asn }}
+{%     endfor %}
+{%   endif %}
+{% endif %}
+{#
+       Set communities -- implemented with a loop to deal with various community types
+#}
+{% for c_kw,c_value in p_entry.set.community|default({})|dictsort %}
+{%   set add_kw = ' additive' if p_entry.set.community.append|default(False) else '' %}
+{%   if c_kw == 'standard' %}
+    set community ({{ c_value|join(",") }}){{ add_kw }}
+{%   elif c_kw == 'large' %}
+    set large-community ({{ c_value|join(",") }}){{ add_kw }}
+{%   endif %}
+{% endfor %}

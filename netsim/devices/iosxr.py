@@ -70,3 +70,4 @@ class IOSXR(_Quirks):
   def device_quirks(self, node: Box, topology: Box) -> None:
     if 'routing' in node:
       rp_set(node,'prefix',None)
+      rp_set(node,'aspath',None)
