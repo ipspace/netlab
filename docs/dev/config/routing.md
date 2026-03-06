@@ -6,11 +6,8 @@ This document describes the implementation details of the [](generic-routing):
 * [Prefix filter data structure](dev-routing-prefix)
 * [AS-Path filter data structure](dev-routing-aspath)
 * [BGP community filter data structure](dev-routing-community)
+* [Static routing data structure](dev-routing-static)
 * [Routing policy data structure](dev-routing-policy)
-
-Still missing:
-
-* Static routing data structure
 
 (dev-routing-platform)=
 ## Platform Capabilities
@@ -406,6 +403,109 @@ Here's the template used to generate BGP community lists for FRR:
 !
 {%     for c_line in c_value.value %}
 bgp {{ clist_kw[c_value.type] }} {{ c_value.cl_type }} {{ c_name }} {{ c_line.action }} {{ c_line._value }}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
+```
+
+(dev-routing-static)=
+## Static Routing Data Structure
+
+The [](generic-routing-static) are stored in the **routing.static** list:
+
+* Unlike other routing objects (prefix, aspath, community), static routes are stored as a **list**, not a dictionary.
+* Each entry in the list represents a single static route.
+
+Each static route entry contains these attributes:
+
+* **ipv4** or **ipv6** -- The prefix to route (string). Only one of these is present.
+* **nexthop** -- A dictionary containing next-hop information:
+  * **ipv4** or **ipv6** -- The next-hop IP address (string). Only one of these is present.
+  * **intf** -- The outgoing interface name (string, for directly-connected next-hops)
+  * **idx** -- The next-hop index (integer, used when multiple next-hops are available)
+  * **discard** -- Set if the route goes to null/discard (used for blackhole routes)
+  * **vrf** -- VRF name for inter-VRF next-hops
+  * **nhlist** -- A list of next-hops (present when the next-hop was specified as a node or gateway and was expanded)
+* **vrf** -- The VRF name (string, present if the static route belongs to a VRF)
+
+For example, a simple static route...
+
+```
+routing.static:
+- ipv4: 192.168.0.0/16
+  nexthop:
+    ipv4: 10.0.0.1
+```
+
+... is transformed into:
+
+```
+routing.static:
+- ipv4: 192.168.0.0/16
+  nexthop:
+    ipv4: 10.0.0.1
+    idx: 0
+```
+
+A static route using a node as next-hop gets expanded to include interface information:
+
+```
+routing.static:
+- ipv4: 192.168.0.0/16
+  nexthop:
+    node: router1
+```
+
+... becomes:
+
+```
+routing.static:
+- ipv4: 192.168.0.0/16
+  nexthop:
+    ipv4: 10.0.0.2
+    intf: eth1
+    idx: 0
+```
+
+### Device Features
+
+The **routing.static** device feature dictionary can contain:
+
+* **vrf** -- Device supports VRF static routes
+* **inter_vrf** -- Device supports inter-VRF static routes (next-hop in a different VRF)
+* **discard** -- Device supports discard/null routes
+* **max_nexthop** -- Maximum number of next-hops per static route (default: 256)
+
+### Template Example
+
+Here's the template used to generate static routes for FRR:
+
+```
+{% if routing.static|default([]) %}
+!
+{% macro config_sr(sr_data,af) %}
+{%   set cmd_af = 'ip' if af == 'ipv4' else af %}
+{%   set e_vrf = ' nexthop-vrf '+(sr_data.nexthop.vrf or 'default') if 'vrf' in sr_data.nexthop else '' %}
+{%   set sr_nh = 'Null0' if 'discard' in sr_data.nexthop else sr_data.nexthop[af] %}
+{{ cmd_af }} route {{ sr_data[af] }} {{ sr_nh }} {{ sr_data.nexthop.intf|default('') }}{{ e_vrf }}
+{% endmacro -%}
+!
+! Global static routes
+!
+{%   for sr_data in routing.static if 'vrf' not in sr_data %}
+{%     for sr_af in ['ipv4','ipv6'] if sr_af in sr_data %}
+{{       config_sr(sr_data,sr_af) -}}
+{%     endfor %}
+{%   endfor %}
+{%   for r_vrf in routing.static|map(attribute='vrf',default=False)|unique if r_vrf %}
+!
+! VRF static routes
+!
+vrf {{ r_vrf }}
+{%     for sr_data in routing.static if sr_data.vrf|default('') == r_vrf %}
+{%       for sr_af in ['ipv4','ipv6'] if sr_af in sr_data %}
+{{         config_sr(sr_data,sr_af) -}}
+{%       endfor %}
 {%     endfor %}
 {%   endfor %}
 {% endif %}
