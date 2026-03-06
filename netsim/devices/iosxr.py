@@ -9,10 +9,11 @@ from ..data import get_new_box
 from ..utils import log
 from . import _Quirks, report_quirk
 
-"""
-Split prefix lists into permit_ and deny_ sets and adjust the routing policies accordingly
-"""
+
 def rp_set(node: Box, o_name: str, o_value: typing.Optional[str]) -> None:
+  """
+  Split prefix lists into permit_ and deny_ sets and adjust the routing policies accordingly
+  """
 
   #
   # Get action set from a routing policy object
@@ -95,10 +96,10 @@ def rp_set(node: Box, o_name: str, o_value: typing.Optional[str]) -> None:
     rp_update_routing_policies(rpo_name)
     node.routing[o_name].pop(rpo_name,None)           # Finally, remove the original routing policy object
 
-"""
-Check the values in community list entries
-"""
 def clist_check(node: Box) -> None:
+  """
+  Check the values in community list entries
+  """
   for cname,cdata in node.routing.community.items():  # Iterate over all community lists
     for centry in cdata.value:                        # ... checking their items
       if centry.get('regexp',None) == '.*':           # "permit any" has to be rewritten
