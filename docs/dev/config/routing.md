@@ -423,12 +423,13 @@ Each static route entry contains these attributes:
 
 * **ipv4** or **ipv6** -- The prefix to route (string). Only one of these is present.
 * **nexthop** -- A dictionary containing next-hop information:
+
   * **ipv4** or **ipv6** -- The next-hop IP address (string). Only one of these is present.
   * **intf** -- The outgoing interface name (string, for directly-connected next-hops)
   * **idx** -- The next-hop index (integer, used when multiple next-hops are available)
   * **discard** -- Set if the route goes to null/discard (used for blackhole routes)
   * **vrf** -- VRF name for inter-VRF next-hops
-  * **nhlist** -- A list of next-hops (present when the next-hop was specified as a node or gateway and was expanded)
+
 * **vrf** -- The VRF name (string, present if the static route belongs to a VRF)
 
 For example, a simple static route...
@@ -450,7 +451,7 @@ routing.static:
     idx: 0
 ```
 
-A static route using a node as next-hop gets expanded to include interface information:
+A static route using a node as the next-hop gets expanded to include interface information:
 
 ```
 routing.static:
@@ -500,10 +501,10 @@ Here's the template used to generate static routes for FRR:
 {{       config_sr(sr_data,sr_af) -}}
 {%     endfor %}
 {%   endfor %}
-{%   for r_vrf in routing.static|map(attribute='vrf',default=False)|unique if r_vrf %}
 !
 ! VRF static routes
 !
+{%   for r_vrf in routing.static|map(attribute='vrf',default=False)|unique if r_vrf %}
 vrf {{ r_vrf }}
 {%     for sr_data in routing.static if sr_data.vrf|default('') == r_vrf %}
 {%       for sr_af in ['ipv4','ipv6'] if sr_af in sr_data %}
