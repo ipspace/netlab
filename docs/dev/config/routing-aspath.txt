@@ -1,0 +1,77 @@
+(dev-routing-aspath)=
+## AS-Path Filters Data Structure
+
+The [](generic-routing-aspath) are transformed into the **routing.aspath** dictionary:
+
+* The keys are the AS-path filter names
+* The values are lists of AS-path filter permit/deny conditions
+
+Each entry in an AS-path filter list contains these attributes:
+
+* **action** -- `permit` or `deny`
+* **sequence** -- sequence number.
+* **path** -- AS path to match. A string containing space-separated AS numbers or AS path regular expression patterns.
+
+```{tip}
+The AS-path filter entries are sorted by their sequence numbers. If your platform does not require sequence numbers in AS-path filters, you can ignore the **sequence** attribute.
+```
+
+For example, the following AS-path filters...
+
+```
+routing.aspath:
+  local_as:
+  - path: 65000
+  peer_as:
+  - path: 65001
+  transit_as:
+  - path: 65000 65002
+  any:
+  - path: ".*"
+```
+
+... are transformed into the following data structure:
+
+```
+routing.aspath:
+  local_as:
+  - action: permit
+    path: "65000"
+    sequence: 10
+  peer_as:
+  - action: permit
+    path: "65001"
+    sequence: 10
+  transit_as:
+  - action: permit
+    path: "65000 65002"
+    sequence: 10
+  any:
+  - action: permit
+    path: ".*"
+    sequence: 10
+```
+
+Some platforms (like Cisco IOS) use numbered AS-path access lists. _netlab_ creates a **routing._numobj** dictionary that maps AS-path filter names to their numbers:
+
+```
+routing._numobj:
+  aspath:
+    local_as: 1
+    peer_as: 2
+    transit_as: 3
+    any: 4
+```
+
+Here's the template used to generate AS-path access lists for FRR:
+
+```
+{% if routing.aspath|default({}) %}
+{%   for asp_name,asp_list in routing.aspath.items() %}
+!
+{%     for asp_line in asp_list %}
+bgp as-path access-list {{ asp_name }} {{ asp_line.action }} {{ asp_line.path }}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
+```
