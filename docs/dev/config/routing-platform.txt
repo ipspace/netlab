@@ -1,0 +1,73 @@
+(dev-routing-platform)=
+## Platform Capabilities
+
+The routing policy/filtering capabilities of individual devices are specified in the device **features.routing** dictionary. That dictionary contains a key for every component supported by the **routing** module:
+
+* **policy** -- routing policy capabilities
+* **prefix** -- prefix filters (boolean)
+* **aspath** -- AS path filters (boolean)
+* **community** -- BGP community filter capabilities. **expanded** key indicates that the device can use regular expressions to match BGP communities.
+
+The **policy** capability dictionary has three elements:
+
+* **match** -- attributes the device can use in **match** conditions (prefix, nexthop, aspath, community)
+* **set** -- attributes the device can use in **set** parameters (locpref, med, weight, prepend, community)
+* **delete** -- attributes the device can use in **delete** parameters (currently only community)
+
+The **policy.match**, **policy.set**, and **policy.delete** values can be a list of supported attributes or a dictionary of attributes, if you need to specify the capabilities of individual attributes.
+
+When using the dictionary format, set the supported attribute values to **true**; the only **set** attribute that might need more details is the **community** attribute.
+
+**policy.set.community** can be a dictionary with the following values:
+
+* **standard** -- device can change **standard** communities
+* **large** -- device can change **large** communities
+* **extended** -- device can change **extended** communities
+* **append** -- device can append communities to a BGP route
+
+The **policy.delete.community** attribute controls whether BGP communities can be deleted from routes. It can be:
+
+* **true** -- device supports direct community deletion
+* **false** -- device does not support community deletion
+* **clist** -- device requires community lists to delete communities
+
+It can also be a dictionary similar to the **set.community** dictionary (with the additional **list** parameter).
+
+For example, this is the capability definition for a device that can only set MED and local preference values:
+
+```
+features:
+  routing:
+    policy:
+      set: [ locpref, med ]
+```
+
+This is the FRRouting capability definition -- it can do almost everything supported by the routing module:
+
+```
+  routing:
+    policy:
+      set:
+        locpref: True
+        med: True
+        weight: True
+        prepend: True
+        community:
+          standard: True
+          large: True
+          extended: True
+          append: True
+      match:
+        prefix: True
+        nexthop: True
+        aspath: True
+        community:
+          standard: True
+          large: True
+      delete:
+        community: clist
+    prefix: True
+    aspath: True
+    community:
+      expanded: True
+```
