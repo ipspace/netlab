@@ -1,6 +1,6 @@
 # Generic Routing Tools Configuration Templates
 
-This document describes the implementation details of the [](generic-routing):
+This document describes the implementation details of the device configuration templates (and associated platform capabilities) needed to implement [](generic-routing):
 
 * [Platform capabilities](dev-routing-platform)
 * [Prefix filter data structure](dev-routing-prefix)
@@ -9,6 +9,9 @@ This document describes the implementation details of the [](generic-routing):
 * [Static routing data structure](dev-routing-static)
 * [Routing policy data structure](dev-routing-policy)
 
+<!--
+Note to reviewers: the document describes the outputs of the transformation process, not the topology elements used as its input. The outputs might differ significantly from the inputs; you have to analyze the code to determine whether the outputs are correctly described.
+-->
 (dev-routing-platform)=
 ## Platform Capabilities
 
@@ -235,7 +238,7 @@ Notes:
 (dev-routing-aspath)=
 ## AS-Path Filters Data Structure
 
-The [](generic-routing-aspaths) are transformed into the **routing.aspath** dictionary:
+The [](generic-routing-aspath) are transformed into the **routing.aspath** dictionary:
 
 * The keys are the AS-path filter names
 * The values are lists of AS-path filter permit/deny conditions
@@ -313,7 +316,7 @@ bgp as-path access-list {{ asp_name }} {{ asp_line.action }} {{ asp_line.path }}
 (dev-routing-community)=
 ## BGP Community Filter Data Structure
 
-The [](generic-routing-communities) are transformed into the **routing.community** dictionary:
+The [](generic-routing-community) are transformed into the **routing.community** dictionary:
 
 * The keys are the BGP community filter names
 * The values are dictionaries containing the community filter definition
