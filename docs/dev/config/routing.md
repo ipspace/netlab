@@ -356,7 +356,7 @@ routing.community:
     type: standard
     value:
     - action: permit
-      path: 65001:.*
+      path: "65001:.*"
 ```
 
 ... are transformed into the following data structure:
@@ -380,8 +380,8 @@ routing.community:
     value:
     - action: permit
       sequence: 10
-      _value: 65001:*
-      regexp: 65001:*
+      _value: 65001:.*
+      regexp: 65001:.*
     cl_type: expanded
     regexp: regexp
 ```
