@@ -14,9 +14,9 @@ Split prefix lists into permit_ and deny_ sets and adjust the routing policies a
 """
 def rp_set(node: Box, o_name: str, o_value: typing.Optional[str]) -> None:
 
-  """
-  Get action set from a routing policy object
-  """
+  #
+  # Get action set from a routing policy object
+  #
   def rp_get_action_set(rpo_value: list) -> set:
     action_set = set()                                # Collect permit/deny actions
     oo_warning = False                                # Remember whether we emitted out-of-order warning
@@ -37,9 +37,9 @@ def rp_set(node: Box, o_name: str, o_value: typing.Optional[str]) -> None:
 
     return action_set
 
-  """
-  Create permit/deny objects from the original routing policy object
-  """
+  #
+  # Create permit/deny objects from the original routing policy object
+  #
   def rp_create_permit_deny_objects(rpo_name: str) -> None:
     for action in ('deny','permit'):
       o_act_name = f'{rpo_name}_{action}'             # Create permit- and deny objects
@@ -51,9 +51,9 @@ def rp_set(node: Box, o_name: str, o_value: typing.Optional[str]) -> None:
       else:
         node.routing[o_name][o_act_name] = o_act_list # Otherwise the trimmed list is the value
 
-  """
-  Update routing policies to use the new permit/deny objects
-  """
+  #
+  # Update routing policies to use the new permit/deny objects
+  #
   def rp_update_routing_policies(rpo_name: str) -> None:
     for rp_value in node.routing.get('policy',{}).values():
       for rp_entry in rp_value:                       # Iterate over RP entries
@@ -101,14 +101,13 @@ Check the values in community list entries
 def clist_check(node: Box) -> None:
   for cname,cdata in node.routing.community.items():  # Iterate over all community lists
     for centry in cdata.value:                        # ... checking their items
-      if 'regexp' not in centry:                      # Did the routing module think this was complex?
-        continue                                      # ... nope, move on
-      if centry.regexp == '.*':                       # "permit any" has to be rewritten
+      if centry.get('regexp',None) == '.*':           # "permit any" has to be rewritten
         centry.regexp = '.*:.*' if cdata.type == 'standard' else '.*:.*:.*'
         centry._value = centry.regexp                 # ... for standard or large communities
         continue
+      centry._value = centry._value.strip('_')        # Remove leading/trailing boundary markers
       if ' ' in centry._value or '_' in centry._value:
-        report_quirk(
+        report_quirk(                                 # Also, IOS XR cannot handle multi-community entries
           f'Community lists can match a single community in each entry',
           more_data=[f'Node {node.name} community list {cname} entry {centry._value}'],
           quirk=f'routing_clist_multiple',
