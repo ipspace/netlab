@@ -210,6 +210,8 @@ See also [common Cisco IOS](caveats-iosv) caveats.
 
 * Cisco IOS XR cannot configure the minimum TTL when configuring BGP TTL security. The value of the **bgp.gtsm** interface parameter is ignored.
 * Cisco IOS XR routing policies cannot use traditional prefix lists. _netlab_ thus implements **routing.prefix** lists as **prefix-sets** which cannot mix **permit** and **deny** conditions. When encountering such a filter, _netlab_ generates a warning and does its best (**deny** check followed by **permit** check).
+* The same limitation applies to BGP AS-path matching (using **as-set** objects) and BGP community matching (using **community-set** objects)
+* _netlab_ translates **match.community** routing policy entry into IOS XR `community matches-any` test, and the **community-set** object cannot match two (or more) communities in a single entry. You cannot use the current _netlab_ IOS XR implementation of BGP community lists to match two (or more) communities being attached to the route *at the same time*.
 
 ### Cisco IOS XRv
 
