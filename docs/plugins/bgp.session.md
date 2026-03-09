@@ -23,14 +23,18 @@ The plugin adds the following BGP session attributes:
 * **bgp.password** is a string attribute that specifies the MD5  or TCP-AO password used on EBGP sessions.
 * **bgp.remove_private_as** is a boolean/string/list attribute that describes the desired removal of private autonomous system(s) from the AS path. See [](bgp-session-remove-private-as) section for more details.
 * **bgp.rs** is a boolean attribute specifying that a BGP router is a BGP route server. See [](bgp-session-route-server) section for more details.
-* **bgp.tcp_ao** is an attribute that enables TCP-AO on a BGP session. The attribute value *true* enables TCP-AO with the HMAC-SHA1-96 algorithm; you can specify the desired algorithm as a string value of **bgp.tcp_ao** parameter.
+* **bgp.tcp_ao** is an attribute that enables TCP-AO on a BGP session[^AOO]. The attribute value *true* enables TCP-AO with the HMAC-SHA1-96[^AOA] algorithm. You can specify the desired algorithm as the string value of the **bgp.tcp_ao** parameter (valid values are `hmac-sha-1` and `aes-128-cmac`).
 * **bgp.timers** is a dictionary of BGP session timers. It has three elements:
 
 	* **bgp.timers.keepalive** -- keepalive timer in seconds
 	* **bgp.timers.hold** -- hold timer in seconds
-	* **bgp.timers.min_hold** -- minimum hold timer accepted from the remote node. It is used only on devices where the minimum hold timer can be specified per BGP neighbor.
+	* **bgp.timers.min_hold** -- minimum hold timer accepted from the remote node. It is used only on devices that support specifying the minimum hold timer per BGP neighbor.
 
 [^PBP]: A passive BGP peer waits for its neighbor to initiate the conversation and never tries to establish a TCP session with its neighbor.
+
+[^AOO]: The TCP-AO is configured to include TCP options in the checksum calculation
+
+[^AOA]: The HMAC-SHA1-96 algorithm is specified as **hmac-sha-1** in the **bgp.tcp_ao** parameter and configured as HMAC-SHA-96 in several implementations (for example, Cisco IOS XR and Arista EOS)
 
 BGP session attributes can be specified at the global, node, link, or interface (node-to-link attachment) level. The following table describes where you could apply individual attributes:
 
@@ -92,11 +96,11 @@ BGP session security features are available on these platforms:
 
 | Operating system    | password | GTSM | TCP-AO |
 | ------------------- | :------: | :-: | :-:  |
-| Arista EOS          |    ✅    | ✅  |  ✅  |
+| Arista EOS          |    ✅    | ✅  |  ✅ |
 | Aruba AOS-CX        |    ✅    | ✅  |  ❌  |
 | Cisco IOSv/IOSvL2   |    ✅    | ✅  |  ❌  |
-| Cisco IOS XE[^18v]  |    ✅    | ✅  |  ✅  |
-| Cisco IOS XR[^XR]   |    ✅    | ✅  |  ❌  |
+| Cisco IOS XE[^18v]  |    ✅    | ✅  |  ✅ |
+| Cisco IOS XR[^XR]   |    ✅    | ✅  |  ✅ |
 | Cisco Nexus OS      |    ✅    | ✅  |  ❌  |
 | Cumulus Linux       |    ✅    | ✅  |  ❌  |
 | Dell OS10           |    ✅    | ❌  |  ❌  |

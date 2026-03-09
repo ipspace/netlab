@@ -3,6 +3,7 @@ import typing
 from box import Box
 
 from netsim import api, modules
+from netsim.data import append_to_list
 from netsim.utils import log
 from netsim.utils import routing as _bgp
 
@@ -95,11 +96,8 @@ def process_tcpao_password(neigh: Box, ndata: Box) -> None:
     return
   
   pwd = neigh.password
-  if not '_ao_secrets' in ndata.bgp:
-    ndata.bgp._ao_secrets = []
-
-  if not pwd in ndata.bgp._ao_secrets:
-    ndata.bgp._ao_secrets.append(pwd)
+  append_to_list(ndata.bgp,'_ao_secrets',pwd)
+  append_to_list(ndata.bgp,'_ao_algo_secrets',f'{neigh.tcp_ao}:{pwd}')
 
 def process_tcpao_secrets(ndata: Box,topology: Box) -> None:
   for ngb in _bgp.neighbors(ndata):

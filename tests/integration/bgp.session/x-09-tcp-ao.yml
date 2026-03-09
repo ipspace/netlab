@@ -1,0 +1,53 @@
+message:
+  This lab tests the BGP TCP-AO password functionality. The EBGP session
+  between the probe and the lab device should be established.
+
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
+plugin: [ bgp.session ]
+module: [ bgp ]
+
+groups:
+  probes:
+    device: eos
+    provider: libvirt
+    members: [ x1, x2 ]
+
+addressing:
+  p2p:
+    ipv6: 2001:db8:3::/48
+  lan:
+    ipv6: 2001:db8:4::/48
+
+defaults.bgp.as: 65000
+
+nodes:
+  dut:
+  x1:
+    bgp.as: 65100
+  x2:
+    bgp.as: 65101
+
+links:
+- dut:
+  x1:
+  bgp.password: Secret
+  bgp.tcp_ao: aes-128-cmac
+- dut:
+  x2:
+  bgp.password: Other
+  bgp.tcp_ao: True
+
+validate:
+  x1_v4:
+    description: Check IPv4 EBGP sessions with DUT
+    wait_msg: Waiting for EBGP session establishment
+    wait: 200
+    nodes: [ x1, x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  x1_v6:
+    description: Check IPv6 EBGP sessions with DUT
+    wait_msg: Waiting for EBGP session establishment
+    wait: 30
+    nodes: [ x1, x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')

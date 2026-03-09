@@ -7,11 +7,8 @@ neighbor {{ n[af] }}
   enforce-first-as disable
 {% endif %}
 {%   if n.tcp_ao is defined %}
-{#
-   Not implemented yet
-{%     set idx = bgp._ao_secrets.index(n.password) + 1 %}
-  neighbor {{ n[af] }} ao tcp-ao-{{ idx }}
-#}
+{%     set idx = bgp._ao_algo_secrets.index(n.tcp_ao + ":" + n.password) + 1 %}
+  ao tcp-ao-{{ idx }} include-tcp-options enable
 {%   elif n.password is defined %}
   password clear {{ n.password }}
 {%   endif %}
@@ -41,15 +38,25 @@ default-originate
 remove-private-AS{{ " entire-aspath" if 'all' in n.remove_private_as else "" }}
 {%   endif %}
 {%- endmacro %}
+{% set ao_algo = { 'aes-128-cmac': 'aes-128-cmac-96', 'hmac-sha-1': 'hmac-sha1-96', '':  'hmac-sha1-96' } %}
+{% for algo_pwd in bgp._ao_algo_secrets|default([]) %}
 !
-{% for pwd in bgp._ao_secrets|default([]) %}
-key chain tcp-ao-{{ loop.index }} tcp
+{%   set (algo,pwd) = algo_pwd.split(':',1) %}
+key chain tcp-ao-{{ loop.index }}
   key 0
-    send-id 0
-    recv-id 0
-    cryptographic-algorithm hmac-sha-1
+    cryptographic-algorithm {{ ao_algo[algo] }}
+    send-lifetime 00:00:00 1 january 2000 infinite
+    accept-lifetime 00:00:00 1 january 2000 infinite
     key-string {{ pwd }}
+{% endfor %}
+{% for pwd in bgp._ao_algo_secrets|default([]) %}
+{%   if loop.first %}
 !
+tcp ao
+{%   endif %}
+!
+  keychain tcp-ao-{{ loop.index }}
+  key 0 SendID 0 ReceiveID 0
 {% endfor %}
 router bgp {{ bgp.as }}
 {% for n in bgp.neighbors %}
