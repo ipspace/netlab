@@ -11,6 +11,7 @@ The following implementation notes for configuration deployment, initial device 
    initial.md
    bfd.md
    bgp.md
+   ebgp.multihop.md
    gateway.md
    mpls.md
    ospf.md
