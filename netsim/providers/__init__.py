@@ -109,8 +109,7 @@ class _Provider(Callback):
     fname = self.get_output_name(fname,topology)
     tname = self.get_root_template()
     try:
-      search_path = _files.get_search_path(self.provider)
-      search_path.append(self.get_full_template_path())
+      search_path = _files.get_search_path(self.provider,pkg_path_component=self.get_template_path())
       r_text = templates.render_template(
         data=topology.to_dict(),
         j2_file=tname,

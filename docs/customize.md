@@ -25,9 +25,9 @@ If you want to change the provisioning or device configuration templates, you ca
 
 ```{tip}
 * Use the `netlab create --debug paths` command to display the components of individual search paths and the directories _netlab_ uses when searching those paths (non-existent directories are removed from the search paths).
-* Use the `‌netlab create --debug template` command to troubleshoot template errors; the debugging printouts display every template file _netlab_ searched for and the search path it used for the search.
-* Use the `‌netlab create --output provider` with one of the `--debug` options to reduce the amount of debugging output when troubleshooting the provider configuration files.
-* The `‌--debug` option must be the last option in the command line.
+* Use the `netlab create --debug template` command to troubleshoot template errors; the debugging printouts display every template file _netlab_ searched for and the search path it used for the search.
+* Use the `netlab create --output provider` with one of the `--debug` options to reduce the amount of debugging output when troubleshooting the provider configuration files.
+* The `--debug` option must be the last option in the command line.
 ```
 
 ```{warning}
