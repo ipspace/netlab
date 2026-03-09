@@ -21,6 +21,8 @@ This document describes how to write configuration templates for the **ebgp.mult
 
 Add `features.bgp.multihop: true` to your device definition to indicate that the device supports EBGP multihop sessions. The `ebgp.multihop` plugin uses this flag to determine which devices it should configure.
 
+If your device supports EBGP multihop sessions in VRFs, set `features.bgp.multihop.vrf: true` instead. This setting implies support for EBGP multihop features in the global routing table.
+
 (dev-ebgp-multihop-neighbor)=
 ## BGP Neighbor Attributes
 
@@ -32,7 +34,7 @@ The plugin adds the following attributes to relevant entries in the **bgp.neighb
   * **ipv4** (optional) -- The IPv4 address assigned to the source interface
   * **ipv6** (optional) -- The IPv6 address assigned to the source interface
 
-Use `n[af]` to get the neighbor's IP address (as in any BGP template), and add the multihop and update-source commands when the corresponding attributes are present.
+Use `n[af]` to get the neighbor's IP address (as in any BGP template), and add the **multihop** and **update-source** commands when the corresponding attributes are present.
 
 (dev-ebgp-multihop-template)=
 ## Template Structure
@@ -68,7 +70,7 @@ The plugin also handles multihop sessions within VRFs. Apply the same macro to e
 
 ```
 {% if vrfs is defined %}
-{%   for vname,vdata in vrfs.items() if vdata.bgp is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.bgp.neighbors is defined %}
 router bgp {{ vdata.as|default(bgp.as) }} vrf {{ vname }}
 {%     for af in ['ipv4','ipv6'] %}
 {%       for n in vdata.bgp.neighbors if n[af] is defined %}
@@ -83,7 +85,7 @@ router bgp {{ vdata.as|default(bgp.as) }} vrf {{ vname }}
 
 ```
 {% if vrfs is defined %}
-{%   for vname,vdata in vrfs.items() %}
+{%   for vname,vdata in vrfs.items() if vdata.bgp.neighbors is defined %}
 {%     for af in ('ipv4','ipv6') if af in vdata.af|default({}) %}
  address-family {{ af }} vrf {{ vname }}
 {%       for n in vdata.bgp.neighbors if n[af] is defined %}
@@ -98,7 +100,7 @@ router bgp {{ vdata.as|default(bgp.as) }} vrf {{ vname }}
 
 ```
 {% if vrfs is defined %}
-{%   for vname,vdata in vrfs.items() if vdata.bgp is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.bgp.neighbors is defined %}
  vrf {{ vname }}
 {%     for af in ['ipv4','ipv6'] %}
 {%       for n in vdata.bgp.neighbors if n[af] is defined %}
