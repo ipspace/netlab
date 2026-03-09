@@ -17,13 +17,15 @@ router bgp {{ bgp.as }}
 {% endfor %}
 !
 {% if vrfs is defined %}
-{%   for vname,vdata in vrfs.items() %}
+{%   for vname,vdata in vrfs.items() if vdata.bgp.neighbors is defined %}
   vrf {{ vname }}
 {%     for af in ('ipv4','ipv6') if af in vdata.af|default({}) %}
 {%       for n in vdata.bgp.neighbors if n[af] is defined %}
 {{         ebgp_session(n,af) -}}
 {%       endfor %}
 {%     endfor %}
+!
+do clear ip bgp vrf {{ vname }} *
 {%   endfor %}
 {% endif %}
 
