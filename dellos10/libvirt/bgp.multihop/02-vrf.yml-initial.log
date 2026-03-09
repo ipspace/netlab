@@ -2,13 +2,13 @@ Creating Device configuration snippets
 [CREATED] dut: initial,ospf,bgp,vrf,ebgp.multihop
 [CREATED] c1: initial,ospf
 [CREATED] pe2: initial,ospf,bgp,bgp.session,ebgp.multihop
-Checking Are lab devices ready to be configured?
- [INFO] Checking SSH server(s) on dut
-[SSH]     SSH server on node dut (device iol) is ready after 25.3 seconds
+[CREATED] ce1: initial,bgp
 Config Deploying device configurations
  [INFO] Executing initial configuration for node c1
  [INFO] Executing initial configuration for node pe2
+ [INFO] Executing initial configuration for node ce1
  [INFO] Executing ospf configuration for node pe2
+ [INFO] Executing bgp configuration for node ce1
  [INFO] Executing ospf configuration for node c1
  [INFO] Executing bgp configuration for node pe2
  [INFO] Executing bgp.session configuration for node pe2
@@ -60,16 +60,16 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "initial configuration for dut\n=========================================\nhostname dut\n!\nno ip domain lookup\nlogging buffered 256000\n\n!\nlldp run\n!\nip host c1 10.0.0.2 10.1.0.1 10.1.0.5 2001:db8:1:2::1 2001:db8:3::1 2001:db8:3:1::1\nip host dut-tenant 10.1.0.2 192.168.42.1 10.2.0.1 2001:db8:3::2 2001:db8:42::1 2001:db8:4::1\nip host pe2 10.0.0.3 10.1.0.6 2001:db8:1:3::1 2001:db8:3:1::2\n!\nip routing\n!\nipv6 unicast-routing\n!\nvrf definition tenant\n rd 65000:1\n route-target import 65000:1\n route-target export 65000:1\n!\n address-family ipv4\n exit-address-family\n!\n address-family ipv6\n exit-address-family\n!\n\n!\n!\ninterface Loopback0\n ip address 10.0.0.1 255.255.255.255\n ipv6 address 2001:DB8:1:1::1/64\n!\ninterface Ethernet0/0\n no lldp transmit\n no lldp receive\n!\ninterface Ethernet0/1\n vrf forwarding tenant\n description dut -> c1\n ip address 10.1.0.2 255.255.255.252\n ipv6 nd ra interval 5\n ipv6 address 2001:DB8:3::2/64\n no shutdown\n!\ninterface Ethernet0/2\n vrf forwarding tenant\n description dut -> stub [stub]\n ip address 192.168.42.1 255.255.255.0\n ipv6 nd ra interval 5\n ipv6 address 2001:DB8:42::1/64\n no shutdown\n!\ninterface Loopback1\n vrf forwarding tenant\n description VRF Loopback tenant\n ip address 10.2.0.1 255.255.255.255\n ipv6 nd ra interval 5\n ipv6 address 2001:DB8:4::1/64\n no shutdown\n!\n!\nline vty 0 4\n exec-timeout 0 0 \n!\nno banner exec\nno banner login\nno banner incoming\n"
+    "msg": "initial configuration for dut\n=========================================\nhostname dut\n!\nlldp enable\n!\nip vrf tenant\nexit\n!\nip host c1 10.0.0.2\nip host pe2 10.0.0.3\nip host ce1 10.0.0.4\n!\n!\ndefault mtu 1532\n!\ninterface mgmt1/1/1\n no lldp transmit\n no lldp receive\n!\ninterface loopback0\n no shutdown\n ip address 10.0.0.1/32\n no ipv6 enable\n!\ninterface ethernet1/1/1\n no shutdown\n no switchport\n ip vrf forwarding tenant\n description \"dut -> c1\"\n ip address 10.1.0.1/30\n ip unreachables\n no ipv6 enable\n!\ninterface ethernet1/1/2\n no shutdown\n no switchport\n ip vrf forwarding tenant\n description \"dut -> ce1 [external]\"\n ip address 10.1.0.9/30\n ip unreachables\n no ipv6 enable\n!\ninterface loopback1\n no shutdown\n ip vrf forwarding tenant\n description \"VRF Loopback tenant\"\n ip address 10.2.0.1/32\n no ipv6 enable\n!\n"
 }
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
 
-TASK [ios_config: deploying initial from /work/netlab_cicd/node_files/dut/initial] ***
-[WARNING]: To ensure idempotency and correct diff the input configuration lines
-should be similar to how they appear if present in the running configuration on
-device including the indentation
+TASK [wait_for_connection] *****************************************************
+skipping: [dut]
+
+TASK [dellos10_config: deploying initial from /work/netlab_cicd/node_files/dut/initial, save to startup=yes] ***
 changed: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -100,10 +100,13 @@ ok: [dut] => {
 }
 
 TASK [Deploy ospf configuration] ***********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
 
-TASK [ios_config: deploying ospf from /work/netlab_cicd/node_files/dut/ospf] ***
-ok: [dut]
+TASK [wait_for_connection] *****************************************************
+skipping: [dut]
+
+TASK [dellos10_config: deploying ospf from /work/netlab_cicd/node_files/dut/ospf, save to startup=yes] ***
+changed: [dut]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
@@ -119,13 +122,16 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "bgp configuration for dut\n=========================================\n!\nip bgp-community new-format\n!\nrouter bgp 65000\n no bgp default ipv4-unicast\n bgp update-delay 5\n bgp nopeerup-delay cold-boot 1\n bgp nopeerup-delay user-initiated 1\n bgp router-id 10.0.0.1\n!\n address-family ipv4\n  bgp scan-time 5\n!\n!\n! Originate networks from connected subnets\n!\n  network 10.0.0.1 mask 255.255.255.255\n\n!\n address-family ipv6\n  bgp scan-time 5\n!\n!\n! Originate networks from connected subnets\n!\n  network 2001:db8:1:1::/64\n\n!\n!\n"
+    "msg": "bgp configuration for dut\n=========================================\n!\nrouter bgp 65000\n  log-neighbor-changes\n\n! define a generic unnumbered template to be used for eBGP unnumbered...\n! additionally, need to define link-local-only-nexthop as per Dell suggested \"Cumulus workaround\"\n! WTF Dell...\n  template unnumbered_ebgp\n    link-local-only-nexthop\n    exit\n\n  router-id 10.0.0.1\n!\n!\n address-family ipv4 unicast\n!\n\n  network 10.0.0.1/32\n!\n!\n!\n!\n"
 }
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
 
-TASK [ios_config: deploying bgp from /work/netlab_cicd/node_files/dut/bgp] *****
+TASK [wait_for_connection] *****************************************************
+skipping: [dut]
+
+TASK [dellos10_config: deploying bgp from /work/netlab_cicd/node_files/dut/bgp, save to startup=yes] ***
 changed: [dut]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
@@ -142,13 +148,16 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "vrf configuration for dut\n=========================================\n!\nrouter bgp 65000\n!\n address-family ipv4 vrf tenant\n  bgp router-id 10.0.0.1\n  redistribute connected\n  redistribute ospf 100 match internal external\n\n!\n  network 10.2.0.1 mask 255.255.255.255\n\n!\n  neighbor 10.0.0.3 remote-as 65101\n  neighbor 10.0.0.3 description pe2\n  neighbor 10.0.0.3 update-source Loopback1\n\n  neighbor 10.0.0.3 activate\n  neighbor 10.0.0.3 advertisement-interval 0\n  neighbor 10.0.0.3 send-community standard\n\n exit-address-family\n!\n address-family ipv6 vrf tenant\n  bgp router-id 10.0.0.1\n  redistribute connected\n  redistribute ospf 100 match internal external\n\n!\n  network 2001:db8:4::/64\n\n!\n  neighbor 2001:db8:1:3::1 remote-as 65101\n  neighbor 2001:db8:1:3::1 description pe2\n  neighbor 2001:db8:1:3::1 update-source Loopback1\n\n  neighbor 2001:db8:1:3::1 activate\n  neighbor 2001:db8:1:3::1 advertisement-interval 0\n  neighbor 2001:db8:1:3::1 send-community standard\n\n exit-address-family\n!\nexit\n!\n!\nrouter ospf 100 vrf tenant\n router-id 10.0.0.1\n passive-interface Ethernet0/2\n\n redistribute bgp 65000\n redistribute connected\n\n!\ninterface Ethernet0/1\n! dut -> c1\n ip ospf 100 area 0.0.0.0\n ip ospf network point-to-point\n!\ninterface Ethernet0/2\n! dut -> stub\n ip ospf 100 area 0.0.0.0\n!\ninterface Loopback1\n! VRF Loopback tenant\n ip ospf 100 area 0.0.0.0\n!\n\nrouter ospfv3 100\n router-id 10.0.0.1\n address-family ipv6 unicast vrf tenant\n  passive-interface Ethernet0/2\n  redistribute bgp 65000\n  redistribute connected\n\n!\ninterface Ethernet0/1\n! dut -> c1\n ospfv3 100 ipv6 area 0.0.0.0\n ospfv3 network point-to-point\n!\ninterface Ethernet0/2\n! dut -> stub\n ospfv3 100 ipv6 area 0.0.0.0\n!\ninterface Loopback1\n! VRF Loopback tenant\n ospfv3 100 ipv6 area 0.0.0.0\n!\n\n!\n"
+    "msg": "vrf configuration for dut\n=========================================\n\nrouter ospf 100 vrf tenant\n router-id 10.0.0.1\n redistribute bgp 65000\n redistribute connected\n\n redistribute imported-ospf-routes\n\n\n\n timers lsa arrival 100\n timers spf 10 50 500\n timers throttle lsa all 100\n!\ninterface ethernet1/1/1\n! dut -> c1\n ip ospf 100 area 0.0.0.0\n ip ospf network point-to-point\n!\n\ninterface loopback1\n! VRF Loopback tenant\n ip ospf 100 area 0.0.0.0\n!\n\nexit\n!\nip vrf tenant\n!\n! ip route-import | route-export xxx\n ip route-import 65000:1\n ip route-export 65000:1\n!\nexit\n!\n\nrouter bgp 65000\n!\n vrf tenant\n  router-id 10.0.0.1\n! need to define unnumbered template also at vrf-level\n  template unnumbered_ebgp\n    link-local-only-nexthop\n    exit\n\n!\n  neighbor 10.1.0.10\n    remote-as 65200\n    \n    description \"ce1\"\n    send-community standard\n\n!\n    address-family ipv4 unicast\n      soft-reconfiguration inbound\n      activate\n    exit\n    address-family ipv6 unicast\n      no activate\n    exit\n\n    timers 3 9\n    advertisement-interval 1\n    no shutdown\n  exit\n!\n  neighbor 10.0.0.3\n    remote-as 65101\n    \n    description \"pe2\"\n    update-source loopback1\n    send-community standard\n\n!\n    address-family ipv4 unicast\n      soft-reconfiguration inbound\n      activate\n    exit\n    address-family ipv6 unicast\n      no activate\n    exit\n\n    timers 3 9\n    advertisement-interval 1\n    no shutdown\n  exit\n\n!\n address-family ipv4 unicast\n redistribute connected\n redistribute ospf 100\n\n   network 10.2.0.1/32\n\n!\n  neighbor 10.1.0.10\n     address-family ipv4 unicast\n       soft-reconfiguration inbound\n       activate\n     address-family ipv6 unicast\n       no activate\n!\n  neighbor 10.0.0.3\n     address-family ipv4 unicast\n       soft-reconfiguration inbound\n       activate\n     address-family ipv6 unicast\n       no activate\n\n"
 }
 
 TASK [Deploy vrf configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
 
-TASK [ios_config: deploying vrf from /work/netlab_cicd/node_files/dut/vrf] *****
+TASK [wait_for_connection] *****************************************************
+skipping: [dut]
+
+TASK [dellos10_config: deploying vrf from /work/netlab_cicd/node_files/dut/vrf, save to startup=yes] ***
 changed: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************
@@ -176,18 +185,22 @@ TASK [Find custom configuration deployment script] *****************************
 ok: [dut]
 
 TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
 
-TASK [ios_config: deploying ebgp.multihop from /work/netlab_cicd/node_files/dut/ebgp.multihop] ***
+TASK [wait_for_connection] *****************************************************
+skipping: [dut]
+
+TASK [dellos10_config: deploying ebgp.multihop from /work/netlab_cicd/node_files/dut/ebgp.multihop, save to startup=yes] ***
 changed: [dut]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=40   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+dut                        : ok=40   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================
 c1               Script:  initial,ospf
 pe2              Script:  initial,ospf,bgp,bgp.session,ebgp.multihop
+ce1              Script:  initial,bgp
 
 
 Use this topology to test the VRF EBGP multihop implementation
