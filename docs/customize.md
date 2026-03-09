@@ -18,15 +18,16 @@ You can also augment the _netlab_ data model transformation or add new functiona
 (customize-templates)=
 If you want to change the provisioning or device configuration templates, you can:
 
-* Create your own device configuration templates: copy a [system device configuration template](https://github.com/ipspace/netlab/tree/dev/netsim/ansible/templates) into **templates/_module_/_device_.j2** file[^MIN] and modify it. You can have custom device configuration templates in the current directory or in the `~/.netlab` directory.
-* Create your own device provisioning template: copy a [system template](https://github.com/ipspace/netlab/tree/dev/netsim/templates) into **_provider_/_device_-domain.j2** file and modify it.
+* Create your own device configuration templates: copy a [system device configuration template](https://github.com/ipspace/netlab/tree/dev/netsim/ansible/templates) into **templates/_module_/_device_.j2** file[^MIN] and modify it. You can have custom device configuration templates in the current directory, the lab topology directory, the `~/.netlab` directory, or the `/etc/netlab` directory.
+* Create your own device provisioning template: copy a [system template](https://github.com/ipspace/netlab/tree/dev/netsim/templates) into **_provider_/_device_-domain.j2** file and modify it. You can have custom device provisioning templates in the current directory, the `~/.netlab` directory, or the `/etc/netlab` directory.
 
 [^MIN]: Initial device configurations are stored in **templates/initial** directory.
 
 ```{tip}
-Use the **‌netlab create --debug paths** command to display the components of individual search paths and the directories _netlab_ uses when searching those paths (non-existent directories are removed from the search paths).
-
-You can use the same command to troubleshoot template errors; the debugging printouts display every template file _netlab_ searched for and the search path it used for the search.
+* Use the `netlab create --debug paths` command to display the components of individual search paths and the directories _netlab_ uses when searching those paths (non-existent directories are removed from the search paths).
+* Use the `‌netlab create --debug template` command to troubleshoot template errors; the debugging printouts display every template file _netlab_ searched for and the search path it used for the search.
+* Use the `‌netlab create --output provider` with one of the `--debug` options to reduce the amount of debugging output when troubleshooting the provider configuration files.
+* The `‌--debug` option must be the last option in the command line.
 ```
 
 ```{warning}
