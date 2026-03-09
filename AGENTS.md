@@ -82,6 +82,23 @@ pip3 install -e .
 - **Output modules**: `netsim/outputs/` - data export formats
 - **Augment modules**: `netsim/augment/` - topology transformation
 
+### Using Box objects
+
+* The topology data structure is a Box object with `default_box=True` and `box_dots=True`
+* In most cases, the Box object is converted into a dictionary before being used in a Jinja2 template
+
+With the Box settings used in the topology data structure:
+
+* The interim dictionaries are created automatically: `a.b.c=1` works even when `a.b` does not exist yet.
+* The dotted paths can be used in indices (for example, `a['b.c'] = 1`) and in **in** tests (for example `'b.c' in a`)
+
+### Using Jinja2 templates
+
+* The Jinja2 environment uses a custom `undefined` method that can handle dictionary hierarchy. For example, `a.b.c is defined` returns False instead of crashing even when `a.b` does not exist. There is no need for an extra `a.b is defined` guard.
+* Use `for ... if ...` loops whenever possible instead of separate `for` followed by `if`/`endif` block.
+* Prefer `for key,value in some.dict|default({})|dictsort` over `if some.dict is defined` followed by the `for` loop.
+* When in doubt, check the device configuration developer documentation. If that feels off, check the module topology transformation code.
+
 ### Testing Guidelines
 - Test files in `tests/` directory
 - Use `pytest` framework
@@ -142,13 +159,14 @@ When you don't have to change the code for other reasons:
 
 ## Documentation
 
-### Writing Template Development Documentation
+### Writing Configuration Template Development Documentation
 
 * The documentation files must be in `docs/dev/config`
 * The new files have to be included in ToC in `docs/dev/config/index.md`
+* The *configuration template developer* documentation is not the user guide. The data structures described must match the output of the transformation process, not the input attribute schema, and there are significant differences between the two.
 * There is no need to include supported platforms or more than three sample templates.
 * The documentation must describe all relevant **node** attributes, followed by all relevant **interface** attributes. When needed, add VLAN- or VRF attributes.
-* Do not explain the lab topology attributes, they have their own documentation.
+* Do not explain the lab topology attributes; they have their own documentation.
 * Find the relevant tests in the `tests/integration` directory tree and mention them
-* Do not use `jinja2` syntax highlighter, it does not work.
+* Do not use `jinja2` syntax highlighter; it does not work.
 * Mention where the configuration templates should be stored, and how the platform name is calculated (based on `netlab_device_type` or `ansible_network_os` variable)
