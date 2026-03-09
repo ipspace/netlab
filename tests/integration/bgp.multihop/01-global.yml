@@ -6,18 +6,14 @@ defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
 
 module: [ bgp, ospf ]
 
-prefix:
-  beacon:
-    ipv4: 192.168.42.0/24
-    ipv6: 2001:db8:42::/64
-
 groups:
   probes:
     device: frr
     provider: clab
-    members: [ pe2, c1 ]
+    members: [ pe2, c1, ce1 ]
 
-plugin: [ ebgp.multihop, bgp.session ]
+defaults.paths.prepend.plugin: [ "topology:../plugin" ]
+plugin: [ ebgp.multihop, bgp.session, adjust_test ]
 
 bgp.multihop.sessions:
 - dut:
@@ -31,19 +27,14 @@ nodes:
     module: [ ospf ]
   pe2:
     bgp.as: 65101
+  ce1:
+    bgp.as: 65200
+    module: [ bgp ]
 
 links:
 - dut-c1
 - c1-pe2
-- dut:
-  prefix: beacon
-
-# For whatever weird reason, IOS/XE takes forever to originate the prefix
-#
-defaults.devices.iol.netlab_validate.prefix.wait: 40
-defaults.devices.ioll2.netlab_validate.prefix.wait: 40
-defaults.devices.csr.netlab_validate.prefix.wait: 40
-defaults.devices.cat8000v.netlab_validate.prefix.wait: 40
+- dut-ce1
 
 validate:
   ospf:
@@ -62,23 +53,23 @@ validate:
     description: Check IPv4 EBGP sessions with DUT
     wait_msg: Wait for BGP sessions to be established
     wait: ibgp_session
-    nodes: [ pe2 ]
+    nodes: [ ce1, pe2 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
   bgp6:
     description: Check IPv6 EBGP sessions with DUT
     wait_msg: Wait for BGP sessions to be established
     wait: ebgp_session
-    nodes: [ pe2 ]
+    nodes: [ ce1, pe2 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
   prefix:
     description: Check whether DUT propagates the IPv4 beacon prefix
     wait_msg: Wait for BGP convergence
     wait: bgp_scan_long
     nodes: [ pe2 ]
-    plugin: bgp_prefix(prefix.beacon.ipv4)
+    plugin: bgp_prefix(nodes.ce1.loopback.ipv4)
   prefix6:
     description: Check whether DUT propagates the IPv6 beacon prefix
     wait_msg: Wait for BGP convergence
     wait: bgp_scan_long
     nodes: [ pe2 ]
-    plugin: bgp_prefix(prefix.beacon.ipv6,af='ipv6')
+    plugin: bgp_prefix(nodes.ce1.loopback.ipv4)

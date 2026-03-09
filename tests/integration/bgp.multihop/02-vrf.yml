@@ -4,26 +4,21 @@ message: |
 
 defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
 
-prefix:
-  beacon:
-    ipv4: 192.168.42.0/24
-    ipv6: 2001:db8:42::/64
-
 groups:
   probes:
     device: frr
     provider: clab
-    members: [ pe2, c1 ]
+    members: [ pe2, c1, ce1 ]
 
-plugin: [ ebgp.multihop, bgp.session ]
+defaults.paths.prepend.plugin: [ "topology:../plugin" ]
+plugin: [ ebgp.multihop, bgp.session, adjust_test ]
 
 vrfs:
   tenant:
     links:
     - dut-c1
     - c1-pe2
-    - dut:
-      prefix: beacon
+    - dut-ce1
 
 bgp.multihop.sessions:
 - dut:
@@ -41,6 +36,21 @@ nodes:
   pe2:
     bgp.as: 65101
     module: [ bgp, ospf ]
+  ce1:
+    bgp.as: 65200
+    module: [ bgp ]
+
+_adjust:
+- nodes: [ dut ]              # Remove 'suppress map' test if the device does not support prefix lists
+  features:
+  - key: vrf.ospfv3
+    value: True
+  warning: OSPFv3 VRF instances are not implemented on device {device}
+  remove_af: [ ipv6 ]
+  remove:
+  - validate.ospf6
+  - validate.bgp6
+  - validate.prefix6
 
 validate:
   ospf:
@@ -59,7 +69,7 @@ validate:
     description: Check IPv4 EBGP sessions with DUT
     wait_msg: Wait for BGP sessions to be established
     wait: ebgp_session
-    nodes: [ pe2 ]
+    nodes: [ pe2, ce1 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
   bgp6:
     description: Check IPv6 EBGP sessions with DUT
@@ -72,10 +82,10 @@ validate:
     wait_msg: Wait for BGP convergence
     wait: bgp_scan_long
     nodes: [ pe2 ]
-    plugin: bgp_prefix(prefix.beacon.ipv4)
+    plugin: bgp_prefix(nodes.ce1.loopback.ipv4)
   prefix6:
     description: Check whether DUT propagates the IPv6 beacon prefix
     wait_msg: Wait for BGP convergence
     wait: bgp_scan_long
     nodes: [ pe2 ]
-    plugin: bgp_prefix(prefix.beacon.ipv6,af='ipv6')
+    plugin: bgp_prefix(nodes.ce1.loopback.ipv6,af='ipv6')
