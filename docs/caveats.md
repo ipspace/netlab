@@ -145,10 +145,10 @@ See also [CSR 1000v](caveats-csr) and [Cisco IOSv](caveats-iosv) caveats.
 
 See also [Cisco IOSv](caveats-iosv) SSH, OSPF, RIPng, and BGP caveats.
 
-(caveats-iosv)=
-## Cisco IOSv and IOSvL2
+(caveats-ios)=
+## Cisco IOS/IOS XE Caveats
 
-These caveats are common to all Cisco IOS/IOS-XE platforms:
+These caveats are common to all Cisco IOS/IOS XE platforms:
 
 * BGP configuration is optimized for reasonable convergence times under lab conditions. Do not use the same settings in a production network.
 * It's impossible to configure RIPv2 on individual subnets on Cisco IOS. RIPv2 might be running on more interfaces than intended. _netlab_ configures those interfaces to be *passive*.
@@ -157,14 +157,9 @@ These caveats are common to all Cisco IOS/IOS-XE platforms:
 * Cisco IOS behaves like an awful IP host from the 1980s with the **no ip routing** configuration; it does not use static routes and relies only on the **ip default-gateway**. IPv4 routing is thus enabled even when a Cisco IOS device has **role** set to *host*.
 * You can use the **ios.debug** global- or node attribute to [enable debugging](node-debug-attribute) during the initial device configuration.
 
-These caveats apply only to Cisco IOSv and IOSvL2
+These caveats are common to all Cisco IOS XE platforms:
 
-* Cisco IOS release 15.x does not support unnumbered interfaces. Use Cisco CSR 1000v.
-* Multiple OSPFv2 processes on Cisco IOS cannot have the same OSPF router ID. By default, _netlab_ generates the same router ID for global and VRF OSPF processes, resulting in non-fatal configuration errors that Ansible silently ignores.
-* You cannot use VLANs 1002 through 1005 with Cisco IOSvL2 image
-* Cisco IOSv does not support VRRPv3 on BVI interfaces
-* Cisco IOSv cannot use tagged VLAN 1 in a trunk
-* Cisco IOSvL2 cannot configure tagged VLAN 1 in a trunk. Internal VLAN 1002 is used as a fake native VLAN on interfaces that have tagged VLAN 1 in a trunk.
+* The BGP TCP AO implementation does not interwork with other implementations (for example, Arista EOS).
 
 (cisco-iosv-ssh)=
 ### SSH Access to Cisco IOS/IOS-XE
@@ -190,6 +185,19 @@ group_vars:
 You can change the additional SSH arguments with the node **netlab_ssh_args** parameter or with the **defaults.devices._device_.group_vars.netlab_ssh_args** [system default](topo-defaults).
 
 Additionally, you might have to execute `sudo update-crypto-policies --set LEGACY` on AlmaLinux/RHEL.
+
+(caveats-iosv)=
+## Cisco IOSv/IOSvL2 Caveats
+These caveats apply only to Cisco IOSv and IOSvL2
+
+* Cisco IOS release 15.x does not support unnumbered interfaces. Use Cisco CSR 1000v.
+* Multiple OSPFv2 processes on Cisco IOS cannot have the same OSPF router ID. By default, _netlab_ generates the same router ID for global and VRF OSPF processes, resulting in non-fatal configuration errors that Ansible silently ignores.
+* You cannot use VLANs 1002 through 1005 with Cisco IOSvL2 image
+* Cisco IOSv does not support VRRPv3 on BVI interfaces
+* Cisco IOSv cannot use tagged VLAN 1 in a trunk
+* Cisco IOSvL2 cannot configure tagged VLAN 1 in a trunk. Internal VLAN 1002 is used as a fake native VLAN on interfaces that have tagged VLAN 1 in a trunk.
+
+See also [common Cisco IOS](caveats-ios) caveats.
 
 (caveats-iol)=
 ## Cisco IOS on Linux (IOL) and IOL Layer-2 Image

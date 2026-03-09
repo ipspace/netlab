@@ -1,6 +1,6 @@
 {% macro ebgp_session(n,af,bgp) -%}
 {%   if n.tcp_ao is defined %}
-{%     set idx = bgp._ao_secrets.index(n.password) + 1 %}
+{%     set idx = bgp._ao_algo_secrets.index(n.tcp_ao + ":" + n.password) + 1 %}
   neighbor {{ n[af] }} ao tcp-ao-{{ idx }}
 {%   elif n.password is defined %}
   neighbor {{ n[af] }} password {{ n.password }}
@@ -40,14 +40,16 @@
 {%   endif %} 
 {%- endmacro %}
 !
-{% for pwd in bgp._ao_secrets|default([]) %}
+{% for algo_pwd in bgp._ao_algo_secrets|default([]) %}
+!
+{%   set (algo,pwd) = algo_pwd.split(':',1) %}
 key chain tcp-ao-{{ loop.index }} tcp
   key 0
     send-id 0
     recv-id 0
-    cryptographic-algorithm hmac-sha-1
+    cryptographic-algorithm {{ algo }}
+    include-tcp-options
     key-string {{ pwd }}
-!
 {% endfor %}
 router bgp {{ bgp.as }}
 {% if bgp.rs_client|default(False) %}
