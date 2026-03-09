@@ -80,6 +80,14 @@ def adjust_topology(a_entry: Box, topology: Box) -> None:
         'level': 'warning',
         'fail': w_fmt_text }
 
+  for af in get_a_list(a_entry,'remove_af'):
+    for kw in ('addressing','pools'):
+      for pool_name,pool_data in topology.get(kw,{}).items():
+        for pfx in (af,f'{af}_pfx'):
+          if pfx in pool_data:
+            pool_data.pop(pfx)
+            log.print_verbose(f'Removing {kw}.{pool_name}.{pfx}')
+
   for rm_item in get_a_list(a_entry,'remove'):
     log.print_verbose(f'Removing {rm_item}')
     topology.pop(rm_item,None)
