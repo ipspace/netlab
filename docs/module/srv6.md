@@ -25,7 +25,7 @@ The following table describes the per-platform support of individual router-leve
 
 [^XE]: Includes Catalyst 8000v, Cisco IOL, and Cisco IOL layer-2 image. The minimum Cisco IOS/XE release with working SRv6 is release 17.16.01a.
 
-[^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
+[^XR]: Includes IOS XRv, IOS XRd, but not Cisco 8000v. Cisco 8000v does not support the *shift-only* microsegment behavior needed to interoperate with other SRv6 implementations. Please [open an issue](https://github.com/ipspace/netlab/issues/new/choose) if you're interested in running SRv6 on Cisco 8000v.
 
 (srv6-l3vpn-supported-platforms)=
 ### BGP/SRv6 L3VPN
