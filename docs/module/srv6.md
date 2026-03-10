@@ -33,7 +33,7 @@ The following table describes the per-platform support of individual router-leve
 | Operating system      | VPNv4 | VPNv6 |
 | ----------------------| :---: | :---: |
 | Cisco IOS XE[^XE]     |   ✅  |  ✅  |
-| Cisco IOS XR[^XE]     |   ✅  |  ✅  |
+| Cisco IOS XR[^XR]     |   ✅  |  ✅  |
 | FRR                   |   ✅  |  ✅ [❗️](caveats-frr)  |
 | Nokia SR OS[^SROS]    |   ❌   |   ❌  |
 
