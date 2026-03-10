@@ -16,7 +16,8 @@ The following table describes the per-platform support of individual router-leve
 
 | Operating system   | IS-IS | OSPFv3 | BGP v4/v6 | Transit only |
 |--------------------|:--:|:-:|:-:|:-:|
-| Cisco IOS/XE[^XE]  | ✅ | ❌ | ❌ | ❌ |
+| Cisco IOS XE[^XE]  | ✅ | ❌ | ❌ | ❌ |
+| Cisco IOS XR[^XR]  | ✅ | ❌ | ❌ | ❌ |
 | FRR                | ✅ | ❌ | ❌ | ❌ | 
 | Nokia SR OS[^SROS] | ✅ | ❌ | ✅ | ✅ |
 
@@ -24,12 +25,15 @@ The following table describes the per-platform support of individual router-leve
 
 [^XE]: Includes Catalyst 8000v, Cisco IOL, and Cisco IOL layer-2 image. The minimum Cisco IOS/XE release with working SRv6 is release 17.16.01a.
 
+[^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
+
 (srv6-l3vpn-supported-platforms)=
 ### BGP/SRv6 L3VPN
 
 | Operating system      | VPNv4 | VPNv6 |
 | ----------------------| :---: | :---: |
-| Cisco IOS/XE[^XE]     |   ✅  |  ✅  |
+| Cisco IOS XE[^XE]     |   ✅  |  ✅  |
+| Cisco IOS XR[^XE]     |   ✅  |  ✅  |
 | FRR                   |   ✅  |  ✅ [❗️](caveats-frr)  |
 | Nokia SR OS[^SROS]    |   ❌   |   ❌  |
 
