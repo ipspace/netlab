@@ -18,6 +18,7 @@ The following implementation notes for configuration deployment, initial device 
    ospf.areas.md
    rip.md
    routing.md
+   srv6.md
    vlan.md
    vrf.md
 ```
