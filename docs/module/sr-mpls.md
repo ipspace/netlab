@@ -1,3 +1,4 @@
+(module-sr-mpls)=
 # Segment Routing (MPLS) Configuration Module
 
 This configuration module configures Segment Routing with MPLS encapsulation (SR-MPLS) and Node SIDs within the IS-IS or OSPFv2 routing process.

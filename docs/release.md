@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+**Release 26.03 (2026-03-10)**
+
+* [New Cisco IOS XR features](release-26.03-ios-xr): SR-MPLS, MPLS/VPN, MPLS 6PE, EVPN over MPLS, VRRP, full BGP routing policy support
+* [Juniper cRPD](caveats-crpd) support
+* [EVPN/VXLAN](module-evpn) on Juniper vPTX and vJunos-router
+* OpenBSD BGP support
+* [SR-MPLS support for OSPFv2](sr-mpls-platforms) on EOS, FRR, IOS XE, IOS XR
+
+[More details](release-26.03) and [breaking changes](release-26.03-breaking)
+
 **Release 26.02 (2026-02-11)**
 
 * Support for [Kubernetes (KinD) clusters](plugin-kind) based on work by [@wnagele](https://github.com/wnagele)
@@ -111,6 +121,7 @@ For older releases, check the [release notes archive](release-archive.md).
    :caption: Individual release notes
    :maxdepth: 1
 
+   release/26.03.md
    release/26.02.md
    release/26.01.md
    release/25.12.md

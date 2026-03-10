@@ -1,3 +1,4 @@
+(module-evpn)=
 # Ethernet Virtual Private Network (EVPN) Configuration Module
 
 This configuration module configures the BGP EVPN address family to implement L2VPN or L3VPN. It supports:
