@@ -1,13 +1,13 @@
 Release Notes
 =============
 
-**Release 26.03 (XX-XX-XX)**
+**Release 26.03 (2026-03-10)**
 
-* New Cisco IOS XR features: SR-MPLS, MPLS/VPN, MPLS 6PE, EVPN over MPLS, VRRP, full BGP routing policy support
-* Juniper cRPD support
-* EVPN/VXLAN on Juniper vPTX and vJunos-router
+* [New Cisco IOS XR features](release-26.03-ios-xr): SR-MPLS, MPLS/VPN, MPLS 6PE, EVPN over MPLS, VRRP, full BGP routing policy support
+* [Juniper cRPD](caveats-crpd) support
+* [EVPN/VXLAN](module-evpn) on Juniper vPTX and vJunos-router
 * OpenBSD BGP support
-* SR-MPLS support for OSPFv2 on EOS, FRR, IOS XE, IOS XR
+* [SR-MPLS support for OSPFv2](sr-mpls-platforms) on EOS, FRR, IOS XE, IOS XR
 
 [More details](release-26.03) and [breaking changes](release-26.03-breaking)
 
