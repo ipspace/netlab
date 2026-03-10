@@ -1,0 +1,244 @@
+Creating Device configuration snippets
+[CREATED] s1: initial,vlan,vxlan,ospf
+[CREATED] ros: initial,vlan,ospf,vrf,vxlan
+[CREATED] h1: initial,routing
+[CREATED] h2: initial,routing
+Checking Are lab devices ready to be configured?
+ [INFO] Checking SSH server(s) on ros
+[SSH]     SSH server on node ros (device vjunos-router) is ready after 78.8 seconds
+ [INFO] Checking lab devices with an Ansible playbook
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Wait for SSH servers] ****************************************************
+
+PLAY [Wait for device-specific conditions] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [ros]
+
+TASK [Find device readiness script] ********************************************
+ok: [ros]
+
+TASK [Wait for device to become ready] *****************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/junos.yml for ros
+
+TASK [set_fact] ****************************************************************
+ok: [ros]
+
+TASK [Wait for first interface (ge-0/0/0)] *************************************
+ok: [ros]
+
+PLAY RECAP *********************************************************************
+ros                        : ok=5    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+Config Deploying device configurations
+ [INFO] Executing initial configuration for node s1
+ [INFO] Executing initial configuration for node h1 (namespace clab-
+          ml-17-h1)
+ [INFO] Executing initial configuration for node h2 (namespace clab-
+          ml-17-h2)
+ [INFO] Executing routing configuration for node h2 (namespace clab-
+          ml-17-h2)
+ [INFO] Executing routing configuration for node h1 (namespace clab-
+          ml-17-h1)
+ [INFO] Executing vlan configuration for node s1
+ [INFO] Executing vxlan configuration for node s1
+ [INFO] Executing ospf configuration for node s1
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [ros]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ros
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [ros]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [ros]
+
+TASK [fail] ********************************************************************
+skipping: [ros]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [ros]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [ros]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [ros]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ros
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [ros]
+
+TASK [Find configuration template for initial] *********************************
+ok: [ros]
+
+TASK [fail] ********************************************************************
+skipping: [ros]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [ros]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [ros] => {
+    "msg": "initial configuration for ros\n=========================================\nsystem {\n  host-name ros;\n  static-host-mapping {\n    s1 inet 10.0.0.1;\n    h1 inet 172.16.0.3;\n    h2 inet 172.16.1.4;\n  }\n}\n\n\n\n\npolicy-options {\n  community tg_65000_1 members target:65000:1;\n}\n\n\n\npolicy-options {\n  policy-statement vrf-tenant-rt-export {\n    term 1 {\n      then {\n        community add tg_65000_1;\n        accept;\n      }\n    }\n  }\n\n\n  policy-statement vrf-tenant-rt-import {\n    term 1 {\n      from community [ tg_65000_1 ];\n      then accept;\n    }\n    term default {\n      then reject;\n    }\n  }\n}\n\nrouting-instances {\n\n  tenant {\n    instance-type vrf;\n    route-distinguisher 65000:1;\n\n    vrf-import vrf-tenant-rt-import;\n    vrf-export vrf-tenant-rt-export;\n\n    routing-options {\n      auto-export;\n    }\n\n    interface irb.1000;\n    interface irb.1001;\n    interface lo0.1;\n\n  }\n\n}\ninterfaces {\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n}\ninterfaces {\n  ge-0/0/0 {\n    mtu 1614;\n  }\n\n  lo0.0 {\n    \n      family inet {\n        address 10.0.0.2/32;\n      }\n    \n  }\n  ge-0/0/0.0 {\n    description \"ros -> s1\";\n    \n      family inet {\n        address 10.1.0.1/30;\n      }\n    \n  }\n  irb.1000 {\n    description \"VLAN red (1000) -> [h1,s1]\";\n    \n      family inet {\n        address 172.16.0.2/24;\n        mtu 1500;\n      }\n    \n  }\n  irb.1001 {\n    description \"VLAN blue (1001) -> [h2,s1]\";\n    \n      family inet {\n        address 172.16.1.2/24;\n        mtu 1500;\n      }\n    \n  }\n  lo0.1 {\n    description \"VRF Loopback tenant\";\n    \n      family inet {\n        address 10.2.0.1/32;\n      }\n    \n  }\n}\nprotocols {\n  lldp {\n    interface fxp0 {\n      disable;\n    }\n    interface all;\n  }\n}\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for ros
+
+TASK [junos_config: deploying initial from /work/netlab_cicd/node_files/ros/initial] ***
+[WARNING]: mgd: statement has no contents; ignored
+changed: [ros]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [ros]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ros => (item=vlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ros => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ros => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ros => (item=vrf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ros => (item=vxlan)
+
+TASK [Figure out whether to deploy the module vlan on current device] **********
+ok: [ros]
+
+TASK [Find configuration template for vlan] ************************************
+ok: [ros]
+
+TASK [fail] ********************************************************************
+skipping: [ros]
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
+ok: [ros]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [ros] => {
+    "msg": "vlan configuration for ros\n=========================================\ninterfaces {\n}\n\n\nbridge-domains {\n\n  vlan-1000 {\n    domain-type bridge;\n    vlan-id 1000;\n    routing-interface irb.1000;\n\n  }\n\n\n  vlan-1001 {\n    domain-type bridge;\n    vlan-id 1001;\n    routing-interface irb.1001;\n\n  }\n\n}\n"
+}
+
+TASK [Deploy vlan configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for ros
+
+TASK [junos_config: deploying vlan from /work/netlab_cicd/node_files/ros/vlan] ***
+changed: [ros]
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [ros]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [ros]
+
+TASK [fail] ********************************************************************
+skipping: [ros]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [ros]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [ros]
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [ros]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [ros]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [ros]
+
+TASK [fail] ********************************************************************
+skipping: [ros]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [ros]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [ros] => {
+    "msg": "ospf configuration for ros\n=========================================\nrouting-options {\n  router-id 10.0.0.2\n}\nprotocols {\n  delete: ospf;\n}\n\nprotocols {\n  ospf {\n    area 0.0.0.0 {\n      interface lo0.0 {\n      }\n    }\n    area 0.0.0.0 {\n      interface ge-0/0/0.0 {\n        interface-type p2p;\n      }\n    }\n  }\n}\n\n"
+}
+
+TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for ros
+
+TASK [junos_config: deploying ospf from /work/netlab_cicd/node_files/ros/ospf] ***
+[WARNING]:  statement not found
+changed: [ros]
+
+TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [ros]
+
+TASK [Find configuration template for vrf] *************************************
+ok: [ros]
+
+TASK [fail] ********************************************************************
+skipping: [ros]
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+ok: [ros]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [ros] => {
+    "msg": "vrf configuration for ros\n=========================================\n\n"
+}
+
+TASK [Deploy vrf configuration] ************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for ros
+
+TASK [junos_config: deploying vrf from /work/netlab_cicd/node_files/ros/vrf] ***
+ok: [ros]
+
+TASK [Figure out whether to deploy the module vxlan on current device] *********
+ok: [ros]
+
+TASK [Find configuration template for vxlan] ***********************************
+ok: [ros]
+
+TASK [fail] ********************************************************************
+skipping: [ros]
+
+TASK [Find configuration deployment deploy_script for vxlan] *******************
+ok: [ros]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [ros] => {
+    "msg": "vxlan configuration for ros\n=========================================\n\npolicy-options {\n    policy-statement ecmp {\n        then {\n            load-balance per-flow;\n        }\n    }\n}\nrouting-options {\n    forwarding-table {\n        export ecmp;\n    }\n}\n\nswitch-options {\n    vtep-source-interface lo0.0;\n}\n\n\n\nswitch-options {\n    remote-vtep-list 10.0.0.1;\n}\n\nbridge-domains {\n  vlan-1000 {\n        vxlan {\n            vni 5000;\n            ingress-node-replication;\n            static-remote-vtep-list 10.0.0.1;\n        }\n    }\n  vlan-1001 {\n        vxlan {\n            vni 5001;\n            ingress-node-replication;\n            static-remote-vtep-list 10.0.0.1;\n        }\n    }\n}\n\n\n"
+}
+
+TASK [Deploy vxlan configuration] **********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for ros
+
+TASK [junos_config: deploying vxlan from /work/netlab_cicd/node_files/ros/vxlan] ***
+changed: [ros]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+ros                        : ok=43   changed=4    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
+
+Results of configuration script deployments
+================================================================================
+s1               Script:  initial,vlan,vxlan,ospf
+h1               Script:  initial,routing
+h2               Script:  initial,routing
+
+
+The device under test is a VXLAN router-on-a-stick. This tests check
+VXLAN-to-VXLAN routing.
+
+* h1 and h2 should be able to ping each other
+

@@ -6,8 +6,8 @@ Creating Device configuration snippets
 [CREATED] h2: initial,routing
 Checking Are lab devices ready to be configured?
  [INFO] Checking SSH server(s) on spine,l1
-[SSH]     SSH server on node l1 (device ioll2) is ready after 7.3 seconds
 [SSH]     SSH server on node spine (device ioll2) is ready after 7.3 seconds
+[SSH]     SSH server on node l1 (device ioll2) is ready after 7.3 seconds
 Config Deploying device configurations
  [INFO] Executing initial configuration for node l2
  [INFO] Executing initial configuration for node h1 (namespace clab-
@@ -67,8 +67,8 @@ TASK [ios_config: deploying normalize from /work/netlab_cicd/node_files/spine/no
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for spine, l1
@@ -248,10 +248,10 @@ ok: [l1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [spine] => {
-    "msg": "evpn configuration for spine\n=========================================\n!\nroute-map evpn_nh_unchanged permit 10\n set ip next-hop unchanged\n!\nrouter bgp 65100\n neighbor 10.0.0.2 ebgp-multihop\n neighbor 10.0.0.3 ebgp-multihop\n address-family l2vpn evpn\n  neighbor 10.0.0.2 activate\n  neighbor 10.0.0.2 send-community both\n  neighbor 10.0.0.3 activate\n  neighbor 10.0.0.3 send-community both\n  no bgp default route-target filter\n  neighbor 10.0.0.2 next-hop-unchanged\n  neighbor 10.0.0.2 route-map evpn_nh_unchanged out\n  neighbor 10.0.0.3 next-hop-unchanged\n  neighbor 10.0.0.3 route-map evpn_nh_unchanged out\n"
+    "msg": "evpn configuration for spine\n=========================================\n!\nroute-map evpn_nh_unchanged permit 10\n set ip next-hop unchanged\n!\nrouter bgp 65100\n neighbor 10.0.0.2 ebgp-multihop\n neighbor 10.0.0.3 ebgp-multihop\n address-family l2vpn evpn\n  neighbor 10.0.0.2 encap vxlan\n  neighbor 10.0.0.2 activate\n  neighbor 10.0.0.2 send-community both\n  neighbor 10.0.0.3 encap vxlan\n  neighbor 10.0.0.3 activate\n  neighbor 10.0.0.3 send-community both\n  no bgp default route-target filter\n  neighbor 10.0.0.2 next-hop-unchanged\n  neighbor 10.0.0.2 route-map evpn_nh_unchanged out\n  neighbor 10.0.0.3 next-hop-unchanged\n  neighbor 10.0.0.3 route-map evpn_nh_unchanged out\n"
 }
 ok: [l1] => {
-    "msg": "evpn configuration for l1\n=========================================\n! \nvlan configuration 1000\n member evpn-instance 1000 vni 6000\n!\nl2vpn evpn instance 1000 vlan-based\n encapsulation vxlan\n replication-type ingress\n rd 10.0.0.2:1000\n route-target import 65000:1000\n route-target export 65000:1000\n!\nroute-map evpn_nh_unchanged permit 10\n set ip next-hop unchanged\n!\nrouter bgp 65200\n neighbor 10.0.0.1 ebgp-multihop\n address-family l2vpn evpn\n  neighbor 10.0.0.1 activate\n  neighbor 10.0.0.1 send-community both\n  no bgp default route-target filter\n  neighbor 10.0.0.1 next-hop-unchanged\n  neighbor 10.0.0.1 route-map evpn_nh_unchanged out\n"
+    "msg": "evpn configuration for l1\n=========================================\n! \nvlan configuration 1000\n member evpn-instance 1000 vni 6000\n!\nl2vpn evpn instance 1000 vlan-based\n encapsulation vxlan\n replication-type ingress\n rd 10.0.0.2:1000\n route-target import 65000:1000\n route-target export 65000:1000\n!\nroute-map evpn_nh_unchanged permit 10\n set ip next-hop unchanged\n!\nrouter bgp 65200\n neighbor 10.0.0.1 ebgp-multihop\n address-family l2vpn evpn\n  neighbor 10.0.0.1 encap vxlan\n  neighbor 10.0.0.1 activate\n  neighbor 10.0.0.1 send-community both\n  no bgp default route-target filter\n  neighbor 10.0.0.1 next-hop-unchanged\n  neighbor 10.0.0.1 route-map evpn_nh_unchanged out\n"
 }
 
 TASK [Deploy evpn configuration] ***********************************************
@@ -275,8 +275,8 @@ skipping: [spine]
 skipping: [l1]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [spine -> localhost]
 ok: [l1 -> localhost]
+ok: [spine -> localhost]
 
 TASK [fail] ********************************************************************
 skipping: [spine]
@@ -303,9 +303,9 @@ spine                      : ok=42   changed=5    unreachable=0    failed=0    s
 
 Results of configuration script deployments
 ================================================================================
-l2                           Script:  6  
-h1                           Script:  2  
-h2                           Script:  2  
+l2               Script:  initial,vlan,bgp,vxlan,evpn,ebgp.multihop
+h1               Script:  initial,routing
+h2               Script:  initial,routing
 
 
 The devices under test are EVPN switches (leaf and spine) using
