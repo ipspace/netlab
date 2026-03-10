@@ -7,7 +7,7 @@ This document describes how to write configuration templates for the **ebgp.mult
 
 * The plugin configuration template should be stored in `netsim/extra/ebgp.multihop/<nos>.j2` where **nos** is the value of the **netlab_device_type** or **ansible_network_os** variable (see [Using Your Devices with Ansible Playbooks](../devices.md#using-your-device-with-ansible-playbooks) for more details).
 * The plugin augments existing BGP neighbor entries. Your template should only configure the multihop-specific parameters; all other BGP configuration is handled by the standard BGP template.
-* All attributes described below are optional. Use `if sth is defined` checks in your Jinja2 templates.
+* All attributes described below are optional. In your Jinja2 templates, guard access to them with `if <attribute> is defined` checks.
 
 ```eval_rst
 .. contents:: Table of Contents
