@@ -66,6 +66,9 @@ class SRV6(_Module):
           category=log.MissingValue,
           module='srv6')
 
+  def module_pre_transform(self, topology: Box) -> None:
+    addressing.get(topology.pools,[get_pool_name()])                  # Throw away the all-zeroes prefix
+
   def node_pre_transform(self, node: Box, topology: Box) -> None:
     mods = node.get('module',[])
     d_features = devices.get_device_features(node,topology.defaults)

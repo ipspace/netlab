@@ -447,12 +447,12 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | --------------------- |:--:|:--:|:--:|:--:|:--:|:--:|
 | Arista EOS            | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
 | Aruba AOS-CX          | ✅ | ✅ |  ✅[❗](caveats-aruba) | [❗](caveats-aruba) | ❌ | ❌ |
-| Cisco 8000v (IOS XR)  | ✅ | ✅ |  ❌ | ✅ | ✅ |  ❌ |
+| Cisco 8000v (IOS XR)  | ✅ | ✅ |  ❌ | ✅ | ✅ | ✅ |
 | Cisco Catalyst 8000v  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cisco CSR 1000v       | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
 | Cisco IOL/IOLL2       | ✅ | ✅ | ✅[❗](caveats-iol) | ✅ | ✅ | ✅ |
 | Cisco IOSv/IOSvL2     | ✅ | ✅ |  ❌ | ✅ |  ❌ |  ❌ |
-| Cisco IOS XR          |  ❌ | ✅ |  ❌ | ✅ | ✅ |  ❌ |
+| Cisco IOS XR          |  ❌ | ✅ |  ❌ | ✅ | ✅ | ✅ |
 | Cisco Nexus OS        | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
 | Cumulus Linux         | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
 | Cumulus Linux 5.x (NVUE) | ✅ |[❗](module-vrf-platform-support)| ❌ | ❌ | ❌ | ❌ |
