@@ -1,7 +1,7 @@
 (dev-config-srv6)=
 # Configuring SRv6
 
-This document describes the device data model parameters one should consider when creating an SRv6 device configuration template. For a wider picture, please see the [contributing new devices](../devices.md) document.
+This document describes the device data model parameters one should consider when creating an [SRv6](module-srv6) device configuration template. For a wider picture, please see the [contributing new devices](../devices.md) document.
 
 The configuration template (in Jinja2 format) should be stored in the `netsim/ansible/templates/srv6/` directory. The template file name is derived from the `netlab_device_type` or `ansible_network_os` variable (see [](dev-config-bgp) for details on how the platform name is used).
 
@@ -22,7 +22,7 @@ Add the following **features.srv6** entries to a device YAML file (`netsim/devic
 
 * **isis** -- device supports SRv6 with IS-IS
 * **ospf** -- device supports SRv6 with OSPFv3
-* **bgp** -- device supports BGP v4/v6 overlay over SRv6 (end.dt4 / end.dt6)
+* **bgp** -- device supports BGP v4/v6 overlay over SRv6 (end.dt4/end.dt6)
 * **vpn** -- device supports BGP L3VPN v4/v6 over SRv6
 
 ## Node Attributes
@@ -31,9 +31,7 @@ The `srv6` node dictionary is always present on nodes that have the `srv6` modul
 
 ### srv6.locator
 
-An IPv6 prefix in CIDR notation (e.g., `5f00:0:1::/48`), automatically allocated per-node from the `srv6_locator` address pool (default `5F00::/16`, based on the IANA-reserved range in [RFC 9602](https://datatracker.ietf.org/doc/html/rfc9602)).
-
-The user may override the locator with a static value in the topology file; the module uses it as-is in that case.
+An IPv6 prefix in CIDR notation (e.g., `5f00:0:1::/48`), specified in lab topology or automatically allocated per-node from the SRv6 locator address pool (default `5F00::/16`, based on the IANA-reserved range in [RFC 9602](https://datatracker.ietf.org/doc/html/rfc9602)).
 
 Templates typically use `srv6.locator` to configure the SRv6 locator prefix:
 
@@ -58,15 +56,15 @@ router isis {{ isis.instance }}
 
 ### srv6.bgp
 
-A dictionary with keys `ipv4` and/or `ipv6`, each containing a list of BGP neighbor types that should use SRv6 as the transport for the plain IPv4 or IPv6 unicast address family (end.dt4 / end.dt6, *not* VPN).
+An optional dictionary with keys `ipv4` and/or `ipv6`, each containing a list of BGP neighbor types that should use SRv6 as the transport for the plain IPv4 or IPv6 unicast address family (end.dt4/end.dt6, *not* VPN).
 
-`srv6.bgp` is absent (evaluates to `{}`) when the feature is disabled. It is set to `{'ipv4': ['ibgp'], 'ipv6': ['ibgp']}` when enabled with `True`. The module performs a boolean-to-dictionary expansion (`True` → default dict, `False` → empty dict) before templates are rendered.
+`srv6.bgp` is absent when the feature is disabled.
 
 Example:
 
 ```
 {% if srv6.bgp is defined %}
-{%   for af in ['ipv4','ipv6'] if srv6.bgp.get(af) %}
+{%   for af in ['ipv4','ipv6'] if af in srv6.bgp %}
   family {{ af }}
     locator {{ inventory_hostname }}
 {%   endfor %}
@@ -75,7 +73,7 @@ Example:
 
 ### srv6.vpn
 
-A dictionary with keys `ipv4` and/or `ipv6`, each containing a list of BGP neighbor types for which BGP L3VPN routes should be carried over SRv6 (end.dt4-vrf / end.dt6-vrf).
+A dictionary with keys `ipv4` and/or `ipv6`, each containing a list of BGP neighbor types for which BGP L3VPN routes should be carried over SRv6 (end.dt4-vrf/end.dt6-vrf).
 
 The structure and boolean-expansion rules are identical to `srv6.bgp`. `srv6.vpn` is absent when L3VPN is disabled.
 
@@ -89,35 +87,29 @@ A boolean flag (`True`/`False`). When `True`, the node acts as a transit-only SR
 {% endif %}
 ```
 
-### srv6.allocate_loopback
-
-A boolean flag that is **not** present in the rendered template data — it is consumed during the `node_pre_transform` phase to auto-assign `loopback.ipv6` from within the node's SRv6 locator range. After transformation this attribute is no longer useful to templates; use `loopback.ipv6` directly.
-
 ## Loopback IPv6 Address
 
-`loopback.ipv6` is always present on SRv6 nodes (enforced by `node_post_transform`). It may be:
-
-* a user-defined loopback address from the topology `loopback` pool, or
-* automatically assigned as the first host address within `srv6.locator` (when `srv6.allocate_loopback: True`).
+`loopback.ipv6` is always present on SRv6 nodes (enforced by `node_post_transform`). It may be user-defined, assigned from the `loopback` topology pool, or automatically assigned as the first host address in `srv6.locator` (when `srv6.allocate_loopback: True`).
 
 Templates must use `loopback.ipv6` as the SRv6 source address:
 
 ```
-source-address {{ loopback.ipv6 | ipaddr('address') }}
+source-address {{ loopback.ipv6 | ansible.utils.ipaddr('address') }}
 ```
 
 ## BGP Neighbor Attributes
 
-The `srv6` module modifies the `bgp.neighbors` list during `node_post_transform`. For each neighbor that:
+The `srv6` module modifies the `bgp.neighbors` list during `node_post_transform`. For each BGP neighbor that...
 
-* has an `ipv6` address (IPv6 transport), **and**
+* has an `ipv6` transport address
+* has no `ipv4` transport address,
 * is listed in `srv6.bgp.ipv4` or `srv6.vpn.ipv4` (i.e., IPv4 AF is carried over an IPv6 session)
 
-the module adds:
+...the module adds:
 
 * **extended_nexthop** (`True`) — signals that the BGP session requires extended next-hop encoding (RFC 8950) to carry IPv4 prefixes over an IPv6 transport session.
 
-Templates should check for this attribute to conditionally enable extended next-hop negotiation:
+Templates could check for this attribute to conditionally enable extended next-hop negotiation:
 
 ```
 {% for n in bgp.neighbors|default([]) if n.ipv6 is defined %}
@@ -137,7 +129,7 @@ The `srv6` module does not add any per-interface attributes. Templates that need
 
 ## Template Architecture
 
-Complex platforms may split SRv6 configuration into a main template and a BGP sub-template, included conditionally. The main template handles locator declaration and IGP integration; the BGP sub-template handles the BGP overlay and VPN configuration.
+Complex platforms may split SRv6 configuration into a main template and a conditionally-included BGP sub-template. The main template handles locator declaration and IGP integration; the BGP sub-template handles the BGP overlay and VPN configuration.
 
 **Example** (`frr.j2` main template, simplified):
 
@@ -210,7 +202,7 @@ updates:
 
 The integration tests for the SRv6 module are in the `tests/integration/srv6/` directory:
 
-* `x-01-isis-ipv4-bgp.yml` — PE router running IS-IS + BGP (`srv6.bgp.ipv4: True`) with `allocate_loopback: True`, carrying IPv4 over an IPv6-only SRv6 core (4PE scenario).
-* `x-11-isis-ipv6-bgp.yml` — Similar scenario with IPv6 BGP overlay.
 * `02-isis-ipv4-bgp-vpn.yml` — PE router running IS-IS + BGP L3VPN (`srv6.vpn.ipv4: True`) over an IPv6-only SRv6 core, with VRFs attached; validates end-to-end L3VPN reachability.
 * `12-isis-ipv6-bgp-vpn.yml` — Similar scenario with IPv6 L3VPN overlay.
+* `x-01-isis-ipv4-bgp.yml` — PE router running IS-IS + BGP (`srv6.bgp.ipv4: True`) with `allocate_loopback: True`, carrying IPv4 over an IPv6-only SRv6 core (4PE scenario).
+* `x-11-isis-ipv6-bgp.yml` — Similar scenario with IPv6 BGP overlay.
