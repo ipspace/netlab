@@ -1,3 +1,4 @@
+---
 name: Check integration tests with "none" device
 
 on:
@@ -37,12 +38,29 @@ jobs:
         for file in netsim/extra/*/plugin.py; do
           python3 -m mypy $file
         done
-    - name: Run transformation tests
+    - name: Consolidate system files for faster testing
+      id: consolidate
+      run: |
+        # Pre-consolidate all system/package YAML files
+        # This cache will be used by all _read.load() calls in pytest tests
+        CACHE_FILE="/tmp/netlab-system-cache.json"
+        ./netlab consolidate -o "$CACHE_FILE"
+        echo "✅ System cache created: $(ls -lh "$CACHE_FILE" | awk '{print $5}')"
+        cache_info=$(python3 -c "import json; data=json.load(open('$CACHE_FILE')); \
+          print(f\"{len(data['files'])} files, netlab \
+          {data.get('netlab_version', 'unknown')}\")")
+        echo "📦 Cache contains: $cache_info"
+        echo "cache_file=$CACHE_FILE" >> $GITHUB_OUTPUT
+    - name: Run transformation tests (with JSON cache)
       if: ${{ github.event.pull_request.head.repo.full_name != 'ipspace/netlab' }}
+      env:
+        NETLAB_JSON_CACHE: ${{ steps.consolidate.outputs.cache_file }}
       run: |
         cd tests
         PYTHONPATH="../" pytest
-    - name: Check integration tests
+    - name: Check integration tests (using JSON cache)
+      env:
+        NETLAB_JSON_CACHE: ${{ steps.consolidate.outputs.cache_file }}
       run: |
         cd tests
         ./check-integration-tests.sh

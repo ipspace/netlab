@@ -184,6 +184,73 @@ def save_to_pickle(path: str, data: Box) -> None:
 #
 read_cache: dict = {}
 
+# JSON cache support
+_json_cache: typing.Optional[dict] = None
+
+def set_json_cache(json_file: str) -> None:
+  """
+  Set the JSON cache file to use for loading YAML files.
+  This will cause read_yaml() to check the JSON cache before reading YAML files.
+  
+  Args:
+    json_file: Path to the consolidated JSON cache file
+  """
+  global _json_cache
+  from . import consolidate as _consolidate
+  
+  consolidated = _consolidate.load_from_json(json_file, validate=True)
+  if consolidated is None:
+    log.warning(text=f'Failed to load JSON cache from {json_file}, falling back to YAML files', module='read')
+    _json_cache = None
+  else:
+    # Extract just the files dictionary for use in read_yaml
+    _json_cache = consolidated.get('files') or {}
+    file_count = len(_json_cache)
+    cache_version = consolidated.get('netlab_version', 'unknown')
+    log.info(f'Using JSON cache from {json_file} (netlab {cache_version}, {file_count} files)', module='read')
+
+def _read_from_json_cache(filename: str) -> typing.Optional[Box]:
+  """
+  Try to read a file from the JSON cache.
+  
+  Args:
+    filename: The filename to look up in the cache
+    
+  Returns:
+    Box object with the file content if found, None otherwise
+    
+  Note:
+    Assumes _json_cache is not None. Caller should check this first.
+  """
+  global _json_cache
+  
+  # Type guard: ensure _json_cache is not None (caller should check, but mypy needs this)
+  if _json_cache is None:
+    return None
+  
+  # Normalize the filename to match cache keys
+  if filename.startswith('package:'):
+    cache_key = filename
+  else:
+    try:
+      cache_key = str(_files.absolute_path(filename))
+    except:
+      cache_key = filename
+  
+  # Try exact match first
+  file_data = _json_cache.get(cache_key)
+  if file_data:
+    content = file_data.get('content', {})
+    return Box(content, default_box=True, box_dots=True, default_box_none_transform=False)
+  
+  # Try to find by source filename (for package: files or relative paths)
+  for file_data in _json_cache.values():
+    if file_data.get('source') == filename:
+      content = file_data.get('content', {})
+      return Box(content, default_box=True, box_dots=True, default_box_none_transform=False)
+  
+  return None
+
 class UniqueKeyLoader(yaml.SafeLoader):
   def construct_mapping(self, node : yaml.MappingNode, deep : bool = False) -> dict:
     mapping = []
@@ -196,7 +263,7 @@ class UniqueKeyLoader(yaml.SafeLoader):
     return super().construct_mapping(node, deep)
 
 def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str] = None) -> typing.Optional[Box]:
-  global read_cache
+  global read_cache, _json_cache
 
   if string is not None:
     try:
@@ -212,6 +279,13 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
   if log.debug_active('defaults'):
     print(f"Reading {filename}")
 
+  # Check JSON cache first if it's available
+  if _json_cache is not None:
+    cached_result = _read_from_json_cache(filename)
+    if cached_result is not None:
+      return cached_result
+
+  # Fall back to normal cache
   if filename in read_cache:
     return Box(read_cache[filename],default_box=True,box_dots=True,default_box_none_transform=False)
 

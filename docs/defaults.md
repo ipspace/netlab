@@ -129,12 +129,19 @@ You can change _netlab_ defaults with environment variables starting with `netla
 
 For example, the `NETLAB_DEVICE` variable sets the **defaults.device** parameter and the `NETLAB_BGP_AS` variable sets the **defaults.bgp.as** parameter.
 
-You can use the environment variables instead of the `--device`, `--provider`, or `--set` arguments of the **netlab up** command. For example, the following command sequence starts a lab topology using Arista EOS containers:
+You can use the environment variables instead of the `--device`, `--provider`, `--json-cache`, or `--set` arguments of the **netlab up** and **netlab create** commands. For example, the following command sequence starts a lab topology using Arista EOS containers:
 
 ```
 $ export NETLAB_DEVICE=eos
 $ export NETLAB_PROVIDER=clab
 $ netlab up
+```
+
+You can also use `NETLAB_JSON_CACHE` to specify a consolidated JSON cache file:
+
+```
+$ export NETLAB_JSON_CACHE=/path/to/cache.json
+$ netlab create topology.yml
 ```
 
 Some _netlab_ defaults have an underscore in their names. To set those parameters with environment variables, use a double underscore. For example, to set the *libvirt* **batch_size** parameter, use:

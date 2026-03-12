@@ -9,6 +9,12 @@
 You can skip this step and reuse existing configuration files with the `--snapshot` flag ([more details](netlab-up-restart));
 ```
 
+```{tip}
+For faster execution, especially in CI/CD pipelines or when running multiple `netlab up` operations, you can use the `--json-cache` flag or `NETLAB_JSON_CACHE` environment variable with a consolidated JSON cache file created by **[netlab consolidate](netlab-consolidate)**. This can improve performance by 40-50% by eliminating YAML parsing and reducing file I/O operations.
+
+The CLI argument takes precedence over the environment variable.
+```
+
 * Checks the [virtualization provider](../providers.md) installation;
 * Creates the lab management network ([more details](libvirt-mgmt))
 * Starts the virtual lab using the [selected virtualization provider](topology-reference-top-elements);
@@ -35,7 +41,7 @@ You can use `netlab up` to create configuration files and start the lab, or use 
 usage: netlab up [-h] [--log] [-v] [-q] [--defaults [DEFAULTS ...]] [-d DEVICE]
                  [-p PROVIDER] [--plugin PLUGIN] [-s SETTINGS] [--no-config] [-r RELOAD]
                  [--no-tools] [--dry-run] [--fast-config] [--snapshot [SNAPSHOT]]
-                 [topology]
+                 [--json-cache JSON_CACHE] [topology]
 
 Create configuration files, start a virtual lab, and configure it
 
@@ -65,6 +71,9 @@ options:
   --fast-config         Use fast device configuration (Ansible strategy = free)
   --snapshot [SNAPSHOT]
                         Use netlab snapshot file created by a previous lab run
+  --json-cache JSON_CACHE
+                        Use consolidated JSON cache file instead of reading
+                        YAML files (see [netlab consolidate](netlab-consolidate))
 ```
 
 ```{tip}
