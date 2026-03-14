@@ -62,7 +62,7 @@ The plugin implements BGP routing policies and individual BGP policy attributes 
 | Cisco IOS XE[^18v]  |✅ |✅ |✅ |✅|✅ |✅[❗](caveats-iosv) |✅|
 | Cisco IOS XR[^XR]   |✅ |✅ |✅ |✅|✅ | ❌ |✅|
 | Cumulus Linux       |✅ |✅ |✅ |✅|✅ |✅| ❌ |
-| Dell OS10           |❌ |✅ |✅ |✅| ❌ | ❌ |✅|
+| Dell OS10           |✅ |✅ |✅ |✅| ❌ | ❌ |✅|
 | FRR                 |✅ |✅ |✅ |✅|✅ |✅| ✅|
 | Junos               |✅ |✅ |✅ |✅|✅ | ❌ | ❌ |
 | Nokia SR Linux      |✅ |✅ |✅ | ❌ | ❌ | ❌ | ❌ |
@@ -74,7 +74,7 @@ The plugin implements BGP routing policies and individual BGP policy attributes 
 [^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
 
 ```{tip}
-See [BGP Policies Test Results](https://release.netlab.tools/_html/coverage.bgp.policy) for more details.
+See [BGP Policies Test Results](https://release.netlab.tools/_html/coverage.bgp.policy) and [Routing Policies Test Results](https://release.netlab.tools/_html/coverage.r_policy) for more details.
 ```
 
 **Notes:**
@@ -140,7 +140,7 @@ route-map set_locpref permit 10
 
 ## Applying Individual Policy Attributes
 
-You could specify individual BGP policy attributes as interface-level attributes instead of defining and deploying a routing policy. This approach is probably easier to use in simple scenarios without route filters.
+You could specify individual BGP policy attributes at the interface level instead of defining and deploying a routing policy. This approach is probably easier to use in simple scenarios without route filters.
 
 The plugin's device-specific configuration templates try to apply as many BGP policy attributes as possible directly to EBGP neighbor sessions. For example, **bgp.weight** is usually applied directly to a **neighbor**, as illustrated by the following FRR configuration:
 
@@ -154,7 +154,7 @@ router bgp 65000
   neighbor 10.1.0.2 weight 10
 ```
 
-Most other policy attributes have to be applied through a route map. The plugin device-specific configuration templates create per-neighbor maps using names unique to each EBGP session and apply those route maps to EBGP neighbors:
+Most other policy attributes are applied with a route map. The plugin device-specific configuration templates create per-neighbor maps using names unique to each EBGP session and apply those route maps to EBGP neighbors:
 
 ```
 router bgp 65000
