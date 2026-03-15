@@ -1,0 +1,36 @@
+{% macro render_routes(routes, family) %}
+{% for route in routes if family in route %}
+{% set nh = route.nexthop %}
+    edit {{ loop.index }}
+        set dst {{ route[family] }}
+{% if 'discard' in nh %}
+        set blackhole enable
+{% else %}
+        set gateway {{ nh[family] }}
+        set device {{ nh['intf'] }}
+{% endif %}
+    next
+{% endfor %}
+{% endmacro %}
+
+{% set vdom_traffic = netlab_vdom|default(vdom) %}
+{% set multi_vdom = vdom_traffic != vdom %}
+
+{% if multi_vdom %}
+config vdom
+    edit {{ vdom_traffic }}
+{% endif %}
+
+{% set static_routes = routing.static | default([]) %}
+
+config router static
+{{ render_routes(static_routes, 'ipv4') }}
+end
+
+config router static6
+{{ render_routes(static_routes, 'ipv6') }}
+end
+
+{% if multi_vdom %}
+end
+{% endif %}
