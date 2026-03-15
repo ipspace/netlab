@@ -1,0 +1,43 @@
+configure snmp sysName {{ inventory_hostname.replace("_","-") }}
+
+enable lldp ports all
+disable lldp ports Mgmt
+
+{% for vname in vrfs|default({}) %}
+create virtual-router {{ vname }} type user
+{% endfor %}
+
+{% for l in netlab_interfaces %}
+{%   set is_loopback = l.type|default('') == 'loopback' %}
+{%   set vlan_name = 'VLAN_LO' + l.ifindex|string if is_loopback else 'VLAN_P' + l.ifname %}
+create vlan "{{ vlan_name }}"
+{%   if is_loopback %}
+enable loopback-mode vlan {{ vlan_name }}
+{%   else %}
+configure vlan {{ vlan_name }} add ports {{ l.ifname }} untagged
+{%     if l.name is defined %}
+configure ports {{ l.ifname }} display-string {{ (l.name + ("-"+l.role if l.role is defined else "")) | replace('->','to') | replace(' ','_') }}
+{%     elif l.type == "stub" %}
+configure ports {{ l.ifname }} display-string Stub
+{%     endif %}
+{%     if l.mtu is defined %}
+enable jumbo-frame ports {{ l.ifname }}
+{%     endif %}
+{%   endif %}
+{%   if l.vrf is defined %}
+configure vlan {{ vlan_name }} virtual-router {{ l.vrf }}
+{%   endif %}
+{%   if l.ipv4 is defined %}
+{%     if l.ipv4 is sameas True %}
+! Unnumbered IPv4 not supported on EXOS
+{%     elif l.ipv4 is string and l.ipv4|ansible.utils.ipv4 %}
+configure vlan {{ vlan_name }} ipaddress {{ l.ipv4|ansible.utils.ipaddr('address') }} {{ l.ipv4|ansible.utils.ipaddr('netmask') }}
+{%     else %}
+! Invalid IPv4 address {{ l.ipv4 }}
+{%     endif %}
+{%   endif %}
+{#   ip-mtu must come after ipaddress #}
+{%   if not is_loopback and l.mtu is defined %}
+configure ip-mtu {{ l.mtu }} vlan {{ vlan_name }}
+{%   endif %}
+{% endfor %}
