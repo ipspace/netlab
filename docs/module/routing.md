@@ -30,6 +30,7 @@ The following table describes high-level per-platform support of generic routing
 | Cumulus Linux      | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cumulus NVUE 5.x   | ❌  | ❌  | ❌  | ❌  | ✅ |
 | Dell OS10          | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Fortinet FortiOS   | ❌  | ❌  | ❌  | ❌  | ✅ |
 | FRR                | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Linux              | ❌  | ❌  | ❌  | ❌  | ✅ |
 | Junos              | ✅ | ✅ | ✅ | ✅ | ✅ |
