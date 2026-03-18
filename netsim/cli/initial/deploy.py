@@ -88,8 +88,9 @@ def ansible_extra_vars(topology: Box) -> Box:
   for p in ["templates", "custom"]:
     ev[f"paths_{p}"].dirs = "{{ node_files }}/{{ inventory_hostname }}"
 
-  # Retain the custom configuration task name(s)
+  # Retain the custom configuration task name(s) and directories
   ev.paths_custom.tasks = topology.defaults.paths.custom.tasks
+  ev.paths_custom.task_dirs = topology.defaults.paths.custom.dirs
   return ev
 
 

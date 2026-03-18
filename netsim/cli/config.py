@@ -84,8 +84,9 @@ def ansible_extra_vars(topology: Box, reload: bool = False, extra_vars: dict = {
   for p in ['templates','custom']:                            # Change the search paths to node_files
     ev[f'paths_{p}'].dirs = "{{ node_files }}/{{ inventory_hostname }}"
 
-  # Retain the custom configuration task name(s)
+  # Retain the custom configuration task name(s) and directories
   ev.paths_custom.tasks = topology.defaults.paths.custom.tasks
+  ev.paths_custom.task_dirs = topology.defaults.paths.custom.dirs
   return ev
 
 def get_ansible_args(ans_vars: Box,nodeset: list,cfg_name: str) -> list:
