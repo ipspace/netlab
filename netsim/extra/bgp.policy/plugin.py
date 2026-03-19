@@ -249,7 +249,7 @@ def apply_bgp_routing_policy(ndata: Box,ngb: Box,intf: Box,topology: Box) -> Non
     if f'bgp.policy.{direction}' not in intf:               # No policies applied in this direction, move on
       continue
 
-    if 'routing' not in ndata.module:
+    if 'routing' not in ndata.get('module', []):
       log.error(
         f"You cannot use 'bgp.policy' interface attribute on a node that does not use 'routing' module",
         category=log.IncorrectType,
@@ -309,7 +309,7 @@ def post_transform(topology: Box) -> None:
   _attr_list = _direct + list(_compound.keys())
 
   for n, ndata in topology.nodes.items():
-    if 'bgp' not in ndata.module:                           # Skip nodes not running BGP
+    if 'bgp' not in ndata.get('module',[]):                 # Skip nodes not running BGP
       continue
 
     route_aggregation(ndata,topology)
