@@ -63,3 +63,4 @@ def run(cli_args: typing.List[str]) -> None:
       rest=rest,
       topology=topology,
       log_level=LogLevel.NONE if p_header else log_level)
+    print()
