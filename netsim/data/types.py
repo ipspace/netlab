@@ -725,7 +725,7 @@ RESERVED_PREFIXES: typing.Dict[str,dict] = {
     'local':     ipaddress.IPv4Network('0.0.0.0/8'),
     'loopback':  ipaddress.IPv4Network('127.0.0.0/8'),
     'multicast': ipaddress.IPv4Network('224.0.0.0/4'),
-    'class_e':   ipaddress.IPv4Network('240.0.0.0/4'),
+    'class E':   ipaddress.IPv4Network('240.0.0.0/4'),
   },
   'IPv6': {
     'loopback':  ipaddress.IPv6Network('::1/128'),
