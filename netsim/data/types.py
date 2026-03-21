@@ -724,7 +724,8 @@ RESERVED_PREFIXES: typing.Dict[str,dict] = {
   'IPv4': {
     'local':     ipaddress.IPv4Network('0.0.0.0/8'),
     'loopback':  ipaddress.IPv4Network('127.0.0.0/8'),
-    'multicast': ipaddress.IPv4Network('224.0.0.0/4')
+    'multicast': ipaddress.IPv4Network('224.0.0.0/4'),
+    'class_e':   ipaddress.IPv4Network('240.0.0.0/4'),
   },
   'IPv6': {
     'loopback':  ipaddress.IPv6Network('::1/128'),
@@ -757,7 +758,7 @@ def common_addr_parse(
         ranges: dict,
         p_addr: typing.Any) -> typing.Optional[str]:
     for k,v in ranges.items():
-      if v.overlaps(p_addr):
+      if p_addr.subnet_of(v):
         return k
 
     return None
