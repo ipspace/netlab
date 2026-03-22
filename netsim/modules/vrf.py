@@ -181,7 +181,7 @@ def normalize_vrf_ids(topology: Box) -> None:
     normalize_vrf_dict(n,topology)
 
 def vrf_needs_id(vrf: Box) -> bool:
-  if 'rd' in vrf and 'id' in vrf:
+  if vrf.get('rd',None) and vrf.get('id',None):
     return False
   return True
 
@@ -236,8 +236,9 @@ def set_vrf_ids(obj: Box, topology: Box) -> None:
       continue
     asn = asn or get_rd_as_number(obj,topology)
 
-    if not is_global and vname in topology.get('vrfs',{}):  # Can we copy the global values?
-      vdata.id = topology.vrfs[vname].id                    # We cannot merge global-to-node before post-transform
+    if not is_global and vname in topology.get('vrfs',{}):  # Can we copy the global values (can't do merge yet)
+      if not vdata.get('id',None):                          # Do we need VRF ID?
+        vdata.id = topology.vrfs[vname].id                  # Copy it from the global data
       if 'rd' not in vdata:                                 # No local RD, copy it from global VRF definition
         vdata.rd = topology.vrfs[vname].rd
         continue
