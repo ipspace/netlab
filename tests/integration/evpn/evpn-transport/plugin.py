@@ -16,7 +16,7 @@ def init(topology: Box) -> None:
   def_device = topology.defaults.device               # Get features of the default device
   node = get_box({'device': def_device})
   features = get_device_features(node,topology.defaults)
-  if 'evpn.transport' not in features:                # Does the device specify available EVPN transports?
+  if not features.get('evpn.transport',[]):           # Does the device specify available EVPN transports?
     return
 
   transport = features.evpn.transport[0]
