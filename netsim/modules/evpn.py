@@ -551,8 +551,8 @@ Check whether the node supports the evpn.transport setting used in lab topology
 """
 def check_node_transport(node: Box, topology: Box) -> bool:
   features = devices.get_device_features(node,topology.defaults)
-  transport = node.get('evpn.transport','vxlan')
-  s_trans  = features.get('evpn.transport',['vxlan'])       # Missing feature means VXLAN only
+  transport = node.get('evpn.transport','vxlan')            # Get configured VXLAN transport
+  s_trans  = features.get('evpn.transport',[])              # Get supported transports
   if transport not in s_trans:                              # Is the requested transport supported by the device?
     log.error(
       f'Device {node.device} (node {node.name}) does not support EVPN transport {transport}',
