@@ -78,7 +78,7 @@ The following parameters can be set globally or per node:
 
 * **vrfs**: A dictionary of VRF definitions (see below)
 * **vrf.loopback** (bool): Create loopback interfaces for all VRFs used on this node
-* **vrf.as**: The default AS number used in RD/RT values when **bgp.as** is not set. The system default for **vrf.as** is 65000.
+* **vrf.as**: The default AS number used in RD/RT values when **bgp.as** is not set ([more details](default-vrf-values)). The system default for **vrf.as** is 65000.
 
 (module-vrf-definition)=
 ## VRF Definition
@@ -160,13 +160,14 @@ vrfs:
 (default-vrf-values)=
 ### Default RD/RT Values
 
-The following default values are used in VRF definitions missing **rd**, **import**, or **export** values (including the corner case of empty VRF definition):
+_netlab_ uses the following default values when the global VRF definitions don't have the **rd**, **import**, or **export** values (including the corner case of empty VRF definition):
 
-* VRFs specified in nodes inherit missing parameters from the global VRFs with the same name
-* When the **rd** is missing, it's assigned a unique value using **bgp.as** or **vrf.as** value as the high-end of the RD value
+* When the **rd** is missing, it's assigned a unique value in the `asn:nn` format using the global **bgp.as** or **vrf.as** value as the high-end of the RD value. The lower 16 bits of the RD value are the VRF ID (starting with one).
 * The missing **import** and **export** route targets become a list, with the VRF RD as the sole element.
 
-For example, defining a simple VRF *red*...
+When completing the node-level VRF definitions, _netlab_ copies the missing parameters from the global VRFs with the same name, and replaces empty values using the same rules as for the global VRF definitions, but this time using node **bgp.as** and **vrf.as** values (which can themselves be inherited from the global values).
+
+For example, defining a simple global VRF *red*...
 
 ```
 vrfs:
@@ -176,13 +177,13 @@ vrfs:
 ... results in the following data structure:
 
 ```
-vrfs:
-  red:
-    export:
-    - '65000:1'
-    import:
-    - '65000:1'
-    rd: '65000:1'
+red:
+  export:
+  - '65000:1'
+  id: 1
+  import:
+  - '65000:1'
+  rd: '65000:1'
 ```
 
 When using an empty **rd** value in a node VRF, the **rd** will be auto-generated, while the **import** and **export** route targets will be inherited from the global VRF definition.
@@ -196,7 +197,9 @@ vrfs:
 nodes:
   r1:
     bgp.as: 65001
-    vrfs.red.rd:
+    vrfs:
+      green:
+      red.rd:
 ```
 
 ... results in the following (VRF-related) data structures:
@@ -206,6 +209,7 @@ vrfs:
   red:
     export:
     - '65000:1'
+    id: 1
     import:
     - '65000:1'
     rd: '65000:1'
@@ -213,13 +217,13 @@ vrfs:
 nodes:
   r1:
     vrfs:
-      green:
       red:
         export:
         - '65000:1'
+        id: 1
         import:
         - '65000:1'
-        rd: '65001:2'
+        rd: '65001:1'
 ```
 
 Notes:
