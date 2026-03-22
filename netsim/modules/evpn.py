@@ -237,11 +237,12 @@ def register_static_transit_vni(topology: Box) -> None:
 Check evpn.transport from user, default to VXLAN if not provided
 """
 def check_evpn_transport(topology: Box) -> str:
+  global VALID_TRANSPORTS
   setting = must_be_string(
       parent=topology,
       key='evpn.transport',
       path='topology',
-      valid_values=topology.defaults.evpn.attributes.transport.valid_values,
+      valid_values=VALID_TRANSPORTS,
       module='evpn')
   if not setting:
     setting = VALID_TRANSPORTS[0]                 # Default to VXLAN
