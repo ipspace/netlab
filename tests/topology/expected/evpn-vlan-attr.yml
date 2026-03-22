@@ -11,6 +11,8 @@ bgp:
 evpn:
   session:
   - ibgp
+  vlans:
+  - red
 groups:
   as65000:
     members:
@@ -35,6 +37,7 @@ links:
 module:
 - vlan
 - bgp
+- vxlan
 - evpn
 name: input
 nodes:
@@ -71,6 +74,8 @@ nodes:
       session:
       - ibgp
       transport: vxlan
+      vlans:
+      - red
     id: 1
     interfaces:
     - bgp:
@@ -115,6 +120,7 @@ nodes:
     module:
     - vlan
     - bgp
+    - vxlan
     - evpn
     name: a
     role: router
@@ -125,17 +131,33 @@ nodes:
         bridge_group: 1
         evpn:
           evi: 10
+          export:
+          - '65000:10'
+          import:
+          - '65000:10'
           rd: 10.0.0.1:10
         id: 1000
         mode: irb
         prefix:
           allocation: id_based
           ipv4: 172.16.0.0/24
+        vni: 101000
+    vxlan:
+      domain: global
+      flooding: evpn
+      vlans:
+      - red
+      vtep: 10.0.0.1
+      vtep_interface: Loopback0
 provider: libvirt
 vlans:
   red:
     evpn:
       evi: 10
+      export:
+      - '65000:10'
+      import:
+      - '65000:10'
     host_count: 0
     id: 1000
     neighbors:
@@ -148,3 +170,10 @@ vlans:
     prefix:
       allocation: id_based
       ipv4: 172.16.0.0/24
+    vni: 101000
+vxlan:
+  domain: global
+  flooding: evpn
+  use_v6_vtep: false
+  vlans:
+  - red

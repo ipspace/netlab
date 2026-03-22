@@ -11,6 +11,8 @@ bgp:
 evpn:
   session:
   - ibgp
+  vlans:
+  - red
   vrfs:
   - tenant
 groups:
@@ -38,6 +40,7 @@ module:
 - vlan
 - bgp
 - vrf
+- vxlan
 - evpn
 name: input
 nodes:
@@ -75,6 +78,8 @@ nodes:
       session:
       - ibgp
       transport: vxlan
+      vlans:
+      - red
       vrfs:
       - tenant
     id: 1
@@ -123,6 +128,7 @@ nodes:
     - vlan
     - bgp
     - vrf
+    - vxlan
     - evpn
     name: a
     role: router
@@ -131,11 +137,19 @@ nodes:
     vlans:
       red:
         bridge_group: 1
+        evpn:
+          evi: 1000
+          export:
+          - 65000:1000
+          import:
+          - 65000:1000
+          rd: 10.0.0.1:1000
         id: 1000
         mode: irb
         prefix:
           allocation: id_based
           ipv4: 172.16.0.0/24
+        vni: 101000
         vrf: tenant
     vrf:
       as: 65000
@@ -159,9 +173,24 @@ nodes:
         - '65000:1'
         rd: '65000:1'
         vrfidx: 100
+    vxlan:
+      domain: global
+      flooding: evpn
+      l3vnis:
+      - tenant
+      vlans:
+      - red
+      vtep: 10.0.0.1
+      vtep_interface: Loopback0
 provider: libvirt
 vlans:
   red:
+    evpn:
+      evi: 1000
+      export:
+      - 65000:1000
+      import:
+      - 65000:1000
     host_count: 0
     id: 1000
     neighbors:
@@ -175,6 +204,7 @@ vlans:
     prefix:
       allocation: id_based
       ipv4: 172.16.0.0/24
+    vni: 101000
     vrf: tenant
 vrf:
   as: 65000
@@ -189,3 +219,9 @@ vrfs:
     import:
     - '65000:1'
     rd: '65000:1'
+vxlan:
+  domain: global
+  flooding: evpn
+  use_v6_vtep: false
+  vlans:
+  - red
