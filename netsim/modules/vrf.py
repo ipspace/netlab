@@ -234,13 +234,16 @@ def set_vrf_ids(obj: Box, topology: Box) -> None:
   for vname,vdata in obj.vrfs.items():                      # Iterate over object VRFs
     if not vrf_needs_id(vdata):                             # Skip if the ID/RD is set
       continue
+    asn = asn or get_rd_as_number(obj,topology)
 
     if not is_global and vname in topology.get('vrfs',{}):  # Can we copy the global values?
-      vdata.id = topology.vrfs[vname].id                    # ... we have to copy individual values because
-      vdata.rd = topology.vrfs[vname].rd                    # ... we cannot simply merge global into node data
-      continue                                              # ... before post-transform
+      vdata.id = topology.vrfs[vname].id                    # We cannot merge global-to-node before post-transform
+      if 'rd' not in vdata:                                 # No local RD, copy it from global VRF definition
+        vdata.rd = topology.vrfs[vname].rd
+      elif not vdata.rd:                                    # Local RD is empty value, create it
+        vdata.rd = f'{asn}:{vdata.id}'
+      continue                                              # And move on, we're all set
 
-    asn = asn or get_rd_as_number(obj,topology)
     if not asn:
       log.error(f'Need a usable vrf.as or bgp.as to create auto-generated VRF RD for {vname} in {obj_name}',
         log.MissingValue,
@@ -305,24 +308,28 @@ def set_import_export_rt(obj : Box, topology: Box) -> None:
 #
 # VRF route leaking is usually implemented through BGP VPNv4 address families
 # Check whether we have BGP AS configured on all nodes that use VRFs with route leaking
-# (identified as import or export RT not equal to [ RD ])
+# (identified as import or export RT not equal to [ RD ]). We cannot simply compare
+# import and export RT as we might have two VRFs with different RDs but equal RT values.
 #
 
 def validate_vrf_route_leaking(node : Box) -> None:
   for vname,vdata in node.vrfs.items():
     simple_rt = [ vdata.rd ]
-    leaked_routes = vdata['import'] and vdata['import'] != simple_rt
-    leaked_routes = leaked_routes or (vdata['export'] and vdata['export'] != simple_rt)
-    if leaked_routes:
-      vdata._leaked_routes = True
-      if not node.get('bgp.as',None):
-        if node.get('vrf.as',None):
-          node.bgp['as'] = node.vrf['as']
-        else:
-          log.error(
-            f"VRF {vname} on {node.name} uses inter-VRF route leaking, but there's no BGP AS configured on the node",
-            log.MissingValue,
-            'vrf')
+    leaked_routes = vdata.get('import',[]) != simple_rt or vdata.get('export',[]) != simple_rt
+    if not leaked_routes:                         # Simple setup, no extra work
+      continue                                    # ... move on
+
+    vdata._leaked_routes = True                   # Set the flag for VRF configuration templates
+    if node.get('bgp.as',None):                   # If we already have a valid node BGP ASN, move on
+      continue
+
+    if node.get('vrf.as',None):                   # Many devices need BGP ASN for inter-VRF route leaking
+      node.bgp['as'] = node.vrf['as']             # ... even if it's a fake one
+    else:
+      log.error(
+        f"VRF {vname} on {node.name} uses inter-VRF route leaking, but there's no BGP AS configured on the node",
+        log.MissingValue,
+        'vrf')
 
 # If we have an in-VRF loopback, fix parent interface for VRF IPv4 unnumbered interfaces
 #
