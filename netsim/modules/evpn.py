@@ -555,9 +555,7 @@ def check_node_transport(node: Box, topology: Box) -> bool:
   s_trans  = features.get('evpn.transport',[])              # Get supported transports
   if not s_trans:                                           # Control-plane-only node
     node.evpn._cp_only = True
-    return True
-
-  if transport not in s_trans:                              # Is the requested transport supported by the device?
+  elif transport not in s_trans:                            # Is the requested transport supported by the device?
     log.error(
       f'Device {node.device} (node {node.name}) does not support EVPN transport {transport}',
       module='evpn',
