@@ -240,9 +240,10 @@ def set_vrf_ids(obj: Box, topology: Box) -> None:
       vdata.id = topology.vrfs[vname].id                    # We cannot merge global-to-node before post-transform
       if 'rd' not in vdata:                                 # No local RD, copy it from global VRF definition
         vdata.rd = topology.vrfs[vname].rd
-      elif not vdata.rd:                                    # Local RD is empty value, create it
-        vdata.rd = f'{asn}:{vdata.id}'
-      continue                                              # And move on, we're all set
+        continue
+      elif asn and not vdata.rd:                            # Local RD is empty value, create it
+        vdata.rd = f'{asn}:{vdata.id}'                      # ... if we can
+        continue                                            # Move on, we're all set
 
     if not asn:
       log.error(f'Need a usable vrf.as or bgp.as to create auto-generated VRF RD for {vname} in {obj_name}',
