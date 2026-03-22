@@ -188,7 +188,7 @@ red:
 
 When using an empty **rd** value in a node VRF, the **rd** will be auto-generated, while the **import** and **export** route targets will be inherited from the global VRF definition.
 
-For example, defining a *red* VRF with node-specific RD...
+For example, defining a *red* VRF with node-specific auto-generated RD...
 
 ```
 vrfs:
