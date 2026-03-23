@@ -13,22 +13,22 @@ Config Deploying device configurations
  [INFO] Executing initial configuration for node r21
  [INFO] Executing initial configuration for node r22
  [INFO] Executing initial configuration for node v1
- [INFO] Executing initial configuration for node v2
  [INFO] Executing initial configuration for node rb
+ [INFO] Executing initial configuration for node v2
  [INFO] Executing ospf configuration for node r12
  [INFO] Executing ospf configuration for node r21
- [INFO] Executing ospf configuration for node v2
- [INFO] Executing ospf configuration for node v1
  [INFO] Executing ospf configuration for node rb
+ [INFO] Executing ospf configuration for node v1
  [INFO] Executing routing configuration for node r22
+ [INFO] Executing ospf configuration for node v2
  [INFO] Executing ospf configuration for node r11
  [INFO] Executing ospf configuration for node r22
- [INFO] Executing ospf.areas configuration for node v2
- [INFO] Executing ospf.areas configuration for node r11
  [INFO] Executing ospf.areas configuration for node r12
- [INFO] Executing ospf.areas configuration for node r21
- [INFO] Executing ospf.areas configuration for node rb
+ [INFO] Executing ospf.areas configuration for node v2
  [INFO] Executing ospf.areas configuration for node v1
+ [INFO] Executing ospf.areas configuration for node rb
+ [INFO] Executing ospf.areas configuration for node r21
+ [INFO] Executing ospf.areas configuration for node r11
  [INFO] Executing ospf.areas configuration for node r22
  [INFO] Starting Ansible playbook to deploy the rest of the
           configurations
@@ -40,7 +40,7 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -61,7 +61,7 @@ TASK [Deploy normalize configuration] ******************************************
 skipping: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -81,7 +81,7 @@ ok: [dut] => {
 }
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [dut]
@@ -98,9 +98,9 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=routing)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=vrf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=vrf)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [dut]
@@ -138,7 +138,7 @@ ok: [dut] => {
 }
 
 TASK [Deploy ospf configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [dut]
@@ -163,11 +163,11 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "vrf configuration for dut\n=========================================\n\nupdates:\n\n- path: /network-instance[name=tenant]\n  value:\n   type: ip-vrf\n\n- path: /routing-policy/policy[name=tenant_export_ospf]\n  value:\n    default-action:\n      policy-result: reject\n    statement:\n    - name: export_local\n      match:\n        protocol: local\n      action:\n        policy-result: accept\n\n\n- path: /network-instance[name=tenant]\n  value:\n    router-id: 10.1.0.1\n    protocols:\n      ospf:\n        instance:\n        - name: \"1\"\n          version: ospf-v3\n          address-family: ipv6-unicast\n          admin-state: enable\n          max-ecmp-paths: 64\n          asbr: {}\n          export-policy: \"tenant_export_ospf\"\n          area:\n          - area-id: 0.0.0.11\n            interface:\n            - interface-name: ethernet-1/6.0\n              interface-type: \"point-to-point\"\n              failure-detection:\n                enable-bfd: False\n          - area-id: 0.0.0.21\n            interface:\n            - interface-name: ethernet-1/7.0\n              interface-type: \"point-to-point\"\n              failure-detection:\n                enable-bfd: False\n\n\n- path: /routing-policy/community-set[name=C65000_1]\n  value:\n   member:\n   - \"target:65000:1\" # Single member, else matching is AND\n\n- path: /routing-policy/community-set[name=tenant_export]\n  value:\n   member:\n   - \"target:65000:1\"\n\n\n- path: /network-instance[name=tenant]/protocols/bgp-vpn\n  value:\n   bgp-instance:\n   - id: 1\n     route-distinguisher:\n      rd: \"65000:1\"\n\n- path: /network-instance[name=tenant]/inter-instance-policies\n  value:\n   apply-policy:\n    export-policy: \"tenant_vpn_export\"\n    import-policy: \"tenant_vpn_import\"\n\n- path: /routing-policy/policy[name=tenant_vpn_export]\n  value:\n   default-action:\n    policy-result: \"accept\"\n    bgp:\n     communities:\n      add: \"tenant_export\"\n\n- path: /routing-policy/policy[name=tenant_vpn_import]\n  value:\n   default-action:\n    policy-result: \"reject\"\n   statement:\n   - name: 11\n     match:\n      bgp:\n       community-set: \"C65000_1\"\n     action:\n      policy-result: \"accept\"\n\n"
+    "msg": "vrf configuration for dut\n=========================================\n\nupdates:\n\n- path: /network-instance[name=tenant]\n  value:\n   type: ip-vrf\n\n- path: /routing-policy/policy[name=tenant_export_ospf]\n  value:\n    default-action:\n      policy-result: reject\n    statement:\n    - name: export_local\n      match:\n        protocol: local\n      action:\n        policy-result: accept\n\n\n- path: /network-instance[name=tenant]\n  value:\n    router-id: 10.1.0.1\n    protocols:\n      ospf:\n        instance:\n        - name: \"1\"\n          version: ospf-v3\n          address-family: ipv6-unicast\n          admin-state: enable\n          max-ecmp-paths: 64\n          asbr: {}\n          export-policy: \"tenant_export_ospf\"\n          area:\n          - area-id: 0.0.0.11\n            interface:\n            - interface-name: ethernet-1/6.0\n              interface-type: \"point-to-point\"\n              failure-detection:\n                enable-bfd: False\n          - area-id: 0.0.0.21\n            interface:\n            - interface-name: ethernet-1/7.0\n              interface-type: \"point-to-point\"\n              failure-detection:\n                enable-bfd: False\n\n\n- path: /routing-policy/community-set[name=C65000_1]\n  value:\n   member:\n   - \"target:65000:1\" # Single member, else matching is AND\n\n- path: /routing-policy/community-set[name=tenant_export]\n  value:\n   member:\n   - \"target:65000:1\"\n\n\n- path: /network-instance[name=tenant]/protocols/bgp-vpn\n  value:\n   bgp-instance:\n   - id: 1\n     route-distinguisher:\n      rd: \"65000:1\"\n\n- path: /network-instance[name=tenant]/inter-instance-policies\n  value:\n   apply-policy:\n    export-policy:\n      - \"tenant_vpn_export\"\n    import-policy:\n      - \"tenant_vpn_import\"\n\n- path: /routing-policy/policy[name=tenant_vpn_export]\n  value:\n   default-action:\n    policy-result: \"accept\"\n    bgp:\n     communities:\n      add: \"tenant_export\"\n\n- path: /routing-policy/policy[name=tenant_vpn_import]\n  value:\n   default-action:\n    policy-result: \"reject\"\n   statement:\n   - name: 11\n     match:\n      bgp:\n       community-set: \"C65000_1\"\n     action:\n      policy-result: \"accept\"\n\n"
 }
 
 TASK [Deploy vrf configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [dut]
@@ -181,7 +181,7 @@ skipping: [dut]
 PLAY [Deploy custom deployment templates] **************************************
 
 TASK [Run custom configuration deployment scripts] *****************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=ospf.areas)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=ospf.areas)
 
 TASK [Find configuration template] *********************************************
 ok: [dut]
@@ -198,11 +198,17 @@ skipping: [dut]
 TASK [Process template /work/netlab_cicd/node_files/dut/ospf.areas for dut] ****
 skipping: [dut]
 
+TASK [debug] *******************************************************************
+skipping: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
+
 TASK [Find custom configuration deployment script] *****************************
 ok: [dut]
 
 TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [dut]
@@ -214,7 +220,7 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=39   changed=4    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
+dut                        : ok=39   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================
