@@ -197,12 +197,18 @@ Instead of using a global list of autonomous systems, you could specify a BGP au
 
 Additional per-node BGP configuration parameters include:
 
+* **bgp.advertise** -- the list of prefixes that should be advertised into BGP. These prefixes must usually be in the IP routing table (for example, learned via IGP).
+
+```{tip}
+Use **bgp.advertise** link/interface attribute to advertise connected subnets without configuring route redistribution
+```
+
 * **bgp.advertise_loopback** -- When set to `False`, BGP does not advertise the IP prefix configured on the loopback interface. See also [*Advanced Global Configuration Parameters*](#advanced-global-configuration-parameters).
 * **bgp.community** -- override global BGP community propagation defaults for this node. See *[](bgp-community-propagation)* for more details.
 * **bgp.import** -- [import (redistribute) IPv4 and IPv6 routes](routing_import) into global BGP instance (default: **false**)
 * **bgp.local_as** -- the autonomous system used on all EBGP sessions. See *[IBGP local-as](bgp-ibgp-localas)* on how this could also result in **IBGP** sessions.
 * **bgp.next_hop_self** -- Use *next-hop-self* on IBGP sessions. This parameter can also be specified as a global value; the system default is **true**.
-* **bgp.originate** -- a list of additional prefixes to advertise. The advertised prefixes are supported with a static route pointing to *Null0*.
+* **bgp.originate** -- a list of additional prefixes to advertise. Unlike the prefixes listed in the **bgp.advertise**  attribute, these prefixes are supported with a static discard route (usually pointing to *Null0*).
 * **bgp.router_id** -- Set a static router ID. The default **router_id** is taken from the IPv4 address of the loopback interface or the **router_id** address pool if the device does not have a loopback interface or there is no usable IPv4 address on the loopback interface.
 
 (bgp-advanced-node)=
@@ -233,6 +239,7 @@ Finally, the BGP configuration module supports these advanced node parameters th
 ## VRF Parameters
 
 * BGP is always enabled for all VRF address families. By default, _netlab_ redistributes connected interfaces and IGP routes into BGP VRF address families. You can change that on devices supporting configurable route import with the **[bgp.import](routing_import)** VRF parameter.
+* You can use **bgp.advertise** VRF attribute and **bgp.advertise** interface/link attribute to advertise VRF prefixes into VRF BGP instance without configuring route redistribution.
 * You can set a VRF-specific BGP router ID with **bgp.router_id** VRF parameter. Use this setting when building topologies with back-to-back links between VRFs on the same device.
 * To stop the creation of VRF EBGP sessions, set the **bgp** VRF parameter to *False* (see also [](routing_disable_vrf)).
 
@@ -268,12 +275,20 @@ You can also [turn off all EBGP sessions on an interface](routing_disable).
 (bgp-advertise-prefix)=
 ## Advertised BGP Prefixes
 
-The following IPv4/IPv6 prefixes are configured with **network** statements within the BGP routing process:
+The following IPv4/IPv6 prefixes are configured with **network** statements (or a corresponding export-to-BGP routing policy) within the BGP routing process:
 
 * IPv4/IPv6 prefixes configured on the default loopback interface and [loopback links](links-loopback) unless the **bgp.advertise_loopback** is set to `False`.
 * IPv4/IPv6 prefixes from links with **bgp.advertise** parameter set to **true**.
 * Prefixes assigned to *stub* networks -- links with a single node attached to them or links with a single router or daemon attached to them (these links would have **role** set to **stub**). To prevent a stub prefix from being advertised, set **bgp.advertise** link parameter to **false**
-* IPv4 prefixes in **bgp.originate** list. Static routes to *Null0* are created for those prefixes if needed.
+* Prefixes in the **bgp.advertise** list.
+* IPv4 prefixes in the **bgp.originate** list. Static routes to *Null0* are created for those prefixes if needed.
+
+The entries in the **bgp.advertise** list can be:
+
+* IPv4 subnets
+* IPv6 subnets
+* [Named prefixes](named-prefixes)
+* Dictionaries with **ipv4** and **ipv6** keys
 
 ### Using bgp.advertise Link Attribute
 

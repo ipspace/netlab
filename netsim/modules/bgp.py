@@ -563,6 +563,24 @@ def bgp_set_advertise(node: Box, topology: Box) -> None:
       l.bgp.advertise = True                # ... also advertise loopback prefixes if bgp.advertise_loopback is set
 
 """
+check_advertise_data: check whether the device supports bgp.advertise list (if it's used)
+"""
+def check_advertise_data(node: Box, topology: Box) -> None:
+  features = devices.get_device_features(node,topology.defaults)
+  if features.bgp.advertise:                      # Device supports the new advertise features, nothing to check
+    return
+
+  for (bgp_data,_,vname) in _rp_utils.rp_data(node,'bgp'):
+    if 'advertise' in bgp_data:
+      text_msg = f'Device {node.device} (node {node.name}) does not support bgp.advertise attribute'
+      text_msg += f' (vrf {vname})' if vname else ''
+      log.warning(
+        text=text_msg,
+        module='bgp',
+        flag='advertise',
+        category=log.IncorrectAttr)
+
+"""
 bgp_build_advertise_list: build per-VRF bgp.advertise lists from interface bgp.advertise flags
 """
 def bgp_build_advertise_list(node: Box) -> None:
@@ -955,5 +973,6 @@ class BGP(_Module):
     bgp_transform_community_list(node,topology)
     _routing.check_vrf_protocol_support(node,'bgp',None,'bgp',topology)
     _routing.process_imports(node,'bgp',topology,global_vars.get_const('vrf_igp_protocols',['connected']))
+    check_advertise_data(node,topology)
     sanitize_bgp_data(node)
     bgp_build_advertise_list(node)

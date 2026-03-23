@@ -4,6 +4,8 @@ message: |
   of IPv4 prefixes.
 
 defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+defaults.paths.prepend.plugin: [ "topology:../plugin" ]
+plugin: [ adjust_test ]
 
 module: [ bgp ]
 
@@ -16,9 +18,14 @@ groups:
 defaults.bgp.as: 65000
 defaults.interfaces.mtu: 1500
 
+prefix:
+  adv_beacon:
+    ipv4: 172.42.43.0/24
+
 nodes:
   dut:
     bgp.originate: [ 172.42.42.0/24 ]
+    bgp.advertise: [ adv_beacon ]
     bgp.advertise_loopback: False
     loopback: True
     module: [ bgp, ospf ]
@@ -42,9 +49,19 @@ links:
 - dut:
   prefix.ipv4: 172.0.42.0/24
   bgp.advertise: True
+- r1:
+  prefix: adv_beacon
 
 defaults.devices.cisco8000v.netlab_validate.originate.wait: 80
 defaults.devices.cisco8000v.netlab_validate.loopback.wait: 80
+
+_adjust:
+- nodes: [ dut ]              # Remove 'bgp.advertise' if the device does not support it
+  features: [ bgp.advertise ]
+  warning: The BGP configuration template for {device} does not support bgp.advertise attribute
+  remove:
+  - nodes.dut.bgp.advertise
+  - validate.adv_ipv4
 
 validate:
   ospf_adj:
@@ -83,3 +100,9 @@ validate:
     description: Check whether DUT originates an unwanted prefix on a P2P link
     nodes: [ x1, x2, r1 ]
     plugin: bgp_prefix('172.0.66.0/24',state='missing')
+  adv_ipv4:
+    description: Check whether DUT advertises OSPF prefix into BGP
+    wait: bgp_scan_time
+    wait_msg: Waiting for advertised OSPF prefix
+    nodes: [ x1, x2 ]
+    plugin: bgp_prefix(prefix.adv_beacon.ipv4)
