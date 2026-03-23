@@ -25,9 +25,8 @@ VRFs used on a device are defined in the **vrfs** dictionary. Dictionary keys ar
 * **import** -- list of import route targets
 * **export** -- list of export route targets
 * **af** -- list of address families (`ipv4` and/or `ipv6`) used by the VRF
-* **networks** (optional) -- list of subnets advertised as BGP prefixes
-* **ospf** (optional) -- VRF OSPF parameters (when there's an OSPF routing process running in the VRF)
-* **bgp** (optional) -- VRF BGP parameters (when the VRF contains at least one CE router running BGP) 
+* **ospf** (optional) -- VRF OSPF parameters when there's an OSPF routing process running in the VRF
+* **bgp** (optional) -- VRF BGP parameters when the lab topology requires a VRF BGP instance.
 
 Other parameters:
 
@@ -148,7 +147,7 @@ Cisco IOS example:
 (dev-vrf-bgp)=
 ### Configuring VRF BGP Instances
 
-In the BGP configuration process, configure VRF address families, OSPF-to-BGP redistribution, redistribution of connected interfaces, and advertise VRF-specific networks.
+In the BGP configuration process, configure VRF address families, OSPF-to-BGP redistribution, redistribution of connected interfaces, and advertise VRF-specific networks. Use attributes defined in the [](dev-config-bgp) document; many of them (for example, **bgp.advertise**, **bgp.import**, and **bgp.neighbors**) are available in the VRF **bgp** data.
 
 ```{warning}
 Some devices don't inherit the VRF BGP router ID from the global router ID and may fail to function correctly in IPv6-only deployments.
@@ -170,7 +169,7 @@ router bgp {{ bgp.as }}
   redistribute ospf {{ vdata.vrfidx }}
 {%     endif %}
 !
-{%     for n in vdata.networks|default([]) if af in n %}
+{%     for n in vdata.bgp.advertise|default([]) if af in n %}
 {{       bgpcfg.bgp_network(af,n[af]) }}
 {%     endfor %}
 !
@@ -204,7 +203,7 @@ router bgp {{ bgp.as }}
 {%     endfor %}
 {%   endfor %}
 {%   for af in ['ipv4','ipv6'] %}
-{%     for n in vdata.networks|default([]) if af in n %}
+{%     for n in vdata.bgp.advertise|default([]) if af in n %}
 {%       if loop.index == 1 %}
   address-family {{ af }}
 {%       endif %}

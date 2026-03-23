@@ -158,14 +158,14 @@ After configuring the BGP neighbors, you should configure individual address fam
 
 ### Configure Prefix Origination
 
-A BGP instance must advertise the prefixes from the **bgp.advertise** list (present in node and VRF data). The list is created from interface data (for interfaces with **bgp.advertise** attribute) and **bgp.originate** list.
+A BGP instance must advertise the prefixes from the optional **bgp.advertise** list present in node and VRF data when a BGP instance needs to advertise BGP prefixes. The list is created from interface data (for interfaces with **bgp.advertise** attribute) and **bgp.originate** list.
 
 Each entry in the list is a dictionary that can have **ipv4** and **ipv6** attributes -- the prefixes to advertise.
 
 Iterate over the prefixes in the **bgp.advertise** list and generate **network** statements (or prefix list entries if your device uses export policy to advertise BGP prefixes)
 
 ```
-{%   for n in vdata.bgp.advertise|default([]) if af in n %}
+{%   for n in bgp.advertise|default([]) if af in n %}
   network {{ n[af]|ansible.utils.ipaddr('0') }}
 {%   endfor %}
 ```
