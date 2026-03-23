@@ -567,7 +567,7 @@ check_advertise_data: check whether the device supports bgp.advertise list (if i
 """
 def check_advertise_data(node: Box, topology: Box) -> None:
   features = devices.get_device_features(node,topology.defaults)
-  if features.bgp.advertise:                      # Device supports the new advertise features, nothing to check
+  if features.get('bgp.advertise',False):         # Device supports the new advertise features, nothing to check
     return
 
   for (bgp_data,_,vname) in _rp_utils.rp_data(node,'bgp'):
