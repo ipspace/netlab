@@ -158,30 +158,19 @@ After configuring the BGP neighbors, you should configure individual address fam
 
 ### Configure Prefix Origination
 
-Within each address family, iterate over interfaces and create **network** statements (or whatever it takes to originate BGP prefixes) if:
+A BGP instance must advertise the prefixes from the **bgp.advertise** list (present in node and VRF data). The list is created from interface data (for interfaces with **bgp.advertise** attribute) and **bgp.originate** list.
 
-* The **bgp.advertise** interface attribute is set
-* The target address family is configured on the interface
-* The **vrf** interface attribute matches the VRF you're configuring (or is missing for global BGP configuration)
+Each entry in the list is a dictionary that can have **ipv4** and **ipv6** attributes -- the prefixes to advertise.
 
-Use **netlab_interfaces** list to include the loopback interface.
+Iterate over the prefixes in the **bgp.advertise** list and generate **network** statements (or prefix list entries if your device uses export policy to advertise BGP prefixes)
 
 ```
-{%   for l in netlab_interfaces if l.bgp.advertise|default(False) and l[af] is defined and not 'vrf' in l %}
-  network {{ l[af]|ipaddr(0) }}
+{%   for n in vdata.bgp.advertise|default([]) if af in n %}
+  network {{ n[af]|ansible.utils.ipaddr('0') }}
 {%   endfor %}
 ```
 
-For the global IPv4 address family, check the **bgp.originate** list and advertise the prefixes listed in that list. No such mechanism exists for IPv6 prefixes or VRFs
-
-```
-{%   for pfx in bgp.originate|default([]) if af == 'ipv4' %}
-  network {{ pfx|ipaddr('0') }}
-{%   endfor %}
-!
-```
-
-The extra prefixes configured with **bgp.originate** usually have to be supported by discard static routes. Configure those static routes outside of the BGP routing process:
+When your device originates a BGP prefix only based on a corresponding prefix in the IP routing table, add global IPv4 discard static routes for the extra prefixes in the **bgp.originate** list. The **bgp.originate** list is present only in the node-level data and contains IPv4 prefixes as strings.
 
 ```
 {% for pfx in bgp.originate|default([]) %}

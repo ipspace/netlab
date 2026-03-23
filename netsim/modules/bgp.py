@@ -1,6 +1,7 @@
 #
 # BGP transformation module
 #
+import ipaddress
 import typing
 
 from box import Box
@@ -562,6 +563,30 @@ def bgp_set_advertise(node: Box, topology: Box) -> None:
       l.bgp.advertise = True                # ... also advertise loopback prefixes if bgp.advertise_loopback is set
 
 """
+bgp_build_advertise_list: build per-VRF bgp.advertise lists from interface bgp.advertise flags
+"""
+def bgp_build_advertise_list(node: Box) -> None:
+  for intf in node.interfaces:
+    if not intf.get('bgp.advertise',False):       # Interface prefix not advertised in BGP?
+      continue                                    # ... move on
+
+    # Collect interface AF data, turning interface addresses into prefixes
+    #
+    af_data = { af: str(ipaddress.ip_network(intf[af],strict=False)) for af in log.AF_LIST if af in intf }
+    if not af_data:
+      continue                                    # L2-only interface
+
+    # Create the correct bgp.advertise list name, either global or in-vrf
+    list_name = 'bgp.advertise' if 'vrf' not in intf else f'vrfs.{intf.vrf}.bgp.advertise'
+    data.append_to_list(node,list_name,af_data)   # And append prefix data to the list
+
+  if 'originate' in node.bgp:                     # Next, append originate data to the advertise list
+    for o_pfx in node.bgp.originate:
+      # Convert old-style data (IPv4 string) into prefix
+      af_data = o_pfx if isinstance(o_pfx,Box) else {'ipv4': o_pfx }
+      data.append_to_list(node,'bgp.advertise',af_data)
+
+"""
 bgp_set_originate_af: set bgp[af] flags based on prefixes that should be originated
 """
 
@@ -922,6 +947,7 @@ class BGP(_Module):
       return
     build_bgp_sessions(node,topology)
     bgp_set_advertise(node,topology)
+    bgp_build_advertise_list(node)
     bgp_set_originate_af(node,topology)
     _routing.remove_vrf_routing_blocks(node,'bgp')
     bgp_transform_community_list(node,topology)

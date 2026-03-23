@@ -46,21 +46,8 @@ router bgp {{ bgp.as }}
  address-family {{ af }} unicast
 !
 {{   redistribute.config(bgp,af=af) }}
-{%   for l in netlab_interfaces if l.bgp.advertise|default("") and l[af] is defined and not 'vrf' in l %}
-{%     if loop.first %}
-!
-! Originate networks from connected subnets
-!
-{%     endif %}
-  network {{ l[af]|ansible.utils.ipaddr(0) }}
-{%   endfor %}
-{%   for pfx in bgp.originate|default([]) if af == 'ipv4' %}
-{%     if loop.first %}
-!
-! Originate networks from static routes
-!
-{%     endif %}
-  network {{ pfx|ansible.utils.ipaddr('0') }}
+{%   for pfx in bgp.advertise|default([]) if af in pfx %}
+  network {{ pfx[af] }}
 {%   endfor %}
 !
 {%   for n in bgp.neighbors if n.activate[af]|default(false) %}
