@@ -89,7 +89,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "routing configuration for dut\n=========================================\nupdates:\n\n- path: /routing-policy/policy[name=bp-probe-1-in]\n  value:\n    default-action:\n      policy-result: reject\n    statement:\n    - name: rpe_10\n      action:\n        policy-result: accept\n        bgp:\n          local-preference:\n            set: 17\n- path: /routing-policy/policy[name=bp-probe-1-out]\n  value:\n    default-action:\n      policy-result: reject\n    statement:\n    - name: rpe_10\n      action:\n        policy-result: accept\n        bgp:\n          med:\n            operation: set\n            value: 42\n"
+    "msg": "routing configuration for dut\n=========================================\nupdates:\n\n- path: /routing-policy/policy[name=bp-probe-1-in]\n  value:\n    default-action:\n      policy-result: reject\n    statement:\n    - name: rpe_10\n      action:\n        policy-result: accept\n        bgp:\n          local-preference:\n            operation: set\n            value: 17\n- path: /routing-policy/policy[name=bp-probe-1-out]\n  value:\n    default-action:\n      policy-result: reject\n    statement:\n    - name: rpe_10\n      action:\n        policy-result: accept\n        bgp:\n          med:\n            operation: set\n            value: 42\n"
 }
 
 TASK [Deploy routing configuration] ********************************************
@@ -99,13 +99,89 @@ TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [dut]
 
 TASK [Update SRL routing node configuration (template=/work/netlab_cicd/node_files/dut/routing)] ***
-fatal: [dut]: FAILED! => {"changed": false, "id": "2026-03-22 21:24:06:555339", "method": "diff", "msg": "Schema '/routing-policy/policy/statement/action/bgp/local-preference' has no local leaf with the name 'set'. Options are [value, operation]: Parse error on line 1: {\"default-action\": {\"policy-result\": \"reject\"}, \"statement\": [{\"name\": \"rpe_10\", \"action\": {\"policy-result\": \"accept\", \"bgp\":...\nInput(context):\n'{\"default-action\": {\"policy-result\": \"reject\"}, \"statement\": [{\"name\": \"rpe_10\", \"action\": {\"policy-result\": \"accept\", \"bgp\": {\"local-preference\": {\"set\": 17}}}}]}'"}
+changed: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
+
+TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [dut]
+
+TASK [Find configuration template for bgp] *************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "bgp configuration for dut\n=========================================\nupdates:\n\n- path: /routing-policy/policy[name=accept_all]\n  value:\n    default-action:\n      policy-result: accept\n\n- path: /routing-policy/community-set[name=ibgp-mark]\n  value:\n    member: [ \"65536:0:65536\" ]\n\n- path: /routing-policy/policy[name=ibgp-mark]\n  value:\n    default-action:\n      policy-result: reject\n    statement:\n    - name: mark-ibgp-routes\n      action:\n        bgp:\n          communities:\n            add: ibgp-mark\n        policy-result: accept\n\n- path: /routing-policy/prefix-set[name=default_bgp_advertise]\n  value:\n    prefix: [] # Make sure it exists\n\n- path: /routing-policy/policy[name=default_bgp_export]\n  value:\n    default-action:\n      policy-result: reject\n    statement:\n    - name: prefixes\n      match:\n       prefix:\n        prefix-set: default_bgp_advertise\n      action:\n        policy-result: next-policy\n    - name: bgp\n      match:\n        protocol: bgp\n      action:\n        policy-result: next-policy\n        bgp:\n          communities:\n            remove:\n              ibgp-mark\n\n\n- path: /network-instance[name=default]/protocols/bgp\n  value:\n    admin-state: enable\n    autonomous-system: 65000\n    router-id: 10.0.0.42\n    ebgp-default-policy:\n      export-reject-all: False\n      import-reject-all: False\n\n    afi-safi:\n    - afi-safi-name: ipv4-unicast\n      admin-state: enable\n    afi-safi:\n    - afi-safi-name: ipv6-unicast\n      admin-state: enable\n\n- path: /routing-policy/prefix-set[name=default_bgp_advertise]\n  value:\n    prefix:\n    - ip-prefix: 10.0.0.42/32\n      mask-length-range: exact\n\n\n\n- path: /routing-policy/prefix-set[name=default_bgp_advertise]\n  value:\n    prefix:\n    - ip-prefix: 2001:db8:42:1::1/128\n      mask-length-range: exact\n\n\n\n\n\n- path: /network-instance[name=default]/protocols/bgp/group[group-name=intf-ethernet-1/1]\n  value:\n    admin-state: enable\n# neighbor: {'ifindex': 1, 'local_if': 'ethernet-1/1', 'ipv4_rfc8950': True, 'name': 'probe', 'as': 65100, 'type': 'ebgp', 'ipv4': True, 'ipv6': True, 'activate': {'ipv4': True, 'ipv6': True}, 'locpref': 17, 'med': 42, 'policy': {'in': 'bp-probe-1-in', 'out': 'bp-probe-1-out'}}\n# ipv4: True\n# ipv6: True\n    afi-safi:\n    - afi-safi-name: ipv4-unicast\n      admin-state: enable\n      send-community-type: ['standard', 'large']\n\n      ipv4-unicast:\n        advertise-ipv6-next-hops: True\n        receive-ipv6-next-hops: True\n      import-policy: ['accept_all']\n      export-policy: ['default_bgp_export', 'accept_all']\n    - afi-safi-name: ipv6-unicast\n      admin-state: enable\n      send-community-type: ['standard', 'large']\n\n      import-policy: ['accept_all']\n      export-policy: ['default_bgp_export', 'accept_all']\n\n    timers:\n      connect-retry: 10\n      _annotate_connect-retry: \"Reduce default 120s to 10s\"\n      minimum-advertisement-interval: 1\n\n\n- path: /network-instance[name=default]/ip-forwarding\n  value:\n   receive-ipv4-check: false\n   _annotate_receive-ipv4-check: \"Allow IPv4 on IPv6 unnumbered interfaces\"\n\n- path: /network-instance[name=default]/protocols/bgp/dynamic-neighbors/interface[interface-name=ethernet-1/1.0]\n  value:\n    peer-group: \"intf-ethernet-1/1\"\n    allowed-peer-as: [ 65100..65100 ]\n\n- path: /network-instance[name=default]/protocols/bgp/group[group-name=intf-ethernet-1/1]\n  value:\n    admin-state: enable\n# neighbor: {'ifindex': 1, 'local_if': 'ethernet-1/1', 'ipv4_rfc8950': True, 'name': 'probe', 'as': 65100, 'type': 'ebgp', 'ipv4': True, 'ipv6': True, 'activate': {'ipv4': True, 'ipv6': True}, 'locpref': 17, 'med': 42, 'policy': {'in': 'bp-probe-1-in', 'out': 'bp-probe-1-out'}}\n# ipv4: True\n# ipv6: True\n    afi-safi:\n    - afi-safi-name: ipv4-unicast\n      admin-state: enable\n      send-community-type: ['standard', 'large']\n\n      ipv4-unicast:\n        advertise-ipv6-next-hops: True\n        receive-ipv6-next-hops: True\n      import-policy: ['accept_all']\n      export-policy: ['default_bgp_export', 'accept_all']\n    - afi-safi-name: ipv6-unicast\n      admin-state: enable\n      send-community-type: ['standard', 'large']\n\n      import-policy: ['accept_all']\n      export-policy: ['default_bgp_export', 'accept_all']\n\n    timers:\n      connect-retry: 10\n      _annotate_connect-retry: \"Reduce default 120s to 10s\"\n      minimum-advertisement-interval: 1\n\n\n- path: /network-instance[name=default]/ip-forwarding\n  value:\n   receive-ipv4-check: false\n   _annotate_receive-ipv4-check: \"Allow IPv4 on IPv6 unnumbered interfaces\"\n\n- path: /network-instance[name=default]/protocols/bgp/dynamic-neighbors/interface[interface-name=ethernet-1/1.0]\n  value:\n    peer-group: \"intf-ethernet-1/1\"\n    allowed-peer-as: [ 65100..65100 ]\n\n\n"
+}
+
+TASK [Deploy bgp configuration] ************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
+
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [dut]
+
+TASK [Update SRL bgp node configuration (template=/work/netlab_cicd/node_files/dut/bgp)] ***
+changed: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
+
+PLAY [Deploy custom deployment templates] **************************************
+
+TASK [Run custom configuration deployment scripts] *****************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=bgp.policy)
+
+TASK [Find configuration template] *********************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Check is the configuration template is a file] ***************************
+ok: [dut -> localhost]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Process template /work/netlab_cicd/node_files/dut/bgp.policy for dut] ****
+skipping: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
+
+TASK [Find custom configuration deployment script] *****************************
+ok: [dut]
+
+TASK [Run the configuration deployment script] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
+
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [dut]
+
+TASK [Update SRL bgp.policy node configuration (template=/work/netlab_cicd/node_files/dut/bgp.policy)] ***
+changed: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=22   changed=1    unreachable=0    failed=1    skipped=6    rescued=0    ignored=0   
+dut                        : ok=37   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
-FatalError in initial: Configuration deployment failed
 Results of configuration script deployments
 ================================================================================
 probe            Script:  initial,bgp
+
+
+Use this topology to test BGP MED on IPv4 and IPv6 prefixes. DUT
+has to set MED on outgoing EBGP updates.
 
