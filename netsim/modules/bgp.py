@@ -566,15 +566,18 @@ def bgp_set_advertise(node: Box, topology: Box) -> None:
 bgp_build_advertise_list: build per-VRF bgp.advertise lists from interface bgp.advertise flags
 """
 def bgp_build_advertise_list(node: Box) -> None:
-  for intf in node.interfaces:
+  lb_list = [ node.loopback ] if 'loopback' in node else []
+  for intf in lb_list + node.interfaces:          # Iterate over loopback and regular interfaces
     if not intf.get('bgp.advertise',False):       # Interface prefix not advertised in BGP?
       continue                                    # ... move on
 
-    # Collect interface AF data, turning interface addresses into prefixes
+    # Collect interface AF data. Take only string values (skip unnumbereds)
+    # and turn interface addresses into prefixes
     #
-    af_data = { af: str(ipaddress.ip_network(intf[af],strict=False)) for af in log.AF_LIST if af in intf }
+    af_data = { af: str(ipaddress.ip_network(intf[af],strict=False)) 
+                  for af in log.AF_LIST if af in intf and isinstance(intf[af],str) }
     if not af_data:
-      continue                                    # L2-only interface
+      continue                                    # L2-only or unnumbered interface
 
     # Create the correct bgp.advertise list name, either global or in-vrf
     list_name = 'bgp.advertise' if 'vrf' not in intf else f'vrfs.{intf.vrf}.bgp.advertise'
@@ -947,10 +950,10 @@ class BGP(_Module):
       return
     build_bgp_sessions(node,topology)
     bgp_set_advertise(node,topology)
-    bgp_build_advertise_list(node)
     bgp_set_originate_af(node,topology)
     _routing.remove_vrf_routing_blocks(node,'bgp')
     bgp_transform_community_list(node,topology)
     _routing.check_vrf_protocol_support(node,'bgp',None,'bgp',topology)
     _routing.process_imports(node,'bgp',topology,global_vars.get_const('vrf_igp_protocols',['connected']))
     sanitize_bgp_data(node)
+    bgp_build_advertise_list(node)
