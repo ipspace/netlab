@@ -29,6 +29,7 @@
 | Cumulus Linux 4.x/5.x [❗](caveats-cumulus) | cumulus | end of life |
 | Cumulus Linux 5.x (NVUE) [❗](caveats-cumulus-nvue) | cumulus_nvue | minimal |
 | Dell OS10 [❗](caveats-os10) | dellos10     | full          |
+| Extreme Networks EXOS [❗](caveats-exos) | exos | minimal  |
 | Fortinet FortiOS [❗](caveats-fortios) | fortios | minimal  |
 | FRRouting (FRR) [❗](caveats-frr) | frr     | full          |
 | [Generic Linux host](generic-linux-devices) | linux | full          |
@@ -125,7 +126,8 @@ You cannot use all supported network devices with all virtualization providers. 
 | Cumulus Linux      | ✅  | ✅  | ✅[❗](caveats-cumulus) |
 | Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ✅[❗](caveats-cumulus) |
 | Dell OS10          | [✅](build-dellos10)  |  ❌  | ✅  |
-| Fortinet FortiOS   | ✅  |  ❌  |  ✅  |
+| Extreme Networks EXOS | [✅](build-exos)  |  ❌  | ✅[❗](clab-vrnetlab)  |
+| Fortinet FortiOS   | [✅](build-fortios)  |  ❌  |  ✅  |
 | FRR | [✅](build-frr)[❗](caveats-frr) | ✅[❗](caveats-frr) | ✅ |
 | Generic Linux (Ubuntu/Alpine) [❗](labs/linux.md) | ✅  | ✅  | ✅  |
 | Juniper cRPD       |  ❌  |  ❌  | ✅  |
@@ -164,6 +166,7 @@ Configuration files for Virtualbox and KVM/libvirt environments specify the numb
 | Cumulus Linux              | cumulus            |    2 |   1024 | virtio |
 | Cumulus Linux 5.x (NVUE)   | cumulus_nvue       |    2 |   1024 | virtio |
 | Dell OS10                  | dellos10           |    2 |   2048 | e1000                      |
+| Extreme Networks EXOS      | exos               |    1 |   1024 | virtio |
 | Fortinet FortiOS           | fortios            |    1 |   2048 | virtio |
 | FRR                        | frr                |    1 |   1024 | virtio |
 | Generic Linux host         | linux              |    1 |   1024 | virtio |
