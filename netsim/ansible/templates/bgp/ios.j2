@@ -36,21 +36,8 @@ router bgp {{ bgp.as }}
 {{     redistribute.config(bgp,af=af,ospf_pid=ospf_pid)|indent(1,first=True) }}
 {%   endif %}
 !
-{%   for l in netlab_interfaces if l.bgp.advertise|default("") and l[af] is defined and not 'vrf' in l %}
-{%     if loop.first %}
-!
-! Originate networks from connected subnets
-!
-{%     endif %}
-{{     bgpcfg.bgp_network(af,l[af]) }}
-{%   endfor %}
-{%   for pfx in bgp.originate|default([]) if af == 'ipv4' %}
-{%     if loop.first %}
-!
-! Originate networks from static routes
-!
-{%     endif %}
-{{     bgpcfg.bgp_network(af,pfx) }}
+{%   for pfx in bgp.advertise|default([]) if af in pfx %}
+{{     bgpcfg.bgp_network(af,pfx[af]) }}
 {%   endfor %}
 !
 {%   for n in bgp.neighbors if n.activate[af]|default(false) %}
