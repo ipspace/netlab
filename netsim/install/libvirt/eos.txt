@@ -1,76 +1,61 @@
-Creating initial configuration for Arista EOS
-=============================================
+Creating initial configuration for Extreme EXOS Vagrant box
+===========================================================
 
-* Wait for the 'login' prompt
-* Login as 'admin' (no password)
-* Disable zero-touch with 'zerotouch disable'
+* Wait for the 'login' prompt and 'Authentication Service (AAA) on the
+  master node is now available for login' message
+* Log in as 'admin' (no password)
 
-===============
-*** WARNING ***
-===============
-Disabling zero-touch (which will also cause a device reboot) is crucial. With
-zero-touch enabled, the Vagrant box will acquire an IP address on the management
-interface, but never start SSH, resulting in a stuck "vagrant up" process.
+Answers the never-ending list of setup questions:
 
-After the system reboot
+* Disable auto-provision: yes
+* Management port: skip
+* Disable MSTP: no
+* Enable enhanced security: no
+* Disable Telnet: yes
+* Enable SNMPv2: no
+* Enable SNMPv3: no
+* Turn off unconfigured ports by default: yes
+* Failsafe username/password: no
 
-* Login as 'admin'
-* Go into enable mode, enter configuration mode
-* Copy-paste the following configuration
+When you get to the end of the list, you can see the CLI commands you just
+generated and a list of generally useful commands. After that, you'll eventually
+get to the EXOS prompt (* EXOS-VM.1):
 
-NOTE: the management traffic is isolated in a dedicated management VRF (management).
+Enter these commands one at a time. There will be extra prompts, so do not
+copy and paste everything at once. Skip the text in brackets; it is included
+only as an explanation.
 
-=============================================
-aaa authorization exec default local
-!
-no aaa root
-!
-service routing protocols model multi-agent
-!
-vrf instance management
-!
-username vagrant privilege 15 secret sha512 $6$3kgdKcJLJ3j/0N51$a0YshIzKL3xtdwP6XXXRlY9B8yHFK/tLdg0I95YUIaW7oHqLsgK9TxMg8/0bL6VDkImuWT.g7WRKTxi8nNPtA1
-username vagrant ssh-key ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key
-!
-interface Management1
-   vrf management
-   ip address dhcp
-   dhcp client accept default-route
-!
-no ip routing
-no ip routing vrf management
-!
-security pki key generate rsa 2048 default
-security pki certificate generate self-signed default key default param common-name Arista
-!
-management api http-commands
-   no shutdown
-   !
-   vrf management
-      no shutdown
-!
-management api netconf
- transport ssh default
-!
-management api restconf
- transport https default
-  ssl profile default
-  port 6040
-!
-management security
- ssl profile default
-  certificate default key default
-!
-management ssh
-   vrf management
-      no shutdown
-!
-no user vagrant shell
-!
-end
-=============================================
+* configure account admin password (old password is empty, new one is admin)
+* enable ssh
+* create account admin vagrant vagrant
+* create sshd2 user-key vagrant AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ==
+* configure sshd2 user-key vagrant add user vagrant
+* unconfigure vlan Mgmt ip         (remove current IP from management VLAN)
+* enable dhcp vlan Mgmt            (enable DHCP on management VLAN)
+* save configuration
 
-* Save the configuration with 'wr mem'
-* Poweroff the VM with 'bash sudo poweroff'
-* If the device starts reloading instead of shutting down, disconnect
-  from the console (ctrl-] usually works).
+Disconnect from the console (Ctrl+] usually works).
+
+For convenience, here is a copy-and-paste version of the commands above, use with caution:
+
+====================================================
+
+configure account admin password
+
+admin
+admin
+
+enable ssh
+y
+
+create account admin vagrant vagrant
+create sshd2 user-key vagrant AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ==
+configure sshd2 user-key vagrant add user vagrant
+
+unconfigure vlan Mgmt ip
+enable dhcp vlan Mgmt
+
+save configuration
+y
+
+====================================================
