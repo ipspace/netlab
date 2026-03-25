@@ -1,0 +1,114 @@
+Creating Device configuration snippets
+[CREATED] dut: initial
+[CREATED] p1: normalize,initial,routing
+[CREATED] t_1300: initial,routing
+[CREATED] t_1400: initial,routing
+Checking Are lab devices ready to be configured?
+ [INFO] Checking SSH server(s) on p1
+Config Deploying device configurations
+ [INFO] Executing normalize configuration for node p1
+ [INFO] Executing initial configuration for node p1
+ [INFO] Executing routing configuration for node p1
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [t_1300]
+ok: [t_1400]
+ok: [dut]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for t_1300, t_1400, dut
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [t_1300]
+ok: [t_1400]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [t_1300]
+ok: [t_1400]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [t_1300]
+skipping: [t_1400]
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [t_1300]
+ok: [t_1400]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [t_1300]
+skipping: [t_1400]
+skipping: [dut]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [t_1300]
+skipping: [t_1400]
+skipping: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for t_1300, t_1400, dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [t_1300]
+ok: [t_1400]
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [t_1300]
+ok: [t_1400]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [t_1300]
+skipping: [t_1400]
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [t_1300]
+ok: [t_1400]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [t_1300] => {
+    "msg": "initial configuration for t_1300\n=========================================\n#!/bin/bash\n#\nset -e\n#\n# Create bash profile script\n#\ncat <<'SCRIPT' >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)$ \"\nSCRIPT\nhostname t-1300\n#\n# Build hosts file\n#\n#\ncat <<'SCRIPT' >/tmp/hosts\n#\n# Created by netlab initial\n#\n10.0.0.1 dut\n2001:db8:0:1::1 dut\n172.16.0.1 1.dut\n2001:db8:1::1 1.dut\n172.16.1.1 2.dut\n2001:db8:1:1::1 2.dut\n172.16.2.1 3.dut\n2001:db8:1:2::1 3.dut\n10.0.0.2 p1\n2001:db8:0:2::1 p1\n172.16.0.2 Ethernet1.p1\n2001:db8:1::2 Ethernet1.p1\n172.16.2.3 t-1300 eth1.t_1300\n2001:db8:1:2::3 t-1300 eth1.t_1300\n172.16.1.4 t-1400 eth1.t_1400\n2001:db8:1:1::4 t-1400 eth1.t_1400\nSCRIPT\ngrep \"Created by netlab\" /etc/hosts || uniq /tmp/hosts >>/etc/hosts\n# It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.\n# This is annoying on a network with filtered DNS.\n# DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.\n# Let's use that.\n#\n# (Overwrite netplan config to remove DNS stuff)\necho -n 'Starting initial config ' && date\ncat <<'SCRIPT' >/etc/netplan/01-netcfg.yaml\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    eth0:\n      dhcp4: true\n      dhcp6: false\n      optional: true\nSCRIPT\nnetplan apply\n\n# (Overwrite resolved config to remove DNS stuff)\ncat <<'SCRIPT' > /etc/systemd/resolved.conf \n[Resolve]\nDNS=\nFallbackDNS=\nDomains=\nDNSOverTLS=no\nCache=yes\nDNSStubListener=yes\nSCRIPT\n\nsystemctl restart systemd-resolved\n\n# Set persistent hostname\nhostnamectl set-hostname t_1300\n\nNEED_APT_UPDATE=YES\n\n# Loopback addressing\n\n# Interface addressing and bonds, including any static routes\ncat <<'SCRIPT' > /etc/netplan/03-eth-eth1.yaml\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    eth1:\n      addresses:\n        - 172.16.2.3/24\n        - 2001:db8:1:2::3/64\nSCRIPT\n\n# Disable auto-negotiation on Ethernet interfaces, needed to make LACP work correctly\ncat <<'SCRIPT' > /etc/systemd/network/98-eth.link\n\n[Match]\nOriginalName=eth*\n\n[Link]\nBitsPerSecond=1G\nAutoNegotiation=no\nDuplex=full\nSCRIPT\n\nchmod 400 /etc/netplan/*\n\necho -n 'Starting netplan generate ' && date\nnetplan generate\necho -n 'Starting netplan apply ' && date\nnetplan apply\n\n#\n# Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA\n# Do this after 'netplan apply', e.g. bond devices won't exist before that\n#\ncat <<'SCRIPT' > /etc/sysctl.d/10-netsim.conf\nnet.ipv4.conf.all.arp_announce=2\nnet.ipv4.ip_forward=0\nnet.ipv6.conf.all.forwarding=0\n\nnet.ipv6.conf.eth1.disable_ipv6=0\n\nSCRIPT\nsysctl -p /etc/sysctl.d/10-netsim.conf\n"
+}
+ok: [t_1400] => {
+    "msg": "initial configuration for t_1400\n=========================================\n#!/bin/bash\n#\nset -e\n#\n# Create bash profile script\n#\ncat <<'SCRIPT' >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)$ \"\nSCRIPT\nhostname t-1400\n#\n# Build hosts file\n#\n#\ncat <<'SCRIPT' >/tmp/hosts\n#\n# Created by netlab initial\n#\n10.0.0.1 dut\n2001:db8:0:1::1 dut\n172.16.0.1 1.dut\n2001:db8:1::1 1.dut\n172.16.1.1 2.dut\n2001:db8:1:1::1 2.dut\n172.16.2.1 3.dut\n2001:db8:1:2::1 3.dut\n10.0.0.2 p1\n2001:db8:0:2::1 p1\n172.16.0.2 Ethernet1.p1\n2001:db8:1::2 Ethernet1.p1\n172.16.2.3 t-1300 eth1.t_1300\n2001:db8:1:2::3 t-1300 eth1.t_1300\n172.16.1.4 t-1400 eth1.t_1400\n2001:db8:1:1::4 t-1400 eth1.t_1400\nSCRIPT\ngrep \"Created by netlab\" /etc/hosts || uniq /tmp/hosts >>/etc/hosts\n# It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.\n# This is annoying on a network with filtered DNS.\n# DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.\n# Let's use that.\n#\n# (Overwrite netplan config to remove DNS stuff)\necho -n 'Starting initial config ' && date\ncat <<'SCRIPT' >/etc/netplan/01-netcfg.yaml\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    eth0:\n      dhcp4: true\n      dhcp6: false\n      optional: true\nSCRIPT\nnetplan apply\n\n# (Overwrite resolved config to remove DNS stuff)\ncat <<'SCRIPT' > /etc/systemd/resolved.conf \n[Resolve]\nDNS=\nFallbackDNS=\nDomains=\nDNSOverTLS=no\nCache=yes\nDNSStubListener=yes\nSCRIPT\n\nsystemctl restart systemd-resolved\n\n# Set persistent hostname\nhostnamectl set-hostname t_1400\n\nNEED_APT_UPDATE=YES\n\n# Loopback addressing\n\n# Interface addressing and bonds, including any static routes\ncat <<'SCRIPT' > /etc/netplan/03-eth-eth1.yaml\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    eth1:\n      addresses:\n        - 172.16.1.4/24\n        - 2001:db8:1:1::4/64\nSCRIPT\n\n# Disable auto-negotiation on Ethernet interfaces, needed to make LACP work correctly\ncat <<'SCRIPT' > /etc/systemd/network/98-eth.link\n\n[Match]\nOriginalName=eth*\n\n[Link]\nBitsPerSecond=1G\nAutoNegotiation=no\nDuplex=full\nSCRIPT\n\nchmod 400 /etc/netplan/*\n\necho -n 'Starting netplan generate ' && date\nnetplan generate\necho -n 'Starting netplan apply ' && date\nnetplan apply\n\n#\n# Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA\n# Do this after 'netplan apply', e.g. bond devices won't exist before that\n#\ncat <<'SCRIPT' > /etc/sysctl.d/10-netsim.conf\nnet.ipv4.conf.all.arp_announce=2\nnet.ipv4.ip_forward=0\nnet.ipv6.conf.all.forwarding=0\n\nnet.ipv6.conf.eth1.disable_ipv6=0\n\nSCRIPT\nsysctl -p /etc/sysctl.d/10-netsim.conf\n"
+}
+ok: [dut] => {
+    "msg": "initial configuration for dut\n=========================================\nconfigure snmp sysName dut\n\nenable lldp ports all\ndisable lldp ports Mgmt\n\n\ncreate vlan \"VLAN_LO0\"\nenable loopback-mode vlan VLAN_LO0\nconfigure vlan VLAN_LO0 ipaddress 10.0.0.1 255.255.255.255\nconfigure vlan VLAN_LO0 ipaddress 2001:DB8:0:1::1/64\ncreate vlan \"VLAN_P1\"\nconfigure vlan VLAN_P1 add ports 1 untagged\nconfigure ports 1 display-string dut_to_p1\nenable jumbo-frame ports 1\nconfigure vlan VLAN_P1 ipaddress 172.16.0.1 255.255.255.0\nconfigure vlan VLAN_P1 ipaddress 2001:DB8:1::1/64\nconfigure ip-mtu 1500 vlan VLAN_P1\ncreate vlan \"VLAN_P2\"\nconfigure vlan VLAN_P2 add ports 2 untagged\nconfigure ports 2 display-string dut_to_t_1400-stub\nenable jumbo-frame ports 2\nconfigure vlan VLAN_P2 ipaddress 172.16.1.1 255.255.255.0\nconfigure vlan VLAN_P2 ipaddress 2001:DB8:1:1::1/64\nconfigure ip-mtu 1400 vlan VLAN_P2\ncreate vlan \"VLAN_P3\"\nconfigure vlan VLAN_P3 add ports 3 untagged\nconfigure ports 3 display-string dut_to_t_1300-stub\nenable jumbo-frame ports 3\nconfigure vlan VLAN_P3 ipaddress 172.16.2.1 255.255.255.0\nconfigure vlan VLAN_P3 ipaddress 2001:DB8:1:2::1/64\nconfigure ip-mtu 1300 vlan VLAN_P3\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux.yml for t_1300, t_1400
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/exos.yml for dut
+
+TASK [template] ****************************************************************
+changed: [t_1400]
+changed: [t_1300]
+
+TASK [Execute /tmp/config.sh to deploy initial config from /work/netlab_cicd/node_files/t_1300/initial] ***
+changed: [t_1300]
+changed: [t_1400]
+
+TASK [exos_config: deploying initial from /work/netlab_cicd/node_files/dut/initial] ***
+fatal: [dut]: FAILED! => {"changed": false, "msg": "configure ip-mtu 1400 vlan VLAN_P2\r\n\r\u0007                               ^\r\n%% Invalid number detected at '^' marker.\r\n%% Input number must be in the range [1500, 9216].\r\r\n* dut.26 # "}
+
+PLAY RECAP *********************************************************************
+dut                        : ok=11   changed=0    unreachable=0    failed=1    skipped=4    rescued=0    ignored=0   
+t_1300                     : ok=13   changed=2    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+t_1400                     : ok=13   changed=2    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+
+FatalError in initial: Configuration deployment failed
+Results of configuration script deployments
+================================================================================
+p1               Script:  normalize,initial,routing
+
