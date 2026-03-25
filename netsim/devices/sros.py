@@ -2,6 +2,8 @@
 # Nokia SR OS quirks
 #
 
+import ipaddress
+
 from box import Box
 
 from ..utils import log
@@ -87,20 +89,34 @@ def vxlan_vtep(node: Box) -> None:
       node=node,
       category=log.IncorrectValue)
 
+#
+# SROS wants to have /128 IPv6 prefix on the system loopback interface
+#
 def adjust_system_ipv6_prefix(node: Box) -> None:
   v6lb = node.get('loopback.ipv6',None)
-  if not v6lb:
+  if not v6lb:                                    # No IPv6 on system loopback, no problem
     return
 
-  (v6ad,v6pf) = v6lb.split('/')
-  if v6pf != '128':
-    node.loopback.ipv6 = f'{v6ad}/128'
-    report_quirk(
-      text=f'Loopback prefix {v6lb} on node {node.name} was changed to {node.loopback.ipv6}',
-      more_hints=[ f'The IPv6 prefix configured on SR OS system (loopback) interface must be a /128' ],
-      quirk='loopback_ipv6',
-      node=node,
-      category=Warning)
+  (v6ad,v6pf) = v6lb.split('/')                   # Get address and prefix
+  if v6pf == '128':                               # Prefix already /128?
+    return                                        # Cool, let's get out of here
+
+  node.loopback.ipv6 = f'{v6ad}/128'              # Change the prefix length on the loopback interface
+  report_quirk(
+    text=f'Loopback prefix {v6lb} on node {node.name} was changed to {node.loopback.ipv6}',
+    more_hints=[ f'The IPv6 prefix configured on SR OS system (loopback) interface must be a /128' ],
+    quirk='loopback_ipv6',
+    node=node,
+    category=Warning)
+
+  if 'bgp.advertise' not in node:                 # Do we have to patch the bgp.advertise list?
+    return
+
+  v6lb_pfx = str(ipaddress.ip_network(v6lb,strict=False))
+  for pfx in node.bgp.advertise:                  # Iterate over advertised prefixes
+    if pfx.get('ipv6',None) == v6lb_pfx:          # Did we find the original loopback prefix?
+      pfx.ipv6 = node.loopback.ipv6               # Replace it with node loopback IPv6 (with /128 prefix)
+      break                                       # ... and get out of the loop, we're done.
 
 class SROS(_Quirks):
 
