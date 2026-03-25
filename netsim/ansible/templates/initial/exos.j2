@@ -7,14 +7,28 @@ disable lldp ports Mgmt
 create virtual-router {{ vname }} type user
 {% endfor %}
 
+{% if vlans is defined %}
+{% include 'exos.vlan.j2' %}
+{% endif %}
+
 {% for l in netlab_interfaces %}
 {%   set is_loopback = l.type|default('') == 'loopback' %}
-{%   set vlan_name = 'VLAN_LO' + l.ifindex|string if is_loopback else 'VLAN_P' + l.ifname %}
-create vlan "{{ vlan_name }}"
+{%   set is_svi = l.type|default('') == 'svi' %}
+{%   set is_switchport = l.vlan is defined and not is_svi %}
+{%   set is_routed_physical = not is_loopback and not is_svi and not is_switchport %}
+{%   set has_l3_vlan = is_loopback or is_svi or is_routed_physical %}
 {%   if is_loopback %}
+{%     set vlan_name = 'VLAN_LO' + l.ifindex|string %}
+create vlan "{{ vlan_name }}"
 enable loopback-mode vlan {{ vlan_name }}
-{%   else %}
+{%   elif is_svi %}
+{%     set vlan_name = l.vlan.name %}
+{%   elif is_routed_physical %}
+{%     set vlan_name = 'VLAN_P' + l.ifname %}
+create vlan "{{ vlan_name }}"
 configure vlan {{ vlan_name }} add ports {{ l.ifname }} untagged
+{%   endif %}
+{%   if not is_loopback and not is_svi %}
 {%     if l.name is defined %}
 configure ports {{ l.ifname }} display-string {{ (l.name + ("-"+l.role if l.role is defined else "")) | replace('->','to') | replace(' ','_') }}
 {%     elif l.type == "stub" %}
@@ -24,6 +38,7 @@ configure ports {{ l.ifname }} display-string Stub
 enable jumbo-frame ports {{ l.ifname }}
 {%     endif %}
 {%   endif %}
+{%   if has_l3_vlan %}
 {%   if l.vrf is defined %}
 configure vlan {{ vlan_name }} virtual-router {{ l.vrf }}
 {%   endif %}
@@ -49,5 +64,6 @@ enable ipforwarding ipv6 vlan {{ vlan_name }}
 {%   endif %}
 {%   if not is_loopback and l.mtu is defined %}
 configure ip-mtu {{ l.mtu }} vlan {{ vlan_name }}
+{%   endif %}
 {%   endif %}
 {% endfor %}

@@ -1,0 +1,15 @@
+{% if vlans is defined %}
+configure vlan default delete ports all
+{% endif %}
+{% for ifdata in interfaces if ifdata.vlan is defined and ifdata.type|default('') not in ['svi','vlan_member'] %}
+{%   if ifdata.vlan.trunk is defined %}
+{%     if ifdata.vlan.native is defined %}
+configure vlan {{ ifdata.vlan.native }} add ports {{ ifdata.ifname }} untagged
+{%     endif %}
+{%     for vname in ifdata.vlan.trunk.keys()|sort if vname != ifdata.vlan.native|default('') %}
+configure vlan {{ vname }} add ports {{ ifdata.ifname }} tagged
+{%     endfor %}
+{%   elif ifdata.vlan.access is defined %}
+configure vlan {{ ifdata.vlan.access }} add ports {{ ifdata.ifname }} untagged
+{%   endif %}
+{% endfor +%}
