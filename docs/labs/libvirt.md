@@ -87,6 +87,7 @@ These documents contain box-building recipes using the **netlab libvirt** utilit
 * [Cisco Nexus OS](nxos.md)
 * [Cumulus Linux 5.x](cumulus_nvue.md)
 * [Dell OS10](dellos10.md) by [Stefano Sasso](http://stefano.dscnet.org)
+* [Extreme Networks EXOS](exos.md) by [Seb d'Argoeuves](https://noodlesops.space/about/)
 * [Fortinet FortiOS](fortios.md) - instructions based on the [work](https://blog.petecrocker.com/post/fortinet_vagrant_libvirt/) by [Pete Crocker](https://blog.petecrocker.com/about/) for 6.x/7.0 and updated for 7.4/7.6 in this [blog post](https://noodleops.space/2025-06/add-a-fortigate-in-your-virtual-lab-from-qcow-to-netlab-by-creating-a-vagrant-box/) by [Seb d'Argoeuves](https://noodlesops.space/about/).
 * [FRRouting](frr.md) (Debian VM with preinstalled **frr** package)
 * [Juniper vPTX](vptx.md)
@@ -304,6 +305,7 @@ providers.libvirt.probe: []
    cat8000v.md
    csr.md
    cumulus_nvue.md
+   exos.md
    fortios.md
    frr.md
    iosv.md
