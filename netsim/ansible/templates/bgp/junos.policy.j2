@@ -27,11 +27,17 @@ policy-options {
 
 policy-options {
 
-  route-filter-list bgp-announce {
-{% for pfx in bgp.originate|default([]) %}
-    {{ pfx|ansible.utils.ipaddr('0') }} exact;
-{% endfor %}
+{% for bgp_af in af %}
+{%   for pfx in bgp.advertise|default([]) if bgp_af in pfx %}
+{%     if loop.first %}
+  route-filter-list bgp-announce-{{ bgp_af }} {
+{%     endif %}
+    {{ pfx[bgp_af] }} exact;
+{%     if loop.last %}
   }
+{%     endif %}
+{%   endfor %}
+{% endfor %}
 
 {% for af in ('ipv4','ipv6') %}
 {%   for nh in ['ebgp','all'] %}
@@ -53,32 +59,21 @@ policy-options {
 {% endfor %}
 
   policy-statement bgp-advertise {
-    term advertise {
+{% for bgp_af in af %}
+{%   for pfx in bgp.advertise|default([]) if bgp_af in pfx %}
+{%     if loop.first %}
+    term advertise-{{ bgp_af }} {
       from {
-        protocol direct;
-        interface [ 
-          {% if bgp.advertise_loopback %} lo0.0 {% endif %}
-          {%- for l in interfaces if l.bgp.advertise|default("") and not 'vrf' in l %}
-          {{ l.ifname }}
-          {% endfor %} ];
+        route-filter-list bgp-announce-{{ bgp_af }};
       }
       then {
         community add x-route-permit-mark;
         next policy;
       }
     }
-
-    term originate {
-      from {
-        protocol static;
-        route-filter-list bgp-announce;
-      }
-      then {
-        community add x-route-permit-mark;
-        next policy;
-      }
-    }
-
+{%    endif %}
+{%   endfor %}
+{% endfor %}
   }
 
   policy-statement bgp-redistribute {
