@@ -1,0 +1,31 @@
+{% macro config(ospf_pid,ospf_vrf,ospf_data,intf_data,bgp={}) %}
+!
+! OSPFv2 configuration
+!
+{% if ospf_vrf %}
+! OSPFv2 VRF instances not implemented for EXOS
+{% else %}
+{%   if ospf_data.router_id is defined %}
+configure ospf routerid {{ ospf_data.router_id }}
+{%   endif %}
+enable ospf
+{%   for area_data in ospf_data.areas|default([]) %}
+create ospf area {{ area_data.area }}
+{%   endfor %}
+{%   for l in intf_data if 'ospf' in l and 'ipv4' in l %}
+{%     set is_loopback = l.type|default('') == 'loopback' %}
+{%     set vlan_name = 'VLAN_LO' + l.ifindex|string if is_loopback else 'VLAN_P' + l.ifname %}
+{%     set add_line %}configure ospf add vlan {{ vlan_name }} area {{ l.ospf.area }}{% if l.ospf.network_type|default('') == 'point-to-point' %} link-type point-to-point{% endif %}{% if l.ospf.passive|default(False) %} passive{% endif %}{% endset %}
+{{ add_line }}
+{%     if l.ospf.cost is defined %}
+configure ospf vlan {{ vlan_name }} cost {{ l.ospf.cost }}
+{%     endif %}
+{%     if l.ospf.priority is defined %}
+configure ospf vlan {{ vlan_name }} priority {{ l.ospf.priority }}
+{%     endif %}
+{%     if l.ospf.timers.hello is defined and l.ospf.timers.dead is defined %}
+configure ospf vlan {{ vlan_name }} timer 5 1 {{ l.ospf.timers.hello }} {{ l.ospf.timers.dead }} 0
+{%     endif %}
+{%   endfor %}
+{% endif %}
+{% endmacro %}

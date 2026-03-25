@@ -387,6 +387,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Cumulus Linux         | ✅   |   ❌  |   ❌  |  ✅  |  ✅  |
 | Cumulus Linux 5.x (NVUE) | ✅ |  ❌  |   ❌   | ✅ [❗](caveats-cumulus-nvue)  |  ❌  |
 | Dell OS10             | ✅ [❗](caveats-os10) |   ❌   |   ❌   | ✅  |  ❌  |
+| Extreme Networks EXOS | ✅   |   ❌   |   ❌   |   ❌   |  ❌  |
 | Fortinet FortiOS      | ✅ [❗](caveats-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |
 | FRR                   | ✅   |  ✅   |   ❌  | ✅  |  ✅  |
 | Junos[^Junos]         | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
@@ -512,6 +513,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Cumulus Linux 4.x     | ✅ | ❌ | ❌ | ✅ | ❌ |
 | Cumulus Linux NVUE    |  ❌ | ❌ | ❌ | ✅ | ❌ |
 | Dell OS10             | ✅ | ❌ | ❌ | ✅ | ❌ |
+| Extreme Networks EXOS | ✅ | ❌ | ❌ | ❌ | ❌ |
 | FRR                   | ✅ | ✅ | ❌ | ✅ | ❌ |
 | Junos[^Junos]         | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
 | Mikrotik RouterOS 6   |  ❌ | ❌ | ❌ | ✅ | ❌ |

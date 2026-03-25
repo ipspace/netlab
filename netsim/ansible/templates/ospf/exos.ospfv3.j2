@@ -1,0 +1,31 @@
+{% macro config(ospf_pid,ospf_vrf,ospf_data,intf_data,bgp={}) %}
+!
+! OSPFv3 configuration
+!
+{% if ospf_vrf %}
+! OSPFv3 VRF instances not implemented for EXOS
+{% else %}
+{%   if ospf_data.router_id is defined %}
+configure ospfv3 routerid {{ ospf_data.router_id }}
+{%   endif %}
+enable ospfv3
+{%   for area_data in ospf_data.areas|default([]) %}
+create ospfv3 area {{ area_data.area }}
+{%   endfor %}
+{%   for l in intf_data if 'ospf' in l and 'ipv6' in l %}
+{%     set is_loopback = l.type|default('') == 'loopback' %}
+{%     set vlan_name = 'VLAN_LO' + l.ifindex|string if is_loopback else 'VLAN_P' + l.ifname %}
+{%     set add_line %}configure ospfv3 add vlan {{ vlan_name }} instance-id 0 area {{ l.ospf.area }} link-type {{ l.ospf.network_type|default('auto') }}{% if l.ospf.passive|default(False) %} passive{% endif %}{% endset %}
+{{ add_line }}
+{%     if l.ospf.cost is defined %}
+configure ospfv3 vlan {{ vlan_name }} cost {{ l.ospf.cost }}
+{%     endif %}
+{%     if l.ospf.priority is defined %}
+configure ospfv3 vlan {{ vlan_name }} priority {{ l.ospf.priority }}
+{%     endif %}
+{%     if l.ospf.timers.hello is defined and l.ospf.timers.dead is defined %}
+configure ospfv3 vlan {{ vlan_name }} timer retransmit-interval 5 transit-delay 1 hello-interval {{ l.ospf.timers.hello }} dead-interval {{ l.ospf.timers.dead }}
+{%     endif %}
+{%   endfor %}
+{% endif %}
+{% endmacro %}
