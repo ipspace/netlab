@@ -35,17 +35,9 @@
 {{  import_protocols(vrf_bgp.import|default([])) | indent(4,first=True) }}
 {% endif %}
 {% for af in ['ipv4','ipv6'] if af in vrf_context.af and vrf_context.af[af] %}
-{% if loopback[af] is defined and vrf=="default" and bgp.advertise_loopback %}
-{{ bgp_export_prefix(vrf,loopback[af]|ansible.utils.ipaddr('address')|ansible.utils.ipaddr('host')) }}
-{% endif %}
-
-{% for l in interfaces|default([]) if l.bgp.advertise|default(0) and l[af]|default(False) is string and l.vrf|default("default")==vrf %}
-{{ bgp_export_prefix(vrf,l[af]|ansible.utils.ipaddr('subnet')) }}
-{% endfor %}
-
-{% for pfx in vrf_bgp.originate|default([]) if af == 'ipv4' %}
-{{ bgp_export_prefix(vrf,pfx) }}
-{% endfor %}
+{%   for pfx in vrf_bgp.advertise|default([]) if af in pfx %}
+{{ bgp_export_prefix(vrf,pfx[af]) }}
+{%   endfor %}
 {% endfor %}
 
 {% set path = "router[router-name=Base]" if vrf=="default" else "service/vprn[service-name="+vrf+"]" %}

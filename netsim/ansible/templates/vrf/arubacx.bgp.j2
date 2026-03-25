@@ -2,7 +2,7 @@
 !
 router bgp {{ bgp.as }}
 {% for vname,vdata in vrfs.items() %}
-  vrf {{ vname }}
+ vrf {{ vname }}
   bgp router-id {{ vdata.bgp.router_id|default(bgp.router_id) }}
 
 {%   for af in ('ipv4','ipv6') if af in vdata.af|default({}) %}
@@ -12,18 +12,18 @@ router bgp {{ bgp.as }}
 {%   endfor %}
 
 {%   for af in ('ipv4','ipv6') if af in vdata.af|default({}) %}
- address-family {{ af }} unicast
-  redistribute local loopback
+  address-family {{ af }} unicast
+   redistribute local loopback
 {% if vdata.bgp.import is defined %}
 {%   for s_proto,s_data in vdata.bgp.import.items() %}
-  redistribute {{ s_proto }}{%
+   redistribute {{ s_proto }}{%
     if s_proto == 'ospf' and af == 'ipv6' %}v3{% endif %}{%
     if 'policy' in s_data %} route-map {{ s_data.policy }}-{{ af }}{% endif +%}
 {%   endfor %}
 {% endif %}
 !
-{%     for n in vdata.networks|default([]) if af in n %}
-{{       bgpcfg.bgp_network(af,n[af]) }}
+{%     for n in vdata.bgp.advertise if af in n %}
+   network {{ n[af] }}
 {%     endfor %}
 !
 {%     for n in vdata.bgp.neighbors|default([]) if af in n %}
