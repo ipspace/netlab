@@ -29,14 +29,22 @@ configure vlan {{ vlan_name }} virtual-router {{ l.vrf }}
 {%   endif %}
 {%   if l.ipv4 is defined %}
 {%     if l.ipv4 is sameas True %}
-! Unnumbered IPv4 not supported on EXOS
+! Unnumbered IPv4 not implemented for EXOS
 {%     elif l.ipv4 is string and l.ipv4|ansible.utils.ipv4 %}
 configure vlan {{ vlan_name }} ipaddress {{ l.ipv4|ansible.utils.ipaddr('address') }} {{ l.ipv4|ansible.utils.ipaddr('netmask') }}
 {%     else %}
 ! Invalid IPv4 address {{ l.ipv4 }}
 {%     endif %}
 {%   endif %}
-{#   ip-mtu must come after ipaddress #}
+{%   if l.ipv6 is defined %}
+{%     if l.ipv6 is sameas True %}
+! Link-local-only IPv6 not implemented for EXOS
+{%     elif l.ipv6 is string and l.ipv6|ansible.utils.ipv6 %}
+configure vlan {{ vlan_name }} ipaddress {{ l.ipv6|upper }}
+{%     else %}
+! Invalid IPv6 address {{ l.ipv6 }}
+{%     endif %}
+{%   endif %}
 {%   if not is_loopback and l.mtu is defined %}
 configure ip-mtu {{ l.mtu }} vlan {{ vlan_name }}
 {%   endif %}

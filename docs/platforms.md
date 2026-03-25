@@ -154,26 +154,26 @@ Configuration files for Virtualbox and KVM/libvirt environments specify the numb
 
 | Virtual network device     | netlab<br>device type | CPUs | memory | libvirt NIC model          |
 | -------------------------- | ------------------ | ---: | -----: | -------------------------: |
-| Arista vEOS                | eos                |    2 |   2048 | virtio |
+| Arista vEOS                | eos                |    2 |   4096 | virtio |
 | Aruba AOS-CX               | arubacx            |    2 |   4096 | virtio |
 | Cisco ASAv                 | asav               |    1 |   2048 | virtio |
 | Cisco Catalyst 8000v       | cat8000v           |    2 |   4096 | virtio |
 | Cisco CSR 1000v            | csr                |    2 |   4096 | virtio |
-| Cisco IOSv                 | iosv               |    1 |    512 | e1000                      |
-| Cisco IOSvL2               | iosvl2             |    1 |    1024 | e1000                      |
-| Cisco IOS XRv              | iosxr              |    2 |    8192 | e1000                     |
+| Cisco IOSv                 | iosv               |    1 |    512 | e1000  |
+| Cisco IOSvL2               | iosvl2             |    1 |    1024 | e1000 |
+| Cisco IOS XRv              | iosxr              |    2 |    8192 | e1000 |
 | Cisco Nexus 9300v          | nxos               |    2 |   6144 [❗](caveats-nxos)| e1000 |
 | Cumulus Linux              | cumulus            |    2 |   1024 | virtio |
 | Cumulus Linux 5.x (NVUE)   | cumulus_nvue       |    2 |   1024 | virtio |
-| Dell OS10                  | dellos10           |    2 |   2048 | e1000                      |
-| Extreme Networks EXOS      | exos               |    1 |   1024 | virtio |
+| Dell OS10                  | dellos10           |    2 |   2048 | e1000  |
+| Extreme Networks EXOS      | exos               |    1 |   1024 | rtl8139 |
 | Fortinet FortiOS           | fortios            |    1 |   2048 | virtio |
 | FRR                        | frr                |    1 |   1024 | virtio |
 | Generic Linux host         | linux              |    1 |   1024 | virtio |
 | Juniper vSRX 3.0           | vsrx               |    2 |   4096 | virtio |
 | Juniper vPTX               | vptx               |    4 |   8192 | virtio |
 | Mikrotik RouterOS 6        | routeros           |    1 |    256 | virtio |
-| Mikrotik RouterOS 7        | routeros7          |    2 |    256 | e1000                      |
+| Mikrotik RouterOS 7        | routeros7          |    2 |    256 | e1000  |
 | OpenBSD                    | openbsd            |    1 | 1024 | virtio |
 | Sonic                      | sonic              |    2 | 4096 | virtio |
 | VyOS                       | vyos               |    2 |   1024 | virtio |
@@ -197,6 +197,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Cisco Nexus OS        | ✅ | ✅ |
 | Cumulus Linux         | ✅ | ✅ |
 | Dell OS10             | ✅ | ✅ | ✅ |
+| Extreme Networks EXOS | ✅ | ✅  |
 | Fortinet FortiOS      | ✅ | ✅ |
 | FRR                   | ✅ [❗](caveats-frr)  | ✅[❗](caveats-frr) |
 | Generic Linux         | ✅ | ❌  |
@@ -281,6 +282,7 @@ The following system-wide features are configured on supported network operating
 | Cumulus Linux            | ✅  | ✅[^HIF]  | ✅  | ✅  | ✅  |
 | Cumulus Linux 5.x (NVUE) | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Dell OS10                | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Extreme Networks EXOS    | ✅  |  ❌  | ✅  | ✅  | ✅  |
 | Fortinet FortiOS         | ✅  |  ❌  | ✅  | ✅  | ✅  |
 | FRR                      | ✅  | ✅[^HIF]  |  ❌  | ✅  | ✅  |
 | Generic Linux            | ✅  | ✅[^HIF]  |  ✅[❗](linux-lldp) | ✅  | ✅  |
@@ -310,6 +312,7 @@ The following interface parameters are configured on supported network operating
 | Cumulus Linux         | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux 5.x (NVUE) | ✅ | ❌ | ✅  | ✅  |
 | Dell OS10             | ✅  |  ❌  | ✅  | ✅  |
+| Extreme Networks EXOS | ✅  | ❌  |  ✅  |  ❌  |
 | Fortinet FortiOS      | ✅  | ✅  |  ✅[❗](caveats-fortios)  |  ❌  |
 | FRR                   | ✅  | ✅  | ✅  | ✅  |
 | Generic Linux         |  ❌  |  ❌  | ✅  |  ❌  |
@@ -337,6 +340,7 @@ The following interface addresses are supported on various platforms; most daemo
 | Cumulus Linux         | ✅  | ✅  | ✅  |  ❌  |
 | Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ✅ |  ❌  |
 | Dell OS10             | ✅  | ✅  |  ❌  |  ❌  |
+| Extreme Networks EXOS | ✅  | ✅  |  ❌  |  ❌  |
 | Fortinet FortiOS      | ✅  | ✅  |  ❌  |  ❌  |
 | FRR                   | ✅  | ✅  | ✅  | ✅  |
 | Generic Linux         | ✅  | ✅  |  ❌  |  ❌  |
