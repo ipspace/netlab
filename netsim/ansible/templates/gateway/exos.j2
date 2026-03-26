@@ -1,0 +1,26 @@
+{% for intf in interfaces if intf.gateway.protocol is defined and intf.gateway.protocol == 'vrrp' %}
+{%   if intf.type|default('') == 'svi' %}
+{%     set vlan_name = intf.vlan.name %}
+{%   else %}
+{%     set vlan_name = 'VLAN_P' + intf.ifname %}
+{%   endif %}
+create vrrp vlan {{ vlan_name }} vrid {{ intf.gateway.vrrp.group }}
+configure vrrp vlan {{ vlan_name }} vrid {{ intf.gateway.vrrp.group }} version v3
+configure vrrp vlan {{ vlan_name }} vrid {{ intf.gateway.vrrp.group }} ipv4 checksum exclude-pseudo-header
+{%   if 'ipv4' in intf.gateway %}
+configure vrrp vlan {{ vlan_name }} vrid {{ intf.gateway.vrrp.group }} add {{ intf.gateway.ipv4|ansible.utils.ipaddr('address') }}
+{%   endif %}
+{%   if 'ipv6' in intf.gateway %}
+configure vrrp vlan {{ vlan_name }} vrid {{ intf.gateway.vrrp.group }} add virtual-link-local {{ intf.gateway.vrrp.lla }}
+configure vrrp vlan {{ vlan_name }} vrid {{ intf.gateway.vrrp.group }} add {{ intf.gateway.ipv6|ansible.utils.ipaddr('address') }}
+{%   endif %}
+{%   if 'priority' in intf.gateway.vrrp %}
+configure vrrp vlan {{ vlan_name }} vrid {{ intf.gateway.vrrp.group }} priority {{ intf.gateway.vrrp.priority }}
+{%   endif %}
+{%   if intf.gateway.vrrp.preempt|default(True) %}
+configure vrrp vlan {{ vlan_name }} vrid {{ intf.gateway.vrrp.group }} preempt
+{%   else %}
+configure vrrp vlan {{ vlan_name }} vrid {{ intf.gateway.vrrp.group }} dont-preempt
+{%   endif %}
+enable vrrp vlan {{ vlan_name }} vrid {{ intf.gateway.vrrp.group }}
+{% endfor %}
