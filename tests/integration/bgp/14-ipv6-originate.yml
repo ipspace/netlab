@@ -4,6 +4,8 @@ message: |
   of IPv6 prefixes.
 
 defaults.sources.extra: [ defaults-ipv6.yml, ../wait_times.yml, ../warnings.yml ]
+defaults.paths.prepend.plugin: [ "topology:../plugin" ]
+plugin: [ adjust_test ]
 
 module: [ bgp ]
 
@@ -11,14 +13,20 @@ groups:
   probes:
     device: frr
     provider: clab
-    members: [ x1, x2 ]
+    members: [ x1, x2, r1 ]
+
+prefix:
+  adv_beacon:
+    ipv6: 2001:db8:bad:1::/64
 
 defaults.bgp.as: 65000
 defaults.interfaces.mtu: 1500
 
 nodes:
   dut:
+    module: [ ospf, bgp ]
     bgp.advertise_loopback: False
+    bgp.advertise: [ adv_beacon ]
     loopback: True
   dut2:
     bgp.as: 65001
@@ -27,36 +35,61 @@ nodes:
     bgp.as: 65100
   x2:
     bgp.as: 65101
+  r1:
+    module: [ ospf ]
 
 links:
 - dut-x1
 - dut-x2
+- dut-r1
 - dut:
   dut2:
   prefix.ipv6: 2001:db8:cafe:e01::/64
 - dut:
   prefix.ipv6: 2001:db8:cafe:e42::/64
   bgp.advertise: True
+- r1:
+  prefix: adv_beacon
+
+_adjust:
+- nodes: [ dut ]              # Remove 'bgp.advertise' if the device does not support it
+  features: [ bgp.advertise ]
+  warning: The BGP configuration template for {device} does not support bgp.advertise attribute
+  remove:
+  - nodes.dut.bgp.advertise
+  - validate.adv_ipv6
 
 validate:
   s_dut:
-    description: Check EBGP sessions with DUT (wait up to 20 seconds)
+    description: Check EBGP sessions with DUT
     wait: ebgp_session
     wait_msg: Waiting for EBGP session to be established
     nodes: [ x1, x2 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
+  ospf_adj:
+    description: Check OSPFv3 session with DUT
+    wait: ospfv3_adj_p2p
+    wait_msg: Wait for OSPFv3 session to be established
+    nodes: [ r1 ]
+    plugin: ospf6_neighbor(nodes.dut.ospf.router_id)
   stub:
-    description: Check whether DUT originates a stub prefix (wait up to 15 seconds)
+    description: Check whether DUT originates a stub prefix
     wait: bgp_v6_originate
     wait_msg: Waiting for the stub prefix to be originated and propagated
     nodes: [ x1, x2 ]
     plugin: bgp_prefix('2001:db8:cafe:e42::/64',af='ipv6')
   loopback:
-    description: Check whether DUT2 originates the loopback prefix (wait up to 15 seconds)
+    description: Check whether DUT2 originates the loopback prefix
     wait: bgp_v6_originate
     wait_msg: Waiting for the loopback prefix to be originated and propagated
     nodes: [ x1, x2 ]
     plugin: bgp_prefix(nodes.dut2.loopback.ipv6,af='ipv6')
+  adv_ipv6:
+    description: Check whether DUT advertises OSPFv3 prefix into BGP
+    wait: bgp_v6_originate
+    wait_msg: Waiting for advertised OSPF prefix
+    nodes: [ x1, x2 ]
+    plugin: bgp_prefix(prefix.adv_beacon.ipv6,af='ipv6')
   suppress_lb:
     description: Check whether DUT suppresses the loopback prefix
     nodes: [ x1, x2 ]
