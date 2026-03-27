@@ -14,7 +14,8 @@ create ospf area {{ area_data.area }}
 {%   endfor %}
 {%   for l in intf_data if 'ospf' in l and 'ipv4' in l %}
 {%     set is_loopback = l.type|default('') == 'loopback' %}
-{%     set vlan_name = 'VLAN_LO' + l.ifindex|string if is_loopback else 'VLAN_P' + l.ifname %}
+{%     set is_svi = l.type|default('') == 'svi' %}
+{%     set vlan_name = 'VLAN_LO' + l.ifindex|string if is_loopback else l.vlan.name if is_svi else 'VLAN_P' + l.ifname %}
 {%     set add_line %}configure ospf add vlan {{ vlan_name }} area {{ l.ospf.area }}{% if l.ospf.network_type|default('') == 'point-to-point' %} link-type point-to-point{% endif %}{% if l.ospf.passive|default(False) %} passive{% endif %}{% endset %}
 {{ add_line }}
 {%     if l.ospf.cost is defined %}

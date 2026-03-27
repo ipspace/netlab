@@ -14,7 +14,8 @@ create ospfv3 area {{ area_data.area }}
 {%   endfor %}
 {%   for l in intf_data if 'ospf' in l and 'ipv6' in l %}
 {%     set is_loopback = l.type|default('') == 'loopback' %}
-{%     set vlan_name = 'VLAN_LO' + l.ifindex|string if is_loopback else 'VLAN_P' + l.ifname %}
+{%     set is_svi = l.type|default('') == 'svi' %}
+{%     set vlan_name = 'VLAN_LO' + l.ifindex|string if is_loopback else l.vlan.name if is_svi else 'VLAN_P' + l.ifname %}
 {%     set add_line %}configure ospfv3 add vlan {{ vlan_name }} instance-id 0 area {{ l.ospf.area }} link-type {{ l.ospf.network_type|default('auto') }}{% if l.ospf.passive|default(False) %} passive{% endif %}{% endset %}
 {{ add_line }}
 {%     if l.ospf.cost is defined %}
