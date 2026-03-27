@@ -42,6 +42,31 @@ enable jumbo-frame ports {{ l.ifname }}
 {%   if l.vrf is defined %}
 configure vlan {{ vlan_name }} virtual-router {{ l.vrf }}
 {%   endif %}
+{%   if not is_loopback and role == 'router' and l.ipv6 is defined %}
+{%     set ra_prefix = l.ipv6|ansible.utils.ipaddr(0) if l.ipv6 is string and l.ipv6|ansible.utils.ipv6 else None %}
+{%     if l.ra.disable|default(false) is true %}
+disable router-discovery ipv6 vlan {{ vlan_name }}
+{%     else %}
+enable router-discovery ipv6 vlan {{ vlan_name }}
+configure vlan {{ vlan_name }} router-discovery ipv6 max-interval 5
+configure vlan {{ vlan_name }} router-discovery ipv6 min-interval 3
+{%       if ra_prefix %}
+configure vlan {{ vlan_name }} router-discovery ipv6 add prefix {{ ra_prefix }}
+{%         if l.ra.slaac|default(true) is false %}
+configure vlan {{ vlan_name }} router-discovery ipv6 set prefix {{ ra_prefix }} autonomous-flag off
+{%         endif %}
+{%         if l.ra.onlink|default(true) is false %}
+configure vlan {{ vlan_name }} router-discovery ipv6 set prefix {{ ra_prefix }} onlink-flag off
+{%         endif %}
+{%       endif %}
+{%       if l.ra.dhcp|default(false) == 'all' %}
+configure vlan {{ vlan_name }} router-discovery ipv6 managed-config-flag on
+{%       endif %}
+{%       if l.ra.dhcp|default(false) == 'other' %}
+configure vlan {{ vlan_name }} router-discovery ipv6 other-config-flag on
+{%       endif %}
+{%     endif %}
+{%   endif %}
 {%   if l.ipv4 is defined %}
 {%     if l.ipv4 is sameas True %}
 ! Unnumbered IPv4 not implemented for EXOS
