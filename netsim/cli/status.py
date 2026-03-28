@@ -176,7 +176,7 @@ def fetch_node_status(ls: Box, topology: Box) -> None:
       node_stat.provider = n_provider
       wk_name = p_module.call('get_node_name',n_name,topology)
       node_stat.provider_name = wk_name
-      wk_state = p_status[n_provider].get(wk_name,None) or p_status[n_provider].get(n_name,None)
+      wk_state = p_status[n_provider].get(wk_name,None) or p_status[n_provider].get(n_name,None) or get_empty_box()
       node_stat.status = wk_state.get('status','Unknown')
 
   for t_name,t_data in topology.tools.items():
