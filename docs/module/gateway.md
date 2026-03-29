@@ -27,6 +27,7 @@ The module is supported on these platforms:
 | Cumulus Linux 4.x     | ✅  | ✅  | ✅  |
 | Cumulus 5.x (NVUE)    | ✅ | ✅ |  ✅ |
 | Dell OS10             | ✅ [❗](caveats-os10) | ✅ [❗](caveats-os10) | ✅ [❗](caveats-os10)  |
+| Extreme Networks EXOS |  ❌  | ✅ [❗](caveats-exos)  | ✅ [❗](caveats-exos)  | 
 | FRRouting             | ✅  | ✅  | ✅  |
 | Junos[^Junos]         | ✅ [❗](caveats-junos)  | ✅  | ✅  |
 | Juniper cRPD          |  ❌ [❗](caveats-crpd) | ✅  | ✅  |

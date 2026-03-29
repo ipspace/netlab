@@ -62,6 +62,7 @@ The following table describes the per-platform support of individual router-leve
 | Cumulus Linux            | ✅| ✅| ✅| ✅| ✅|
 | Dell OS10 ([❗](caveats-os10)) | ✅| ✅| ✅| ✅| ✅|
 | Cumulus Linux 5.x (NVUE) | ✅| ✅| ❌ | ✅ | ✅|
+| Extreme Networks EXOS    | ✅| ✅| ✅| ❌ | ❌ | 
 | Fortinet FortiOS         |[❗](caveats-fortios)| ✅ | ❌ | ❌ | ❌ |
 | FRR                      | ✅| ✅| ✅| ✅| ✅|
 | Junos[^Junos]            | ✅| ✅| ✅| ❌ | ❌ |
@@ -130,6 +131,7 @@ The following table documents the common interface-level OSPF features:
 | Cumulus Linux            | ✅ | ✅ | ✅ | ✅ |
 | Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ✅ | ✅ |
 | Dell OS10                | ✅ | ✅ | ❌  | ✅ |
+| Extreme Networks EXOS    | ✅ | ✅ | ❌  | ✅ |
 | Fortinet FortiOS         | ✅ | [❗](caveats-fortios) | ❌ | ✅ |
 | FRR                      | ✅ | ✅ | ✅ | ✅ |
 | Junos[^Junos]            | ✅ | ✅ | ✅ | ✅ |
@@ -169,7 +171,7 @@ These devices also support optional OSPF interface attributes:
 | Cumulus Linux 4.x        | ✅ | ✅ | ✅ | ❌  |
 | Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ❌  | ❌  |
 | Dell OS10                | ✅ | ✅ | ✅ | ❌  |
-| FRR                      | ✅ | ✅ | ✅ | ❌  |
+| Extreme Networks EXOS    | ✅ | ✅ | ❌  | ❌  |
 | OpenBSD                  | ✅ | ✅ | ✅ | ❌  |
 
 OSPF routing daemons support these optional OSPF interface attributes:

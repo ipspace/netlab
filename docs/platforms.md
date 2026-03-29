@@ -340,7 +340,7 @@ The following interface addresses are supported on various platforms; most daemo
 | Cumulus Linux         | ✅  | ✅  | ✅  |  ❌  |
 | Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ✅ |  ❌  |
 | Dell OS10             | ✅  | ✅  |  ❌  |  ❌  |
-| Extreme Networks EXOS | ✅  | ✅  |  ❌  |  ❌  |
+| Extreme Networks EXOS | ✅  | ✅  |  ❌  | ✅  |
 | Fortinet FortiOS      | ✅  | ✅  |  ❌  |  ❌  |
 | FRR                   | ✅  | ✅  | ✅  | ✅  |
 | Generic Linux         | ✅  | ✅  |  ❌  |  ❌  |
@@ -417,7 +417,7 @@ These devices support additional control-plane protocols or BGP address families
 | Cisco Nexus OS        | ✅  | ✅  |  ❌  | ✅  |
 | Cumulus Linux         | ✅  | ✅  |  ❌  | ✅  |
 | Dell OS10             | ✅  | ✅  |  ❌  |  ❌  |
-| Extreme Networks EXOS | ✅  | ✅  | ✅  |  ❌  |
+| Extreme Networks EXOS |  ❌  |  ❌  |  ❌  | ✅  |
 | FRR                   | ✅  | ✅  | ✅  |  ❌  |
 | Juniper cRPD          | ✅  |  ❌  | ✅  |  ❌  |
 | Juniper vMX           | ✅  |  ❌  | ✅  | ✅  |

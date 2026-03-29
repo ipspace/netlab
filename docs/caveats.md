@@ -333,11 +333,13 @@ Netlab enables VRRPv3 by default on Dell OS10, overriding any platform defaults.
 (caveats-exos)=
 ## Extreme Networks EXOS
 
-* Netlab uses the now deprecated **community.network.exos_config** Ansible module to configure Extreme EXOS devices. This collection is not actively maintained anymore. To install you can still run:
+* The only way to configure EXOS devices with Ansible is the now-deprecated **community.network.exos_config** Ansible module. This collection is no longer actively maintained. To install it, you can still run:
 
 ```shell
 ansible-galaxy collection install community.network
 ```
+
+* EXOS does not support the same VRRP group for IPv4 and IPv6
 
 (caveats-fortios)=
 ## Fortinet FortiOS

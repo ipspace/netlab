@@ -1,7 +1,7 @@
 from box import Box
 
 from ..utils import log
-from . import _Quirks, report_quirk
+from . import _Quirks, need_ansible_collection, report_quirk
 
 
 def check_vrrp_address_families(node: Box) -> None:
@@ -24,3 +24,6 @@ class EXOS(_Quirks):
   def device_quirks(cls, node: Box, topology: Box) -> None:
     if 'gateway' in node.get('module',[]):
       check_vrrp_address_families(node)
+
+  def check_config_sw(self, node: Box, topology: Box) -> None:
+    need_ansible_collection(node,'community.network',version='5.1.0')
