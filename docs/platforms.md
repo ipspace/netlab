@@ -256,7 +256,7 @@ Several other devices can use alternate (faster) configuration methods that are 
 | Dell OS10 | **startup** |
 | Junos[^Junos] | **startup** |
 
-[^EOSSH]: Arista EOS device configurations are converted into FastCli scripts and executed as Linux scripts within the cEOS container
+[^EOSSH]: Arista EOS device configurations are converted into FastCli scripts and executed as Linux scripts within the cEOS container. This method works on EOS software releases that have the **‌platform tfa phy control-frame disabled** interface configuration command (probably starting with EOS release 4.30)
 
 [^XRDSH]: The Cisco IOS XRd deployment uses a custom **bash** script that calls **xrapply** ZTP command to load and commit a configuration file. The custom script is used as the *shebang* interpreter for the configuration snippets. This deployment method *does not work* on XRv virtual machines packaged into *vrnetlab* containers.
 
