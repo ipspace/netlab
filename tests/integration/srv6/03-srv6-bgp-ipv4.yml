@@ -1,0 +1,132 @@
+---
+message: |
+  The tested device (DUT) is a PE-router running BGP and SRv6 across an IPv6-only network to interconnect
+  two IPv4-only networks. The validation test checks end-to-end IPv4 connectivity across a SRv6 core.
+  See https://www.ietf.org/archive/id/draft-mishra-idr-v4-islands-v6-core-4pe-06.html
+
+defaults.sources.extra: [ ../wait_times.yml ]
+
+plugin: [ bgp.session ]       # For bgp.allowas_in
+
+addressing:
+  core:
+    ipv4: False               # ipv6-only
+    ipv6: 2001:1::/48         # SRv6 requires ipv6 addresses on interfaces
+
+  loopback:
+    ipv4: False               # No need for ipv4 loopbacks, this avoids creating ipv4 ibgp sessions too
+    ipv6: 2001:db8::/48
+
+  lb_ce:
+    ipv4: 192.168.0.0/24
+    prefix: 32
+
+srv6.allocate_loopback: False # Don't allocate loopback addresses from the locator range
+srv6.igp: [ bgp ]
+srv6.bgp:
+  ipv4: True                  # Enable IPv4 in the overlay (for IBGP)
+  ipv6: False
+srv6.vpn: False
+
+bgp.as: 65000                 # PE iBGP AS for IPv4 overlay
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2 ]
+    device: linux
+    provider: clab
+  pe:
+    members: [ dut, pe2 ]
+    module: [ bgp, srv6 ]
+    bgp.import: [ connected ]
+    bgp.advertise_loopback: True  # BGP-only underlay needs loopback reachability in BGP
+  core:
+    members: [ p ]
+    module: [ bgp ]               # No srv6 module, just BGP
+  ce:
+    members: [ ce1, ce2 ]
+    module: [ bgp ]
+    loopback.pool: lb_ce
+  x_switches:
+    members: [ p, pe2, ce1, ce2 ]
+    device: frr
+    provider: clab
+
+nodes:
+  dut:
+  pe2:
+  p:
+    bgp.as: 65010             # Different AS to use eBGP for SID/locator exchange
+  ce1:
+    bgp.as: 65101
+  ce2:
+    bgp.as: 65102
+
+links:
+- group: core
+  pool: core
+  members: 
+  - dut:
+     bgp.allowas_in: True          # Allow transit via P AS
+    p:
+  - p:
+    pe2:
+     bgp.allowas_in: True          # Allow transit via P AS
+- group: edge
+  members: [ h1-dut, h2-pe2 ]
+- group: customer
+  members: [ ce1-dut, ce2-pe2 ]
+
+validate:
+  ebgp_ulay_dut:
+    description: Check eBGP underlay session P-DUT over IPv6
+    wait: ebgp_session
+    wait_msg: Waiting for eBGP underlay sessions to start
+    nodes: [ p ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
+    stop_on_error: true
+  ebgp_ulay_pe2:
+    description: Check eBGP underlay session P-PE2 over IPv6
+    wait: ebgp_session
+    wait_msg: Waiting for eBGP underlay sessions to start
+    nodes: [ p ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'pe2',af='ipv6')
+    stop_on_error: true
+  ebgp_dut:
+    description: Check EBGP session DUT-CE1
+    wait: ebgp_session
+    wait_msg: Waiting for EBGP session DUT-CE1
+    nodes: [ ce1 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv4')
+  ebgp_pe2:
+    description: Check EBGP session PE2-CE2
+    wait: ebgp_session
+    wait_msg: Waiting for EBGP session PE2-CE2
+    nodes: [ ce2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'pe2',af='ipv4')
+  ibgp:
+    description: Check IBGP session with activation of IPv4 over IPv6
+    wait: 10
+    wait_msg: Waiting for IBGP sessions to start
+    nodes: [ pe2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6',activate='ipv4')
+    stop_on_error: true
+  ping_hh:
+    description: Ping-based host-to-host reachability test
+    wait_msg: We might have to wait a bit longer
+    wait: 10
+    nodes: [ h1 ]
+    plugin: ping('h2')
+  ping_h_ce:
+    description: Ping-based host-to-CE reachability test
+    wait_msg: We might have to wait a bit longer
+    wait: 10
+    nodes: [ h1, h2 ]
+    plugin: ping('ce1')
+  ping_ce_ce:
+    description: Ping-based CE-to-CE reachability test
+    wait_msg: We might have to wait a bit longer
+    wait: 10
+    nodes: [ ce1 ]
+    plugin: ping(nodes.ce2.loopback.ipv4,src=nodes.ce1.loopback.ipv4)
