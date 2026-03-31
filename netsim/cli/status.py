@@ -5,6 +5,7 @@
 #
 import argparse
 import os
+import pathlib
 import subprocess
 import sys
 import typing
@@ -138,7 +139,9 @@ def display_active_labs(topology: Box,args: argparse.Namespace,lab_states: Box) 
 def show_lab_instance(iid: Lab_Instance_ID, lab_state: Box) -> None:
   print(f'Lab {iid} in {lab_state.dir}')
   if lab_state.status:
-    print(f'  status: {lab_state.status}')
+    print(f'  status:      {lab_state.status}')
+  if lab_state.topology:
+    print(f'  topology:    {lab_state.topology}')
   if lab_state.providers:
     print(f'  provider(s): {",".join(lab_state.providers)}')
   print()
@@ -224,6 +227,19 @@ def get_lab_status(lab_state: Box) -> str:
 
   return lab_state.status
 
+#
+# Get lab topology filename from the snapshot file, try to make it
+# relative to the current directory
+#
+def get_topology_file(topology: Box, curdir: str) -> typing.Optional[str]:
+  if not topology.input:
+    return None
+  topo_name = topology.input[0]
+  try:
+    return str(pathlib.Path(topo_name).relative_to(curdir))
+  except ValueError:
+    return topo_name
+
 def show_lab(args: argparse.Namespace,lab_states: Box) -> None:
   iid = get_instance(args,lab_states)
   lab_state = cleanup_state(lab_states[iid])
@@ -239,6 +255,7 @@ def show_lab(args: argparse.Namespace,lab_states: Box) -> None:
   if topology is None:
     log.fatal(f'Cannot read topology snapshot file {snapshot}')
 
+  lab_state.topology = get_topology_file(topology,wdir)
   lab_status = get_lab_status(lab_state)
   if 'started' not in lab_status:
     err = 'Lab is not started, cannot display node/tool status'
