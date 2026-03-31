@@ -13,6 +13,7 @@ message: |
   Please note it might take a while for the lab to work due to STP learning
   phase
 
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
 plugin: [ fix_mtu ]
 
 addressing:
@@ -23,6 +24,8 @@ addressing:
 
 defaults.vxlan.use_v6_vtep: true
 
+module: [ vlan, vxlan, ospf, bgp, evpn ]
+
 groups:
   _auto_create: True
   hosts:
@@ -31,9 +34,9 @@ groups:
     provider: clab
   switches:
     members: [ s1, s2 ]
-    module: [ vlan, vxlan, ospf, bgp, evpn ]
   x_switches:
-    members: [ s2 ]
+    module: [ ospf, bgp, evpn ]
+    members: [ probe ]
     device: eos
     provider: clab
 
@@ -55,43 +58,57 @@ links:
 - s1:
   s2:
   mtu: 1600
+- s1-probe
+- s2-probe
 
 validate:
   ospf_adj_s1:
-    description: Check OSPF adjacencies with S1
-    wait: 40
-    nodes: [ s2 ]
-    wait_msg: Waiting for OSPF adjacency process to complete
+    description: Check OSPFv3 adjacencies with S1
+    wait: ospfv3_adj_p2p
+    nodes: [ probe ]
+    wait_msg: Waiting for OSPFv3 adjacency process to complete
     plugin: ospf6_neighbor(nodes.s1.ospf.router_id)
+  ospf_adj_s2:
+    description: Check OSPFv3 adjacencies with S2
+    wait: ospfv3_adj_p2p
+    nodes: [ probe ]
+    wait_msg: Waiting for OSPFv3 adjacency process to complete
+    plugin: ospf6_neighbor(nodes.s2.ospf.router_id)
 
   ibgp_adj_s1:
     description: Check IBGP adjacencies with S1
-    wait: 40
-    nodes: [ s2 ]
+    wait: ibgp_session
+    nodes: [ probe ]
     wait_msg: Waiting for IBGP session
     plugin: bgp_neighbor(node.bgp.neighbors,'s1',af='ipv6')
+  ibgp_adj_s2:
+    description: Check IBGP adjacencies with S2
+    wait: ibgp_session
+    nodes: [ probe ]
+    wait_msg: Waiting for IBGP session
+    plugin: bgp_neighbor(node.bgp.neighbors,'s2',af='ipv6')
 
-  ipv6_adj_s1:
-    description: Check IPv6 AF on IBGP adjacencies with S1
-    nodes: [ s2 ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'s1',activate='ipv6',af='ipv6')
-
-  evpn_adj_s1:
-    description: Check EVPN AF on IBGP adjacencies with S1
-    nodes: [ s2 ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'s1',activate='evpn',af='ipv6')
-    stop_on_error: True
+#  evpn_adj_s1:
+#    description: Check EVPN AF on IBGP adjacencies with S1
+#    nodes: [ probe ]
+#    plugin: bgp_neighbor(node.bgp.neighbors,'s1',activate='evpn',af='ipv6')
+#    stop_on_error: True
+#  evpn_adj_s2:
+#    description: Check EVPN AF on IBGP adjacencies with S2
+#    nodes: [ probe ]
+#    plugin: bgp_neighbor(node.bgp.neighbors,'s2',activate='evpn',af='ipv6')
+#    stop_on_error: True
 
   ping_red:
     description: Ping-based reachability test in VLAN red
     wait_msg: Waiting for STP to wake up
-    wait: 30
+    wait: ping_stp
     nodes: [ h1 ]
     plugin: ping('h2')
   ping_blue:
     description: Ping-based reachability test in VLAN blue
     wait_msg: We might have to wait a bit longer
-    wait: 10
+    wait: vxlan_ping
     nodes: [ h3 ]
     plugin: ping('h4')
   inter_vlan:

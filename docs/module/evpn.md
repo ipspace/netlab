@@ -117,11 +117,16 @@ Most EVPN/VXLAN implementations support only IPv4 VXLAN transport; some can run 
 | Cumulus Linux 4.x  | ✅  | ❌   |
 | Cumulus 5.x (NVUE) | ✅  | ❌   |
 | Dell OS 10         | ✅  | ❌   |
-| FRR                | ✅  | ❌ [❗](caveats-frr)  |
+| FRR                | ✅  | ✅  |
 | Junos[^JN]         | ✅  | ❌   |
 | Nokia SR Linux     | ✅  | ❌   |
 | Nokia SR OS[^SROS] | ✅  | ❌   |
 | VyOS               | ✅  | ❌ [❗](caveats-vyos) |
+
+```{warning}
+* EVPN with VXLAN-over-IPv6 is enabled with the `defaults.vxlan.use_v6_vtep` attribute (see [](module-vxlan)). At the moment, you cannot run a control-plane-only EVPN node with IPv6 next hops.
+* Arista EOS 4.35.2F and FRRouting 10.6.0 use incompatible encodings of PMSI_TUNNEL_ATTRIBUTE when running EVPN over IPv6 next hops. While each implementation works on its own, they are not interoperable.
+```
 
 (evpn-global-parameters)=
 ## Global EVPN Parameters
