@@ -1,7 +1,19 @@
+{% if 'bgp' in srv6.igp|default([]) %}
+interface ${SRv6_DEV}
+  ipv6 address {{ srv6.locator }}
+{% endif %}
+
 router bgp {{ bgp.as }}
+ ! bgp default software-version-capability latest-encoding
  segment-routing srv6
   locator {{ inventory_hostname }}
  exit
+
+ {% if 'bgp' in srv6.igp|default([]) %}
+ address-family ipv6 unicast
+  network {{ srv6.locator }}
+ exit-address-family
+ {% endif %}
 
 {#
   The core bgp module only provisions neighbors for which the transport matches the address family, i.e. IPv4 over v4
@@ -10,6 +22,7 @@ router bgp {{ bgp.as }}
 #}
 {% macro bgp_neighbor(n,peer,af) %}
   neighbor {{ peer }} activate
+  neighbor {{ peer }} encapsulation-srv6
   neighbor {{ peer }} send-community both
 {%   if n.next_hop_unchanged is defined %}
   neighbor {{ peer }} attribute-unchanged next-hop
@@ -19,7 +32,7 @@ router bgp {{ bgp.as }}
 {%   endif %}
 {% endmacro -%}
 
-{% if srv6.vpn is defined %}
+{% if srv6.vpn is defined or srv6.bgp is defined %}
 {%   for n in bgp.neighbors|default([]) if n.ipv6 is defined %}
 {%     set peer = n.ipv6 %}
  neighbor {{ peer }} remote-as {{ n.as }}
@@ -29,10 +42,18 @@ router bgp {{ bgp.as }}
 {%     endif %}
 
 {%-    for af in ['ipv4','ipv6'] %}
-{%       if n.type in srv6.vpn.get(af,[]) %}
+{%       if srv6.bgp is defined and n.type in srv6.bgp.get(af,[]) %}
+ address-family {{ af }} unicast
+!
+  sid export auto
+{{         bgp_neighbor(n,peer,af) -}}
+!
+{%       endif %}
+{%       if srv6.vpn is defined and n.type in srv6.vpn.get(af,[]) %}
  address-family {{ af }} vpn
 !
 {{         bgp_neighbor(n,peer,af) -}}
+!
 {%       endif %}
 {%     endfor %}
 {%   endfor %}
