@@ -30,20 +30,17 @@ Configures BGP address families for neighbors, including extended nexthop where 
 def configure_bgp_for_srv6(node: Box, topology: Box) -> None:
   srv6_bgp = node.get('srv6.bgp',{})
   srv6_vpn = node.get('srv6.vpn',{})
+  srv6_igp = node.get('srv6.igp',[])
   for nb in list(node.get('bgp.neighbors',[])):
     if 'ipv6' not in nb:                               # Skip IPv4-only neighbors
       continue
 
     for af in DEFAULT_BGP_AF.keys():
-      if nb.type in srv6_bgp.get(af,[]) or nb.type in srv6_vpn.get(af,[]):
-# If anything, deactivating BGP AFs would break SR-OS and not achieve anything on FRR
-#        nb.activate[af] = False                        # Disable regular BGP activation
-        pass
-      else:
-        continue                                       # Skip if neither AF is activated
+      # or nb.type in srv6_vpn.get(af,[]):
+      nb.activate[af] = nb.type in srv6_bgp.get(af,[]) or (af=='ipv6' and nb.type=='ebgp' and 'bgp' in srv6_igp)
 
 # The following code is untested and thus commented out
-#      if nb.type=='ebgp':                              # Set next hop unchanged for EBGP peers, to get end-2-end SID routing
+#      if nb.type=='ebgp':                             # Set next hop unchanged for EBGP peers, to get end-2-end SID routing
 #        nb.next_hop_unchanged = True
       if af=='ipv4' and 'ipv4' not in nb:
         nb.extended_nexthop = True                     # Enable extended next hops when IPv4 AF is used without IPv4 transport
