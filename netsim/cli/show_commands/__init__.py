@@ -3,12 +3,13 @@
 #
 
 import argparse
+import typing
 
 from box import Box
 
 from ...utils import log
 
-DEVICES_TO_SKIP = ['none','unknown']
+DEVICES_TO_SKIP: typing.List[str] = []
 
 def parser_add_device(parser: argparse.ArgumentParser) -> None:
   parser.add_argument(

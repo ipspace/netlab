@@ -12,6 +12,7 @@ from ..augment import config, main
 from ..utils import log
 from ..utils import read as _read
 from .help import print_usage
+from .show_commands import DEVICES_TO_SKIP, show_common_parser
 from .show_commands import attributes as _attributes
 from .show_commands import defaults as _defaults
 from .show_commands import devices as _devices
@@ -21,7 +22,6 @@ from .show_commands import modules as _modules
 from .show_commands import outputs as _outputs
 from .show_commands import providers as _providers
 from .show_commands import reports as _reports
-from .show_commands import show_common_parser
 
 show_dispatch: dict = {
   'images': {
@@ -99,13 +99,16 @@ def run(cli_args: typing.List[str]) -> None:
   user_defaults: typing.Optional[list] = [] if 'system' in args and args.system else None
   topology = _read.load(empty_file,user_defaults=user_defaults)
 
+  # Skip meta devices when displaying device/module support
+  DEVICES_TO_SKIP.extend(
+    [dname for dname in topology.defaults.devices if '_meta_device' in topology.defaults.devices[dname]])
+
   if topology is None:
     log.fatal("Cannot read system settings")
     return
 
   log.init_log_system(False)
   topology.name = 'empty'
-#  topology.nodes = data.get_empty_box()
   topology.nodes.dummy.device = 'none'                  # Add a dummy node
   topology.nodes.dummy.module = []                      # ... and disable all modules on that node
   if 'plugin' in args and args.plugin:
@@ -117,4 +120,5 @@ def run(cli_args: typing.List[str]) -> None:
 
   main.transform_setup(topology)
   settings = topology.defaults
+
   show_dispatch[args.action]['exec'](settings,args)
