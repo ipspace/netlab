@@ -7,21 +7,21 @@ import argparse
 import sys
 import typing
 
-from .. import data
-from ..augment import config, main
-from ..utils import log
-from ..utils import read as _read
-from .help import print_usage
-from .show_commands import DEVICES_TO_SKIP, show_common_parser
-from .show_commands import attributes as _attributes
-from .show_commands import defaults as _defaults
-from .show_commands import devices as _devices
-from .show_commands import images as _images
-from .show_commands import module_support as _mod_support
-from .show_commands import modules as _modules
-from .show_commands import outputs as _outputs
-from .show_commands import providers as _providers
-from .show_commands import reports as _reports
+from ... import data
+from ...augment import config, main
+from ...utils import log
+from ...utils import read as _read
+from ..help import print_usage
+from . import attributes as _attributes
+from . import defaults as _defaults
+from . import devices as _devices
+from . import images as _images
+from . import module_support as _mod_support
+from . import modules as _modules
+from . import outputs as _outputs
+from . import providers as _providers
+from . import reports as _reports
+from .utils import DEVICES_TO_SKIP, show_common_parser
 
 show_dispatch: dict = {
   'images': {

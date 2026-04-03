@@ -8,7 +8,7 @@ from box import Box
 
 from ... import data
 from ...utils import strings
-from . import DEVICES_TO_SKIP, parser_add_device, show_common_parser
+from .utils import DEVICES_TO_SKIP, parser_add_device, show_common_parser
 
 
 def parse() -> argparse.ArgumentParser:
