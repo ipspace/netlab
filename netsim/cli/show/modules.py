@@ -138,6 +138,9 @@ Notes:
   print("Feature legend:")
   if not features:
     features = settings[m].features
+  if not features:
+    return
+
   for f in heading[1:]:
     print(f"* {f}: {features[f]}")
 
