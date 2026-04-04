@@ -27,6 +27,7 @@ def parse() -> argparse.ArgumentParser:
     dest='columns',
     action='store',
     default=7,
+    type=int,
     help='Maximum number of columns in the feature table(s)')
   return parser
 
@@ -41,6 +42,19 @@ def get_feature_list(features: dict,prefix: str = '') -> list:
       f_list.append(prefix+k)
 
   return f_list
+
+def get_module_flat_features(features: Box, prefix: str = '', path: str = '', f_dict: dict = {}) -> dict:
+  for k,v in features.items():
+    if k == '_title':
+      continue
+    if not isinstance(v,Box):
+      f_dict[prefix+k] = {'path': path + k, 'name': v }
+    elif '_title' in v:
+      get_module_flat_features(v,prefix,path+k+'.',f_dict)
+    else:
+      get_module_flat_features(v,prefix+k+'.',path+k+'.',f_dict)
+
+  return f_dict
 
 def device_module_feature_row(
       settings: Box, *,
@@ -179,16 +193,18 @@ def show(settings: Box, args: argparse.Namespace) -> None:
   result = data.get_empty_box()
 
   if args.feature:
+    flat_features = get_module_flat_features(settings[args.module].features)
     if not args.module:
       error_and_exit('The --feature parameter is only valid with the --module parameter')
-    if args.feature not in settings[args.module].features:
+    if args.feature not in flat_features:
+      f_list = [ f"* {k}: {flat_features[k]['name']}" for k in sorted(flat_features.keys())]
       error_and_exit(
         f'Module {args.module} does not have feature {args.feature}',
-        more_hints=f'Use "netlab show defaults {args.module}.features" to display valid device features')
+        more_hints=[f'Valid {args.module} features are:\n']+f_list)
 
     # Remove all other features from the module feature list to display just the selected feature
     #
-    f = settings[args.module].features[args.feature]
+    f = settings[args.module].features[flat_features[args.feature]['path']]
     settings[args.module].features = { args.feature: f }
 
   if args.format == 'table':
