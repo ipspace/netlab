@@ -3,6 +3,7 @@
 #
 
 import argparse
+import math
 import typing
 
 from box import Box
@@ -64,3 +65,18 @@ def get_modlist(settings: Box, args: argparse.Namespace) -> list:
       log.fatal(f'Unknown module: {args.module}')
     
   return sorted([ m for m in settings.keys() if 'supported_on' in settings[m]])
+
+def split_table(f_list: list, max_column: int) -> typing.Generator:
+  fl_len = len(f_list)
+  if fl_len <= max_column:
+    yield(f_list)
+    return
+
+  num_tables = math.ceil(fl_len/max_column)
+  cols = max_column if fl_len % max_column == 0 else math.floor(fl_len / num_tables)
+  while f_list:
+    cols = min(cols,len(f_list))
+    yield(f_list[:cols])
+    f_list = f_list[cols:]
+
+  return

@@ -11,7 +11,7 @@ from box import Box
 from ... import data
 from ...utils import strings
 from .. import error_and_exit
-from .utils import DEVICES_TO_SKIP, get_modlist, parser_add_module, show_common_parser
+from .utils import DEVICES_TO_SKIP, get_modlist, parser_add_module, show_common_parser, split_table
 
 
 def parse() -> argparse.ArgumentParser:
@@ -22,11 +22,19 @@ def parse() -> argparse.ArgumentParser:
     dest='feature',
     action='store',
     help='Display information for a single feature of the selected module')
+  parser.add_argument(
+    '--columns',
+    dest='columns',
+    action='store',
+    default=7,
+    help='Maximum number of columns in the feature table(s)')
   return parser
 
-def get_feature_list(features: Box,prefix: str = '') -> list:
+def get_feature_list(features: dict,prefix: str = '') -> list:
   f_list = []
   for k in features.keys():
+    if k == '_title':
+      continue
     if isinstance(features[k],dict):
       f_list.extend(get_feature_list(features[k],k+'.'))
     else:
@@ -40,7 +48,8 @@ def device_module_feature_row(
       heading: list,
       device: str,
       module: str,
-      provider: typing.Optional[str]) -> bool:
+      provider: typing.Optional[str] = None,
+      add_empty: bool = True) -> bool:
 
   d_data = settings.devices[device]
   if provider:
@@ -78,32 +87,48 @@ def device_module_feature_row(
     value = value.center(len(f))
     row.append(value)
 
-  rows.append(row)
-  return has_feature
+  if has_feature or add_empty:
+    rows.append(row)
+  return has_feature and add_empty
 
-def show_module_features(settings: Box, args: argparse.Namespace,dev_list: list) -> None:
+def show_feature_table(
+      settings: Box,
+      feature_list: list,
+      args: argparse.Namespace,
+      dev_list: list,
+      features: typing.Optional[dict] = None,
+      show_notes: bool = True) -> None:
   m = args.module
+  if len(feature_list) > args.columns:
+    for cnt,feature_cols in enumerate(split_table(feature_list,args.columns)):
+      if cnt:
+        print()
+      show_feature_table(settings,feature_cols,args,dev_list,features,show_notes)
+      show_notes=False
+    return
+
   heading = ['device']
-  heading.extend(get_feature_list(settings[m].features))
+  heading.extend(feature_list)
   providers = settings.providers.keys()
 
   rows: list = []
   need_notes = False
-
   for d in sorted(dev_list):
     if d in DEVICES_TO_SKIP:
       continue
 
-    if not device_module_feature_row(settings,rows=rows,heading=heading,device=d,module=m,provider=None):
+    if not device_module_feature_row(
+              settings,rows=rows,heading=heading,device=d,module=m,provider=None,add_empty=show_notes):
       need_notes = True
 
     for p_name in providers:
-      if not device_module_feature_row(settings,rows=rows,heading=heading,device=d,module=m,provider=p_name):
+      if not device_module_feature_row(
+              settings,rows=rows,heading=heading,device=d,module=m,provider=p_name,add_empty=show_notes):
         need_notes = True
 
   strings.print_table(heading,rows)
 
-  if need_notes:
+  if need_notes and show_notes:
     print(f"""
 Notes:
 * All devices listed in the table support {m} configuration module.
@@ -111,8 +136,36 @@ Notes:
     
   print("")
   print("Feature legend:")
+  if not features:
+    features = settings[m].features
   for f in heading[1:]:
-    print(f"* {f}: {settings[m].features[f]}")
+    print(f"* {f}: {features[f]}")
+
+def show_module_features(settings: Box, args: argparse.Namespace,dev_list: list) -> None:
+  m = args.module
+  mod_features = settings[m].features
+  categories = [ cname for cname,cdata in mod_features.items()
+                    if isinstance(cdata,Box) and '_title' in cdata ]
+  features = { k:v for k,v in mod_features.items() if k not in categories }
+
+  for cname in categories:
+    cdata = mod_features[cname]
+    sub_category = bool(cdata.get('_title',None))
+    if sub_category:
+      print("\n")
+      strings.print_colored_text(cdata._title,"bold")
+      print("\n")
+
+    show_feature_table(
+      settings,
+      feature_list=get_feature_list(cdata),
+      args=args,
+      dev_list=dev_list,
+      features=cdata,
+      show_notes=not sub_category)
+
+  if features:
+    show_feature_table(settings,get_feature_list(features),args,dev_list)
 
 def show(settings: Box, args: argparse.Namespace) -> None:
   if args.module == 'initial':
