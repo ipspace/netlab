@@ -9,7 +9,7 @@ import typing
 from box import Box
 
 from ... import data
-from ...utils import strings
+from ...utils import log, strings
 from .. import error_and_exit
 from .utils import DEVICES_TO_SKIP, get_modlist, parser_add_module, show_common_parser, split_table
 
@@ -105,6 +105,19 @@ def device_module_feature_row(
     rows.append(row)
   return has_feature and add_empty
 
+# The core "show_feature_table" processing displays a table of features
+# supported by netlab platforms. The table is limited to selected features
+# (feature_list), selected devices (dev_list) and potentially uses category-
+# specific feature names (features).
+#
+# The final flag (show_notes) controls whether the "some devices support no
+# extra features" text is printed. The default (true) is used for non-category
+# features and the core category (category with '_title' set to none).
+#
+# Finally, the function splits the table into multiple tables when it has to
+# display more than args.columns features and recursively calls itself to
+# generate the split tables
+#
 def show_feature_table(
       settings: Box,
       feature_list: list,
@@ -113,12 +126,12 @@ def show_feature_table(
       features: typing.Optional[dict] = None,
       show_notes: bool = True) -> None:
   m = args.module
-  if len(feature_list) > args.columns:
+  if len(feature_list) > args.columns:            # Do we need to generate multiple tables?
     for cnt,feature_cols in enumerate(split_table(feature_list,args.columns)):
-      if cnt:
+      if cnt:                                     # Empty line between tables
         print()
       show_feature_table(settings,feature_cols,args,dev_list,features,show_notes)
-      show_notes=False
+      show_notes=False                            # Do not show notes after the first table
     return
 
   heading = ['device']
@@ -158,6 +171,13 @@ Notes:
   for f in heading[1:]:
     print(f"* {f}: {features[f]}")
 
+# The top-level "show features table" function splits feature categories from
+# regular features, iterates over categories (printing title and showing category
+# table), and finally prints regular features table.
+#
+# The "show notes" which displays "some devices support no features" note is set
+# to True only when the category title is None (indicating "core" features
+#
 def show_module_features(settings: Box, args: argparse.Namespace,dev_list: list) -> None:
   m = args.module
   mod_features = settings[m].features
@@ -190,9 +210,19 @@ def show(settings: Box, args: argparse.Namespace) -> None:
   else:
     mod_list = get_modlist(settings,args)
 
+  if args.columns < 2 or args.columns > 20:
+    log.info('The value of --columns flag should be between 2 and 20. Using default value (7)')
+    args.columns = 7
+
   result = data.get_empty_box()
 
+  # When the user specifies the --feature flag, we have to unroll the categories features
+  # into a flat list, use the flat list to check the feature value (or generate a list of
+  # features) and limit the printout to the selected feature
+  #
   if args.feature:
+    if not args.module:
+      log.fatal('The --feature flag can be used only with the --module flag')
     flat_features = get_module_flat_features(settings[args.module].features)
     if not args.module:
       error_and_exit('The --feature parameter is only valid with the --module parameter')

@@ -66,17 +66,29 @@ def get_modlist(settings: Box, args: argparse.Namespace) -> list:
     
   return sorted([ m for m in settings.keys() if 'supported_on' in settings[m]])
 
+# The "split_table" function is a generator that yields subsets of table headings
+# no longer than max_column. It returns:
+#
+# * A single entry when the input list short enough
+# * A sequence of balanced entries for longer lists
+#
 def split_table(f_list: list, max_column: int) -> typing.Generator:
   fl_len = len(f_list)
   if fl_len <= max_column:
     yield(f_list)
     return
 
+  # Calculate the number of tables we need and the number of columns in each
+  # table. The number of tables is easy to calculate (we need at least
+  # list_len/columns tables), the number of columns is unchanged when it cleanly
+  # divides the list length (just in case to avoid floating point errors),
+  # otherwise it's rounded up from the average number of columns per table.
+  #
   num_tables = math.ceil(fl_len/max_column)
   cols = max_column if fl_len % max_column == 0 else math.floor(fl_len / num_tables)
-  while f_list:
-    cols = min(cols,len(f_list))
-    yield(f_list[:cols])
-    f_list = f_list[cols:]
+  while f_list:                                   # More work to do?
+    cols = min(cols,len(f_list))                  # Return at most "cols" columns
+    yield(f_list[:cols])                          # (note: the "cols" value changes only on last iteration)
+    f_list = f_list[cols:]                        # ... and shorten the input list
 
   return
