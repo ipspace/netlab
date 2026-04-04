@@ -19,7 +19,18 @@ protocol static static_bgp_default_{{ _af }} {
   route {{ '0.0.0.0/0' if _af=='ipv4' else '::/0' }} reject;
 }
 {% endfor %}
+{% for pfx_af in ['ipv4','ipv6'] %}
+{%   for pfx in bgp.advertise|default([]) if pfx_af in pfx %}
+{%     if loop.first %}
 
+define bgp_advertise_{{ pfx_af }} = [
+{%     endif %}
+  {{ pfx[pfx_af] }}{% if not loop.last %},{% endif +%}
+{%     if loop.last %}
+];
+{%     endif %}
+{%   endfor %}
+{% endfor %}
 function bgp_prefixes( bool originate_default ) {
   if net.len = 0 && !originate_default
     then reject "Don't originate default route";
@@ -35,15 +46,16 @@ function bgp_prefixes( bool originate_default ) {
   if source ~ [ {{ netlab_import_map[proto] }} ]
     then accept "{{ proto }} route:", net;
 {%   endfor %}
-{% endif %} 
-{% if bgp.advertise_loopback|default(False) %}
-  if source ~ [ RTS_DEVICE ] && ifname = "lo"
-    then accept "advertise loopback:", net;
 {% endif %}
-{% for intf in interfaces if 'bgp' in intf and intf.bgp.advertise|default(False) %}
-  if source ~ [ RTS_DEVICE ] && ifname = "{{ intf.ifname }}"
-    then accept "bgp.advertise:", net;
+{% for pfx_af in ['ipv4','ipv6'] %}
+{%   for pfx in bgp.advertise|default([]) if pfx_af in pfx %}
+{%     if loop.first %}
+
+  if net ~ bgp_advertise_{{ pfx_af }} then accept "advertise prefix:", net;
+{%     endif %}
+{%   endfor %}
 {% endfor %}
+
   reject "not accepted:", net, " source=", source, " preference=", preference, " proto=", proto;
 }
 
