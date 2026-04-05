@@ -18,6 +18,8 @@ groups:
 prefix:
   adv_beacon:
     ipv6: 2001:db8:bad:1::/64
+  orig_beacon:
+    ipv6: 2001:db8:bad:2::/64
 
 defaults.bgp.as: 65000
 defaults.interfaces.mtu: 1500
@@ -27,6 +29,7 @@ nodes:
     module: [ ospf, bgp ]
     bgp.advertise_loopback: False
     bgp.advertise: [ adv_beacon ]
+    bgp.originate: [ orig_beacon ]
     loopback: True
   dut2:
     bgp.as: 65001
@@ -58,6 +61,12 @@ _adjust:
   remove:
   - nodes.dut.bgp.advertise
   - validate.adv_ipv6
+- nodes: [ dut ]              # Remove 'bgp.originate' if the device does not support it
+  features: [ bgp.advertise, routing.static.discard ]
+  warning: The BGP configuration template for {device} does not support IPv6 prefixes in bgp.originate attribute
+  remove:
+  - nodes.dut.bgp.originate
+  - validate.orig_ipv6
 
 validate:
   s_dut:
@@ -90,6 +99,12 @@ validate:
     wait_msg: Waiting for advertised OSPF prefix
     nodes: [ x1, x2 ]
     plugin: bgp_prefix(prefix.adv_beacon.ipv6,af='ipv6')
+  orig_ipv6:
+    description: Check whether DUT originates an IPv6 prefix into BGP
+    wait: bgp_v6_originate
+    wait_msg: Waiting for advertised discard route
+    nodes: [ x1, x2 ]
+    plugin: bgp_prefix(prefix.orig_beacon.ipv6,af='ipv6')
   suppress_lb:
     description: Check whether DUT suppresses the loopback prefix
     nodes: [ x1, x2 ]
