@@ -21,24 +21,15 @@ set protocols bgp parameters cluster-id {{ bgp.rr_cluster_id }}
 
 # Work on Family {{ af }}
 
-{% if bgp.import is defined %}
-{%   for s_proto,s_data in bgp.import.items() %}
+{%     if bgp.import is defined %}
+{%       for s_proto,s_data in bgp.import.items() %}
 set protocols bgp address-family {{ af }}-unicast redistribute {{ s_proto }}{%
     if s_proto == 'ospf' and af == 'ipv6' %}v3{% endif %}{%
     if 'policy' in s_data %} route-map {{ s_data.policy }}-{{ af }}{% endif +%}
-{%   endfor %}
-{% endif %}
-
-{%     if loopback[af] is defined and bgp.advertise_loopback %}
-{{       bgpcfg.bgp_network(af,loopback[af]) }}
+{%       endfor %}
 {%     endif %}
-
-{%     for l in interfaces|default([]) if l.bgp.advertise|default("") and l[af] is defined and not 'vrf' in l %}
-{{       bgpcfg.bgp_network(af,l[af]) }}
-{%     endfor %}
-
-{%     for pfx in bgp.originate|default([]) if af == 'ipv4' %}
-{{       bgpcfg.bgp_network(af,pfx) }}
+{%     for pfx in bgp.advertise|default([]) if af in pfx %}
+{{       bgpcfg.bgp_network(af,pfx[af]) }}
 {%     endfor %}
 
 {%     for n in bgp.neighbors if n[af] is defined and n.activate[af] is defined and n.activate[af] %}
