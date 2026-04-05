@@ -1,5 +1,5 @@
 Creating Device configuration snippets
-[CREATED] dut: initial,ospf,bgp
+[CREATED] dut: initial,routing,ospf,bgp
 [CREATED] dut2: initial,bgp
 [CREATED] x1: initial,bgp
 [CREATED] x2: initial,bgp
@@ -26,12 +26,12 @@ TASK [Wait for device to become ready] *****************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vyos-clab.yml for dut, dut2
 
 TASK [wait_for_connection] *****************************************************
-ok: [dut]
 ok: [dut2]
+ok: [dut]
 
 TASK [wait_for] ****************************************************************
-ok: [dut2]
 ok: [dut]
+ok: [dut2]
 
 PLAY RECAP *********************************************************************
 dut                        : ok=5    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
@@ -116,10 +116,10 @@ ok: [dut]
 ok: [dut2]
 
 TASK [template] ****************************************************************
-changed: [dut2]
 changed: [dut]
+changed: [dut2]
 
-TASK [execute config-initial.sh to deploy initial config from /work/netlab_cicd/node_files/dut/initial] ***
+TASK [execute config-initial.sh to deploy initial config from /work/netlab_cicd/bgp/node_files/dut/initial] ***
 changed: [dut2]
 changed: [dut]
 
@@ -130,8 +130,44 @@ ok: [dut]
 ok: [dut2]
 
 TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, dut2 => (item=routing)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, dut2 => (item=ospf)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, dut2 => (item=bgp)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [dut]
+ok: [dut2]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [dut2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [dut2]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [dut2]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut2]
+ok: [dut] => {
+    "msg": "routing configuration for dut\n=========================================\n\n\n\n\n# Static routing\n\nset  protocols static route6 2001:db8:bad:2::/64 blackhole\n"
+}
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [dut2]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for dut
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [execute config-routing.sh to deploy routing config from /work/netlab_cicd/bgp/node_files/dut/routing] ***
+changed: [dut]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -165,7 +201,7 @@ ok: [dut]
 TASK [template] ****************************************************************
 changed: [dut]
 
-TASK [execute config-ospf.sh to deploy ospf config from /work/netlab_cicd/node_files/dut/ospf] ***
+TASK [execute config-ospf.sh to deploy ospf config from /work/netlab_cicd/bgp/node_files/dut/ospf] ***
 changed: [dut]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
@@ -186,7 +222,7 @@ ok: [dut2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "bgp configuration for dut\n=========================================\n\nset protocols bgp system-as 65000\n\nset protocols bgp parameters router-id 10.0.0.1\n\n\n\nset protocols bgp neighbor 2001:db8:3::2 remote-as 65100\nset protocols bgp neighbor 2001:db8:3::2 description 'x1'\n \n\n\n\n\nset protocols bgp neighbor 2001:db8:3:1::2 remote-as 65101\nset protocols bgp neighbor 2001:db8:3:1::2 description 'x2'\n \n\n\n\n\nset protocols bgp neighbor 2001:db8:cafe:e01::2 remote-as 65001\nset protocols bgp neighbor 2001:db8:cafe:e01::2 description 'dut2'\n \n\n\n\n\n# Work on Family ipv6\n\nset protocols bgp address-family ipv6-unicast network 2001:db8:bad:1::/64\nset protocols bgp address-family ipv6-unicast network 2001:db8:cafe:e42::/64\n\n\n\nset protocols bgp neighbor 2001:db8:3::2 address-family ipv6-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 2001:db8:3::2 address-family ipv6-unicast nexthop-self\n\nset protocols bgp neighbor 2001:db8:3::2 address-family ipv6-unicast disable-send-community extended\n\n\n\nset protocols bgp neighbor 2001:db8:3:1::2 address-family ipv6-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 2001:db8:3:1::2 address-family ipv6-unicast nexthop-self\n\nset protocols bgp neighbor 2001:db8:3:1::2 address-family ipv6-unicast disable-send-community extended\n\n\n\nset protocols bgp neighbor 2001:db8:cafe:e01::2 address-family ipv6-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 2001:db8:cafe:e01::2 address-family ipv6-unicast nexthop-self\n\nset protocols bgp neighbor 2001:db8:cafe:e01::2 address-family ipv6-unicast disable-send-community extended\n\n\n\n"
+    "msg": "bgp configuration for dut\n=========================================\n\nset protocols bgp system-as 65000\n\nset protocols bgp parameters router-id 10.0.0.1\n\n\n\nset protocols bgp neighbor 2001:db8:3::2 remote-as 65100\nset protocols bgp neighbor 2001:db8:3::2 description 'x1'\n \n\n\n\n\nset protocols bgp neighbor 2001:db8:3:1::2 remote-as 65101\nset protocols bgp neighbor 2001:db8:3:1::2 description 'x2'\n \n\n\n\n\nset protocols bgp neighbor 2001:db8:cafe:e01::2 remote-as 65001\nset protocols bgp neighbor 2001:db8:cafe:e01::2 description 'dut2'\n \n\n\n\n\n# Work on Family ipv6\n\nset protocols bgp address-family ipv6-unicast network 2001:db8:bad:1::/64\nset protocols bgp address-family ipv6-unicast network 2001:db8:bad:2::/64\nset protocols bgp address-family ipv6-unicast network 2001:db8:cafe:e42::/64\n\n\n\nset protocols bgp neighbor 2001:db8:3::2 address-family ipv6-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 2001:db8:3::2 address-family ipv6-unicast nexthop-self\n\nset protocols bgp neighbor 2001:db8:3::2 address-family ipv6-unicast disable-send-community extended\n\n\n\nset protocols bgp neighbor 2001:db8:3:1::2 address-family ipv6-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 2001:db8:3:1::2 address-family ipv6-unicast nexthop-self\n\nset protocols bgp neighbor 2001:db8:3:1::2 address-family ipv6-unicast disable-send-community extended\n\n\n\nset protocols bgp neighbor 2001:db8:cafe:e01::2 address-family ipv6-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 2001:db8:cafe:e01::2 address-family ipv6-unicast nexthop-self\n\nset protocols bgp neighbor 2001:db8:cafe:e01::2 address-family ipv6-unicast disable-send-community extended\n\n\n\n"
 }
 ok: [dut2] => {
     "msg": "bgp configuration for dut2\n=========================================\n\nset protocols bgp system-as 65001\n\nset protocols bgp parameters router-id 10.0.0.2\n\n\n\nset protocols bgp neighbor 2001:db8:cafe:e01::1 remote-as 65000\nset protocols bgp neighbor 2001:db8:cafe:e01::1 description 'dut'\n \n\n\n\n\n# Work on Family ipv6\n\nset protocols bgp address-family ipv6-unicast network 2001:db8:1::2/128\n\n\n\nset protocols bgp neighbor 2001:db8:cafe:e01::1 address-family ipv6-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 2001:db8:cafe:e01::1 address-family ipv6-unicast nexthop-self\n\nset protocols bgp neighbor 2001:db8:cafe:e01::1 address-family ipv6-unicast disable-send-community extended\n\n\n\n"
@@ -200,10 +236,10 @@ ok: [dut]
 ok: [dut2]
 
 TASK [template] ****************************************************************
-changed: [dut2]
 changed: [dut]
+changed: [dut2]
 
-TASK [execute config-bgp.sh to deploy bgp config from /work/netlab_cicd/node_files/dut/bgp] ***
+TASK [execute config-bgp.sh to deploy bgp config from /work/netlab_cicd/bgp/node_files/dut/bgp] ***
 changed: [dut2]
 changed: [dut]
 
@@ -211,8 +247,8 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=33   changed=6    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
-dut2                       : ok=26   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+dut                        : ok=42   changed=8    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+dut2                       : ok=28   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================
