@@ -27,6 +27,9 @@ addressing:                         # This creates a dual-stack network to uncov
   p2p:
     ipv6: 2001:db8:3::/48
 
+prefix:
+  orig_beacon.ipv6: 2001:db8:cafe:42::/64
+
 groups:
   ce:
     members: [ r1, r2, r3, r4 ]
@@ -57,7 +60,9 @@ nodes:
     vrfs:
       red:
         loopback.ipv6: 2001:db8:c001:cafe::/64
-        bgp.import: {}
+        bgp:
+          import: {}
+          originate: orig_beacon
       blue.loopback.ipv6: 2001:db8:c001:cafe::/64
   r1:
     bgp.as: 65101
@@ -79,6 +84,13 @@ _adjust:
     {device} does not support configurable redistribution into VRF BGP instances
   remove:
   - nodes.dut.vrfs.red.bgp
+- nodes: [ dut ]              # Remove 'bgp.advertise' if the device does not support it
+  check_mode: and
+  features: [ bgp.advertise, routing.static.discard, routing.static.vrf ]
+  warning: The BGP configuration template for {device} does not support VRF bgp.originate attribute
+  remove:
+  - nodes.dut.vrfs.red.bgp.advertise
+  - validate.pfx_red_orig
 
 validate:
   session:
@@ -102,6 +114,14 @@ validate:
     fail: DUT is not advertising connected subnets into VRF BGP
     nodes: [ r2 ]
     plugin: bgp_prefix(nodes.r1.interfaces[0].ipv6,af='ipv6')
+  pfx_red_orig:
+    description: Check originated BGP prefix on R1
+    wait: bgp_v4_redist
+    wait_msg: Waiting for BGP convergence
+    level: warning
+    fail: DUT is not originating a BGP prefix into VRF BGP instance
+    nodes: [ r2 ]
+    plugin: bgp_prefix(prefix.orig_beacon.ipv6,af='ipv6')
   pfx_blue:
     description: Check IPv6 BGP prefix on R3
     wait_msg: Waiting for BGP convergence
