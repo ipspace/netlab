@@ -648,6 +648,7 @@ def bgp_process_originate(node: Box, topology: Box) -> None:
         data.append_to_list(node,'routing.static',sr_data)  # Add discard static route to node data
         if not has_routing:                                 # If needed, add routing module
           data.append_to_list(node,'module','routing')
+          data.append_to_list(topology,'module','routing')
           has_routing = True
 
       bgp_data.pop('originate',None)                        # The bgp.originate attribute has been processed
