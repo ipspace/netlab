@@ -1,7 +1,8 @@
 from box import Box
 
-from netsim.augment import links
+from netsim.augment import devices, links
 from netsim.data import get_box
+from netsim.utils import log
 
 _requires    = [ 'bgp' ]
 
@@ -9,9 +10,10 @@ _requires    = [ 'bgp' ]
 Have to complete the fix of bgp.originate attribute (can't do everything through the settings)
 """
 def init(topology: Box) -> None:
-  o_dict = topology.defaults.bgp.attributes.node.originate
-  for kw in ('use','named','type'):
-    o_dict._subtype.pop(kw,None)
+  log.warning(
+        text='The functionality of the bgp.originate plugin is now available in the BGP module',
+        module='bgp',
+        flag='obsolete')
 
 def post_node_transform(topology: Box) -> None:
   for n, ndata in topology.nodes.items():
@@ -22,6 +24,15 @@ def post_node_transform(topology: Box) -> None:
     if not o_list:
       continue
 
+    features = devices.get_device_features(ndata,topology.defaults)
+    has_advertise = features.get('bgp.advertise',False)
+    originate_v2  = has_advertise and features.get('routing.static.discard',False)
+    if originate_v2:
+      continue
+
+    # The old bgp.plugin processing is still done for the devices that cannot handle bgp.advertise
+    # or discard static routes
+    #
     for o_idx,o_entry in enumerate(o_list):                 # Iterate over entries in originate list
       o_link = get_box({                                    # Create a loopback link for each originate entry
                  'interfaces': [ { 'node': n }],

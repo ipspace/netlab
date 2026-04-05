@@ -601,11 +601,73 @@ def bgp_build_advertise_list(node: Box) -> None:
     list_name = 'bgp.advertise' if 'vrf' not in intf else f'vrfs.{intf.vrf}.bgp.advertise'
     data.append_to_list(node,list_name,af_data)   # And append prefix data to the list
 
-  if 'originate' in node.bgp:                     # Next, append originate data to the advertise list
-    for o_pfx in node.bgp.originate:
-      # Convert old-style data (IPv4 string) into prefix
-      af_data = o_pfx if isinstance(o_pfx,Box) else {'ipv4': o_pfx }
-      data.append_to_list(node,'bgp.advertise',af_data)
+"""
+bgp_process_originate:
+
+* Check the device support for dual-stack and VRF 'bgp.originate' attribute
+* Append prefixes from 'bgp.originate' list to 'bgp.advertise' list
+* Convert 'bgp.originate' list to a list of IPv4-only prefixes for legacy devices
+"""
+DISCARD_NH = data.get_box({'nexthop.discard': True})
+
+def bgp_process_originate(node: Box, topology: Box) -> None:
+  global DISCARD_NH
+  features = devices.get_device_features(node,topology.defaults)
+
+  # Second-generation BGP route origination needs advertisement of routing table prefixes
+  # and discard static routes
+  #
+  # VRF BGP route origination needs VRF static routes
+  #
+  has_advertise = features.get('bgp.advertise',False)
+  originate_v2  = has_advertise and features.get('routing.static.discard',False)
+  originate_vrf = originate_v2 and features.get('routing.static.vrf',False)
+  has_routing   = 'routing' in node.module
+
+  for (bgp_data,_,vname) in _rp_utils.rp_data(node,'bgp'):
+    if 'originate' not in bgp_data:               # No prefix origination? Nice, move on.
+      continue
+
+    if vname and not originate_vrf:
+      log.error(
+        f'device {node.device} (node {node.name}) does not support VRF bgp.originate attribute',
+        category=log.IncorrectAttr,
+        module='bgp')
+      continue
+
+    if originate_v2:                              # Handle next-generation BGP route origination
+      #
+      # The second-generation BGP origination append bgp.originate attribute to bgp.advertise
+      # list and creates corresponding discard static routes
+      #
+      for pfx in bgp_data.originate:
+        data.append_to_list(bgp_data,'advertise',pfx)       # Append originate prefix to advertise list
+        sr_data = DISCARD_NH + pfx                          # This will create a new object with discard NH
+        if vname:                                           # If needed, set the VRF name in static route
+          sr_data.vrf = vname
+        data.append_to_list(node,'routing.static',sr_data)  # Add discard static route to node data
+        if not has_routing:                                 # If needed, add routing module
+          data.append_to_list(node,'module','routing')
+          has_routing = True
+
+      bgp_data.pop('originate',None)                        # The bgp.originate attribute has been processed
+
+    else:                                         # The device can do only old-style BGP route origination
+      originate_list = []
+      for pfx in bgp_data.originate:              # Rebuild bgp.originate into old format
+        # bgp.advertise attribute could be ignored, but doing this does not hurt anyone
+        # plus we need it for devices that support bgp.advertise but not discard routes
+        #
+        data.append_to_list(bgp_data,'advertise',pfx)
+        if 'ipv6' in pfx:                         # Old bgp.originate implementations were IPv4 only
+          log.error(
+            f'device {node.device} (node {node.name}) cannot use bgp.originate with IPv6 BGP prefixes',
+            category=log.IncorrectValue,
+            module='bgp')
+          return
+        elif 'ipv4' in pfx:                       # Save IPv4 prefix (if it exists) into the old-style
+          originate_list.append(pfx['ipv4'])      # originate list
+      bgp_data.originate = originate_list         # ... and replace bgp.originate attribute
 
 """
 bgp_set_originate_af: set bgp[af] flags based on prefixes that should be originated
@@ -615,33 +677,12 @@ def bgp_set_originate_af(node: Box, topology: Box) -> None:
   if 'bgp' not in node:                                     # Safeguard: skip non-BGP nodes
     return
 
-  if node.get('bgp.originate',[]):                          # bgp.originate attribute implies IPv4 is active
-    node.bgp.ipv4 = True
-    pfxs = topology.get('prefix',{})
-    for o_idx,o_value in enumerate(node.bgp.originate):     # Also, replace named prefixes with IPv4 values
-      if o_value in pfxs:
-        if 'ipv4' not in pfxs[o_value]:
-          log.error(
-            f'Named prefix {o_value} used in bgp.originate in node {node.name} must have IPv4 component',
-            category=log.MissingValue,
-            module='bgp')
-          continue
-        node.bgp.originate[o_idx] = pfxs[o_value].ipv4
-
+  advertise_list = node.get('bgp.advertise',[])             # Get the list of advertised prefixes
   for af in ['ipv4','ipv6']:
     if node.get(f'bgp.{af}',False):                         # No need for further checks if the AF flag is already set
       continue
-
-    if node.get('bgp.advertise_loopback',True):             # If the router advertises its loopback prefix
-      if af in node.get('loopback',{}):                     # ... do the AF checks on loopback interface
-        node.bgp[af] = True
-        continue
-
-    for intf in node.get("interfaces",[]):                  # No decision yet, iterate over all interfaces
-      if af in intf and intf[af]:                           # Is the address family active on the interface?
-        if intf.get('bgp.advertise',False):                 # Is the interface prefix advertised in BGP?
-          if not 'vrf' in intf:                             # The AF fix is only required for global interfaces
-            node.bgp[af] = True                             # ... the stars have aligned, set the BGP AF flag
+    if any([ pfx for pfx in advertise_list if af in pfx]):  # Do we advertise any prefix with that AF?
+      node.bgp[af] = True
 
 """
 process_as_list:
@@ -967,12 +1008,13 @@ class BGP(_Module):
       log.fatal(f"Internal error: node {node.name} has BGP module enabled but no BGP parameters","bgp")
       return
     build_bgp_sessions(node,topology)
+    check_advertise_data(node,topology)
     bgp_set_advertise(node,topology)
-    bgp_set_originate_af(node,topology)
+    bgp_process_originate(node,topology)
     _routing.remove_vrf_routing_blocks(node,'bgp')
     bgp_transform_community_list(node,topology)
     _routing.check_vrf_protocol_support(node,'bgp',None,'bgp',topology)
     _routing.process_imports(node,'bgp',topology,global_vars.get_const('vrf_igp_protocols',['connected']))
-    check_advertise_data(node,topology)
     sanitize_bgp_data(node)
     bgp_build_advertise_list(node)
+    bgp_set_originate_af(node,topology)
