@@ -1,3 +1,4 @@
+{% import "junos.macro.j2" as bgpcfg with context %}
 {# initialize default policies #}
 
 {# internal community to handle policy flows #}
@@ -15,8 +16,8 @@
 policy-options community x-route-permit-mark members large:65535:0:65536;
 
 policy-options {
-  delete: policy-statement bgp-advertise;
-  delete: policy-statement bgp-redistribute;
+  delete: policy-statement bgp-default-advertise;
+  delete: policy-statement bgp-default-redistribute;
 {% for af in ['ipv4','ipv6'] %}
 {%   for nhs_type in ['ebgp','all'] %}
   delete: policy-statement next-hop-{{ nhs_type }}-{{ af }};
@@ -27,18 +28,8 @@ policy-options {
 
 policy-options {
 
-{% for bgp_af in af %}
-{%   for pfx in bgp.advertise|default([]) if bgp_af in pfx %}
-{%     if loop.first %}
-  route-filter-list bgp-announce-{{ bgp_af }} {
-{%     endif %}
-    {{ pfx[bgp_af] }} exact;
-{%     if loop.last %}
-  }
-{%     endif %}
-{%   endfor %}
-{% endfor %}
-
+{{ bgpcfg.advertise_list(bgp,'default') }}
+{{ bgpcfg.advertise_policy(bgp,'default') }}
 {% for af in ('ipv4','ipv6') %}
 {%   for nh in ['ebgp','all'] %}
   policy-statement next-hop-{{ nh }}-{{ af }} {
@@ -54,29 +45,9 @@ policy-options {
       }
     }
   }
-
 {%   endfor %}
 {% endfor %}
-
-  policy-statement bgp-advertise {
-{% for bgp_af in af %}
-{%   for pfx in bgp.advertise|default([]) if bgp_af in pfx %}
-{%     if loop.first %}
-    term advertise-{{ bgp_af }} {
-      from {
-        route-filter-list bgp-announce-{{ bgp_af }};
-      }
-      then {
-        community add x-route-permit-mark;
-        next policy;
-      }
-    }
-{%    endif %}
-{%   endfor %}
-{% endfor %}
-  }
-
-  policy-statement bgp-redistribute {
+  policy-statement bgp-default-redistribute {
     term redis_bgp {
       from protocol bgp;
       then {

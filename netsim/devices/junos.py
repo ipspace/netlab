@@ -19,9 +19,9 @@ JUNOS_MTU_FLEX_VLAN_HEADER_LENGTH = 22
 # constants used in BGP Policies
 JUNOS_POLICY_NHS = 'next-hop-{ next_hop_self }-{ af }'
 JUNOS_POLICY_DEFAULT_ORIGINATE = 'bgp-default-route'
-JUNOS_COMMON_BGP_POLICIES = [
-  'bgp-advertise',
-  'bgp-redistribute',
+JUNOS_GLOBAL_BGP_POLICIES = [
+  'bgp-default-advertise',
+  'bgp-default-redistribute',
 ]
 JUNOS_POLICY_LAST = 'bgp-final'
 JUNOS_POLICY_IN_CLEANUP = 'bgp-initial'
@@ -290,7 +290,7 @@ def _bgp_neigh_export_policy_chain_build(neigh: Box, default: list, vrf_name: st
   if vrf_name:
     neigh_policy.append(JUNOS_POLICY_VRF_EXPORT.format(vrf_name))
   else:
-    neigh_policy.extend(JUNOS_COMMON_BGP_POLICIES)
+    neigh_policy.extend(JUNOS_GLOBAL_BGP_POLICIES)
   
   if neigh.get('default_originate', False):
     neigh_policy.append(JUNOS_POLICY_DEFAULT_ORIGINATE)
@@ -346,7 +346,7 @@ def build_bgp_import_export_policy_chain(node: Box, topology: Box) -> None:
       policy_name = strings.eval_format(JUNOS_POLICY_NHS,{ 'next_hop_self': 'ebgp', 'af': af })
       node.bgp._junos_policy.ibgp.append(policy_name)
 
-  node.bgp._junos_policy.export.extend(JUNOS_COMMON_BGP_POLICIES)
+  node.bgp._junos_policy.export.extend(JUNOS_GLOBAL_BGP_POLICIES)
   node.bgp._junos_policy.export.append(JUNOS_POLICY_LAST)
   def_policy = node.bgp._junos_policy.ibgp + node.bgp._junos_policy.export
   # - per neighbor policies

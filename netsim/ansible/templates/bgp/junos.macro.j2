@@ -10,3 +10,41 @@
 {%     endif %}
 {%   endfor %}
 {%- endmacro %}
+{#
+   Macro to create the per-routing-instance advertise prefix lists
+#}
+{% macro advertise_list(bgp,vname) %}
+{%   for bgp_af in af %}
+{%     for pfx in bgp.advertise|default([]) if bgp_af in pfx %}
+{%       if loop.first %}
+  route-filter-list bgp-{{ vname }}-announce-{{ bgp_af }} {
+{%       endif %}
+    {{ pfx[bgp_af] }} exact;
+{%       if loop.last %}
+  }
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{% endmacro +%}
+{#
+   Macro to create per-routing-instance advertise policy
+#}
+{% macro advertise_policy(bgp,vname) %}
+  policy-statement bgp-default-advertise {
+{%   for bgp_af in af %}
+{%     for pfx in bgp.advertise|default([]) if bgp_af in pfx %}
+{%       if loop.first %}
+    term advertise-{{ bgp_af }} {
+      from {
+        route-filter-list bgp-default-announce-{{ bgp_af }};
+      }
+      then {
+        community add x-route-permit-mark;
+        next policy;
+      }
+    }
+{%      endif %}
+{%     endfor %}
+{%   endfor %}
+  }
+{% endmacro +%}
