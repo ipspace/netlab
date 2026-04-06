@@ -286,14 +286,15 @@ def _bgp_neigh_export_policy_chain_build(neigh: Box, default: list, vrf_name: st
         neigh_policy.append(policy_name)
         need_to_have_neigh_policy = True
   
+  if neigh.get('default_originate', False):
+    neigh_policy.append(JUNOS_POLICY_DEFAULT_ORIGINATE)
+    need_to_have_neigh_policy = True
+
   if vrf_name:
     neigh_policy.append(JUNOS_POLICY_VRF_EXPORT.format(vrf_name))
   else:
     neigh_policy.extend(JUNOS_GLOBAL_BGP_POLICIES)
   
-  if neigh.get('default_originate', False):
-    neigh_policy.append(JUNOS_POLICY_DEFAULT_ORIGINATE)
-    need_to_have_neigh_policy = True
   custom_policy = neigh.get('policy.out', '')
   if custom_policy:
     neigh_policy.append(custom_policy)
