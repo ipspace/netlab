@@ -36,8 +36,8 @@ _netlab_ BGP configuration module supports these features:
 * Next-hop-self control on IBGP and confederation EBGP sessions
 * BGP community propagation
 * Configurable activation of default address families
-* Configurable link prefix advertisement
-* Additional (dummy) IPv4 prefix advertisement
+* Configurable link prefix and routing table advertisement
+* Additional (dummy) prefix advertisement
 * [Route import](routing_import) (redistribution)
 * Changing local autonomous system for individual BGP sessions (*local-as*)
 * Static **router-id** and **cluster-id**
@@ -47,7 +47,6 @@ Even more BGP features are implemented in the following plugins:
 
 * [bgp.session](plugin-bgp-session): implements numerous BGP session features, including session protection and AS-path manipulation.
 * [bgp.policy](plugin-bgp-policy): implements simple BGP routing policies, including weights, local preference, and MED.
-* [bgp.originate](plugin-bgp-originate): creates loopback interfaces instead of static routes to originate additional IPv4 or IPv6 prefixes
 * [ebgp.multihop](plugin-ebgp-multihop): implements multihop EBGP sessions.
 * [bgp.domain](plugin-bgp-domain): allows you to build topologies that reuse the same BGP ASN in different network parts.
 
@@ -197,7 +196,7 @@ Instead of using a global list of autonomous systems, you could specify a BGP au
 
 Additional per-node BGP configuration parameters include:
 
-* **bgp.advertise** -- the list of prefixes that should be advertised into BGP. These prefixes must usually be in the IP routing table (for example, learned via IGP).
+* **bgp.advertise** -- the list of prefixes that should be advertised into BGP ([details](bgp-advertise-prefix)). These prefixes must usually be in the IP routing table (for example, learned via IGP).
 
 ```{tip}
 Use **bgp.advertise** link/interface attribute to advertise connected subnets without configuring route redistribution
@@ -208,7 +207,7 @@ Use **bgp.advertise** link/interface attribute to advertise connected subnets wi
 * **bgp.import** -- [import (redistribute) IPv4 and IPv6 routes](routing_import) into global BGP instance (default: **false**)
 * **bgp.local_as** -- the autonomous system used on all EBGP sessions. See *[IBGP local-as](bgp-ibgp-localas)* on how this could also result in **IBGP** sessions.
 * **bgp.next_hop_self** -- Use *next-hop-self* on IBGP sessions. This parameter can also be specified as a global value; the system default is **true**.
-* **bgp.originate** -- a list of additional prefixes to advertise. Unlike the prefixes listed in the **bgp.advertise**  attribute, these prefixes are supported with a static discard route (usually pointing to *Null0*).
+* **bgp.originate** -- a list of additional prefixes to advertise ([details](bgp-advertise-prefix)). Unlike the prefixes listed in the **bgp.advertise**  attribute, these prefixes are supported with a static discard route (usually pointing to *Null0*).
 * **bgp.router_id** -- Set a static router ID. The default **router_id** is taken from the IPv4 address of the loopback interface or the **router_id** address pool if the device does not have a loopback interface or there is no usable IPv4 address on the loopback interface.
 
 (bgp-advanced-node)=
@@ -239,7 +238,8 @@ Finally, the BGP configuration module supports these advanced node parameters th
 ## VRF Parameters
 
 * BGP is always enabled for all VRF address families. By default, _netlab_ redistributes connected interfaces and IGP routes into BGP VRF address families. You can change that on devices supporting configurable route import with the **[bgp.import](routing_import)** VRF parameter.
-* You can use **bgp.advertise** VRF attribute and **bgp.advertise** interface/link attribute to advertise VRF prefixes into VRF BGP instance without configuring route redistribution.
+* You can use **bgp.advertise** VRF attribute and **bgp.advertise** interface/link attribute on most devices to advertise VRF prefixes into the VRF BGP instance without configuring route redistribution.
+* You can also use **bgp.originate** VRF attribute on devices that support [VRF discard static routes](generic-routing-static).
 * You can set a VRF-specific BGP router ID with **bgp.router_id** VRF parameter. Use this setting when building topologies with back-to-back links between VRFs on the same device.
 * To stop the creation of VRF EBGP sessions, set the **bgp** VRF parameter to *False* (see also [](routing_disable_vrf)).
 
@@ -281,14 +281,16 @@ The following IPv4/IPv6 prefixes are configured with **network** statements (or 
 * IPv4/IPv6 prefixes from links with **bgp.advertise** parameter set to **true**.
 * Prefixes assigned to *stub* networks -- links with a single node attached to them or links with a single router or daemon attached to them (these links would have **role** set to **stub**). To prevent a stub prefix from being advertised, set **bgp.advertise** link parameter to **false**
 * Prefixes in the **bgp.advertise** list.
-* IPv4 prefixes in the **bgp.originate** list. Static routes to *Null0* are created for those prefixes if needed.
+* Prefixes in the **bgp.originate** list. Static routes to *Null0* are created for those prefixes if the device requires an entry in the IP routing table to advertise a BGP prefix.
 
-The entries in the **bgp.advertise** list can be:
+The entries in the **bgp.advertise** and **bgp.originate** lists can be:
 
 * IPv4 subnets
-* IPv6 subnets
+* IPv6 subnets[^v6dr]
 * [Named prefixes](named-prefixes)
-* Dictionaries with **ipv4** and **ipv6** keys
+* Dictionaries with **ipv4** and **ipv6**[^v6dr] keys
+
+[^v6dr]: Origination of IPv6 prefixes works on devices on which _netlab_ can configure [*discard* static routes](generic-routing-static).
 
 ### Using bgp.advertise Link Attribute
 
@@ -329,11 +331,7 @@ An IP prefix assigned to a link with the **‌role** set to **‌stub** will not
 (module-bgp-originate)=
 ### Using bgp.originate Node Attribute
 
-When a node has the **bgp.originate** parameter, _netlab_ adds discard static routes for the IPv4 prefixes listed in that parameter (the static routes point to *Null0*) and configures the corresponding BGP prefix.
-
-```{tip}
-Use the [](plugin-bgp-originate) to originate additional IPv6 prefixes
-```
+When a node has the **bgp.originate** parameter, _netlab_ adds discard static routes for the IPv4 and IPv6[^v6dr] prefixes listed in that parameter (the static routes point to *Null0*) and configures the advertisement of the corresponding BGP prefix.
 
 For example, PE1 advertises `172.16.0.0/19' in the following topology. Please note that while the prefix is advertised via BGP, it does not have reachable IP addresses (the BGP prefix is based on a discard-everything static route).
 
@@ -344,7 +342,7 @@ nodes:
     module: [bgp]
     bgp:
       originate:
-        - "172.16.0.0/19"
+      - "172.16.0.0/19"
 ```
 
 (bgp-sessions)=

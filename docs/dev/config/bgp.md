@@ -23,6 +23,7 @@ Most of the document assumes you already created an Ansible task list that is ab
 You can use the following **features.bgp** [device features](dev-device-features) to specify which BGP features your configuration template implements:
 
 * **activate_af** -- device supports selective activation of IPv4 AF on IPv4 BGP session and IPv6 AF on IPv6 BGP session
+* **advertise** -- device supports advertisement of generic prefixes (should be set for all new implementations)
 * **community** -- Granular control of BGP community propagation see `netsim/devices/frr.yml` or `netsim/devices/eos.yml` for an example.
 * **confederation** -- device supports BGP confederations
 * **ipv6_lla** -- device supports unnumbered (interface) EBGP sessions
@@ -55,7 +56,7 @@ _netlab_ assumes the IPv4 BGP session carries the IPv4 address family (plus othe
 * **bgp.ipv6** (optional) -- You should configure IPv6 BGP address family
 * **bgp.neighbors** -- A list of IBGP and EBGP neighbors
 * **bgp.next_hop_self** -- When set to *True*, the BGP process should set itself as the next hop on EBGP routes propagated as IBGP routes. This attribute is propagated to the neighbor **next_hop_self** attribute and can be ignored if you configure **next-hop-self** on individual neighbors.
-* **bgp.originate** (optional) -- A list of additional IPv4 prefixes that should be advertised by the BGP process. You'll probably have to create static routes to support these prefixes.
+* **bgp.originate** (optional) -- A list of additional prefixes that should be advertised by the BGP process. These prefixes are automatically converted into *discard static routes* if your device supports them. Otherwise, you'll have to create static IPv4 routes to support these prefixes.
 * **bgp.router_id** -- The BGP router ID (always set). Always configure the BGP router ID to ensure your BGP configuration works in IPv6-only deployments.
 * **bgp.rr** (optional) -- When set to *True*, the device is a BGP route reflector. This attribute is propagated to the **rr_client** neighbor attribute and can be ignored if you configure **route-reflector-client** on individual neighbors.
 * **bgp.rr_cluster_id** (optional) -- user-configured BGP route-reflector cluster ID. If you need a cluster ID, use `bgp.rr_cluster_id|default(bgp.router_id)`
@@ -170,11 +171,11 @@ Iterate over the prefixes in the **bgp.advertise** list and generate **network**
 {%   endfor %}
 ```
 
-When your device originates a BGP prefix only based on a corresponding prefix in the IP routing table, add global IPv4 discard static routes for the extra prefixes in the **bgp.originate** list. The **bgp.originate** list is present only in the node-level data and contains IPv4 prefixes as strings.
+If your device does not support *discard static routes*, you might get the list of extra IPv4 prefixes that your device should originate in the optional **bgp.originate** list. When needed, add global IPv4 discard static routes for the extra prefixes. The **bgp.originate** list is present only in the node-level data and contains IPv4 prefixes as strings.
 
 ```
 {% for pfx in bgp.originate|default([]) %}
-ip route {{ pfx|ipaddr('0') }} Null0
+ip route {{ pfx }} Null0
 {% endfor %}
 ```
 

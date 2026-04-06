@@ -294,17 +294,17 @@ vrfs:
 
 ## Interaction with Routing Protocols
 
-BGP, OSPF, and IS-IS configuration modules are VRF aware:
+BGP, OSPF, IS-IS, and RIP configuration modules are VRF aware:
 
-* VRF interfaces are removed from the IS-IS routing process
-* VRF interfaces that should be part of an OSPF routing process are moved into VRF-specific data structures that are then used to create VRF-specific OSPF instances.
+* VRF interfaces that should be part of an IGP routing process (OSPF, IS-IS, or RIP) are moved into VRF-specific data structures that are then used to create VRF-specific IGP instances.
 * EBGP neighbors discovered on VRF interfaces are moved into VRF-specific data structures and used to configure BGP neighbors with a BGP VRF address family.
 
 Notes:
 
-* VRF OSPF instances are created only in VRFs with neighbors using the **ospf**  configuration module. To create an OSPF instance in a VRF that would need OSPF based on the lab topology, set the **ospf.active** node VRF parameter to *True*.
+* VRF IGP instances are created only in VRFs with neighbors using the same configuration module (for example, neighbors using the **ospf** configuration module).
+* To create an IGP instance in a VRF that has no IGP neighbors, set ***igp*.active** (for example, **ospf.active**) node VRF parameter to *True*.
 * VRF-specific IGP and BGP configurations are included in the VRF configuration templates.
-* Connected subnets are redistributed into the IGP VRF routing processes and the BGP VRF address family.
+* Unless you configure route redistribution with **_protocol_.import** VRF parameter, _netlab_ configures redistribution of connected subnets into IGP VRF routing processes and the BGP VRF address family.
 * If a node has **bgp.as** parameter and VRF-specific IGP instance(s), the VRF configuration templates configure two-way redistribution between the IGP instances and the BGP VRF address family unless you [configured VRF route redistribution](routing_import).
 * IBGP sessions within VRF instances do not work ([more details](bgp-vrf))
 
