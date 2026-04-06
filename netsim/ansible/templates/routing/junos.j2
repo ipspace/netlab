@@ -1,115 +1,19 @@
 {# since routing is applied before bgp, need to set the internal community for flow control also here #}
 policy-options community x-route-permit-mark members large:65535:0:65536;
 
-{% if routing.prefix|default({}) %}
-{%   include '_prefix_list_junos.j2' %}
+{% if routing.prefix is defined %}
+{%   include 'junos/prefix_list.j2' %}
 {% endif %}
-
-{% if routing.aspath|default({}) %}
-policy-options {
-{%   for asp_name,asp_list in routing.aspath.items() %}
-  delete: policy-statement x_aspath_match_{{ asp_name }};
-{# we need to create a subroutine for as-path matching if we want to use permit/deny, and use the as-path name defined above #}
-{%     for asp_line in asp_list %}
-  as-path {{ asp_name }}-{{ asp_line.sequence }} "{{ asp_line._junos_path }}";
-  policy-statement x_aspath_match_{{ asp_name }} {
-    term seq{{ asp_line.sequence }} {
-      from as-path {{ asp_name }}-{{ asp_line.sequence }};
-      then {
-{%       if asp_line.action == 'permit' %}
-        accept;
-{%       else %}
-        reject;
-{%       endif %}
-      }
-    }
-  }
-{%     endfor %}
-{# add reject as last resort for subroutine #}
-  policy-statement x_aspath_match_{{ asp_name }} {
-    term default-reject {
-      then reject;
-    }
-  }
-{%   endfor %}
-}
+{% if routing.aspath is defined %}
+{%   include 'junos/aspath.j2' %}
 {% endif %}
-
-{% if routing.community|default({}) %}
-{%   for c_name,c_value in routing.community.items() %}
-delete: policy-options policy-statement x_comm_match_{{ c_name }};
-{%     for c_line in c_value.value %}
-{# we need to create both indexed communities, required for permit/deny matching, and "full" communities for set #}
-policy-options community {{ c_name }} members [ "{{ c_line._value }}" ];
-policy-options community {{ c_name }}_idx{{ loop.index }} members [ "{{ c_line._value }}" ];
-
-{# we need to create a subroutine for community matching if we want to use permit/deny, and use the community name defined above #}
-policy-options {
-  policy-statement x_comm_match_{{ c_name }} {
-    term seq{{ loop.index }} {
-      from community {{ c_name }}_idx{{ loop.index }};
-      then {
-{%       if c_line.action == 'permit' %}
-        accept;
-{%       else %}
-        reject;
-{%       endif %}
-      }
-    }
-  }
-}
-{%     endfor %}
-{# add reject as last resort for subroutine #}
-policy-options {
-  policy-statement x_comm_match_{{ c_name }} {
-    term default-reject {
-      then reject;
-    }
-  }
-}
-{%   endfor %}
+{% if routing.community is defined %}
+{%   include 'junos/community.j2' %}
 {% endif %}
-
-{% if routing.policy|default({}) %}
-{%   import '_route_policy_junos.j2' as routemap with context %}
+{% if routing.policy is defined %}
+{%   import 'junos/route_policy.j2' as routemap with context %}
 {{   routemap.create_route_maps(routing.policy) }}
 {% endif %}
-
-{# ### Static Routing ### #}
-
-{% for sr_data in routing.static|default([]) %}
-{#   if we have a vrf route, open the routing instance stanza #}
-{%   if 'vrf' in sr_data %}
-routing-instances {
-  {{sr_data.vrf}} {
-{%   endif %}
-
-{#   recursive lookup is triggered by a route without the intf parameter #}
-{%   set route_resolve = ' resolve' if not 'intf' in sr_data.nexthop else '' %}
-    routing-options {
-{%   if 'ipv4' in sr_data %}
-      static route {{sr_data.ipv4}} {
-{%     if 'discard' in sr_data.nexthop %}
-        discard;
-{%     else %}
-        next-hop {{sr_data.nexthop.ipv4}}{{route_resolve}};
-{%     endif %}
-      }
-{%   endif %}
-{%   if 'ipv6' in sr_data %}
-{%   set ipv6_vrf_rib = sr_data.vrf + '.' if 'vrf' in sr_data else '' %}
-        rib {{ ipv6_vrf_rib }}inet6.0 static route {{sr_data.ipv6}} {
-{%     if 'discard' in sr_data.nexthop %}
-          discard;
-{%     else %}
-          next-hop {{sr_data.nexthop.ipv6}}{{route_resolve}};
-{%     endif %}
-        }
-{%   endif %}
-    }
-
-{%   if 'vrf' in sr_data %}
-  }
-}
-{%   endif %}
-{% endfor %}
+{% if routing.static is defined %}
+{%   include 'junos/static.j2' %}
+{% endif %}

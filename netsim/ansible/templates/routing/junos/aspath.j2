@@ -1,0 +1,27 @@
+policy-options {
+{%   for asp_name,asp_list in routing.aspath.items() %}
+  delete: policy-statement x_aspath_match_{{ asp_name }};
+{# we need to create a subroutine for as-path matching if we want to use permit/deny, and use the as-path name defined above #}
+{%     for asp_line in asp_list %}
+  as-path {{ asp_name }}-{{ asp_line.sequence }} "{{ asp_line._junos_path }}";
+  policy-statement x_aspath_match_{{ asp_name }} {
+    term seq{{ asp_line.sequence }} {
+      from as-path {{ asp_name }}-{{ asp_line.sequence }};
+      then {
+{%       if asp_line.action == 'permit' %}
+        accept;
+{%       else %}
+        reject;
+{%       endif %}
+      }
+    }
+  }
+{%     endfor %}
+{# add reject as last resort for subroutine #}
+  policy-statement x_aspath_match_{{ asp_name }} {
+    term default-reject {
+      then reject;
+    }
+  }
+{%   endfor %}
+}
