@@ -1,5 +1,5 @@
 Creating Device configuration snippets
-[CREATED] dut: initial,bgp,vrf
+[CREATED] dut: initial,routing,bgp,vrf
 [CREATED] r1: normalize,initial,bgp,bgp-xact
 [CREATED] r2: normalize,initial,bgp,bgp-xact
 [CREATED] r3: normalize,initial,bgp,bgp-xact
@@ -11,18 +11,18 @@ Config Deploying device configurations
  [INFO] Executing normalize configuration for node r2
  [INFO] Executing normalize configuration for node r3
  [INFO] Executing normalize configuration for node r4
- [INFO] Executing initial configuration for node r4
- [INFO] Executing initial configuration for node r2
  [INFO] Executing initial configuration for node r1
- [INFO] Executing bgp configuration for node r4
+ [INFO] Executing initial configuration for node r4
  [INFO] Executing initial configuration for node r3
- [INFO] Executing bgp configuration for node r2
+ [INFO] Executing initial configuration for node r2
  [INFO] Executing bgp configuration for node r1
+ [INFO] Executing bgp configuration for node r4
  [INFO] Executing bgp configuration for node r3
+ [INFO] Executing bgp configuration for node r2
  [INFO] Executing bgp-xact configuration for node r4
- [INFO] Executing bgp-xact configuration for node r2
  [INFO] Executing bgp-xact configuration for node r1
  [INFO] Executing bgp-xact configuration for node r3
+ [INFO] Executing bgp-xact configuration for node r2
  [INFO] Starting Ansible playbook to deploy the rest of the
           configurations
 [WARNING]: Found variable using reserved name: hosts
@@ -76,7 +76,7 @@ ok: [dut] => {
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
 
-TASK [ios_config: deploying initial from /work/netlab_cicd/node_files/dut/initial] ***
+TASK [ios_config: deploying initial from /work/netlab_cicd/bgp/node_files/dut/initial] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
@@ -88,8 +88,32 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=routing)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=bgp)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=vrf)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for routing] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "routing configuration for dut\n=========================================\n!\n!\n! Static routes\n!\nip route vrf red 172.42.42.0 255.255.255.0 Null0\n"
+}
+
+TASK [Deploy routing configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+
+TASK [ios_config: deploying routing from /work/netlab_cicd/bgp/node_files/dut/routing] ***
+changed: [dut]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
@@ -111,7 +135,7 @@ ok: [dut] => {
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
 
-TASK [ios_config: deploying bgp from /work/netlab_cicd/node_files/dut/bgp] *****
+TASK [ios_config: deploying bgp from /work/netlab_cicd/bgp/node_files/dut/bgp] ***
 changed: [dut]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
@@ -128,20 +152,20 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "vrf configuration for dut\n=========================================\n!\nrouter bgp 65000\n!\n address-family ipv4 vrf red\n  bgp router-id 10.0.0.1\n \n!\n  network 10.1.0.0 mask 255.255.255.252\n\n!\n  neighbor 10.1.0.2 remote-as 65101\n  neighbor 10.1.0.2 description r1\n\n  neighbor 10.1.0.2 activate\n  neighbor 10.1.0.2 advertisement-interval 0\n  neighbor 10.1.0.2 send-community standard\n\n  neighbor 10.1.0.6 remote-as 65102\n  neighbor 10.1.0.6 description r2\n\n  neighbor 10.1.0.6 activate\n  neighbor 10.1.0.6 advertisement-interval 0\n  neighbor 10.1.0.6 send-community standard\n\n exit-address-family\n!\n address-family ipv4 vrf blue\n  bgp router-id 10.0.0.1\n  redistribute connected\n\n!\n!\n  neighbor 10.1.0.10 remote-as 65103\n  neighbor 10.1.0.10 description r3\n\n  neighbor 10.1.0.10 activate\n  neighbor 10.1.0.10 advertisement-interval 0\n  neighbor 10.1.0.10 send-community standard\n\n  neighbor 10.1.0.14 remote-as 65104\n  neighbor 10.1.0.14 description r4\n\n  neighbor 10.1.0.14 activate\n  neighbor 10.1.0.14 advertisement-interval 0\n  neighbor 10.1.0.14 send-community standard\n\n exit-address-family\n!\nexit\n!\n!\n!\n"
+    "msg": "vrf configuration for dut\n=========================================\n!\nrouter bgp 65000\n!\n address-family ipv4 vrf red\n  bgp router-id 10.0.0.1\n \n!\n  network 172.42.42.0 mask 255.255.255.0\n\n  network 10.1.0.0 mask 255.255.255.252\n\n!\n  neighbor 10.1.0.2 remote-as 65101\n  neighbor 10.1.0.2 description r1\n\n  neighbor 10.1.0.2 activate\n  neighbor 10.1.0.2 advertisement-interval 0\n  neighbor 10.1.0.2 send-community standard\n\n  neighbor 10.1.0.6 remote-as 65102\n  neighbor 10.1.0.6 description r2\n\n  neighbor 10.1.0.6 activate\n  neighbor 10.1.0.6 advertisement-interval 0\n  neighbor 10.1.0.6 send-community standard\n\n exit-address-family\n!\n address-family ipv4 vrf blue\n  bgp router-id 10.0.0.1\n  redistribute connected\n\n!\n!\n  neighbor 10.1.0.10 remote-as 65103\n  neighbor 10.1.0.10 description r3\n\n  neighbor 10.1.0.10 activate\n  neighbor 10.1.0.10 advertisement-interval 0\n  neighbor 10.1.0.10 send-community standard\n\n  neighbor 10.1.0.14 remote-as 65104\n  neighbor 10.1.0.14 description r4\n\n  neighbor 10.1.0.14 activate\n  neighbor 10.1.0.14 advertisement-interval 0\n  neighbor 10.1.0.14 send-community standard\n\n exit-address-family\n!\nexit\n!\n!\n!\n"
 }
 
 TASK [Deploy vrf configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
 
-TASK [ios_config: deploying vrf from /work/netlab_cicd/node_files/dut/vrf] *****
+TASK [ios_config: deploying vrf from /work/netlab_cicd/bgp/node_files/dut/vrf] ***
 changed: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=27   changed=3    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+dut                        : ok=34   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================

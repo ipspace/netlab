@@ -1,5 +1,5 @@
 Creating Device configuration snippets
-[CREATED] dut: initial,bgp,vrf
+[CREATED] dut: initial,routing,bgp,vrf
 [CREATED] r1: normalize,initial,bgp,bgp-xact
 [CREATED] r2: normalize,initial,bgp,bgp-xact
 [CREATED] r3: normalize,initial,bgp,bgp-xact
@@ -33,18 +33,18 @@ Config Deploying device configurations
  [INFO] Executing normalize configuration for node r2
  [INFO] Executing normalize configuration for node r3
  [INFO] Executing normalize configuration for node r4
- [INFO] Executing initial configuration for node r4
- [INFO] Executing initial configuration for node r2
- [INFO] Executing initial configuration for node r3
  [INFO] Executing initial configuration for node r1
- [INFO] Executing bgp configuration for node r4
- [INFO] Executing bgp configuration for node r2
- [INFO] Executing bgp configuration for node r3
+ [INFO] Executing initial configuration for node r3
+ [INFO] Executing initial configuration for node r2
  [INFO] Executing bgp configuration for node r1
- [INFO] Executing bgp-xact configuration for node r4
+ [INFO] Executing initial configuration for node r4
+ [INFO] Executing bgp configuration for node r3
+ [INFO] Executing bgp configuration for node r2
+ [INFO] Executing bgp configuration for node r4
+ [INFO] Executing bgp-xact configuration for node r1
  [INFO] Executing bgp-xact configuration for node r2
  [INFO] Executing bgp-xact configuration for node r3
- [INFO] Executing bgp-xact configuration for node r1
+ [INFO] Executing bgp-xact configuration for node r4
  [INFO] Starting Ansible playbook to deploy the rest of the
           configurations
 [WARNING]: Found variable using reserved name: hosts
@@ -101,7 +101,7 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.y
 TASK [set_fact] ****************************************************************
 ok: [dut]
 
-TASK [copy the cumulus nvue YAML initial config file to switch (generated from /work/netlab_cicd/node_files/dut/initial)] ***
+TASK [copy the cumulus nvue YAML initial config file to switch (generated from /work/netlab_cicd/bgp/node_files/dut/initial)] ***
 changed: [dut]
 
 TASK [execute on cumulus: 'nv config patch' for initial config] ****************
@@ -116,8 +116,41 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=routing)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=bgp)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=vrf)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for routing] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "routing configuration for dut\n=========================================\n---\n- set:\n    vrf:\n      red:\n        router:\n          static:\n            172.42.42.0/24:\n              address-family: ipv4-unicast\n              via:\n                blackhole:\n                  type: blackhole\n"
+}
+
+TASK [Deploy routing configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [copy the cumulus nvue YAML routing config file to switch (generated from /work/netlab_cicd/bgp/node_files/dut/routing)] ***
+changed: [dut]
+
+TASK [execute on cumulus: 'nv config patch' for routing config] ****************
+changed: [dut]
+
+TASK [execute on cumulus: 'nv config apply -y' for routing config] *************
+changed: [dut]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
@@ -142,7 +175,7 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.y
 TASK [set_fact] ****************************************************************
 ok: [dut]
 
-TASK [copy the cumulus nvue YAML bgp config file to switch (generated from /work/netlab_cicd/node_files/dut/bgp)] ***
+TASK [copy the cumulus nvue YAML bgp config file to switch (generated from /work/netlab_cicd/bgp/node_files/dut/bgp)] ***
 changed: [dut]
 
 TASK [execute on cumulus: 'nv config patch' for bgp config] ********************
@@ -165,7 +198,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "vrf configuration for dut\n=========================================\n---\n- set:\n    vrf:\n      red:\n        table: auto\n      blue:\n        table: auto\n\n\n- set:\n    vrf:\n      red:\n        router:\n          bgp:\n            enable: on\n            autonomous-system: 65000\n            router-id: 10.0.0.1\n            rd: 65000:1\n            address-family:\n              ipv4-unicast:\n                enable: on\n                \n                network:\n                  10.1.0.0/30: {}\n            neighbor:\n              10.1.0.2:\n                description: \"r1\"\n                remote-as: 65101\n                address-family:\n                  ipv4-unicast:\n                    enable: on\n              10.1.0.6:\n                description: \"r2\"\n                remote-as: 65102\n                address-family:\n                  ipv4-unicast:\n                    enable: on\n\n- set:\n    vrf:\n      blue:\n        router:\n          bgp:\n            enable: on\n            autonomous-system: 65000\n            router-id: 10.0.0.1\n            rd: 65000:2\n            address-family:\n              ipv4-unicast:\n                enable: on\n                redistribute:\n                  connected:\n                    enable: on\n\n            neighbor:\n              10.1.0.10:\n                description: \"r3\"\n                remote-as: 65103\n                address-family:\n                  ipv4-unicast:\n                    enable: on\n              10.1.0.14:\n                description: \"r4\"\n                remote-as: 65104\n                address-family:\n                  ipv4-unicast:\n                    enable: on\n\n\n\n- set:\n    interface:\n      swp1:\n        ip:\n          vrf: red\n- set:\n    interface:\n      swp2:\n        ip:\n          vrf: red\n- set:\n    interface:\n      swp3:\n        ip:\n          vrf: blue\n- set:\n    interface:\n      swp4:\n        ip:\n          vrf: blue\n"
+    "msg": "vrf configuration for dut\n=========================================\n---\n- set:\n    vrf:\n      red:\n        table: auto\n      blue:\n        table: auto\n\n\n- set:\n    vrf:\n      red:\n        router:\n          bgp:\n            enable: on\n            autonomous-system: 65000\n            router-id: 10.0.0.1\n            rd: 65000:1\n            address-family:\n              ipv4-unicast:\n                enable: on\n                \n                network:\n                  172.42.42.0/24: {}\n                  10.1.0.0/30: {}\n            neighbor:\n              10.1.0.2:\n                description: \"r1\"\n                remote-as: 65101\n                address-family:\n                  ipv4-unicast:\n                    enable: on\n              10.1.0.6:\n                description: \"r2\"\n                remote-as: 65102\n                address-family:\n                  ipv4-unicast:\n                    enable: on\n\n- set:\n    vrf:\n      blue:\n        router:\n          bgp:\n            enable: on\n            autonomous-system: 65000\n            router-id: 10.0.0.1\n            rd: 65000:2\n            address-family:\n              ipv4-unicast:\n                enable: on\n                redistribute:\n                  connected:\n                    enable: on\n\n            neighbor:\n              10.1.0.10:\n                description: \"r3\"\n                remote-as: 65103\n                address-family:\n                  ipv4-unicast:\n                    enable: on\n              10.1.0.14:\n                description: \"r4\"\n                remote-as: 65104\n                address-family:\n                  ipv4-unicast:\n                    enable: on\n\n\n\n- set:\n    interface:\n      swp1:\n        ip:\n          vrf: red\n- set:\n    interface:\n      swp2:\n        ip:\n          vrf: red\n- set:\n    interface:\n      swp3:\n        ip:\n          vrf: blue\n- set:\n    interface:\n      swp4:\n        ip:\n          vrf: blue\n"
 }
 
 TASK [Deploy vrf configuration] ************************************************
@@ -174,7 +207,7 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.y
 TASK [set_fact] ****************************************************************
 ok: [dut]
 
-TASK [copy the cumulus nvue YAML vrf config file to switch (generated from /work/netlab_cicd/node_files/dut/vrf)] ***
+TASK [copy the cumulus nvue YAML vrf config file to switch (generated from /work/netlab_cicd/bgp/node_files/dut/vrf)] ***
 changed: [dut]
 
 TASK [execute on cumulus: 'nv config patch' for vrf config] ********************
@@ -187,7 +220,7 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=36   changed=9    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+dut                        : ok=46   changed=12   unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================
