@@ -20,7 +20,6 @@ JUNOS_MTU_FLEX_VLAN_HEADER_LENGTH = 22
 JUNOS_POLICY_NHS = 'next-hop-{ next_hop_self }-{ af }'
 JUNOS_POLICY_DEFAULT_ORIGINATE = 'bgp-default-route'
 JUNOS_GLOBAL_BGP_POLICIES = [
-  'bgp-default-advertise',
   'bgp-default-redistribute',
 ]
 JUNOS_POLICY_LAST = 'bgp-final'
