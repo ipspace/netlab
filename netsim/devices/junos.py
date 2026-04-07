@@ -24,7 +24,7 @@ JUNOS_GLOBAL_BGP_POLICIES = [
 ]
 JUNOS_POLICY_LAST = 'bgp-final'
 JUNOS_POLICY_IN_CLEANUP = 'bgp-initial'
-JUNOS_POLICY_VRF_EXPORT = 'vrf-{}-bgp-export'
+JUNOS_POLICY_VRF_EXPORT = 'bgp-{}-redistribute'
 
 def _aspath_regex_convert(r: str) -> str:
   if r.startswith("^") or r.endswith("$") or r == '.*':

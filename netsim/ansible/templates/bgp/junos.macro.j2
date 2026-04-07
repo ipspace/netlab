@@ -1,4 +1,22 @@
+{#
+   Macro to create the common objects (mark community, bgp-final policy)
+#}
+{% macro common() %}
+  community x-route-permit-mark members large:65535:0:65536;
 
+  policy-statement bgp-final {
+    term final-option {
+      from community x-route-permit-mark;
+      then {
+        community delete x-route-permit-mark;
+        accept;
+      }
+    }
+    term default-reject {
+      then reject;
+    }
+  }
+{% endmacro %}
 {#
    Macro for BGP neighbor policy application
    Uses custom neigh._junos_policy.xxx attributes
@@ -27,7 +45,7 @@
 {%   endfor %}
 {% endmacro +%}
 {#
-   Macro to create per-routing-instance advertise policy
+   Macro to create per-routing-instance advertise terms
 #}
 {% macro advertise_terms(bgp,vname) %}
 {%   for bgp_af in af %}
@@ -45,4 +63,46 @@
 {%      endif %}
 {%     endfor %}
 {%   endfor %}
+{% endmacro +%}
+{#
+   Macro to create terms for route redistribution
+#}
+{% macro import_terms(pdata) %}
+{%   set protomap = {
+       'connected': 'direct'
+     }
+%}
+{%   for proto in pdata.import|default({}) %}
+    term redist_{{ proto }} {
+      from {
+        protocol {{ protomap[proto]|default(proto) }};
+{%     if pdata.import[proto].policy is defined %}
+        policy [ {{ pdata.import[proto].policy }} bgp-final ];
+{%     endif %}
+      }
+      then {
+        community add x-route-permit-mark;
+        next policy;
+      }
+    }
+{%   endfor %}
+{% endmacro +%}
+{#
+   Macro to create per-routing-instance import/propagate/advertise policy
+#}
+{% macro redistribute(bgp,vname) %}
+  policy-statement bgp-{{ vname }}-redistribute {
+{{ advertise_terms(bgp,vname) }}
+    term redis_bgp {
+      from protocol bgp;
+      then {
+        community add x-route-permit-mark;
+        next policy;
+      }
+    }
+{{ import_terms(bgp) }}
+    term default {
+      then reject;
+    }
+  }
 {% endmacro +%}

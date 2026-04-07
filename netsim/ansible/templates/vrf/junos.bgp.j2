@@ -3,49 +3,13 @@
 {# define VRF policies #}
 
 policy-options {
+{{ bgpcfg.common() }}
 {% for vname,vdata in vrfs.items() %}
-{%   if loop.first %}
-  community x-route-permit-mark members large:65535:0:65536;
-{%   endif %}
+  delete: policy-statement bgp-{{ vname }}-redistribute;
+  delete: route-filter-list bgp-{{ vname }}-announce;
 
-  policy-statement vrf-{{vname}}-bgp-export {
-    term redis_bgp {
-      from {
-        protocol bgp;
-      }
-      then {
-        community add x-route-permit-mark;
-        next policy;
-      }
-    }
-    term redis_direct {
-      from {
-        protocol direct;
-      }
-      then {
-        community add x-route-permit-mark;
-        next policy;
-      }
-    }
-    term redis_ospf {
-      from {
-        protocol ospf;
-      }
-      then {
-        community add x-route-permit-mark;
-        next policy;
-      }
-    }
-    term redis_ospf3 {
-      from {
-        protocol ospf3;
-      }
-      then {
-        community add x-route-permit-mark;
-        next policy;
-      }
-    }
-  }
+{{ bgpcfg.advertise_list(vdata.bgp,vname) }}
+{{ bgpcfg.redistribute(vdata.bgp,vname) }}
 
 {% endfor %}
 }

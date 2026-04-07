@@ -13,10 +13,7 @@
 #   - (custom policies - which may force accept/reject)
 #   - default final policy
 #}
-policy-options community x-route-permit-mark members large:65535:0:65536;
-
 policy-options {
-  delete: policy-statement bgp-default-advertise;
   delete: policy-statement bgp-default-redistribute;
 {% for af in ['ipv4','ipv6'] %}
 {%   for nhs_type in ['ebgp','all'] %}
@@ -24,25 +21,10 @@ policy-options {
 {%   endfor %}
 {% endfor %}
   delete: route-filter-list bgp-default-announce;
-}
 
-policy-options {
-
+{{ bgpcfg.common() }}
 {{ bgpcfg.advertise_list(bgp,'default') }}
-
-  policy-statement bgp-default-redistribute {
-{{ bgpcfg.advertise_terms(bgp,'default') }}
-    term redis_bgp {
-      from protocol bgp;
-      then {
-        community add x-route-permit-mark;
-        next policy;
-      }
-    }
-    term default {
-      then reject;
-    }
-  }
+{{ bgpcfg.redistribute(bgp,'default') }}
 
 {% for af in ('ipv4','ipv6') %}
 {%   for nh in ['ebgp','all'] %}
@@ -61,19 +43,6 @@ policy-options {
   }
 {%   endfor %}
 {% endfor %}
-
-  policy-statement bgp-final {
-    term final-option {
-      from community x-route-permit-mark;
-      then {
-        community delete x-route-permit-mark;
-        accept;
-      }
-    }
-    term default-reject {
-      then reject;
-    }
-  }
 
   policy-statement bgp-initial {
     term initial-cleanup {
