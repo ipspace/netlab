@@ -1,6 +1,6 @@
 Creating Device configuration snippets
 [CREATED] dut: initial,bgp,vrf
-[CREATED] x1: initial,bgp
+[CREATED] x1: initial,routing,bgp
 [CREATED] x2: initial,bgp
 Checking Are lab devices ready to be configured?
  [INFO] Checking lab devices with an Ansible playbook
@@ -37,7 +37,6 @@ TASK [Get port 1/1/c1 status] **************************************************
 FAILED - RETRYING: [dut]: Get port 1/1/c1 status (10 retries left).
 FAILED - RETRYING: [dut]: Get port 1/1/c1 status (9 retries left).
 FAILED - RETRYING: [dut]: Get port 1/1/c1 status (8 retries left).
-FAILED - RETRYING: [dut]: Get port 1/1/c1 status (7 retries left).
 ok: [dut]
 
 PLAY RECAP *********************************************************************
@@ -46,8 +45,9 @@ dut                        : ok=8    changed=1    unreachable=0    failed=0    s
 Config Deploying device configurations
  [INFO] Executing initial configuration for node x1
  [INFO] Executing initial configuration for node x2
- [INFO] Executing bgp configuration for node x1
  [INFO] Executing bgp configuration for node x2
+ [INFO] Executing routing configuration for node x1
+ [INFO] Executing bgp configuration for node x1
  [INFO] Starting Ansible playbook to deploy the rest of the
           configurations
 [WARNING]: Found variable using reserved name: hosts
@@ -116,8 +116,27 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=routing)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=bgp)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=vrf)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [dut]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
@@ -133,7 +152,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "bgp configuration for dut\n=========================================\n\nupdates:\n\n- path: configure/policy-options/policy-statement[name=accept_all]\n  val:\n    default-action:\n      action-type: accept\n\n- path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]\n  val:\n    entry:\n    - entry-id: 10\n      from:\n        path-type: ebgp\n      action:\n        action-type: accept\n        next-hop: self\n    default-action:\n      action-type: next-policy\n\n\n- path: configure/policy-options/prefix-list[name=bgp_default_advertise]\n  val:\n    prefix: [] # Make sure it exists\n\n- path: configure/policy-options/policy-statement[name=bgp_default_export]\n  val:\n    default-action:\n      action-type: reject\n    entry:\n    - entry-id: 10\n      from:\n        prefix-list: [ \"bgp_default_advertise\" ]\n      action:\n        action-type: accept\n    - entry-id: 20\n      from:\n        protocol:\n          name: [ bgp ]\n      action:\n        action-type: accept\n- path: configure/policy-options/prefix-list[name=bgp_default_advertise]\n  val:\n    prefix:\n    - ip-prefix: 10.0.0.1/32\n      type: exact\n\n\n\n\n- path: configure/router[router-name=Base]\n  val:\n    router-id: \"10.0.0.1\"\n    autonomous-system: 65000\n    bgp:\n      ebgp-default-reject-policy:\n        import: False\n        export: False\n      advertise-inactive: True\n      multipath:\n        ibgp: 64\n        ebgp: 64\n      min-route-advertisement: 1 # Be aggressive about sending updates\n      connect-retry: 5           # Retry frequently, suitable in DC context\n    # family: cannot disable this\n    # ipv4: False # Enabled by default, disable globally and set per group\n\n\n\n\n\n"
+    "msg": "bgp configuration for dut\n=========================================\n\nupdates:\n\n- path: configure/policy-options/policy-statement[name=accept_all]\n  val:\n    default-action:\n      action-type: accept\n\n- path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]\n  val:\n    entry:\n    - entry-id: 10\n      from:\n        path-type: ebgp\n      action:\n        action-type: accept\n        next-hop: self\n    default-action:\n      action-type: next-policy\n\n\n- path: configure/policy-options/prefix-list[name=bgp_default_advertise]\n  val:\n    prefix: [] # Make sure it exists\n\n- path: configure/policy-options/policy-statement[name=bgp_default_export]\n  val:\n    default-action:\n      action-type: reject\n    entry:\n    - entry-id: 10\n      from:\n        prefix-list: [ \"bgp_default_advertise\" ]\n      action:\n        action-type: accept\n    - entry-id: 20\n      from:\n        protocol:\n          name: [ bgp ]\n      action:\n        action-type: accept\n- path: configure/policy-options/prefix-list[name=bgp_default_advertise]\n  val:\n    prefix:\n    - ip-prefix: 10.0.0.1/32\n      type: exact\n\n\n- path: configure/router[router-name=Base]\n  val:\n    router-id: \"10.0.0.1\"\n    autonomous-system: 65000\n    bgp:\n      ebgp-default-reject-policy:\n        import: False\n        export: False\n      advertise-inactive: True\n      multipath:\n        ibgp: 64\n        ebgp: 64\n      min-route-advertisement: 1 # Be aggressive about sending updates\n      connect-retry: 5           # Retry frequently, suitable in DC context\n    # family: cannot disable this\n    # ipv4: False # Enabled by default, disable globally and set per group\n\n\n\n\n\n"
 }
 
 TASK [Deploy bgp configuration] ************************************************
@@ -162,7 +181,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "vrf configuration for dut\n=========================================\n\nupdates:\n- path: configure/service/vprn[service-name=tenant]\n  val:\n    service-id: 100\n    customer: \"1\"\n    autonomous-system: 65000\n    router-id: 10.0.0.1\n    ecmp: 64\n    admin-state: enable\n\n- path: configure/policy-options/prefix-list[name=bgp_tenant_advertise]\n  val:\n    prefix: [] # Make sure it exists\n\n- path: configure/policy-options/policy-statement[name=bgp_tenant_export]\n  val:\n    default-action:\n      action-type: reject\n    entry:\n    - entry-id: 10\n      from:\n        prefix-list: [ \"bgp_tenant_advertise\" ]\n      action:\n        action-type: accept\n    - entry-id: 20\n      from:\n        protocol:\n          name: [ bgp ]\n      action:\n        action-type: accept\n    - entry-id: 100\n      from:\n        protocol:\n          name: [ direct ]\n      action:\n        action-type: accept\n\n\n\n\n- path: configure/service/vprn[service-name=tenant]\n  val:\n    router-id: \"10.0.0.1\"\n    autonomous-system: 65000\n    bgp:\n      ebgp-default-reject-policy:\n        import: False\n        export: False\n      advertise-inactive: True\n      multipath:\n        ibgp: 64\n        ebgp: 64\n      min-route-advertisement: 1 # Be aggressive about sending updates\n      connect-retry: 5           # Retry frequently, suitable in DC context\n    # family: cannot disable this\n    # ipv4: False # Enabled by default, disable globally and set per group\n\n\n\n\n- path: configure/service/vprn[service-name=tenant]/bgp/group[group-name=ebgp]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: False\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - bgp_tenant_export\n    send-communities:\n      extended: False  # True value not allowed, on by default\n\n\n- path: configure/service/vprn[service-name=tenant]/bgp\n  val:\n    neighbor:\n    - ip-address: \"10.1.0.2\"\n      description: \"x1\"\n      peer-as: 65100\n      group: \"ebgp\"\n      admin-state: enable\n      family:\n        ipv4: True\n        ipv6: False\n\n      local-as:\n        as-number: 65002\n        prepend-global-as: False # Don't include iBGP global AS in eBGP advertisements\n\n- path: configure/service/vprn[service-name=tenant]/bgp/group[group-name=ebgp]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: False\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - bgp_tenant_export\n    send-communities:\n      extended: False  # True value not allowed, on by default\n\n\n- path: configure/service/vprn[service-name=tenant]/bgp\n  val:\n    neighbor:\n    - ip-address: \"10.1.0.6\"\n      description: \"x2\"\n      peer-as: 65101\n      group: \"ebgp\"\n      admin-state: enable\n      family:\n        ipv4: True\n        ipv6: False\n\n\n\n\n\n"
+    "msg": "vrf configuration for dut\n=========================================\n\nupdates:\n- path: configure/service/vprn[service-name=tenant]\n  val:\n    service-id: 100\n    customer: \"1\"\n    autonomous-system: 65000\n    router-id: 10.0.0.1\n    ecmp: 64\n    admin-state: enable\n\n- path: configure/policy-options/prefix-list[name=bgp_tenant_advertise]\n  val:\n    prefix: [] # Make sure it exists\n\n- path: configure/policy-options/policy-statement[name=bgp_tenant_export]\n  val:\n    default-action:\n      action-type: reject\n    entry:\n    - entry-id: 10\n      from:\n        prefix-list: [ \"bgp_tenant_advertise\" ]\n      action:\n        action-type: accept\n    - entry-id: 20\n      from:\n        protocol:\n          name: [ bgp ]\n      action:\n        action-type: accept\n    - entry-id: 100\n      from:\n        protocol:\n          name: [ direct ]\n      action:\n        action-type: accept\n\n\n- path: configure/service/vprn[service-name=tenant]\n  val:\n    router-id: \"10.0.0.1\"\n    autonomous-system: 65000\n    bgp:\n      ebgp-default-reject-policy:\n        import: False\n        export: False\n      advertise-inactive: True\n      multipath:\n        ibgp: 64\n        ebgp: 64\n      min-route-advertisement: 1 # Be aggressive about sending updates\n      connect-retry: 5           # Retry frequently, suitable in DC context\n    # family: cannot disable this\n    # ipv4: False # Enabled by default, disable globally and set per group\n\n\n\n\n- path: configure/service/vprn[service-name=tenant]/bgp/group[group-name=ebgp]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: False\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - bgp_tenant_export\n    send-communities:\n      extended: False  # True value not allowed, on by default\n\n\n- path: configure/service/vprn[service-name=tenant]/bgp\n  val:\n    neighbor:\n    - ip-address: \"10.1.0.2\"\n      description: \"x1\"\n      peer-as: 65100\n      group: \"ebgp\"\n      admin-state: enable\n      family:\n        ipv4: True\n        ipv6: False\n\n      local-as:\n        as-number: 65002\n        prepend-global-as: False # Don't include iBGP global AS in eBGP advertisements\n\n- path: configure/service/vprn[service-name=tenant]/bgp/group[group-name=ebgp]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: False\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - bgp_tenant_export\n    send-communities:\n      extended: False  # True value not allowed, on by default\n\n\n- path: configure/service/vprn[service-name=tenant]/bgp\n  val:\n    neighbor:\n    - ip-address: \"10.1.0.6\"\n      description: \"x2\"\n      peer-as: 65101\n      group: \"ebgp\"\n      admin-state: enable\n      family:\n        ipv4: True\n        ipv6: False\n\n\n\n\n\n"
 }
 
 TASK [Deploy vrf configuration] ************************************************
@@ -181,11 +200,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=30   changed=3    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+dut                        : ok=32   changed=3    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================
-x1               Script:  initial,bgp
+x1               Script:  initial,routing,bgp
 x2               Script:  initial,bgp
 
 
