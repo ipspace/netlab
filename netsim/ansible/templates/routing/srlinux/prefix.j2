@@ -1,0 +1,17 @@
+{% for pf_name,pf_list in routing.prefix|items %}
+- path: /routing-policy/prefix-set[name={{ pf_name }}]
+  value:
+    prefix:
+{%   for p_entry in pf_list %}{# Iterate over prefix list entries #}
+{%     for p_af in af if p_af in p_entry %}{# Iterate over address families in the prefix list entry #}
+    - ip-prefix: {{ p_entry[p_af] }}
+{%     if p_entry.min[p_af] is defined or p_entry.max[p_af] is defined %}
+      mask-length-range: {{ 
+        p_entry.min[p_af]|default(p_entry[p_af]|ansible.utils.ipaddr('prefix')) }}..{{ 
+        p_entry.max[p_af]|default(32 if p_af == 'ipv4' else 128) }}
+{%     else %}
+      mask-length-range: exact
+{%     endif %}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}

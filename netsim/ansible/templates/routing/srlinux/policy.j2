@@ -1,0 +1,45 @@
+{#
+    Routing policies
+#}
+{% for rp_name,rp_list in routing.policy|items %}
+- path: /routing-policy/policy[name={{ rp_name }}]
+  value:
+    default-action:
+      policy-result: reject
+    statement:
+{%   for entry in rp_list %}
+    - name: rpe_{{ entry.sequence }}
+{%     if 'match' in entry %}
+      match:
+{%       if entry.match.prefix is defined %}
+{%         if _srl_version >= [ 25, 3 ] %}
+       prefix:
+{%         endif %}
+        prefix-set: {{ entry.match.prefix }}
+{%       endif %}
+{%     endif %}
+      action:
+        policy-result: {{ 'accept' if entry.action == 'permit' else 'reject' }}
+{%     if entry.set.locpref is defined or entry.set.med is defined %}
+        bgp:
+{%       if 'locpref' in entry.set %}
+          local-preference:
+{%         if _srl_version >= [ 26, 3 ] %}
+            operation: set
+            value: {{ entry.set.locpref }}
+{%         else %}
+            set: {{ entry.set.locpref }}
+{%         endif %}
+{%       endif %}
+{%       if 'med' in entry.set %}
+          med:
+{%         if _srl_version >= [ 25, 3 ] %}
+            operation: set
+            value: {{ entry.set.med }}
+{%         else %}
+            set: {{ entry.set.med }}
+{%         endif %}
+{%       endif %}
+{%     endif %}
+{%   endfor %}
+{% endfor %}

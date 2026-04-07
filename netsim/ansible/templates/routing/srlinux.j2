@@ -1,67 +1,7 @@
 updates:
-{#
-    Prefix filters
-#}
-{% for pf_name,pf_list in routing.prefix|default({})|items %}
-- path: /routing-policy/prefix-set[name={{ pf_name }}]
-  value:
-    prefix:
-{%   for p_entry in pf_list %}{# Iterate over prefix list entries #}
-{%     for p_af in af if p_af in p_entry %}{# Iterate over address families in the prefix list entry #}
-    - ip-prefix: {{ p_entry[p_af] }}
-{%     if p_entry.min[p_af] is defined or p_entry.max[p_af] is defined %}
-      mask-length-range: {{ 
-        p_entry.min[p_af]|default(p_entry[p_af]|ansible.utils.ipaddr('prefix')) }}..{{ 
-        p_entry.max[p_af]|default(32 if p_af == 'ipv4' else 128) }}
-{%     else %}
-      mask-length-range: exact
-{%     endif %}
-{%     endfor %}
-{%   endfor %}
-{% endfor %}
-
-{#
-    Routing policies
-#}
-{% for rp_name,rp_list in routing.policy|default({})|items %}
-- path: /routing-policy/policy[name={{ rp_name }}]
-  value:
-    default-action:
-      policy-result: reject
-    statement:
-{%   for entry in rp_list %}
-    - name: rpe_{{ entry.sequence }}
-{%     if 'match' in entry %}
-      match:
-{%       if entry.match.prefix is defined %}
-{%         if _srl_version >= [ 25, 3 ] %}
-       prefix:
-{%         endif %}
-        prefix-set: {{ entry.match.prefix }}
-{%       endif %}
-{%     endif %}
-      action:
-        policy-result: {{ 'accept' if entry.action == 'permit' else 'reject' }}
-{%     if entry.set.locpref is defined or entry.set.med is defined %}
-        bgp:
-{%       if 'locpref' in entry.set %}
-          local-preference:
-{%         if _srl_version >= [ 26, 3 ] %}
-            operation: set
-            value: {{ entry.set.locpref }}
-{%         else %}
-            set: {{ entry.set.locpref }}
-{%         endif %}
-{%       endif %}
-{%       if 'med' in entry.set %}
-          med:
-{%         if _srl_version >= [ 25, 3 ] %}
-            operation: set
-            value: {{ entry.set.med }}
-{%         else %}
-            set: {{ entry.set.med }}
-{%         endif %}
-{%       endif %}
-{%     endif %}
-{%   endfor %}
-{% endfor %}
+{% if routing.prefix is defined %}
+{%   include 'srlinux/prefix.j2' %}
+{% endif %}
+{% if routing.policy is defined %}
+{%   include 'srlinux/policy.j2' %}
+{% endif %}
