@@ -1,0 +1,100 @@
+{#
+   Setup:
+
+   * Find discard routes (sr_discard)
+   * Extract VRFs used in discard routes into discard_vrf
+   * Find VRFs used in static routes (no vrf => default)
+#}
+{% set sr_discard = routing.static|selectattr('nexthop.discard','defined') %}
+{% set discard_vrf = sr_discard|map(attribute='vrf',default='default')|sort|unique|list %}
+{% set static_vrf  = routing.static|map(attribute='vrf',default='default')|sort|unique|list %}
+{% for vrf in static_vrf %}
+{%   if vrf in discard_vrf %}
+- path: /network-instance[name={{vrf}}]/next-hop-groups/group[name=blackhole]
+  value:
+    blackhole:
+      generate-icmp: True
+{%   endif %}
+{#
+   Find the static routes in the current VRF. Either find data with no VRF attribute
+   (for default VRF) or data with vrf attribute matching the current VRF
+#}
+{%   set sr_list = routing.static|rejectattr('vrf','defined')|list if vrf == 'default'
+                     else routing.static|selectattr('vrf','defined')|selectattr('vrf','==',vrf)|list %}
+{#
+   Iterate over address families to generate separate IPv4 and IPv6 entries
+#}
+{%   for pfx_af in ['ipv4','ipv6'] %}
+{#
+   Find all static routes in this VRF matching the current address family and
+   group them by the prefix
+#}
+{%     set pfx_list = sr_list|selectattr(pfx_af,'defined')|groupby(pfx_af) %}
+{%     for pfx,nh_info in pfx_list %}
+{%       set nh_name = 'nh_'+pfx_af+'_'+loop.index|string %}
+{#
+   Iterate over static route data (prefix + nexthop info), create next hop groups,
+   and finally create a static route entry pointing to the next hop group
+#}
+{%       for nh_data in nh_info if nh_data.nexthop[pfx_af] is defined %}
+{%         if loop.first %}
+- path: /network-instance[name={{vrf}}]/next-hop-groups/group[name={{ nh_name }}]
+  value:
+    admin-state: enable
+    nexthop:
+{%         endif %}
+    - index: {{ nh_data.nexthop.idx }}
+      ip-address: {{ nh_data.nexthop[pfx_af] }}
+{%         if loop.last %}
+- path: /network-instance[name={{vrf}}]/static-routes
+  value:
+    route:
+    - prefix: "{{ pfx }}"
+      next-hop-group: {{ nh_name }}
+      admin-state: enable
+{%         endif %}
+{%       endfor %}
+{#
+   Now iterate over the same data but looking for discard next hops
+#}
+{%       for nh_data in nh_info if nh_data.nexthop.discard|default(False) %}
+{%         if loop.first %}
+- path: /network-instance[name={{vrf}}]/static-routes
+  value:
+    route:
+    - prefix: "{{ pfx }}"
+      next-hop-group: blackhole
+      admin-state: enable
+{%         endif %}
+{%       endfor %}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
+{#
+{%   for sr_data in routing.static if sr_data.vrf|default('default') == vrf %}
+{%     set sr_idx = loop.index %}
+{%     if loop.first %}
+- path: /network-instance[name={{vrf}}]/next-hop-groups
+  value:
+{%       if vrf in discard_vrf %}
+    blackhole:
+      blackhole:
+      generate-icmp: True
+{%       endif %}
+{%     endif %}
+{%     for af in ['ipv4','ipv6'] %}
+
+- path: /network-instance[name={{vrf}}]/static-routes
+  value:
+    route:
+{%     endif %}
+{%     for sr_af in ['ipv4','ipv6'] if sr_af in sr_data %}
+    - prefix: "{{ sr_data[sr_af] }}"
+      admin_state: enable
+{%     if sr_data.next.discard|default(False) %}
+      next-hop-group: blackhole
+{%     else %}
+{%     endif %}
+{%   endfor %}
+{% endfor %}
+#}
