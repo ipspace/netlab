@@ -6,6 +6,9 @@ routing-options {
 {% if bgp.router_id is defined %}
   router-id {{ bgp.router_id }}
 {% endif %}
+{% if bgp.confederation is defined %}
+  confederation {{ bgp.confederation.as }} members [ {{ bgp.as }} {{ bgp.confederation.peers|join(' ') }} ]
+{% endif %}
 }
 
 {% include "junos.policy.j2" with context %}
@@ -50,7 +53,7 @@ protocols {
         ];
       advertise-inactive;
 {# treat localas_ibgp as ebgp session --> no usage of local address #}
-{% for n in bgp.neighbors if (n.type == 'ebgp' or n.type == 'localas_ibgp') %}
+{% for n in bgp.neighbors if n.type in ['ebgp','confed_ebgp','localas_ibgp'] %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
       neighbor {{ n[af] }} {
 {#     apply per-neighbor policies, if defined #}
