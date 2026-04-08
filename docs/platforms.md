@@ -192,7 +192,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Arista EOS            | ✅ | ✅ |
 | Aruba AOS-CX          | ✅ | ✅ |
 | Cisco ASAv            | ✅ | ✅ |
-| Cisco IOS/IOS XE[^18v]| ✅ [❗](cisco-iosv-ssh) | ✅ |
+| Cisco IOS/IOS XE[^18v]| ✅ [❗](cisco-ios-ssh) | ✅ |
 | Cisco IOS XR[^XR]     | ✅ | ✅ |
 | Cisco Nexus OS        | ✅ | ✅ |
 | Cumulus Linux         | ✅ | ✅ |
@@ -306,7 +306,7 @@ The following interface parameters are configured on supported network operating
 | Arista EOS            | ✅  | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  |  ❌  | ✅  | ✅  |
 | Cisco ASAv            | ✅  |  ❌  | ✅  |  ❌  |
-| Cisco IOS/IOS XE[^18v]| ✅  | ✅  | ✅[❗](caveats-iosv) | ✅  |
+| Cisco IOS/IOS XE[^18v]| ✅  | ✅  | ✅[❗](caveats-ios) | ✅  |
 | Cisco IOS XR[^XR]     | ✅  | ✅ [❗](caveats-iosxr) | ✅ | ✅ |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅  | ✅  | ✅  | ✅  |

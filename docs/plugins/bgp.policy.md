@@ -58,8 +58,7 @@ The plugin implements BGP routing policies and individual BGP policy attributes 
 |---------------------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 | Arista EOS          |✅ |✅ |✅ |✅|✅ |✅| ✅|
 | Aruba AOS-CX        |✅ |✅ |✅ |✅|✅ | ❌ | ❌ |
-| Cisco IOSv/IOSvL2   |✅ |✅ |✅ |✅|✅ |✅[❗](caveats-iosv) |✅|
-| Cisco IOS XE[^18v]  |✅ |✅ |✅ |✅|✅ |✅[❗](caveats-iosv) |✅|
+| Cisco IOS/IOS XE[^18v]  |✅ |✅ |✅ |✅|✅ |✅[❗](caveats-ios) |✅|
 | Cisco IOS XR[^XR]   |✅ |✅ |✅ |✅|✅ | ❌ |✅|
 | Cumulus Linux       |✅ |✅ |✅ |✅|✅ |✅| ❌ |
 | Dell OS10           |✅ |✅ |✅ |✅| ❌ | ❌ |✅|
@@ -69,7 +68,7 @@ The plugin implements BGP routing policies and individual BGP policy attributes 
 | Nokia SR OS         |✅ |✅ |✅ | ❌ | ❌ | ✅| ❌ |
 | VyOS                |✅ |✅ |✅ | ❌ | ✅ | ❌ | ❌ |
 
-[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
+[^18v]: Includes Cisco IOSv, Cisco IOSv Layer-2 image, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
 [^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
 

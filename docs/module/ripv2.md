@@ -21,8 +21,7 @@ The following table describes per-platform support of individual RIPv2/RIPng fea
 | Operating system      | IPv4<br>(RIPv2) | IPv6<br>(RIPng) | Passive<br>interfaces | Route<br>import | VRF<br>instances | RIP<br>timers |
 | ------------------ | :-: | :-: | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  |  ❌  |  ❌  |  ❌  |  ❌  | ✅ |
-| Cisco IOSv/IOSvL2  | ✅  | ✅  | ✅ [❗](caveats-iosv) | ✅  [❗](caveats-iosv) | ✅ | ✅ |
-| Cisco IOS XE[^18v] | ✅  | ✅  | ✅ [❗](caveats-iosv) | ✅  [❗](caveats-iosv) | ✅ | ✅ |
+| Cisco IOS/IOS XE[^18v]  | ✅  | ✅  | ✅ [❗](caveats-ios) | ✅  [❗](caveats-ios) | ✅ | ✅ |
 | Cumulus Linux      | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ |
 | FRR                | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ |
 | Nokia SR OS[^SROS] | ✅  | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
@@ -34,7 +33,7 @@ The following table describes per-platform support of individual RIPv2/RIPng fea
 * Use the `netlab show modules -m ripv2` command to display the route types that can be imported into RIPv2/RIPng.
 ```
 
-[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
+[^18v]: Includes Cisco IOSv, Cisco IOSv Layer-2 image, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
