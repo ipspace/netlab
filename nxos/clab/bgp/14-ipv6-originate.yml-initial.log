@@ -1,13 +1,13 @@
 Creating Device configuration snippets
-[CREATED] dut: initial,ospf,bgp
+[CREATED] dut: initial,routing,ospf,bgp
 [CREATED] dut2: initial,bgp
 [CREATED] x1: initial,bgp
 [CREATED] x2: initial,bgp
 [CREATED] r1: initial,ospf
 Checking Are lab devices ready to be configured?
  [INFO] Checking SSH server(s) on dut,dut2
-[SSH]     SSH server on node dut2 (device nxos) is ready after 191.0 seconds
-[SSH]     SSH server on node dut (device nxos) is ready after 210.1 seconds
+[SSH]     SSH server on node dut2 (device nxos) is ready after 192.1 seconds
+[SSH]     SSH server on node dut (device nxos) is ready after 208.1 seconds
  [INFO] Checking lab devices with an Ansible playbook
 [WARNING]: Found variable using reserved name: hosts
 
@@ -24,7 +24,7 @@ ok: [dut]
 ok: [dut2]
 
 TASK [Wait for device to become ready] *****************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/nxos.yml for dut, dut2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/nxos.yml for dut, dut2
 
 TASK [Wait for Eth1/1 to appear] ***********************************************
 ok: [dut2]
@@ -39,8 +39,8 @@ Config Deploying device configurations
  [INFO] Executing initial configuration for node x2
  [INFO] Executing initial configuration for node r1
  [INFO] Executing bgp configuration for node x1
- [INFO] Executing bgp configuration for node x2
  [INFO] Executing ospf configuration for node r1
+ [INFO] Executing bgp configuration for node x2
  [INFO] Starting Ansible playbook to deploy the rest of the
           configurations
 [WARNING]: Found variable using reserved name: hosts
@@ -52,7 +52,7 @@ ok: [dut]
 ok: [dut2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, dut2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, dut2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -79,7 +79,7 @@ skipping: [dut]
 skipping: [dut2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, dut2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, dut2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -106,9 +106,9 @@ ok: [dut2] => {
 }
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/nxos.yml for dut, dut2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/nxos.yml for dut, dut2
 
-TASK [nxos_config: deploying initial from /work/netlab_cicd/bgp/node_files/dut/initial] ***
+TASK [nxos_config: deploying initial from /work/netlab_cicd/node_files/dut/initial] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
@@ -122,8 +122,38 @@ ok: [dut]
 ok: [dut2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, dut2 => (item=ospf)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, dut2 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, dut2 => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, dut2 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, dut2 => (item=bgp)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [dut]
+ok: [dut2]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [dut2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [dut2]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [dut2]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut2]
+ok: [dut] => {
+    "msg": "routing configuration for dut\n=========================================\nipv6 route 2001:db8:bad:2::/64 Null0\n"
+}
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [dut2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/nxos.yml for dut
+
+TASK [nxos_config: deploying routing from /work/netlab_cicd/node_files/dut/routing] ***
+changed: [dut]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -149,9 +179,9 @@ ok: [dut] => {
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [dut2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/nxos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/nxos.yml for dut
 
-TASK [nxos_config: deploying ospf from /work/netlab_cicd/bgp/node_files/dut/ospf] ***
+TASK [nxos_config: deploying ospf from /work/netlab_cicd/node_files/dut/ospf] ***
 changed: [dut]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
@@ -172,16 +202,16 @@ ok: [dut2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "bgp configuration for dut\n=========================================\n!\nfeature bgp\n!\nrouter bgp 65000\n  router-id 10.0.0.1\n!\n address-family ipv6 unicast\n!\n  network 2001:db8:bad:1::/64\n  network 2001:db8:cafe:e42::/64\n!\n neighbor 2001:db8:3::2 remote-as 65100\n  description x1\n  address-family ipv6 unicast\n   send-community standard\n!\n neighbor 2001:db8:3:1::2 remote-as 65101\n  description x2\n  address-family ipv6 unicast\n   send-community standard\n!\n neighbor 2001:db8:cafe:e01::2 remote-as 65001\n  description dut2\n  address-family ipv6 unicast\n   send-community standard\n!\n!\n"
+    "msg": "bgp configuration for dut\n=========================================\n!\nfeature bgp\n!\nrouter bgp 65000\n  router-id 10.0.0.1\n!\n address-family ipv6 unicast\n!\n  network 2001:db8:bad:1::/64\n  network 2001:db8:bad:2::/64\n  network 2001:db8:cafe:e42::/64\n!\n neighbor 2001:db8:3::2 remote-as 65100\n  description x1\n  address-family ipv6 unicast\n   send-community standard\n!\n neighbor 2001:db8:3:1::2 remote-as 65101\n  description x2\n  address-family ipv6 unicast\n   send-community standard\n!\n neighbor 2001:db8:cafe:e01::2 remote-as 65001\n  description dut2\n  address-family ipv6 unicast\n   send-community standard\n!\n!\n"
 }
 ok: [dut2] => {
     "msg": "bgp configuration for dut2\n=========================================\n!\nfeature bgp\n!\nrouter bgp 65001\n  router-id 10.0.0.2\n!\n address-family ipv6 unicast\n!\n  network 2001:db8:1::2/128\n!\n neighbor 2001:db8:cafe:e01::1 remote-as 65000\n  description dut\n  address-family ipv6 unicast\n   send-community standard\n!\n!\n"
 }
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/nxos.yml for dut, dut2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/nxos.yml for dut, dut2
 
-TASK [nxos_config: deploying bgp from /work/netlab_cicd/bgp/node_files/dut/bgp] ***
+TASK [nxos_config: deploying bgp from /work/netlab_cicd/node_files/dut/bgp] ****
 changed: [dut]
 changed: [dut2]
 
@@ -189,8 +219,8 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=27   changed=3    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
-dut2                       : ok=22   changed=2    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+dut                        : ok=34   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+dut2                       : ok=24   changed=2    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================

@@ -1,0 +1,182 @@
+Creating Device configuration snippets
+[CREATED] dut: initial,routing,vrf
+[CREATED] x1: initial,ospf
+[CREATED] x2: initial,ospf
+Checking Are lab devices ready to be configured?
+ [INFO] Checking SSH server(s) on dut
+[SSH]     SSH server on node dut (device nxos) is ready after 199.8 seconds
+ [INFO] Checking lab devices with an Ansible playbook
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Wait for SSH servers] ****************************************************
+
+PLAY [Wait for device-specific conditions] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Find device readiness script] ********************************************
+ok: [dut]
+
+TASK [Wait for device to become ready] *****************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/nxos.yml for dut
+
+TASK [Wait for Eth1/1 to appear] ***********************************************
+ok: [dut]
+
+PLAY RECAP *********************************************************************
+dut                        : ok=4    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+Config Deploying device configurations
+ [INFO] Executing initial configuration for node x1
+ [INFO] Executing initial configuration for node x2
+ [INFO] Executing ospf configuration for node x2
+ [INFO] Executing ospf configuration for node x1
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "initial configuration for dut\n=========================================\nhostname dut\n!\nno ip domain-lookup\n!\nfeature lldp\n!\nusername vagrant password vagrant\n!\nip host dut-transport 10.1.0.9\nip host x1 10.0.0.2\nip host x2 10.0.0.3\n!\n!\nfeature bgp\n!\nvrf context transport\n  rd 65000:1\n  address-family ipv4 unicast\n    route-target import 65000:1\n    route-target export 65000:1\n  exit\n  address-family ipv6 unicast\n    route-target import 65000:1\n    route-target export 65000:1\n  exit\n!\n!\ninterface mgmt0\n no lldp transmit\n no lldp receive\n!\ninterface loopback0\n no shutdown\n ip address 10.0.0.1/32\n ipv6 address 2001:db8:1:1::1/64\n ipv6 nd ra-interval 5 min 3\n!\ninterface Ethernet1/1\n no shutdown\n no switchport\n mac-address caf0.0001.0001\n description dut -> x1\n ip address 10.1.0.1/30\n ipv6 address 2001:db8:3::1/64\n ipv6 nd ra-interval 5 min 3\n!\ninterface Ethernet1/2\n no shutdown\n no switchport\n mac-address caf0.0001.0002\n  vrf member transport\n description dut -> x1\n ip address 10.1.0.9/30\n ipv6 address 2001:db8:3:2::1/64\n ipv6 nd ra-interval 5 min 3\n!\ninterface Ethernet1/3\n no shutdown\n no switchport\n mac-address caf0.0001.0003\n  vrf member transport\n description dut -> x1\n ip address 10.1.0.13/30\n ipv6 address 2001:db8:3:3::1/64\n ipv6 nd ra-interval 5 min 3\n!\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/nxos.yml for dut
+
+TASK [nxos_config: deploying initial from /work/netlab_cicd/node_files/dut/initial] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=vrf)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for routing] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "routing configuration for dut\n=========================================\n!\nvrf context transport\n  ip route 10.0.0.2/32 Ethernet1/2 10.1.0.10\n  ip route 10.0.0.2/32 Ethernet1/3 10.1.0.14\n  ipv6 route 2001:db8:cafe:42::/64 Ethernet1/2 2001:db8:3:2::2\n  ipv6 route 2001:db8:cafe:42::/64 Ethernet1/3 2001:db8:3:3::2\n  ip route 10.0.0.3/32 Ethernet1/2 10.1.0.10\n  ip route 10.0.0.3/32 Ethernet1/3 10.1.0.14\n  ipv6 route 2001:db8:cafe:43::/64 Ethernet1/2 2001:db8:3:2::2\n  ipv6 route 2001:db8:cafe:43::/64 Ethernet1/3 2001:db8:3:3::2\n"
+}
+
+TASK [Deploy routing configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/nxos.yml for dut
+
+TASK [nxos_config: deploying routing from /work/netlab_cicd/node_files/dut/routing] ***
+changed: [dut]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
+
+TASK [Find configuration template for ospf] ************************************
+skipping: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+
+TASK [Deploy ospf configuration] ***********************************************
+skipping: [dut]
+
+TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [dut]
+
+TASK [Find configuration template for vrf] *************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "vrf configuration for dut\n=========================================\n"
+}
+
+TASK [Deploy vrf configuration] ************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/nxos.yml for dut
+
+TASK [nxos_config: deploying vrf from /work/netlab_cicd/node_files/dut/vrf] ****
+ok: [dut]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut                        : ok=29   changed=2    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+
+Results of configuration script deployments
+================================================================================
+x1               Script:  initial,ospf
+x2               Script:  initial,ospf
+
+
+Use this topology to test VRF IPv4 and IPv6 static routes. DUT has
+to have static routes for loopback addresses of X1 and X2.
+
