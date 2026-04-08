@@ -106,7 +106,7 @@ nodes:
 (caveats-asav)=
 ## Cisco ASAv Caveats
 
-* Some ASAv versions use older SSH protocols. For more details, see the [Cisco IOS SSH caveats](cisco-ios-ssh).
+* Some ASAv versions use older SSH protocols. For more details, see the [SSH Access to Cisco IOS/IOS-XE](cisco-ios-ssh).
 * ASAv does not have a standard implementation of OSPFv2 or IS-IS point-to-point circuits. netlab reports an error if you try to use them with ASAv nodes.
 * The ASAv OSPF and IS-IS configuration templates were not tested, as all OSPFv2/IS-IS integration tests include at least one point-to-point circuit
 
