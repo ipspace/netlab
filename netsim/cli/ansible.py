@@ -81,9 +81,11 @@ Create the extra vars structure that will be passed to Ansible playbook to modif
 the search paths. We could just change the Ansible playbooks, but this keeps some
 level of compatibility with older code (and an escape strategy ;).
 """
-def ansible_extra_vars(topology: Box, reload: bool = False, extra_vars: dict = {}) -> Box:
+def ansible_extra_vars(topology: Box, reload: bool = False, extra_vars: typing.Optional[dict] = None) -> Box:
   cfg_sfx = '.cfg' if reload else ''
 
+  if extra_vars is None:
+    extra_vars = {}
   ev = get_box(extra_vars)
   ev.node_files = str(Path("./node_files").resolve().absolute())
 
