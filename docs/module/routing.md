@@ -35,7 +35,7 @@ The following table describes high-level per-platform support of generic routing
 | Linux              | ❌  | ❌  | ❌  | ❌  | ✅ |
 | Junos              | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Nokia SR Linux     |  ✅ | ✅ [❗](caveats-srlinux) | ❌  | ❌  | ✅ |
-| Nokia SR OS[^SROS] | ✅ | ❌  | ❌  | ❌  | ❌ |
+| Nokia SR OS[^SROS] | ✅ | ❌  | ❌  | ❌  | ✅ |
 | OpenBSD            | ❌  | ❌  | ❌  | ❌  | ✅ |
 | VyOS               | ✅ | ✅ | ✅ | ✅ | ❌ |
 
