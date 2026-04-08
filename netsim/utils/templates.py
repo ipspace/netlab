@@ -175,8 +175,9 @@ def config_template_paths(
     path_suffix = [ fname ]
   else:
     path_suffix = [ node.device ]
-    path_prefix = [ provider_path ] if provider_path else []
+    path_prefix = []
     path_prefix += topology.defaults.paths.templates.dirs
+    path_prefix += [ provider_path ] if provider_path else []
     path_prefix += [ str(get_moddir() / 'ansible') ]
 
     if node.get('_daemon',False):
