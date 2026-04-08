@@ -1,5 +1,5 @@
 Creating Device configuration snippets
-[CREATED] dut: initial,bgp,vrf
+[CREATED] dut: initial,routing,bgp,vrf
 [CREATED] r1: normalize,initial,bgp,bgp-xact
 [CREATED] r2: normalize,initial,bgp,bgp-xact
 [CREATED] r3: normalize,initial,bgp,bgp-xact
@@ -20,10 +20,10 @@ TASK [Find device readiness script] ********************************************
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/srsim.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/srsim.yml for dut
 
 TASK [Common SR-OS checks] *****************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/sros.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/sros.yml for dut
 
 TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
 ok: [dut]
@@ -48,18 +48,18 @@ Config Deploying device configurations
  [INFO] Executing normalize configuration for node r2
  [INFO] Executing normalize configuration for node r3
  [INFO] Executing normalize configuration for node r4
- [INFO] Executing initial configuration for node r1
  [INFO] Executing initial configuration for node r2
- [INFO] Executing initial configuration for node r4
  [INFO] Executing initial configuration for node r3
- [INFO] Executing bgp configuration for node r1
  [INFO] Executing bgp configuration for node r2
- [INFO] Executing bgp configuration for node r4
  [INFO] Executing bgp configuration for node r3
+ [INFO] Executing initial configuration for node r4
+ [INFO] Executing initial configuration for node r1
+ [INFO] Executing bgp configuration for node r4
+ [INFO] Executing bgp configuration for node r1
  [INFO] Executing bgp-xact configuration for node r2
- [INFO] Executing bgp-xact configuration for node r1
- [INFO] Executing bgp-xact configuration for node r4
  [INFO] Executing bgp-xact configuration for node r3
+ [INFO] Executing bgp-xact configuration for node r4
+ [INFO] Executing bgp-xact configuration for node r1
  [INFO] Starting Ansible playbook to deploy the rest of the
           configurations
 [WARNING]: Found variable using reserved name: hosts
@@ -70,7 +70,7 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -91,7 +91,7 @@ TASK [Deploy normalize configuration] ******************************************
 skipping: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -111,7 +111,7 @@ ok: [dut] => {
 }
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
 
 TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
@@ -128,8 +128,38 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=bgp)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=vrf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=vrf)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for routing] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "routing configuration for dut\n=========================================\nupdates:\n- path: configure/service/vprn[service-name=red]/static-routes\n  val:\n    route:\n    - ip-prefix: 172.42.42.0/24\n      route-type: \"unicast\"\n      blackhole:\n        admin-state: \"enable\"\n"
+}
+
+TASK [Deploy routing configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
+
+TASK [Generate gNMI YAML configuration] ****************************************
+ok: [dut]
+
+TASK [Update routing node configuration from gNMI template /work/netlab_cicd/node_files/dut/routing] ***
+changed: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
@@ -149,7 +179,7 @@ ok: [dut] => {
 }
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
 
 TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
@@ -174,11 +204,11 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "vrf configuration for dut\n=========================================\n\nupdates:\n- path: configure/service/vprn[service-name=red]\n  val:\n    service-id: 100\n    customer: \"1\"\n    autonomous-system: 65000\n    router-id: 10.0.0.1\n    ecmp: 64\n    admin-state: enable\n\n- path: configure/policy-options/prefix-list[name=bgp_red_advertise]\n  val:\n    prefix: [] # Make sure it exists\n\n- path: configure/policy-options/policy-statement[name=bgp_red_export]\n  val:\n    default-action:\n      action-type: reject\n    entry:\n    - entry-id: 10\n      from:\n        prefix-list: [ \"bgp_red_advertise\" ]\n      action:\n        action-type: accept\n    - entry-id: 20\n      from:\n        protocol:\n          name: [ bgp ]\n      action:\n        action-type: accept\n    \n- path: configure/policy-options/prefix-list[name=bgp_red_advertise]\n  val:\n    prefix:\n    - ip-prefix: 10.1.0.0/30\n      type: exact\n\n\n- path: configure/service/vprn[service-name=red]\n  val:\n    router-id: \"10.0.0.1\"\n    autonomous-system: 65000\n    bgp:\n      ebgp-default-reject-policy:\n        import: False\n        export: False\n      advertise-inactive: True\n      multipath:\n        ibgp: 64\n        ebgp: 64\n      min-route-advertisement: 1 # Be aggressive about sending updates\n      connect-retry: 5           # Retry frequently, suitable in DC context\n    # family: cannot disable this\n    # ipv4: False # Enabled by default, disable globally and set per group\n\n\n\n\n- path: configure/service/vprn[service-name=red]/bgp/group[group-name=ebgp]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: False\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - bgp_red_export\n    send-communities:\n      extended: False  # True value not allowed, on by default\n\n\n- path: configure/service/vprn[service-name=red]/bgp\n  val:\n    neighbor:\n    - ip-address: \"10.1.0.2\"\n      description: \"r1\"\n      peer-as: 65101\n      group: \"ebgp\"\n      admin-state: enable\n      family:\n        ipv4: True\n        ipv6: False\n\n\n- path: configure/service/vprn[service-name=red]/bgp/group[group-name=ebgp]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: False\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - bgp_red_export\n    send-communities:\n      extended: False  # True value not allowed, on by default\n\n\n- path: configure/service/vprn[service-name=red]/bgp\n  val:\n    neighbor:\n    - ip-address: \"10.1.0.6\"\n      description: \"r2\"\n      peer-as: 65102\n      group: \"ebgp\"\n      admin-state: enable\n      family:\n        ipv4: True\n        ipv6: False\n\n\n\n\n\n- path: configure/service/vprn[service-name=blue]\n  val:\n    service-id: 101\n    customer: \"1\"\n    autonomous-system: 65000\n    router-id: 10.0.0.1\n    ecmp: 64\n    admin-state: enable\n\n- path: configure/policy-options/prefix-list[name=bgp_blue_advertise]\n  val:\n    prefix: [] # Make sure it exists\n\n- path: configure/policy-options/policy-statement[name=bgp_blue_export]\n  val:\n    default-action:\n      action-type: reject\n    entry:\n    - entry-id: 10\n      from:\n        prefix-list: [ \"bgp_blue_advertise\" ]\n      action:\n        action-type: accept\n    - entry-id: 20\n      from:\n        protocol:\n          name: [ bgp ]\n      action:\n        action-type: accept\n    - entry-id: 100\n      from:\n        protocol:\n          name: [ direct ]\n      action:\n        action-type: accept\n\n\n- path: configure/service/vprn[service-name=blue]\n  val:\n    router-id: \"10.0.0.1\"\n    autonomous-system: 65000\n    bgp:\n      ebgp-default-reject-policy:\n        import: False\n        export: False\n      advertise-inactive: True\n      multipath:\n        ibgp: 64\n        ebgp: 64\n      min-route-advertisement: 1 # Be aggressive about sending updates\n      connect-retry: 5           # Retry frequently, suitable in DC context\n    # family: cannot disable this\n    # ipv4: False # Enabled by default, disable globally and set per group\n\n\n\n\n- path: configure/service/vprn[service-name=blue]/bgp/group[group-name=ebgp]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: False\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - bgp_blue_export\n    send-communities:\n      extended: False  # True value not allowed, on by default\n\n\n- path: configure/service/vprn[service-name=blue]/bgp\n  val:\n    neighbor:\n    - ip-address: \"10.1.0.10\"\n      description: \"r3\"\n      peer-as: 65103\n      group: \"ebgp\"\n      admin-state: enable\n      family:\n        ipv4: True\n        ipv6: False\n\n\n- path: configure/service/vprn[service-name=blue]/bgp/group[group-name=ebgp]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: False\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - bgp_blue_export\n    send-communities:\n      extended: False  # True value not allowed, on by default\n\n\n- path: configure/service/vprn[service-name=blue]/bgp\n  val:\n    neighbor:\n    - ip-address: \"10.1.0.14\"\n      description: \"r4\"\n      peer-as: 65104\n      group: \"ebgp\"\n      admin-state: enable\n      family:\n        ipv4: True\n        ipv6: False\n\n\n\n\n\n"
+    "msg": "vrf configuration for dut\n=========================================\n\nupdates:\n- path: configure/service/vprn[service-name=red]\n  val:\n    service-id: 100\n    customer: \"1\"\n    autonomous-system: 65000\n    router-id: 10.0.0.1\n    ecmp: 64\n    admin-state: enable\n\n- path: configure/policy-options/prefix-list[name=bgp_red_advertise]\n  val:\n    prefix: [] # Make sure it exists\n\n- path: configure/policy-options/policy-statement[name=bgp_red_export]\n  val:\n    default-action:\n      action-type: reject\n    entry:\n    - entry-id: 10\n      from:\n        prefix-list: [ \"bgp_red_advertise\" ]\n      action:\n        action-type: accept\n    - entry-id: 20\n      from:\n        protocol:\n          name: [ bgp ]\n      action:\n        action-type: accept\n    \n- path: configure/policy-options/prefix-list[name=bgp_red_advertise]\n  val:\n    prefix:\n    - ip-prefix: 172.42.42.0/24\n      type: exact\n\n- path: configure/policy-options/prefix-list[name=bgp_red_advertise]\n  val:\n    prefix:\n    - ip-prefix: 10.1.0.0/30\n      type: exact\n\n\n- path: configure/service/vprn[service-name=red]\n  val:\n    router-id: \"10.0.0.1\"\n    autonomous-system: 65000\n    bgp:\n      ebgp-default-reject-policy:\n        import: False\n        export: False\n      advertise-inactive: True\n      multipath:\n        ibgp: 64\n        ebgp: 64\n      min-route-advertisement: 1 # Be aggressive about sending updates\n      connect-retry: 5           # Retry frequently, suitable in DC context\n    # family: cannot disable this\n    # ipv4: False # Enabled by default, disable globally and set per group\n\n\n\n\n- path: configure/service/vprn[service-name=red]/bgp/group[group-name=ebgp]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: False\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - bgp_red_export\n    send-communities:\n      extended: False  # True value not allowed, on by default\n\n\n- path: configure/service/vprn[service-name=red]/bgp\n  val:\n    neighbor:\n    - ip-address: \"10.1.0.2\"\n      description: \"r1\"\n      peer-as: 65101\n      group: \"ebgp\"\n      admin-state: enable\n      family:\n        ipv4: True\n        ipv6: False\n\n\n- path: configure/service/vprn[service-name=red]/bgp/group[group-name=ebgp]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: False\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - bgp_red_export\n    send-communities:\n      extended: False  # True value not allowed, on by default\n\n\n- path: configure/service/vprn[service-name=red]/bgp\n  val:\n    neighbor:\n    - ip-address: \"10.1.0.6\"\n      description: \"r2\"\n      peer-as: 65102\n      group: \"ebgp\"\n      admin-state: enable\n      family:\n        ipv4: True\n        ipv6: False\n\n\n\n\n\n- path: configure/service/vprn[service-name=blue]\n  val:\n    service-id: 101\n    customer: \"1\"\n    autonomous-system: 65000\n    router-id: 10.0.0.1\n    ecmp: 64\n    admin-state: enable\n\n- path: configure/policy-options/prefix-list[name=bgp_blue_advertise]\n  val:\n    prefix: [] # Make sure it exists\n\n- path: configure/policy-options/policy-statement[name=bgp_blue_export]\n  val:\n    default-action:\n      action-type: reject\n    entry:\n    - entry-id: 10\n      from:\n        prefix-list: [ \"bgp_blue_advertise\" ]\n      action:\n        action-type: accept\n    - entry-id: 20\n      from:\n        protocol:\n          name: [ bgp ]\n      action:\n        action-type: accept\n    - entry-id: 100\n      from:\n        protocol:\n          name: [ direct ]\n      action:\n        action-type: accept\n\n\n- path: configure/service/vprn[service-name=blue]\n  val:\n    router-id: \"10.0.0.1\"\n    autonomous-system: 65000\n    bgp:\n      ebgp-default-reject-policy:\n        import: False\n        export: False\n      advertise-inactive: True\n      multipath:\n        ibgp: 64\n        ebgp: 64\n      min-route-advertisement: 1 # Be aggressive about sending updates\n      connect-retry: 5           # Retry frequently, suitable in DC context\n    # family: cannot disable this\n    # ipv4: False # Enabled by default, disable globally and set per group\n\n\n\n\n- path: configure/service/vprn[service-name=blue]/bgp/group[group-name=ebgp]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: False\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - bgp_blue_export\n    send-communities:\n      extended: False  # True value not allowed, on by default\n\n\n- path: configure/service/vprn[service-name=blue]/bgp\n  val:\n    neighbor:\n    - ip-address: \"10.1.0.10\"\n      description: \"r3\"\n      peer-as: 65103\n      group: \"ebgp\"\n      admin-state: enable\n      family:\n        ipv4: True\n        ipv6: False\n\n\n- path: configure/service/vprn[service-name=blue]/bgp/group[group-name=ebgp]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: False\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - bgp_blue_export\n    send-communities:\n      extended: False  # True value not allowed, on by default\n\n\n- path: configure/service/vprn[service-name=blue]/bgp\n  val:\n    neighbor:\n    - ip-address: \"10.1.0.14\"\n      description: \"r4\"\n      peer-as: 65104\n      group: \"ebgp\"\n      admin-state: enable\n      family:\n        ipv4: True\n        ipv6: False\n\n\n\n\n\n"
 }
 
 TASK [Deploy vrf configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
 
 TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
@@ -193,7 +223,7 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=30   changed=3    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+dut                        : ok=38   changed=4    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================
