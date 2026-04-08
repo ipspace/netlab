@@ -306,7 +306,8 @@ The following interface parameters are configured on supported network operating
 | Arista EOS            | ✅  | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  |  ❌  | ✅  | ✅  |
 | Cisco ASAv            | ✅  |  ❌  | ✅  |  ❌  |
-| Cisco IOS/IOS XE[^18v]| ✅  | ✅  | ✅[❗](caveats-ios) | ✅  |
+| Cisco IOS             | ✅  | ✅  | ✅  | ✅  |
+| Cisco IOS XE[^XE]     | ✅  | ✅  | ✅[❗](caveats-csr)[❗](caveats-iol) | ✅  |
 | Cisco IOS XR[^XR]     | ✅  | ✅ [❗](caveats-iosxr) | ✅ | ✅ |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅  | ✅  | ✅  | ✅  |

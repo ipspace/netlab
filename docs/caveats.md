@@ -134,16 +134,15 @@ You should use the latest *vrnetlab* code to build (or rebuild) the Catalyst 800
 * Older _vrnetlab_ code used **virtio** NICs for Catalyst 8000v VMs, causing problems with Ethernet subinterfaces. The latest *vrnetlab* code [uses **vmxnet3** NICs](https://github.com/srl-labs/vrnetlab/pull/419).
 * Older _vrnetlab_ code did not apply the **network-premier** license to the Catalyst 8000v VM. The [latest code](https://github.com/srl-labs/vrnetlab/pull/421) starts the VM while building the container, applies the license, and saves the snapshot of the modified disk image into the container image.
 
-See also [CSR 1000v](caveats-csr) and [common Cisco IOS](caveats-ios) caveats.
+See also [common Cisco IOS](caveats-ios) caveats.
 
 (caveats-csr)=
 ## Cisco CSR 1000v
 
 * Cisco CSR 1000v does not support an interface MTU lower than 1500 bytes or an IP MTU higher than 1500 bytes.
 * Cisco CSR 1000v supports VXLAN with ingress replication and EVPN with MPLS encapsulation, but not EVPN with VXLAN encapsulation
-* Cisco IOS/XE does not accept VXLAN VNI values below 4096
 
-See also [SSH access](cisco-ios-ssh) and [common Cisco IOS](caveats-ios) caveats for OSPF, RIPng, and BGP.
+See also [SSH access](cisco-ios-ssh) and [common Cisco IOS](caveats-ios) caveats.
 
 (caveats-ios)=
 ## Cisco IOS/IOS XE Caveats
@@ -159,7 +158,7 @@ These caveats are common to all Cisco IOS/IOS XE platforms:
 
 These caveats are common to all Cisco IOS XE platforms:
 
-* The BGP TCP AO implementation does not interwork with other implementations (for example, Arista EOS).
+* Cisco IOS/XE does not accept VXLAN VNI values below 4096
 
 (cisco-ios-ssh)=
 ### SSH Access to Cisco IOS/IOS-XE
@@ -191,7 +190,7 @@ Additionally, you might have to execute `sudo update-crypto-policies --set LEGAC
 These caveats apply only to Cisco IOSv and IOSvL2
 
 * Cisco IOS release 15.x does not support unnumbered interfaces. Use Cisco CSR 1000v.
-* Multiple OSPFv2 processes on Cisco IOS cannot have the same OSPF router ID. By default, _netlab_ generates the same router ID for global and VRF OSPF processes, resulting in non-fatal configuration errors that Ansible silently ignores.
+* Multiple OSPFv2 processes on Cisco IOS cannot have the same OSPF router ID. _netlab_ automatically generates a different OSPF router ID for each VRF.
 * You cannot use VLANs 1002 through 1005 with Cisco IOSvL2 image
 * Cisco IOSv does not support VRRPv3 on BVI interfaces
 * Cisco IOSv cannot use tagged VLAN 1 in a trunk
