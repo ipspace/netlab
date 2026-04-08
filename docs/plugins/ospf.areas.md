@@ -13,6 +13,7 @@ The plugin includes Jinja2 templates for the following platforms:
 |--------------|:-:|:-:|:-:|:-:|
 | Arista EOS   |✅ [❗](caveats-eos) |✅|✅| ❌ |
 | Aruba CX     |✅|✅|✅|✅|
+| BIRD Internet Routing Daemon |✅|✅|✅|✅|
 | Cisco IOS/XE[^18v] |✅|✅|✅| ❌ |
 | Cumulus NVUE |✅|✅|✅ [❗](caveats-cumulus-nvue) | ❌ |
 | Dell OS10    |✅|✅|✅ [❗](caveats-os10) | ❌ |

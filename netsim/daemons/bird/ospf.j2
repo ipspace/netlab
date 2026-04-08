@@ -1,13 +1,7 @@
 {% if 'router_id' in ospf %}
 router id {{ ospf.router_id }};
 {% endif %}
-{# build a list of OSPF areas #}
-{% set area_list = [ ospf.area ] %}
-{% for l in interfaces|default([]) if 'ospf' in l and 'area' in l.ospf and l.ospf.area not in area_list %}
-{%   set status = area_list.append(l.ospf.area) %}
-{% endfor %}
 {% set KW_NETWORK_TYPE = { 'broadcast': 'bcast', 'point-to-point': 'ptp','point-to-multipoint': 'ptmp', 'non-broadcast': 'nbma' } %}
-
 {% for af in ['ipv4','ipv6'] if af in ospf.af %}
 {%   set ver = 'v2' if af == 'ipv4' else 'v3' %}
 protocol ospf {{ ver }} ospf_{{ ver }} {
@@ -22,26 +16,50 @@ protocol ospf {{ ver }} ospf_{{ ver }} {
    };
   };
 {%   endif %}
-{%   for area in area_list %}
-  area {{ area }} {
-    default cost 10;
-{%     if area == ospf.area and af in loopback|default({}) %}
-{%       if af=='ipv4' %}
-    interface "lo" {
-      stub;
+{%   for adata in ospf.areas %}
+  area {{ adata.area }} {
+{%     if adata.default.cost is defined %}
+    default cost {{ adata.default.cost }};
+{%     endif %}
+{%     if adata.kind == 'stub' %}
+    stub;
+    summary {{ 'yes' if adata.inter_area else 'no' }};
+{%     elif adata.kind == 'nssa' %}
+    nssa;
+    summary {{ 'yes' if adata.inter_area else 'no' }};
+    translator yes;
+    translator stability 3;
+{%       if ospf._abr and adata.default|default(false) %}
+    default nssa on;
+{%       endif %}
+    external {
+{%     for r_data in adata.external_range|default([]) if af in r_data %}
+      {{ r_data[af] }};
+{%     endfor %}
+{%     for r_data in adata.external_filter|default([]) if af in r_data %}
+      {{ r_data[af] }} hidden;
+{%     endfor %}
     };
-{%       else %}
-    # RFC 5340, section 4.4.3.9: Loopback should be advertised as /128
+{%     endif %}
+    networks {
+{%     for r_data in adata.range|default([]) if af in r_data %}
+      {{ r_data[af] }};
+{%     endfor %}
+{%     for r_data in adata.filter|default([]) if af in r_data %}
+      {{ r_data[af] }} hidden;
+{%     endfor %}
+    };
+{%     set ext_list = adata.external_range %}
+{%     for l in netlab_interfaces if af in l and l.ospf.area|default('') == adata.area %}
+{%       if l.ifname == 'lo' and af == 'ipv6' %}
     stubnet {{ loopback.ipv6 | ipaddr('address') }}/128;
 {%       endif %}
-{%     endif %}
-{%     for l in interfaces|default([]) if af in l and 'ospf' in l and 'area' in l.ospf and l.ospf.area == area %}
     interface "{{ l.ifname }}" {
+{%       if l.ospf.passive|default(False) or l.type == 'loopback' %}
+      stub;
+{%       endif %}
 {%       if 'network_type' in l.ospf %}
       type {{ KW_NETWORK_TYPE[l.ospf.network_type] }};
-{%       endif %}
-{%       if l.ospf.passive|default(False) %}
-      stub;
 {%       endif %}
 {%       if 'cost' in l.ospf %}
       cost {{ l.ospf.cost }};
