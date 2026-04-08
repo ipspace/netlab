@@ -9,6 +9,9 @@ import sys
 import typing
 from pathlib import Path
 
+from box import Box
+
+from ..data import get_box
 from ..utils import log
 from . import external_commands
 
@@ -72,3 +75,24 @@ def playbook(name: str, args: typing.List[str], abort_on_error: bool = True) -> 
     log.fatal(f"Executing Ansible playbook {pbname} failed")
 
   return OK is True
+
+"""
+Create the extra vars structure that will be passed to Ansible playbook to modify
+the search paths. We could just change the Ansible playbooks, but this keeps some
+level of compatibility with older code (and an escape strategy ;).
+"""
+def ansible_extra_vars(topology: Box, reload: bool = False, extra_vars: dict = {}) -> Box:
+  cfg_sfx = '.cfg' if reload else ''
+
+  ev = get_box(extra_vars)
+  ev.node_files = str(Path("./node_files").resolve().absolute())
+
+  ev.paths_t_files.files = "{{ config_module }}" + cfg_sfx    # Take only module file from node_files
+  ev.paths_custom.files = "{{ custom_config }}" + cfg_sfx     # And rendered custom config from node_files
+  for p in ['templates','custom']:                            # Change the search paths to node_files
+    ev[f'paths_{p}'].dirs = "{{ node_files }}/{{ inventory_hostname }}"
+
+  # Retain the custom configuration task name(s) and directories
+  ev.paths_custom.tasks = topology.defaults.paths.custom.tasks
+  ev.paths_custom.task_dirs = topology.defaults.paths.custom.dirs
+  return ev

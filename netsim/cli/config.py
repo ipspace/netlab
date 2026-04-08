@@ -9,7 +9,6 @@ from pathlib import Path
 
 from box import Box
 
-from ..data import get_box
 from ..utils import log
 from . import (
   _nodeset,
@@ -72,22 +71,6 @@ def set_custom_config(
     n_data.config = [ cfg_name ]
     for k,v in extra_vars.items():
       n_data[k] = v
-
-def ansible_extra_vars(topology: Box, reload: bool = False, extra_vars: dict = {}) -> Box:
-  cfg_sfx = '.cfg' if reload else ''
-
-  ev = get_box(extra_vars)
-  ev.node_files = str(Path("./node_files").resolve().absolute())
-
-  ev.paths_t_files.files = "{{ config_module }}" + cfg_sfx    # Take only module file from node_files
-  ev.paths_custom.files = "{{ custom_config }}" + cfg_sfx     # And rendered custom config from node_files
-  for p in ['templates','custom']:                            # Change the search paths to node_files
-    ev[f'paths_{p}'].dirs = "{{ node_files }}/{{ inventory_hostname }}"
-
-  # Retain the custom configuration task name(s) and directories
-  ev.paths_custom.tasks = topology.defaults.paths.custom.tasks
-  ev.paths_custom.task_dirs = topology.defaults.paths.custom.dirs
-  return ev
 
 def get_ansible_args(ans_vars: Box,nodeset: list,cfg_name: str) -> list:
   args = i_utils.common_ansible_args()
@@ -189,7 +172,7 @@ def reload_node_configs(topology: Box,nodeset: list,args: argparse.Namespace, re
 
   # Run the Ansible playbook with modified path variables and an adjusted nodeset
   #
-  ans_vars = ansible_extra_vars(topology,reload=True)
+  ans_vars = ansible.ansible_extra_vars(topology,reload=True)
   rest_args = rest + get_ansible_args(ans_vars,nodeset,str(cfg_path.name))
   if not ansible.playbook('reload-config.ansible',rest_args,abort_on_error=False):
     error_and_exit('Cannot reload initial device configurations')
@@ -211,7 +194,7 @@ def deploy_custom_config(topology: Box,nodeset: list,args: argparse.Namespace, r
 
   # Run the Ansible playbook with modified path variables and an adjusted nodeset
   #
-  ans_vars = ansible_extra_vars(topology,reload=False,extra_vars=extra_vars)
+  ans_vars = ansible.ansible_extra_vars(topology,reload=False,extra_vars=extra_vars)
   rest_args = rest + get_ansible_args(ans_vars,nodeset,cfg_name)
   if not ansible.playbook('config.ansible',rest_args,abort_on_error=False):
     error_and_exit('Cannot deploy custom configuration template')

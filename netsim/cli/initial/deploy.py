@@ -11,7 +11,6 @@ from pathlib import Path
 from box import Box
 
 from ... import devices
-from ...data import get_empty_box
 from ...providers import execute_node
 from ...utils import log, strings
 from .. import ansible, error_and_exit, external_commands, get_message, lab_status_change
@@ -76,27 +75,9 @@ def print_internal_stats(topology: Box, top_margin: bool = False) -> None:
   print()
 
 
-def ansible_extra_vars(topology: Box) -> Box:
-  ev = get_empty_box()
-  ev.node_files = str(Path("./node_files").resolve().absolute())
-
-  # Change the search names of the module/custom configuration snippet, get rid of config paths
-  # and limit the search to per-node node_files
-  #
-  ev.paths_t_files.files = "{{ config_module }}"
-  ev.paths_custom.files = "{{ custom_config }}"
-  for p in ["templates", "custom"]:
-    ev[f"paths_{p}"].dirs = "{{ node_files }}/{{ inventory_hostname }}"
-
-  # Retain the custom configuration task name(s) and directories
-  ev.paths_custom.tasks = topology.defaults.paths.custom.tasks
-  ev.paths_custom.task_dirs = topology.defaults.paths.custom.dirs
-  return ev
-
-
 def deploy_ansible_playbook(topology: Box, rest: list) -> bool:
   external_commands.LOG_COMMANDS = True
-  rest_args = rest + ["-e", ansible_extra_vars(topology).to_json()]
+  rest_args = rest + ["-e", ansible.ansible_extra_vars(topology).to_json()]
 
   return ansible.playbook("initial-config.ansible", rest_args, abort_on_error=False)
 
