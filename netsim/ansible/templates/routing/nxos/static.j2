@@ -1,0 +1,18 @@
+{% set static_vrf  = routing.static|map(attribute='vrf',default='')|sort|unique|list %}
+{% for sr_vrf in static_vrf %}
+{%   set sr_list = routing.static|rejectattr('vrf','defined')|list if sr_vrf == ''
+                     else routing.static|selectattr('vrf','defined')|selectattr('vrf','==',sr_vrf)|list %}
+{%   if sr_vrf %}
+!
+vrf context {{ sr_vrf }}
+{%   endif %}
+{%   for sr_data in sr_list %}
+{%     for sr_af in ['ipv4','ipv6'] if sr_af in sr_data %}
+{%       set sr_cmd = ('  ' if sr_vrf else '') + ('ip' if sr_af == 'ipv4' else sr_af) + ' route' %}
+{%       set sr_nh = 'Null0' if sr_data.nexthop.discard|default(False)
+                        else (sr_data.nexthop.intf + ' ' if sr_data.nexthop.intf is defined else '') +
+                             sr_data.nexthop[sr_af] %}
+{{ sr_cmd }} {{ sr_data[sr_af] }} {{ sr_nh }}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
