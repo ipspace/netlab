@@ -107,7 +107,7 @@ def node_set_vtep(node: Box, topology: Box) -> bool:
       loopback_name = intf.ifname
       break
 
-  if topology.defaults.vxlan.use_v6_vtep:
+  if topology.get('vxlan.use_v6_vtep',False):
     vtep_af = 'ipv6'
     features = devices.get_device_features(node,topology.defaults)
     node.vxlan.transport = vtep_af
@@ -196,7 +196,6 @@ class VXLAN(_Module):
 
     if not 'use_v6_vtep' in topology.vxlan:                         # Copy IPv6 VTEP setting into global parameter
       topology.vxlan.use_v6_vtep = topology.defaults.vxlan.use_v6_vtep
-
     for name,ndata in topology.nodes.items():
       if not 'vxlan' in ndata.get('module',[]):                     # Skip nodes without VXLAN module
         continue
