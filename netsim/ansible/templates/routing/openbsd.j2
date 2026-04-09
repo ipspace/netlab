@@ -3,6 +3,12 @@
 route add {{ '-mpath ' if sr_entry.nexthop.idx else '' }}{{ sr_entry[sr_af] }} {{ sr_entry.nexthop[sr_af] }}
 {%   endfor %}
 {% endmacro %}
+{% macro sr_discard(sr_entry) %}
+{%   for sr_af in ['ipv4','ipv6'] if sr_af in sr_entry %}
+route delete {{ sr_entry[sr_af] }} || true
+route add -blackhole {{ sr_entry[sr_af] }} {{ '127.0.0.1' if sr_af == 'ipv4' else '::1' }}
+{%   endfor %}
+{% endmacro %}
 #!/bin/bash
 #
 set -e
@@ -17,7 +23,15 @@ route -n flush -iface {{ intf }} -priority static
 #
 {% for sr_entry in sr_list if 'intf' in sr_entry.nexthop %}
 {%   if loop.first %}
+#
 echo Adding direct static routes
 {%   endif %}
 {{ sr_add(sr_entry) -}}
+{% endfor %}
+{% for sr_entry in sr_list if 'discard' in sr_entry.nexthop %}
+{%   if loop.first %}
+#
+echo Adding discard static routes
+{%   endif %}
+{{ sr_discard(sr_entry) -}}
 {% endfor %}
