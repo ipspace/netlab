@@ -1,5 +1,5 @@
 Creating Device configuration snippets
-[CREATED] dut: initial,ospf,bgp
+[CREATED] dut: initial,routing,ospf,bgp
 [CREATED] dut2: initial,bgp
 [CREATED] x1: initial,bgp
 [CREATED] x2: initial,bgp
@@ -22,7 +22,7 @@ ok: [dut]
 ok: [dut2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, dut2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, dut2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -49,7 +49,7 @@ skipping: [dut]
 skipping: [dut2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, dut2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, dut2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -76,11 +76,11 @@ ok: [dut2] => {
 }
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/openbsd.yml for dut, dut2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/openbsd.yml for dut, dut2
 
 TASK [template] ****************************************************************
-changed: [dut2]
 changed: [dut]
+changed: [dut2]
 
 TASK [Execute /tmp/config.sh to deploy initial config from /work/netlab_cicd/node_files/dut/initial] ***
 changed: [dut2]
@@ -93,8 +93,41 @@ ok: [dut]
 ok: [dut2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, dut2 => (item=ospf)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, dut2 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, dut2 => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, dut2 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, dut2 => (item=bgp)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [dut]
+ok: [dut2]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [dut2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [dut2]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [dut2]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut2]
+ok: [dut] => {
+    "msg": "routing configuration for dut\n=========================================\n#!/bin/bash\n#\nset -e\nset -x\n#\n#\n#\n#\necho Adding discard static routes\nroute delete 2001:db8:bad:2::/64 || true\nroute add -blackhole 2001:db8:bad:2::/64 ::1\n"
+}
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [dut2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/openbsd.yml for dut
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [Execute /tmp/config.sh to deploy routing config from /work/netlab_cicd/node_files/dut/routing] ***
+changed: [dut]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -120,7 +153,7 @@ ok: [dut] => {
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [dut2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/openbsd.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/openbsd.yml for dut
 
 TASK [template] ****************************************************************
 changed: [dut]
@@ -146,14 +179,14 @@ ok: [dut2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "bgp configuration for dut\n=========================================\n#!/bin/sh\n\ncat <<BGPD_CONF >/etc/bgpd.conf\nAS 65000\nrouter-id 10.0.0.1\nlog updates\n\n## network announcements\n\nnetwork 2001:db8:bad:1::/64\nnetwork 2001:db8:cafe:e42::/64\n\n## neighbors and groups\n\nneighbor 2001:db8:3::3 {\n    remote-as 65100\n    descr \"x1\"\n}\nneighbor 2001:db8:3:1::4 {\n    remote-as 65101\n    descr \"x2\"\n}\nneighbor 2001:db8:cafe:e01::2 {\n    remote-as 65001\n    descr \"dut2\"\n}\n\n## rules\n\nmatch from ebgp set { nexthop self }\nmatch to ebgp set { ext-community delete * * }\n\nallow from any\nallow to any\n\nBGPD_CONF\n\nchmod 640 /etc/bgpd.conf\nrcctl enable bgpd\nrcctl restart bgpd\n\n"
+    "msg": "bgp configuration for dut\n=========================================\n#!/bin/sh\n\ncat <<BGPD_CONF >/etc/bgpd.conf\nAS 65000\nrouter-id 10.0.0.1\nlog updates\n\n## network announcements\n\nnetwork 2001:db8:bad:1::/64\nnetwork 2001:db8:bad:2::/64\nnetwork 2001:db8:cafe:e42::/64\n\n## neighbors and groups\n\nneighbor 2001:db8:3::3 {\n    remote-as 65100\n    descr \"x1\"\n}\nneighbor 2001:db8:3:1::4 {\n    remote-as 65101\n    descr \"x2\"\n}\nneighbor 2001:db8:cafe:e01::2 {\n    remote-as 65001\n    descr \"dut2\"\n}\n\n## rules\n\nmatch from ebgp set { nexthop self }\nmatch to ebgp set { ext-community delete * * }\n\nallow from any\nallow to any\n\nBGPD_CONF\n\nchmod 640 /etc/bgpd.conf\nrcctl enable bgpd\nrcctl restart bgpd\n\n"
 }
 ok: [dut2] => {
     "msg": "bgp configuration for dut2\n=========================================\n#!/bin/sh\n\ncat <<BGPD_CONF >/etc/bgpd.conf\nAS 65001\nrouter-id 10.0.0.2\nlog updates\n\n## network announcements\n\nnetwork 2001:db8:1::2/128\n\n## neighbors and groups\n\nneighbor 2001:db8:cafe:e01::1 {\n    remote-as 65000\n    descr \"dut\"\n}\n\n## rules\n\nmatch from ebgp set { nexthop self }\nmatch to ebgp set { ext-community delete * * }\n\nallow from any\nallow to any\n\nBGPD_CONF\n\nchmod 640 /etc/bgpd.conf\nrcctl enable bgpd\nrcctl restart bgpd\n\n"
 }
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/openbsd.yml for dut, dut2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/openbsd.yml for dut, dut2
 
 TASK [template] ****************************************************************
 changed: [dut]
@@ -167,8 +200,8 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=30   changed=6    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
-dut2                       : ok=24   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+dut                        : ok=38   changed=8    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+dut2                       : ok=26   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================
