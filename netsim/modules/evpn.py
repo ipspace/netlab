@@ -48,18 +48,21 @@ def validate_evpn_lists(toponode: Box, obj_path: str, topology: Box, create: boo
 
 def get_evpn_af(node: Box, topology: Box) -> typing.Optional[str]:
   evpn_transport = node.get('evpn.transport','vxlan')
-  if evpn_transport == 'vxlan':                   # For VXLAN transport
-    evpn_af = node.get('vxlan.transport','ipv4')  # Check the transport address family
-    if evpn_af == 'ipv6':                         # ... and enable EVPN over corresponding BGP session
-      features = devices.get_device_features(node,topology.defaults)
-      if not features.evpn.ipv6:                  # ... but only if the device supports it
-        log.error(
-          f'node {node.name}/device {node.device} cannot use EVPN with IPv6 next hops',
-          more_hints=['The node is using VXLAN-over-IPv6 transport, but does not support EVPN over IPv6'],
-          category=log.IncorrectValue)
-        return None
-  else:                                           # For MPLS transport
-    evpn_af = 'ipv4'                              # ... assume we're using IPv4 with LDP
+  if evpn_transport != 'vxlan':                   # Are we using VXLAN transport?
+    return 'ipv4'                                 # No, assume IPv4 next hops for MPLS/LDP and SR-MPLS transport
+
+  if 'vxlan.transport' in node:                   # Data-plane node with VXLAN module?
+    evpn_af = node.vxlan.transport
+  else:                                           # Otherwise figure out the AF from topology settings
+    evpn_af = 'ipv6' if topology.get('vxlan.use_v6_vtep',False) else 'ipv4'
+  if evpn_af == 'ipv6':                           # Enable EVPN over IPv6 BGP sessions
+    features = devices.get_device_features(node,topology.defaults)
+    if not features.evpn.ipv6:                    # ... only if the device supports it
+      log.error(
+        f'node {node.name}/device {node.device} cannot use EVPN with IPv6 next hops',
+        more_hints=['The node is using VXLAN-over-IPv6 transport, but does not support EVPN over IPv6'],
+        category=log.IncorrectValue)
+      return None
 
   return evpn_af
 
