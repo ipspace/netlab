@@ -104,8 +104,9 @@ def transform_data(topology: Box) -> None:
 
 def post_transform(topology: Box) -> None:
   augment.validate.process_validation(topology)
-  modules.post_transform(topology)
-  augment.plugin.execute('post_transform',topology)
+  modules.post_transform(topology)                    # Call module post-transform routines
+  augment.plugin.execute('post_transform',topology)   # ... and the plugin ones
+  modules.reorder_node_modules(topology)              # Plugins could change module list, so this needs to be called last (#3284)
   augment.groups.node_config_templates(topology)
   augment.nodes.cleanup(topology)
   log.exit_on_error()

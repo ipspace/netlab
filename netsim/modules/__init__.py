@@ -120,7 +120,6 @@ def post_transform(topology: Box) -> None:
   module_transform("post_transform",topology)
   node_transform("post_transform",topology)
   link_transform("post_transform",topology)
-  reorder_node_modules(topology)               # Make sure modules are configured in dependency order (#86)
 
 """
 cleanup: execute final cleanup actions

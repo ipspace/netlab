@@ -1,0 +1,291 @@
+_extra_module:
+- routing
+bgp:
+  advertise_loopback: true
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
+groups:
+  as65000:
+    members:
+    - dut
+  as65100:
+    members:
+    - x1
+input:
+- coverage/input/bgp-auto-policy.yml
+- package:topology-defaults.yml
+links:
+- _linkname: links[1]
+  interfaces:
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.1/30
+    node: dut
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.2/30
+    node: x1
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  role: external
+  type: p2p
+message: 'This topology is a regression test for #3284 and checks that the routing
+
+  module is inserted in the correct place in the node module list.
+
+  '
+module:
+- routing
+- bgp
+name: input
+nodes:
+  dut:
+    _node_config:
+      bgp: /mnt/flash/04-bgp.sh:sh
+      bgp@policy: /mnt/flash/05-bgp@policy.sh:sh
+      initial: /mnt/flash/02-initial.sh:sh
+      normalize: /mnt/flash/01-normalize.sh:sh
+      routing: /mnt/flash/03-routing.sh:sh
+    af:
+      ipv4: true
+    bgp:
+      _cprop_order:
+      - standard
+      - extended
+      - large
+      - link-bandwidth
+      _session_clear:
+      - 10.1.0.2
+      advertise:
+      - ipv4: 10.0.0.1/32
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      ipv4: true
+      locpref: 17
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65100
+        ifindex: 1
+        ipv4: 10.1.0.2
+        locpref: 17
+        name: x1
+        policy:
+          in: bp-x1-1-in
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.1
+    box: none
+    clab:
+      binds:
+      - source: node_files/dut/normalize
+        target: /mnt/flash/01-normalize.sh
+      - source: node_files/dut/initial
+        target: /mnt/flash/02-initial.sh
+      - source: node_files/dut/routing
+        target: /mnt/flash/03-routing.sh
+      - source: node_files/dut/bgp
+        target: /mnt/flash/04-bgp.sh
+      - source: node_files/dut/bgp.policy
+        target: /mnt/flash/05-bgp@policy.sh
+      config_templates:
+      - mode: sh
+        source: normalize
+        target: /mnt/flash/01-normalize.sh
+      - mode: sh
+        source: initial
+        target: /mnt/flash/02-initial.sh
+      - mode: sh
+        source: routing
+        target: /mnt/flash/03-routing.sh
+      - mode: sh
+        source: bgp
+        target: /mnt/flash/04-bgp.sh
+      - mode: sh
+        source: bgp.policy
+        target: /mnt/flash/05-bgp@policy.sh
+      env:
+        CLAB_MGMT_VRF: management
+        INTFTYPE: et
+      kind: ceos
+    config:
+    - bgp.policy
+    device: eos
+    hostname: clab-input-dut
+    id: 1
+    interfaces:
+    - bgp:
+        locpref: 17
+      clab:
+        name: et1
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      mac_address: caf0.0001.0001
+      name: dut -> x1
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.2/30
+        node: x1
+      role: external
+      type: p2p
+    loopback:
+      bgp:
+        advertise: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: Management0
+      ipv4: 192.168.121.101
+      mac: ca:fe:00:01:00:00
+    module:
+    - routing
+    - bgp
+    name: dut
+    netlab_ansible_skip_module:
+    - normalize
+    - initial
+    - routing
+    - bgp
+    - bgp.policy
+    role: router
+    routing:
+      policy:
+        bp-x1-1-in:
+        - action: permit
+          sequence: 10
+          set:
+            locpref: 17
+  x1:
+    _node_config:
+      bgp: /mnt/flash/03-bgp.sh:sh
+      initial: /mnt/flash/02-initial.sh:sh
+      normalize: /mnt/flash/01-normalize.sh:sh
+    af:
+      ipv4: true
+    bgp:
+      _cprop_order:
+      - standard
+      - extended
+      - large
+      - link-bandwidth
+      advertise:
+      - ipv4: 10.0.0.2/32
+      advertise_loopback: true
+      as: 65100
+      community:
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65000
+        ifindex: 1
+        ipv4: 10.1.0.1
+        name: dut
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.2
+    box: none
+    clab:
+      binds:
+      - source: node_files/x1/normalize
+        target: /mnt/flash/01-normalize.sh
+      - source: node_files/x1/initial
+        target: /mnt/flash/02-initial.sh
+      - source: node_files/x1/bgp
+        target: /mnt/flash/03-bgp.sh
+      config_templates:
+      - mode: sh
+        source: normalize
+        target: /mnt/flash/01-normalize.sh
+      - mode: sh
+        source: initial
+        target: /mnt/flash/02-initial.sh
+      - mode: sh
+        source: bgp
+        target: /mnt/flash/03-bgp.sh
+      env:
+        CLAB_MGMT_VRF: management
+        INTFTYPE: et
+      kind: ceos
+    device: eos
+    hostname: clab-input-x1
+    id: 2
+    interfaces:
+    - clab:
+        name: et1
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      mac_address: caf0.0002.0001
+      name: x1 -> dut
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.1/30
+        node: dut
+      role: external
+      type: p2p
+    loopback:
+      bgp:
+        advertise: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: Management0
+      ipv4: 192.168.121.102
+      mac: ca:fe:00:02:00:00
+    module:
+    - bgp
+    name: x1
+    netlab_ansible_skip_module:
+    - normalize
+    - initial
+    - bgp
+    role: router
+plugin:
+- bgp.policy
+prefix:
+  any:
+    ipv4: 0.0.0.0/0
+    ipv6: ::/0
+provider: clab
