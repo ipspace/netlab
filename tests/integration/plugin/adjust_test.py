@@ -108,7 +108,13 @@ def adjust_topology(a_entry: Box, topology: Box) -> None:
 
   for rm_item in get_a_list(a_entry,'remove'):
     log.print_verbose(f'Removing {rm_item}')
-    topology.pop(rm_item,None)
+    if ":" not in rm_item:
+      topology.pop(rm_item,None)
+      continue
+
+    (object,item) = rm_item.split(":",1)
+    for data in topology.get(object,{}).values():
+      data.pop(item,None)
 
   for rp_item in get_a_list(a_entry,'replace'):
     rp_key = rp_item.get('key',None)
