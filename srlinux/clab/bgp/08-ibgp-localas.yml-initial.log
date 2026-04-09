@@ -1,5 +1,5 @@
 Creating Device configuration snippets
-[CREATED] dut: initial,ospf,bgp
+[CREATED] dut: initial,routing,ospf,bgp
 [CREATED] x1: initial,bgp
 [CREATED] x2: initial,ospf,bgp
 [CREATED] x3: initial,routing,ospf,bgp
@@ -9,13 +9,13 @@ Config Deploying device configurations
  [INFO] Executing initial configuration for node x2
  [INFO] Executing initial configuration for node x3
  [INFO] Executing initial configuration for node x4
+ [INFO] Executing routing configuration for node x3
  [INFO] Executing bgp configuration for node x1
  [INFO] Executing ospf configuration for node x2
- [INFO] Executing routing configuration for node x3
  [INFO] Executing ospf configuration for node x4
- [INFO] Executing ospf configuration for node x3
  [INFO] Executing bgp configuration for node x4
  [INFO] Executing bgp configuration for node x2
+ [INFO] Executing ospf configuration for node x3
  [INFO] Executing bgp configuration for node x3
  [INFO] Starting Ansible playbook to deploy the rest of the
           configurations
@@ -27,7 +27,7 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -48,7 +48,7 @@ TASK [Deploy normalize configuration] ******************************************
 skipping: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -68,7 +68,7 @@ ok: [dut] => {
 }
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [dut]
@@ -85,26 +85,37 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=routing)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=bgp)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [dut]
 
 TASK [Find configuration template for routing] *********************************
-skipping: [dut]
+ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for routing] *****************
-skipping: [dut]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
+ok: [dut] => {
+    "msg": "routing configuration for dut\n=========================================\nupdates:\n- path: /network-instance[name=default]/next-hop-groups/group[name=blackhole]\n  value:\n    blackhole:\n      generate-icmp: True\n- path: /network-instance[name=default]/static-routes\n  value:\n    route:\n    - prefix: \"172.42.42.0/24\"\n      next-hop-group: blackhole\n      admin-state: enable\n"
+}
 
 TASK [Deploy routing configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
+
+TASK [Generate JSON-RPC YAML configuration] ************************************
+ok: [dut]
+
+TASK [Update SRL routing node configuration (template=/work/netlab_cicd/node_files/dut/routing)] ***
+changed: [dut]
+
+TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
@@ -125,7 +136,7 @@ ok: [dut] => {
 }
 
 TASK [Deploy ospf configuration] ***********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [dut]
@@ -150,11 +161,11 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "bgp configuration for dut\n=========================================\nupdates:\n\n- path: /routing-policy/policy[name=accept_all]\n  value:\n    default-action:\n      policy-result: accept\n\n- path: /routing-policy/community-set[name=ibgp-mark]\n  value:\n    member: [ \"65536:0:65536\" ]\n\n- path: /routing-policy/policy[name=ibgp-mark]\n  value:\n    default-action:\n      policy-result: reject\n    statement:\n    - name: mark-ibgp-routes\n      action:\n        bgp:\n          communities:\n            add: ibgp-mark\n        policy-result: accept\n\n- path: /routing-policy/prefix-set[name=default_bgp_advertise]\n  value:\n    prefix: [] # Make sure it exists\n\n- path: /routing-policy/policy[name=default_bgp_export]\n  value:\n    default-action:\n      policy-result: reject\n    statement:\n    - name: prefixes\n      match:\n       prefix:\n        prefix-set: default_bgp_advertise\n      action:\n        policy-result: next-policy\n    - name: bgp\n      match:\n        protocol: bgp\n      action:\n        policy-result: next-policy\n        bgp:\n          communities:\n            remove:\n              ibgp-mark\n\n\n- path: /network-instance[name=default]/protocols/bgp\n  value:\n    admin-state: enable\n    autonomous-system: 65000\n    router-id: 10.0.0.1\n    ebgp-default-policy:\n      export-reject-all: False\n      import-reject-all: False\n\n    afi-safi:\n    - afi-safi-name: ipv4-unicast\n      admin-state: enable\n\n- path: /routing-policy/prefix-set[name=default_bgp_advertise]\n  value:\n    prefix:\n    - ip-prefix: 172.42.42.0/24\n      mask-length-range: exact\n\n- path: /routing-policy/prefix-set[name=default_bgp_advertise]\n  value:\n    prefix:\n    - ip-prefix: 10.0.0.1/32\n      mask-length-range: exact\n\n\n\n- path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]\n  value:\n    admin-state: enable\n# neighbor: {'name': 'x3', 'as': 65000, 'type': 'ibgp', 'ipv4': '10.0.0.4', '_source_intf': {'type': 'loopback', 'neighbors': [], 'virtual_interface': True, 'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.1/32'}, 'next_hop_self': 'all', 'activate': {'ipv4': True}}\n# ipv4: True\n# ipv6: True\n    afi-safi:\n    - afi-safi-name: ipv4-unicast\n      admin-state: enable\n      send-community-type: ['standard', 'large', 'extended']\n\n      import-policy: ['accept_all']\n      export-policy: ['default_bgp_export', 'accept_all']\n    - afi-safi-name: ipv6-unicast\n      admin-state: disable\n      send-community-type: ['standard', 'large', 'extended']\n\n      import-policy: ['accept_all']\n      export-policy: ['default_bgp_export', 'accept_all']\n\n    timers:\n      connect-retry: 10\n      _annotate_connect-retry: \"Reduce default 120s to 10s\"\n      minimum-advertisement-interval: 1\n    peer-as: 65000\n    transport:\n      local-address: 10.0.0.1\n    next-hop-self: True\n\n\n- path: /network-instance[name=default]/protocols/bgp\n  value:\n    neighbor:\n    - peer-address: \"10.0.0.4\"\n      description: x3\n      peer-group: ibgp-ipv4\n  # neighbor: {'name': 'x3', 'as': 65000, 'type': 'ibgp', 'ipv4': '10.0.0.4', '_source_intf': {'type': 'loopback', 'neighbors': [], 'virtual_interface': True, 'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.1/32'}, 'next_hop_self': 'all', 'activate': {'ipv4': True}}\n  # ipv4: True\n  # ipv6: False\n      afi-safi:\n      - afi-safi-name: ipv4-unicast\n        admin-state: enable\n        send-community-type: ['standard', 'large', 'extended']\n\n      - afi-safi-name: ipv6-unicast\n        admin-state: disable\n\n\n- path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]\n  value:\n    admin-state: enable\n# neighbor: {'ifindex': 1, 'local_as': 65002, 'name': 'x1', 'as': 65100, 'type': 'ebgp', 'ipv4': '10.1.0.2', 'activate': {'ipv4': True}}\n# ipv4: True\n# ipv6: True\n    afi-safi:\n    - afi-safi-name: ipv4-unicast\n      admin-state: enable\n      send-community-type: ['standard', 'large']\n\n      import-policy: ['accept_all']\n      export-policy: ['default_bgp_export', 'accept_all']\n    - afi-safi-name: ipv6-unicast\n      admin-state: disable\n      send-community-type: ['standard', 'large']\n\n      import-policy: ['accept_all']\n      export-policy: ['default_bgp_export', 'accept_all']\n\n    timers:\n      connect-retry: 10\n      _annotate_connect-retry: \"Reduce default 120s to 10s\"\n      minimum-advertisement-interval: 1\n\n\n- path: /network-instance[name=default]/protocols/bgp\n  value:\n    neighbor:\n    - peer-address: \"10.1.0.2\"\n      description: x1\n      peer-group: ebgp\n  # neighbor: {'ifindex': 1, 'local_as': 65002, 'name': 'x1', 'as': 65100, 'type': 'ebgp', 'ipv4': '10.1.0.2', 'activate': {'ipv4': True}}\n  # ipv4: True\n  # ipv6: False\n      afi-safi:\n      - afi-safi-name: ipv4-unicast\n        admin-state: enable\n        send-community-type: ['standard', 'large']\n\n      - afi-safi-name: ipv6-unicast\n        admin-state: disable\n\n      peer-as: 65100\n      local-as:\n        as-number: 65002\n        prepend-global-as: False # Don't include iBGP global AS in eBGP advertisements\n\n- path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-local-as]\n  value:\n    admin-state: enable\n# neighbor: {'ifindex': 2, 'local_as': 65101, 'name': 'x2', 'as': 65101, 'type': 'localas_ibgp', 'ipv4': '10.1.0.6', 'rr_client': True, 'next_hop_self': 'all', 'activate': {'ipv4': True}}\n# ipv4: True\n# ipv6: True\n    afi-safi:\n    - afi-safi-name: ipv4-unicast\n      admin-state: enable\n      send-community-type: ['standard', 'large', 'extended']\n\n      import-policy: ['accept_all']\n      export-policy: ['default_bgp_export', 'accept_all']\n    - afi-safi-name: ipv6-unicast\n      admin-state: disable\n      send-community-type: ['standard', 'large', 'extended']\n\n      import-policy: ['accept_all']\n      export-policy: ['default_bgp_export', 'accept_all']\n\n    timers:\n      connect-retry: 10\n      _annotate_connect-retry: \"Reduce default 120s to 10s\"\n      minimum-advertisement-interval: 1\n    peer-as: 65101\n    next-hop-self: True\n\n\n- path: /network-instance[name=default]/protocols/bgp\n  value:\n    neighbor:\n    - peer-address: \"10.1.0.6\"\n      description: x2\n      peer-group: ibgp-local-as\n  # neighbor: {'ifindex': 2, 'local_as': 65101, 'name': 'x2', 'as': 65101, 'type': 'localas_ibgp', 'ipv4': '10.1.0.6', 'rr_client': True, 'next_hop_self': 'all', 'activate': {'ipv4': True}}\n  # ipv4: True\n  # ipv6: False\n      afi-safi:\n      - afi-safi-name: ipv4-unicast\n        admin-state: enable\n        send-community-type: ['standard', 'large', 'extended']\n\n      - afi-safi-name: ipv6-unicast\n        admin-state: disable\n\n      transport:\n        local-address: 10.1.0.5\n      local-as:\n        as-number: 65101\n        prepend-global-as: False # Don't include iBGP global AS in eBGP advertisements\n\n- path: /network-instance[name=default]/next-hop-groups/group[name=blackhole]\n  value:\n    blackhole:\n      generate-icmp: True\n- path: /network-instance[name=default]/static-routes\n  value:\n    route:\n    - prefix: \"172.42.42.0/24\"\n      next-hop-group: blackhole\n\n"
+    "msg": "bgp configuration for dut\n=========================================\nupdates:\n\n- path: /routing-policy/policy[name=accept_all]\n  value:\n    default-action:\n      policy-result: accept\n\n- path: /routing-policy/community-set[name=ibgp-mark]\n  value:\n    member: [ \"65536:0:65536\" ]\n\n- path: /routing-policy/policy[name=ibgp-mark]\n  value:\n    default-action:\n      policy-result: reject\n    statement:\n    - name: mark-ibgp-routes\n      action:\n        bgp:\n          communities:\n            add: ibgp-mark\n        policy-result: accept\n\n- path: /routing-policy/prefix-set[name=default_bgp_advertise]\n  value:\n    prefix: [] # Make sure it exists\n\n- path: /routing-policy/policy[name=default_bgp_export]\n  value:\n    default-action:\n      policy-result: reject\n    statement:\n    - name: prefixes\n      match:\n       prefix:\n        prefix-set: default_bgp_advertise\n      action:\n        policy-result: next-policy\n    - name: bgp\n      match:\n        protocol: bgp\n      action:\n        policy-result: next-policy\n        bgp:\n          communities:\n            remove:\n              ibgp-mark\n\n\n- path: /network-instance[name=default]/protocols/bgp\n  value:\n    admin-state: enable\n    autonomous-system: 65000\n    router-id: 10.0.0.1\n    ebgp-default-policy:\n      export-reject-all: False\n      import-reject-all: False\n\n    afi-safi:\n    - afi-safi-name: ipv4-unicast\n      admin-state: enable\n\n- path: /routing-policy/prefix-set[name=default_bgp_advertise]\n  value:\n    prefix:\n    - ip-prefix: 172.42.42.0/24\n      mask-length-range: exact\n\n- path: /routing-policy/prefix-set[name=default_bgp_advertise]\n  value:\n    prefix:\n    - ip-prefix: 10.0.0.1/32\n      mask-length-range: exact\n\n\n\n- path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]\n  value:\n    admin-state: enable\n# neighbor: {'name': 'x3', 'as': 65000, 'type': 'ibgp', 'ipv4': '10.0.0.4', '_source_intf': {'type': 'loopback', 'neighbors': [], 'virtual_interface': True, 'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.1/32'}, 'next_hop_self': 'all', 'activate': {'ipv4': True}}\n# ipv4: True\n# ipv6: True\n    afi-safi:\n    - afi-safi-name: ipv4-unicast\n      admin-state: enable\n      send-community-type: ['standard', 'large', 'extended']\n\n      import-policy: ['accept_all']\n      export-policy: ['default_bgp_export', 'accept_all']\n    - afi-safi-name: ipv6-unicast\n      admin-state: disable\n      send-community-type: ['standard', 'large', 'extended']\n\n      import-policy: ['accept_all']\n      export-policy: ['default_bgp_export', 'accept_all']\n\n    timers:\n      connect-retry: 10\n      _annotate_connect-retry: \"Reduce default 120s to 10s\"\n      minimum-advertisement-interval: 1\n    peer-as: 65000\n    transport:\n      local-address: 10.0.0.1\n    next-hop-self: True\n\n\n- path: /network-instance[name=default]/protocols/bgp\n  value:\n    neighbor:\n    - peer-address: \"10.0.0.4\"\n      description: x3\n      peer-group: ibgp-ipv4\n  # neighbor: {'name': 'x3', 'as': 65000, 'type': 'ibgp', 'ipv4': '10.0.0.4', '_source_intf': {'type': 'loopback', 'neighbors': [], 'virtual_interface': True, 'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.1/32'}, 'next_hop_self': 'all', 'activate': {'ipv4': True}}\n  # ipv4: True\n  # ipv6: False\n      afi-safi:\n      - afi-safi-name: ipv4-unicast\n        admin-state: enable\n        send-community-type: ['standard', 'large', 'extended']\n\n      - afi-safi-name: ipv6-unicast\n        admin-state: disable\n\n\n- path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]\n  value:\n    admin-state: enable\n# neighbor: {'ifindex': 1, 'local_as': 65002, 'name': 'x1', 'as': 65100, 'type': 'ebgp', 'ipv4': '10.1.0.2', 'activate': {'ipv4': True}}\n# ipv4: True\n# ipv6: True\n    afi-safi:\n    - afi-safi-name: ipv4-unicast\n      admin-state: enable\n      send-community-type: ['standard', 'large']\n\n      import-policy: ['accept_all']\n      export-policy: ['default_bgp_export', 'accept_all']\n    - afi-safi-name: ipv6-unicast\n      admin-state: disable\n      send-community-type: ['standard', 'large']\n\n      import-policy: ['accept_all']\n      export-policy: ['default_bgp_export', 'accept_all']\n\n    timers:\n      connect-retry: 10\n      _annotate_connect-retry: \"Reduce default 120s to 10s\"\n      minimum-advertisement-interval: 1\n\n\n- path: /network-instance[name=default]/protocols/bgp\n  value:\n    neighbor:\n    - peer-address: \"10.1.0.2\"\n      description: x1\n      peer-group: ebgp\n  # neighbor: {'ifindex': 1, 'local_as': 65002, 'name': 'x1', 'as': 65100, 'type': 'ebgp', 'ipv4': '10.1.0.2', 'activate': {'ipv4': True}}\n  # ipv4: True\n  # ipv6: False\n      afi-safi:\n      - afi-safi-name: ipv4-unicast\n        admin-state: enable\n        send-community-type: ['standard', 'large']\n\n      - afi-safi-name: ipv6-unicast\n        admin-state: disable\n\n      peer-as: 65100\n      local-as:\n        as-number: 65002\n        prepend-global-as: False # Don't include iBGP global AS in eBGP advertisements\n\n- path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-local-as]\n  value:\n    admin-state: enable\n# neighbor: {'ifindex': 2, 'local_as': 65101, 'name': 'x2', 'as': 65101, 'type': 'localas_ibgp', 'ipv4': '10.1.0.6', 'rr_client': True, 'next_hop_self': 'all', 'activate': {'ipv4': True}}\n# ipv4: True\n# ipv6: True\n    afi-safi:\n    - afi-safi-name: ipv4-unicast\n      admin-state: enable\n      send-community-type: ['standard', 'large', 'extended']\n\n      import-policy: ['accept_all']\n      export-policy: ['default_bgp_export', 'accept_all']\n    - afi-safi-name: ipv6-unicast\n      admin-state: disable\n      send-community-type: ['standard', 'large', 'extended']\n\n      import-policy: ['accept_all']\n      export-policy: ['default_bgp_export', 'accept_all']\n\n    timers:\n      connect-retry: 10\n      _annotate_connect-retry: \"Reduce default 120s to 10s\"\n      minimum-advertisement-interval: 1\n    peer-as: 65101\n    next-hop-self: True\n\n\n- path: /network-instance[name=default]/protocols/bgp\n  value:\n    neighbor:\n    - peer-address: \"10.1.0.6\"\n      description: x2\n      peer-group: ibgp-local-as\n  # neighbor: {'ifindex': 2, 'local_as': 65101, 'name': 'x2', 'as': 65101, 'type': 'localas_ibgp', 'ipv4': '10.1.0.6', 'rr_client': True, 'next_hop_self': 'all', 'activate': {'ipv4': True}}\n  # ipv4: True\n  # ipv6: False\n      afi-safi:\n      - afi-safi-name: ipv4-unicast\n        admin-state: enable\n        send-community-type: ['standard', 'large', 'extended']\n\n      - afi-safi-name: ipv6-unicast\n        admin-state: disable\n\n      transport:\n        local-address: 10.1.0.5\n      local-as:\n        as-number: 65101\n        prepend-global-as: False # Don't include iBGP global AS in eBGP advertisements\n\n"
 }
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [dut]
@@ -169,7 +180,7 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=32   changed=3    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+dut                        : ok=38   changed=4    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================
