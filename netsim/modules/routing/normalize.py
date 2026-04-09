@@ -110,6 +110,7 @@ def import_routing_object(
         f'Global routing {o_name} {pname} referenced in node {node.name} does not exist',
         category=log.MissingValue,
         module='routing')
+      node.routing[o_name].pop(pname,None)
       return None
 
     node.routing[o_name][pname] = topo_pdata[pname]         # Otherwise, copy global policy to node policy

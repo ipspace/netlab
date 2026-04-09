@@ -133,6 +133,8 @@ the attributes make sense.
 """
 def check_routing_policy(p_name: str,o_type: str, node: Box,topology: Box) -> bool:
   p_data = node.get(f'routing.policy.{p_name}',None)        # Use this convoluted getter in case we get called out of context
+  if p_data is None:
+    return False
   d_features = devices.get_device_features(node,topology.defaults)
   d_features = d_features.routing.policy                    # Get per-device routing policy features
 
