@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+**Release 26.04 (2026-04-10)**
+
+* New [**bgp.advertise**](bgp-advertise-prefix) node attribute — advertise connected/static networks into BGP on over a dozen platforms
+* The **bgp.originate** node attribute can be used to [originate IPv4 and IPv6 prefixes](bgp-advertise-prefix) in global and VRF BGP instances.
+* Extreme Networks EXOS initial platform support
+* Static routes on Nexus OS, Nokia SR OS, SR Linux, OpenBSD
+* EVPN/VXLAN-over-IPv6 on FRRouting
+
+[More details](release-26.04)
+
 **Release 26.03 (2026-03-10)**
 
 * [New Cisco IOS XR features](release-26.03-ios-xr): SR-MPLS, MPLS/VPN, MPLS 6PE, EVPN over MPLS, VRRP, full BGP routing policy support
@@ -121,6 +131,7 @@ For older releases, check the [release notes archive](release-archive.md).
    :caption: Individual release notes
    :maxdepth: 1
 
+   release/26.04.md
    release/26.03.md
    release/26.02.md
    release/26.01.md
