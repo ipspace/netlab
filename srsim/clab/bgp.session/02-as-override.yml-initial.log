@@ -27,7 +27,7 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/sros.yml for
 TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
 ok: [dut]
 
-TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on 192.168.17.101] *******
+TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on 192.168.83.101] *******
 ok: [dut -> localhost]
 
 TASK [Update SR-SIM hardware configuration] ************************************
@@ -37,7 +37,6 @@ TASK [Get port 1/1/c1 status] **************************************************
 FAILED - RETRYING: [dut]: Get port 1/1/c1 status (10 retries left).
 FAILED - RETRYING: [dut]: Get port 1/1/c1 status (9 retries left).
 FAILED - RETRYING: [dut]: Get port 1/1/c1 status (8 retries left).
-FAILED - RETRYING: [dut]: Get port 1/1/c1 status (7 retries left).
 ok: [dut]
 
 PLAY RECAP *********************************************************************
@@ -46,8 +45,8 @@ dut                        : ok=8    changed=1    unreachable=0    failed=0    s
 Config Deploying device configurations
  [INFO] Executing initial configuration for node x1
  [INFO] Executing initial configuration for node x2
- [INFO] Executing bgp configuration for node x2
  [INFO] Executing bgp configuration for node x1
+ [INFO] Executing bgp configuration for node x2
  [INFO] Starting Ansible playbook to deploy the rest of the
           configurations
 [WARNING]: Found variable using reserved name: hosts
@@ -104,7 +103,7 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for d
 TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
 
-TASK [Update initial node configuration from gNMI template /work/netlab_cicd/node_files/dut/initial] ***
+TASK [Update initial node configuration from gNMI template /work/netlab_cicd/nokia_c/node_files/dut/initial] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -132,7 +131,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "bgp configuration for dut\n=========================================\n\nupdates:\n\n- path: configure/policy-options/policy-statement[name=accept_all]\n  val:\n    default-action:\n      action-type: accept\n\n- path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]\n  val:\n    entry:\n    - entry-id: 10\n      from:\n        path-type: ebgp\n      action:\n        action-type: accept\n        next-hop: self\n    default-action:\n      action-type: next-policy\n\n\n- path: configure/policy-options/prefix-list[name=bgp_default_advertise]\n  val:\n    prefix: [] # Make sure it exists\n\n- path: configure/policy-options/policy-statement[name=bgp_default_export]\n  val:\n    default-action:\n      action-type: reject\n    entry:\n    - entry-id: 10\n      from:\n        prefix-list: [ \"bgp_default_advertise\" ]\n      action:\n        action-type: accept\n    - entry-id: 20\n      from:\n        protocol:\n          name: [ bgp ]\n      action:\n        action-type: accept\n- path: configure/policy-options/prefix-list[name=bgp_default_advertise]\n  val:\n    prefix:\n    - ip-prefix: 10.0.0.1/32\n      type: exact\n\n\n\n\n\n\n- path: configure/router[router-name=Base]\n  val:\n    router-id: \"10.0.0.1\"\n    autonomous-system: 65000\n    bgp:\n      ebgp-default-reject-policy:\n        import: False\n        export: False\n      multipath:\n        ibgp: 64\n        ebgp: 64\n      min-route-advertisement: 1 # Be aggressive about sending updates\n      connect-retry: 5           # Retry frequently, suitable in DC context\n    # family: cannot disable this\n    # ipv4: False # Enabled by default, disable globally and set per group\n\n\n\n\n- path: configure/router[router-name=Base]/bgp/group[group-name=ebgp]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: True\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - bgp_default_export\n    send-communities:\n      extended: False  # True value not allowed, on by default\n\n\n- path: configure/router[router-name=Base]/bgp\n  val:\n    neighbor:\n    - ip-address: \"10.1.0.2\"\n      description: \"x1\"\n      peer-as: 65100\n      group: \"ebgp\"\n      admin-state: enable\n      family:\n        ipv4: True\n        ipv6: False\n\n\n- path: configure/router[router-name=Base]/bgp/group[group-name=ebgp]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: True\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - bgp_default_export\n    send-communities:\n      extended: False  # True value not allowed, on by default\n\n\n- path: configure/router[router-name=Base]/bgp\n  val:\n    neighbor:\n    - ip-address: \"2001:db8:3::2\"\n      description: \"x1\"\n      peer-as: 65100\n      group: \"ebgp\"\n      admin-state: enable\n      family:\n        ipv4: False\n        ipv6: True\n\n\n- path: configure/router[router-name=Base]/bgp/group[group-name=ebgp]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: True\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - bgp_default_export\n    send-communities:\n      extended: False  # True value not allowed, on by default\n\n\n- path: configure/router[router-name=Base]/bgp\n  val:\n    neighbor:\n    - ip-address: \"10.1.0.6\"\n      description: \"x2\"\n      peer-as: 65100\n      group: \"ebgp\"\n      admin-state: enable\n      family:\n        ipv4: True\n        ipv6: False\n\n\n- path: configure/router[router-name=Base]/bgp/group[group-name=ebgp]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: True\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - bgp_default_export\n    send-communities:\n      extended: False  # True value not allowed, on by default\n\n\n- path: configure/router[router-name=Base]/bgp\n  val:\n    neighbor:\n    - ip-address: \"2001:db8:3:1::2\"\n      description: \"x2\"\n      peer-as: 65100\n      group: \"ebgp\"\n      admin-state: enable\n      family:\n        ipv4: False\n        ipv6: True\n\n\n\n"
+    "msg": "bgp configuration for dut\n=========================================\n\nupdates:\n\n- path: configure/policy-options/policy-statement[name=accept_all]\n  val:\n    default-action:\n      action-type: accept\n\n- path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]\n  val:\n    entry:\n    - entry-id: 10\n      from:\n        path-type: ebgp\n      action:\n        action-type: accept\n        next-hop: self\n    default-action:\n      action-type: next-policy\n\n\n- path: configure/policy-options/prefix-list[name=bgp_default_advertise]\n  val:\n    prefix: [] # Make sure it exists\n\n- path: configure/policy-options/policy-statement[name=bgp_default_export]\n  val:\n    default-action:\n      action-type: reject\n    entry:\n    - entry-id: 10\n      from:\n        prefix-list: [ \"bgp_default_advertise\" ]\n      action:\n        action-type: accept\n    - entry-id: 20\n      from:\n        protocol:\n          name: [ bgp ]\n      action:\n        action-type: accept\n- path: configure/policy-options/prefix-list[name=bgp_default_advertise]\n  val:\n    prefix:\n    - ip-prefix: 10.0.0.1/32\n      type: exact\n\n\n- path: configure/router[router-name=Base]\n  val:\n    router-id: \"10.0.0.1\"\n    autonomous-system: 65000\n    bgp:\n      ebgp-default-reject-policy:\n        import: False\n        export: False\n      advertise-inactive: True\n      multipath:\n        ibgp: 64\n        ebgp: 64\n      min-route-advertisement: 1 # Be aggressive about sending updates\n      connect-retry: 5           # Retry frequently, suitable in DC context\n    # family: cannot disable this\n    # ipv4: False # Enabled by default, disable globally and set per group\n\n\n\n\n- path: configure/router[router-name=Base]/bgp/group[group-name=ebgp]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: True\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - bgp_default_export\n    send-communities:\n      extended: False  # True value not allowed, on by default\n\n\n- path: configure/router[router-name=Base]/bgp\n  val:\n    neighbor:\n    - ip-address: \"10.1.0.2\"\n      description: \"x1\"\n      peer-as: 65100\n      group: \"ebgp\"\n      admin-state: enable\n      family:\n        ipv4: True\n        ipv6: False\n\n\n- path: configure/router[router-name=Base]/bgp/group[group-name=ebgp]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: True\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - bgp_default_export\n    send-communities:\n      extended: False  # True value not allowed, on by default\n\n\n- path: configure/router[router-name=Base]/bgp\n  val:\n    neighbor:\n    - ip-address: \"2001:db8:3::2\"\n      description: \"x1\"\n      peer-as: 65100\n      group: \"ebgp\"\n      admin-state: enable\n      family:\n        ipv4: False\n        ipv6: True\n\n\n- path: configure/router[router-name=Base]/bgp/group[group-name=ebgp]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: True\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - bgp_default_export\n    send-communities:\n      extended: False  # True value not allowed, on by default\n\n\n- path: configure/router[router-name=Base]/bgp\n  val:\n    neighbor:\n    - ip-address: \"10.1.0.6\"\n      description: \"x2\"\n      peer-as: 65100\n      group: \"ebgp\"\n      admin-state: enable\n      family:\n        ipv4: True\n        ipv6: False\n\n\n- path: configure/router[router-name=Base]/bgp/group[group-name=ebgp]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: True\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - bgp_default_export\n    send-communities:\n      extended: False  # True value not allowed, on by default\n\n\n- path: configure/router[router-name=Base]/bgp\n  val:\n    neighbor:\n    - ip-address: \"2001:db8:3:1::2\"\n      description: \"x2\"\n      peer-as: 65100\n      group: \"ebgp\"\n      admin-state: enable\n      family:\n        ipv4: False\n        ipv6: True\n\n"
 }
 
 TASK [Deploy bgp configuration] ************************************************
@@ -141,7 +140,7 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for d
 TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
 
-TASK [Update bgp node configuration from gNMI template /work/netlab_cicd/node_files/dut/bgp] ***
+TASK [Update bgp node configuration from gNMI template /work/netlab_cicd/nokia_c/node_files/dut/bgp] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -164,7 +163,13 @@ ok: [dut -> localhost]
 TASK [fail] ********************************************************************
 skipping: [dut]
 
-TASK [Process template /work/netlab_cicd/node_files/dut/bgp.session for dut] ***
+TASK [Process template /work/netlab_cicd/nokia_c/node_files/dut/bgp.session for dut] ***
+skipping: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
+
+TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [Find custom configuration deployment script] *****************************
@@ -176,19 +181,19 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for d
 TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
 
-TASK [Update bgp.session node configuration from gNMI template /work/netlab_cicd/node_files/dut/bgp.session] ***
+TASK [Update bgp.session node configuration from gNMI template /work/netlab_cicd/nokia_c/node_files/dut/bgp.session] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
 skipping: [dut]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=29   changed=3    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+dut                        : ok=29   changed=3    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================
-x1                           OK: 2   
-x2                           OK: 2   
+x1               Script:  initial,bgp
+x2               Script:  initial,bgp
 
 
 Use this topology to test the 'as-override' functionality. The DUT has to

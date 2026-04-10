@@ -6,20 +6,138 @@ Creating Device configuration snippets
 [CREATED] r2: initial,ospf
 Checking Are lab devices ready to be configured?
  [INFO] Checking SSH server(s) on ros
-[SSH]     SSH server on node ros (device iol) is ready after 25.4 seconds
+[SSH]     SSH server on node ros (device iol) is ready after 25.5 seconds
 Config Deploying device configurations
  [INFO] Executing initial configuration for node s1
  [INFO] Executing initial configuration for node s2
  [INFO] Executing initial configuration for node r1
  [INFO] Executing initial configuration for node r2
- [INFO] Executing ospf configuration for node r1
  [INFO] Executing ospf configuration for node r2
+ [INFO] Executing ospf configuration for node r1
  [INFO] Executing vlan configuration for node s2
  [INFO] Executing vlan configuration for node s1
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [ros]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [ros]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [ros]
+
+TASK [fail] ********************************************************************
+skipping: [ros]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [ros]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [ros]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [ros]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [ros]
+
+TASK [Find configuration template for initial] *********************************
+ok: [ros]
+
+TASK [fail] ********************************************************************
+skipping: [ros]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [ros]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [ros] => {
+    "msg": "initial configuration for ros\n=========================================\nhostname ros\n!\nno ip domain lookup\nlogging buffered 256000\n\n!\nlldp run\n!\nip host r1 10.0.0.4 172.16.0.4\nip host r2 10.0.0.5 172.16.1.5\nip host s1 10.0.0.2 172.16.0.2 172.16.1.2\nip host s2 10.0.0.3 172.16.1.3 172.16.0.3\n!\nip routing\n!\nno ipv6 unicast-routing\n!\n!\nbridge irb\n!\nbridge 1 protocol vlan-bridge\nbridge 1 route ip\n!\nbridge 2 protocol vlan-bridge\nbridge 2 route ip\n!\n\n!\n!\ninterface Loopback0\n ip address 10.0.0.1 255.255.255.255\n!\ninterface Ethernet0/0\n no lldp transmit\n no lldp receive\n!\ninterface Ethernet0/1\n description ros -> s2\n no shutdown\n!\ninterface Ethernet0/1.1\n encapsulation dot1Q 701\n description ros -> [r2,s1,s2]\n ip address 172.16.1.1 255.255.255.0\n no shutdown\n!\ninterface Ethernet0/1.2\n encapsulation dot1Q 700\n description ros -> [r1,s1,s2]\n ip address 172.16.0.1 255.255.255.0\n no shutdown\n!\n!\nline vty 0 4\n exec-timeout 0 0 \n!\nno banner exec\nno banner login\nno banner incoming\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for ros
+
+TASK [ios_config: deploying initial from /work/netlab_cicd/cisco_c/node_files/ros/initial] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [ros]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [ros]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros => (item=ospf)
+
+TASK [Figure out whether to deploy the module vlan on current device] **********
+ok: [ros]
+
+TASK [Find configuration template for vlan] ************************************
+ok: [ros]
+
+TASK [fail] ********************************************************************
+skipping: [ros]
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
+ok: [ros]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [ros] => {
+    "msg": "vlan configuration for ros\n=========================================\n!\nbridge-domain 701\n!\nbridge-domain 700\n!\ninterface Ethernet0/1.1\n encapsulation dot1Q 701\n!\ninterface Ethernet0/1.2\n encapsulation dot1Q 700\n"
+}
+
+TASK [Deploy vlan configuration] ***********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for ros
+
+TASK [ios_config: deploying vlan from /work/netlab_cicd/cisco_c/node_files/ros/vlan] ***
+changed: [ros]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [ros]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [ros]
+
+TASK [fail] ********************************************************************
+skipping: [ros]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [ros]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [ros] => {
+    "msg": "ospf configuration for ros\n=========================================\nrouter ospf 1\n router-id 10.0.0.1\n\n!\ninterface Loopback0\n! \n ip ospf 1 area 0.0.0.0\n!\ninterface Ethernet0/1.1\n! ros -> [r2,s1,s2]\n ip ospf 1 area 0.0.0.0\n!\ninterface Ethernet0/1.2\n! ros -> [r1,s1,s2]\n ip ospf 1 area 0.0.0.0\n!\n\n"
+}
+
+TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for ros
+
+TASK [ios_config: deploying ospf from /work/netlab_cicd/cisco_c/node_files/ros/ospf] ***
+changed: [ros]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+ros                        : ok=27   changed=3    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================
-ros              Startup: initial,vlan,ospf
 s1               Script:  initial,vlan
 s2               Script:  initial,vlan
 r1               Script:  initial,ospf
