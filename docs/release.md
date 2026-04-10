@@ -3,7 +3,7 @@ Release Notes
 
 **Release 26.04 (2026-04-10)**
 
-* New [**bgp.advertise**](bgp-advertise-prefix) node attribute — advertise connected/static networks into BGP on over a dozen platforms
+* New [**bgp.advertise**](bgp-advertise-prefix) node/VRF attribute — advertise prefixes from IP routing tables into BGP on most platforms.
 * The **bgp.originate** node attribute can be used to [originate IPv4 and IPv6 prefixes](bgp-advertise-prefix) in global and VRF BGP instances.
 * Extreme Networks EXOS initial platform support
 * Static routes on Nexus OS, Nokia SR OS, SR Linux, OpenBSD
