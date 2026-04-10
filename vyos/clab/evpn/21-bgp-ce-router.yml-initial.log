@@ -1,6 +1,8 @@
 Creating Device configuration snippets
 [CREATED] ce1: initial,bgp
 [CREATED] ce2: initial,bgp
+[CREATED] ce3: initial,bgp
+[CREATED] ce4: initial,bgp
 [CREATED] dut: initial,vlan,ospf,bgp,vrf,vxlan,evpn
 [CREATED] s2: initial,vlan,ospf,bgp,vrf,vxlan,evpn
 Checking Are lab devices ready to be configured?
@@ -34,10 +36,14 @@ dut                        : ok=5    changed=0    unreachable=0    failed=0    s
 Config Deploying device configurations
  [INFO] Executing initial configuration for node ce1
  [INFO] Executing initial configuration for node ce2
+ [INFO] Executing initial configuration for node ce3
+ [INFO] Executing initial configuration for node ce4
  [INFO] Executing initial configuration for node s2
  [INFO] Executing bgp configuration for node ce2
- [INFO] Executing vlan configuration for node s2
  [INFO] Executing bgp configuration for node ce1
+ [INFO] Executing bgp configuration for node ce3
+ [INFO] Executing bgp configuration for node ce4
+ [INFO] Executing vlan configuration for node s2
  [INFO] Executing ospf configuration for node s2
  [INFO] Executing bgp configuration for node s2
  [INFO] Executing vrf configuration for node s2
@@ -90,7 +96,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "initial configuration for dut\n=========================================\n#!/bin/vbash\nsource /opt/vyatta/etc/functions/script-template\n\nif [ \"$(id -g -n)\" != 'vyattacfg' ] ; then\n    exec sg vyattacfg -c \"/bin/vbash $(readlink -f $0) $@\"\nfi\n\n# Configuration items start here\n\nconfigure\nset system host-name 'dut'\n\nset vrf name tenant table 100\n\nset interfaces dummy dum0 address 10.0.0.3/32\n\n\n\nset interfaces ethernet eth1 description 'dut -> s2'\n\nset interfaces ethernet eth1 mtu 1600\n\nset interfaces ethernet eth1 address 10.1.0.1/30\n\n\n\n\n\nset interfaces ethernet eth2 description 'dut -> ce1 [external]'\n\nset interfaces ethernet eth2 mtu 1500\n\nset interfaces ethernet eth2 address 10.1.0.6/30\n\n\nset interfaces ethernet eth2 vrf tenant\n\n\nset service lldp interface all\n>/dev/null 2>/dev/null set service lldp interface eth0 disable\n>/dev/null 2>/dev/null set service lldp interface eth0 mode disable\n\n\nset service ssh\n\n# Commit, save and exit from subshell\n\ncommit\nsave\nexit\n\n# Restart FRR to pick up the new hostname\nsudo service frr restart\n"
+    "msg": "initial configuration for dut\n=========================================\nset system host-name 'dut'\n\nset vrf name tenant table 100\nset vrf name other table 101\n\nset interfaces dummy dum0 address 10.0.0.5/32\n\n\n\nset interfaces ethernet eth1 description 'dut -> s2'\n\nset interfaces ethernet eth1 mtu 1600\n\nset interfaces ethernet eth1 address 10.1.0.1/30\n\n\n\n\n\nset interfaces ethernet eth2 description 'dut -> ce1 [external]'\n\nset interfaces ethernet eth2 mtu 1500\n\nset interfaces ethernet eth2 address 10.1.0.6/30\n\n\nset interfaces ethernet eth2 vrf tenant\n\n\n\nset interfaces ethernet eth3 description 'dut -> ce3 [external]'\n\nset interfaces ethernet eth3 mtu 1500\n\nset interfaces ethernet eth3 address 10.1.0.14/30\n\n\nset interfaces ethernet eth3 vrf other\n\n\nset service lldp interface all\n>/dev/null 2>/dev/null set service lldp interface eth0 disable\n>/dev/null 2>/dev/null set service lldp interface eth0 mode disable\n\n\nset service ssh\n\ncommit\n\n# Restart FRR to pick up the new hostname\nsudo service frr restart\n"
 }
 
 TASK [Deploy initial configuration] ********************************************
@@ -161,7 +167,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "ospf configuration for dut\n=========================================\n\nset protocols ospf parameters router-id 10.0.0.3\n\n\n\n\nset protocols ospf interface dum0 passive\nset protocols ospf interface dum0 area 0.0.0.0\n\n\nset protocols ospf interface eth1 area 0.0.0.0\n\nset protocols ospf interface eth1 network point-to-point\n\n\n"
+    "msg": "ospf configuration for dut\n=========================================\n\nset protocols ospf parameters router-id 10.0.0.5\n\n\n\n\nset protocols ospf interface dum0 passive\nset protocols ospf interface dum0 area 0.0.0.0\n\n\nset protocols ospf interface eth1 area 0.0.0.0\n\nset protocols ospf interface eth1 network point-to-point\n\n\n"
 }
 
 TASK [Deploy ospf configuration] ***********************************************
@@ -190,7 +196,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "bgp configuration for dut\n=========================================\n\nset protocols bgp system-as 65000\n\nset protocols bgp parameters router-id 10.0.0.3\n\n\n\nset protocols bgp neighbor 10.0.0.4 remote-as 65000\nset protocols bgp neighbor 10.0.0.4 description 's2'\n \nset protocols bgp neighbor 10.0.0.4 update-source dum0\n\n\n\n\n# Work on Family ipv4\n\n\nset protocols bgp address-family ipv4-unicast network 10.0.0.3/32\n\n\n\n\n\nset protocols bgp neighbor 10.0.0.4 address-family ipv4-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.0.0.4 address-family ipv4-unicast nexthop-self\n\n\n\n\n"
+    "msg": "bgp configuration for dut\n=========================================\n\nset protocols bgp system-as 65000\n\nset protocols bgp parameters router-id 10.0.0.5\n\n\n\nset protocols bgp neighbor 10.0.0.6 remote-as 65000\nset protocols bgp neighbor 10.0.0.6 description 's2'\n \nset protocols bgp neighbor 10.0.0.6 update-source dum0\n\n\n\n\n# Work on Family ipv4\n\nset protocols bgp address-family ipv4-unicast network 10.0.0.5/32\n\n\n\nset protocols bgp neighbor 10.0.0.6 address-family ipv4-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.0.0.6 address-family ipv4-unicast nexthop-self\n\n\n\n"
 }
 
 TASK [Deploy bgp configuration] ************************************************
@@ -219,7 +225,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "vrf configuration for dut\n=========================================\nset protocols bgp system-as 65000\n\n# Enter vrf sublevel\nedit vrf name tenant\n\n\nset protocols bgp system-as 65000\n\nset protocols bgp parameters router-id 10.0.0.3\n\nset protocols bgp address-family ipv4-unicast rd vpn export 65000:1\nset protocols bgp address-family ipv4-unicast route-target vpn import \"65000:1\"\nset protocols bgp address-family ipv4-unicast route-target vpn export \"65000:1\"\nset protocols bgp address-family ipv4-unicast import vpn\nset protocols bgp address-family ipv4-unicast export vpn\nset protocols bgp address-family ipv4-unicast label vpn export auto\n\n\n\nset protocols bgp address-family ipv4-unicast redistribute connected\n\n# Define networks for VRF Loopback\n\n\n\nset protocols bgp neighbor 10.1.0.5 remote-as 65100\nset protocols bgp neighbor 10.1.0.5 description 'ce1'\n \n\n\n\n\nset protocols bgp neighbor 10.1.0.5 address-family ipv4-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.1.0.5 address-family ipv4-unicast nexthop-self\n\nset protocols bgp neighbor 10.1.0.5 address-family ipv4-unicast disable-send-community extended\n\n\n\n# Back to root level\ntop\n"
+    "msg": "vrf configuration for dut\n=========================================\nset protocols bgp system-as 65000\n\n# Enter vrf sublevel\nedit vrf name tenant\n\n\nset protocols bgp system-as 65000\n\nset protocols bgp parameters router-id 10.0.0.5\n\nset protocols bgp address-family ipv4-unicast rd vpn export 65000:1\nset protocols bgp address-family ipv4-unicast route-target vpn import \"65000:1\"\nset protocols bgp address-family ipv4-unicast route-target vpn export \"65000:1\"\nset protocols bgp address-family ipv4-unicast import vpn\nset protocols bgp address-family ipv4-unicast export vpn\nset protocols bgp address-family ipv4-unicast label vpn export auto\n\n\n\nset protocols bgp address-family ipv4-unicast redistribute connected\n\n# Configure advertised BGP networks\n\n\n\nset protocols bgp neighbor 10.1.0.5 remote-as 65101\nset protocols bgp neighbor 10.1.0.5 description 'ce1'\n \n\n\n\n\nset protocols bgp neighbor 10.1.0.5 address-family ipv4-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.1.0.5 address-family ipv4-unicast nexthop-self\n\nset protocols bgp neighbor 10.1.0.5 address-family ipv4-unicast disable-send-community extended\n\n\n\n# Back to root level\ntop\nedit vrf name other\n\n\nset protocols bgp system-as 65000\n\nset protocols bgp parameters router-id 10.0.0.5\n\nset protocols bgp address-family ipv4-unicast rd vpn export 65000:2\nset protocols bgp address-family ipv4-unicast route-target vpn import \"65000:2\"\nset protocols bgp address-family ipv4-unicast route-target vpn export \"65000:2\"\nset protocols bgp address-family ipv4-unicast import vpn\nset protocols bgp address-family ipv4-unicast export vpn\nset protocols bgp address-family ipv4-unicast label vpn export auto\n\n\n\nset protocols bgp address-family ipv4-unicast redistribute connected\n\n# Configure advertised BGP networks\n\n\n\nset protocols bgp neighbor 10.1.0.13 remote-as 65103\nset protocols bgp neighbor 10.1.0.13 description 'ce3'\n \n\n\n\n\nset protocols bgp neighbor 10.1.0.13 address-family ipv4-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.1.0.13 address-family ipv4-unicast nexthop-self\n\nset protocols bgp neighbor 10.1.0.13 address-family ipv4-unicast disable-send-community extended\n\n\n\n# Back to root level\ntop\n"
 }
 
 TASK [Deploy vrf configuration] ************************************************
@@ -248,7 +254,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "vxlan configuration for dut\n=========================================\n#!/bin/vbash\nsource /opt/vyatta/etc/functions/script-template\n\nif [ \"$(id -g -n)\" != 'vyattacfg' ] ; then\n    exec sg vyattacfg -c \"/bin/vbash $(readlink -f $0) $@\"\nfi\n\n# Configuration items start here\nconfigure\n\n\n# Commit, save and exit from subshell\n\ncommit\nsave\nexit\n"
+    "msg": "vxlan configuration for dut\n=========================================\n"
 }
 
 TASK [Deploy vxlan configuration] **********************************************
@@ -277,7 +283,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "evpn configuration for dut\n=========================================\n#!/bin/vbash\nsource /opt/vyatta/etc/functions/script-template\n\nif [ \"$(id -g -n)\" != 'vyattacfg' ] ; then\n    exec sg vyattacfg -c \"/bin/vbash $(readlink -f $0) $@\"\nfi\n\n# Configuration items start here\nconfigure\n\n# Configure Generic EVPN Stuff\nset protocols bgp address-family l2vpn-evpn advertise-svi-ip\nset protocols bgp address-family l2vpn-evpn advertise-all-vni\n\nset protocols bgp neighbor 10.0.0.4 address-family l2vpn-evpn nexthop-self\nset protocols bgp neighbor 10.0.0.4 address-family l2vpn-evpn soft-reconfiguration inbound\n\n\n# Configure VNI params\n\n# Work on L3VNI\n\n# If at least one VRF has evpn.transit_vni\nset protocols bgp address-family l2vpn-evpn advertise ipv4 unicast\n\nset vrf name tenant protocols bgp address-family ipv4-unicast redistribute connected\nset vrf name tenant protocols bgp address-family l2vpn-evpn advertise ipv4 unicast\nset vrf name tenant vni '5042'\nset vrf name tenant protocols bgp address-family l2vpn-evpn vni 5042\n\nset vrf name tenant protocols bgp address-family l2vpn-evpn rd 65000:1\nset vrf name tenant protocols bgp address-family l2vpn-evpn route-target import \"65000:1\"\nset vrf name tenant protocols bgp address-family l2vpn-evpn route-target export \"65000:1\"\n\n# Need to create VXLAN and Bridge for L3VNI\nset interfaces vxlan vxlan5042 vni 5042\nset interfaces vxlan vxlan5042 source-address 10.0.0.3\nset interfaces vxlan vxlan5042 port 4789\nset interfaces vxlan vxlan5042 parameters nolearning\n\n# Dummy Bridge for L3VNI - See https://github.com/FRRouting/frr/issues/11212\nset interfaces bridge br5042 member interface vxlan5042\nset interfaces bridge br5042 description \"Dummy Bridge for L3VNI 5042\"\nset interfaces bridge br5042 vrf 'tenant'\n\n\n\n# Commit, save and exit from subshell\n\ncommit\nsave\nexit\n"
+    "msg": "evpn configuration for dut\n=========================================\n# Configure Generic EVPN Stuff\nset protocols bgp address-family l2vpn-evpn advertise-svi-ip\nset protocols bgp address-family l2vpn-evpn advertise-all-vni\n\nset protocols bgp neighbor 10.0.0.6 address-family l2vpn-evpn soft-reconfiguration inbound\n\n\n# Configure VNI params\n\n# Work on L3VNI\n\n# If at least one VRF has evpn.transit_vni\nset protocols bgp address-family l2vpn-evpn advertise ipv4 unicast\n\nset vrf name tenant protocols bgp address-family ipv4-unicast redistribute connected\nset vrf name tenant protocols bgp address-family l2vpn-evpn advertise ipv4 unicast\nset vrf name tenant vni '5042'\nset vrf name tenant protocols bgp address-family l2vpn-evpn vni 5042\n\nset vrf name tenant protocols bgp address-family l2vpn-evpn rd 65000:1\nset vrf name tenant protocols bgp address-family l2vpn-evpn route-target import \"65000:1\"\nset vrf name tenant protocols bgp address-family l2vpn-evpn route-target export \"65000:1\"\n\n# Need to create VXLAN and Bridge for L3VNI\nset interfaces vxlan vxlan5042 vni 5042\nset interfaces vxlan vxlan5042 source-address 10.0.0.5\nset interfaces vxlan vxlan5042 port 4789\nset interfaces vxlan vxlan5042 parameters nolearning\n\n# Dummy Bridge for L3VNI - See https://github.com/FRRouting/frr/issues/11212\nset interfaces bridge br5042 member interface vxlan5042\nset interfaces bridge br5042 description \"Dummy Bridge for L3VNI 5042\"\nset interfaces bridge br5042 vrf 'tenant'\n\nset vrf name other protocols bgp address-family ipv4-unicast redistribute connected\nset vrf name other protocols bgp address-family l2vpn-evpn advertise ipv4 unicast\nset vrf name other vni '5067'\nset vrf name other protocols bgp address-family l2vpn-evpn vni 5067\n\nset vrf name other protocols bgp address-family l2vpn-evpn rd 65000:2\nset vrf name other protocols bgp address-family l2vpn-evpn route-target import \"65000:2\"\nset vrf name other protocols bgp address-family l2vpn-evpn route-target export \"65000:2\"\n\n# Need to create VXLAN and Bridge for L3VNI\nset interfaces vxlan vxlan5067 vni 5067\nset interfaces vxlan vxlan5067 source-address 10.0.0.5\nset interfaces vxlan vxlan5067 port 4789\nset interfaces vxlan vxlan5067 parameters nolearning\n\n# Dummy Bridge for L3VNI - See https://github.com/FRRouting/frr/issues/11212\nset interfaces bridge br5067 member interface vxlan5067\nset interfaces bridge br5067 description \"Dummy Bridge for L3VNI 5067\"\nset interfaces bridge br5067 vrf 'other'\n\n\n\ncommit\nsave\n\nvtysh -c 'clear bgp *'\n"
 }
 
 TASK [Deploy evpn configuration] ***********************************************
@@ -300,9 +306,11 @@ dut                        : ok=69   changed=14   unreachable=0    failed=0    s
 
 Results of configuration script deployments
 ================================================================================
-ce1                          OK: 2   
-ce2                          OK: 2   
-s2                           OK: 7   
+ce1              Script:  initial,bgp
+ce2              Script:  initial,bgp
+ce3              Script:  initial,bgp
+ce4              Script:  initial,bgp
+s2               Script:  initial,vlan,ospf,bgp,vrf,vxlan,evpn
 
 
 The devices under test are layer-3 EVPN/VXLAN routers
