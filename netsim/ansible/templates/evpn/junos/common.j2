@@ -146,7 +146,7 @@ routing-instances {
                     advertise direct-nexthop;
                     encapsulation vxlan;
                     vni {{ v.evpn.transit_vni }};
-                    export [ vrf-{{n}}-bgp-export bgp-final ];
+                    export [ bgp-{{n}}-redistribute bgp-final ];
                 }
 {%     endif %}
             }
@@ -168,13 +168,18 @@ policy-options {
             }
         }
     }
-    policy-statement vrf-{{n}}-bgp-export {
+    policy-statement bgp-{{n}}-redistribute {
+        delete: term default;
+
         term redis_evpn {
             from protocol evpn;
             then {
                 community add x-route-permit-mark;
                 next policy;
             }
+        }
+        term default {
+            then reject;
         }
     }
 {%   endfor %}
