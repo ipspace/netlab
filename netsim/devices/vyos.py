@@ -18,7 +18,7 @@ def check_aspath_prepend(node: Box, topology: Box) -> None:
         category=log.IncorrectValue,
         quirk='aspath_prepend')
 
-class Linux(_Quirks):
+class Vyos(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
