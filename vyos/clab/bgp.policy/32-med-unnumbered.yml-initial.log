@@ -1,5 +1,5 @@
 Creating Device configuration snippets
-[CREATED] dut: initial,bgp,routing,bgp.policy
+[CREATED] dut: initial,routing,bgp,bgp.policy
 [CREATED] probe: initial,bgp
 Checking Are lab devices ready to be configured?
  [INFO] Checking lab devices with an Ansible playbook
@@ -79,7 +79,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "initial configuration for dut\n=========================================\n#!/bin/vbash\nsource /opt/vyatta/etc/functions/script-template\n\nif [ \"$(id -g -n)\" != 'vyattacfg' ] ; then\n    exec sg vyattacfg -c \"/bin/vbash $(readlink -f $0) $@\"\nfi\n\n# Configuration items start here\n\nconfigure\nset system host-name 'dut'\n\n\nset interfaces dummy dum0 address 10.0.0.42/32\nset interfaces dummy dum0 address 2001:db8:42:1::1/128\n\n\n\nset interfaces ethernet eth1 description 'dut -> probe [external]'\n\nset interfaces ethernet eth1 mtu 1500\n\n# Need to set the same address as loopback (dum0) to make it behave as unnumbered\nset interfaces ethernet eth1 address 10.0.0.42/32\n\nset interfaces ethernet eth1 ipv6\n\n\n\nset service lldp interface all\n>/dev/null 2>/dev/null set service lldp interface eth0 disable\n>/dev/null 2>/dev/null set service lldp interface eth0 mode disable\n\nset service router-advert interface eth1\n\nset service ssh\n\n# Commit, save and exit from subshell\n\ncommit\nsave\nexit\n\n# Restart FRR to pick up the new hostname\nsudo service frr restart\n"
+    "msg": "initial configuration for dut\n=========================================\nset system host-name 'dut'\n\n\nset interfaces dummy dum0 address 10.0.0.42/32\nset interfaces dummy dum0 address 2001:db8:42:1::1/128\n\n\n\nset interfaces ethernet eth1 description 'dut -> probe [external]'\n\nset interfaces ethernet eth1 mtu 1500\n\n# Need to set the same address as loopback (dum0) to make it behave as unnumbered\nset interfaces ethernet eth1 address 10.0.0.42/32\n\nset interfaces ethernet eth1 ipv6\n\n\n\nset service lldp interface all\n>/dev/null 2>/dev/null set service lldp interface eth0 disable\n>/dev/null 2>/dev/null set service lldp interface eth0 mode disable\n\nset service router-advert interface eth1\n\nset service ssh\n\ncommit\n\n# Restart FRR to pick up the new hostname\nsudo service frr restart\n"
 }
 
 TASK [Deploy initial configuration] ********************************************
@@ -91,7 +91,7 @@ ok: [dut]
 TASK [template] ****************************************************************
 changed: [dut]
 
-TASK [execute config-initial.sh to deploy initial config from /work/netlab_cicd/node_files/dut/initial] ***
+TASK [execute config-initial.sh to deploy initial config from /work/netlab_cicd/other_c/node_files/dut/initial] ***
 changed: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -117,7 +117,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "routing configuration for dut\n=========================================\n#!/bin/vbash\nsource /opt/vyatta/etc/functions/script-template\n\nif [ \"$(id -g -n)\" != 'vyattacfg' ] ; then\n    exec sg vyattacfg -c \"/bin/vbash $(readlink -f $0) $@\"\nfi\n\n# Configuration items start here\n\nconfigure\n\n\n\n\nset policy route-map bp-probe-1-in-ipv4 rule 10 action permit\n\nedit policy route-map bp-probe-1-in-ipv4 rule 10\nset set local-preference 17\n\ntop\n\n\nset policy route-map bp-probe-1-in-ipv6 rule 10 action permit\n\nedit policy route-map bp-probe-1-in-ipv6 rule 10\nset set local-preference 17\n\ntop\n\n\nset policy route-map bp-probe-1-out-ipv4 rule 10 action permit\n\nedit policy route-map bp-probe-1-out-ipv4 rule 10\nset set metric 42\n\ntop\n\n\nset policy route-map bp-probe-1-out-ipv6 rule 10 action permit\n\nedit policy route-map bp-probe-1-out-ipv6 rule 10\nset set metric 42\n\ntop\n\n\n\n\n# Static routing\n\n\ncommit\nsave\nexit\n"
+    "msg": "routing configuration for dut\n=========================================\n\n\n\nset policy route-map bp-probe-1-in-ipv4 rule 10 action permit\n\nedit policy route-map bp-probe-1-in-ipv4 rule 10\nset set local-preference 17\n\ntop\n\n\nset policy route-map bp-probe-1-in-ipv6 rule 10 action permit\n\nedit policy route-map bp-probe-1-in-ipv6 rule 10\nset set local-preference 17\n\ntop\n\n\nset policy route-map bp-probe-1-out-ipv4 rule 10 action permit\n\nedit policy route-map bp-probe-1-out-ipv4 rule 10\nset set metric 42\n\ntop\n\n\nset policy route-map bp-probe-1-out-ipv6 rule 10 action permit\n\nedit policy route-map bp-probe-1-out-ipv6 rule 10\nset set metric 42\n\ntop\n\n\n\n\n# Static routing\n\n"
 }
 
 TASK [Deploy routing configuration] ********************************************
@@ -129,7 +129,7 @@ ok: [dut]
 TASK [template] ****************************************************************
 changed: [dut]
 
-TASK [execute config-routing.sh to deploy routing config from /work/netlab_cicd/node_files/dut/routing] ***
+TASK [execute config-routing.sh to deploy routing config from /work/netlab_cicd/other_c/node_files/dut/routing] ***
 changed: [dut]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
@@ -146,7 +146,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "bgp configuration for dut\n=========================================\n\nset protocols bgp system-as 65000\n\nset protocols bgp parameters router-id 10.0.0.42\n\n\n\nset protocols bgp neighbor eth1 interface remote-as 65100\nset protocols bgp neighbor eth1 description 'probe'\n \n\n\n\n\nset protocols bgp neighbor eth1 interface remote-as 65100\nset protocols bgp neighbor eth1 description 'probe'\n \n\n\n\n\n# Work on Family ipv4\n\n\nset protocols bgp address-family ipv4-unicast network 10.0.0.42/32\n\n\n\n\n\nset protocols bgp neighbor eth1 address-family ipv4-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor eth1 address-family ipv4-unicast nexthop-self\n\nset protocols bgp neighbor eth1 address-family ipv4-unicast disable-send-community extended\n\n\n\n# Work on Family ipv6\n\n\nset protocols bgp address-family ipv6-unicast network 2001:db8:42:1::1/128\n\n\n\n\n\nset protocols bgp neighbor eth1 address-family ipv6-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor eth1 address-family ipv6-unicast nexthop-self\n\nset protocols bgp neighbor eth1 address-family ipv6-unicast disable-send-community extended\n\n\n\n"
+    "msg": "bgp configuration for dut\n=========================================\n\nset protocols bgp system-as 65000\n\nset protocols bgp parameters router-id 10.0.0.42\n\n\n\nset protocols bgp neighbor eth1 interface remote-as 65100\nset protocols bgp neighbor eth1 description 'probe'\n \n\n\n\n\nset protocols bgp neighbor eth1 interface remote-as 65100\nset protocols bgp neighbor eth1 description 'probe'\n \n\n\n\n\n# Work on Family ipv4\n\nset protocols bgp address-family ipv4-unicast network 10.0.0.42/32\n\n\n\nset protocols bgp neighbor eth1 address-family ipv4-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor eth1 address-family ipv4-unicast nexthop-self\n\nset protocols bgp neighbor eth1 address-family ipv4-unicast disable-send-community extended\n\n\n\n# Work on Family ipv6\n\nset protocols bgp address-family ipv6-unicast network 2001:db8:42:1::1/128\n\n\n\nset protocols bgp neighbor eth1 address-family ipv6-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor eth1 address-family ipv6-unicast nexthop-self\n\nset protocols bgp neighbor eth1 address-family ipv6-unicast disable-send-community extended\n\n\n"
 }
 
 TASK [Deploy bgp configuration] ************************************************
@@ -158,7 +158,7 @@ ok: [dut]
 TASK [template] ****************************************************************
 changed: [dut]
 
-TASK [execute config-bgp.sh to deploy bgp config from /work/netlab_cicd/node_files/dut/bgp] ***
+TASK [execute config-bgp.sh to deploy bgp config from /work/netlab_cicd/other_c/node_files/dut/bgp] ***
 changed: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************
@@ -178,7 +178,13 @@ ok: [dut -> localhost]
 TASK [fail] ********************************************************************
 skipping: [dut]
 
-TASK [Process template /work/netlab_cicd/node_files/dut/bgp.policy for dut] ****
+TASK [Process template /work/netlab_cicd/other_c/node_files/dut/bgp.policy for dut] ***
+skipping: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
+
+TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [Find custom configuration deployment script] *****************************
@@ -193,15 +199,15 @@ ok: [dut]
 TASK [template] ****************************************************************
 changed: [dut]
 
-TASK [execute config-bgp.policy.sh to deploy bgp.policy config from /work/netlab_cicd/node_files/dut/bgp.policy] ***
+TASK [execute config-bgp.policy.sh to deploy bgp.policy config from /work/netlab_cicd/other_c/node_files/dut/bgp.policy] ***
 changed: [dut]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=41   changed=8    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+dut                        : ok=41   changed=8    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================
-probe                        OK: 2   
+probe            Script:  initial,bgp
 
 
 Use this topology to test BGP MED on IPv4 and IPv6 prefixes. DUT

@@ -79,7 +79,7 @@ def print_rerun_instructions(path: str,args: argparse.Namespace) -> None:
   separator = '; ' if args.oneline else '\n'
   print(f'./run-tests.py -d {device} -p {provider} -t {test_suite} --limit {limit}',end=separator)
 
-def print_caveats(path: str) -> None:
+def print_caveats(path: str, results: Box) -> None:
   components = path.split('.')
   if len(components) < 3:
     fatal(f'Cannot create caveats for {path}')
@@ -87,7 +87,11 @@ def print_caveats(path: str) -> None:
   for idx,value in enumerate(components[2:]):
     print (" " * idx * 2 + value + ":")
     if idx == len(components) - 3:
-      print(" " * (idx + 1) * 2 + "caveat: |\n")
+      print(" " * (idx + 1) * 2 + "caveat: |")
+      if 'supported.warning' in results:
+        for line in results.supported.warning:
+          print(" " * (idx + 2) * 2 + line.strip())
+      print()
 
 def print_report(path: str, fail_step: str) -> None:
   components = path.split('.')
@@ -120,7 +124,7 @@ def check_test_result(path: str, results: Box, args: argparse.Namespace) -> bool
   if args.rerun:
     print_rerun_instructions(path,args)
   if args.caveats:
-    print_caveats(path)
+    print_caveats(path,results)
   if args.report:
     print_report(path,fail_step)
 

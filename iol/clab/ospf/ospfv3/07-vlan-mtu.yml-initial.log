@@ -5,7 +5,7 @@ Creating Device configuration snippets
 [CREATED] x3: initial,vlan,ospf
 Checking Are lab devices ready to be configured?
  [INFO] Checking SSH server(s) on dut
-[SSH]     SSH server on node dut (device iol) is ready after 25.4 seconds
+[SSH]     SSH server on node dut (device iol) is ready after 25.3 seconds
 Config Deploying device configurations
  [INFO] Executing initial configuration for node x1
  [INFO] Executing initial configuration for node x2
@@ -14,12 +14,130 @@ Config Deploying device configurations
  [INFO] Executing vlan configuration for node x3
  [INFO] Executing vlan configuration for node x2
  [INFO] Executing ospf configuration for node x2
- [INFO] Executing ospf configuration for node x1
  [INFO] Executing ospf configuration for node x3
+ [INFO] Executing ospf configuration for node x1
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "initial configuration for dut\n=========================================\nhostname dut\n!\nno ip domain lookup\nlogging buffered 256000\n\n!\nlldp run\n!\nip host x1 2001:db8:1:2::1 2001:db8:2::2\nip host x2 2001:db8:1:3::1 2001:db8:2:1::3\nip host x3 2001:db8:1:4::1 2001:db8:2:2::4\n!\nip routing\n!\nipv6 unicast-routing\n!\n!\nbridge irb\n!\nbridge 1 protocol vlan-bridge\nbridge 1 route ip\n!\nbridge 2 protocol vlan-bridge\nbridge 2 route ip\n!\nbridge 3 protocol vlan-bridge\nbridge 3 route ip\n!\n\n!\n!\ninterface Loopback0\n ipv6 address 2001:DB8:1:1::1/64\n!\ninterface Ethernet0/0\n no lldp transmit\n no lldp receive\n!\ninterface Ethernet0/1\n description dut -> x3\n no shutdown\n!\ninterface Ethernet0/2\n description [Access VLAN ospf_1] dut -> x1\n no shutdown\n!\ninterface Ethernet0/3\n description [Access VLAN ospf_2] dut -> x2\n no shutdown\n!\ninterface BDI500\n description VLAN ospf_1 (500) -> [x1]\n ipv6 mtu 1400\n ipv6 nd ra interval 5\n ipv6 address 2001:DB8:2::1/64\n no shutdown\n!\ninterface BDI501\n description VLAN ospf_2 (501) -> [x2]\n ipv6 mtu 1280\n ipv6 nd ra interval 5\n ipv6 address 2001:DB8:2:1::1/64\n no shutdown\n!\ninterface BDI502\n description VLAN ospf_3 (502) -> [x3]\n ipv6 mtu 1320\n ipv6 nd ra interval 5\n ipv6 address 2001:DB8:2:2::1/64\n no shutdown\n!\n!\nline vty 0 4\n exec-timeout 0 0 \n!\nno banner exec\nno banner login\nno banner incoming\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+
+TASK [ios_config: deploying initial from /work/netlab_cicd/cisco_c/node_files/dut/initial] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
+
+TASK [Figure out whether to deploy the module vlan on current device] **********
+ok: [dut]
+
+TASK [Find configuration template for vlan] ************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "vlan configuration for dut\n=========================================\n!\nbridge-domain 500\n member Ethernet0/2 service-instance 500\n!\nbridge-domain 501\n member Ethernet0/3 service-instance 501\n!\nbridge-domain 502\n member Ethernet0/1 service-instance 502\n!\ninterface Ethernet0/1\n service instance 502 ethernet\n  encapsulation dot1q 502\n  rewrite ingress tag pop 1\n  rewrite egress tag push dot1q 502\n!\ninterface Ethernet0/2\n service instance 500 ethernet\n  encapsulation untagged\n!\ninterface Ethernet0/3\n service instance 501 ethernet\n  encapsulation untagged\n"
+}
+
+TASK [Deploy vlan configuration] ***********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+
+TASK [ios_config: deploying vlan from /work/netlab_cicd/cisco_c/node_files/dut/vlan] ***
+changed: [dut]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "ospf configuration for dut\n=========================================\nrouter ospfv3 1\n router-id 10.0.0.1\n address-family ipv6 unicast\n!\ninterface Loopback0\n! \n ospfv3 1 ipv6 area 0.0.0.0\n!\ninterface BDI500\n! VLAN ospf_1 (500) -> [x1]\n ospfv3 1 ipv6 area 0.0.0.0\n ospfv3 network point-to-point\n!\ninterface BDI501\n! VLAN ospf_2 (501) -> [x2]\n ospfv3 1 ipv6 area 0.0.0.0\n ospfv3 network point-to-point\n!\ninterface BDI502\n! VLAN ospf_3 (502) -> [x3]\n ospfv3 1 ipv6 area 0.0.0.0\n ospfv3 network point-to-point\n!\n\n"
+}
+
+TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+
+TASK [ios_config: deploying ospf from /work/netlab_cicd/cisco_c/node_files/dut/ospf] ***
+changed: [dut]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut                        : ok=27   changed=3    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================
-dut              Startup: initial,vlan,ospf
 x1               Script:  initial,vlan,ospf
 x2               Script:  initial,vlan,ospf
 x3               Script:  initial,vlan,ospf

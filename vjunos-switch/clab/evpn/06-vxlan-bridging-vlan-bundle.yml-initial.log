@@ -7,7 +7,8 @@ Creating Device configuration snippets
 [CREATED] s2: normalize,initial,vlan,ospf,bgp,vrf,vxlan,evpn
 Checking Are lab devices ready to be configured?
  [INFO] Checking SSH server(s) on dut,s2
-[SSH]     SSH server on node dut (device vjunos-switch) is ready after 75.4 seconds
+[SSH]     SSH server on node s2 (device eos) is ready after 11.4 seconds
+[SSH]     SSH server on node dut (device vjunos-switch) is ready after 84.5 seconds
  [INFO] Checking lab devices with an Ansible playbook
 [WARNING]: Found variable using reserved name: hosts
 
@@ -35,22 +36,22 @@ dut                        : ok=5    changed=0    unreachable=0    failed=0    s
 
 Config Deploying device configurations
  [INFO] Executing initial configuration for node h1 (namespace clab-
-          ml-17-h1)
+          ml-81-h1)
  [INFO] Executing initial configuration for node h2 (namespace clab-
-          ml-17-h2)
+          ml-81-h2)
  [INFO] Executing initial configuration for node h3 (namespace clab-
-          ml-17-h3)
+          ml-81-h3)
  [INFO] Executing initial configuration for node h4 (namespace clab-
-          ml-17-h4)
+          ml-81-h4)
  [INFO] Executing normalize configuration for node s2
- [INFO] Executing routing configuration for node h2 (namespace clab-
-          ml-17-h2)
  [INFO] Executing routing configuration for node h3 (namespace clab-
-          ml-17-h3)
+          ml-81-h3)
  [INFO] Executing routing configuration for node h1 (namespace clab-
-          ml-17-h1)
+          ml-81-h1)
  [INFO] Executing routing configuration for node h4 (namespace clab-
-          ml-17-h4)
+          ml-81-h4)
+ [INFO] Executing routing configuration for node h2 (namespace clab-
+          ml-81-h2)
  [INFO] Executing initial configuration for node s2
  [INFO] Executing vlan configuration for node s2
  [INFO] Executing ospf configuration for node s2
@@ -111,7 +112,7 @@ ok: [dut] => {
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
-TASK [junos_config: deploying initial from /work/netlab_cicd/node_files/dut/initial] ***
+TASK [junos_config: deploying initial from /work/netlab_cicd/junos_c/node_files/dut/initial] ***
 [WARNING]: mgd: statement has no contents; ignored
 changed: [dut]
 
@@ -149,7 +150,7 @@ ok: [dut] => {
 TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
-TASK [junos_config: deploying vlan from /work/netlab_cicd/node_files/dut/vlan] ***
+TASK [junos_config: deploying vlan from /work/netlab_cicd/junos_c/node_files/dut/vlan] ***
 changed: [dut]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
@@ -190,7 +191,7 @@ ok: [dut] => {
 TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
-TASK [junos_config: deploying ospf from /work/netlab_cicd/node_files/dut/ospf] ***
+TASK [junos_config: deploying ospf from /work/netlab_cicd/junos_c/node_files/dut/ospf] ***
 [WARNING]:  statement not found
 changed: [dut]
 
@@ -208,13 +209,13 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "bgp configuration for dut\n=========================================\n\nrouting-options {\n  autonomous-system 65000;\n  router-id 10.0.0.5\n}\n\n\npolicy-options community x-route-permit-mark members large:65535:0:65536;\n\npolicy-options {\n  delete: policy-statement bgp-advertise;\n  delete: policy-statement bgp-redistribute;\n  delete: policy-statement next-hop-ebgp-ipv4;\n  delete: policy-statement next-hop-all-ipv4;\n  delete: policy-statement next-hop-ebgp-ipv6;\n  delete: policy-statement next-hop-all-ipv6;\n  delete: route-filter-list bgp-announce;\n}\n\npolicy-options {\n\n  route-filter-list bgp-announce {\n  }\n\n  policy-statement next-hop-ebgp-ipv4 {\n    term next-hop-self-ipv4 {\n      from {\n        family inet;\n        route-type external;\n      }\n      then {\n        next-hop self;\n      }\n    }\n  }\n\n  policy-statement next-hop-all-ipv4 {\n    term next-hop-self-ipv4 {\n      from {\n        family inet;\n      }\n      then {\n        next-hop self;\n      }\n    }\n  }\n\n  policy-statement next-hop-ebgp-ipv6 {\n    term next-hop-self-ipv6 {\n      from {\n        family inet6;\n        route-type external;\n      }\n      then {\n        next-hop self;\n      }\n    }\n  }\n\n  policy-statement next-hop-all-ipv6 {\n    term next-hop-self-ipv6 {\n      from {\n        family inet6;\n      }\n      then {\n        next-hop self;\n      }\n    }\n  }\n\n\n  policy-statement bgp-advertise {\n    term advertise {\n      from {\n        protocol direct;\n        interface [ \n lo0.0  ];\n      }\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n\n    term originate {\n      from {\n        protocol static;\n        route-filter-list bgp-announce;\n      }\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n\n  }\n\n  policy-statement bgp-redistribute {\n    term redis_bgp {\n      from protocol bgp;\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n  }\n\n  policy-statement bgp-final {\n    term final-option {\n      from community x-route-permit-mark;\n      then {\n        community delete x-route-permit-mark;\n        accept;\n      }\n    }\n    term default-reject {\n      then reject;\n    }\n  }\n\n  policy-statement bgp-initial {\n    term initial-cleanup {\n      from community x-route-permit-mark;\n      then {\n        community delete x-route-permit-mark;\n        next policy;\n      }\n    }\n  }\n\n}\nprotocols {\n  delete: bgp;\n}\nprotocols {\n  bgp {\n    group ibgp-peers-ipv4 {\n      type internal;\n      export [ \n          next-hop-ebgp-ipv4 bgp-advertise bgp-redistribute bgp-final\n        ];\n      advertise-inactive;\n      neighbor 10.0.0.6 {\n\n        local-address 10.0.0.5;\n        description s2;\n        family inet {\n          unicast;\n        }\n      }\n    }\n    group ebgp-peers {\n      export [ \n          bgp-advertise bgp-redistribute bgp-final\n        ];\n      advertise-inactive;\n    }\n  }\n}\n"
+    "msg": "bgp configuration for dut\n=========================================\n\nrouting-options {\n  autonomous-system 65000;\n  router-id 10.0.0.5\n}\n\n\npolicy-options {\n  delete: policy-statement next-hop-ebgp-ipv4;\n  delete: policy-statement next-hop-all-ipv4;\n  delete: policy-statement next-hop-ebgp-ipv6;\n  delete: policy-statement next-hop-all-ipv6;\n\n  delete: policy-statement bgp-default-redistribute;\n  delete: route-filter-list bgp-default-announce-ipv4;\n  delete: route-filter-list bgp-default-announce-ipv6;\n\n  community x-route-permit-mark members large:65535:0:65536;\n\n  policy-statement bgp-final {\n    term final-option {\n      from community x-route-permit-mark;\n      then {\n        community delete x-route-permit-mark;\n        accept;\n      }\n    }\n    term default-reject {\n      then reject;\n    }\n  }\n\n  route-filter-list bgp-default-announce-ipv4 {\n    10.0.0.5/32 exact;\n  }\n\n  policy-statement bgp-default-redistribute {\n    term advertise-ipv4 {\n      from {\n        route-filter-list bgp-default-announce-ipv4;\n      }\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n\n    term redis_bgp {\n      from protocol bgp;\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n\n    term default {\n      then reject;\n    }\n  }\n\n\n  policy-statement next-hop-ebgp-ipv4 {\n    term next-hop-self-ipv4 {\n      from {\n        family inet;\n        route-type external;\n      }\n      then {\n        next-hop self;\n      }\n    }\n  }\n  policy-statement next-hop-all-ipv4 {\n    term next-hop-self-ipv4 {\n      from {\n        family inet;\n      }\n      then {\n        next-hop self;\n      }\n    }\n  }\n  policy-statement next-hop-ebgp-ipv6 {\n    term next-hop-self-ipv6 {\n      from {\n        family inet6;\n        route-type external;\n      }\n      then {\n        next-hop self;\n      }\n    }\n  }\n  policy-statement next-hop-all-ipv6 {\n    term next-hop-self-ipv6 {\n      from {\n        family inet6;\n      }\n      then {\n        next-hop self;\n      }\n    }\n  }\n\n  policy-statement bgp-initial {\n    term initial-cleanup {\n      from community x-route-permit-mark;\n      then {\n        community delete x-route-permit-mark;\n        next policy;\n      }\n    }\n  }\n\n}\nprotocols {\n  delete: bgp;\n}\nprotocols {\n  bgp {\n    group ibgp-peers-ipv4 {\n      type internal;\n      export [ \n          next-hop-ebgp-ipv4 bgp-default-redistribute bgp-final\n        ];\n      advertise-inactive;\n      neighbor 10.0.0.6 {\n\n        local-address 10.0.0.5;\n        description s2;\n        family inet {\n          unicast;\n        }\n      }\n    }\n    group ebgp-peers {\n      export [ \n          bgp-default-redistribute bgp-final\n        ];\n      advertise-inactive;\n    }\n  }\n}\n"
 }
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
-TASK [junos_config: deploying bgp from /work/netlab_cicd/node_files/dut/bgp] ***
+TASK [junos_config: deploying bgp from /work/netlab_cicd/junos_c/node_files/dut/bgp] ***
 changed: [dut]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
@@ -231,13 +232,13 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "vrf configuration for dut\n=========================================\n\n\npolicy-options {\n  community x-route-permit-mark members large:65535:0:65536;\n\n  policy-statement vrf-tenant-bgp-export {\n    term redis_bgp {\n      from {\n        protocol bgp;\n      }\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n    term redis_direct {\n      from {\n        protocol direct;\n      }\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n    term redis_ospf {\n      from {\n        protocol ospf;\n      }\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n    term redis_ospf3 {\n      from {\n        protocol ospf3;\n      }\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n  }\n\n}\n\n\nrouting-instances {\n\n  tenant {\n    routing-options {\n      autonomous-system 65000;\n      router-id 10.0.0.5\n    }\n\n    protocols {\n      bgp {\n\n        group ebgp-peers {\n          export [ vrf-tenant-bgp-export bgp-final ];\n          advertise-inactive;\n        }\n      }\n    }\n  }\n\n}\n"
+    "msg": "vrf configuration for dut\n=========================================\n\n\npolicy-options {\n  delete: policy-statement bgp-tenant-redistribute;\n  delete: route-filter-list bgp-tenant-announce-ipv4;\n  delete: route-filter-list bgp-tenant-announce-ipv6;\n\n  community x-route-permit-mark members large:65535:0:65536;\n\n  policy-statement bgp-final {\n    term final-option {\n      from community x-route-permit-mark;\n      then {\n        community delete x-route-permit-mark;\n        accept;\n      }\n    }\n    term default-reject {\n      then reject;\n    }\n  }\n\n\n  policy-statement bgp-tenant-redistribute {\n\n    term redis_bgp {\n      from protocol bgp;\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n    term redist_connected {\n      from {\n        protocol direct;\n      }\n      then {\n        community add x-route-permit-mark;\n        next policy;\n      }\n    }\n\n    term default {\n      then reject;\n    }\n  }\n\n\n}\n\n\nrouting-instances {\n\n  tenant {\n    routing-options {\n      autonomous-system 65000;\n      router-id 10.0.0.5\n    }\n\n    protocols {\n      bgp {\n\n        group ebgp-peers {\n          export [ bgp-tenant-redistribute bgp-final ];\n          advertise-inactive;\n        }\n      }\n    }\n  }\n\n}\n"
 }
 
 TASK [Deploy vrf configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
-TASK [junos_config: deploying vrf from /work/netlab_cicd/node_files/dut/vrf] ***
+TASK [junos_config: deploying vrf from /work/netlab_cicd/junos_c/node_files/dut/vrf] ***
 changed: [dut]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
@@ -260,7 +261,7 @@ ok: [dut] => {
 TASK [Deploy vxlan configuration] **********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
-TASK [junos_config: deploying vxlan from /work/netlab_cicd/node_files/dut/vxlan] ***
+TASK [junos_config: deploying vxlan from /work/netlab_cicd/junos_c/node_files/dut/vxlan] ***
 changed: [dut]
 
 TASK [Figure out whether to deploy the module evpn on current device] **********
@@ -283,7 +284,7 @@ ok: [dut] => {
 TASK [Deploy evpn configuration] ***********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
-TASK [junos_config: deploying evpn from /work/netlab_cicd/node_files/dut/evpn] ***
+TASK [junos_config: deploying evpn from /work/netlab_cicd/junos_c/node_files/dut/evpn] ***
 changed: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************

@@ -5,7 +5,7 @@ from pathlib import Path
 from box import Box
 
 from netsim import __version__
-from netsim.data import get_empty_box
+from netsim.data import get_empty_box, append_to_list
 from netsim.utils import read as _read,templates,log
 from netsim.cli import external_commands
 
@@ -30,14 +30,16 @@ def sum_results(data: Box) -> None:
   for k in list(data.keys()):
     if k.startswith('_'):
       continue
+
+    # Figure out whether we managed to create the lab files
     create_status = data[k].get('create',None)
-    if not data[k] or create_status is False:
-      increase_counter(data,'unsupported')
+    if not data[k] or create_status is False:                         # If the create status is False
+      increase_counter(data,'unsupported')                            # ... the test scenario is unsupported
       data[k].supported = False
     elif isinstance(create_status,Box) and 'warning' in create_status:
-      data[k].supported = create_status
-    OK = True
-
+      data[k].supported = create_status                               # Create status is a box with warning?
+                                                                      # Make "supported" status more descriptive
+    OK = True                                                         # Next, assume everything is OK
     if isinstance(data[k].get('caveat',None),str):                    # Make sure caveat is a list
       data[k].caveat = [ data[k].caveat ]
 
@@ -45,14 +47,18 @@ def sum_results(data: Box) -> None:
       if data[k].validate == 'warning':
         data[k].validate = { 'warning': data[k]._warning }            # Migrate "old-style" warnings into boxes
     
-    if data[k].get('validate',None) is True:                          # But pop caveats if the validation succeeded
+    validation_status = data[k].get('validate',None)
+    if validation_status is True:                                     # Pop caveats if the validation succeeded
       data[k].pop('caveat',None)
 
     for step in list(data[k].keys()):
       if isinstance(data[k][step],Box) and 'warning' in data[k][step]:
         increase_counter(data,'warning_'+step)
-        if step in ['create','validate']:
-          data[k].caveat = data[k].get('caveat',[]) + data[k][step].warning
+
+        # Add warnings to caveats, but only when the validation did not hard-fail
+        if step in ['create','validate'] and validation_status is not False:
+          for line in data[k][step].get('warning',[]):
+            append_to_list(data[k],'caveat',line)
         OK = True
         continue
 
