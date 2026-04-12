@@ -6,7 +6,7 @@ from setuptools import setup
 
 sys.path.append('..')
 
-version="26.03"
+version="26.04"
 
 long_description = (Path(__file__).parent / "README.md").read_text()
 

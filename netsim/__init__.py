@@ -2,7 +2,7 @@
 
 import sys
 
-__version__ = "26.03"
+__version__ = "26.04"
 
 abort = False
 
