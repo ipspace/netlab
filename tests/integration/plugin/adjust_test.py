@@ -73,18 +73,38 @@ def missing_features(a_entry: Box, node: Box, topology: Box) -> bool:
   # If we got to here, either all features are missing (in OR mode) or all features are OK (in AND mode)
   return check_mode == 'or'                       # Return the result corresponding to the check mode
 
-def adjust_topology(a_entry: Box, topology: Box) -> None:
-  OK = True
+def check_missing_features(a_entry: Box, topology: Box) -> typing.Optional[Box]:
+  if 'features' not in a_entry:
+    return None
+
   for n_name in get_a_list(a_entry,'nodes'):      # Iterate over nodes to check
     if n_name not in topology.nodes:              # Skip missing nodes
       continue
     n_data = topology.nodes[n_name]               # Get node data
     if missing_features(a_entry,n_data,topology): # ... and check for missing features
-      OK = False                                  # ... oops, we have a mismatch
-      break
+      return n_data
 
-  if OK:                                          # All good (or no nodes to check)
-    return                                        # ... so get out of here
+  return None
+
+def check_faulty_devices(a_entry: Box, topology: Box) -> typing.Optional[Box]:
+  if 'devices' not in a_entry:
+    return None
+
+  for n_name in get_a_list(a_entry,'nodes'):      # Iterate over nodes to check
+    if n_name not in topology.nodes:              # Skip missing nodes
+      continue
+    n_data = topology.nodes[n_name]               # Get node data
+    if n_data.device in a_entry.devices:          # Faulty device?
+      return n_data
+
+  return None
+
+def adjust_topology(a_entry: Box, topology: Box) -> None:
+  n_data = check_missing_features(a_entry,topology)
+  if n_data is None:                              # If all features are OK, check faulty devices
+    n_data = check_faulty_devices(a_entry,topology)
+  if n_data is None:                              # No missing features or faulty devices?
+    return                                        # Cool, we're out of here ;)
 
   # The n_name/n_data contain the first node with missing feature(s)
   #
