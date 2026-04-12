@@ -90,11 +90,12 @@ def check_faulty_devices(a_entry: Box, topology: Box) -> typing.Optional[Box]:
   if 'devices' not in a_entry:
     return None
 
+  dev_list = make_a_list(a_entry.devices)
   for n_name in get_a_list(a_entry,'nodes'):      # Iterate over nodes to check
     if n_name not in topology.nodes:              # Skip missing nodes
       continue
     n_data = topology.nodes[n_name]               # Get node data
-    if n_data.device in a_entry.devices:          # Faulty device?
+    if n_data.device in dev_list:                 # Faulty device?
       return n_data
 
   return None
@@ -106,7 +107,7 @@ def adjust_topology(a_entry: Box, topology: Box) -> None:
   if n_data is None:                              # No missing features or faulty devices?
     return                                        # Cool, we're out of here ;)
 
-  # The n_name/n_data contain the first node with missing feature(s)
+  # n_data contain the first node that triggered adjustment
   #
   w_text = a_entry.get('warning','')              # Do we have to add a warning?
   if w_text:                                      # Print the formatted warning
