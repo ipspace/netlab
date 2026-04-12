@@ -24,7 +24,7 @@
 | Cisco IOS-on-Linux L2 image (IOL L2)[❗](caveats-iol) | ioll2               | full |
 | Cisco IOSv [❗](caveats-iosv)      | iosv   | full          |
 | [Cisco IOSvL2](https://developer.cisco.com/docs/modeling-labs/iosvl2/#iosvl2) [❗](caveats-iosv)   | iosvl2 | full |
-| Cisco IOS XRv/XRd [❗](caveats-iosxr) | iosxr  | minimal       |
+| Cisco IOS XRv/XRd [❗](caveats-iosxr) | iosxr  | full (XRd only) |
 | Cisco Nexus 9300v [❗](caveats-nxos) | nxos | best effort   |
 | Cumulus Linux 4.x/5.x [❗](caveats-cumulus) | cumulus | end of life |
 | Cumulus Linux 5.x (NVUE) [❗](caveats-cumulus-nvue) | cumulus_nvue | minimal |
@@ -33,7 +33,7 @@
 | Fortinet FortiOS [❗](caveats-fortios) | fortios | minimal  |
 | FRRouting (FRR) [❗](caveats-frr) | frr     | full          |
 | [Generic Linux host](generic-linux-devices) | linux | full          |
-| Juniper cRPD | crpd | best effort |
+| Juniper cRPD | crpd | full |
 | Juniper vMX [❗](caveats-vmx) | vmx         | best effort   |
 | Juniper vPTX (vJunos EVO) [❗](caveats-vptx) | vptx | full  |
 | Juniper vSRX 3.0 [❗](caveats-vsrx) | vsrx  | best effort   |
