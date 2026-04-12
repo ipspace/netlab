@@ -2,11 +2,15 @@
 router id {{ bgp.router_id }};
 {% endif %}
 
-{% for _af in ['ipv4','ipv6'] if _af in af %}
+{% for ngb in bgp.neighbors|default([]) if ngb.default_originate|default(False) %}
+{%   if loop.first %}
+{%     for _af in ['ipv4','ipv6'] if _af in af %}
 protocol static static_bgp_default_{{ _af }} {
   {{ _af }};
   route {{ '0.0.0.0/0' if _af=='ipv4' else '::/0' }} reject;
 }
+{%     endfor %}
+{%   endif %}
 {% endfor %}
 {% for pfx_af in ['ipv4','ipv6'] %}
 {%   for pfx in bgp.advertise|default([]) if pfx_af in pfx %}
@@ -26,6 +30,9 @@ function bgp_prefixes( bool originate_default ) {
 
   if source ~ [ RTS_BGP ]
     then accept "BGP route:", net;
+
+  if proto ~ "static_bgp_default*"
+    then accept "BGP prefix origination:", net;
 
 {% if bgp.import is defined %}
 {%   for proto in bgp.import %}
