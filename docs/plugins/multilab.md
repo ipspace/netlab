@@ -40,6 +40,7 @@ plugin: [ multilab ]
 multilab.id: 12
 ```
 
+(plugin-multilab-status-file)=
 ```{warning}
 Use the system-wide _netlab_ status file if multiple users start lab instances on the same Linux server. You can change the location of the status file with the **‌defaults.lab_status_file** parameter.
 
@@ -70,7 +71,7 @@ $ export NETLAB_MULTILAB_ID=17
 (multilab-behind-the-scenes)=
 ## Behind the Scenes
 
-*multilab* plugin uses *lab id* specified in **defaults.multilab.id** to change system defaults or topology parameters listed in **defaults.multilab.change** dictionary. The default parameters *multilab* plugin changes are specified in the `netsim/defaults/multilab.yml` file; you can add your parameters if needed.
+*multilab* plugin uses *lab id* specified in **defaults.multilab.id** to change system defaults or topology parameters listed in **defaults.multilab.change** dictionary. The default parameters that the *multilab* plugin changes are specified in the `netsim/defaults/multilab.yml` file; you can add your parameters if needed.
 
 ```
 change:
@@ -85,6 +86,18 @@ change:
 ```
 
 String values specified in the **defaults.multilab.change** dictionary are evaluated as f-formatted Python strings. You can use the **id** variable (the value of **defaults.multilab.id** parameter) or any lab topology parameter (including system defaults) in the evaluated expressions.
+
+## Serializing the Up/Down Processes
+
+Executing multiple **vagrant** commands in parallel can result in a corrupted virtualization environment. **containerlab** is much better, but might still encounter race conditions when one process is starting a new lab while another process is destroying one.
+
+In an environment with frequent, potentially parallel, up/down operations, use the optional **defaults.multilab.lock** parameter to serialize the **vagrant**/**containerlab** start/stop operations. The parameter value is a filename used as a global mutex; _netlab_ uses the **flock** command to ensure that any operation involving virtualization providers acquires an exclusive lock before proceeding.
+
+The value of this parameter depends on how you use **multilab**:
+
+* In a single-user environment, use `~/.netlab/lab.lock` or similar.
+* In a multi-user environment with a shared `/tmp` directory, use `/tmp/netlab.lock` or similar.
+* You could also place the lock file in the same directory as the [system-wide status file](plugin-multilab-status-file).
 
 ## Interface Name Limitations
 
