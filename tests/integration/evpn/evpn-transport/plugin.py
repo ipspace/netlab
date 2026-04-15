@@ -19,7 +19,7 @@ def init(topology: Box) -> None:
   if not features.get('evpn.transport',[]):           # Does the device specify available EVPN transports?
     return
 
-  transport = features.evpn.transport[0]
+  transport = list(features.evpn.transport)[0]        # Convert dictionary into a list of needed
   if transport == 'vxlan':                            # Is the default transport VXLAN?
     return                                            # ... cool, we're good to go.
 
