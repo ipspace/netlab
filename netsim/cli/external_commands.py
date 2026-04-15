@@ -216,7 +216,8 @@ def custom_configs(config : str, group: str, step : int = 4, command: str = "tes
 def stop_lab(settings: Box, provider: str, command: str = "test", exec_command: typing.Optional[str] = None) -> None:
   if exec_command is None:
     exec_command = settings.providers[provider].stop
-  print(f"provider {provider}: executing {exec_command}",flush=True)
+  if exec_command:
+    print(f"provider {provider}: executing {exec_command}",flush=True)
   if not run_command(exec_command):
     log.fatal(f"{exec_command} failed, aborting...",command)
 
