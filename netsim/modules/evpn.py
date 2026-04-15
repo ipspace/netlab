@@ -46,6 +46,12 @@ def validate_evpn_lists(toponode: Box, obj_path: str, topology: Box, create: boo
     default_filter=lambda v: False if not isinstance(v,Box) else v.get('evpn.transit_vni',False),
     module='evpn')
 
+"""
+Get the transport AF used for EVPN on this node:
+
+* IPv4 for SR/MPLS transport
+* vxlan.transport (IPv4 or IPv6) for VXLAN transport
+"""
 def get_evpn_af(node: Box, topology: Box) -> typing.Optional[str]:
   evpn_transport = node.get('evpn.transport','vxlan')
   if evpn_transport != 'vxlan':                   # Are we using VXLAN transport?
@@ -66,10 +72,26 @@ def get_evpn_af(node: Box, topology: Box) -> typing.Optional[str]:
 
   return evpn_af
 
+"""
+Get the BGP session types the current node/device supports for the selected EVPN transport
+"""
+def get_bgp_neighbor_types(node: Box, topology: Box) -> list:
+  topo_transport = node.get('evpn.transport','vxlan')       # EVPN transport used in lab topology
+  features = devices.get_device_features(node,topology.defaults)
+  device_transport = features.get('evpn.transport',[])      # EVPN transport(s) supported by the device
+  if isinstance(device_transport,Box):                      # Do we have non-default BGP type settings?
+    return device_transport.get(topo_transport,[]) or \
+           device_transport.get(f'cp_{topo_transport}',[])  # Return DP- or CP- settings
+
+  # Default: support IBGP and EBGP for VXLAN and only IBGP for MPLS/SR
+  return ['ibgp', 'ebgp'] if topo_transport == 'vxlan' else ['ibgp']
+
 def enable_evpn_af(node: Box, topology: Box) -> None:
   AF_WARNING = {}
   bgp_session = node.get('evpn.session',[])
   bgp_community = node.get('bgp.community',{})
+  bgp_neighbor_types: typing.Optional[list] = None
+  bgp_error_types: list = []
   evpn_af = get_evpn_af(node,topology)
   if not evpn_af:
     return
@@ -81,6 +103,19 @@ def enable_evpn_af(node: Box, topology: Box) -> None:
     if bn.type in bgp_session and 'evpn' in topology.nodes[bn.name].get('module'):
       if evpn_af not in bn:
         continue
+      if bgp_neighbor_types is None:                        # Get BGP neighbor types only when needed
+        bgp_neighbor_types = get_bgp_neighbor_types(node,topology)
+      if bn.type not in bgp_neighbor_types:                 # Does the device support the requested neighbor type?
+        if bn.type not in bgp_error_types:                  # Did we already report this error?
+          log.error(
+            f'netlab cannot configure EVPN AF for {bn.type} neighbors on {node.device} when using {node.evpn.transport} transport',
+            more_data = [ f'Found a {bn.type} session on node {node.name} with {bn.name}'],
+            category=log.IncorrectType,
+            module='evpn')
+          bgp_error_types.append(bn.type)
+
+        continue
+
       bn.evpn = evpn_af
 
       # Now check if the user enabled extended BGP communities on the BGP session type
