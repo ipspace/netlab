@@ -1,4 +1,4 @@
-import typing
+from pathlib import Path
 
 from box import Box
 
@@ -71,6 +71,7 @@ def add_provider_locks(topology: Box) -> None:
   # Collect all providers used in the current topology
   defaults = topology.defaults
   pset = { devices.get_provider(node_data,defaults) for node_data in topology.nodes.values() }
+  lock = str(Path(lock).resolve())                    # And resolve relative/$HOME paths in lock filename
 
   for pname in list(pset):                            # Iterate over all providers used in the lab topology
     pdata = defaults.providers[pname]
