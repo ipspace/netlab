@@ -343,6 +343,12 @@ ansible-galaxy collection install community.network
 (caveats-fortios)=
 ## Fortinet FortiOS
 
+Device-specific parameters:
+
+* A FortiGate firewall does not pass any traffic by default. If you want the firewall to behave like a router after the initial configuration, set the `netlab_default_policy` node- or group variable to `True`. To create a disabled default policy, set the `netlab_default_policy.enable` variable to `False`.
+
+Device configuration:
+
 * Use a recent version of Ansible and **fortinet.fortios** Ansible Galaxy collection (version 2.3.6 or later)
 * _netlab_ tries to configure Fortinet devices with configuration scripts uploaded through the FortiOS Monitor API calls using username/password authentication.
 * If the API call fails, _netlab_ tries to push the configuration to a Fortinet device through a regular SSH session. Use **netlab initial -vvv --limit _fw_device_** to troubleshoot the configuration download (Ansible displays full contents of the SSH session at this level of verbosity).
