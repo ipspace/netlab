@@ -73,9 +73,43 @@ _netlab_ uses the node **graph.rank** attribute to:
 
 The default value of the **graph.rank** attribute is 100, allowing you to push some nodes (with rank below 100) toward the top of the graph and others (with rank above 100) toward the bottom.
 
-You can also use the **graph.rank** on links to influence how Graphviz draws multi-access links.
+You can also use the **graph.rank** on links to influence how Graphviz positions multi-access links relative to other links and nodes.
 
-Finally, the link/interface **graph.linkorder** attribute allows you to specify the node order in individual links. The default **graph.linkorder** value is 50 for interfaces and 100 for subnets (multi-access links), resulting in subnets being "below" nodes unless you change the link- or interface **graph.linkorder** value.
+Finally, the **graph.linkorder** attribute allows you to specify the node order in individual links. The default **graph.linkorder** value is 50 for interfaces and 100 for subnets (multi-access links). **graph.rank** is used to sort objects with the same **graph.linkorder**.
+
+The default value of **graph.linkorder** places subnets (multi-access links) below all nodes attached to them. For example, the following lab topology results in a graph with the subnet below sw, h1, and h2:
+
+```
+nodes: [ sw, h1, h2 ]
+links:
+- interfaces: [ sw, h1, h2 ]
+```
+
+You can change the **graph.linkorder** on the host interfaces (h1, h2) to put the host nodes below the subnet:
+
+```
+nodes: [ sw, h1, h2 ]
+links:
+- sw:
+  h1:
+    graph.linkorder: 200
+  h2:
+    graph.linkorder: 200
+```
+
+You can also change the node **graph.linkorder** attribute to put nodes below subnets *on all links they're connected to*. For example, you could use a `hosts` group to set the **graph.linkorder** for all hosts to a value higher than the default link value (100):
+
+```
+groups:
+  hosts:
+    members: [ h1, h2 ]
+    graph.linkorder: 200
+
+nodes: [ r1, h1, h2 ]
+
+links:
+- interfaces: [ r1, h1, h2 ]
+```
 
 (outputs-graph-appearance)=
 ## Modifying Graph Appearance

@@ -112,8 +112,20 @@ def get_graph_attributes(obj: Box, g_type: str, exclude: list = []) -> Box:
 """
 Get a graph attribute from shared or graph-specific dictionary
 """
-def get_attr(obj: Box, g_type: str, attr: str, default: typing.Any) -> typing.Any:
-  return obj.get(f'{g_type}.{attr}',obj.get(f'graph.{attr}',default))
+def get_attr(obj: Box, topology: Box, g_type: str, attr: str, default: typing.Any) -> typing.Any:
+  kw_list = [ f'{g_type}.{attr}', f'graph.{attr}' ]         # Try graph-specific (graph/d2) and shared graph attributes
+  for kw in kw_list:                                        # Try to find the value in interface/link object
+    if kw in obj:
+      return obj[kw]
+  
+  if 'node' in obj:                                         # Try to get node data from object.node (if present)
+    ndata = topology.nodes.get(obj.node,None)
+    if ndata:                                               # If we found node data, try to get the keyword value from it
+      for kw in kw_list:
+        if kw in ndata:
+          return ndata[kw]
+
+  return default                                            # Nothing works, return the default value
 
 """
 Propagate link graph attributes to interfaces
@@ -182,14 +194,14 @@ def append_segment(graph: Box,link: Box, g_type: str, topology: Box) -> None:
 
   for intf in link.interfaces:
     e_data = [ intf, link ]
-    e_data.sort(key = lambda x: x.get('graph.rank',topology.nodes[intf.node].get('graph.rank',100)))
-    e_data.sort(key = lambda x: get_attr(x,g_type,'linkorder',50))
+    e_data.sort(key = lambda x: get_attr(x,topology,g_type,'rank',100))
+    e_data.sort(key = lambda x: get_attr(x,topology,g_type,'linkorder',50))
     append_edge(graph,e_data[0],e_data[1],g_type)
 
 def topo_edges(graph: Box, topology: Box, settings: Box,g_type: str) -> None:
   graph.edges = []
-  for link in sorted(topology.links,key=lambda x: get_attr(x,g_type,'linkorder',100)):
-    propagate_link_attributes(link,g_type,['linkorder','type'])
+  for link in sorted(topology.links,key=lambda x: get_attr(x,topology,g_type,'linkorder',100)):
+    propagate_link_attributes(link,g_type,['linkorder','type','rank'])
 
     if settings.get('topology.vlan',False):
       for intf in link.interfaces:
@@ -197,7 +209,7 @@ def topo_edges(graph: Box, topology: Box, settings: Box,g_type: str) -> None:
 
     if len(link.interfaces) == 2 and link.get('graph.type','') != 'lan':
       intf_list = sorted(link.interfaces,key=lambda intf: topology.nodes[intf.node].get('graph.rank',100))
-      intf_list.sort(key = lambda x: get_attr(x,g_type,'linkorder',50))
+      intf_list.sort(key = lambda x: get_attr(x,topology,g_type,'linkorder',50))
       append_edge(graph,intf_list[0],intf_list[1],g_type)
     else:
       append_segment(graph,link,g_type,topology)
@@ -300,7 +312,7 @@ def get_node_interface(topology: Box, intf: Box) -> Box:
 
 def isis_edges(topology: Box, graph: Box, g_type: str) -> None:
   graph.edges = []
-  for link in sorted(topology.links,key=lambda x: get_attr(x,g_type,'linkorder',100)):
+  for link in sorted(topology.links,key=lambda x: get_attr(x,topology,g_type,'linkorder',100)):
     propagate_link_attributes(link,g_type,['linkorder','type'])
 
     isis_nodes = [ intf.node 
