@@ -201,7 +201,7 @@ def append_segment(graph: Box,link: Box, g_type: str, topology: Box) -> None:
 def topo_edges(graph: Box, topology: Box, settings: Box,g_type: str) -> None:
   graph.edges = []
   for link in sorted(topology.links,key=lambda x: get_attr(x,topology,g_type,'linkorder',100)):
-    propagate_link_attributes(link,g_type,['linkorder','type','rank'])
+    propagate_link_attributes(link,g_type,['linkorder','rank','type'])
 
     if settings.get('topology.vlan',False):
       for intf in link.interfaces:
@@ -313,7 +313,7 @@ def get_node_interface(topology: Box, intf: Box) -> Box:
 def isis_edges(topology: Box, graph: Box, g_type: str) -> None:
   graph.edges = []
   for link in sorted(topology.links,key=lambda x: get_attr(x,topology,g_type,'linkorder',100)):
-    propagate_link_attributes(link,g_type,['linkorder','type'])
+    propagate_link_attributes(link,g_type,['linkorder','rank','type'])
 
     isis_nodes = [ intf.node 
                     for intf in link.interfaces
