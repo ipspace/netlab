@@ -559,11 +559,14 @@ def check_node_transport(node: Box, topology: Box) -> bool:
   if not s_trans:                                           # Control-plane-only node
     node.evpn._cp_only = True
   elif transport not in s_trans:                            # Is the requested transport supported by the device?
-    log.error(
-      f'Device {node.device} (node {node.name}) does not support EVPN transport {transport}',
-      module='evpn',
-      category=log.IncorrectValue)
-    return False
+    if f'cp_{transport}' in s_trans:                        # Can the device at least act as a CP node for this transport?
+      node.evpn._cp_only = True
+    else:
+      log.error(
+        f'Device {node.device} (node {node.name}) does not support EVPN transport {transport}',
+        module='evpn',
+        category=log.IncorrectValue)
+      return False
 
   if transport == 'sr':                                     # SR-MPLS and MPLS are identical from EVPN perspective
     node.evpn.transport = 'mpls'
@@ -580,7 +583,7 @@ def check_cp_only(node: Box) -> None:
     return
   if node.evpn.get('vlans',[]) or node.evpn.get('vrfs',[]):
     log.error(
-      f'Device {node.device} (node {node.name}) cannot have EVPN MAC-VRF or IP-VRF instances',
+      f'Device {node.device} (node {node.name}) cannot have MAC-VRF or IP-VRF instances with EVPN transport {node.evpn.transport}',
       module='evpn',
       category=log.IncorrectValue)
 
