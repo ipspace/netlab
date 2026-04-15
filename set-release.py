@@ -13,7 +13,7 @@ from _reports.read import get_git_releases
 
 def get_release_from_timestamp(t: str, r_list: dict) -> typing.Optional[str]:
   post_release = [ r_key for r_key in r_list.keys() if r_list[r_key] >= t ]
-  return post_release[0] if post_release else None
+  return post_release[0] if post_release else __version__
 
 def relabel_data(data: Box, r_list: dict) -> None:
   for k,v in data.items():
@@ -34,12 +34,13 @@ def relabel_releases(glob: str, r_list: dict) -> None:
 
     i_yaml = data.to_yaml()
     relabel_data(data,r_list)
-    if data.to_yaml != i_yaml:
+    if data.to_yaml() != i_yaml:
       print(f'Changed: {path}')
       data.to_yaml(filename=path)
 
 def main() -> None:
   r_list = get_git_releases()
+  print(f'Release dates: {r_list}')
   relabel_releases('**/*yaml',r_list)
 
 if __name__ == '__main__':
