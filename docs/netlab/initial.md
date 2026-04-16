@@ -1,15 +1,15 @@
 (netlab-initial)=
 # Deploying Initial Device Configurations
 
-**netlab initial** command uses expanded Ansible inventory data created by the **[netlab up](up.md)** command, device-specific Jinja2 templates, and an internal Ansible playbook to deploy initial device configurations.
+**netlab initial** command uses expanded Ansible inventory data created by the **[netlab up](up.md)** command, device-specific Jinja2 templates, internal configuration scripts, and internal Ansible playbooks to deploy initial device configurations.
 
 **netlab initial** skips devices with [**unmanaged** attribute](node-attributes) (those devices are not part of Ansible inventory) and [devices in the **unprovisioned** group](group-special-names).
 
-After successful completion of the Ansible playbook, **netlab initial** displays the [help **message** defined in the lab topology](topology-reference-top-elements).
+After successful deployment of device configurations, **netlab initial** displays the [help **message** defined in the lab topology](topology-reference-top-elements).
 
 ![netlab initial functional diagram](initial.png)
 
-The Ansible playbook invoked by the **netlab initial** command deploys device configurations in five steps:
+**netlab initial** command deploys device configurations in five steps, using internal Ansible playbooks and configuration scripts ([more details](platform-config-mode)):
 
 * Wait for devices to become ready[^rtag]
 * Normalize[^norm] device configurations[^ntag]

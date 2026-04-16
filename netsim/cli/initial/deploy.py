@@ -41,8 +41,8 @@ def deploy_provider_config(nodeset: list, topology: Box, args: argparse.Namespac
     n_deploy = utils.node_deploy_list(n_data, args)
     if not n_deploy:
       return
+    deploy_parts=",".join(n_deploy)
     if is_dry_run():
-      deploy_parts=",".join(n_deploy)
       log.info(f'Would deploy {n_name}: {deploy_parts}',module='dry_run')
       return
     if log.VERBOSE:

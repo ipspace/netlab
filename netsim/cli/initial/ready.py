@@ -172,7 +172,9 @@ def internal_device_ready(waitlists: Box, topology: Box) -> Box:
 
     if is_dry_run():
       log.info(f'Would execute internal {r_step} readiness check',module='dry_run')
+      waitlists.pop(r_step)
       continue
+
     READY_ACTIONS[r_step](waitlists[r_step],topology)
     waitlists.pop(r_step)
 
