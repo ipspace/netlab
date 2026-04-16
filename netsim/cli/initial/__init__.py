@@ -6,10 +6,9 @@
 import os
 import typing
 
-from ... import devices
 from ...utils import log
 from ...utils import status as _status
-from .. import ansible, error_and_exit, external_commands, get_message, lab_status_change, load_snapshot
+from .. import ansible, error_and_exit, external_commands, load_snapshot, set_dry_run
 from . import configs, deploy, ready, utils
 
 
@@ -19,6 +18,7 @@ def run_initial(cli_args: typing.List[str]) -> None:
   topology = load_snapshot(args)
 
   log.set_logging_flags(args)
+  set_dry_run(args)
   if args.logging or args.verbose:
     print(f"Unrecognized Ansible playbook args: {rest}")
 

@@ -12,7 +12,7 @@ from box import Box
 from ...augment import devices as a_devices
 from ...data import append_to_list, get_empty_box
 from ...utils import log, strings
-from .. import ansible, error_and_exit, external_commands, lab_status_change
+from .. import ansible, error_and_exit, external_commands, is_dry_run, lab_status_change
 from . import utils
 
 """
@@ -170,6 +170,9 @@ def internal_device_ready(waitlists: Box, topology: Box) -> Box:
     if topology.defaults.netlab.initial.ready[r_step] != 'internal':
       continue                                    # We're not using the internal code for this step
 
+    if is_dry_run():
+      log.info(f'Would execute internal {r_step} readiness check',module='dry_run')
+      continue
     READY_ACTIONS[r_step](waitlists[r_step],topology)
     waitlists.pop(r_step)
 

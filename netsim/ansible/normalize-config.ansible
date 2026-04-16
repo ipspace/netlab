@@ -1,0 +1,26 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: Normalize device configurations
+  hosts: netlab_normalize:!unprovisioned
+  strategy: "{{ netlab_strategy|default('linear') }}"
+  gather_facts: false
+  tasks:
+  - name: Set variables that cannot be set with VARS
+    set_fact:
+      netlab_device_type: "{{ netlab_device_type|default(ansible_network_os) }}"
+      netlab_interfaces: "{{ ([ loopback ] if loopback is defined else []) + interfaces|default([]) }}"
+      search_path: "{{ paths_templates.dirs }}"
+      node_provider: "{{ provider|default(netlab_provider) }}"
+      node_files: "{{ lookup('env','PWD') }}/node_files"
+    tags: [ always ]
+
+  - name: Normalize config on bridge-like devices
+    include_tasks: "tasks/deploy-module.yml"
+    args:
+      apply:
+        vars:
+          config_module: normalize
+          module: [ normalize ]
+          paths: "{{ search_path }}"
+        tags: [ always ]
+    tags: [ always ]

@@ -31,6 +31,10 @@ def initial_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namesp
     dest='initial', action='store_true',
     help='Deploy just the initial configuration')
   parser.add_argument(
+    '-n','--normalize',
+    dest='normalize', action='store_true',
+    help='Deploy just the normalize configuration')
+  parser.add_argument(
     '-m','--module',
     dest='module', action='store',nargs='?',const='*',
     help='Deploy module-specific configuration (optionally including a list of modules separated by commas)')
@@ -58,6 +62,10 @@ def initial_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namesp
     '--clean',
     dest='clean', action='store_true',
     help='Clean up the output directory before creating the initial configuration')
+  parser.add_argument(
+    '--dry-run',
+    dest='dry_run', action='store_true',
+    help='Print actions that would be executed without executing them')
   parser.add_argument(
     '--no-message',
     dest='no_message', action='store_true',
@@ -153,6 +161,14 @@ def node_deploy_list(node: Box, args: argparse.Namespace) -> list:
 
   node_configs = []
   skip_config = node.get('skip_config',[])
+  if args.normalize:                              # Normalize is an independent step and cannot be combined with other configs
+    topology = global_vars.get_topology()
+    if topology:
+      features = a_devices.get_device_features(node,topology.defaults)
+      return ['normalize'] if features.get('initial.normalize',False) else []
+    else:
+      return []
+
   if args.module or all_config:
     node_modules = node.get('module',[])
     if args.module == '*' or all_config:
@@ -161,11 +177,6 @@ def node_deploy_list(node: Box, args: argparse.Namespace) -> list:
       node_configs = [ m for m in args.module.split(',') if m in node_modules ]
   if args.initial or all_config:
     node_configs = ['initial'] + node_configs
-    topology = global_vars.get_topology()
-    if topology:
-      features = a_devices.get_device_features(node,topology.defaults)
-      if features.get('initial.normalize',False):
-        node_configs = ['normalize'] + node_configs
   if args.custom or all_config:
     node_configs += [ cfg for cfg in node.get('config',[]) if cfg not in skip_config ]
 

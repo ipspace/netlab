@@ -76,6 +76,10 @@ def create(topology: Box) -> Box:
     for r_item in ready:
       inventory[f'netlab_ready_{r_item}'].hosts[name] = {}
 
+    features = devices.get_device_features(node,topology.defaults)
+    if features.get('initial.normalize',False):
+      inventory['netlab_normalize'].hosts[name] = {}
+
   if 'devices' in defaults:
     for group in inventory.keys():
       if group in defaults.devices:
