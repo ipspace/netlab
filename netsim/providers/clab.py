@@ -117,7 +117,7 @@ def add_config_filemaps(node: Box, topology: Box) -> None:
     # Adjust the configuration templates based on whether the skip_config is set
     #
     if skip_config:
-      add_config = { k:v for k,v in node[kw].items() if k not in skip_config }
+      add_config = { k:v for k,v in node[kw].items() if k.replace('@','.') not in skip_config }
     else:
       add_config = node[kw]
 
