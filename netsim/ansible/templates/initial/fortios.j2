@@ -5,6 +5,7 @@
 config global
 {% endif %}
 config system global
+    set management-vdom {{vdom}}
     set hostname {{ inventory_hostname.replace("_","-") }}
 end
 
@@ -15,6 +16,20 @@ config system interface
         set lldp-reception disable
         set allowaccess ping https ssh http fgfm
     next
+
+{% if multi_vdom %}
+end
+
+end
+
+{# End of `config global` #}
+
+config vdom
+    edit {{ vdom_traffic }}
+
+config system interface
+{% endif %}
+
 {%  if loopback is defined %}
     edit "{{ loopback.ifname }}"
         set vdom "{{ vdom_traffic }}"
@@ -66,19 +81,7 @@ config system interface
 {%  endfor %}
 end
 
-{% if multi_vdom %}
-end
-{% endif %}
-
-{# End of `config global` #}
-
 {% if netlab_default_policy|default(false) %}
-
-{%  if multi_vdom %}
-config vdom
-    edit {{ vdom_traffic }}
-{%  endif %}
-
 config firewall policy
     edit 1000
 {%   if not netlab_default_policy.enable|default(true) %}
@@ -97,9 +100,8 @@ config firewall policy
         set logtraffic disable
     next
 end
+{% endif %}
 
 {%  if multi_vdom %}
 end
 {%  endif %}
-
-{% endif %}
