@@ -3,42 +3,68 @@
   ansible.builtin.set_fact:
     netlab_vdom_is_enabled: "{{ netlab_vdom is defined and netlab_vdom != vdom }}"
 
+- name: Enable api-user authentication
+  block:
+  - name: Generate api-user token
+    delegate_to: localhost
+    expect:
+      command: >-
+        sshpass -p '{{ ansible_ssh_pass }}'
+        ssh -o UserKnownHostsFile=/dev/null
+          -o StrictHostKeyChecking=no
+          {{ ansible_user }}@{{ ansible_host }}
+      responses:
+        "password": "{{ ansible_ssh_pass }}"
+        "#":
+        - config global
+        - execute api-user generate-key netlab
+        - exit
+    register: raw_token
+
+  - name: Extract api-user token
+    set_fact:
+      ansible_httpapi_session_key:
+        access_token: "{{ raw_token.stdout | regex_search('New API key: (\\w+)', '\\1') | first }}"
+
+  - name: Create auth.yml in host_vars
+    delegate_to: localhost
+    copy:
+      dest: "{{ inventory_dir }}/host_vars/{{ inventory_hostname }}/auth.yml"
+      content: |
+        ---
+        ansible_httpapi_session_key:
+          access_token: "{{ ansible_httpapi_session_key.access_token }}"
+  when: netlab_generate_api_token|default(true)
+
 - name: Enable multi-VDOM mode if a traffic VDOM is defined
   fortinet.fortios.fortios_system_global:
     vdom: "{{ vdom }}"
     system_global:
-      vdom_mode: "{{ netlab_vdom_is_enabled|ternary('multi-vdom', 'no-vdom') }}"
+      vdom_mode: "{{ 'multi-vdom' if netlab_vdom_is_enabled else 'no-vdom' }}"
   register: vdom_mode_result
 
 - name: Ensure FortiGate is ready after VDOM mode change
-  block:
-  - name: Wait after VDOM mode change
-    ansible.builtin.wait_for:
-      host: "{{ ansible_host }}"
-      port: 443
-      timeout: 180
-      sleep: 10                          # time in seconds between checks
-      delay: "{{ netlab_vdom_timer }}"   # Initial delay in seconds before first check
-      state: started
-    when: netlab_vdom_timer|default(0) > 0
-  - name: Test FortiGate API readiness after VDOM mode change
-    fortinet.fortios.fortios_system_global:
-      vdom: "{{ vdom }}"
-      system_global:
-        hostname: '{{ inventory_hostname.replace("_","-") }}'
-    register: hostname_result
-    retries: 5
-    delay: 10       # waiting time between retries
-    until: hostname_result is not failed and hostname_result.meta.http_status == 200
-  when: >-
-    vdom_mode_result.meta is defined and
-    (vdom_mode_result.meta.http_status == 200 and vdom_mode_result.meta.revision_changed)
+  ansible.builtin.wait_for:
+    host: "{{ ansible_host }}"
+    port: 443
+    timeout: 180
+    sleep: 10                                       # time in seconds between checks
+    delay: "{{ netlab_vdom_timer|default(0) }}"    # Initial delay in seconds before first check
+    state: started
+  when:
+  - netlab_vdom_timer|default(0) > 0
+  - vdom_mode_result.meta.http_status == 200
+  - vdom_mode_result.meta.revision_changed
 
 - name: Ensure `{{ vdom }}` VDOM is set as admin
   fortinet.fortios.fortios_system_settings:
     vdom: "{{ vdom }}"
     system_settings:
       vdom_type: admin
+  register: api_result
+  retries: "{{ netlab_check_retries | default(20) }}"
+  delay: "{{ netlab_check_delay | default(5) }}"
+  until: api_result.meta.http_status == 200
   when: netlab_vdom_is_enabled
 
 - name: Deploy initial configuration from template
