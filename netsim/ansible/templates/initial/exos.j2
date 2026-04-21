@@ -39,14 +39,14 @@ enable jumbo-frame ports {{ l.ifname }}
 {%     endif %}
 {%   endif %}
 {%   if has_l3_vlan %}
-{%   if l.vrf is defined %}
+{%     if l.vrf is defined %}
 configure vlan {{ vlan_name }} virtual-router {{ l.vrf }}
-{%   endif %}
-{%   if not is_loopback and role == 'router' and l.ipv6 is defined %}
-{%     set ra_prefix = l.ipv6|ansible.utils.ipaddr(0) if l.ipv6 is string and l.ipv6|ansible.utils.ipv6 else None %}
-{%     if l.ra.disable|default(false) is true %}
+{%     endif %}
+{%     if not is_loopback and role == 'router' and l.ipv6 is defined %}
+{%       set ra_prefix = l.ipv6|ansible.utils.ipaddr(0) if l.ipv6 is string and l.ipv6|ansible.utils.ipv6 else None %}
+{%       if l.ra.disable|default(false) is true %}
 disable router-discovery ipv6 vlan {{ vlan_name }}
-{%     else %}
+{%       else %}
 enable router-discovery ipv6 vlan {{ vlan_name }}
 configure vlan {{ vlan_name }} router-discovery ipv6 max-interval 5
 configure vlan {{ vlan_name }} router-discovery ipv6 min-interval 3
@@ -65,30 +65,33 @@ configure vlan {{ vlan_name }} router-discovery ipv6 managed-config-flag on
 {%       if l.ra.dhcp|default(false) == 'other' %}
 configure vlan {{ vlan_name }} router-discovery ipv6 other-config-flag on
 {%       endif %}
+{%       endif %}
 {%     endif %}
-{%   endif %}
-{%   if l.ipv4 is defined %}
-{%     if l.ipv4 is sameas True %}
+{%     if l.ipv4 is defined %}
+{%       if l.ipv4 is sameas True %}
 ! Unnumbered IPv4 not implemented for EXOS
-{%     elif l.ipv4 is string and l.ipv4|ansible.utils.ipv4 %}
+{%       elif l.ipv4 is string and l.ipv4|ansible.utils.ipv4 %}
 configure vlan {{ vlan_name }} ipaddress {{ l.ipv4|ansible.utils.ipaddr('address') }} {{ l.ipv4|ansible.utils.ipaddr('netmask') }}
 enable ipforwarding vlan {{ vlan_name }}
-{%     else %}
+{%       else %}
 ! Invalid IPv4 address {{ l.ipv4 }}
+{%       endif %}
 {%     endif %}
-{%   endif %}
-{%   if l.ipv6 is defined %}
-{%     if l.ipv6 is sameas True %}
+{%     if l.ipv6 is defined %}
+{%       if l.ipv6 is sameas True %}
 ! Link-local-only IPv6 not implemented for EXOS
-{%     elif l.ipv6 is string and l.ipv6|ansible.utils.ipv6 %}
+{%       elif l.ipv6 is string and l.ipv6|ansible.utils.ipv6 %}
 configure vlan {{ vlan_name }} ipaddress {{ l.ipv6|upper }}
 enable ipforwarding ipv6 vlan {{ vlan_name }}
-{%     else %}
+{%       else %}
 ! Invalid IPv6 address {{ l.ipv6 }}
+{%       endif %}
+{%     endif %}
+{%     if not is_loopback and l.mtu is defined %}
+configure ip-mtu {{ l.mtu }} vlan {{ vlan_name }}
 {%     endif %}
 {%   endif %}
-{%   if not is_loopback and l.mtu is defined %}
-configure ip-mtu {{ l.mtu }} vlan {{ vlan_name }}
-{%   endif %}
+{%   if not is_loopback and not is_svi %}
+enable ports {{ l.ifname }}
 {%   endif %}
 {% endfor %}
