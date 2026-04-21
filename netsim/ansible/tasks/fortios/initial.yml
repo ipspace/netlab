@@ -17,6 +17,11 @@
         "password": "{{ ansible_ssh_pass }}"
         "#":
         - config global
+        - config system api-user
+        - edit "netlab"
+        - set accprofile "super_admin"
+        - next
+        - end
         - execute api-user generate-key netlab
         - exit
     register: raw_token
@@ -44,15 +49,20 @@
   register: vdom_mode_result
 
 - name: Ensure FortiGate is ready after VDOM mode change
+  vars:
+    wait:
+      delay:   "{{ netlab_check_delay   | default(5)  | int }}"
+      retries: "{{ netlab_check_retries | default(20) | int }}"
+      timer:   "{{ netlab_vdom_timer    | default(0)  | int }}"
   ansible.builtin.wait_for:
     host: "{{ ansible_host }}"
-    port: 443
-    timeout: 180
-    sleep: 10                                       # time in seconds between checks
-    delay: "{{ netlab_vdom_timer|default(0) }}"    # Initial delay in seconds before first check
+    port: "{{ ansible_httpapi_port }}"
+    timeout: "{{ wait.delay | int * wait.retries | int + wait.timer | int }}"
+    sleep: "{{ wait.delay }}"
+    delay: "{{ wait.timer }}"
     state: started
   when:
-  - netlab_vdom_timer|default(0) > 0
+  - wait.timer | int > 0
   - vdom_mode_result.meta.http_status == 200
   - vdom_mode_result.meta.revision_changed
 
