@@ -350,8 +350,10 @@ Device-specific parameters:
 Device configuration:
 
 * Use a recent version of Ansible and **fortinet.fortios** Ansible Galaxy collection (version 2.3.6 or later)
-* _netlab_ tries to configure Fortinet devices with configuration scripts uploaded through the FortiOS Monitor API calls using username/password authentication.
+* When the **netlab_generate_api_token** device group variable is `True` (default behavior), _netlab_ generates the API token for the _netlab_ user (created during the Vagrant box creation process) and saves it in the `ansible_httpapi_session_key.access_token` Ansible host variable. You can disable the generation of API token with the `netlab_generate_api_token: False` node/group variable.
+* Without the API token, _netlab_ tries to configure Fortinet devices with configuration scripts uploaded through the FortiOS Monitor API calls using username/password authentication.
 * If the API call fails, _netlab_ tries to push the configuration to a Fortinet device through a regular SSH session. Use **netlab initial -vvv --limit _fw_device_** to troubleshoot the configuration download (Ansible displays full contents of the SSH session at this level of verbosity).
+* _netlab_ uses HTTPS to access FortiOS API. See [](caveats-fortios-70) if your device cannot use HTTPS due to licensing restrictions.
 * To troubleshoot API authentication, log into the FortiOS VM with **netlab connect** and enable HTTP debugging with the following commands:
 
 ```
@@ -364,18 +366,32 @@ diag debug application httpsd -1
 * We're not testing Fortinet implementation as part of the regular integration tests; the configuration scripts might be outdated. If you encounter a problem, please open an issue.
 ```
 
-### Fortinet FortiOS 6.x/7.0
+FortiOS restarts the HTTPS server after multi-VDOM configuration. The initial configuration playbook waits for the HTTPS server to become available after changing the VDOM mode to `multi-vdom`. The following device variables (which can also be set as node/group variables) control the wait time:
+
+(caveats-fortios-wait)=
+* `netlab_vdom_timer` -- the initial wait time (default: 0). Ansible won't try to reach the HTTPS server until this timer expires
+* `netlab_check_delay` -- the delay between retries (default: 5 seconds)
+* `netlab_check_retries` -- the number of retries (default: 20)
+
+(caveats-fortios-70)=
+### Fortinet FortiOS 7.0
 
 * FortiOS VM images have a default 15-day evaluation license. The VM has [limited capabilities](https://docs.fortinet.com/document/fortigate-private-cloud/7.2.0/kvm-administration-guide/504166/fortigate-vm-evaluation-license) without a license file. It will work for 15 days from the first boot, at which point you must install a license file or recreate the vagrant box completely from scratch.
 * The 15-day evaluation license only allows one single VDOM. Using the **netlab_vdom** node parameter will fail when using the built-in 15-day license.
+* You cannot use HTTPS without FortiOS license. Set these node/group variables to use HTTP:
+
+```
+ansible_httpapi_use_ssl: false
+ansible_httpapi_port: 80
+```
 
 ### Fortinet FortiOS 7.4.x/7.6.x
 
 * Starting from FortiOS 7.2, FortiGate devices do not come with a license out of the box. Users can link *one* device with a permanent evaluation license to an account on the Fortinet support portal.
 * The license needs to be added before creating the Vagrant box.
-* There are restrictions associated with the evaluation license, including a maximum of three interfaces, firewall policies, and routes... For more detailed information, refer to the [evaluation license restrictions](https://docs.fortinet.com/document/fortigate/7.6.3/administration-guide/441460).
+* There are restrictions associated with the evaluation license, including a maximum of three interfaces, firewall policies, and routes. For more detailed information, refer to the [evaluation license restrictions](https://docs.fortinet.com/document/fortigate/7.6.3/administration-guide/441460).
 * The license is linked to the serial number of the device and the UUID. To ensure that the serial number remains consistent each time you start the lab, set the `libvirt.uuid` (or `clab.env.FORTIGATE_UUID`) node parameter to the appropriate value.
-* MTU can be defined on the interface level, the default is forced to 1500 bytes due to a different behaviour between `7.4.8` and `7.6.3` releases.
+* MTU can be defined on the interface level; the default is forced to 1500 bytes due to a different behavior between `7.4.8` and `7.6.3` releases.
 * If you want to use a multi-vdom configuration, you just need to set the `netlab_vdom: <name>` in the node data. `root` vdom will be used as the management with interface `port1`, and everything else will be configured in the specified traffic vdom. Default is `netlab_vdom: root` vdom in a no-vdom configuration.
 
 (caveats-frr)=
