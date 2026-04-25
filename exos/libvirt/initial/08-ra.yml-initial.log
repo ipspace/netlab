@@ -1,11 +1,48 @@
 Creating Device configuration snippets
-[CREATED] dut: initial
+[CREATED] dut: normalize,initial
 [CREATED] h4: initial,dhcp
 [CREATED] dhsrv: initial,dhcp
 [CREATED] h0: initial
 [CREATED] h1: initial
 [CREATED] h2: initial
 [CREATED] h3: initial
+Config Normalizing device configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Normalize device configurations] *****************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "normalize configuration for dut\n=========================================\nconfigure vlan Default delete ports all\ndisable port 1\ndisable port 2\ndisable port 3\ndisable port 4\ndisable port 5\n"
+}
+
+TASK [Deploy normalize configuration] ******************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/exos.yml for dut
+
+TASK [exos_config: deploying normalize from /work/netlab_cicd/node_files/dut/normalize] ***
+changed: [dut]
+
+PLAY RECAP *********************************************************************
+dut                        : ok=8    changed=1    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+
 Config Deploying device configurations
  [INFO] Executing initial configuration for node dhsrv (namespace
           clab-ml-17-dhsrv)
@@ -23,35 +60,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h4]
 ok: [dut]
 
-TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h4, dut
-
-TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [h4]
-ok: [dut]
-
-TASK [Find configuration template for normalize] *******************************
-ok: [h4]
-ok: [dut]
-
-TASK [fail] ********************************************************************
-skipping: [h4]
-skipping: [dut]
-
-TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [h4]
-ok: [dut]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [h4]
-skipping: [dut]
-
-TASK [Deploy normalize configuration] ******************************************
-skipping: [h4]
-skipping: [dut]
-
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h4, dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h4, dut
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [h4]
@@ -74,12 +84,12 @@ ok: [h4] => {
     "msg": "initial configuration for h4\n=========================================\n#!/bin/bash\n#\nset -e\n#\n# Create bash profile script\n#\ncat <<'SCRIPT' >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)$ \"\nSCRIPT\nhostname h4\n#\n# Build hosts file\n#\n#\ncat <<'SCRIPT' >/tmp/hosts\n#\n# Created by netlab initial\n#\n2001:db8:1:4::2 dhsrv eth1.dhsrv\n2001:db8:0:84::1 dut\n2001:db8:1::84 1.dut\n2001:db8:1:1::84 2.dut\n2001:db8:1:2::84 3.dut\n2001:db8:1:3::84 4.dut\n2001:db8:1:4::84 5.dut\nSCRIPT\ngrep \"Created by netlab\" /etc/hosts || uniq /tmp/hosts >>/etc/hosts\n# It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.\n# This is annoying on a network with filtered DNS.\n# DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.\n# Let's use that.\n#\n# (Overwrite netplan config to remove DNS stuff)\necho -n 'Starting initial config ' && date\ncat <<'SCRIPT' >/etc/netplan/01-netcfg.yaml\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    eth0:\n      dhcp4: true\n      dhcp6: false\n      optional: true\nSCRIPT\nnetplan apply\n\n# (Overwrite resolved config to remove DNS stuff)\ncat <<'SCRIPT' > /etc/systemd/resolved.conf \n[Resolve]\nDNS=\nFallbackDNS=\nDomains=\nDNSOverTLS=no\nCache=yes\nDNSStubListener=yes\nSCRIPT\n\nsystemctl restart systemd-resolved\n\n# Set persistent hostname\nhostnamectl set-hostname h4\n\nNEED_APT_UPDATE=YES\n\n# Loopback addressing\n\n# Interface addressing and bonds, including any static routes\ncat <<'SCRIPT' > /etc/netplan/03-eth-eth1.yaml\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    eth1:\n      dhcp6: true\n      accept-ra: true\nSCRIPT\n\n# Disable auto-negotiation on Ethernet interfaces, needed to make LACP work correctly\ncat <<'SCRIPT' > /etc/systemd/network/98-eth.link\n\n[Match]\nOriginalName=eth*\n\n[Link]\nBitsPerSecond=1G\nAutoNegotiation=no\nDuplex=full\nSCRIPT\n\nchmod 400 /etc/netplan/*\n\necho -n 'Starting netplan generate ' && date\nnetplan generate\necho -n 'Starting netplan apply ' && date\nnetplan apply\n\n#\n# Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA\n# Do this after 'netplan apply', e.g. bond devices won't exist before that\n#\ncat <<'SCRIPT' > /etc/sysctl.d/10-netsim.conf\nnet.ipv4.conf.all.arp_announce=2\nnet.ipv4.ip_forward=0\nnet.ipv6.conf.all.forwarding=0\n\nnet.ipv6.conf.eth1.disable_ipv6=1\n\nSCRIPT\nsysctl -p /etc/sysctl.d/10-netsim.conf\n"
 }
 ok: [dut] => {
-    "msg": "initial configuration for dut\n=========================================\nconfigure snmp sysName dut\n\nenable lldp ports all\ndisable lldp ports Mgmt\n\n\n\ncreate vlan \"VLAN_LO0\"\nenable loopback-mode vlan VLAN_LO0\nconfigure vlan VLAN_LO0 ipaddress 2001:DB8:0:84::1/64\nenable ipforwarding ipv6 vlan VLAN_LO0\ncreate vlan \"VLAN_P1\"\nconfigure vlan VLAN_P1 add ports 1 untagged\nconfigure ports 1 display-string Regular_link_(default_RA_behavior)-stub\nenable router-discovery ipv6 vlan VLAN_P1\nconfigure vlan VLAN_P1 router-discovery ipv6 max-interval 5\nconfigure vlan VLAN_P1 router-discovery ipv6 min-interval 3\nconfigure vlan VLAN_P1 router-discovery ipv6 add prefix 2001:db8:1::/64\nconfigure vlan VLAN_P1 ipaddress 2001:DB8:1::84/64\nenable ipforwarding ipv6 vlan VLAN_P1\ncreate vlan \"VLAN_P2\"\nconfigure vlan VLAN_P2 add ports 2 untagged\nconfigure ports 2 display-string no_RA-stub\ndisable router-discovery ipv6 vlan VLAN_P2\nconfigure vlan VLAN_P2 ipaddress 2001:DB8:1:1::84/64\nenable ipforwarding ipv6 vlan VLAN_P2\ncreate vlan \"VLAN_P3\"\nconfigure vlan VLAN_P3 add ports 3 untagged\nconfigure ports 3 display-string No_SLAAC-stub\nenable router-discovery ipv6 vlan VLAN_P3\nconfigure vlan VLAN_P3 router-discovery ipv6 max-interval 5\nconfigure vlan VLAN_P3 router-discovery ipv6 min-interval 3\nconfigure vlan VLAN_P3 router-discovery ipv6 add prefix 2001:db8:1:2::/64\nconfigure vlan VLAN_P3 router-discovery ipv6 set prefix 2001:db8:1:2::/64 autonomous-flag off\nconfigure vlan VLAN_P3 ipaddress 2001:DB8:1:2::84/64\nenable ipforwarding ipv6 vlan VLAN_P3\ncreate vlan \"VLAN_P4\"\nconfigure vlan VLAN_P4 add ports 4 untagged\nconfigure ports 4 display-string No_onlink-stub\nenable router-discovery ipv6 vlan VLAN_P4\nconfigure vlan VLAN_P4 router-discovery ipv6 max-interval 5\nconfigure vlan VLAN_P4 router-discovery ipv6 min-interval 3\nconfigure vlan VLAN_P4 router-discovery ipv6 add prefix 2001:db8:1:3::/64\nconfigure vlan VLAN_P4 router-discovery ipv6 set prefix 2001:db8:1:3::/64 onlink-flag off\nconfigure vlan VLAN_P4 ipaddress 2001:DB8:1:3::84/64\nenable ipforwarding ipv6 vlan VLAN_P4\ncreate vlan \"VLAN_P5\"\nconfigure vlan VLAN_P5 add ports 5 untagged\nconfigure ports 5 display-string DHCPv6_managed_config\nenable router-discovery ipv6 vlan VLAN_P5\nconfigure vlan VLAN_P5 router-discovery ipv6 max-interval 5\nconfigure vlan VLAN_P5 router-discovery ipv6 min-interval 3\nconfigure vlan VLAN_P5 router-discovery ipv6 add prefix 2001:db8:1:4::/64\nconfigure vlan VLAN_P5 router-discovery ipv6 set prefix 2001:db8:1:4::/64 autonomous-flag off\nconfigure vlan VLAN_P5 router-discovery ipv6 managed-config-flag on\nconfigure vlan VLAN_P5 ipaddress 2001:DB8:1:4::84/64\nenable ipforwarding ipv6 vlan VLAN_P5\n"
+    "msg": "initial configuration for dut\n=========================================\nconfigure snmp sysName dut\n\nenable lldp ports all\ndisable lldp ports Mgmt\n\n\n\ncreate vlan \"VLAN_LO0\"\nenable loopback-mode vlan VLAN_LO0\nconfigure vlan VLAN_LO0 ipaddress 2001:DB8:0:84::1/64\nenable ipforwarding ipv6 vlan VLAN_LO0\ncreate vlan \"VLAN_P1\"\nconfigure vlan VLAN_P1 add ports 1 untagged\nconfigure ports 1 display-string Regular_link_(default_RA_behavior)-stub\nenable router-discovery ipv6 vlan VLAN_P1\nconfigure vlan VLAN_P1 router-discovery ipv6 max-interval 5\nconfigure vlan VLAN_P1 router-discovery ipv6 min-interval 3\nconfigure vlan VLAN_P1 router-discovery ipv6 add prefix 2001:db8:1::/64\nconfigure vlan VLAN_P1 ipaddress 2001:DB8:1::84/64\nenable ipforwarding ipv6 vlan VLAN_P1\nenable ports 1\ncreate vlan \"VLAN_P2\"\nconfigure vlan VLAN_P2 add ports 2 untagged\nconfigure ports 2 display-string no_RA-stub\ndisable router-discovery ipv6 vlan VLAN_P2\nconfigure vlan VLAN_P2 ipaddress 2001:DB8:1:1::84/64\nenable ipforwarding ipv6 vlan VLAN_P2\nenable ports 2\ncreate vlan \"VLAN_P3\"\nconfigure vlan VLAN_P3 add ports 3 untagged\nconfigure ports 3 display-string No_SLAAC-stub\nenable router-discovery ipv6 vlan VLAN_P3\nconfigure vlan VLAN_P3 router-discovery ipv6 max-interval 5\nconfigure vlan VLAN_P3 router-discovery ipv6 min-interval 3\nconfigure vlan VLAN_P3 router-discovery ipv6 add prefix 2001:db8:1:2::/64\nconfigure vlan VLAN_P3 router-discovery ipv6 set prefix 2001:db8:1:2::/64 autonomous-flag off\nconfigure vlan VLAN_P3 ipaddress 2001:DB8:1:2::84/64\nenable ipforwarding ipv6 vlan VLAN_P3\nenable ports 3\ncreate vlan \"VLAN_P4\"\nconfigure vlan VLAN_P4 add ports 4 untagged\nconfigure ports 4 display-string No_onlink-stub\nenable router-discovery ipv6 vlan VLAN_P4\nconfigure vlan VLAN_P4 router-discovery ipv6 max-interval 5\nconfigure vlan VLAN_P4 router-discovery ipv6 min-interval 3\nconfigure vlan VLAN_P4 router-discovery ipv6 add prefix 2001:db8:1:3::/64\nconfigure vlan VLAN_P4 router-discovery ipv6 set prefix 2001:db8:1:3::/64 onlink-flag off\nconfigure vlan VLAN_P4 ipaddress 2001:DB8:1:3::84/64\nenable ipforwarding ipv6 vlan VLAN_P4\nenable ports 4\ncreate vlan \"VLAN_P5\"\nconfigure vlan VLAN_P5 add ports 5 untagged\nconfigure ports 5 display-string DHCPv6_managed_config\nenable router-discovery ipv6 vlan VLAN_P5\nconfigure vlan VLAN_P5 router-discovery ipv6 max-interval 5\nconfigure vlan VLAN_P5 router-discovery ipv6 min-interval 3\nconfigure vlan VLAN_P5 router-discovery ipv6 add prefix 2001:db8:1:4::/64\nconfigure vlan VLAN_P5 router-discovery ipv6 set prefix 2001:db8:1:4::/64 autonomous-flag off\nconfigure vlan VLAN_P5 router-discovery ipv6 managed-config-flag on\nconfigure vlan VLAN_P5 ipaddress 2001:DB8:1:4::84/64\nenable ipforwarding ipv6 vlan VLAN_P5\nenable ports 5\n"
 }
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux.yml for h4
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/exos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux.yml for h4
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/exos.yml for dut
 
 TASK [template] ****************************************************************
 changed: [h4]
@@ -96,7 +106,7 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h4]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h4 => (item=dhcp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h4 => (item=dhcp)
 
 TASK [Figure out whether to deploy the module dhcp on current device] **********
 ok: [h4]
@@ -116,7 +126,7 @@ ok: [h4] => {
 }
 
 TASK [Deploy dhcp configuration] ***********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/linux/dhcp.yml for h4
+included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/dhcp.yml for h4
 
 TASK [Install dnsmasq] *********************************************************
 skipping: [h4]
@@ -134,8 +144,8 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=12   changed=1    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-h4                         : ok=22   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+dut                        : ok=8    changed=1    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h4                         : ok=18   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================
