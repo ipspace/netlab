@@ -445,7 +445,7 @@ Implementation limitations in import/export route filters (reported as errors th
 ## Juniper cSRX
 
 * cSRX might require a license file to unlock additional features. You can specify the location of the license file with the **clab.license** node parameter or **defaults.devices.crpd.clab.node.license** [device default](topo-defaults).
-* If using more than 2 data interfaces, `clab.env.CSRX_PORT_NUM` must be increased to the number of interfaces + 1 (because it includes the management interface). Setting it higher will result in none of the data interfaces functioning correctly, e.g. no ARP.
+* cSRX container supports up to 17 interfaces: 1 Out-of-band management Interface (eth0) and 16 In-band interfaces (ge-0/0/0 to ge-0/0/15).
 * Since cSRX does not support any dynamic routing protocols, the use of the routing module and static routes is recommended.
 
 (caveats-crpd)=
