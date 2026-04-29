@@ -1,0 +1,65 @@
+system {
+  host-name {{ inventory_hostname }};
+  static-host-mapping {
+{% for k,v in hostvars.items() if k != inventory_hostname %}
+{%   if v.loopback.ipv4 is defined %}
+    {{ k|replace('_','') }} inet {{ v.loopback.ipv4|ansible.utils.ipaddr('address') }};
+{%   elif v.interfaces|default([]) and v.interfaces[0].ipv4|default(False) is string %}
+    {{ k|replace('_','') }} inet {{ v.interfaces[0].ipv4|ansible.utils.ipaddr('address') }};
+{%   endif %}
+{% endfor %}
+  }
+}
+
+interfaces {
+{% for l in netlab_interfaces|default([]) %}
+  {{ l.ifname }} {
+{%   if l.mtu is defined %}
+    mtu {{ l.mtu }};
+{%   endif %}
+{%   if l.name is defined %}
+    description "{{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}";
+{%   elif l.type|default("") == "stub" %}
+    description "Stub interface"
+{%   endif %}
+    unit 0 {
+{#
+    IPv4 addresses
+#}
+{%   if 'ipv4' in l %}
+      family inet {
+{%     if l.ipv4 == True %}
+        unnumbered-address lo0.0;
+{%     elif l.ipv4|ansible.utils.ipv4 %}
+        address {{ l.ipv4 }};
+{%     else %}
+! Invalid IPv4 address {{ l.ipv4 }}
+{%     endif %}
+      }
+{%   endif %}
+{#
+    IPv6 addresses
+#}
+{%   if 'ipv6' in l %}
+      family inet6 {
+{%     if l.ipv6 is string %}
+        address {{ l.ipv6 }};
+{%     endif %}
+      }
+{%   endif %}
+    }
+  }
+{% endfor %}
+}
+
+security {
+    zones {
+        security-zone default {
+            interfaces {
+                {% for l in netlab_interfaces|default([]) %}
+                {{ l.ifname }}.0;
+                {% endfor %}
+            }
+        }
+    }
+}

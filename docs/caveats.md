@@ -441,6 +441,13 @@ Implementation limitations in import/export route filters (reported as errors th
 * When prepending an AS number different than the local one, JunOS puts the prepended AS at the beginning of the *AS_PATH* while other vendors perform the prepending and then add the device's own AS at the beginning. Most EBGP peers deny a BGP update that does not have the neighbor's AS number at the beginning of the *AS_PATH*. If needed, _netlab_ automatically adds the *local-as* to the prepend list to get it at the beginning of the *AS_PATH*.
 * *as-path* regex syntax for JunOS has different rules than other vendors. For example, a *null as-path* is represented as `()`. netlab tries some as-path conversion, but sometimes it could be wrong.
 
+(caveats-csrx)=
+## Juniper cSRX
+
+* cSRX might require a license file to unlock additional features. You can specify the location of the license file with the **clab.license** node parameter or **defaults.devices.crpd.clab.node.license** [device default](topo-defaults).
+* If using more than 2 data interfaces, `clab.env.CSRX_PORT_NUM` must be increased to the number of interfaces + 1 (because it includes the management interface). Setting it higher will result in none of the data interfaces functioning correctly, e.g. no ARP.
+* Since cSRX does not support any dynamic routing protocols, the use of the routing module and static routes is recommended.
+
 (caveats-crpd)=
 ## Juniper cRPD
 

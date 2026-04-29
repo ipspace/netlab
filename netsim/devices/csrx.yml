@@ -1,0 +1,55 @@
+---
+description: Juniper cSRX container
+group_vars:
+  ansible_user: root
+  ansible_ssh_pass: "clab123"
+  netlab_device_type: csrx
+  netlab_check_retries: 20
+
+mgmt_if: fxp0
+ifindex_offset: 0
+interface_name: ge-0/0/{ifindex}
+loopback_interface_name: "" # Unsupported on cSRX
+mtu: 1500
+
+features:
+  initial:
+    ipv4:
+      unnumbered: false               # The 'unnumbered-address' family inet command does not work on cSRX
+    ipv6:
+      lla: true
+  routing:
+    static:
+      vrf: False
+      discard: True
+
+clab:
+  image: csrx:23.4R1.9
+  build: https://containerlab.dev/manual/kinds/csrx/
+  node:
+    kind: juniper_csrx
+    env:
+      # Number of interfaces to create
+      # cSRX default is 3 (management + 2 data interfaces)
+      # If more interfaces are required, this must be increased.
+      # Setting to a higher value than required will break interfaces (no arp etc)
+      CSRX_PORT_NUM: 3
+    config_templates:
+      hosts: /etc/hosts:shared
+      netlab-config: /config/netlab/netlab-config.sh:sh
+  interface:
+    name: eth{ifindex+1}
+  features:
+    initial:
+      config_mode: [ sh ]
+  group_vars:
+    netlab_config_mode: sh
+    netlab_show_command: [ cli, -c, 'show $@' ]
+    netlab_check_command: who
+    netlab_ready: [ ssh ]
+    netlab_default_shebang: '#!/config/netlab/netlab-config.sh'
+#    ansible_connection: docker
+#    netlab_console_connection: docker
+    netlab_config_path: /config/netlab/
+
+graphite.icon: firewall
