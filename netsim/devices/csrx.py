@@ -6,6 +6,7 @@ from box import Box
 from ..utils import log
 from . import _Quirks, report_quirk
 
+
 def csrx_port_num(node: Box) -> None:
   if_count = len(node.get('interfaces', []))
   node.clab.env.CSRX_PORT_NUM = if_count + 1
