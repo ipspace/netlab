@@ -220,7 +220,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 
 [^XE]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL) and IOL Layer-2 image
 
-[^Junos]: Includes cRPD, vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
+[^Junos]: Includes cRPD, vMX, vSRX, vPTX, vJunos-switch, and vJunos-router but not cSRX
 
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
@@ -289,7 +289,7 @@ The following system-wide features are configured on supported network operating
 | Fortinet FortiOS         | ✅  |  ❌  | ✅  | ✅  | ✅  |
 | FRR                      | ✅  | ✅[^HIF]  |  ❌  | ✅  | ✅  |
 | Generic Linux            | ✅  | ✅[^HIF]  |  ✅[❗](linux-lldp) | ✅  | ✅  |
-| Juniper cSRX            | ✅  |  ❌  |  ❌  |  ❌  |  ❌  |
+| Juniper cSRX            | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
 | Junos[^Junos]            | ✅  |  ❌  | ✅  | ✅  | ✅  |
 | Mikrotik RouterOS 6      | ✅  | ✅  | ✅[❗](caveats-routeros6) | ✅ | ✅ |
 | Mikrotik RouterOS 7      | ✅ | ✅ | ✅[❗](caveats-routeros7) | ✅ | ✅ |
@@ -397,7 +397,6 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Extreme Networks EXOS | ✅   |   ❌   |   ❌   |   ❌   |  ❌  |
 | Fortinet FortiOS      | ✅ [❗](caveats-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |
 | FRR                   | ✅   |  ✅   |   ❌  | ✅  |  ✅  |
-| Juniper cSRX         |   ❌  |   ❌  |   ❌  |   ❌  |   ❌  |
 | Junos[^Junos]         | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
 | Mikrotik RouterOS 6   | ✅   |   ❌   |   ❌  | ✅  |   ❌  |
 | Mikrotik RouterOS 7   | ✅   |   ❌   |   ❌  | ✅  |   ❌  |
@@ -427,7 +426,6 @@ These devices support additional control-plane protocols or BGP address families
 | Dell OS10             | ✅  | ✅  |  ❌  |  ❌  |
 | Extreme Networks EXOS |  ❌  |  ❌  |  ❌  | ✅  |
 | FRR                   | ✅  | ✅  | ✅  |  ❌  |
-| Juniper cSRX          |  ❌  |  ❌  |  ❌  |  ❌  |
 | Juniper cRPD          | ✅  |  ❌  | ✅  |  ❌  |
 | Juniper vMX           | ✅  |  ❌  | ✅  | ✅  |
 | Juniper vPTX          | ✅  | ✅  | ✅  | ✅  |
@@ -477,7 +475,6 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | Dell OS10             | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
 | Extreme Networks EXOS | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | FRR                   | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Juniper cSRX          |  ❌ |  ❌ |   ❌ |   ❌ |   ❌ |  ❌ |
 | Juniper cRPD          |  ❌ |  ❌ |   ❌ | ✅ | ✅ |  ❌ |
 | Juniper vMX           | ✅ | ✅ |  ❌ | ✅ | ✅ |  ❌ |
 | Juniper vPTX          | ✅ | ✅ | ✅ [❗](caveats-vptx) | ✅ | ✅ |  ❌ |
@@ -527,7 +524,6 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Dell OS10             | ✅ | ❌ | ❌ | ✅ | ❌ |
 | Extreme Networks EXOS | ✅ | ❌ | ❌ | ❌ | ❌ |
 | FRR                   | ✅ | ✅ | ❌ | ✅ | ❌ |
-| Juniper cSRX         | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Junos[^Junos]         | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
 | Mikrotik RouterOS 6   |  ❌ | ❌ | ❌ | ✅ | ❌ |
 | Mikrotik RouterOS 7   | ✅ | ❌ | ❌ | ✅ | ❌ |

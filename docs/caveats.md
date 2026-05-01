@@ -441,13 +441,6 @@ Implementation limitations in import/export route filters (reported as errors th
 * When prepending an AS number different than the local one, JunOS puts the prepended AS at the beginning of the *AS_PATH* while other vendors perform the prepending and then add the device's own AS at the beginning. Most EBGP peers deny a BGP update that does not have the neighbor's AS number at the beginning of the *AS_PATH*. If needed, _netlab_ automatically adds the *local-as* to the prepend list to get it at the beginning of the *AS_PATH*.
 * *as-path* regex syntax for JunOS has different rules than other vendors. For example, a *null as-path* is represented as `()`. netlab tries some as-path conversion, but sometimes it could be wrong.
 
-(caveats-csrx)=
-## Juniper cSRX
-
-* cSRX might require a license file to unlock additional features. You can specify the location of the license file with the **clab.license** node parameter or **defaults.devices.crpd.clab.node.license** [device default](topo-defaults).
-* cSRX supports up to 17 interfaces: 1 Out-of-band management Interface (eth0) and 16 In-band interfaces (ge-0/0/0 to ge-0/0/15).
-* Since cSRX does not support any dynamic routing protocols, the use of the routing module and static routes is recommended.
-
 (caveats-crpd)=
 ## Juniper cRPD
 
@@ -455,6 +448,14 @@ Implementation limitations in import/export route filters (reported as errors th
 * Inter-VRF route leaking does not work correctly
 * VRRPv3 for IPv4 implementation uses the [checksum calculation that is incompatible with most other VRRP implementations](https://blog.ipspace.net/2025/01/sturgeon-law-vrrp-edition/). The `checksum-without-pseudoheader` configuration command does not seem to be available.
 * Anycast gateway is unsupported
+
+(caveats-csrx)=
+## Juniper cSRX
+
+* cSRX is a native container and should not be confused with vSRX which is a vrnetlab VM in a container. See [Juniper's cSRX documentation](https://www.juniper.net/documentation/us/en/software/csrx/csrx-consolidated-deployment-guide/topics/concept/security-csrx-docker-feature-support.html) for more details.
+* cSRX might require a license file to unlock additional features. You can specify the location of the license file with the **clab.license** node parameter or **defaults.devices.csrx.clab.node.license** [device default](topo-defaults).
+* cSRX supports up to 17 interfaces: 1 out-of-band management Interface (eth0) and 16 in-band interfaces (ge-0/0/0 to ge-0/0/15).
+* Since cSRX does not support any dynamic routing protocols, use the **routing** module and static routes.
 
 (caveats-vmx)=
 ## Juniper vMX
