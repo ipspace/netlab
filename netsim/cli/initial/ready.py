@@ -199,11 +199,13 @@ def get_waitlists(nodeset: list, topology: Box) -> Box:
 def run(
       topology: Box,
       args: argparse.Namespace,
-      rest: list = [],
+      rest: typing.Optional[list] = None,
       nodeset: typing.Optional[list] = None) -> None:
 
   if nodeset is None:
     nodeset = utils.get_deploy_nodeset(args,topology)
+  if rest is None:
+    rest = []
 
   node_waits = get_waitlists(nodeset,topology)
   if node_waits and not log.QUIET:

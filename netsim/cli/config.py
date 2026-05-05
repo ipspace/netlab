@@ -162,6 +162,11 @@ def reload_node_configs(topology: Box,nodeset: list,args: argparse.Namespace, re
     if not nodeset:                                   # Any nodes left to work on?
       error_and_exit('Found no nodes with saved configuration, exiting')
 
+  # Check that the devices are ready before trying to reload the config
+  #
+  ready_args = argparse.Namespace(limit=None,ready=None,fast=False)
+  i_ready.run(topology,ready_args,rest=[],nodeset=nodeset)
+
   """
   Now prepare the environment for the "netlab initial" processing
 
@@ -169,9 +174,6 @@ def reload_node_configs(topology: Box,nodeset: list,args: argparse.Namespace, re
   * Create initial- and custom config files
   * Change the node "config" parameter to request configuration reload
   """
-  ready_args = argparse.Namespace(limit=None,ready=None)
-  i_ready.run(topology,ready_args,rest=[],nodeset=nodeset)
-
   topology.defaults.paths.custom.dirs = [ str(cfg_path.parent) ]
   create_node_files(topology,nodeset,args,str(cfg_path.name),initial=True,cfg_suffix='.cfg')
 
