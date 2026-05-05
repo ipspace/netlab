@@ -1,0 +1,202 @@
+Using transformed lab topology from snapshot file netlab.snapshot.pickle
+Checking virtualization provider installation
+OK: clab installed and working correctly
+Starting clab nodes
+provider clab: executing flock -E 42 /tmp/netlab.lock sudo -E containerlab deploy --reconfigure -t clab.yml
+14:25:22 INFO Containerlab started version=0.75.0
+14:25:22 INFO Parsing & checking topology file=clab.yml
+14:25:22 INFO Removing directory path=/work/netlab_cicd/sample/clab-ml-32
+14:25:22 INFO Creating docker network name=nl_mgmt_32 IPv4 subnet=192.168.32.0/24 IPv6 subnet="" MTU=0
+14:25:22 INFO Creating lab directory path=/work/netlab_cicd/sample/clab-ml-32
+14:25:23 INFO Creating container name=x1
+14:25:23 INFO Creating container name=dut
+14:25:23 INFO Created link: dut:eth1 ▪┄┄▪ x1:eth1
+14:25:24 INFO Executed command node=x1 command="sleep 1" stdout=""
+14:25:24 INFO Adding host entries path=/etc/hosts
+14:25:24 INFO Adding SSH config for nodes path=/etc/ssh/ssh_config.d/clab-ml-32.conf
+[1m╭[0m[1m────────────────[0m[1m┬[0m[1m──────────────────────────────────[0m[1m┬[0m[1m────────────────────[0m[1m┬[0m[1m────────────────[0m[1m╮[0m
+[1m│[0m[1m      Name      [0m[1m│[0m[1m            Kind/Image            [0m[1m│[0m[1m        State       [0m[1m│[0m[1m IPv4/6 Address [0m[1m│[0m
+[1m├[0m[1m────────────────[0m[1m┼[0m[1m──────────────────────────────────[0m[1m┼[0m[1m────────────────────[0m[1m┼[0m[1m────────────────[0m[1m┤[0m
+│ clab-ml-32-dut │ vr-aoscx                         │ running            │ 192.168.32.101 │
+│                │ vrnetlab/vr-aoscx:20240129204649 │ (health: starting) │ N/A            │
+├────────────────┼──────────────────────────────────┼────────────────────┼────────────────┤
+│ clab-ml-32-x1  │ linux                            │ running            │ 192.168.32.102 │
+│                │ quay.io/frrouting/frr:10.6.1     │                    │ N/A            │
+╰────────────────┴──────────────────────────────────┴────────────────────┴────────────────╯
+Deploying initial device configurations
+Creating Device configuration snippets
+[CREATED] dut: initial,ospf
+[CREATED] x1: initial,ospf
+Checking Are lab devices ready to be configured?
+ [INFO] Checking SSH server(s) on dut
+[SSH]     SSH server on node dut (device arubacx) is ready after 23.7 seconds
+Config Deploying device configurations
+ [INFO] Executing initial configuration for node x1
+ [INFO] Executing ospf configuration for node x1
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "initial configuration for dut\n=========================================\nhostname dut\n!\nlldp\n!\n\n\n\ninterface mgmt\n    no lldp transmit\n    no lldp receive\n!\n\n\ninterface loopback 0\n    ip address 10.0.0.1/32\n    no shutdown\n!\n\ninterface 1/1/1\n    shutdown\n    mtu 9198\n    ip mtu 1500\n    description dut -> x1\n    ip address 10.1.0.1/30\n    no shutdown\n!\n!\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
+
+TASK [tempfile] ****************************************************************
+changed: [dut -> localhost]
+
+TASK [template] ****************************************************************
+changed: [dut -> localhost]
+
+TASK [aoscx_config: deploying initial from /work/netlab_cicd/sample/node_files/dut/initial] ***
+changed: [dut]
+
+TASK [file] ********************************************************************
+changed: [dut -> localhost]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "ospf configuration for dut\n=========================================\n!\nrouter ospf 1\n    router-id 10.0.0.1\n\n\n\n\n\n    area 0.0.0.0\n    area 0.0.0.0\n\n!\ninterface loopback 0\n    ip ospf 1 area 0.0.0.0\n!\ninterface 1/1/1\n! dut -> x1\n    ip ospf 1 area 0.0.0.0\n    ip ospf network point-to-point\n!\n"
+}
+
+TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
+
+TASK [tempfile] ****************************************************************
+changed: [dut -> localhost]
+
+TASK [template] ****************************************************************
+changed: [dut -> localhost]
+
+TASK [aoscx_config: deploying ospf from /work/netlab_cicd/sample/node_files/dut/ospf] ***
+changed: [dut]
+
+TASK [file] ********************************************************************
+changed: [dut -> localhost]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut                        : ok=22   changed=8    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
+
+Results of configuration script deployments
+================================================================================
+x1               Script:  initial,ospf
+
+
+OK: Lab devices configured
+
+
+This topology tests the "start with with configuration reload" functionality.
+You should:
+
+* Start the lab with "netlab up"
+* Save the configuration with "netlab collect -o saved"
+* Stop the lab with "netlab down"
+* Restart the lab with "netlab up --snapshot --reload saved"
+* Validate the results with "netlab validate"
+
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Collect device configurations] *******************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [x1]
+ok: [dut]
+
+TASK [Create '/work/netlab_cicd/sample/saved' directory] ***********************
+ok: [dut -> localhost]
+
+TASK [Find configuration collection script] ************************************
+ok: [x1]
+ok: [dut]
+
+TASK [Collect device configurations] *******************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config/arubacx.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config/frr.yml for x1
+
+TASK [arubanetworks.aoscx.aoscx_command] ***************************************
+ok: [dut]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [Save FRR running configuration to frr.conf] ******************************
+changed: [x1]
+
+TASK [Collect FRR configuration] ***********************************************
+changed: [x1]
+
+TASK [set_fact] ****************************************************************
+ok: [x1]
+
+TASK [Collect FRR daemons configuration] ***************************************
+changed: [x1]
+
+TASK [Save FRR daemons to /work/netlab_cicd/sample/saved/x1-daemons] ***********
+changed: [x1 -> localhost]
+
+TASK [Copy collected configuration to '/work/netlab_cicd/sample/saved' directory] ***
+changed: [dut -> localhost]
+changed: [x1 -> localhost]
+
+PLAY RECAP *********************************************************************
+dut                        : ok=7    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+x1                         : ok=9    changed=5    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+cwd: /work/netlab_cicd/sample output: saved
+Checking virtualization provider installation
+OK: clab installed and working correctly
+Stopping clab nodes
+provider clab: executing flock -E 42 /tmp/netlab.lock sudo -E containerlab destroy --cleanup -t clab.yml
+14:26:14 INFO Parsing & checking topology file=clab.yml
+14:26:14 INFO Parsing & checking topology file=clab.yml
+14:26:14 INFO Destroying lab name=ml-32
+14:26:14 INFO Removed container name=clab-ml-32-x1
+14:26:15 INFO Removed container name=clab-ml-32-dut
+14:26:15 INFO Removing host entries path=/etc/hosts
+14:26:15 INFO Removing SSH config path=/etc/ssh/ssh_config.d/clab-ml-32.conf
