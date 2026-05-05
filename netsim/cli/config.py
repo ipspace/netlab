@@ -21,6 +21,7 @@ from . import (
   parser_lab_location,
 )
 from .initial import configs as i_configs
+from .initial import ready as i_ready
 from .initial import utils as i_utils
 
 
@@ -168,6 +169,9 @@ def reload_node_configs(topology: Box,nodeset: list,args: argparse.Namespace, re
   * Create initial- and custom config files
   * Change the node "config" parameter to request configuration reload
   """
+  ready_args = argparse.Namespace(limit=None,ready=None)
+  i_ready.run(topology,ready_args,rest=[],nodeset=nodeset)
+
   topology.defaults.paths.custom.dirs = [ str(cfg_path.parent) ]
   create_node_files(topology,nodeset,args,str(cfg_path.name),initial=True,cfg_suffix='.cfg')
 

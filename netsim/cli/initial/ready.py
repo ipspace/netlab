@@ -196,8 +196,15 @@ def get_waitlists(nodeset: list, topology: Box) -> Box:
 
   return waitlists
 
-def run(topology: Box, args: argparse.Namespace, rest: list) -> None:
-  nodeset = utils.get_deploy_nodeset(args,topology)
+def run(
+      topology: Box,
+      args: argparse.Namespace,
+      rest: list = [],
+      nodeset: typing.Optional[list] = None) -> None:
+
+  if nodeset is None:
+    nodeset = utils.get_deploy_nodeset(args,topology)
+
   node_waits = get_waitlists(nodeset,topology)
   if node_waits and not log.QUIET:
     log.section_header('Checking',f'Are lab devices ready to be configured?')
