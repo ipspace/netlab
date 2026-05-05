@@ -75,6 +75,10 @@ def initial_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namesp
     dest='deploy', action='store_true',
     help=argparse.SUPPRESS)
   parser.add_argument(
+    '--skip-ready',
+    dest='skip_ready', action='store_true',
+    help=argparse.SUPPRESS)
+  parser.add_argument(
     '--generate',
     dest='generate', action='store',choices=['ansible','internal','compare'],
     help=argparse.SUPPRESS)

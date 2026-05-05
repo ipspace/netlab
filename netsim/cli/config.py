@@ -21,6 +21,7 @@ from . import (
   parser_lab_location,
 )
 from .initial import configs as i_configs
+from .initial import deploy as i_deploy
 from .initial import ready as i_ready
 from .initial import utils as i_utils
 
@@ -164,8 +165,13 @@ def reload_node_configs(topology: Box,nodeset: list,args: argparse.Namespace, re
 
   # Check that the devices are ready before trying to reload the config
   #
-  ready_args = argparse.Namespace(limit=None,ready=None,fast=False)
+  (ready_args,_) = i_utils.initial_config_parse(['--ready'])
   i_ready.run(topology,ready_args,rest=[],nodeset=nodeset)
+
+  # Normalize device configuration when needed
+  #
+  (norm_args,_) = i_utils.initial_config_parse(['--normalize','--deploy','--skip-ready'])
+  i_deploy.run(topology,norm_args,rest=[],nodeset=nodeset)
 
   """
   Now prepare the environment for the "netlab initial" processing

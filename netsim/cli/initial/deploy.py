@@ -141,14 +141,22 @@ def deploy_ansible_playbook(
   utils.ansible_skip_group([])
   return(True,status_ansible)
 
-def run(topology: Box, args: argparse.Namespace, rest: list) -> None:
+def run(
+      topology: Box,
+      args: argparse.Namespace,
+      rest: typing.Optional[list] = None,
+      nodeset: typing.Optional[list] = None) -> None:
+
   deploy_parts = utils.get_deploy_parts(args)
   if args.normalize:
     deploy_text = "normalize configuration"
   else:
     deploy_text = ", ".join(deploy_parts) or "complete configuration"
 
-  nodeset = utils.get_deploy_nodeset(args,topology)
+  if rest is None:
+    rest = []
+  if nodeset is None:
+    nodeset = utils.get_deploy_nodeset(args,topology)
   if not nodeset:
     error_and_exit("The specified nodeset is empty, there are no nodes to configure")
 
@@ -159,8 +167,9 @@ def run(topology: Box, args: argparse.Namespace, rest: list) -> None:
   recreate_configs(topology,args,nodeset)
   log.exit_on_error()
 
-  ready.run(topology,args,rest)
-  log.exit_on_error()
+  if not args.skip_ready:
+    ready.run(topology,args,rest)
+    log.exit_on_error()
 
   # Normalize step is executed only if we're deploying complete configuration or if the user
   # asked to run the normalization step or deploy initial configuration
@@ -180,7 +189,7 @@ def run(topology: Box, args: argparse.Namespace, rest: list) -> None:
 
   if normalize_only:
     if not normalize_list:
-      log.warning(text='Lab devices do not need the configuration normalization step',module='initial')
+      log.info(text='Lab devices do not need the configuration normalization step',module='initial')
     return
 
   log.section_header('Config',f'Deploying device configurations')
