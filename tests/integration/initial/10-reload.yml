@@ -1,0 +1,53 @@
+---
+message: |
+  This topology tests the "start with with configuration reload" functionality.
+  You should:
+
+  * Start the lab with "netlab up"
+  * Save the configuration with "netlab collect -o saved"
+  * Stop the lab with "netlab down"
+  * Restart the lab with "netlab up --snapshot --reload saved"
+  * Validate the results with "netlab validate"
+
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+module: [ ospf ]
+
+plugin: [ files ]
+
+files:
+  start_and_save.sh: |
+    set -e
+    netlab up --snapshot
+    netlab collect -o saved
+    netlab down
+  reload.sh: |
+    netlab up --snapshot --reload saved
+    netlab initial -l x1
+
+defaults.netlab.integration:
+  up: bash start_and_save.sh                    # Go through up/collect/down/restart cycle
+  initial: bash reload.sh                       # Try to reload device configuration
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1 ]
+
+nodes:
+  dut:
+    role: router
+  x1:
+
+links:
+- dut:
+  x1:
+  mtu: 1500
+
+validate:
+  adj:
+    description: Check OSPF adjacencies
+    wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPF adjacency process to complete
+    nodes: [ x1 ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
