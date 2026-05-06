@@ -7,20 +7,21 @@
 import argparse
 
 import utils
+from box import Box
 
 import netsim.augment
-import netsim.common
+from netsim.data import get_box
 from netsim.utils import log
 from netsim.utils import read as _read
 
 
-def create_expected_results_file(topology,fname):
+def create_expected_results_file(topology: Box,fname: str) -> None:
   with open(fname,"w") as output:
     output.write(utils.transformation_results_yaml(topology))
     output.close()
     print(f"... created expected transformed topology: {fname}")
 
-def parse():
+def parse() -> argparse.Namespace:
   parser = argparse.ArgumentParser(description='Create topology test cases')
   parser.add_argument('-t','--topology', dest='topology', action='store', default='topology.yml',
                   help='Topology file name')
@@ -31,10 +32,12 @@ def parse():
 
   return args
 
-def main():
+def main() -> None:
   args = parse()
   print(f"Reading {args.topology}")
   topology = _read.load(args.topology,user_defaults=[],relative_topo_name=True)
+  if utils.HAS_RUAMEL:
+    topology = get_box(utils.clean_ruamel(topology))
   log.exit_on_error()
   netsim.augment.main.transform(topology)
   log.exit_on_error()

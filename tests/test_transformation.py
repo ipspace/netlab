@@ -14,20 +14,23 @@ import utils
 from box import Box
 
 from netsim import augment
+from netsim.data import get_box
 from netsim.outputs import _TopologyOutput, ansible
 from netsim.utils import log
 from netsim.utils import read as _read
 
 
-def run_test(fname):
+def run_test(fname: str) -> Box:
   log.init_log_system(header = False)
   topology = _read.load(fname,relative_topo_name=True,user_defaults=[])
+  if utils.HAS_RUAMEL:
+    topology = get_box(utils.clean_ruamel(topology))
   log.exit_on_error()
   augment.main.transform(topology)
   log.exit_on_error()
   return topology
 
-def run_transformation_test(test_case: str, tmpdir: str = '/tmp'):
+def run_transformation_test(test_case: str, tmpdir: str = '/tmp') -> None:
   print("Test case: %s" % test_case)
   log.set_flag(raise_error = False)
   topology = run_test(test_case)
@@ -62,14 +65,14 @@ def run_transformation_test(test_case: str, tmpdir: str = '/tmp'):
   print("... succeeded, string length = %d" % len(result))
   
 @pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
-def test_xform_cases(tmpdir):
+def test_xform_cases(tmpdir: str) -> None:
   print("Starting transformation test cases")
   for test_case in list(glob.glob('topology/input/*yml')):
     run_transformation_test(test_case)
 
 # Verbose test cases are executed only when we're doing a coverage report
 #
-def test_coverage_verbose_cases(tmpdir):
+def test_coverage_verbose_cases(tmpdir: str ) -> None:
   if not sys.gettrace():
     return
   log.set_verbose()
@@ -78,7 +81,7 @@ def test_coverage_verbose_cases(tmpdir):
 def run_error_case(test_case: str) -> None:
   log.set_flag(raise_error = True)
   print("Test case: %s" % test_case)
-  log.err_count = 0
+  log._ERROR_LOG = []
   with pytest.raises(log.ErrorAbort):
     run_test(test_case)
 
@@ -95,18 +98,18 @@ def run_error_case(test_case: str) -> None:
     assert error_log == log_lines
 
 @pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
-def test_error_cases():
+def test_error_cases() -> None:
   print("Starting error test cases")
   for test_case in list(glob.glob('errors/*yml')):
     run_error_case(test_case)
 
 @pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
-def test_coverage_xf_cases():
+def test_coverage_xf_cases() -> None:
   for test_case in list(glob.glob('coverage/input/*yml')):
     run_transformation_test(test_case)
 
 @pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
-def test_coverage_errors():
+def test_coverage_errors() -> None:
   for test_case in list(glob.glob('coverage/errors/*yml')):
     run_error_case(test_case)
 
