@@ -5,6 +5,7 @@
 #
 import argparse
 import typing
+import re 
 
 from . import common_parse_args, down, parser_lab_location, up
 
@@ -38,5 +39,5 @@ def run(cli_args: typing.List[str]) -> None:
   parser.parse_args(cli_args)
   up_only_args = ['--fast-config','--no-config','--snapshot']
 
-  down.run([ arg for arg in cli_args if arg not in up_only_args ])
+  down.run([ arg for arg in cli_args if arg not in up_only_args and not bool(re.search(r"\.ya?ml$", arg)) ])
   up.run(cli_args)
