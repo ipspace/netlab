@@ -490,8 +490,10 @@ def augment_node_device_data(n: Box, topology: Box) -> None:
         category=log.IncorrectType,
         module='nodes')
 
-  if not features.get('initial.reload',True):
+  if not features.get('initial.reload',False):
     append_to_list(topology.groups.netlab_no_reload,'members',n.name)
+  if not features.get('initial.collect',False):
+    append_to_list(topology.groups.netlab_no_collect,'members',n.name)
 
 '''
 Main node transformation code
