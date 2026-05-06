@@ -5,10 +5,11 @@
 * **mypy** static type checking of all Python code in `netsim/` directory
 * Transformation tests ran with **pytest** in `tests/` directory
 
-You can run the same tests with the `run-tests.sh` script in *tests* directory. It's highly recommended you run them before creating a pull request that modifies Python code, or we'll have to have a discussion before your PR is merged.
+You can run the same tests with the `run-tests.sh` script in *tests* directory. It's highly recommended that you run them before creating a pull request that modifies Python code. PRs that fail the CI/CD pipeline will not be merged.
 
 ```{tip}
-The CI/CD tests require additional Python modules. Install them with `pip3 install -r requirements-dev.txt`
+* The CI/CD tests require additional Python modules. Install them with `pip3 install -r requirements-dev.txt`
+* The CI/CD tests use PyYAML. You can run them on a system with `ruamel.yaml` installed, but they might take longer (see [bug report](https://github.com/ipspace/netlab/issues/3345) and [related PR](https://github.com/ipspace/netlab/pull/3353) for details). Uninstalling `ruamel.yaml` might not be a bad idea. 
 ```
 
 ## Automated Tests
@@ -43,7 +44,11 @@ The transformation error tests:
 
 Whenever you're creating a new error test case or modifying an existing one, you **HAVE TO** create a corresponding *expected error messages* log file.
 
-To create the *expected error messages* files run `create-error-tests.sh` script in the *tests* directory. The script assumes that your code works flawlessly and that whatever error messages are generated are the expected error messages. That might *not* be the case, so it's highly recommended that you execute `git diff errors` after running `create-errors-tests.sh` script and do a thorough check of the differences.
+To create the *expected error messages* files, run the `create-error-tests.sh` script in the *tests* directory. The script assumes that your code works flawlessly and that whatever error messages are generated are the expected error messages. That might *not* be the case, so it's highly recommended that you execute `git diff errors` after running the `create-errors-tests.sh` script and do a thorough check of the differences.
+
+```{warning}
+You cannot create a new error test on a system with `ruamel.yaml` package (details in the [bug report](https://github.com/ipspace/netlab/issues/3345) and [related PR](https://github.com/ipspace/netlab/pull/3353)). Uninstall `ruamel.yaml` before running the `create-error-tests.sh` script.
+```
 
 ## Before Submitting a PR
 
