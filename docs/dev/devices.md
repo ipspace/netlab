@@ -115,6 +115,8 @@ Device parameters file can also include numerous *features*. The following featu
 * **features.initial.ipv6.lla** -- The device supports IPv6 interfaces using just link-local addresses.
 * **features.initial.ipv6.use_ra** -- The device (when running as a host) listens to IPv6 RA messages to generate a default route
 * **features.initial.roles** -- The list of roles a device can have (default: `[ router ]`)
+* **features.initial.collect** (bool) -- netlab knows how to collect device configuration (default: False). When this feature is set, the device MUST have the `fetch-config` tasklist.
+* **features.initial.reload** (bool) -- netlab can reload the complete saved device configuration after starting the lab (default: False). Device configuration reload uses the `deploy-config` tasklist to merge the saved configuration with the startup configuration. Add a `reload-config` tasklist if your device requires a different approach (for example, **configure replace** command).
 * **features.initial.normalize** -- The device needs the configuration normalization step before the initial configuration is applied to any devices in the lab. Usually used for devices that act as simple bridges when started (Arista cEOS, Cisco IOLL2). When this feature is set, the device MUST have the `normalize` template.
 * **features.groups** -- The groups this device belongs to. You can set this feature to [`[ unprovisioned ]`](group-special-names) for devices that _netlab_ cannot configure yet. Don't forget to remove the **unprovisioned** group once you implement the Ansible [device configuration task list](dev-new-devices-configure).
 
