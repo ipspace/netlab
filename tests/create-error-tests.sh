@@ -4,6 +4,12 @@
 # on STDERR into a file that will be used in the test harness
 # to validate the error handling hasn't been broken.
 #
+if python3 -c "import ruamel.yaml" 2>/dev/null; then
+  echo "ERROR: ruamel.yaml is installed; error-test fixtures cannot be generated" >&2
+  echo "       correctly. Uninstall ruamel.yaml first (see #3345)." >&2
+  exit 2
+fi
+
 ERR_PATH="errors"
 
 # Check for "coverage" first

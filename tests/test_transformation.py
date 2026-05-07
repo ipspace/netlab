@@ -72,7 +72,7 @@ def test_xform_cases(tmpdir: str) -> None:
 
 # Verbose test cases are executed only when we're doing a coverage report
 #
-def test_coverage_verbose_cases(tmpdir: str ) -> None:
+def test_coverage_verbose_cases(tmpdir: str) -> None:
   if not sys.gettrace():
     return
   log.set_verbose()
@@ -81,7 +81,6 @@ def test_coverage_verbose_cases(tmpdir: str ) -> None:
 def run_error_case(test_case: str) -> None:
   log.set_flag(raise_error = True)
   print("Test case: %s" % test_case)
-  log._ERROR_LOG = []
   with pytest.raises(log.ErrorAbort):
     run_test(test_case)
 
