@@ -162,6 +162,7 @@ def stop_all(topology: Box, args: argparse.Namespace) -> None:
   providers.mark_providers(topology)
   p_module.call('pre_output_transform',topology)
 
+  external_commands.run_cli_hooks(topology.defaults,'down','pre_lab_stop')
   for s_provider in topology[p_provider].providers:
     lab_status_change(topology,f'stopping {s_provider} provider')
     try:
@@ -179,6 +180,7 @@ def stop_all(topology: Box, args: argparse.Namespace) -> None:
   except:
     if not args.force:
       sys.exit(1)
+  external_commands.run_cli_hooks(topology.defaults,'down','post_lab_stop')
 
 def run(cli_args: typing.List[str]) -> None:
   args = down_parse(cli_args)
@@ -202,12 +204,14 @@ def run(cli_args: typing.List[str]) -> None:
     stop_all(topology,args)
 
   if args.cleanup:
+    external_commands.run_cli_hooks(topology.defaults,'down','pre_cleanup')
     if 'tools' in topology:
       log.section_header('Cleanup',f'tool configuration','yellow')
       tool_cleanup(topology,True)
 
     log.section_header('Cleanup',f'configuration files','yellow')
     down_cleanup(topology,True)
+    external_commands.run_cli_hooks(topology.defaults,'down','post_cleanup')
 
   if not mismatch:
     status.remove_lab_status(topology)
