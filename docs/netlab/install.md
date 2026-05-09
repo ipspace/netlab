@@ -3,7 +3,7 @@
 
 **netlab install** uses internal installation scripts to install nice-to-have Ubuntu software, Ansible and related networking libraries, or libvirt+vagrant.
 
-The *ubuntu*, *libvirt*, and *containerlab* installation scripts run only on Ubuntu[^U20] and Debian[^D10]; the *ansible* and *grpc* installation scripts should run in any environment with **bash** and **pip3**.
+The *ubuntu*, *libvirt*, and *containerlab* installation scripts run only on Ubuntu[^UT] and Debian[^DT]; the *ansible* and *grpc* installation scripts should run in any environment with **bash** and **pip3**.
 
 ## Usage
 
@@ -40,9 +40,9 @@ Running multiple installation scripts with **‌netlab install** or **netlab ins
 * The *graph* script installs GraphViz and D2 software needed to generate graphs from _netlab_ topologies
 * The *grpc* script installs gRPC Python libraries needed to configure Nokia SR Linux and Nokia SR OS.
 
-[^U20]: Tested on Ubuntu 22.04 and 24.04
+[^UT]: Tested on Ubuntu 22.04 and 24.04
 
-[^D10]: Tested on Debian 12 (bookworm)
+[^DT]: Tested on Debian 12 (bookworm)
 
 You can display an up-to-date list of installation scripts with **netlab install** command:
 
