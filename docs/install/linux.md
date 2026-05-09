@@ -9,18 +9,14 @@ We test _netlab_ on Ubuntu to ensure we provide a reasonably hassle-free experie
 
 ## Prerequisite Software Installation
 
-*netlab* is a Python package that uses KVM to run virtual machines and Docker to run containers. Virtual machines in the KVM environment and the associated Linux bridges are created with Vagrant using libvirt API. Ansible is used to configure the network devices.
+*netlab* is a Python package that uses KVM to run virtual machines and Docker to run containers. Virtual machines in the KVM environment and the associated Linux bridges are created with Vagrant using libvirt API. Ansible is used to configure most network devices.
 
 ![netlab on Linux](linux-architecture.png)
 
 To build a Linux environment needed to run network devices as virtual machines or containers:
 
-* Install Python 3.8 or later (use the latest Python version supported by your Linux distribution)
-* Install Ansible 2.9.1 or later and any Ansible networking dependencies (example: paramiko)
-
-```{warning}
-At the moment, _netlab_ does not work with Ansible release 12.x. Install the latest Ansible 11.x release.
-```
+* Install Python 3.10 or later (use the latest Python version supported by your Linux distribution)
+* Install Ansible 2.9.1 or later and any Ansible networking dependencies (example: paramiko). We recommend using the latest Ansible 11.x release.
 
 If you want to run network devices as virtual machines with KVM:
 
@@ -29,6 +25,10 @@ If you want to run network devices as virtual machines with KVM:
 * Install *vagrant-libvirt* plugin with `vagrant plugin install libvirt --plugin-version=0.12.2`
 
 If you want to run network devices as containers (or virtual machines in *vrnetlab* containers), install Docker and containerlab.
+
+```{tip}
+If possible, [use containerlab](lab-clab) and package the virtual machines you need in [_vrnetlab_ containers](clab-vrnetlab). Getting Vagrant to work on some Linux distributions could be a bit challenging.
+```
 
 [^CSV]: We must change the recommended Vagrant release every few months. Please check the [libvirt installation script](https://github.com/ipspace/netlab/blob/dev/netsim/install/libvirt.sh) for details.
 

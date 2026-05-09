@@ -146,7 +146,7 @@ When you don't have to change the code for other reasons:
 - **requests**: HTTP client
 
 ## Platform Requirements
-- **Python**: 3.8+ (due to subprocess.capture_output and typing.Final)
+- **Python**: 3.10+ (to support Ubuntu 22.04)
 - **OS**: Linux, macOS
 - **Package managers**: pip, setuptools
 

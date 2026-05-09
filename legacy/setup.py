@@ -23,13 +23,14 @@ setup(
     "Topic :: Utilities",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Operating System :: POSIX :: Linux",
     "Operating System :: MacOS",
   ],
   url="https://github.com/ipspace/netlab",
-  python_requires='>=3.8',  # Due to e.g. 'capture_output' in subprocess.run
+  python_requires='>=3.10',  # Due to e.g. 'capture_output' in subprocess.run
 )

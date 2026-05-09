@@ -11,8 +11,8 @@ long_description = (Path(__file__).parent / "README.md").read_text()
 with open("requirements.txt", "r") as fs:
   reqs = [r for r in fs.read().splitlines() if (len(r) > 0 and not r.startswith("#"))]
 
-if sys.version_info < (3, 8):
-  raise RuntimeError("This package requires Python 3.8+")
+if sys.version_info < (3, 10):
+  raise RuntimeError("This package requires Python 3.10+")
 
 setup(
   name="networklab",
@@ -38,7 +38,7 @@ setup(
   url="https://github.com/ipspace/netlab",
   include_package_data=True,
   setup_requires=["wheel"],
-  python_requires='>=3.8',  # Due to e.g. 'capture_output' in subprocess.run, and use of typing.Final
+  python_requires='>=3.10',  # To support Ubuntu 22.04
   install_requires=reqs,
   scripts=[ "netlab" ],
 #  entry_points={
