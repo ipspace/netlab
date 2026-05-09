@@ -2,10 +2,11 @@
 # Pytest hooks shared across the netlab test tree
 #
 
+import pytest
 from utils import HAS_RUAMEL
 
 
-def pytest_configure(config):
+def pytest_configure(config: pytest.Config) -> None:
   if not HAS_RUAMEL:
     return
   config.issue_config_time_warning(
