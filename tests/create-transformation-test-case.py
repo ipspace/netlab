@@ -5,6 +5,7 @@
 #
 
 import argparse
+import sys
 
 import utils
 from box import Box
@@ -34,6 +35,12 @@ def parse() -> argparse.Namespace:
 
 def main() -> None:
   args = parse()
+  if utils.HAS_RUAMEL:
+    print(
+      "WARNING: ruamel.yaml is installed; fixture generation will be slower. "
+      "Consider uninstalling ruamel.yaml (see #3345).",
+      file=sys.stderr,
+    )
   print(f"Reading {args.topology}")
   topology = _read.load(args.topology,user_defaults=[],relative_topo_name=True)
   if utils.HAS_RUAMEL:
