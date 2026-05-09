@@ -6,18 +6,19 @@
   delete: route-filter-list bgp-{{ vname }}-announce-ipv4;
   delete: route-filter-list bgp-{{ vname }}-announce-ipv6;
 
-  community x-route-permit-mark members large:65535:0:65536;
-
+{#
+  Real BGP export policies can end at "advertise" policy or at neighbor
+  route map. To support both, the "advertise" policy uses "next-policy"
+  instead of "accept" to get the neighbor route map a chance to do its
+  work. However, that approach would fail to accept routes in case there
+  is no neighbor route-map, so we need a "catch all" last step that just
+  allows everything.
+#}
   policy-statement bgp-final {
     term final-option {
-      from community x-route-permit-mark;
       then {
-        community delete x-route-permit-mark;
         accept;
       }
-    }
-    term default-reject {
-      then reject;
     }
   }
 {% endmacro %}
