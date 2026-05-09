@@ -1,8 +1,8 @@
 # Installation
 
-*netlab* is a Python3 package[^NSL] that uses Python 3.8[^P38] or later. We recommend using _netlab_ on Linux (we're doing all our tests on Ubuntu), including Windows Subsystem for Linux or [Multipass on macOS](https://blog.ipspace.net/2024/03/netlab-bgp-apple-silicon/). While you might be able to get _netlab_ to run natively on Windows or macOS with VirtualBox, we no longer support that.
+*netlab* is a Python3 package[^NSL] that uses Python 3.10[^P310] or later. We recommend using _netlab_ on Linux (we're doing all our tests on Ubuntu), including Windows Subsystem for Linux or [Multipass on macOS](https://blog.ipspace.net/2024/03/netlab-bgp-apple-silicon/). While you might be able to get _netlab_ to run natively on Windows or macOS with VirtualBox, we no longer support that.
 
-[^P38]: We keep supporting Python 3.8 because it's the default Python distribution on Ubuntu 20.04.
+[^P38]: We keep supporting Python 3.10 because it's the default Python distribution on Ubuntu 22.04.
 
 [^NSL]: For legacy reasons, the *netlab* Python code resides in *netsim.\** modules.
 

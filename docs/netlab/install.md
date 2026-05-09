@@ -40,7 +40,7 @@ Running multiple installation scripts with **‌netlab install** or **netlab ins
 * The *graph* script installs GraphViz and D2 software needed to generate graphs from _netlab_ topologies
 * The *grpc* script installs gRPC Python libraries needed to configure Nokia SR Linux and Nokia SR OS.
 
-[^U20]: Tested on Ubuntu 20.04, 22.04, and 24.04
+[^U20]: Tested on Ubuntu 22.04 and 24.04
 
 [^D10]: Tested on Debian 12 (bookworm)
 
