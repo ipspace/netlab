@@ -7,18 +7,19 @@ Supported SRv6 features:
 
 * End SIDs (nodes) and End-x SIDs (links), all statically allocated
 * IS-IS routing protocol with SRv6 TLVs
-* BGP L3VPN v4/v6 over SRv6
+* SRv6 transport for global IPv4/IPv6 BGP routes
+* BGP IPv4/IPv6 L3VPN over SRv6
 
 The module currently depends on IS-IS and will trigger a configuration error if the **isis** module is not enabled in the network topology. It is initially focused on the L3VPN use case; IPv4 islands over SRv6 or IPv6 transport between SRv6 endpoints will be added once FRRouting supports them.
 
 ## Platform Support
 The following table describes the per-platform support of individual router-level SRv6 features:
 
-| Operating system   | IS-IS | OSPFv3 | BGP v4/v6 | Transit only |
-|--------------------|:--:|:-:|:-:|:-:|
+| Operating system   | IS-IS | OSPFv3 | BGP v4/v6 | Transit only | 
+|--------------------|:--:|:-:|:-:| :-:|
 | Cisco IOS XE[^XE]  | ✅ | ❌ | ❌ | ❌ |
 | Cisco IOS XR[^XR]  | ✅ | ❌ | ❌ | ❌ |
-| FRR                | ✅ | ❌ | ❌ | ❌ | 
+| FRR                | ✅ | ❌ | ✅ | ❌ |
 | Nokia SR OS[^SROS] | ✅ | ❌ | ✅ | ✅ |
 
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
@@ -60,7 +61,7 @@ The following table describes the per-platform support of individual router-leve
 
 This module provides 2 parameters that are identical in structure, controlling different BGP address families:
 
-* **srv6.bgp** -- Controls IPv4 and IPv6 address families
+* **srv6.bgp** -- Controls SRv6 next hops for global IPv4 and IPv6 BGP routes
 * **srv6.vpn** -- Controls VPNv4 and VPNv6 address families
 
 Each parameter could be a boolean (*True* to enable both IP address families on IBGP sessions), or a dictionary of parameters:
@@ -74,4 +75,4 @@ Each parameter could be a boolean (*True* to enable both IP address families on 
 * Boolean value *True* to enable the address family on IBGP sessions
 * A string or a list of *ibgp/ebgp* keywords
 
-For a tested example, see the [IPv4 L3VPN over SRv6 topology](https://github.com/ipspace/netlab/tree/dev/tests/integration/srv6/02-isis-ipv4-bgp-vpn.yml).
+For a tested example, see the [SRv6 integration tests](https://github.com/ipspace/netlab/tree/dev/tests/integration/srv6).

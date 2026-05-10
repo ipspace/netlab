@@ -11,6 +11,7 @@ router bgp {{ bgp.as }}
 {% macro bgp_neighbor(n,peer,af) %}
   neighbor {{ peer }} activate
   neighbor {{ peer }} send-community both
+  neighbor {{ peer }} encapsulation-srv6
 {%   if n.next_hop_unchanged is defined %}
   neighbor {{ peer }} attribute-unchanged next-hop
 {%   endif %}
@@ -19,35 +20,39 @@ router bgp {{ bgp.as }}
 {%   endif %}
 {% endmacro -%}
 
-{% if srv6.vpn is defined %}
-{%   for n in bgp.neighbors|default([]) if n.ipv6 is defined %}
+{% if srv6.vpn|default(False) or srv6.bgp|default(False) %}
+{%   for n in bgp.neighbors|default([]) if n.ipv6 is defined and n.type == 'ibgp' %}
 {%     set peer = n.ipv6 %}
- neighbor {{ peer }} remote-as {{ n.as }}
  neighbor {{ peer }} description {{ n.name }} (SRv6)
 {%     if n.extended_nexthop is defined %}
  neighbor {{ peer }} capability extended-nexthop
 {%     endif %}
 
 {%-    for af in ['ipv4','ipv6'] %}
-{%       if n.type in srv6.vpn.get(af,[]) %}
+{%       if srv6.bgp is defined and n.type in srv6.bgp.get(af,[]) %}
+ address-family {{ af }} unicast
+!
+  sid export auto
+{{         bgp_neighbor(n,peer,af) -}}
+{%       endif %}
+{%       if n.type in srv6.vpn[af]|default('') %}
  address-family {{ af }} vpn
 !
 {{         bgp_neighbor(n,peer,af) -}}
 {%       endif %}
 {%     endfor %}
 {%   endfor %}
-!
-{%   if vrfs is defined %}
-{%     for vname,vdata in vrfs.items() %}
+{% endif %}
+{% if srv6.vpn|default(False) and vrfs is defined %}
+{%   for vname,vdata in vrfs.items() %}
 router bgp {{ vdata.as|default(bgp.as) }} vrf {{ vname }}
  sid vpn per-vrf export auto
  no bgp network import-check
 
-{%       for af in ['ipv4','ipv6'] if 'ebgp' in srv6.vpn.get(af,[]) %}
+{%     for af in ['ipv4','ipv6'] if 'ebgp' in srv6.vpn.get(af,[]) %}
  address-family {{ af }} unicast
   nexthop vpn export {{ loopback.ipv6|ansible.utils.ipaddr('address') }}
-{%       endfor %}
-!
 {%     endfor %}
-{%   endif %}
+!
+{%   endfor %}
 {% endif %}

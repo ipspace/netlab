@@ -3,11 +3,22 @@
 set -e
 
 export SRv6_DEV="sr0"
+export SRv6_VRF_DEV="vrf-srv6"
 
 if [ ! -e /sys/devices/virtual/net/${SRv6_DEV} ]; then
-ip link add ${SRv6_DEV} type dummy
-ip link set ${SRv6_DEV} up
+  ip link add ${SRv6_DEV} type dummy
+  ip link set ${SRv6_DEV} up
 fi
+
+{% if 'bgp' in srv6.igp|default([]) or srv6.bgp|default(False) %}
+#
+# Create SRv6 default VRF, needed to install SRv6 nexthops
+#
+if [ ! -e /sys/devices/virtual/net/${SRv6_VRF_DEV} ]; then
+  ip link add ${SRv6_VRF_DEV} type vrf table 254
+  ip link set ${SRv6_VRF_DEV} up
+fi
+{% endif %}
 
 # See https://onvox.net/2024/12/16/srv6-frr/
 sysctl -w net.ipv6.seg6_flowlabel=1
@@ -44,7 +55,7 @@ router isis {{ isis.instance }}
 exit
 {% endif %}
 
-{% if srv6.vpn is defined and bgp.as is defined %}
+{% if (srv6.vpn|default(False) or srv6.bgp|default(False)) and bgp.as is defined %}
 {%   include "frr.bgp.j2" %}
 {% endif %}
 
