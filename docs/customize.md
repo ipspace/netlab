@@ -37,10 +37,11 @@ The device provisioning templates can use only built-in Jinja2 filters and a sub
 Finally, you might want to use external tools or devices not yet supported by _netlab_:
 
 * [Adding external tools](dev/extools.md) is relatively easy.
+* You can extend the functionality of **[netlab up](netlab-up)** and **[netlab down](netlab-down)** commands with [CLI hooks](dev-cli-hooks)
 * If you want to add unsupported devices to a lab but are willing to configure them manually, just [define them as _unknown_ devices](platform-unknown).
 * Adding [new functionality to an existing device](dev/device-features.md) or adding a new device to _netlab_ takes more effort. When adding a new device, it's easier to [define a new device](dev/device-box.md) and keep it _[unprovisioned](group-special-names)_ than going for a [full-blown implementation](dev/devices.md).
 
-Regardless of how far you're willing to go, we'd appreciate if you decided to [contribute your changes](dev/guidelines.md), but it's perfectly fine to keep them private. The best part: you don't have to modify the _netlab_ package to get the job done; you could use [user defaults](defaults-user-file) to define new stuff, and user-defined configuration templates (see above) to configure it.
+Regardless of how far you're willing to go, we'd appreciate it if you decided to [contribute your changes](dev/guidelines.md), but it's perfectly fine to keep them private. The best part: you don't have to modify the _netlab_ package to get the job done; you could use [user defaults](defaults-user-file) or [system defaults](defaults-locations) to define new stuff, and user-defined configuration templates (see above) to configure it.
 
 ```eval_rst
 .. toctree::

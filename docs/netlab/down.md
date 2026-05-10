@@ -5,6 +5,8 @@
 
 This command uses the lab topology or the snapshot file created by **netlab up** or **[netlab create](create.md)** to find the virtualization provider and executes provider-specific CLI commands to destroy the virtual lab.
 
+You can use the [CLI hooks](dev-cli-hooks) to [execute additional commands](dev-cli-hooks-down) during **netlab down** processing.
+
 ## Usage
 
 ```

@@ -70,6 +70,7 @@ router bgp {{ bgp.as }}
 
 After saving the above template into `bgp_default.j2`, you can use `netlab config bgp_default --limit somenode` to enable BGP default route advertisement and `netlab config bgp_default --limit somenode -e df_state=off` to turn it off.
 
+(netlab-config-reload)=
 ## Restoring Saved Device Configurations
 
 **netlab config --reload** implements the *reload saved device configurations* part of the **netlab initial -r** command. It waits for devices to become ready (since it's used immediately after a lab has been started) and starts the initial configuration process on devices that need more than a replay of saved configuration ([more details](netlab-up-reload)).

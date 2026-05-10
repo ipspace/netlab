@@ -1,3 +1,4 @@
+(providers)=
 # Virtualization Providers
 
 *netlab* uses third-party orchestration and virtualization tools to create, start, stop, and destroy virtual labs. It supports the following virtualization providers:

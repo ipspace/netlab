@@ -13,11 +13,13 @@ You can skip this step and reuse existing configuration files with the `--snapsh
 * Creates the lab management network ([more details](libvirt-mgmt))
 * Starts the virtual lab using the [selected virtualization provider](topology-reference-top-elements);
 * Performs provider-specific initialization ([more details](netlab-up-provider))
-* Deploys device configurations with **[netlab initial](initial.md)** command unless it was started with the `--no-config` flag, or reloads saved configurations if it was started with the `--reload-config` flag.
+* Deploys device configurations with **[netlab initial](initial.md)** command unless it was started with the `--no-config` flag, or [reloads saved configurations](netlab-config-reload) if it was started with the `--reload-config` flag.
 
 ![netlab up functional diagram](up.png)
 
 After configuring the lab with **netlab initial**, **netlab up** displays the [help **message** defined in the lab topology](topology-reference-top-elements).
+
+You can also use the [CLI hooks](dev-cli-hooks) to [execute additional commands](dev-cli-hooks-up) during **netlab up** processing.
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -25,7 +27,6 @@ After configuring the lab with **netlab initial**, **netlab up** displays the [h
    :local:
    :backlinks: none
 ```
-
 
 ## Usage
 
