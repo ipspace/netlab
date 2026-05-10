@@ -21,6 +21,20 @@ The above defaults define commands that are executed [before the lab is started]
 
 After having the mechanism to create and delete the locking file, you could add **netlab.up.pre_probe** hook to check whether the locking file exists.
 
+## Environment Variables Available to CLI Hooks
+
+CLI parameters specified in the **netlab up** and **netlab down** commands are passed to the CLI hooks as environment variables starting with `NETLAB_ARGS_`. **netlab** also sets the `NETLAB_ARGS_TOPOLOGY` variable to the name of the lab topology specified in the command line or stored in the transformed lab topology snapshot file.
+
+For example:
+
+* When you execute `netlab down --cleanup`, the CLI hooks will have the `NETLAB_ARGS_CLEANUP` environment variable set to `True`. 
+* When `netlab up` is started with `-vvv` parameter, the `NETLAB_ARGS_VERBOSITY` environment variable will be set to 3.
+
+```{tip}
+* You can debug this process with the verbosity set to `-vvv` or more.
+* If you execute other **netlab** commands in the CLI hooks, those commands get the values of the `NETLAB_ARGS_` environment variables in the **defaults.args** dictionary.
+```
+
 (dev-cli-hooks-up)=
 ## netlab up Hooks
 

@@ -190,7 +190,6 @@ def provider_probes(topology: Box) -> None:
   p_provider = topology.provider
   defaults = topology.defaults
 
-  external_commands.run_cli_hooks(defaults,'up','pre_probe')
   log.section_header('Checking','virtualization provider installation')
   external_commands.run_probes(defaults,p_provider)
   for s_provider in topology[p_provider].providers:
@@ -351,12 +350,12 @@ def run_up(cli_args: typing.List[str]) -> None:
   if args.reload and args.no_config:
     log.fatal('Cannot combine --reload-config and --no-config')
 
+  set_dry_run(args)
   if not args.snapshot and not is_dry_run():
     check_existing_lab()
 
   topology = get_topology(args,cli_args)
 
-  set_dry_run(args)
   set_env_args(args,topology)
   if not is_dry_run():
     check_lab_instance(topology)
@@ -365,6 +364,7 @@ def run_up(cli_args: typing.List[str]) -> None:
     os.environ["ANSIBLE_STDOUT_CALLBACK"] = "selective"
 
   external_commands.LOG_COMMANDS = True
+  external_commands.run_cli_hooks(topology.defaults,'up','pre_probe')
   provider_probes(topology)
   if not args.no_config:
     process_config_sw_check(topology)
