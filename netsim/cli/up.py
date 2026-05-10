@@ -28,6 +28,7 @@ from . import (
   lab_status_update,
   load_snapshot,
   set_dry_run,
+  set_env_args,
 )
 
 
@@ -209,7 +210,7 @@ def start_provider_lab(topology: Box, pname: str, sname: typing.Optional[str] = 
 
   status_start_provider(topology,p_name)
   defaults = topology.defaults
-  external_commands.run_cli_hooks(defaults,'up','pre_start_lab')
+  external_commands.run_cli_hooks(defaults,'up',f'pre_start_{p_name}')
 
   p_module.call('pre_start_lab',p_topology)
   if sname is not None:
@@ -224,7 +225,7 @@ def start_provider_lab(topology: Box, pname: str, sname: typing.Optional[str] = 
       log.fatal(f"{cmd} failed, aborting...","netlab up")
 
   p_module.call('post_start_lab',p_topology)
-  external_commands.run_cli_hooks(defaults,'up','post_start_lab')
+  external_commands.run_cli_hooks(defaults,'up',f'post_start_{p_name}')
 
   lab_status_change(topology,f'{p_name} workload started')
 
@@ -350,11 +351,13 @@ def run_up(cli_args: typing.List[str]) -> None:
   if args.reload and args.no_config:
     log.fatal('Cannot combine --reload-config and --no-config')
 
-  set_dry_run(args)
   if not args.snapshot and not is_dry_run():
     check_existing_lab()
 
   topology = get_topology(args,cli_args)
+
+  set_dry_run(args)
+  set_env_args(args,topology)
   if not is_dry_run():
     check_lab_instance(topology)
 
@@ -381,6 +384,7 @@ def run_up(cli_args: typing.List[str]) -> None:
     _status.lock_directory()
 
   log.section_header('Starting',f'{p_provider} nodes')
+  external_commands.run_cli_hooks(topology.defaults,'up',f'pre_start_lab')
   start_provider_lab(topology,p_provider)
 
   for s_provider in topology[p_provider].providers:
@@ -391,6 +395,7 @@ def run_up(cli_args: typing.List[str]) -> None:
   if topology.get('defaults.tc.enable',True):
     providers.execute_tc_commands(topology)
 
+  external_commands.run_cli_hooks(topology.defaults,'up',f'post_start_lab')
   try:
     if args.reload:
       reload_saved_config(args,topology)

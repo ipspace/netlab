@@ -162,6 +162,30 @@ def is_dry_run() -> bool:
   global DRY_RUN
   return DRY_RUN
 
+def set_env_args(args: argparse.Namespace, topology: typing.Optional[Box] = None) -> None:
+  """
+  Sets environment variables from CLI arguments and topology name
+
+  Primarily used by commands that call CLI hooks to give the hook scripts
+  visibility into parent command arguments (see #3355)
+  """
+  for k,v in vars(args).items():
+    if not v:                                     # Set environment variables only for
+      continue                                    # arguments specified in the command line
+    env_key = f'NETLAB_ARGS_{k.upper()}'
+    os.environ[env_key] = str(v)
+    if log.VERBOSE >= 3:                          # Tell user what we did if they asked for it
+      print(f'Setting environment variable {env_key}={v}')
+
+  if not topology:                                # Try to extract topology name
+    return                                        # Nope? Oh, well...
+  topo_input = topology.get('input',[])           # Topology name should be the first element
+  if not topo_input:                              # of the 'input' list
+    return                                        # Empty or missing list? Oh, well...
+  os.environ['NETLAB_ARGS_TOPOLOGY'] = topo_input[0]
+  if log.VERBOSE >= 3:
+    print(f'Setting NETLAB_ARGS_TOPOLOGY={topo_input[0]}')
+
 #
 # Common file/directory cleanup routine, used by collect/clab/down
 #

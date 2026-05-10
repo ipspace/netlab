@@ -22,6 +22,7 @@ from . import (
   load_snapshot,
   parser_lab_location,
   set_dry_run,
+  set_env_args,
 )
 from .up import provider_probes
 
@@ -107,9 +108,11 @@ def stop_provider_lab(
   if sname is not None:
     exec_command = topology.defaults.providers[pname][sname].stop
 
+  external_commands.run_cli_hooks(topology.defaults,'down',f'pre_stop_{p_name}')
   p_module.call('pre_stop_lab',p_topology)
   external_commands.stop_lab(topology.defaults,p_name,"netlab down",exec_command)
   p_module.call('post_stop_lab',p_topology)
+  external_commands.run_cli_hooks(topology.defaults,'down',f'post_stop_{p_name}')
 
 '''
 lab_dir_mismatch -- check if the lab instance is running in the current directory
@@ -162,7 +165,7 @@ def stop_all(topology: Box, args: argparse.Namespace) -> None:
   providers.mark_providers(topology)
   p_module.call('pre_output_transform',topology)
 
-  external_commands.run_cli_hooks(topology.defaults,'down','pre_lab_stop')
+  external_commands.run_cli_hooks(topology.defaults,'down','pre_stop_lab')
   for s_provider in topology[p_provider].providers:
     lab_status_change(topology,f'stopping {s_provider} provider')
     try:
@@ -180,15 +183,16 @@ def stop_all(topology: Box, args: argparse.Namespace) -> None:
   except:
     if not args.force:
       sys.exit(1)
-  external_commands.run_cli_hooks(topology.defaults,'down','post_lab_stop')
+  external_commands.run_cli_hooks(topology.defaults,'down','post_stop_lab')
 
 def run(cli_args: typing.List[str]) -> None:
   args = down_parse(cli_args)
-  set_dry_run(args)
   log.set_logging_flags(args)
+  set_dry_run(args)
 
   topology = load_snapshot(args,ghosts=False)
   mismatch = lab_dir_mismatch(topology,args)
+  set_env_args(args,topology)
 
   probes_OK = True
   external_commands.LOG_COMMANDS = True
