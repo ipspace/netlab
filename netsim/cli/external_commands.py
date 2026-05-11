@@ -2,6 +2,7 @@
 # Run external commands from netlab CLI
 #
 import os
+import shlex
 import subprocess
 import sys
 import typing
@@ -21,7 +22,7 @@ def print_step(n: int, txt: str, spacing: typing.Optional[bool] = False) -> None
 
 def stringify(cmd : typing.Union[str,list]) -> str:
   if isinstance(cmd,list):
-    return " ".join(cmd)
+    return shlex.join(cmd)
   return str(cmd)
 
 """
@@ -99,15 +100,15 @@ def run_command(
       print(f"DRY RUN: {cmd}")
       return True
 
-  if log.VERBOSE or log.debug_active('external'):
-    print(f"run_command executing: {cmd}",flush=True)
-
   add_netlab_path()
   if isinstance(cmd,str):
-    cmd = [ arg for arg in cmd.split(" ") if arg not in (""," ") ]
+    cmd = shlex.split(cmd)
 
   if not cmd:                                               # Skip empty commands
     return True
+
+  if log.VERBOSE or log.debug_active('external'):
+    print(f"run_command executing: {shlex.join(cmd)}",flush=True)
 
   try:
     result = subprocess.run(
