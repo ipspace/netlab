@@ -1,0 +1,38 @@
+---
+message: |
+  This topology tests the "restart lab" functionality.
+
+defaults.sources.extra: [ ../../integration/wait_times.yml ]
+defaults.device: frr
+provider: clab
+
+module: [ ospf ]
+
+plugin: [ files ]
+
+files:
+  restart.sh: |
+    set -e
+    netlab restart
+
+defaults.netlab.integration:
+  up: netlab up --snapshot
+  initial: bash restart.sh                       # Try to restart the lab
+
+nodes:
+  dut:
+  x1:
+
+links:
+- dut:
+  x1:
+  mtu: 1500
+  ospf.timers.hello: 1
+
+validate:
+  adj:
+    description: Check OSPF adjacencies
+    wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPF adjacency process to complete
+    nodes: [ x1 ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
