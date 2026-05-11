@@ -529,9 +529,33 @@ def link_transform(method: str, topology: Box) -> None:
   if log.debug_active('modules'):
     print(f'Processing link_{method} hooks')
 
+  topo_mods = topology.get('module',[])
   for l in topology.get("links",[]):
-    mod_list: typing.Dict = {}
-    for node_data in l.get('interfaces',[]):
+    iflist = l.get('interfaces',[])               # Carefully get the list of attached interfaces
+    if not iflist:                                # Do we have anything attached to this link?
+      continue                                    # Nope, move on (hoping it's a LAG link)
+
+    mod_list: typing.Dict = {}                    # Build the list of modules used by attached nodes
+    for node_data in iflist:
       mod_list.update({ m: None for m in topology.nodes[node_data.node].get("module",[]) })
-    for m in mod_list.keys():
+    for m in mod_list.keys():                     # And call link hooks only for relevant (node) modules
       call_module_hook(m,method=f"link_{method}",topology=topology,link=l)
+
+    # Do we have any irrelevant module attributes on this link?
+    extra_mod = [ m for m in topo_mods if m in l and m not in mod_list ]
+    if not extra_mod:                             # Nope?
+      continue                                    # ... great, move on
+    if '_warning_extra_mod' in l:                 # Did we already warn about them?
+      extra_mod = [ m for m in extra_mod if m not in l._warning_extra_mod ]
+      if not extra_mod:                           # Any attributes not warned about?
+        continue                                  # ... everything was covered. Cool, move on
+
+    log.warning(                                  # Tell the user this makes little sense
+      text=f'Module attribute(s) {",".join(extra_mod)} are used on link {l._linkname} '+ \
+            f'but no attached nodes use these module(s)',
+      flag='no_nodes',
+      module='modules',
+      more_hints=['A module attribute on a link makes sense only when an attached node uses that module'])
+
+    # ... and remember what warnings we already generated
+    data.append_to_list(l,'_warning_extra_mod',extra_mod,flatten=True)

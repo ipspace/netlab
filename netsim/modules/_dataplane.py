@@ -5,7 +5,7 @@ import typing
 
 from box import Box
 
-from ..data import global_vars
+from ..data import append_to_list, global_vars
 from ..data.types import must_be_list
 from ..utils import log
 
@@ -208,3 +208,5 @@ def validate_link_module_usage(
     flag='link_no_nodes',
     category=category,
     more_hints=[f'At least one node attached to the link {t_should} use {module} module'])
+
+  append_to_list(link,'_warning_extra_mod',module)  # Remember we generated a warning about this module
