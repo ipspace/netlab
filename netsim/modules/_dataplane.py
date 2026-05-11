@@ -186,7 +186,11 @@ def validate_object_reference_list(
 
   return list_ok
 
-def validate_link_module_usage(link: Box, topology: Box, module: str) -> None:
+def validate_link_module_usage(
+      link: Box,
+      topology: Box,
+      module: str,
+      category: typing.Union[typing.Type[Warning],typing.Type[Exception]] = Warning) -> None:
   """Check whether at least one node attached to the link uses the specified module"""
 
   if module not in link:                          # Is the module used on the link?
@@ -197,9 +201,10 @@ def validate_link_module_usage(link: Box, topology: Box, module: str) -> None:
     if module in n_data.get('module',[]):         # Is the node using the specified module?
       return                                      # Link attribute is legit. Get out of here
 
+  t_should = "should" if category is Warning else "must"
   log.warning(
     text=f'No node attached to link {link._linkname} is using module {module} used on the link',
     module=module,
     flag='link_no_nodes',
-    category=log.IncorrectAttr,
-    more_hints=[f'At least one node attached to the link must use {module} module'])
+    category=category,
+    more_hints=[f'At least one node attached to the link {t_should} use {module} module'])

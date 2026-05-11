@@ -1304,8 +1304,8 @@ class VLAN(_Module):
       create_vlan_access_links(topology)
       validate_vlan_attributes(topology,topology)
 
-    for link in topology.links:                   # Check for VLAN-enabled links without VLAN-enabled nodes
-      _dataplane.validate_link_module_usage(link,topology,'vlan')
+    for link in topology.get('links',[]):         # Check for VLAN-enabled links without VLAN-enabled nodes
+      _dataplane.validate_link_module_usage(link,topology,'vlan',category=log.IncorrectAttr)
 
   """
   In the node_pre_transform we perform basic attribute checks and merge global and node VLAN data.
