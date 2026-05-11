@@ -15,6 +15,7 @@ from . import common_parse_args, down, load_snapshot, parser_lab_location, up
 #
 def restart_parse_args() -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(
+    prog="netlab restart",
     description='Reconfigure and restart the virtual lab',
     parents = [ common_parse_args() ],
     add_help=True)
@@ -53,13 +54,14 @@ def up_args(args: argparse.Namespace, topo_name: str) -> list:
 def run(cli_args: typing.List[str]) -> None:
   parser = restart_parse_args()
   args = parser.parse_args(cli_args)
+  log.set_logging_flags(args)
   topology = load_snapshot(args,warn_modified=False)
   if not topology:
     log.fatal(f'Cannot read the snapshot file {args.snapshot}')
   try:
     topo_name = topology.get('input',[])[0]
-  except:
-    log.fatal('Cannot find the original topology name from the snapshot file')
+  except Exception as ex:
+    log.fatal(f'Cannot find the original topology name from the snapshot file: {str(ex)}')
 
   down.run(down_args(args,with_snapshot=True))
   log.section_header('Progress','Lab has been stopped, starting new instance',color='bright_cyan')
