@@ -1304,6 +1304,9 @@ class VLAN(_Module):
       create_vlan_access_links(topology)
       validate_vlan_attributes(topology,topology)
 
+    for link in topology.links:                   # Check for VLAN-enabled links without VLAN-enabled nodes
+      _dataplane.validate_link_module_usage(link,topology,'vlan')
+
   """
   In the node_pre_transform we perform basic attribute checks and merge global and node VLAN data.
   This merge is executed before the node module list is completely built and therefore cannot delete
@@ -1338,7 +1341,6 @@ class VLAN(_Module):
 
     v_attr = data.get_empty_box()
     link_ok = check_link_vlan_attributes(link,link,v_attr,topology)               # Check link-level VLAN attributes
-
     for intf in link.interfaces:
       link_ok = link_ok and check_link_vlan_attributes(intf,link,v_attr,topology) # Check interface VLAN attributes
 

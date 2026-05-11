@@ -480,6 +480,8 @@ class VRF(_Module):
       return
 
     create_vrf_links(topology)                          # Create VRF links (and remove 'links' attribute)
+    for link in topology.get('links',[]):               # Check for VRF-enabled links without VRF-enabled nodes
+      _dataplane.validate_link_module_usage(link,topology,'vrf')
     log.exit_on_error()
     populate_vrf_static_ids(topology)
     set_vrf_ids(topology,topology)

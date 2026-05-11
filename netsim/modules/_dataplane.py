@@ -27,17 +27,16 @@ Auto-assign sequence numbers
 * get_next_id -- given a namespace (ID set, auto-assign counter), create next unused identifier
 """
 
-"""
-build_id_set: given an object (topology or node) and a data structure within the object,
-create a set of attributes used in that object
-
-* obj: parent object (topology or node)
-* dsname: name of the data structure (vlans, vrfs)
-* attr: name of the attribute we're interested in (vlan, vni, rd, import, export)
-* objname: name of the parent object in case we have to thrown an error message
-"""
-
 def build_id_set(obj: Box, dsname: str, attr: str, objname: str) -> set:
+  """
+  Given an object (topology or node) and a data structure within the object,
+  create a set of attributes used in that object
+
+  * obj: parent object (topology or node)
+  * dsname: name of the data structure (vlans, vrfs)
+  * attr: name of the attribute we're interested in (vlan, vni, rd, import, export)
+  * objname: name of the parent object in case we have to thrown an error message
+  """
   if dsname in obj:
     if not isinstance(obj[dsname],dict):    # pragma: no cover
       log.fatal(f'Found a {objname}.{dsname} setting that is not a dictionary','dataplane')
@@ -55,36 +54,48 @@ def build_id_set(obj: Box, dsname: str, attr: str, objname: str) -> set:
   return set()
 
 def get_id_set(name: str) -> set:
-	idvar = global_vars.get(f'{name}_id')
-	if not 'value' in idvar:
-		idvar.value = set()
-	
-	return idvar.value
+  """Get the requested ID set, create an empty one on first use"""
+  idvar = global_vars.get(f'{name}_id')
+  if not 'value' in idvar:
+    idvar.value = set()
+  
+  return idvar.value
 
 def create_id_set(name: str) -> set:
-	idvar = global_vars.get(f'{name}_id')
-	idvar.value = set()
-	return idvar.value
+  """Set the value of the specified ID set to an empty set"""
+  idvar = global_vars.get(f'{name}_id')
+  idvar.value = set()
+  return idvar.value
 
 def extend_id_set(name: str, add_set: set) -> set:
-	idset = get_id_set(name)
-	idset.update(add_set)
-	return idset
+  """Add a set of values to the specified ID set"""
+  idset = get_id_set(name)
+  idset.update(add_set)
+  return idset
 
 def is_id_used(name: str, value: typing.Any) -> bool:
-	idset = get_id_set(name)
-	return value in idset
+  """Check whether an ID has already been used"""
+  idset = get_id_set(name)
+  return value in idset
 
 def set_id_counter(name: str, start: int, max_value: int = 4096) -> int:
-	idvar = global_vars.get(f'{name}_id')
-	idvar.next = start
-	idvar.max = max_value
-	if not idvar.value:
-		idvar.value = set()
+  """Create an ID counter given its start and maximum values"""
+  idvar = global_vars.get(f'{name}_id')
+  idvar.next = start
+  idvar.max = max_value
+  if not idvar.value:
+    idvar.value = set()
 
-	return start
+  return start
 
 def get_next_id(name: str, hint: typing.Optional[str] = None) -> int:
+  """
+  Get next free ID from an ID counter
+  
+  Use the "next" value as the starting point, check it against the set
+  of existing identifiers, and increase it until you get a non-used
+  value or hit the maximum value.
+  """
   idvar = global_vars.get(f'{name}_id')
   if not 'next' in idvar:
     log.fatal(f'Initial {name} value is not set, get_next_id failed')
@@ -102,36 +113,35 @@ def get_next_id(name: str, hint: typing.Optional[str] = None) -> int:
         more_hints=hint)
       log.exit_on_error()
 
-"""
-validate_object_reference_list
-
-Validate that a list of references is valid. Create a list of all available references if there
-is no list in the parent object.
-
-Input:
-* parent -- node or other parent object (topology if missing)
-* parent_path -- path to display in error messages
-* topology -- lab topology
-* list_name -- name of reference list (example: vxlan.vlans)
-* reference_dictionary -- name of dictionary with objects list_name references (example: vlans)
-* reference_name -- name of objects in reference_dictionary (example: VLAN)
-* create_default -- do we have to create a default list
-* merge_topology -- do we have to merge topology-level list with local default list
-* module -- calling module (used in error messages)
-"""
-
 def validate_object_reference_list(
-			parent: typing.Optional[Box],
-			topology: Box,
-			list_name: str,
-			reference_dictionary: str,
-			reference_name: str,
-			parent_path: str = 'topology',
-			create_default: bool = True,
-			default_filter: typing.Callable = lambda x: True,
-			merge_topology: bool = True,
-			module: str = 'dataplane') -> bool:
+      parent: typing.Optional[Box],
+      topology: Box,
+      list_name: str,
+      reference_dictionary: str,
+      reference_name: str,
+      parent_path: str = 'topology',
+      create_default: bool = True,
+      default_filter: typing.Callable = lambda x: True,
+      merge_topology: bool = True,
+      module: str = 'dataplane') -> bool:
 
+  """
+  validate_object_reference_list
+
+  Validate that a list of references is valid. Create a list of all available references if there
+  is no list in the parent object.
+
+  Input:
+  * parent -- node or other parent object (topology if missing)
+  * parent_path -- path to display in error messages
+  * topology -- lab topology
+  * list_name -- name of reference list (example: vxlan.vlans)
+  * reference_dictionary -- name of dictionary with objects list_name references (example: vlans)
+  * reference_name -- name of objects in reference_dictionary (example: VLAN)
+  * create_default -- do we have to create a default list
+  * merge_topology -- do we have to merge topology-level list with local default list
+  * module -- calling module (used in error messages)
+  """
   if parent is None:
     parent = topology
 
@@ -175,3 +185,21 @@ def validate_object_reference_list(
     list_ok = False
 
   return list_ok
+
+def validate_link_module_usage(link: Box, topology: Box, module: str) -> None:
+  """Check whether at least one node attached to the link uses the specified module"""
+
+  if module not in link:                          # Is the module used on the link?
+    return                                        # Gee, it's not. Stop bothering us.
+  
+  for intf in link.interfaces:                    # Iterate over nodes attached to the link
+    n_data = topology.nodes.get(intf.node,{})     # Get node data of an attached node
+    if module in n_data.get('module',[]):         # Is the node using the specified module?
+      return                                      # Link attribute is legit. Get out of here
+
+  log.warning(
+    text=f'No node attached to link {link._linkname} is using module {module} used on the link',
+    module=module,
+    flag='link_no_nodes',
+    category=log.IncorrectAttr,
+    more_hints=[f'At least one node attached to the link must use {module} module'])
