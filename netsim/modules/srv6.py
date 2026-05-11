@@ -1,13 +1,13 @@
 #
 # SRv6 transformation module
 #
-import ipaddress
 import typing
 
 from box import Box
 
 from .. import data
 from ..augment import addressing, devices
+from ..data import validate
 from ..data.global_vars import get_const
 from ..utils import log
 from . import _Module
@@ -53,6 +53,14 @@ class SRV6(_Module):
   module_pre_default - create the default SRv6 locator address pool
   """
   def module_pre_default(self, topology: Box) -> None:
+    if 'srv6' in topology:
+      validate.legacy_attributes(
+        t_object=topology,
+        topology=topology,
+        o_path=f'',
+        module='srv6',
+        attr_namespace='global')
+
     # Defining this as _top addressing includes it in *every* topology
     POOL_NAME = get_pool_name()
     if POOL_NAME not in topology.defaults.addressing:
@@ -70,6 +78,14 @@ class SRV6(_Module):
     addressing.get(topology.pools,[get_pool_name()])                  # Throw away the all-zeroes prefix
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
+    if 'srv6' in node:
+      validate.legacy_attributes(
+        t_object=node,
+        topology=topology,
+        o_path=f'nodes.{node.name}',
+        module='srv6',
+        attr_namespace='node')
+
     mods = node.get('module',[])
     d_features = devices.get_device_features(node,topology.defaults)
     for igp in node.get('srv6.igp',[]):
@@ -108,11 +124,6 @@ class SRV6(_Module):
        prefix = addressing.get(topology.pools,[get_pool_name()])['ipv6']
        locator = str(prefix)
        node.srv6.locator = locator
-    locator_net = ipaddress.IPv6Network(locator)
-    if node.get('srv6.allocate_loopback'):                   # Auto-assign a loopback from locator range
-      first_host = next(iter(locator_net.hosts()))           # Use first usable address
-      prefix6 = topology.pools['loopback'].get('prefix6',64) # Use loopback.prefix6, default /64
-      node.loopback.ipv6 = ipaddress.IPv6Interface((first_host, prefix6)).with_prefixlen
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
     if 'ipv6' not in node.loopback:
