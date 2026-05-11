@@ -1,7 +1,7 @@
 (module-srv6)=
 # Segment Routing over IPv6 (srv6) Configuration Module
 
-This configuration module configures SRv6 over IS-IS with IBGP to advertise SID reachability
+This configuration module configures SRv6 over IS-IS with IBGP using advertised SIDs for global and VPN connectivity services.
 
 Supported SRv6 features:
 
@@ -10,33 +10,35 @@ Supported SRv6 features:
 * SRv6 transport for global IPv4/IPv6 BGP routes
 * BGP IPv4/IPv6 L3VPN over SRv6
 
-The module currently depends on IS-IS and will trigger a configuration error if the **isis** module is not enabled in the network topology. It is initially focused on the L3VPN use case; IPv4 islands over SRv6 or IPv6 transport between SRv6 endpoints will be added once FRRouting supports them.
+The module currently depends on IS-IS and will trigger a configuration error if the **isis** module is not enabled in the network topology. It supports the L3VPN use case, as well as IPv4 islands over SRv6 (IPv4aaS) and IPv6 transport between SRv6 endpoints.
 
 ## Platform Support
-The following table describes the per-platform support of individual router-level SRv6 features:
 
-| Operating system   | IS-IS | OSPFv3 | BGP v4/v6 | Transit only | 
-|--------------------|:--:|:-:|:-:| :-:|
-| Cisco IOS XE[^XE]  | ✅ | ❌ | ❌ | ❌ |
-| Cisco IOS XR[^XR]  | ✅ | ❌ | ❌ | ❌ |
-| FRR                | ✅ | ❌ | ✅ | ❌ |
-| Nokia SR OS[^SROS] | ✅ | ❌ | ✅ | ✅ |
+The following table describes the per-platform support of SRv6-enabled routing protocols:
 
-[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
+| Operating system   | IS-IS | OSPFv3 |
+|--------------------|:--:|:-:|
+| Cisco IOS XE[^XE]  | ✅ | ❌ |
+| Cisco IOS XR[^XR]  | ✅ | ❌ |
+| FRR                | ✅ | ❌ |
 
 [^XE]: Includes Catalyst 8000v, Cisco IOL, and Cisco IOL layer-2 image. The minimum Cisco IOS/XE release with working SRv6 is release 17.16.01a.
 
 [^XR]: Includes IOS XRv, IOS XRd, but not Cisco 8000v. Cisco 8000v does not support the *shift-only* microsegment behavior needed to interoperate with other SRv6 implementations. Please [open an issue](https://github.com/ipspace/netlab/issues/new/choose) if you're interested in running SRv6 on Cisco 8000v.
 
-(srv6-l3vpn-supported-platforms)=
-### BGP/SRv6 L3VPN
+These platforms can use SRv6 next hops for global IPv4/IPv6 BGP routes:
+
+| Operating system   | Global IPv4<br>BGP routes | Global IPv6<br>BGP routes | 
+|--------------------|:--:|:-:|
+| FRR                | ✅ | ✅ |
+
+These platforms support SRv6-based L3VPN services:
 
 | Operating system      | VPNv4 | VPNv6 |
 | ----------------------| :---: | :---: |
 | Cisco IOS XE[^XE]     |   ✅  |  ✅  |
 | Cisco IOS XR[^XR]     |   ✅  |  ✅  |
 | FRR                   |   ✅  |  ✅ [❗️](caveats-frr)  |
-| Nokia SR OS[^SROS]    |   ❌   |   ❌  |
 
 **Notes**
 * VPNv4 and VPNv6 address families are enabled on IPv6 IBGP sessions
@@ -73,6 +75,8 @@ Each parameter could be a boolean (*True* to enable both IP address families on 
 
 * Boolean value *False* to disable the address family within node data (overwriting global defaults)
 * Boolean value *True* to enable the address family on IBGP sessions
-* A string or a list of *ibgp/ebgp* keywords
+* A string or a list of *ibgp/ebgp* keywords[^NE]
 
 For a tested example, see the [SRv6 integration tests](https://github.com/ipspace/netlab/tree/dev/tests/integration/srv6).
+
+[^NE]: SRv6 services over EBGP are currently not supported
