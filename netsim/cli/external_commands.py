@@ -102,7 +102,11 @@ def run_command(
 
   add_netlab_path()
   if isinstance(cmd,str):
-    cmd = shlex.split(cmd)
+    try:
+      cmd = shlex.split(cmd)
+    except ValueError:
+      log.error(f'Malformed shell command: {cmd}',module='cli',category=log.IncorrectValue)
+      return False
 
   if not cmd:                                               # Skip empty commands
     return True
