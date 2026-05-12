@@ -481,6 +481,8 @@ class VRF(_Module):
 
     create_vrf_links(topology)                          # Create VRF links (and remove 'links' attribute)
     for link in topology.get('links',[]):               # Check for VRF-enabled links without VRF-enabled nodes
+      if 'vlan' in link:                                # Skip VLAN links, as there could be ...
+        continue                                        # ... a VRF-enabled node attached to the VLAN
       _dataplane.validate_link_module_usage(link,topology,'vrf')
     log.exit_on_error()
     populate_vrf_static_ids(topology)
