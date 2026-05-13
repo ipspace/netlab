@@ -81,7 +81,7 @@
       from {
         protocol {{ protomap[proto]|default(proto) }};
 {%     if pdata.import[proto].policy is defined %}
-        policy [ {{ pdata.import[proto].policy }} bgp-final ];
+        policy {{ pdata.import[proto].policy }};
 {%     endif %}
       }
       then {
@@ -93,7 +93,7 @@
 {#
    Macro to create per-routing-instance import/propagate/advertise policy
 #}
-{% macro redistribute(bgp,vname) %}
+{% macro redistribute(bgp,vname,has_evpn=false) %}
   policy-statement bgp-{{ vname }}-redistribute {
 {{ advertise_terms(bgp,vname) }}
     term redis_bgp {
@@ -102,6 +102,14 @@
         next policy;
       }
     }
+{% if has_evpn %}
+    term redis_evpn {
+      from protocol evpn;
+      then {
+        next policy;
+      }
+    }
+{% endif %}
 {{ import_terms(bgp) }}
     term default {
       then reject;
