@@ -1,50 +1,5 @@
 {% import "templates/ospf/junos.macro.j2" as ospf_cfg %}
 {% if bgp.as is defined %}
-{% include 'junos.bgp.j2' %}
-{% endif %}
-
-{% for vname,vdata in vrfs.items() if 'ospf' in vdata %}
-{# 
-   generic policy to redistribute bgp + leaked(imported) into ospf
-#}
-{% if vdata.ospf.router_id is defined %}
-routing-instances {
-  {{ vname }} {
-    routing-options {
-      router-id {{ vdata.ospf.router_id }}
-    }
-  }
-}
-{% endif %}
-{% set ns = namespace(import_list=[]) %}
-{%   for i in vdata.import|default([]) %}
-{%     set _ = ns.import_list.append('tg_'+i|replace(':', '_')|replace('.', '_')) %}
-{%   endfor %}
-
-policy-options {
-  policy-statement vrf-{{vname}}-ospf-export {
-    term redis_direct {
-      from {
-        protocol direct;
-      }
-      then accept;
-    }
-    term redis_bgp {
-      from protocol bgp;
-      then {
-        accept;
-      }
-    }
-    term redis_local_target {
-      from community [ {{ ns.import_list|join(' ') }} ];
-      then accept;
-    }
-  }
-}
-{%   if vdata.af.ipv4|default(False) %}
-{{     ospf_cfg.config('ospf',vname,vdata.ospf,vdata.ospf.interfaces|default([]),bgp|default({})) }}
-{%   endif %}
-{%   if vdata.af.ipv6|default(False) %}
-{{     ospf_cfg.config('ospf3',vname,vdata.ospf,vdata.ospf.interfaces|default([]),bgp|default({})) }}
-{%   endif %}
-{% endfor %}
+{% include 'junos/bgp.j2' %}
+{% endif +%}
+{% include 'junos/ospf.j2' %}

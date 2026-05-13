@@ -1,0 +1,38 @@
+{%
+  set proto_kw = {
+    'connected': 'direct'
+  }
+%}
+{% macro policy(proto,vrf,pdata,rt_import_list=[]) -%}
+{%   set policy_name = 'vrf-'+vrf if vrf else 'default' %}
+policy-options {
+  delete: policy-statement {{ policy_name }}-{{ proto }}-export;
+  policy-statement {{ policy_name }}-{{ proto }}-export {
+{%   for s_proto,s_data in pdata.import.items() %}
+    term redis_{{ s_proto }} {
+      from {
+        protocol {{ proto_kw[s_proto] if s_proto in proto_kw else s_proto }};
+{%     if 'policy' in s_data %}
+        policy {{ s_data.policy }}
+{%     endif %}
+      }
+      then accept;
+    }
+{%     if s_proto == 'bgp' and 'evpn' in module %}
+    term redis_evpn {
+      from protocol evpn;
+      then {
+        accept;
+      }
+    }
+{%     endif %}
+{%   endfor %}
+{%   if rt_import_list %}
+    term redis_local_target {
+      from community [ {{ rt_import_list|join(' ') }} ];
+      then accept;
+    }
+{%   endif %}
+  }
+}
+{%- endmacro %}

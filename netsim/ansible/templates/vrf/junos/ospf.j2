@@ -1,0 +1,26 @@
+{% import "templates/routing/junos/redistribute.j2" as redistribute with context %}
+{% for vname,vdata in vrfs.items() if 'ospf' in vdata %}
+{%   if vdata.ospf.router_id is defined %}
+routing-instances {
+  {{ vname }} {
+    routing-options {
+      router-id {{ vdata.ospf.router_id }}
+    }
+  }
+}
+{%   endif %}
+{%   set ospf_data = vdata.ospf %}
+{%   set ns = namespace(import_list=[]) %}
+{%   for i in vdata.import|default([]) %}
+{%     set _ = ns.import_list.append('tg_'+i|replace(':', '_')|replace('.', '_')) %}
+{%   endfor %}
+{%   if 'import' in ospf_data %}
+{{ redistribute.policy('ospf',vname,ospf_data,ns.import_list) }}
+{%   endif %}
+{%   if vdata.af.ipv4|default(False) %}
+{{     ospf_cfg.config('ospf',vname,vdata.ospf,vdata.ospf.interfaces|default([]),bgp|default({})) }}
+{%   endif %}
+{%   if vdata.af.ipv6|default(False) %}
+{{     ospf_cfg.config('ospf3',vname,vdata.ospf,vdata.ospf.interfaces|default([]),bgp|default({})) }}
+{%   endif %}
+{% endfor %}

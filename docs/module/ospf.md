@@ -65,7 +65,7 @@ The following table describes the per-platform support of individual router-leve
 | Extreme Networks EXOS    | ✅| ✅| ✅| ❌ | ❌ | 
 | Fortinet FortiOS         |[❗](caveats-fortios)| ✅ | ❌ | ❌ | ❌ |
 | FRR                      | ✅| ✅| ✅| ✅| ✅|
-| Junos[^Junos]            | ✅| ✅| ✅| ❌ | ❌ |
+| Junos[^Junos]            | ✅| ✅| ✅| ✅| ❌ |
 | Mikrotik RouterOS 6      | ✅| ❌ | ❌ | ❌ | ❌ |
 | Mikrotik RouterOS 7      | ✅| ❌ | ✅| ❌ | ❌ |
 | Nokia SR Linux           | ✅| ✅| ✅| ✅ [❗](caveats-srlinux) | ✅ [❗](caveats-srlinux) |
