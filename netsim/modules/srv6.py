@@ -28,25 +28,37 @@ def get_pool_name() -> str:
 Configures BGP address families for neighbors, including extended nexthop where needed
 """
 def configure_bgp_for_srv6(node: Box, topology: Box) -> None:
-  srv6_bgp = node.get('srv6.bgp',{})
-  srv6_vpn = node.get('srv6.vpn',{})
-  for nb in list(node.get('bgp.neighbors',[])):
-    if 'ipv6' not in nb:                               # Skip IPv4-only neighbors
+  srv6 = node.get('srv6',{})
+  if not srv6:
+    return
+
+  for nb in node.get('bgp.neighbors',[]):
+    if 'ipv6' not in nb:                                # Skip IPv4-only neighbors
       continue
 
-    for af in DEFAULT_BGP_AF.keys():
-      if nb.type in srv6_bgp.get(af,[]) or nb.type in srv6_vpn.get(af,[]):
-# If anything, deactivating BGP AFs would break SR-OS and not achieve anything on FRR
-#        nb.activate[af] = False                        # Disable regular BGP activation
-        pass
-      else:
-        continue                                       # Skip if neither AF is activated
+    ngb_node = topology.nodes[nb.name]                  # Get neighbor node data
+    if 'srv6' not in ngb_node.get('module',[]):         # Is neighbor running SRv6?
+      continue                                          # No? Too bad, let's not bother them
 
-# The following code is untested and thus commented out
-#      if nb.type=='ebgp':                              # Set next hop unchanged for EBGP peers, to get end-2-end SID routing
-#        nb.next_hop_unchanged = True
-      if af=='ipv4' and 'ipv4' not in nb:
-        nb.extended_nexthop = True                     # Enable extended next hops when IPv4 AF is used without IPv4 transport
+    need_srv6 = False
+    for svc in ['bgp','vpn']:                           # Iterate over potential SRv6 services
+      srv6_svc = srv6.get(svc,{})                       # Get service definition for this node
+      for af in DEFAULT_BGP_AF.keys():                  # Next, iterate over address families for this service
+        svc_ngb_type = srv6_svc.get(af,[])              # ... get neighbor type for this svc/af combo
+        if nb.type not in svc_ngb_type:                 # ... and check whether this neighbor matches
+          continue                                      # It doesn't? Meh, better luck next time
+
+        data.append_to_list(nb.srv6,svc,af)             # Adjust neighbor data
+        need_srv6 = True                                # ... and remember we need SRv6
+        if af=='ipv4':                                  # IPv4 service over SRv6?
+          nb.extended_nexthop = True                    # ... needs extended next hop capability
+
+    if not need_srv6:                                   # No SRv6 for this neighbor?
+      continue                                          # ... cool, let's get out of here
+
+    if nb.type == 'ebgp':                               # Are we running SRv6 services with EBGP neighbor?
+      nb.srv6.next_hop_unchanged = True                 # Cool, but we have to take care of next hops
+
 
 class SRV6(_Module):
   """
