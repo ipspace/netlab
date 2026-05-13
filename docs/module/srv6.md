@@ -30,6 +30,7 @@ These platforms can use SRv6 next hops for global IPv4/IPv6 BGP routes:
 
 | Operating system   | Global IPv4<br>BGP routes | Global IPv6<br>BGP routes | 
 |--------------------|:--:|:-:|
+| Cisco IOS XR       | ✅ | ✅ |
 | FRR                | ✅ | ✅ |
 
 These platforms support SRv6-based L3VPN services:

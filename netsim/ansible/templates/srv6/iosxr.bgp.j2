@@ -1,16 +1,23 @@
 router bgp {{ bgp.as }}
 !
   segment-routing srv6 locator {{ inventory_hostname }}
-{% for af in srv6.vpn %}
+{% for af in srv6.vpn|default([]) %}
   address-family {{ af.replace('ip','vpn') }} unicast
     vrf all
       segment-routing srv6 alloc mode per-vrf
 {% endfor %}
-{% for n in bgp.neighbors|default([]) if n.ipv6 is defined %}
-{%   for af in srv6.vpn if n.type in srv6.vpn[af] %}
-{%     if loop.first %}
+{% for af in srv6.bgp|default([]) %}
+  address-family {{ af }} unicast
+    segment-routing srv6 alloc mode per-vrf
+{% endfor %}
+{% for n in bgp.neighbors|default([]) if n.srv6 is defined %}
   neighbor {{ n.ipv6 }}
-{%     endif %}
+{%   for af in n.srv6.vpn|default([]) %}
     address-family {{ af.replace('ip','vpn') }} unicast
+{%   endfor %}
+{%   for af in n.srv6.bgp|default([]) %}
+    address-family {{ af }} unicast
+      encapsulation-type srv6
+      next-hop-self
 {%   endfor %}
 {% endfor %}
