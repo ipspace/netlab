@@ -3,32 +3,10 @@
     level {{ level }} disable;
 {%   endfor %}
 {% endmacro %}
-
-{% import "templates/routing/junos/redistribute.j2" as redistribute with context %}
-{% if isis.import is defined %}
-{{ redistribute.policy('isis','',isis) }}
-{% endif %}
-
-protocols {
-  delete: isis;
-}
-protocols {
-  isis {
-{% if 'ipv6' in isis.af %}
-    topologies {
-      ipv6-unicast;
-    }
-{% endif %}
-{% if isis.import is defined %}
-{# configure IS-IS route redistribution policy #}
-    export {{ 'default' }}-isis-export;
-{% endif %}
-
-{{ disable_level(isis.type) }}
-    level 1 wide-metrics-only;
-    level 2 wide-metrics-only;
-    interface lo0.0;
-{% for l in interfaces|default([]) if 'isis' in l %}
+{#
+    Non-loopback interface configuration
+#}
+{% macro config_intf(l,isis) %}
     interface {{ l.ifname }} {
 {%   if l.isis.network_type is defined %}
       {{ l.isis.network_type }};
@@ -70,10 +48,12 @@ protocols {
 {%     endif %}
 {%   endif %}
     }
-{% endfor %}
-  }
-}
-
+{% endmacro %}
+{#
+    Protocol instance configuration
+#}
+{% macro config(isis,vrf_name='',interfaces=[]) %}
+{%   if not vrf_name %}{# Use the old "NSAP on loopback" config method for global IS-IS #}
 interfaces {
   lo0 {
     unit 0 {
@@ -83,3 +63,54 @@ interfaces {
     }
   }
 }
+{%   endif %}
+{%   if vrf_name %}
+routing-instances {
+  {{ vrf_name }} {
+{%   endif %}
+protocols {
+  delete: isis;
+}
+protocols {
+  isis {
+{% if vrf_name %}{# Use underdocumented "net" setting for VRF IS-IS instances #}
+    net {{ isis.net }};
+{% endif %}
+{% if 'ipv6' in isis.af %}
+    topologies {
+      ipv6-unicast;
+    }
+{% endif %}
+{% if isis.import is defined %}
+    export {{ 'vrf-'+vrf_name if vrf_name else 'default' }}-isis-export;
+{% endif %}
+
+{{ disable_level(isis.type) }}
+    level 1 wide-metrics-only;
+    level 2 wide-metrics-only;
+{% for l in interfaces|default([]) if 'isis' in l %}
+{%   if l.type == 'loopback' %}
+    interface {{ l.ifname }};
+{%   else %}
+{{     config_intf(l,isis) }}
+{%   endif %}
+{% endfor %}
+  }
+}
+{%   if vrf_name %}
+}{# vrf_name #}
+}{# routing-instances #}
+{%   endif %}
+{% endmacro %}
+{#
+    Enable IS-IS on interfaces
+#}
+{% macro isis_interfaces(interfaces=[]) %}
+interfaces {
+{%   for l in interfaces|default([]) if 'isis' in l %}
+  {{ l.ifname }} {
+      family iso;
+  }
+{%   endfor %}
+}
+{% endmacro %}

@@ -50,7 +50,7 @@ These platforms support additional IS-IS features:
 | Cisco IOS XR[^XR]  | ✅  | ✅  | ✅  |
 | Cisco Nexus OS     | ✅  |  ❌  |  ❌  |
 | FRR                | ✅  | ✅  | ✅  |
-| Junos[^Junos]      | ✅  | ✅  |  ❌  |
+| Junos[^Junos]      | ✅  | ✅  | ✅ [❗](caveats-junos) | 
 | Nokia SR Linux     | ✅  | ✅ [❗](caveats-srlinux) | ✅  |
 | Nokia SR OS[^SROS] | ✅  | ✅ [❗](caveats-sros) | ✅  |
 

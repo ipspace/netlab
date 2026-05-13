@@ -95,11 +95,12 @@ def fix_unit_0(node: Box, topology: Box) -> None:
             set_junos_mtu(intf, JUNOS_MTU_FLEX_VLAN_HEADER_LENGTH)
   
   # need to append .0 unit trick to the interface list copied into vrf->ospf
-  if 'vrf' in mods and 'ospf' in mods:
+  if 'vrf' in mods:
     for vname,vdata in node.vrfs.items():
-      for intf in vdata.get('ospf.interfaces',[]):
-        if not '.' in intf.ifname:
-          unit_0_trick(intf, f"vrf({vname})/ospf")
+      for igp in ['ospf','isis']:
+        for intf in vdata.get(f'{igp}.interfaces',[]):
+          if not '.' in intf.ifname:
+            unit_0_trick(intf, f"vrf({vname})/{igp}")
 
 def check_multiple_loopbacks(node: Box, topology: Box) -> None:
   vrf_count: dict = {}

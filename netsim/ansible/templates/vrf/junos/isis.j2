@@ -1,0 +1,18 @@
+{% import "templates/routing/junos/redistribute.j2" as redistribute with context %}
+{% import "templates/isis/junos.isis.j2" as isis_cfg with context %}
+{% for vname,vdata in vrfs.items() if 'isis' in vdata %}
+{%   set isis_data = vdata.isis %}
+{%   set import_list = [] %}
+{%   for i in vdata.import|default([]) %}
+{%     set _ = import_list.append('tg_'+i|replace(':', '_')|replace('.', '_')) %}
+{%   endfor %}
+{%   if 'import' in isis_data %}
+{{ redistribute.policy('isis',vname,isis_data,import_list,has_evpn=vdata.evpn is defined) }}
+{%   endif %}
+{%   if vdata.af.ipv4|default(False) or vdata.af.ipv6|default(False) %}
+{{     isis_cfg.config(isis_data,vname,interfaces=isis_data.interfaces|default([])) }}
+{%     if netlab_device_type != 'crpd' %}
+{{       isis_cfg.isis_interfaces(isis_data.interfaces) }}
+{%     endif %}
+{%   endif %}
+{% endfor %}

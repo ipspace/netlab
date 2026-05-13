@@ -435,6 +435,7 @@ ansible_httpapi_port: 80
 * Junos cannot have more than one loopback interface per routing instance. Using **loopback** links on Junos devices will result in configuration errors.
 * Junos configuration template configures BFD timers within routing protocol configuration, not on individual interfaces
 * Junos does not disable the default BGP address family on a BGP neighbor until another AF is configured.
+* IS-IS NSAP is configured on the loopback interface for the global IS-IS instance and with the protocol **net** parameter in VRF IS-IS instances.
 
 Implementation limitations in import/export route filters (reported as errors that can be disabled with topology settings):
 

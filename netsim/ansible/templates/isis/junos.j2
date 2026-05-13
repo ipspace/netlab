@@ -1,9 +1,10 @@
 {# Regular Junos devices need IS-IS configuration and ISO family on Ethernet interfaces #}
-{% include 'junos.isis.j2' %}
-interfaces {
-{% for l in interfaces|default([]) if 'isis' in l %}
-  {{ l.ifname }} {
-      family iso;
-  }
-{% endfor %}
-}
+{% import "templates/routing/junos/redistribute.j2" as redistribute with context %}
+{% import "junos.isis.j2" as isis_cfg %}
+{% if isis.net is defined %}
+{%   if isis.import is defined %}
+{{     redistribute.policy('isis',vrf_name,isis) }}
+{%   endif %}
+{{   isis_cfg.config(isis,interfaces=netlab_interfaces) }}
+{{   isis_cfg.isis_interfaces(interfaces) }}
+{% endif %}
