@@ -5,7 +5,7 @@ Creating Device configuration snippets
 [CREATED] s2: initial,vlan,ospf,bgp,vrf,vxlan,evpn
 Checking Are lab devices ready to be configured?
  [INFO] Checking SSH server(s) on dut
-[SSH]     SSH server on node dut (device vjunos-switch) is ready after 83.9 seconds
+[SSH]     SSH server on node dut (device vjunos-switch) is ready after 84.0 seconds
  [INFO] Checking lab devices with an Ansible playbook
 [WARNING]: Found variable using reserved name: hosts
 
@@ -35,9 +35,9 @@ Config Deploying device configurations
  [INFO] Executing initial configuration for node ce1
  [INFO] Executing initial configuration for node ce2
  [INFO] Executing initial configuration for node s2
- [INFO] Executing ospf configuration for node ce2
- [INFO] Executing ospf configuration for node ce1
  [INFO] Executing vlan configuration for node s2
+ [INFO] Executing ospf configuration for node ce1
+ [INFO] Executing ospf configuration for node ce2
  [INFO] Executing ospf configuration for node s2
  [INFO] Executing bgp configuration for node s2
  [INFO] Executing vrf configuration for node s2
@@ -176,7 +176,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "vrf configuration for dut\n=========================================\n\n\npolicy-options {\n  delete: policy-statement bgp-tenant-redistribute;\n  delete: route-filter-list bgp-tenant-announce-ipv4;\n  delete: route-filter-list bgp-tenant-announce-ipv6;\n\n  policy-statement bgp-final {\n    term final-option {\n      then {\n        accept;\n      }\n    }\n  }\n\n\n  policy-statement bgp-tenant-redistribute {\n\n    term redis_bgp {\n      from protocol bgp;\n      then {\n        next policy;\n      }\n    }\n    term redist_connected {\n      from {\n        protocol direct;\n      }\n      then {\n        next policy;\n      }\n    }\n    term redist_ospf {\n      from {\n        protocol ospf;\n      }\n      then {\n        next policy;\n      }\n    }\n\n    term default {\n      then reject;\n    }\n  }\n\n\n}\n\n\nrouting-instances {\n\n  tenant {\n    routing-options {\n      autonomous-system 65000;\n      router-id 10.0.0.3\n    }\n\n    protocols {\n      bgp {\n\n        group ebgp-peers {\n          export [ bgp-tenant-redistribute bgp-final ];\n          advertise-inactive;\n        }\n      }\n    }\n  }\n\n}\nrouting-instances {\n  tenant {\n    routing-options {\n      router-id 10.0.0.3\n    }\n  }\n}\npolicy-options {\n  delete: policy-statement vrf-tenant-ospf-export;\n  policy-statement vrf-tenant-ospf-export {\n    term redis_bgp {\n      from {\n        protocol bgp;\n      }\n      then accept;\n    }\n    term redis_evpn {\n      from protocol evpn;\n      then {\n        accept;\n      }\n    }\n    term redis_connected {\n      from {\n        protocol direct;\n      }\n      then accept;\n    }\n    term redis_local_target {\n      from community [ tg_65000_1 ];\n      then accept;\n    }\n  }\n}\nrouting-instances {\n  tenant {\nprotocols {\n  delete: ospf;\n}\n\nprotocols {\n  ospf {\n    export vrf-tenant-ospf-export;\n    area 0.0.0.0 {\n      interface ge-0/0/1.0 {\n        interface-type p2p;\n      }\n    }\n  }\n}\n} }\n\n"
+    "msg": "vrf configuration for dut\n=========================================\n\n\npolicy-options {\n  delete: policy-statement bgp-tenant-redistribute;\n  delete: route-filter-list bgp-tenant-announce-ipv4;\n  delete: route-filter-list bgp-tenant-announce-ipv6;\n\n  policy-statement bgp-final {\n    term final-option {\n      then {\n        accept;\n      }\n    }\n  }\n\n\n  policy-statement bgp-tenant-redistribute {\n\n    term redis_bgp {\n      from protocol bgp;\n      then {\n        next policy;\n      }\n    }\n    term redis_evpn {\n      from protocol evpn;\n      then {\n        next policy;\n      }\n    }\n    term redist_connected {\n      from {\n        protocol direct;\n      }\n      then {\n        next policy;\n      }\n    }\n    term redist_ospf {\n      from {\n        protocol ospf;\n      }\n      then {\n        next policy;\n      }\n    }\n\n    term default {\n      then reject;\n    }\n  }\n\n\n}\n\n\nrouting-instances {\n\n  tenant {\n    routing-options {\n      autonomous-system 65000;\n      router-id 10.0.0.3\n    }\n\n    protocols {\n      bgp {\n\n        group ebgp-peers {\n          export [ bgp-tenant-redistribute bgp-final ];\n          advertise-inactive;\n        }\n      }\n    }\n  }\n\n}\nrouting-instances {\n  tenant {\n    routing-options {\n      router-id 10.0.0.3\n    }\n  }\n}\npolicy-options {\n  delete: policy-statement vrf-tenant-ospf-export;\n  policy-statement vrf-tenant-ospf-export {\n    term redis_bgp {\n      from {\n        protocol bgp;\n      }\n      then accept;\n    }\n    term redis_evpn {\n      from protocol evpn;\n      then {\n        accept;\n      }\n    }\n    term redis_connected {\n      from {\n        protocol direct;\n      }\n      then accept;\n    }\n    term redis_local_target {\n      from community [ tg_65000_1 ];\n      then accept;\n    }\n  }\n}\nrouting-instances {\n  tenant {\nprotocols {\n  delete: ospf;\n}\n\nprotocols {\n  ospf {\n    export vrf-tenant-ospf-export;\n    area 0.0.0.0 {\n      interface ge-0/0/1.0 {\n        interface-type p2p;\n      }\n    }\n  }\n}\n} }\n\n"
 }
 
 TASK [Deploy vrf configuration] ************************************************
@@ -222,7 +222,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "evpn configuration for dut\n=========================================\n\n\n\nprotocols {\n  bgp {\n    group ibgp-peers-ipv4 {\n      neighbor 10.0.0.4 {\n        delete: shutdown;\n        family evpn {\n          signaling;\n        }\n      }\n    }\n    group ebgp-peers {\n    }\n  }\n}\n\n\n\nrouting-instances {\n}\n\nrouting-instances {\n\n    tenant {\n        protocols {\n            evpn {\n                irb-symmetric-routing {\n                    vni 5042;\n                }\n                ip-prefix-routes {\n                    advertise direct-nexthop;\n                    encapsulation vxlan;\n                    vni 5042;\n                    export [ bgp-tenant-redistribute bgp-final ];\n                }\n            }\n        }\n        route-distinguisher 10.0.0.3:5001;\n    }\n\n}\n\npolicy-options {\n    policy-statement bgp-tenant-redistribute {\n        delete: term default;\n\n        term redis_evpn {\n            from protocol evpn;\n            then {\n                next policy;\n            }\n        }\n        term default {\n            then reject;\n        }\n    }\n}\n\ninterfaces {\n}\n\n"
+    "msg": "evpn configuration for dut\n=========================================\n\n\n\nprotocols {\n  bgp {\n    group ibgp-peers-ipv4 {\n      neighbor 10.0.0.4 {\n        delete: shutdown;\n        family evpn {\n          signaling;\n        }\n      }\n    }\n    group ebgp-peers {\n    }\n  }\n}\n\n\n\nrouting-instances {\n}\n\nrouting-instances {\n\n    tenant {\n        protocols {\n            evpn {\n                irb-symmetric-routing {\n                    vni 5042;\n                }\n                ip-prefix-routes {\n                    advertise direct-nexthop;\n                    encapsulation vxlan;\n                    vni 5042;\n                    export [ bgp-tenant-redistribute bgp-final ];\n                }\n            }\n        }\n        route-distinguisher 10.0.0.3:5001;\n    }\n\n}\n\ninterfaces {\n}\n\n"
 }
 
 TASK [Deploy evpn configuration] ***********************************************

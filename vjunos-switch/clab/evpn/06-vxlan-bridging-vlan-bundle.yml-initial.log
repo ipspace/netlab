@@ -7,7 +7,7 @@ Creating Device configuration snippets
 [CREATED] s2: normalize,initial,vlan,ospf,bgp,vrf,vxlan,evpn
 Checking Are lab devices ready to be configured?
  [INFO] Checking SSH server(s) on dut,s2
-[SSH]     SSH server on node dut (device vjunos-switch) is ready after 66.3 seconds
+[SSH]     SSH server on node dut (device vjunos-switch) is ready after 70.5 seconds
  [INFO] Checking lab devices with an Ansible playbook
 [WARNING]: Found variable using reserved name: hosts
 
@@ -47,12 +47,12 @@ Config Deploying device configurations
  [INFO] Executing initial configuration for node s2
  [INFO] Executing routing configuration for node h2 (namespace clab-
           ml-17-h2)
- [INFO] Executing routing configuration for node h1 (namespace clab-
-          ml-17-h1)
- [INFO] Executing routing configuration for node h3 (namespace clab-
-          ml-17-h3)
  [INFO] Executing routing configuration for node h4 (namespace clab-
           ml-17-h4)
+ [INFO] Executing routing configuration for node h3 (namespace clab-
+          ml-17-h3)
+ [INFO] Executing routing configuration for node h1 (namespace clab-
+          ml-17-h1)
  [INFO] Executing vlan configuration for node s2
  [INFO] Executing ospf configuration for node s2
  [INFO] Executing bgp configuration for node s2
@@ -211,7 +211,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "vrf configuration for dut\n=========================================\n\n\npolicy-options {\n  delete: policy-statement bgp-tenant-redistribute;\n  delete: route-filter-list bgp-tenant-announce-ipv4;\n  delete: route-filter-list bgp-tenant-announce-ipv6;\n\n  policy-statement bgp-final {\n    term final-option {\n      then {\n        accept;\n      }\n    }\n  }\n\n\n  policy-statement bgp-tenant-redistribute {\n\n    term redis_bgp {\n      from protocol bgp;\n      then {\n        next policy;\n      }\n    }\n    term redist_connected {\n      from {\n        protocol direct;\n      }\n      then {\n        next policy;\n      }\n    }\n\n    term default {\n      then reject;\n    }\n  }\n\n\n}\n\n\nrouting-instances {\n\n  tenant {\n    routing-options {\n      autonomous-system 65000;\n      router-id 10.0.0.5\n    }\n\n    protocols {\n      bgp {\n\n        group ebgp-peers {\n          export [ bgp-tenant-redistribute bgp-final ];\n          advertise-inactive;\n        }\n      }\n    }\n  }\n\n}\n"
+    "msg": "vrf configuration for dut\n=========================================\n\n\npolicy-options {\n  delete: policy-statement bgp-tenant-redistribute;\n  delete: route-filter-list bgp-tenant-announce-ipv4;\n  delete: route-filter-list bgp-tenant-announce-ipv6;\n\n  policy-statement bgp-final {\n    term final-option {\n      then {\n        accept;\n      }\n    }\n  }\n\n\n  policy-statement bgp-tenant-redistribute {\n\n    term redis_bgp {\n      from protocol bgp;\n      then {\n        next policy;\n      }\n    }\n    term redis_evpn {\n      from protocol evpn;\n      then {\n        next policy;\n      }\n    }\n    term redist_connected {\n      from {\n        protocol direct;\n      }\n      then {\n        next policy;\n      }\n    }\n\n    term default {\n      then reject;\n    }\n  }\n\n\n}\n\n\nrouting-instances {\n\n  tenant {\n    routing-options {\n      autonomous-system 65000;\n      router-id 10.0.0.5\n    }\n\n    protocols {\n      bgp {\n\n        group ebgp-peers {\n          export [ bgp-tenant-redistribute bgp-final ];\n          advertise-inactive;\n        }\n      }\n    }\n  }\n\n}\n"
 }
 
 TASK [Deploy vrf configuration] ************************************************
@@ -257,7 +257,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "evpn configuration for dut\n=========================================\n\n\n\nprotocols {\n  bgp {\n    group ibgp-peers-ipv4 {\n      neighbor 10.0.0.6 {\n        delete: shutdown;\n        family evpn {\n          signaling;\n        }\n      }\n    }\n    group ebgp-peers {\n    }\n  }\n}\n\npolicy-options {\n}\n\n\nrouting-instances {\n}\n\nrouting-instances {\n  vlan_aware_tenant {\n    instance-type mac-vrf;\n    service-type vlan-aware;\n    vtep-source-interface lo0.0;\n    route-distinguisher 65000:3;\n    vrf-target import target:65000:1;\n    vrf-target export target:65000:1;\n    protocols {\n      evpn {\n        encapsulation vxlan;\n        default-gateway no-gateway-community;\n        extended-vni-list all;\n      }\n    }\n  }\n}\n\nrouting-instances {\n\n\n}\n\npolicy-options {\n}\n\ninterfaces {\n}\n\n\nvlans {\n}\n\nrouting-instances {\n}\n\nrouting-instances {\n  vlan_aware_tenant {\n    interface ge-0/0/1.0;\n    vlans {\n      red {\n        vlan-id 1000;\n        vxlan {\n          vni 6000;\n        }\n      }\n    }\n    interface ge-0/0/2.0;\n    vlans {\n      blue {\n        vlan-id 1001;\n        vxlan {\n          vni 6001;\n        }\n      }\n    }\n  }\n}\n"
+    "msg": "evpn configuration for dut\n=========================================\n\n\n\nprotocols {\n  bgp {\n    group ibgp-peers-ipv4 {\n      neighbor 10.0.0.6 {\n        delete: shutdown;\n        family evpn {\n          signaling;\n        }\n      }\n    }\n    group ebgp-peers {\n    }\n  }\n}\n\npolicy-options {\n}\n\n\nrouting-instances {\n}\n\nrouting-instances {\n  vlan_aware_tenant {\n    instance-type mac-vrf;\n    service-type vlan-aware;\n    vtep-source-interface lo0.0;\n    route-distinguisher 65000:3;\n    vrf-target import target:65000:1;\n    vrf-target export target:65000:1;\n    protocols {\n      evpn {\n        encapsulation vxlan;\n        default-gateway no-gateway-community;\n        extended-vni-list all;\n      }\n    }\n  }\n}\n\nrouting-instances {\n\n\n}\n\ninterfaces {\n}\n\n\nvlans {\n}\n\nrouting-instances {\n}\n\nrouting-instances {\n  vlan_aware_tenant {\n    interface ge-0/0/1.0;\n    vlans {\n      red {\n        vlan-id 1000;\n        vxlan {\n          vni 6000;\n        }\n      }\n    }\n    interface ge-0/0/2.0;\n    vlans {\n      blue {\n        vlan-id 1001;\n        vxlan {\n          vni 6001;\n        }\n      }\n    }\n  }\n}\n"
 }
 
 TASK [Deploy evpn configuration] ***********************************************
