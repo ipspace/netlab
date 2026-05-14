@@ -63,12 +63,11 @@ def run_transformation_test(test_case: str, tmpdir: str = '/tmp') -> None:
 
   assert result == expected
   print("... succeeded, string length = %d" % len(result))
-  
+
 @pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
-def test_xform_cases(tmpdir: str) -> None:
-  print("Starting transformation test cases")
-  for test_case in list(glob.glob('topology/input/*yml')):
-    run_transformation_test(test_case)
+@pytest.mark.parametrize('test_case',sorted(glob.glob('topology/input/*yml')))
+def test_xform_cases(test_case: str, tmpdir: str) -> None:
+  run_transformation_test(test_case)
 
 # Verbose test cases are executed only when we're doing a coverage report
 #
@@ -76,7 +75,8 @@ def test_coverage_verbose_cases(tmpdir: str) -> None:
   if not sys.gettrace():
     return
   log.set_verbose()
-  test_xform_cases(tmpdir)
+  for test_case in sorted(glob.glob('topology/input/*yml')):
+    run_transformation_test(test_case)
 
 def run_error_case(test_case: str) -> None:
   log.set_flag(raise_error = True)
@@ -97,22 +97,16 @@ def run_error_case(test_case: str) -> None:
     assert error_log == log_lines
 
 @pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
-def test_error_cases() -> None:
-  print("Starting error test cases")
-  for test_case in list(glob.glob('errors/*yml')):
-    run_error_case(test_case)
+@pytest.mark.parametrize('test_case',sorted(glob.glob('errors/*yml')))
+def test_error_cases(test_case: str) -> None:
+  run_error_case(test_case)
 
 @pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
-def test_coverage_xf_cases() -> None:
-  for test_case in list(glob.glob('coverage/input/*yml')):
-    run_transformation_test(test_case)
+@pytest.mark.parametrize('test_case',sorted(glob.glob('coverage/input/*yml')))
+def test_coverage_xf_cases(test_case: str) -> None:
+  run_transformation_test(test_case)
 
 @pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
-def test_coverage_errors() -> None:
-  for test_case in list(glob.glob('coverage/errors/*yml')):
-    run_error_case(test_case)
-
-if __name__ == "__main__":
-  test_xform_cases("/tmp")
-#  test_error_cases()
-#  test_minimal_cases()
+@pytest.mark.parametrize('test_case',sorted(glob.glob('coverage/errors/*yml')))
+def test_coverage_errors(test_case: str) -> None:
+  run_error_case(test_case)
