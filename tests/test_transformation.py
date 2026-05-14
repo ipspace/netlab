@@ -4,8 +4,8 @@
 # topology file
 #
 
-import difflib
 import glob
+import os
 import pathlib
 import sys
 
@@ -30,57 +30,60 @@ def run_test(fname: str) -> Box:
   log.exit_on_error()
   return topology
 
-def run_transformation_test(test_case: str, tmpdir: str = '/tmp') -> None:
-  print("Test case: %s" % test_case)
+def run_transformation_test(test_case: str, tmp_path: pathlib.Path) -> None:
   log.set_flag(raise_error = False)
   topology = run_test(test_case)
 
-  if topology.defaults.get("inventory"):
-    print("Writing inventory... %s" % topology.defaults.inventory)
-    ansible.ansible_inventory(topology,tmpdir+"/extra/hosts.yml",topology.defaults.get("inventory").replace("dump",""))
-    ansible.ansible_config(tmpdir+"/ansible.cfg",tmpdir+"/hosts.yml")
-    if topology.defaults.inventory == "dump":
-      ansible.dump(topology)
+  # All side-effect file writes (Ansible inventory, output modules, the
+  # group_vars/ and host_vars/ trees that ansible_inventory creates with
+  # CWD-relative paths) land inside tmp_path, isolating each case from
+  # every other one and from the tests/ directory.
+  cwd = os.getcwd()
+  os.chdir(tmp_path)
+  try:
+    if topology.defaults.get("inventory"):
+      ansible.ansible_inventory(topology,"hosts.yml",topology.defaults.get("inventory").replace("dump",""))
+      ansible.ansible_config("ansible.cfg","hosts.yml")
+      if topology.defaults.inventory == "dump":
+        ansible.dump(topology)
 
-  if topology.defaults.get("Output"):
-    for output_format in topology.defaults.get("Output"):
-      output_module = _TopologyOutput.load(output_format,topology.defaults.outputs[output_format])
-      if output_module:
-        output_module.write(Box(topology))
-      else:
-        log.error('Unknown output format %s' % output_format,log.IncorrectValue,'create')
+    if topology.defaults.get("Output"):
+      for output_format in topology.defaults.get("Output"):
+        output_module = _TopologyOutput.load(output_format,topology.defaults.outputs[output_format])
+        if output_module:
+          output_module.write(Box(topology))
+        else:
+          log.error('Unknown output format %s' % output_format,log.IncorrectValue,'create')
+  finally:
+    os.chdir(cwd)
 
   result = utils.transformation_results_yaml(topology)
   exp_test_case = test_case.replace("/input/","/expected/")
   expected = pathlib.Path(exp_test_case).read_text()
-  if result != expected:
-    print("Test case: %s FAILED" % test_case)
-    sys.stdout.writelines(
-      difflib.unified_diff(
-        expected.splitlines(keepends=True),
-        result.splitlines(keepends=True),
-        fromfile='expected',tofile='result'))
-
-  assert result == expected
-  print("... succeeded, string length = %d" % len(result))
+  assert result == expected, f"transformation mismatch for {test_case}"
 
 @pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
 @pytest.mark.parametrize('test_case',sorted(glob.glob('topology/input/*yml')))
-def test_xform_cases(test_case: str, tmpdir: str) -> None:
-  run_transformation_test(test_case)
+def test_xform_cases(test_case: str, tmp_path: pathlib.Path) -> None:
+  run_transformation_test(test_case,tmp_path)
 
-# Verbose test cases are executed only when we're doing a coverage report
+# Verbose test cases are executed only when we're running under coverage
+# (sys.gettrace() returns the tracer); skipped otherwise so the result is
+# visibly SKIPPED instead of silently PASSED.
 #
-def test_coverage_verbose_cases(tmpdir: str) -> None:
-  if not sys.gettrace():
-    return
+# Each inner iteration gets its own scratch dir via tmp_path_factory.mktemp()
+# so coverage measurement stays deterministic with respect to filesystem
+# state -- output modules with create-if-missing branches would otherwise
+# exercise different code paths depending on iteration order.
+#
+@pytest.mark.skipif(not sys.gettrace(),reason="coverage-only test")
+def test_coverage_verbose_cases(tmp_path_factory: pytest.TempPathFactory) -> None:
   log.set_verbose()
   for test_case in sorted(glob.glob('topology/input/*yml')):
-    run_transformation_test(test_case)
+    run_transformation_test(test_case,tmp_path_factory.mktemp("coverage"))
 
 def run_error_case(test_case: str) -> None:
   log.set_flag(raise_error = True)
-  print("Test case: %s" % test_case)
   with pytest.raises(log.ErrorAbort):
     run_test(test_case)
 
@@ -89,12 +92,7 @@ def run_error_case(test_case: str) -> None:
   if log_file.exists():
     with log_file.open() as f:
       log_lines = [line.rstrip('\n') for line in f]
-
-    if error_log != log_lines:
-      error_log_text = "\n".join(error_log)
-      expected_text  = "\n".join(log_lines)
-      print(f'Accumulated error log\n{"=" * 70}\n{error_log_text}\n\nExpected log\n{"=" * 70}\n{expected_text}')
-    assert error_log == log_lines
+    assert error_log == log_lines, f"error-log mismatch for {test_case}"
 
 @pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
 @pytest.mark.parametrize('test_case',sorted(glob.glob('errors/*yml')))
@@ -103,8 +101,8 @@ def test_error_cases(test_case: str) -> None:
 
 @pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
 @pytest.mark.parametrize('test_case',sorted(glob.glob('coverage/input/*yml')))
-def test_coverage_xf_cases(test_case: str) -> None:
-  run_transformation_test(test_case)
+def test_coverage_xf_cases(test_case: str, tmp_path: pathlib.Path) -> None:
+  run_transformation_test(test_case,tmp_path)
 
 @pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
 @pytest.mark.parametrize('test_case',sorted(glob.glob('coverage/errors/*yml')))
