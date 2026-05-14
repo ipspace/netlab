@@ -1,7 +1,7 @@
 (install-linux-server)=
 # Running *netlab* on a Linux Server
 
-This page describes generic installation steps for creating a virtual lab environment on any Linux distribution ([follow these instructions](ubuntu.md) if you plan to run your labs on an Ubuntu server).
+This page describes generic installation steps for creating a virtual lab environment on any Linux distribution ([follow these instructions](ubuntu.md) if you plan to run your labs on a Debian or Ubuntu server, including Windows Subsystem for Linux).
 
 ```{warning}
 We test _netlab_ on Ubuntu to ensure we provide a reasonably hassle-free experience to networking engineers without Linux sysadmin skills. Unfortunately, we cannot help you if you run _netlab_ on another Linux distribution (dealing with one distro is more than enough pain). Still, please try to make it work; we would appreciate it if you could add your findings to this document. Thank you!
@@ -16,7 +16,6 @@ We test _netlab_ on Ubuntu to ensure we provide a reasonably hassle-free experie
 To build a Linux environment needed to run network devices as virtual machines or containers:
 
 * Install Python 3.10 or later (use the latest Python version supported by your Linux distribution)
-* Install Ansible 2.9.1 or later and any Ansible networking dependencies (example: paramiko). We recommend using the latest Ansible 11.x release.
 
 If you want to run network devices as virtual machines with KVM:
 
@@ -31,6 +30,8 @@ If possible, [use containerlab](lab-clab) and package the virtual machines you n
 ```
 
 [^CSV]: We must change the recommended Vagrant release every few months. Please check the [libvirt installation script](https://github.com/ipspace/netlab/blob/dev/netsim/install/libvirt.sh) for details.
+
+Finally, install Ansible 2.9.1 or later and any Ansible networking dependencies (example: paramiko). We recommend using the latest Ansible 11.x release. You _might_ be able to use the **netlab install ansible** command (after [installing netlab](install-linux-netlab)) instead of manual installation.
 
 (linux-commands-mandatory)=
 *netlab* also needs (at least) these Linux commands to provide its full functionality:
@@ -49,6 +50,7 @@ If possible, [use containerlab](lab-clab) and package the virtual machines you n
 
 To see the Linux commands executed by various _netlab_ commands, use the `--dry-run` option of **netlab up**, **netlab down**, or **netlab connect**.
 
+(install-linux-netlab)=
 ## netlab Installation
 
 Install the Python package with `sudo python3 -m pip install networklab` or your preferred Python package installation procedure.
