@@ -89,6 +89,9 @@ def ansible_extra_vars(topology: Box, reload: bool = False, extra_vars: typing.O
   ev = get_box(extra_vars)
   ev.node_files = str(Path("./node_files").resolve().absolute())
 
+  if reload:                                                  # Extra variables needed to make reload work
+    ev.netlab_ansible_skip_module = []                        # Do not skip modules in Ansible playbooks (there's no other mechanism)
+
   ev.paths_t_files.files = "{{ config_module }}" + cfg_sfx    # Take only module file from node_files
   ev.paths_custom.files = "{{ custom_config }}" + cfg_sfx     # And rendered custom config from node_files
   for p in ['templates','custom']:                            # Change the search paths to node_files
