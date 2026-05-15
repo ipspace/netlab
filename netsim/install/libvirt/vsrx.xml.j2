@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+
+<domain type="kvm">
+  <name>vm_box</name>
+  <memory unit="KiB">4194304</memory>
+  <currentMemory unit="KiB">4194304</currentMemory>
+  <vcpu placement="static">2</vcpu>
+  <resource>
+    <partition>/machine</partition>
+  </resource>
+  <os>
+    <type arch="x86_64" machine="pc-i440fx-6.2">hvm</type>
+    <boot dev="hd"/>
+  </os>
+  <features>
+    <acpi/>
+    <apic/>
+  </features>
+  <cpu mode="custom" match="exact">
+    <model fallback="allow">Haswell-noTSX</model>
+    <topology cores="2" sockets="1" threads="1"/>
+  </cpu>
+  <clock offset="utc">
+    <timer name="pit" tickpolicy="delay" present="yes"/>
+    <timer name="rtc" tickpolicy="catchup" present="yes"/>
+    <timer name="hpet" present="no"/>
+    <timer name="kvmclock" present="no"/>
+    <timer name="hypervclock" present="no"/>
+  </clock>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>destroy</on_crash>
+  <pm>
+    <suspend-to-mem enabled="no"/>
+    <suspend-to-disk enabled="no"/>
+  </pm>
+  <devices>
+    <emulator>/usr/bin/qemu-system-x86_64</emulator>
+    <disk device="disk" type="file">
+      <driver cache="writeback" name="qemu" type="qcow2"/>
+      <source file="{{ user.cwd }}/vm.qcow2"/>
+      <target dev="sda" bus="scsi"/>
+    </disk>
+    <controller type="scsi" index="0" model="virtio-scsi"/>
+    <controller index="0" model="pci-root" type="pci"/>
+
+    <interface type="network">
+      <source network="vagrant-libvirt"/>
+      <model type="virtio"/>
+    </interface>
+
+    <console type="pty">
+      <target type="serial" port="0"/>
+    </console>
+    <memballoon model="none"/>
+  </devices>
+</domain>
+
