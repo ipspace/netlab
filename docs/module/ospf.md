@@ -172,6 +172,7 @@ These devices also support optional OSPF interface attributes:
 | Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ❌  | ❌  |
 | Dell OS10                | ✅ | ✅ | ✅ | ❌  |
 | Extreme Networks EXOS    | ✅ | ✅ | ❌  | ❌  |
+| Junos[^Junos]            | ✅ | ✅ | ✅ | ❌  | 
 | OpenBSD                  | ✅ | ✅ | ✅ | ❌  |
 
 OSPF routing daemons support these optional OSPF interface attributes:
