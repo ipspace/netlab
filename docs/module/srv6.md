@@ -12,6 +12,7 @@ Supported SRv6 features:
 
 The module currently depends on IS-IS and will trigger a configuration error if the **isis** module is not enabled in the network topology. It supports the L3VPN use case, as well as IPv4 islands over SRv6 (IPv4aaS) and IPv6 transport between SRv6 endpoints.
 
+(module-srv6-platform)=
 ## Platform Support
 
 The following table describes the per-platform support of SRv6-enabled routing protocols:
@@ -26,6 +27,7 @@ The following table describes the per-platform support of SRv6-enabled routing p
 
 [^XR]: Includes IOS XRv, IOS XRd, but not Cisco 8000v. Cisco 8000v does not support the *shift-only* microsegment behavior needed to interoperate with other SRv6 implementations. Please [open an issue](https://github.com/ipspace/netlab/issues/new/choose) if you're interested in running SRv6 on Cisco 8000v.
 
+(module-srv6-services)=
 These platforms can use SRv6 next hops for global IPv4/IPv6 BGP routes:
 
 | Operating system   | Global IPv4<br>BGP routes | Global IPv6<br>BGP routes | 

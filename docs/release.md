@@ -1,6 +1,17 @@
 Release Notes
 =============
 
+**Release 26.05 (2026-05-16)**
+
+* Support for [global BGP routes with SRv6 next hops](module-srv6-services) on FRR and IOS XR
+* Support for Juniper cSRX container
+* Streamline and speed up the FortiOS initial device configuration
+* Junos OSPF/IS-IS [route redistribution](routing_import), VRF [IS-IS instances](isis-platform), and OSPF [interface parameters](ospf-interface-optional-support)
+* We changed the minimum supported Python version to 3.10. New _netlab_ versions will thus no longer run on Ubuntu 20.04.
+* You can [define scripts](dev-cli-hooks) (for example, device license management) that are executed at various points in the `netlab up` and `netlab down` processes.
+
+[More details](release-26.05) and [breaking changes](release-26.05-breaking)
+
 **Release 26.04 (2026-04-12)**
 
 * New [**bgp.advertise**](bgp-advertise-prefix) node/VRF attribute — advertise prefixes from IP routing tables into BGP on most platforms.

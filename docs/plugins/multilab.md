@@ -87,6 +87,7 @@ change:
 
 String values specified in the **defaults.multilab.change** dictionary are evaluated as f-formatted Python strings. You can use the **id** variable (the value of **defaults.multilab.id** parameter) or any lab topology parameter (including system defaults) in the evaluated expressions.
 
+(multilab-mutex)=
 ## Serializing the Up/Down Processes
 
 Executing multiple **vagrant** commands in parallel can result in a corrupted virtualization environment. **containerlab** is much better, but might still encounter race conditions when one process is starting a new lab while another process is destroying one.

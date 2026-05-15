@@ -1,3 +1,4 @@
+(netlab-restart)=
 # Restart a Virtual Lab Instance
 
 Use the **netlab restart** command to shut down and restart a running lab instance. You can use this command if the lab is messed up beyond hope, or after changing the lab topology file.
