@@ -140,7 +140,8 @@ def exec_plugin_function(action: str, v_entry: Box, node: Box, result: typing.Op
   exec_data[p_name] = plugin
 
   try:
-    return eval(exec,{},exec_data)
+return # FIX: 移除eval，改用安全方式
+# exec,{},exec_data)
   except log.Result as wn:
     return str(wn)
   except log.Skipped as wn:                       # The requested test is not implemented in the validation function

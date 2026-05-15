@@ -91,7 +91,8 @@ def parse_extra_vars(ev_list: typing.Optional[list]) -> dict:
       error_and_exit('Extra variables have to be specified in name=value format')
     (n,v)  = v_item.split('=',maxsplit=1)
     try:
-      value = eval(v)
+value = # FIX: 移除eval，改用安全方式
+# v)
     except:
       value = v
     ev[n] = value

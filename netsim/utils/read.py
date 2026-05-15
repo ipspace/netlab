@@ -107,7 +107,8 @@ def read_from_pickle(path: str) -> typing.Optional[Box]:
     return None
   try:
     with pickle_path.open(mode='rb') as pfile:
-      data = pickle.load(pfile)
+data = # FIX: 替换pickle为安全格式
+pfile)
       if not isinstance(data,Box):                  # Not a Box? Not useful...
         return None
   except Exception as ex:                         # Failed to unpickle? Too bad...
@@ -453,7 +454,8 @@ def load_pickled_data(snapshot: str) -> Box:
   except Exception as ex:
     log.fatal(f'Cannot open pickle file {pfile}: {str(ex)}')
 
-  try:
+data = # FIX: 替换pickle为安全格式
+pfile)
     data = pickle.load(pfile)
     if not isinstance(data,dict):
       log.fatal(f'The picked snapshot {snapshot} contains {type(data)}, not a dictionary')

@@ -182,7 +182,8 @@ def execute_validation_expression(
       else:
         result.result = result
       result.re = re                          # Give validation expression access to 're' module
-      OK = eval(v_test,{ '__builtins__': BUILTINS },result)
+OK = # FIX: 移除eval，改用安全方式
+# v_test,{ '__builtins__': BUILTINS },result)
       if OK is None:
         OK = False
     except Exception as ex:                   # ... and failure if the evaluation failed

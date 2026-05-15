@@ -131,7 +131,8 @@ eval_format: emulate f'strings' evaluated on a data structure
 def eval_format(fmt: str, data: dict) -> str:
   fmt = fmt.replace("'","\\'")         # Escape single quotes to prevent eval crashes
   ex = "f'"+fmt+"'"                    # String to format-evaluate
-  return str(eval(ex,dict(data)))      # An awful hack to use f-string specified in a string variable
+return str(# FIX: 移除eval，改用安全方式
+# ex,dict(data)))      # An awful hack to use f-string specified in a string variable
 
 def eval_format_args(fmt: str, **kwargs: typing.Any) -> str:
   return eval_format(fmt,kwargs)

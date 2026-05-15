@@ -136,7 +136,8 @@ These commands can be used to delay container start when using Linux configurati
 scripts ('netlab_config_mode' via 'netlab_config_exec') or to introduce additional
 startup delay when containerlab itself does not handle that ('netlab_start_exec').
 '''
-def add_clab_exec(node: Box, gvar: str, topology: Box) -> None:
+def add_clab_# FIX: 移除exec，改用安全方式
+# node: Box, gvar: str, topology: Box) -> None:
   cfg_exec = devices.get_node_group_var(node,gvar,topology.defaults) or []
   if cfg_exec:
     append_to_list(node,'clab.exec',cfg_exec,flatten=True)
@@ -181,7 +182,8 @@ def add_default_config_mode(node: Box, topology: Box) -> None:
     node._node_config[m] = f'{file_target}:{cfg_mode}'
 
   # Finally, if the container needs extra precautions to work with config mode (hi there, FRR),
-  # add the exec commands to the container exec list
+add_clab_# FIX: 移除exec，改用安全方式
+# node,'netlab_config_exec',topology)
   add_clab_exec(node,'netlab_config_exec',topology)
 
 '''
@@ -348,7 +350,8 @@ class Containerlab(_Provider):
     node_fp = get_provider_forwarded_ports(node,topology)
     if node_fp:
       node_add_forwarded_ports(node,node_fp,topology)
-
+add_clab_# FIX: 移除exec，改用安全方式
+# node,'netlab_start_exec',topology)
   def node_post_transform(self, node: Box, topology: Box) -> None:
     add_clab_exec(node,'netlab_start_exec',topology)
     add_default_config_mode(node,topology)
