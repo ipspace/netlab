@@ -183,12 +183,12 @@ def reload_node_configs(topology: Box,nodeset: list,args: argparse.Namespace, re
   * Change the node "config" parameter to request configuration reload
   """
   topology.defaults.paths.custom.dirs = [ str(cfg_path.parent) ]
-  for n in nodeset:                               # Change the node parameters for 'create_node_files'
+  for n in nodeset:                                   # Change the node parameters for 'create_node_files'
     ndata = topology.nodes[n]
     n_provider = a_devices.get_provider(ndata,topology.defaults)
-    ndata.netlab_initial_reload = True            # Set "we're reloading configuration" flag
-    ndata.netlab_config_mode = None               # Fall back to Ansible config mode (we're using Ansible playbook to reload config)
-    ndata.pop(f'{n_provider}.config_templates')   # And do not generate fancy container configuration files
+    ndata.netlab_initial_reload = True                # Set "we're reloading configuration" flag
+    ndata.netlab_config_mode = None                   # Fall back to Ansible config mode (we're using Ansible playbook to reload config)
+    ndata.pop(f'{n_provider}.config_templates',None)  # And do not generate fancy container configuration files
 
   create_node_files(topology,nodeset,args,str(cfg_path.name),initial=True,cfg_suffix='.cfg')
 
