@@ -1,0 +1,228 @@
+Using transformed lab topology from snapshot file netlab.snapshot.pickle
+Checking virtualization provider installation
+OK: clab installed and working correctly
+Starting clab nodes
+provider clab: executing flock -E 42 /tmp/netlab.lock sudo -E containerlab deploy --reconfigure -t clab.yml
+08:33:18 INFO Containerlab started version=0.75.0
+08:33:18 INFO Parsing & checking topology file=clab.yml
+08:33:18 INFO Removing directory path=/work/netlab_cicd/clab-ml-17
+08:33:18 INFO Creating docker network name=nl_mgmt_17 IPv4 subnet=192.168.17.0/24 IPv6 subnet="" MTU=0
+08:33:18 INFO Creating lab directory path=/work/netlab_cicd/clab-ml-17
+08:33:18 INFO Creating container name=x1
+08:33:18 WARN node "dut": kind is nokia_srsim but the provided image does not have the correct labels; please use a valid SR-SIM container image or run a more recent version of the SR-SIM container image to suppress this warning
+08:33:18 WARN Failed to write chassis_info.json to lab dir node=dut path=/work/netlab_cicd/clab-ml-17/dut error="/opt/nokia/chassis_info.json not found in image graph driver (UpperDir/MergedDir)"
+08:33:18 INFO Retrieved SR OS version from image node=dut version=25.7.R1
+08:33:18 INFO Creating container name=dut
+08:33:18 INFO Created link: dut:e1-1-c1-1 (1/1/c1/1) ▪┄┄▪ x1:eth1
+08:33:18 INFO Running postdeploy actions kind=nokia_srsim node=dut
+08:33:24 INFO Saving node "clab-ml-17-dut" config as startup...
+08:33:25 INFO Saved running configuration node=dut addr=192.168.17.101 config-mode=model-driven
+08:33:25 INFO Executed command node=x1 command="sleep 1" stdout=""
+08:33:25 INFO Adding host entries path=/etc/hosts
+08:33:25 INFO Adding SSH config for nodes path=/etc/ssh/ssh_config.d/clab-ml-17.conf
+[1m╭[0m[1m────────────────[0m[1m┬[0m[1m──────────────────────────────[0m[1m┬[0m[1m─────────[0m[1m┬[0m[1m────────────────[0m[1m╮[0m
+[1m│[0m[1m      Name      [0m[1m│[0m[1m          Kind/Image          [0m[1m│[0m[1m  State  [0m[1m│[0m[1m IPv4/6 Address [0m[1m│[0m
+[1m├[0m[1m────────────────[0m[1m┼[0m[1m──────────────────────────────[0m[1m┼[0m[1m─────────[0m[1m┼[0m[1m────────────────[0m[1m┤[0m
+│ clab-ml-17-dut │ nokia_srsim                  │ running │ 192.168.17.101 │
+│                │ nokia_srsim:25.7.R1          │         │ N/A            │
+├────────────────┼──────────────────────────────┼─────────┼────────────────┤
+│ clab-ml-17-x1  │ linux                        │ running │ 192.168.17.102 │
+│                │ quay.io/frrouting/frr:10.6.1 │         │ N/A            │
+╰────────────────┴──────────────────────────────┴─────────┴────────────────╯
+Deploying initial device configurations
+Creating Device configuration snippets
+[CREATED] dut: initial,ospf
+[CREATED] x1: initial,ospf
+Checking Are lab devices ready to be configured?
+ [INFO] Checking lab devices with an Ansible playbook
+[WARNING]: Could not match supplied host pattern, ignoring: netlab_ready_ssh
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Wait for SSH servers] ****************************************************
+skipping: no hosts matched
+
+PLAY [Wait for device-specific conditions] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Find device readiness script] ********************************************
+ok: [dut]
+
+TASK [Wait for device to become ready] *****************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/srsim.yml for dut
+
+TASK [Common SR-OS checks] *****************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/sros.yml for dut
+
+TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+ok: [dut]
+
+TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on 192.168.17.101] *******
+ok: [dut -> localhost]
+
+TASK [Update SR-SIM hardware configuration] ************************************
+changed: [dut]
+
+TASK [Get port 1/1/c1 status] **************************************************
+FAILED - RETRYING: [dut]: Get port 1/1/c1 status (10 retries left).
+FAILED - RETRYING: [dut]: Get port 1/1/c1 status (9 retries left).
+FAILED - RETRYING: [dut]: Get port 1/1/c1 status (8 retries left).
+FAILED - RETRYING: [dut]: Get port 1/1/c1 status (7 retries left).
+ok: [dut]
+
+PLAY RECAP *********************************************************************
+dut                        : ok=8    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+Config Deploying device configurations
+ [INFO] Executing initial configuration for node x1
+ [INFO] Executing ospf configuration for node x1
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "initial configuration for dut\n=========================================\n\n\n\n\n\nupdates:\n- path: configure/card[slot-number=1]\n  val:\n    card-type: iom-1\n    mda:\n    - mda-slot: 1\n      mda-type: me12-100gb-qsfp28\n    - mda-slot: 2\n      mda-type: me12-100gb-qsfp28\n    slot-number: 1\n\n- path: configure/router[router-name=Base]\n  val:\n   ecmp: 64\n\n\n\n\n\n\n- path: configure/router[router-name=Base]/interface[interface-name=system]\n\n  val:\n   admin-state: enable\n   description: \"System interface\"\n   ipv4:\n    primary:\n     address: \"10.0.0.1\"\n     prefix-length: 32\n\n\n\n\n\n- path: configure/port[port-id=1/1/c1]\n  val:\n   admin-state: enable\n   connector:\n    breakout: \"c1-100g\"\n- path: configure/port[port-id=1/1/c1/1]\n  val:\n   admin-state: enable\n   ethernet:\n    mtu: 1514 # max 9800\n    mode: network\n\n\n\n- path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c1]\n\n  val:\n   admin-state: enable\n   description: \"dut ~ x1 ()\"\n   ip-mtu: 1500\n   port: \"1/1/c1/1\"\n   ipv4:\n    primary:\n     address: \"10.1.0.1\"\n     prefix-length: 30\n\n\n\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
+
+TASK [Generate gNMI YAML configuration] ****************************************
+ok: [dut]
+
+TASK [Update initial node configuration from gNMI template /work/netlab_cicd/node_files/dut/initial] ***
+changed: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "ospf configuration for dut\n=========================================\n\n\n\n\nupdates:\n\n\n- path: configure/router[router-name=Base]/ospf[ospf-instance=0]\n\n  val:\n    admin-state: enable\n    router-id: 10.0.0.1\n    area:\n    - area-id: \"0.0.0.0\"\n      interface:\n      - interface-name: \"system\"\n      - interface-name: \"eth-1/1/c1\"\n        interface-type: \"point-to-point\"\n\n"
+}
+
+TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
+
+TASK [Generate gNMI YAML configuration] ****************************************
+ok: [dut]
+
+TASK [Update ospf node configuration from gNMI template /work/netlab_cicd/node_files/dut/ospf] ***
+changed: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut                        : ok=18   changed=2    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+
+Results of configuration script deployments
+================================================================================
+x1               Script:  initial,ospf
+
+
+OK: Lab devices configured
+
+
+This topology tests the "start lab with configuration reload" functionality.
+You should:
+
+* Start the lab with "netlab up"
+* Save the configuration with "netlab collect -o saved"
+* Stop the lab with "netlab down"
+* Restart the lab with "netlab up --snapshot --reload-config saved"
+* Validate the results with "netlab validate"
+
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Collect device configurations] *******************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Create '/work/netlab_cicd/saved' directory] ******************************
+ok: [dut -> localhost]
+
+TASK [Find configuration collection script] ************************************
+ok: [dut]
+
+TASK [Collect device configurations] *******************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config/sros.yml for dut
+
+TASK [Backup SR OS node config user=admin] *************************************
+ok: [dut]
+
+TASK [SR OS backup details] ****************************************************
+ok: [dut] => {
+    "msg": {
+        "backup_path": "/work/netlab_cicd/saved/dut.config",
+        "changed": false,
+        "date": "2026-05-14",
+        "failed": false,
+        "time": "08:33:45"
+    }
+}
+
+TASK [Copy collected configuration to '/work/netlab_cicd/saved' directory] *****
+skipping: [dut]
+
+PLAY RECAP *********************************************************************
+dut                        : ok=6    changed=0    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+
+cwd: /work/netlab_cicd output: saved
+Checking virtualization provider installation
+OK: clab installed and working correctly
+Stopping clab nodes
+provider clab: executing flock -E 42 /tmp/netlab.lock sudo -E containerlab destroy --cleanup -t clab.yml
+08:33:45 INFO Parsing & checking topology file=clab.yml
+08:33:46 INFO Parsing & checking topology file=clab.yml
+08:33:46 INFO Destroying lab name=ml-17
+08:33:46 INFO Removed container name=clab-ml-17-x1
+08:33:46 INFO Removed container name=clab-ml-17-dut
+08:33:46 INFO Removing host entries path=/etc/hosts
+08:33:46 INFO Removing SSH config path=/etc/ssh/ssh_config.d/clab-ml-17.conf
