@@ -5,4 +5,4 @@ fi
 DIRNAME=`dirname "$0"`
 echo "Executing code coverage tests in $DIRNAME"
 cd "$DIRNAME"
-PYTHONPATH="../" python3 -m pytest -vvv -k 'coverage'
+PYTHONPATH="../" python3 -m pytest -v -k 'coverage'

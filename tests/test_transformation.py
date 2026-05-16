@@ -8,6 +8,7 @@ import glob
 import os
 import pathlib
 import sys
+import typing
 
 import pytest
 import utils
@@ -30,7 +31,7 @@ def run_test(fname: str) -> Box:
   log.exit_on_error()
   return topology
 
-def run_transformation_test(test_case: str, tmp_path: pathlib.Path) -> None:
+def transformation_results(test_case: str, tmp_path: pathlib.Path) -> typing.Tuple[str,str]:
   log.set_flag(raise_error = False)
   topology = run_test(test_case)
 
@@ -60,6 +61,11 @@ def run_transformation_test(test_case: str, tmp_path: pathlib.Path) -> None:
   result = utils.transformation_results_yaml(topology)
   exp_test_case = test_case.replace("/input/","/expected/")
   expected = pathlib.Path(exp_test_case).read_text()
+
+  return (result,expected)
+
+def run_transformation_test(test_case: str, tmp_path: pathlib.Path) -> None:
+  (result,expected) = transformation_results(test_case,tmp_path)
   assert result == expected, f"transformation mismatch for {test_case}"
 
 @pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
@@ -82,17 +88,19 @@ def test_coverage_verbose_cases(tmp_path_factory: pytest.TempPathFactory) -> Non
   for test_case in sorted(glob.glob('topology/input/*yml')):
     run_transformation_test(test_case,tmp_path_factory.mktemp("coverage"))
 
-def run_error_case(test_case: str) -> None:
+def error_results(test_case: str) -> typing.Tuple[str, str]:
   log.set_flag(raise_error = True)
   with pytest.raises(log.ErrorAbort):
     run_test(test_case)
 
-  error_log = log.get_error_log()
+  error_log = '\n'.join(log.get_error_log())
   log_file = pathlib.Path(test_case.replace('.yml','.log'))
-  if log_file.exists():
-    with log_file.open() as f:
-      log_lines = [line.rstrip('\n') for line in f]
-    assert error_log == log_lines, f"error-log mismatch for {test_case}"
+  expected_log = log_file.read_text().strip('\n') if log_file.exists() else ""
+  return (error_log,expected_log)
+  
+def run_error_case(test_case: str) -> None:
+  (error_log,expected_log) = error_results(test_case)
+  assert error_log == expected_log, f"error-log mismatch for {test_case}"
 
 @pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
 @pytest.mark.parametrize('test_case',sorted(glob.glob('errors/*yml')))
