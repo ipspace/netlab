@@ -19,7 +19,7 @@ TASK [Find device readiness script] ********************************************
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/junos.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/junos.yml for dut
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -30,8 +30,9 @@ ok: [dut]
 PLAY RECAP *********************************************************************
 dut                        : ok=5    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 
-Config Deploying device configurations
+Config Normalizing device configurations
  [INFO] Executing normalize configuration for node p1
+Config Deploying device configurations
  [INFO] Executing initial configuration for node p1
  [INFO] Executing routing configuration for node p1
  [INFO] Starting Ansible playbook to deploy the rest of the
@@ -45,41 +46,8 @@ ok: [t_1300]
 ok: [t_1400]
 ok: [dut]
 
-TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for t_1300, t_1400, dut
-
-TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [t_1300]
-ok: [t_1400]
-ok: [dut]
-
-TASK [Find configuration template for normalize] *******************************
-ok: [t_1300]
-ok: [t_1400]
-ok: [dut]
-
-TASK [fail] ********************************************************************
-skipping: [t_1300]
-skipping: [t_1400]
-skipping: [dut]
-
-TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [t_1300]
-ok: [t_1400]
-ok: [dut]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [t_1300]
-skipping: [t_1400]
-skipping: [dut]
-
-TASK [Deploy normalize configuration] ******************************************
-skipping: [t_1300]
-skipping: [t_1400]
-skipping: [dut]
-
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for t_1300, t_1400, dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for t_1300, t_1400, dut
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [t_1300]
@@ -109,32 +77,32 @@ ok: [t_1400] => {
     "msg": "initial configuration for t_1400\n=========================================\n#!/bin/bash\n#\nset -e\n#\n# Create bash profile script\n#\ncat <<'SCRIPT' >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)$ \"\nSCRIPT\nhostname t-1400\n#\n# Build hosts file\n#\n#\ncat <<'SCRIPT' >/tmp/hosts\n#\n# Created by netlab initial\n#\n10.0.0.1 dut\n2001:db8:0:1::1 dut\n172.16.0.1 et-0-0-0.0.dut\n2001:db8:1::1 et-0-0-0.0.dut\n172.16.1.1 et-0-0-1.0.dut\n2001:db8:1:1::1 et-0-0-1.0.dut\n172.16.2.1 et-0-0-2.0.dut\n2001:db8:1:2::1 et-0-0-2.0.dut\n10.0.0.2 p1\n2001:db8:0:2::1 p1\n172.16.0.2 Ethernet1.p1\n2001:db8:1::2 Ethernet1.p1\n172.16.2.3 t-1300 eth1.t_1300\n2001:db8:1:2::3 t-1300 eth1.t_1300\n172.16.1.4 t-1400 eth1.t_1400\n2001:db8:1:1::4 t-1400 eth1.t_1400\nSCRIPT\ngrep \"Created by netlab\" /etc/hosts || uniq /tmp/hosts >>/etc/hosts\n# It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.\n# This is annoying on a network with filtered DNS.\n# DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.\n# Let's use that.\n#\n# (Overwrite netplan config to remove DNS stuff)\necho -n 'Starting initial config ' && date\ncat <<'SCRIPT' >/etc/netplan/01-netcfg.yaml\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    eth0:\n      dhcp4: true\n      dhcp6: false\n      optional: true\nSCRIPT\nnetplan apply\n\n# (Overwrite resolved config to remove DNS stuff)\ncat <<'SCRIPT' > /etc/systemd/resolved.conf \n[Resolve]\nDNS=\nFallbackDNS=\nDomains=\nDNSOverTLS=no\nCache=yes\nDNSStubListener=yes\nSCRIPT\n\nsystemctl restart systemd-resolved\n\n# Set persistent hostname\nhostnamectl set-hostname t_1400\n\nNEED_APT_UPDATE=YES\n\n# Loopback addressing\n\n# Interface addressing and bonds, including any static routes\ncat <<'SCRIPT' > /etc/netplan/03-eth-eth1.yaml\nnetwork:\n  version: 2\n  renderer: networkd\n  ethernets:\n    eth1:\n      addresses:\n        - 172.16.1.4/24\n        - 2001:db8:1:1::4/64\nSCRIPT\n\n# Disable auto-negotiation on Ethernet interfaces, needed to make LACP work correctly\ncat <<'SCRIPT' > /etc/systemd/network/98-eth.link\n\n[Match]\nOriginalName=eth*\n\n[Link]\nBitsPerSecond=1G\nAutoNegotiation=no\nDuplex=full\nSCRIPT\n\nchmod 400 /etc/netplan/*\n\necho -n 'Starting netplan generate ' && date\nnetplan generate\necho -n 'Starting netplan apply ' && date\nnetplan apply\n\n#\n# Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA\n# Do this after 'netplan apply', e.g. bond devices won't exist before that\n#\ncat <<'SCRIPT' > /etc/sysctl.d/10-netsim.conf\nnet.ipv4.conf.all.arp_announce=2\nnet.ipv4.ip_forward=0\nnet.ipv6.conf.all.forwarding=0\n\nnet.ipv6.conf.eth1.disable_ipv6=0\n\nSCRIPT\nsysctl -p /etc/sysctl.d/10-netsim.conf\n"
 }
 ok: [dut] => {
-    "msg": "initial configuration for dut\n=========================================\nsystem {\n  host-name dut;\n  static-host-mapping {\n    p1 inet 10.0.0.2;\n    t1300 inet 172.16.2.3;\n    t1400 inet 172.16.1.4;\n  }\n}\n\n\ninterfaces {\n  et-0/0/0 {\n    mtu 1514;\n  }\n  et-0/0/1 {\n    mtu 1414;\n  }\n  et-0/0/2 {\n    mtu 1314;\n  }\n\n  lo0.0 {\n    \n      family inet {\n        address 10.0.0.1/32;\n      }\n      family inet6 {\n        address 2001:db8:0:1::1/64;\n      }\n    \n  }\n  et-0/0/0.0 {\n    description \"dut -> p1\";\n    \n      bandwidth 1000000;\n      family inet {\n        address 172.16.0.1/24;\n      }\n      family inet6 {\n        address 2001:db8:1::1/64;\n      }\n    \n  }\n  et-0/0/1.0 {\n    description \"dut -> t_1400 [stub]\";\n    \n      family inet {\n        address 172.16.1.1/24;\n      }\n      family inet6 {\n        address 2001:db8:1:1::1/64;\n      }\n    \n  }\n  et-0/0/2.0 {\n    description \"dut -> t_1300 [stub]\";\n    \n      family inet {\n        address 172.16.2.1/24;\n      }\n      family inet6 {\n        address 2001:db8:1:2::1/64;\n      }\n    \n  }\n}\nprotocols {\n  lldp {\n    interface re0:mgmt-0 {\n      disable;\n    }\n    interface all;\n  }\n  router-advertisement {\n    interface et-0/0/0.0;\n    interface et-0/0/1.0;\n    interface et-0/0/2.0;\n  }\n}\n"
+    "msg": "initial configuration for dut\n=========================================\nsystem {\n  host-name dut;\n  static-host-mapping {\n    p1 inet 10.0.0.2;\n    t1300 inet 172.16.2.3;\n    t1400 inet 172.16.1.4;\n  }\n}\n\ninterfaces {\n  et-0/0/0 {\n    mtu 1514;\n  }\n  et-0/0/1 {\n    mtu 1414;\n  }\n  et-0/0/2 {\n    mtu 1314;\n  }\n\n  lo0.0 {\n\n      family inet {\n        address 10.0.0.1/32;\n      }\n      family inet6 {\n        address 2001:db8:0:1::1/64;\n      }\n  }\n  et-0/0/0.0 {\n    description \"dut -> p1\";\n\n      bandwidth 1000000;\n      family inet {\n        address 172.16.0.1/24;\n      }\n      family inet6 {\n        address 2001:db8:1::1/64;\n      }\n  }\n  et-0/0/1.0 {\n    description \"dut -> t_1400 [stub]\";\n\n      family inet {\n        address 172.16.1.1/24;\n      }\n      family inet6 {\n        address 2001:db8:1:1::1/64;\n      }\n  }\n  et-0/0/2.0 {\n    description \"dut -> t_1300 [stub]\";\n\n      family inet {\n        address 172.16.2.1/24;\n      }\n      family inet6 {\n        address 2001:db8:1:2::1/64;\n      }\n  }\n}\nprotocols {\n  lldp {\n    interface re0:mgmt-0 {\n      disable;\n    }\n    interface all;\n  }\n  router-advertisement {\n    interface et-0/0/0.0;\n    interface et-0/0/1.0;\n    interface et-0/0/2.0;\n  }\n}\n"
 }
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux.yml for t_1300, t_1400
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux.yml for t_1300, t_1400
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
 TASK [template] ****************************************************************
 changed: [t_1300]
 changed: [t_1400]
 
-TASK [Execute /tmp/config.sh to deploy initial config from /work/netlab_cicd/other_vm/node_files/t_1300/initial] ***
+TASK [Execute /tmp/config.sh to deploy initial config from /work/netlab_cicd/junos/node_files/t_1300/initial] ***
 changed: [t_1400]
 changed: [t_1300]
 
-TASK [junos_config: deploying initial from /work/netlab_cicd/other_vm/node_files/dut/initial] ***
+TASK [junos_config: deploying initial from /work/netlab_cicd/junos/node_files/dut/initial] ***
 changed: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [t_1300]
 ok: [t_1400]
+ok: [t_1300]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for t_1300, t_1400 => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for t_1300, t_1400 => (item=routing)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [t_1300]
@@ -161,23 +129,23 @@ ok: [t_1400] => {
 }
 
 TASK [Deploy routing configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux.yml for t_1300, t_1400
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux.yml for t_1300, t_1400
 
 TASK [template] ****************************************************************
-changed: [t_1300]
 changed: [t_1400]
+changed: [t_1300]
 
-TASK [Execute /tmp/config.sh to deploy routing config from /work/netlab_cicd/other_vm/node_files/t_1300/routing] ***
-changed: [t_1400]
+TASK [Execute /tmp/config.sh to deploy routing config from /work/netlab_cicd/junos/node_files/t_1300/routing] ***
 changed: [t_1300]
+changed: [t_1400]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=12   changed=1    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-t_1300                     : ok=22   changed=4    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-t_1400                     : ok=22   changed=4    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+dut                        : ok=8    changed=1    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+t_1300                     : ok=18   changed=4    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
+t_1400                     : ok=18   changed=4    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================
