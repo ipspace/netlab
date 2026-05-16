@@ -23,7 +23,6 @@ Some steps are done incrementally during development and must **not** be repeate
 | File | What to change |
 |------|----------------|
 | `netsim/__init__.py` | `__version__` string |
-| `legacy/setup.py` | `version` string |
 | `README.md` | `## Releases` blurb — latest release link + fallback link |
 
 ## Check release notes completeness
