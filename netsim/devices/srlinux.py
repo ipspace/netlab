@@ -128,7 +128,7 @@ class SRLINUX(_Quirks):
           category=log.IncorrectType)
 
     if 'isis' in mods:
-      if node.get('isis.af.ipv6',False) and 'sr' in mods:
+      if node.get('isis.af.ipv6',False) and 'srx' in mods:
         report_quirk(
           text=f'SR Linux on "{node.name}" does not support IS-IS multi-topology for IPv6 in combination with segment routing',
           node=node,

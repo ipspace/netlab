@@ -33,7 +33,7 @@ SR-MPLS is implemented on the following platforms:
 | Cisco IOS XR[^XR]     |   ✅  |  ✅  |  ✅   |  ✅   |
 | FRRouting             |   ✅  |  ✅  |  ✅   |  ✅   |
 | Junos[^Junos]         |   ✅  |  ✅  |  ✅   |  ❌   |
-| Nokia SR Linux [❗](caveats-srlinux) |   ✅  |  ❌   |  ✅   |  ❌   |
+| Nokia SR Linux [❗](caveats-srlinux) | ✅ | ✅ | ✅ | ❌ |
 | Nokia SR OS[^SROS]    |   ✅  |  ✅  |  ✅   |  ❌   |
 
 [^xe]: Catalyst 8000v, Cisco CSR 1000v, Cisco IOS on Linux (IOL) and IOL layer-2 image.

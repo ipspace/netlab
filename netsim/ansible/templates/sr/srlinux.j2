@@ -8,55 +8,57 @@ delete:
 updates:
 - path: /system/mpls/label-ranges
   value:
-   #
-   # EOS default ranges: https://www.arista.com/en/um-eos/eos-is-is
-   # Dynamic Global Range--(100000) (262144)
-   # IS-IS SR Global Range -- (900000) (65536)
-   # Static Global Range -- (16) (99984)
-   #
-   # IOS-XR: https://packetpushers.net/yet-another-blog-about-segment-routing-part-1/
-   # default SRGB range is from 16000-23999 and Dynamic label range is 24000-1048575
-   #
-   static:
-   - name: static-srgb
-     start-label: {{ sr.srgb.start }}
-     end-label: {{ sr.srgb.start + (sr.srgb.size/2)|int }}
+    #
+    # EOS default ranges: https://www.arista.com/en/um-eos/eos-is-is
+    # Dynamic Global Range--(100000) (262144)
+    # IS-IS SR Global Range -- (900000) (65536)
+    # Static Global Range -- (16) (99984)
+    #
+    # IOS-XR: https://packetpushers.net/yet-another-blog-about-segment-routing-part-1/
+    # default SRGB range is from 16000-23999 and Dynamic label range is 24000-1048575
+    #
+    static:
+    - name: static-srgb
+      start-label: {{ sr.srgb.start }}
+      end-label: {{ sr.srgb.start + (sr.srgb.size/2)|int }}
 
-   dynamic:
-   - name: dynamic-srgb
-     start-label: {{ sr.srgb.start + (sr.srgb.size/2)|int + 1 }}
-     end-label: {{ sr.srgb.start + sr.srgb.size }}
+    dynamic:
+    - name: dynamic-srgb
+      start-label: {{ sr.srgb.start + (sr.srgb.size/2)|int + 1 }}
+      end-label: {{ sr.srgb.start + sr.srgb.size }}
 
 - path: /network-instance[name=default]
   value:
-   interface:
-   - name: system0.0
-   segment-routing:
-    mpls:
-     global-block:
-      label-range: static-srgb
-      _annotate_label-range: "static SRGB, required"
-   protocols:
-    isis:
-     dynamic-label-block: dynamic-srgb # Required but not currently used
-     _annotate_dynamic-label-block: "Required but not currently used"
-     instance:
-     - name: {{ isis.instance }}
-       max-ecmp-paths: 64 # Since release 23.7.1
-       segment-routing:
-        mpls: {}
-       interface:
-       - interface-name: system0.0
-         passive: True
-         segment-routing:
-          mpls:
+    interface:
+    - name: system0.0
+    segment-routing:
+      mpls:
+        global-block:
+          label-range: static-srgb
+          _annotate_label-range: "static SRGB, required"
+    protocols:
+      isis:
+        dynamic-label-block: dynamic-srgb
+        instance:
+        - name: {{ isis.instance }}
+          max-ecmp-paths: 64 # Since release 23.7.1
+          segment-routing:
+            mpls:
+              adjacency-sid-hold-time: 20
+              dynamic-adjacency-sids:
+                all-interfaces: true
+          interface:
+          - interface-name: system0.0
+            passive: True
+            segment-routing:
+              mpls:
 {%   for af in ['ipv4','ipv6'] if af in loopback and sr.node_sid[af]|default(False) %}
-           {{ af }}-node-sid:
-            index: "{{ sr.node_sid[af] }}"
+                {{ af }}-node-sid:
+                  index: "{{ sr.node_sid[af] }}"
 {%     if af == 'ipv4' %}
-            _annotate_index: "References a label from the global static range"
+                  _annotate_index: "References a label from the global static range"
 {%     else %}
-            _annotate_index: "ipv6 can be provisioned but not currently supported"
+                  _annotate_index: "ipv6 can be provisioned but not currently supported"
 {%     endif %}
 {%   endfor %}
 {% endif %}

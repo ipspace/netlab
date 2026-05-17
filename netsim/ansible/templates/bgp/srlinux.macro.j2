@@ -265,15 +265,19 @@
 {%     endif %}
 {%   endfor %}
 {% endfor %}
+{% endmacro %}
 
-{% if 'sr' in module|default([]) or ('mpls' in module|default([]) and ldp is defined) %}
-{# Configure BGP shortcuts via SR-ISIS or LDP #}
-- path: /network-instance[name={{vrf}}]/protocols/bgp/afi-safi[afi-safi-name=ipv4-unicast]/ipv4-unicast/next-hop-resolution
+{% macro bgp_shortcut(bgp,vrf='default') %}
+{#   Configure BGP shortcuts via SR-ISIS or LDP #}
+{%   if 'sr' in module|default([]) or ('mpls' in module|default([]) and ldp is defined) %}
+{%     for af in ['ipv4','ipv6'] if af in bgp %}
+- path: /network-instance[name={{vrf}}]/protocols/bgp/afi-safi[afi-safi-name={{ af }}-unicast]/{{ af }}-unicast/next-hop-resolution
   value:
-    ipv4-next-hops:
+    {{ af }}-next-hops:
       tunnel-resolution:
         mode: prefer
         _annotate_mode: "tunnel-table lookup over FIB"
         allowed-tunnel-types: [ {{ "sr-isis" if 'sr' in module|default([]) else 'ldp' }} ]
-{% endif %}
+{%     endfor %}    
+{%   endif %}
 {% endmacro %}
