@@ -31,7 +31,22 @@ jobs:
         for file in netsim/extra/*/plugin.py; do
           python3 -m mypy $file
         done
+    - name: Compute pytest tmp path
+      run: echo "PYTEST_TMP=$RUNNER_TEMP/pytest-tmp" >> "$GITHUB_ENV"
     - name: Run transformation tests
+      id: pytest
       run: |
         cd tests
-        PYTHONPATH="../" pytest
+        PYTHONPATH="../" pytest --basetemp="$PYTEST_TMP" --junit-xml="$PYTEST_TMP/junit.xml"
+    - name: Prune empty case dirs
+      if: ${{ !cancelled() && steps.pytest.outcome == 'failure' }}
+      run: |
+        find "$PYTEST_TMP" -type d -empty -delete
+        find "$PYTEST_TMP" -xtype l -delete
+    - name: Upload pytest artifacts
+      if: ${{ !cancelled() && steps.pytest.outcome == 'failure' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: pytest-tmp-py${{ matrix.python-version }}
+        path: ${{ env.PYTEST_TMP }}
+        retention-days: 7

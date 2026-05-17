@@ -4,6 +4,7 @@
 # topology file
 #
 
+import difflib
 import glob
 import os
 import pathlib
@@ -20,6 +21,8 @@ from netsim.outputs import _TopologyOutput, ansible
 from netsim.utils import log
 from netsim.utils import read as _read
 
+MAX_PREVIEW_LINES = 20
+MAX_PREVIEW_LINES_VERBOSE = 2 * MAX_PREVIEW_LINES
 
 def run_test(fname: str) -> Box:
   log.init_log_system(header = False)
@@ -64,14 +67,62 @@ def transformation_results(test_case: str, tmp_path: pathlib.Path) -> typing.Tup
 
   return (result,expected)
 
-def run_transformation_test(test_case: str, tmp_path: pathlib.Path) -> None:
+# On mismatch, drop the rendered output and a unified diff into tmp_path
+# so CI's upload-artifact step can surface them, then raise pytest.fail
+# with a diff preview in the message.  Constructing the failure message
+# ourselves (rather than letting `assert actual == expected` go through)
+# skips pytest's assertion rewriter, which would otherwise emit an ndiff
+# truncated to ~8 lines of context at default verbosity and flooded with
+# matching lines at -vv.  pytest.fail is preferred over raise
+# AssertionError for its pytrace= argument: a fixture mismatch needs no
+# helper-frame traceback at default verbosity.
+#
+# Preview length and pytrace are tied to pytest's -v count:
+#   verbose<=0  ->  cap at MAX_PREVIEW_LINES         (CI / default pytest)
+#   verbose==1  ->  cap at MAX_PREVIEW_LINES_VERBOSE (run-tests.sh, -v)
+#   verbose>=2  ->  no cap                           (targeted local run)
+#   verbose>=3  ->  no cap, pytrace on               (debugging this harness)
+# The full diff is written to disk regardless, so CI artifact upload is
+# unaffected by the cap.
+def _report_mismatch(
+    test_case: str,
+    label: str,
+    actual: str,
+    expected: str,
+    tmp_path: pathlib.Path,
+    actual_name: str,
+    verbose: int,
+    ) -> None:
+  if actual == expected:
+    return
+
+  diff_lines = list(difflib.unified_diff(
+      expected.splitlines(keepends=True),
+      actual.splitlines(keepends=True),
+      fromfile='expected',tofile='actual'))
+  if verbose >= 2:
+    cap: typing.Optional[int] = None
+  elif verbose >= 1:
+    cap = MAX_PREVIEW_LINES_VERBOSE
+  else:
+    cap = MAX_PREVIEW_LINES
+  preview = "".join(diff_lines if cap is None else diff_lines[:cap])
+  if cap is not None and len(diff_lines) > cap:
+    preview += "\n... diff truncated ..."
+  actual_path = tmp_path / actual_name
+  actual_path.write_text(actual)
+  diff_path = actual_path.with_suffix(".diff")
+  diff_path.write_text("".join(diff_lines))
+  pytest.fail(f"{label} mismatch for {test_case}\n{preview}\n\nFull diff: {diff_path}",pytrace=verbose >= 3)
+
+def run_transformation_test(test_case: str, tmp_path: pathlib.Path, verbose: int) -> None:
   (result,expected) = transformation_results(test_case,tmp_path)
-  assert result == expected, f"transformation mismatch for {test_case}"
+  _report_mismatch(test_case,"transformation",result,expected,tmp_path,"result.yml",verbose)
 
 @pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
 @pytest.mark.parametrize('test_case',sorted(glob.glob('topology/input/*yml')))
-def test_xform_cases(test_case: str, tmp_path: pathlib.Path) -> None:
-  run_transformation_test(test_case,tmp_path)
+def test_xform_cases(test_case: str, tmp_path: pathlib.Path, pytestconfig: pytest.Config) -> None:
+  run_transformation_test(test_case,tmp_path,pytestconfig.getoption("verbose"))
 
 # Verbose test cases are executed only when we're running under coverage
 # (sys.gettrace() returns the tracer); skipped otherwise so the result is
@@ -83,10 +134,14 @@ def test_xform_cases(test_case: str, tmp_path: pathlib.Path) -> None:
 # exercise different code paths depending on iteration order.
 #
 @pytest.mark.skipif(not sys.gettrace(),reason="coverage-only test")
-def test_coverage_verbose_cases(tmp_path_factory: pytest.TempPathFactory) -> None:
+def test_coverage_verbose_cases(
+    tmp_path_factory: pytest.TempPathFactory,
+    pytestconfig: pytest.Config,
+    ) -> None:
   log.set_verbose()
+  verbose = pytestconfig.getoption("verbose")
   for test_case in sorted(glob.glob('topology/input/*yml')):
-    run_transformation_test(test_case,tmp_path_factory.mktemp("coverage"))
+    run_transformation_test(test_case,tmp_path_factory.mktemp("coverage"),verbose)
 
 def error_results(test_case: str) -> typing.Tuple[str, str]:
   log.set_flag(raise_error = True)
@@ -97,22 +152,22 @@ def error_results(test_case: str) -> typing.Tuple[str, str]:
   log_file = pathlib.Path(test_case.replace('.yml','.log'))
   expected_log = log_file.read_text().strip('\n') if log_file.exists() else ""
   return (error_log,expected_log)
-  
-def run_error_case(test_case: str) -> None:
+
+def run_error_case(test_case: str, tmp_path: pathlib.Path, verbose: int) -> None:
   (error_log,expected_log) = error_results(test_case)
-  assert error_log == expected_log, f"error-log mismatch for {test_case}"
+  _report_mismatch(test_case,"error-log",error_log,expected_log,tmp_path,"error_log.actual",verbose)
 
 @pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
 @pytest.mark.parametrize('test_case',sorted(glob.glob('errors/*yml')))
-def test_error_cases(test_case: str) -> None:
-  run_error_case(test_case)
+def test_error_cases(test_case: str, tmp_path: pathlib.Path, pytestconfig: pytest.Config) -> None:
+  run_error_case(test_case,tmp_path,pytestconfig.getoption("verbose"))
 
 @pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
 @pytest.mark.parametrize('test_case',sorted(glob.glob('coverage/input/*yml')))
-def test_coverage_xf_cases(test_case: str, tmp_path: pathlib.Path) -> None:
-  run_transformation_test(test_case,tmp_path)
+def test_coverage_xf_cases(test_case: str, tmp_path: pathlib.Path, pytestconfig: pytest.Config) -> None:
+  run_transformation_test(test_case,tmp_path,pytestconfig.getoption("verbose"))
 
 @pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
 @pytest.mark.parametrize('test_case',sorted(glob.glob('coverage/errors/*yml')))
-def test_coverage_errors(test_case: str) -> None:
-  run_error_case(test_case)
+def test_coverage_errors(test_case: str, tmp_path: pathlib.Path, pytestconfig: pytest.Config) -> None:
+  run_error_case(test_case,tmp_path,pytestconfig.getoption("verbose"))
