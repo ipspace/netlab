@@ -111,8 +111,11 @@ The following node parameters influence the VM configuration created by *vagrant
 * **libvirt.nic_model_type** -- VM NIC model (example: e1000). The default _netlab_ settings usually work fine.
 * **libvirt.nic_adapter_count** -- maximum number of VM NICs (default: 8)
 * **libvirt.uuid** -- sets the libvirt VM UUID (some devices use the UUID to create their serial numbers). The value of this parameter is not checked[^UUID].
+* **libvirt.machine_type** -- QEMU machine type passed to *vagrant-libvirt* (example: `pc-i440fx-6.2`, `q35`). Useful when a Vagrant box requires a specific machine type to boot (for example, older guest kernels that fail on the QEMU 8.x default on Ubuntu 24.04). Overrides any value set by the device template. The value of this parameter is not checked[^MACHTYPE].
 
 [^UUID]: In other words, you're on your own. After starting a lab, you can get a valid VM UUID with the **virsh dumpxml _vm_name_|grep uuid** command (use **netlab status** to display the VM name).
+
+[^MACHTYPE]: Use with caution -- an invalid or unsupported machine type will surface as a *vagrant-libvirt* / QEMU boot error rather than a *netlab* validation message. List the machine types available on your host with **qemu-system-x86_64 -machine help**.
 
 (libvirt-box-replace)=
 ### Replacing Vagrant Boxes
