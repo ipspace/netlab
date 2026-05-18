@@ -12,7 +12,11 @@ $SUDO apt-get install -y $FLAG_APT ebtables dnsmasq-base sshpass tree jq bridge-
 echo ".. common libraries installed"
 echo
 echo "Install libvirt packages"
-$SUDO apt-get install -y $FLAG_APT libvirt-dev qemu-kvm cpu-checker virtinst
+QEMU_PACKAGE="qemu-kvm"
+if apt-cache show qemu-system-x86 >/dev/null 2>&1; then
+  QEMU_PACKAGE="qemu-system-x86"
+fi
+$SUDO apt-get install -y $FLAG_APT libvirt-dev $QEMU_PACKAGE cpu-checker virtinst
 $SUDO apt-get install -y $FLAG_APT libvirt-daemon-system libvirt-clients
 echo ".. libvirt packages installed"
 echo
@@ -37,11 +41,11 @@ cat <<FILE | $SUDO tee /etc/apt/preferences.d/vagrant
 # https://github.com/ipspace/netlab/issues/2436 for details
 #
 Package: vagrant
-Pin: version 2.4.3-1
+Pin: version 2.4.9-1
 Pin-Priority: 1000
 FILE
 . apt-get-update.sh
-$SUDO apt-get install -y --allow-downgrades $FLAG_APT ruby-dev ruby-libvirt vagrant=2.4.3-1
+$SUDO apt-get install -y --allow-downgrades $FLAG_APT ruby-dev ruby-libvirt vagrant
 vagrant plugin install vagrant-libvirt --plugin-version=0.12.2
 echo ".. vagrant installed"
 echo
