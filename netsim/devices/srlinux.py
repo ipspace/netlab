@@ -127,13 +127,6 @@ class SRLINUX(_Quirks):
           quirk='vrf_route_leaking',
           category=log.IncorrectType)
 
-    if 'isis' in mods:
-      if node.get('isis.af.ipv6',False) and 'srx' in mods:
-        report_quirk(
-          text=f'SR Linux on "{node.name}" does not support IS-IS multi-topology for IPv6 in combination with segment routing',
-          node=node,
-          quirk='ipv6_sr')
-
     if 'bgp' in mods:
       cleanup_neighbor_transport(node,topology)
       if node._srl_version < [ 25, 3 ]:
