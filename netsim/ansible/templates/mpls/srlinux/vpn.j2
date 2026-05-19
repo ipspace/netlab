@@ -1,0 +1,34 @@
+{% for af in ['ipv4','ipv6'] if mpls.vpn[af] is defined %}
+{%   if loop.first %}
+- path: /network-instance[name=default]/protocols/bgp
+  value:
+    afi-safi:
+{%   endif %}
+    - afi-safi-name: l3vpn-{{ af }}-unicast
+      admin-state: enable
+      l3vpn-{{ af }}-unicast:
+        rapid-update: True
+        keep-all-routes: True
+{% endfor %}
+{% for n_type in ['ibgp','ebgp'] %}
+{%   for af in ['ipv4','ipv6'] if n_type in mpls.vpn[af]|default([]) %}
+{%     if loop.first %}
+- path: /network-instance[name=default]/protocols/bgp/group[group-name={{ n_type }}-ipv4]
+  value:
+    afi-safi:
+{%     endif %}
+    - afi-safi-name: l3vpn-{{ af }}-unicast
+      admin-state: enable
+      send-community-type: [ standard, extended ]
+{%   endfor %}
+{% endfor %}
+{% for v_name,v_data in vrfs|default({})|dictsort %}
+- path: /network-instance[name={{ v_name }}]/protocols/bgp-ipvpn
+  value:
+    bgp-instance:
+    - id: 1
+      admin-state: enable
+      mpls:
+        next-hop-resolution:
+          allowed-tunnel-types: [ ldp, sr-isis ]
+{% endfor %}
