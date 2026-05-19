@@ -19,26 +19,29 @@
 ```text
 usage: netlab defaults [-h] [-r] [--delete] [-s] [--directory] [--project] [--user]
                        [--system] [--package] [--yes] [--yaml]
+                       [--format {yaml,env,export}]
                        [setting]
 
 Manage netlab default settings
 
 positional arguments:
-  setting       Specify setting to set (with s=v) or display (can be a glob)
+  setting               Specify setting to set (with s=v) or display (can be a glob)
 
 options:
-  -h, --help    show this help message and exit
-  -r, --regex   Display default settings matching a regular expression
-  --delete      Delete the settings matching the specified pattern from the specified
-                datastore
-  -s, --source  Display the source of the default setting
-  --directory   Display or store settings from the current directory
-  --project     Display or store settings from the current project defaults
-  --user        Display or store settings from the user default file
-  --system      Display or store settings from the system default file
-  --package     Display settings included in netlab package
-  --yes         Overwrite existing settings without a confirmation
-  --yaml        Store changed defaults in expanded YAML format
+  -h, --help            show this help message and exit
+  -r, --regex           Display default settings matching a regular expression
+  --delete              Delete the settings matching the specified pattern from the
+                        specified datastore
+  -s, --source          Display the source of the default setting
+  --directory           Display or store settings from the current directory
+  --project             Display or store settings from the current project defaults
+  --user                Display or store settings from the user default file
+  --system              Display or store settings from the system default file
+  --package             Display settings included in netlab package
+  --yes                 Overwrite existing settings without a confirmation
+  --yaml                Store changed defaults in expanded YAML format
+  --format {yaml,env,export}
+                        Alternate output format of the "show" action
 ```
 
 ```{note}
@@ -67,6 +70,15 @@ To display all sources of `devices.csr.clab.image` setting, use the **netlab def
 $ netlab defaults --source devices.csr.clab.image
 devices.csr.clab.image = vrnetlab/vr-csr:17.03.04 (netlab)
 devices.csr.clab.image = vrnetlab/cisco_csr1000v:17.03.08 (user)
+```
+
+You can also display the default settings as environment variables (that you can change for subsequent **netlab up** commands) or as exported environment variables:
+
+```bash
+$ netlab defaults --format env devices.srlinux.clab.image
+NETLAB_DEVICES_SRLINUX_CLAB_IMAGE=ghcr.io/nokia/srlinux:26.3.2
+$ netlab defaults --format export devices.srlinux.clab.image
+export NETLAB_DEVICES_SRLINUX_CLAB_IMAGE=ghcr.io/nokia/srlinux:26.3.2
 ```
 
 Specify a default prefix to display a subset of defaults. For example, to display Arista EOS EVPN features, use **devices.eos.features.evpn** parameter:
