@@ -86,8 +86,10 @@ Specify a default prefix to display a subset of defaults. For example, to displa
 ```
 $ netlab defaults devices.eos.features.evpn
 devices.eos.features.evpn.asymmetrical_irb = True
-devices.eos.features.evpn.bundle = ['vlan_aware']
+devices.eos.features.evpn.bundle = [vlan_aware]
+devices.eos.features.evpn.ipv6 = True
 devices.eos.features.evpn.irb = True
+devices.eos.features.evpn.transport = [vxlan, mpls, sr]
 ```
 
 You can also use glob expressions to select the parameters you want to display. For example, use `*clab.image*` to display all containerlab image settings:
