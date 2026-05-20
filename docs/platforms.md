@@ -434,7 +434,7 @@ These devices support additional control-plane protocols or BGP address families
 | vJunos-router         | ✅  |  ❌  | ✅  | ✅  |
 | Mikrotik RouterOS 6   | ✅  |  ❌  | ✅  |  ❌  |
 | Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  |  ❌  |
-| Nokia SR Linux        | ✅  | ✅  |  ❌  | ✅  |
+| Nokia SR Linux        | ✅  | ✅  | ✅  | ✅  |
 | Nokia SR OS[^SROS]    | ✅  | ✅  | ✅  | ✅  |
 | VyOS                  | ✅  | ✅  | ✅  |  ❌  |
 
@@ -483,7 +483,7 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | vJunos-router         | ❌  | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
 | Mikrotik RouterOS 6   | ✅ | ✅ |  ❌ | ✅ |  ❌ |  ❌ |
 | Mikrotik RouterOS 7   | ✅ | ✅ |  ❌ | ✅ |  ❌ |  ❌ |
-| Nokia SR Linux        | ✅ | ✅ | ✅ |  ❌ | ✅ |  ❌ |
+| Nokia SR Linux        | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
 | Nokia SR OS[^SROS]    | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | VyOS                  | ✅ | ✅ | ✅ | ✅ |  ❌ |  ❌ |
 

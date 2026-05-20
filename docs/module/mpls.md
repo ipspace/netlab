@@ -33,7 +33,7 @@ The following table describes the per-platform support of individual MPLS label 
 | Junos[^Junos]         |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Mikrotik RouterOS 6   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Mikrotik RouterOS 7   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
-| Nokia SR Linux        |   [❗](caveats-srlinux)  |   ❌    |   ✅  |   ❌  |   ❌  |
+| Nokia SR Linux[❗](caveats-srlinux) | ✅ |   ❌    |  ❌  |   ❌  |   ❌  |
 | Nokia SR OS[^SROS]    |   ✅  |   ✅    |   ✅  |   ❌  |   ❌  |
 | VyOS                  |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 
@@ -78,6 +78,7 @@ The following table describes the per-platform support of individual MPLS label 
 | Mikrotik RouterOS 6   |   ✅  |   ❌  |
 | Mikrotik RouterOS 7   |   ✅  |   ❌  |
 | Nokia SR OS[^SROS]    |   ✅  |   ✅  |
+| Nokia SR Linux [❗](caveats-srlinux) | ✅ | ✅ |
 | VyOS                  |   ✅  |   ✅  |
 
 **Notes**
