@@ -229,9 +229,10 @@ def get_re_pattern(txt: str, regex: bool = False) -> re.Pattern:
   return reobj
 
 def print_def_list(def_expanded: Box, args: argparse.Namespace) -> None:
+  def_dict = def_expanded.to_dict()
   for k in sorted(def_expanded):
     ns_list = list(def_expanded[k])
-    if args.source:
+    if args.source and not args.format:
       for ns in ns_list:
         txt = f'{k} = {def_expanded[k][ns]} ({ns})'
         if ns != ns_list[-1] and strings.rich_color:
@@ -239,16 +240,18 @@ def print_def_list(def_expanded: Box, args: argparse.Namespace) -> None:
         else:
           print(txt)
     else:
-      v = def_expanded[k][ns_list[-1]]
+      v = def_dict[k][ns_list[-1]]
+      is_obj = isinstance(v,(dict,list))
+      v_txt = yaml.dump(v,default_flow_style=True).strip() if is_obj else str(v)
       if not args.format:
-        print(f'{k} = {v}')
+        print(f'{k} = {v_txt}')
       elif args.format == 'yaml':
-        print(f'{k}: {shlex.quote(v) if isinstance(v,str) else v}')
+        print(f'{k}: {v_txt}')
       else:
         key = 'NETLAB_'+k.replace('_','__').replace('.','_').upper()
         if args.format == 'export':
           key = 'export '+key
-        print(f'{key}={shlex.quote(v) if isinstance(v,str) else v}')
+        print(f'{key}={shlex.quote(v_txt)}')
 
 def default_show(args: argparse.Namespace) -> None:
   global D_SOURCES
@@ -258,8 +261,6 @@ def default_show(args: argparse.Namespace) -> None:
   def_expanded = build_defaults_sources(reobj,d_sources)
   
   if def_expanded:
-    if args.source and args.format:
-      log.fatal('Cannot use --source option together with --format')
     print_def_list(def_expanded,args)
   else:
     d_src_txt = '' if d_sources == D_SOURCES else f' in {",".join(d_sources)} defaults'
