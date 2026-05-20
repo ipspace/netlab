@@ -8,6 +8,7 @@ import re
 
 from box import Box
 
+from ..augment import devices as a_devices
 from ..utils import log
 from ..utils import routing as _routing
 from . import _Quirks, need_ansible_collection, report_quirk
@@ -98,14 +99,23 @@ def normalize_interface_descriptions(node: Box) -> None:
     if intf.get('name'):
       intf.name = intf.name.replace('->','~').replace('[','').replace(']','')
 
+def license_needed(dt: str, features: Box) -> bool:
+  p_list = features.get('mpls._platforms',[])
+  for p_prefix in p_list:
+    if dt.startswith(p_prefix):
+      return True
+
+  return False
+
 class SRLINUX(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
     dt = node.clab.type
     set_api_version(node)
+    features = a_devices.get_device_features(node,topology.defaults)
     normalize_interface_descriptions(node)
-    if dt in ['ixr6','ixr10','ixr6e','ixr10e'] and not node.clab.get('license',None):
+    if license_needed(dt,features) and not node.clab.get('license',None):
       report_quirk(
         text=f'You need a valid SR Linux license to run {dt} container on node {node.name}',
         node=node,
@@ -140,9 +150,10 @@ class SRLINUX(_Quirks):
               quirk='bgp_community')
 
     if 'mpls' in mods or 'sr' in mods:
-      if dt not in ['ixr6','ixr10','ixr6e','ixr10e']:
+      if not license_needed(dt,features):
         report_quirk(
-          text=f'SR Linux device type must be set to ixr6/ixr10 for MPLS to work (node {node.name})',
+          text=f'MPLS works only on (emulated) 7250-IXR and 7730-SXR routers (node {node.name})',
+          more_hints=['Set node clab.type to a different device model (see https://containerlab.dev/manual/kinds/srl/)'],
           node=node,
           category=log.IncorrectValue)
 

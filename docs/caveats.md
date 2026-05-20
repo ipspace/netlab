@@ -569,7 +569,7 @@ Other caveats you might encounter:
 * Only supported on top of *Containerlab*
 * Supports SR Linux release 24.7.1 or later (due to YANG model changes)
 * Requires `nokia.srlinux` Ansible Galaxy collection (minimum version 0.5.0). Use **ansible-galaxy collection install nokia.srlinux** command to install it.
-* MPLS, LDP, and SR-MPLS are only supported on 7250 IXR (clab.type in ['ixr6','ixr6e','ixr10','ixr10e']). You need a license to run these containers.
+* MPLS, LDP, and SR-MPLS are only supported on 7250 IXR and 7730 SXR routers. Set the `clab.type` node attribute to one of the [valid node types](https://containerlab.dev/manual/kinds/srl/#types) to use these features. You will also need a license to run these containers.
 * Nokia SR Linux needs an EVPN control plane to enable VXLAN functionality. VXLAN ingress replication lists are built from EVPN Route Type 3 updates.
 * Inter-VRF route leaking is supported only in combination with BGP EVPN
 * SR Linux does not support configurable propagation of extended BGP communities.
