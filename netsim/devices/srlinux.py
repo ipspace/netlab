@@ -111,7 +111,7 @@ class SRLINUX(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
-    dt = node.clab.type
+    dt = node.get('clab.type','')
     set_api_version(node)
     features = a_devices.get_device_features(node,topology.defaults)
     normalize_interface_descriptions(node)
