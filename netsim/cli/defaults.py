@@ -230,6 +230,7 @@ def get_re_pattern(txt: str, regex: bool = False) -> re.Pattern:
 
 def print_def_list(def_expanded: Box, args: argparse.Namespace) -> None:
   def_dict = def_expanded.to_dict()
+  to_yaml = args.format == 'yaml'
   for k in sorted(def_expanded):
     ns_list = list(def_expanded[k])
     if args.source and not args.format:
@@ -242,7 +243,7 @@ def print_def_list(def_expanded: Box, args: argparse.Namespace) -> None:
     else:
       v = def_dict[k][ns_list[-1]]
       is_obj = isinstance(v,(dict,list))
-      v_txt = yaml.dump(v,default_flow_style=True).strip() if is_obj else str(v)
+      v_txt = yaml.dump(v,default_flow_style=True,width=9999).split("\n")[0] if is_obj or to_yaml else str(v)
       if not args.format:
         print(f'{k} = {v_txt}')
       elif args.format == 'yaml':
