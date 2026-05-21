@@ -300,9 +300,9 @@ def check_version(b: str, v: str) -> typing.Tuple:
   if '/' in v:                                    # Full box name specified by the user
     if ':' not in v:
       return invalid_version('Box names should include a version')
-    b,v = v.split(':')
+    b,v = v.split(':',1)
   elif ':' in v:
-    b,v = v.split(':')
+    b,v = v.split(':',1)
     b = 'netlab/' + b
 
   match_str = '[0-9a-zA-Z_][.a-zA-Z0-9_-]{0,15}'
