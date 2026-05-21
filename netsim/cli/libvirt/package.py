@@ -368,7 +368,7 @@ def lp_install_box(args: argparse.Namespace,settings: Box) -> None:
   devdata = settings.devices[args.device]
   dev_boxname = devdata.libvirt.create_image or devdata.libvirt.image
   if not dev_boxname:
-    log.fatal("Libvirt box name is not set for device {args.device}")
+    log.fatal(f"Libvirt box name is not set for device {args.device}")
 
   print(f"""
 Your Vagrant box is ready to be imported. We just need a few bits of information
