@@ -92,6 +92,7 @@ These documents contain box-building recipes using the **netlab libvirt** utilit
 * [FRRouting](frr.md) (Debian VM with preinstalled **frr** package)
 * [Juniper vPTX](vptx.md)
 * [Juniper vSRX 3.0](vsrx.md)
+* [Custom Linux boxes](linux.md)
 * [Mikrotik RouterOS 7](routeros7.md) - based on the original [Mikrotik RouterOS](http://stefano.dscnet.org/a/mikrotik_vagrant/) by [Stefano Sasso](http://stefano.dscnet.org)
 * [OpenBSD](openbsd.md)
 * [Sonic](sonic.md)

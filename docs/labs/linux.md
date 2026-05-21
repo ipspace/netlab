@@ -3,7 +3,7 @@
 
 You can run Linux hosts or routers in virtual machines or containers. The default image used for a Linux virtual machine is Ubuntu 24.04, and the default container image is a Python 3.13 container running on Alpine Linux (use the **‌netlab show images --device linux** command to display the actual defaults).
 
-To use any other Linux distribution or container, or to start a home-built Vagrant box or Docker container, add **image** attribute with the name of Vagrant box or Docker container to the node data[^GL]. The only requirements for a Linux virtual machine is working Python environment (to support Ansible playbooks used in **netlab initial** command) and the presence of **ip** command used in initial device configuration. Docker containers have no requirements ([see below](clab-linux))
+To use any other Linux distribution or container, or to start a home-built Vagrant box or Docker container, add **image** attribute with the name of Vagrant box or Docker container to the node data[^GL]. The only requirements for a Linux virtual machine are a working Python environment (to support Ansible playbooks used in **netlab initial** command) and the presence of **ip** command used in initial device configuration. Docker containers have no requirements ([see below](clab-linux))
 
 ```eval_rst
 .. contents:: More Details
@@ -13,6 +13,13 @@ To use any other Linux distribution or container, or to start a home-built Vagra
 ```
 
 [^GL]: You can also set the **defaults.devices.linux._provider_.image** attribute to change the Vagrant box or Docker container for all Linux hosts in your lab.
+
+(linux-build)=
+## Building a Custom Vagrant Box
+
+You can use the `netlab libvirt package linux` command to build a Custom Vagrant box from a Linux **qcow2** file that includes the `cloud-init`  service. The build process uses the local `cloud-init` data to create the `vagrant` user and its default SSH keys.
+
+After the Linux VM boots, log in as user `vagrant` (password `vagrant`), install any other software you want to have in the VM, change its settings if needed, and shut down the VM with `sudo poweroff`. After the VM is powered off, _netlab_ takes over and creates a Vagrant box from the modified VM disk.
 
 (linux-hosts)=
 ## Hosts File
