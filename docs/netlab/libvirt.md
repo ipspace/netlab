@@ -52,6 +52,14 @@ options:
   -q, --quiet           Report only major errors
 ```
 
+The Vagrant box name/version can be specified in three formats:
+
+* Just the version number (for example, `4.35.2F`). _netlab_ takes the default device box name, appends the specified version, and builds the box. You can start using the box immediately[^HV].
+* Device name and version (for example, `ubuntu:26.04`). _netlab_ will prepend `netlab/` to the specified box name to prevent clashes with other boxes you might be using. You will have to [specify the default box name](default-device-image) you want to use for your devices or change it for a specific node with the node **box** attribute.
+* Full box name (for example, `test/ubuntu:26.04`).
+
+[^HV]: Assuming you don't have another box for the same device with a higher version, in which case you [have to specify](default-device-image) the exact `box:version` name.
+
 (netlab-libvirt-remove)=
 ## Removing a Vagrant Box
 

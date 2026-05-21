@@ -287,20 +287,34 @@ window and follow the instructions.
 
   vm_cleanup('vm_box',ignore_errors=True)
 
-"""
-valid_version: Check the version number
-"""
-def valid_version(v: str) -> bool:
-  match_str = '[0-9a-zA-Z_][.a-zA-Z0-9_-]{0,15}'
-  if re.fullmatch(match_str,v):
-    return True
-  
-  log.error(
-    f'Box version number can contain ASCII letters, numbers, dots, or dashes',
-    category=log.IncorrectValue,
-    module='libvirt')
+
+def invalid_version(err: str) -> typing.Tuple:
+  log.error(err,category=log.IncorrectValue,module='libvirt')
   print()
-  return False
+  return (None,None)
+
+def check_version(b: str, v: str) -> typing.Tuple:
+  """
+  valid_version: Check the version number
+  """
+  if '/' in v:                                    # Full box name specified by the user
+    if ':' not in v:
+      return invalid_version('Box names should include a version')
+    b,v = v.split(':')
+  elif ':' in v:
+    b,v = v.split(':')
+    b = 'netlab/' + b
+
+  match_str = '[0-9a-zA-Z_][.a-zA-Z0-9_-]{0,15}'
+  valid_content = 'can contain ASCII letters, numbers, dots, or dashes'
+  for b_part in b.split('/'):
+    if not re.fullmatch(match_str,b_part):
+      return invalid_version(f'Box names {valid_content} (got: {b})')
+
+  if not re.fullmatch(match_str,v):
+    return invalid_version(f'Box versions {valid_content} (got: {v})')
+
+  return (b,v)
 
 def lp_create_box(args: argparse.Namespace,settings: Box,target: str) -> None:
   log.section_header('CREATING','Creating Vagrant box')
@@ -352,36 +366,41 @@ end
 def lp_install_box(args: argparse.Namespace,settings: Box) -> None:
   log.section_header('INSTALL','Installing new Vagrant box')
   devdata = settings.devices[args.device]
-  boxname = devdata.libvirt.create_image or devdata.libvirt.image
-  if not boxname:
+  dev_boxname = devdata.libvirt.create_image or devdata.libvirt.image
+  if not dev_boxname:
     log.fatal("Libvirt box name is not set for device {args.device}")
 
   print(f"""
-Your Vagrant box is ready to be imported. We just need a few
-bits of information to tag it properly so you can have multiple
-Vagrant boxes (different software versions) for the same network
-device.
-""")
-  if not boxname:
-    boxname = input('Enter box name: ')
+Your Vagrant box is ready to be imported. We just need a few bits of information
+to tag it properly so you can have multiple Vagrant boxes (different software
+versions) for the same network device.
 
-  print(f"""
-Your boxes should have versions. A box version can be anything; it's
-best to use the version of the network operating system so you'll know
-what your boxes do and be able to select a particular OS version in your
-lab topology if you feel like building multiple boxes for the same OS.
+Your boxes should have versions. A box version can be anything; it's best to use
+the version of the network operating system so you'll know what your boxes do
+and be able to select a particular OS version in your lab topology if you feel
+like building multiple boxes for the same OS.
 
 You might want to limit yourself to using alphanumeric characters and dots.
 
 Examples: 9.3.8 for Nexus OS, 4.27.0M for Arista EOS, 17.03.04 for CSR...
+        
+When specifying the box version, netlab creates the box using the box name
+specified in the device definition. You can also specify the full box name
+(netlab/device:version) or partial box name (device:version) that will be
+preceded by "netlab/".
 """)
   while True:
     version = input('Enter box version: ')
-    if valid_version(version):
+    if not version:
+      continue
+
+    (boxname,version) = check_version(dev_boxname,version)
+    if version:
       break
 
-  description = devdata.libvirt.description or devdata.description or (args.device+" box")
-  json_name = f'{args.device}-{version}-box.json'
+  b_name = args.device if boxname == dev_boxname else boxname.replace('/','-')
+  description = devdata.libvirt.description or devdata.description or (b_name+" box")
+  json_name = f'{b_name}-{version}-box.json'
   json = string.Template("""
 {
   "name": "$boxname",
