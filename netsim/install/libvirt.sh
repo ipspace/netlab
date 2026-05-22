@@ -12,12 +12,19 @@ $SUDO apt-get install -y $FLAG_APT ebtables dnsmasq-base sshpass tree jq bridge-
 echo ".. common libraries installed"
 echo
 echo "Install libvirt packages"
+QEMU_SUFFIX=""
 QEMU_PACKAGE="qemu-kvm"
-if apt-cache show qemu-system-x86 >/dev/null 2>&1; then
+if dpkg -s qemu-system-x86-hwe >/dev/null 2>&1; then
+  echo "Detected existing qemu-system-x86-hwe package"
+  QEMU_PACKAGE="qemu-system-x86-hwe"
+  QEMU_SUFFIX="-hwe"
+elif apt-cache show qemu-system-x86 >/dev/null 2>&1; then
+  echo "Using qemu-system-x86 instead of qemu-kvm"
   QEMU_PACKAGE="qemu-system-x86"
 fi
-$SUDO apt-get install -y $FLAG_APT libvirt-dev $QEMU_PACKAGE cpu-checker virtinst
-$SUDO apt-get install -y $FLAG_APT libvirt-daemon-system libvirt-clients
+$SUDO apt-get install -y $FLAG_APT $QEMU_PACKAGE libvirt-dev${QEMU_SUFFIX}
+$SUDO apt-get install -y $FLAG_APT libvirt-daemon-system${QEMU_SUFFIX} libvirt-clients${QEMU_SUFFIX}
+$SUDO apt-get install -y cpu-checker virtinst
 echo ".. libvirt packages installed"
 echo
 echo "Install vagrant"
