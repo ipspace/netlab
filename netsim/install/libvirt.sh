@@ -35,6 +35,14 @@ $SUDO rm /etc/apt/sources.list.d/vagrant.list 2>/dev/null
 set -e
 # add-apt-repository has been deprecated, doesn't work on Debian 11 and will be removed from Ubuntu 22
 # changed to new method - ghostinthenet - 20220417
+#
+# First, install GPG if it's missing
+if ! command -v gpg >/dev/null; then
+  echo "Installing GPG"
+  $SUDO apt-get install -y gnupg2
+fi
+#
+# Next, add Vagrant repository
 curl -fsSL https://apt.releases.hashicorp.com/gpg | $SUDO gpg --dearmor -o /etc/apt/trusted.gpg.d/hashicorp-security.gpg
 $SUDO sh -c 'echo "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" > /etc/apt/sources.list.d/vagrant.list'
 #
