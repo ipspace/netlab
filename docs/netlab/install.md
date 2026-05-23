@@ -28,21 +28,27 @@ Run "netlab install" with no arguments to get install script descriptions
 ```
 
 ```{tip}
-Running multiple installation scripts with **‌netlab install** or **netlab install --all** might fail on some Ubuntu distributions due to background processes locking the APT repository directory. If you experience that problem, execute multiple **‌netlab install** commands (one per installation script).
+* The installation scripts are tested on a fresh copy of Ubuntu/Debian VM. Don't expect miracles if you run them on a system with numerous custom-installed packages.
+* Running multiple installation scripts with **‌netlab install** or **netlab install --all** might fail on some Ubuntu distributions due to background processes locking the APT repository directory. If you experience that problem, execute multiple **‌netlab install** commands (one per installation script).
 ```
 
 ## Installation Scripts
 
 * The *ubuntu* script installs Python3 development components that might be needed for Ansible installation, common tools like **git** and **sshpass**, and XML libraries.
 * The *libvirt* script installs *libvirt* and supporting libraries/packages, *vagrant*, *vagrant-libvirt* plugin, and creates the *vagrant-libvirt* virtual network.
+
+```{warning}
+Ubuntu 26.04 introduced Hardware Enablement (`-hwe`) version of `qemu-system-x86`. The installation script will try to detect that package and install the corresponding *‌libvirt* packages if the `-hwe` package is present on your system.
+```
+
 * The *containerlab* script installs Docker Engine and *containerlab*.
 * The *ansible* script uses **pip3** to install the latest version of Ansible, networking libraries (*netaddr, paramiko, netmiko*), text parsing libraries (*testfsm, ttp, ntc-templates*), and a few other utility libraries (*jmespath, yamllint, yq*)
 * The *graph* script installs GraphViz and D2 software needed to generate graphs from _netlab_ topologies
 * The *grpc* script installs gRPC Python libraries needed to configure Nokia SR Linux and Nokia SR OS.
 
-[^UT]: Tested on Ubuntu 22.04 and 24.04
+[^UT]: Tested on Ubuntu 22.04, 24.04, and 26.04
 
-[^DT]: Tested on Debian 12 (bookworm)
+[^DT]: Tested on Debian 12 (bookworm) and 13 (trixie)
 
 You can display an up-to-date list of installation scripts with **netlab install** command:
 
