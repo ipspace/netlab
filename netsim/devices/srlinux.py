@@ -15,21 +15,22 @@ from . import _Quirks, need_ansible_collection, report_quirk
 
 
 def check_prefix_deny(node: Box) -> None:
+  """Report a quirk when prefix filters use a deny action (unsupported on SR Linux)."""
   for pf_name,pf_list in node.get('routing.prefix',{}).items():
     for p_entry in pf_list:
       if p_entry.get('action',None) == 'deny':
         report_quirk(
-          text=f'SR Linux does not support "deny" action in prefix filters (node {node.name} prefix filter {pf_name})',
+          text=(
+            f'SR Linux does not support "deny" action in prefix filters '
+            f'(node {node.name} prefix filter {pf_name})'
+          ),
           node=node,
           quirk='prefix_deny',
           category=log.IncorrectValue)
         break
 
-'''
-Remove unused IPv4/IPv6 transport addresses -- SR Linux does not like a
-BGP neighbor with no active address families
-'''
 def cleanup_neighbor_transport(node: Box, topology: Box) -> None:
+  """Remove unused BGP transport addresses when no address family is activated."""
   for ngb in _routing.neighbors(node,vrf=True):
     if 'local_if' in ngb:               # True unnumbered, move on
       continue
@@ -59,10 +60,8 @@ def cleanup_neighbor_transport(node: Box, topology: Box) -> None:
         category=Warning)
       ngb.pop(af)
 
-"""
-Determines the SRL version based on the container image
-"""
 def set_api_version(node: Box) -> None:
+  """Set node._srl_version from the container image tag."""
   version = re.search(r'^.*/srlinux:([\d]+.[\d]+).*$', node.box)
   node._srl_version = [ 25, 3 ]         # Assume 25.3 release
   if version is not None:               # If we managed to match the SR Linux image name
@@ -72,6 +71,7 @@ def set_api_version(node: Box) -> None:
       pass                              # ... no worries, we'll use the default
 
 def check_nssa_default_cost(node: Box) -> None:
+  """Warn when OSPF NSSA areas specify a default-metric (not supported on SR Linux)."""
   for (odata,_,_) in _routing.rp_data(node,'ospf'):
     if 'areas' not in odata:
       continue
@@ -87,12 +87,8 @@ def check_nssa_default_cost(node: Box) -> None:
           category=Warning,
           quirk='ospf_nssa_default_cost')
 
-"""
-Normalize interface descriptions for SR Linux:
-- Replace '->' with '~'
-- Remove square brackets '[' and ']'
-"""
 def normalize_interface_descriptions(node: Box) -> None:
+  """Normalize interface descriptions (-> to ~, remove square brackets)."""
 
   # Normalize regular interface descriptions
   for intf in node.get('interfaces',[]):
@@ -100,6 +96,7 @@ def normalize_interface_descriptions(node: Box) -> None:
       intf.name = intf.name.replace('->','~').replace('[','').replace(']','')
 
 def license_needed(dt: str, features: Box) -> bool:
+  """Return True when the emulated platform requires an SR Linux license for MPLS/SR."""
   p_list = features.get('mpls._platforms',[])
   for p_prefix in p_list:
     if dt.startswith(p_prefix):
@@ -107,14 +104,68 @@ def license_needed(dt: str, features: Box) -> bool:
 
   return False
 
+def check_mpls_sr_platform(node: Box, mods: list, clab_type: str, features: Box) -> None:
+  """Report a quirk when MPLS or SR-MPLS is used on an unsupported hardware platform."""
+  if license_needed(clab_type, features):
+    return
+
+  if 'sr' in mods:
+    report_quirk(
+      text=f'SR-MPLS only supported on 7250 IXR and 7730 SXR routers (node {node.name})',
+      more_hints=[f'Use e.g. clab.type "ixr-6e" instead of {clab_type}'],
+      node=node,
+      quirk='sr_mpls_platform',
+      category=log.IncorrectValue)
+    return
+
+  report_quirk(
+    text=f'MPLS works only on (emulated) 7250-IXR and 7730-SXR routers (node {node.name})',
+    more_hints=[
+      'Set node clab.type to a different device model '
+      '(see https://containerlab.dev/manual/kinds/srl/)',
+    ],
+    node=node,
+    quirk='mpls_platform',
+    category=log.IncorrectValue)
+
+SRL_MTU_OVERHEAD = 14
+SRL_MAX_FRAME_MTU_7220 = 9398   # 7220 IXR (ixr-d*, ixr-h*)
+SRL_MAX_FRAME_MTU_7250 = 9486   # 7250 IXR and 7730 SXR (ixr-6*, ixr-10*, ixr-18*, ixr-x*, sxr-*)
+
+def max_frame_mtu_for_type(clab_type: str) -> int | None:
+  """Return the maximum L2 frame size for a containerlab hardware type, if known."""
+  if clab_type.startswith(('ixr-d', 'ixr-h')):
+    return SRL_MAX_FRAME_MTU_7220
+  if clab_type.startswith(('ixr-6', 'ixr-10', 'ixr-18', 'ixr-x', 'sxr-')):
+    return SRL_MAX_FRAME_MTU_7250
+  return None
+
+def check_mtu(node: Box, clab_type: str) -> None:
+  """Report a quirk when node MTU exceeds the limit for the emulated hardware platform."""
+  mtu = node.get('mtu', None)
+  if mtu is None:
+    return
+
+  max_frame = max_frame_mtu_for_type(clab_type)
+  if max_frame is None:
+    return
+
+  if mtu + SRL_MTU_OVERHEAD > max_frame:
+    report_quirk(
+      text=f'IP MTU {mtu} too large for given hardware platform: {clab_type}',
+      node=node,
+      quirk='mtu_too_large',
+      category=log.IncorrectValue)
+
 class SRLINUX(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
-    dt = node.get('clab.type','')
+    dt = node.get('clab.type','ixr-d2')   # Default to ixr-d2, which is a 7220 IXR
     set_api_version(node)
     features = a_devices.get_device_features(node,topology.defaults)
     normalize_interface_descriptions(node)
+    check_mtu(node,dt)
     if license_needed(dt,features) and not node.clab.get('license',None):
       report_quirk(
         text=f'You need a valid SR Linux license to run {dt} container on node {node.name}',
@@ -131,7 +182,7 @@ class SRLINUX(_Quirks):
 
       if vlist:
         report_quirk(
-          text=f'Inter-VRF route leaking is supported only in combination with BGP EVPN',
+          text='Inter-VRF route leaking is supported only in combination with BGP EVPN',
           more_data=[ f'Node {node.name} VRF(s) {",".join(vlist)}' ],
           node=node,
           quirk='vrf_route_leaking',
@@ -143,25 +194,23 @@ class SRLINUX(_Quirks):
         for c,vals in topology.get('bgp.community',[]).items():
           if 'extended' not in vals:
             report_quirk(
-              text=f'SR Linux on ({node.name}) before version 25.3.1 does not support filtering out extended communities for BGP.',
+              text=(
+                f'SR Linux on ({node.name}) before version 25.3.1 does not support '
+                'filtering out extended communities for BGP.'
+              ),
               more_data= [ f'{c}:{vals}' ],
               node=node,
               category=Warning,
               quirk='bgp_community')
 
     if 'mpls' in mods or 'sr' in mods:
-      if not license_needed(dt,features):
-        report_quirk(
-          text=f'MPLS works only on (emulated) 7250-IXR and 7730-SXR routers (node {node.name})',
-          more_hints=['Set node clab.type to a different device model (see https://containerlab.dev/manual/kinds/srl/)'],
-          node=node,
-          category=log.IncorrectValue)
+      check_mpls_sr_platform(node,mods,dt,features)
 
     if 'routing' in mods and node.get('routing.prefix',None):
       check_prefix_deny(node)
 
     if 'ospf' in mods:
       check_nssa_default_cost(node)
-  
+
   def check_config_sw(self, node: Box, topology: Box) -> None:
     need_ansible_collection(node,'nokia.srlinux',version='0.5.0')
