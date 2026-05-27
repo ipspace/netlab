@@ -104,27 +104,6 @@ def license_needed(dt: str, features: Box) -> bool:
 
   return False
 
-def check_mpls_sr_platform(node: Box, mods: list, clab_type: str) -> None:
-  """Report a quirk when MPLS or SR-MPLS is used on an unsupported hardware platform."""
-  if 'sr' in mods:
-    report_quirk(
-      text=f'SR-MPLS only supported on 7250 IXR and 7730 SXR routers (node {node.name})',
-      more_hints=[f'Use e.g. clab.type "ixr-6e" instead of {clab_type}'],
-      node=node,
-      quirk='sr_mpls_platform',
-      category=log.IncorrectValue)
-    return
-
-  report_quirk(
-    text=f'MPLS works only on (emulated) 7250-IXR and 7730-SXR routers (node {node.name})',
-    more_hints=[
-      'Set node clab.type to a different device model '
-      '(see https://containerlab.dev/manual/kinds/srl/)',
-    ],
-    node=node,
-    quirk='mpls_platform',
-    category=log.IncorrectValue)
-
 ETH_FRAME_MTU_OVERHEAD = 14
 SRL_MAX_FRAME_MTU_7220 = 9398   # 7220 IXR (ixr-d*, ixr-h*)
 SRL_MAX_FRAME_MTU_7250 = 9486   # 7250 IXR and 7730 SXR (ixr-6*, ixr-10*, ixr-18*, ixr-x*, sxr-*)
@@ -163,12 +142,16 @@ class SRLINUX(_Quirks):
     features = a_devices.get_device_features(node,topology.defaults)
     normalize_interface_descriptions(node)
     check_mtu(node,dt)
-    if license_needed(dt,features) and not node.clab.get('license',None):
-      report_quirk(
-        text=f'You need a valid SR Linux license to run {dt} container on node {node.name}',
-        node=node,
-        quirk='mpls_license',
-        category=log.MissingValue)
+    is_licensed = False
+    if license_needed(dt,features):
+      if not node.clab.get('license',None):
+        report_quirk(
+          text=f'You need a valid SR Linux license to run {dt} container on node {node.name}',
+          node=node,
+          quirk='platform_license',
+          category=log.MissingValue)
+      else:
+        is_licensed = True
 
     mods = node.get('module',[])
     if 'vrf' in mods and 'evpn' not in mods:
@@ -200,8 +183,13 @@ class SRLINUX(_Quirks):
               category=Warning,
               quirk='bgp_community')
 
-    if 'mpls' in mods or 'sr' in mods:
-      check_mpls_sr_platform(node,mods,dt)
+    if ('mpls' in mods or 'sr' in mods) and not is_licensed:
+      report_quirk(
+         text=f'SR-MPLS only supported on 7250 IXR and 7730 SXR routers (node {node.name})',
+         more_hints=[f'Use e.g. clab.type "ixr-6e" instead of {dt}'],
+         node=node,
+         quirk='sr_mpls_platform',
+         category=log.IncorrectValue)
 
     if 'routing' in mods and node.get('routing.prefix',None):
       check_prefix_deny(node)
