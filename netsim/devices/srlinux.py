@@ -104,11 +104,8 @@ def license_needed(dt: str, features: Box) -> bool:
 
   return False
 
-def check_mpls_sr_platform(node: Box, mods: list, clab_type: str, features: Box) -> None:
+def check_mpls_sr_platform(node: Box, mods: list, clab_type: str) -> None:
   """Report a quirk when MPLS or SR-MPLS is used on an unsupported hardware platform."""
-  if license_needed(clab_type, features):
-    return
-
   if 'sr' in mods:
     report_quirk(
       text=f'SR-MPLS only supported on 7250 IXR and 7730 SXR routers (node {node.name})',
@@ -128,7 +125,7 @@ def check_mpls_sr_platform(node: Box, mods: list, clab_type: str, features: Box)
     quirk='mpls_platform',
     category=log.IncorrectValue)
 
-SRL_MTU_OVERHEAD = 14
+ETH_FRAME_MTU_OVERHEAD = 14
 SRL_MAX_FRAME_MTU_7220 = 9398   # 7220 IXR (ixr-d*, ixr-h*)
 SRL_MAX_FRAME_MTU_7250 = 9486   # 7250 IXR and 7730 SXR (ixr-6*, ixr-10*, ixr-18*, ixr-x*, sxr-*)
 
@@ -150,7 +147,7 @@ def check_mtu(node: Box, clab_type: str) -> None:
   if max_frame is None:
     return
 
-  if mtu + SRL_MTU_OVERHEAD > max_frame:
+  if mtu + ETH_FRAME_MTU_OVERHEAD > max_frame:
     report_quirk(
       text=f'IP MTU {mtu} too large for given hardware platform: {clab_type}',
       node=node,
@@ -204,7 +201,7 @@ class SRLINUX(_Quirks):
               quirk='bgp_community')
 
     if 'mpls' in mods or 'sr' in mods:
-      check_mpls_sr_platform(node,mods,dt,features)
+      check_mpls_sr_platform(node,mods,dt)
 
     if 'routing' in mods and node.get('routing.prefix',None):
       check_prefix_deny(node)
