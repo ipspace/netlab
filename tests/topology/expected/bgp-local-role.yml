@@ -1,0 +1,437 @@
+bgp:
+  advertise_loopback: true
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
+groups:
+  as65001:
+    members:
+    - isp
+  as65002:
+    members:
+    - customer
+  as65003:
+    members:
+    - peer
+input:
+- topology/input/bgp-local-role.yml
+- package:topology-defaults.yml
+links:
+- _linkname: links[1]
+  interfaces:
+  - bgp:
+      local_role: provider
+    ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.2/30
+    node: isp
+  - bgp:
+      local_role: customer
+    ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.1/30
+    node: customer
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  role: external
+  type: p2p
+- _linkname: links[2]
+  interfaces:
+  - bgp:
+      local_role: peer
+    ifindex: 2
+    ifname: eth2
+    ipv4: 10.1.0.5/30
+    node: isp
+  - bgp:
+      local_role: peer
+    ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.6/30
+    node: peer
+  linkindex: 2
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.4/30
+  role: external
+  type: p2p
+module:
+- bgp
+name: input
+nodes:
+  customer:
+    _node_config:
+      bgp: /etc/config/02-bgp.sh:sh
+      bgp@local_role: /etc/config/03-bgp@local_role.sh:sh
+      initial: /etc/config/01-initial.sh:sh
+    af:
+      ipv4: true
+    bgp:
+      _session_clear:
+      - 10.1.0.2
+      advertise:
+      - ipv4: 10.0.0.2/32
+      advertise_loopback: true
+      as: 65002
+      community:
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65001
+        ifindex: 1
+        ipv4: 10.1.0.2
+        local_role: customer
+        name: isp
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.2
+    box: quay.io/frrouting/frr:10.6.1
+    clab:
+      binds:
+      - source: node_files/customer/initial
+        target: /etc/config/01-initial.sh
+      - source: node_files/customer/bgp
+        target: /etc/config/02-bgp.sh
+      - source: node_files/customer/bgp.local_role
+        target: /etc/config/03-bgp@local_role.sh
+      - source: node_files/customer/daemons
+        target: /etc/frr/daemons
+      - mode: ro
+        source: node_files/-shared-hosts
+        target: /etc/hosts
+      config_templates:
+      - mode: sh
+        source: initial
+        target: /etc/config/01-initial.sh
+      - mode: sh
+        source: bgp
+        target: /etc/config/02-bgp.sh
+      - mode: sh
+        source: bgp.local_role
+        target: /etc/config/03-bgp@local_role.sh
+      - source: daemons
+        target: /etc/frr/daemons
+      - mode: shared
+        source: hosts
+        target: /etc/hosts
+      exec:
+      - sleep 1
+      kind: linux
+    config:
+    - bgp.local_role
+    device: frr
+    hostname: clab-input-customer
+    id: 2
+    interfaces:
+    - bgp:
+        local_role: customer
+      ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      mtu: 1500
+      name: customer -> isp
+      neighbors:
+      - bgp:
+          local_role: provider
+        ifname: eth1
+        ipv4: 10.1.0.2/30
+        node: isp
+      role: external
+      type: p2p
+    loopback:
+      bgp:
+        advertise: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.102
+      mac: ca:fe:00:02:00:00
+    module:
+    - bgp
+    mtu: 1500
+    name: customer
+    netlab_ansible_skip_module:
+    - initial
+    - bgp
+    - bgp.local_role
+    role: router
+  isp:
+    _node_config:
+      bgp: /etc/config/02-bgp.sh:sh
+      bgp@local_role: /etc/config/03-bgp@local_role.sh:sh
+      initial: /etc/config/01-initial.sh:sh
+    af:
+      ipv4: true
+    bgp:
+      _session_clear:
+      - 10.1.0.1
+      - 10.1.0.6
+      advertise:
+      - ipv4: 10.0.0.1/32
+      advertise_loopback: true
+      as: 65001
+      community:
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65002
+        ifindex: 1
+        ipv4: 10.1.0.1
+        local_role: provider
+        name: customer
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65003
+        ifindex: 2
+        ipv4: 10.1.0.6
+        local_role: peer
+        name: peer
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.1
+    box: quay.io/frrouting/frr:10.6.1
+    clab:
+      binds:
+      - source: node_files/isp/initial
+        target: /etc/config/01-initial.sh
+      - source: node_files/isp/bgp
+        target: /etc/config/02-bgp.sh
+      - source: node_files/isp/bgp.local_role
+        target: /etc/config/03-bgp@local_role.sh
+      - source: node_files/isp/daemons
+        target: /etc/frr/daemons
+      - mode: ro
+        source: node_files/-shared-hosts
+        target: /etc/hosts
+      config_templates:
+      - mode: sh
+        source: initial
+        target: /etc/config/01-initial.sh
+      - mode: sh
+        source: bgp
+        target: /etc/config/02-bgp.sh
+      - mode: sh
+        source: bgp.local_role
+        target: /etc/config/03-bgp@local_role.sh
+      - source: daemons
+        target: /etc/frr/daemons
+      - mode: shared
+        source: hosts
+        target: /etc/hosts
+      exec:
+      - sleep 1
+      kind: linux
+    config:
+    - bgp.local_role
+    device: frr
+    hostname: clab-input-isp
+    id: 1
+    interfaces:
+    - bgp:
+        local_role: provider
+      ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      mtu: 1500
+      name: isp -> customer
+      neighbors:
+      - bgp:
+          local_role: customer
+        ifname: eth1
+        ipv4: 10.1.0.1/30
+        node: customer
+      role: external
+      type: p2p
+    - bgp:
+        local_role: peer
+      ifindex: 2
+      ifname: eth2
+      ipv4: 10.1.0.5/30
+      linkindex: 2
+      mtu: 1500
+      name: isp -> peer
+      neighbors:
+      - bgp:
+          local_role: peer
+        ifname: eth1
+        ipv4: 10.1.0.6/30
+        node: peer
+      role: external
+      type: p2p
+    loopback:
+      bgp:
+        advertise: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.101
+      mac: ca:fe:00:01:00:00
+    module:
+    - bgp
+    mtu: 1500
+    name: isp
+    netlab_ansible_skip_module:
+    - initial
+    - bgp
+    - bgp.local_role
+    role: router
+  peer:
+    _node_config:
+      bgp: /etc/config/02-bgp.sh:sh
+      bgp@local_role: /etc/config/03-bgp@local_role.sh:sh
+      initial: /etc/config/01-initial.sh:sh
+    af:
+      ipv4: true
+    bgp:
+      _session_clear:
+      - 10.1.0.5
+      advertise:
+      - ipv4: 10.0.0.3/32
+      advertise_loopback: true
+      as: 65003
+      community:
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65001
+        ifindex: 1
+        ipv4: 10.1.0.5
+        local_role: peer
+        name: isp
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.3
+    box: quay.io/frrouting/frr:10.6.1
+    clab:
+      binds:
+      - source: node_files/peer/initial
+        target: /etc/config/01-initial.sh
+      - source: node_files/peer/bgp
+        target: /etc/config/02-bgp.sh
+      - source: node_files/peer/bgp.local_role
+        target: /etc/config/03-bgp@local_role.sh
+      - source: node_files/peer/daemons
+        target: /etc/frr/daemons
+      - mode: ro
+        source: node_files/-shared-hosts
+        target: /etc/hosts
+      config_templates:
+      - mode: sh
+        source: initial
+        target: /etc/config/01-initial.sh
+      - mode: sh
+        source: bgp
+        target: /etc/config/02-bgp.sh
+      - mode: sh
+        source: bgp.local_role
+        target: /etc/config/03-bgp@local_role.sh
+      - source: daemons
+        target: /etc/frr/daemons
+      - mode: shared
+        source: hosts
+        target: /etc/hosts
+      exec:
+      - sleep 1
+      kind: linux
+    config:
+    - bgp.local_role
+    device: frr
+    hostname: clab-input-peer
+    id: 3
+    interfaces:
+    - bgp:
+        local_role: peer
+      ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.6/30
+      linkindex: 2
+      mtu: 1500
+      name: peer -> isp
+      neighbors:
+      - bgp:
+          local_role: peer
+        ifname: eth2
+        ipv4: 10.1.0.5/30
+        node: isp
+      role: external
+      type: p2p
+    loopback:
+      bgp:
+        advertise: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.3/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.103
+      mac: ca:fe:00:03:00:00
+    module:
+    - bgp
+    mtu: 1500
+    name: peer
+    netlab_ansible_skip_module:
+    - initial
+    - bgp
+    - bgp.local_role
+    role: router
+plugin:
+- bgp.local_role
+provider: clab

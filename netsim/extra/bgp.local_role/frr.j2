@@ -1,0 +1,46 @@
+#!/bin/bash
+#
+{% macro ebgp_local_role(n,af) -%}
+{%   set peer = n[af] if n[af] is string else n.local_if|default('?') %}
+{%   if n.local_role is defined %}
+  neighbor {{ peer }} local-role {{ n.local_role }}{% if n.local_role_strict|default(False) %} strict-mode{% endif +%}
+{%   endif %}
+{%- endmacro %}
+{#
+
+#}
+set -e
+cat >/tmp/config <<CONFIG
+!
+router bgp {{ bgp.as }}
+{% for n in bgp.neighbors %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{{     ebgp_local_role(n,af) }}
+{%   endfor %}
+{% endfor %}
+
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.bgp is defined and vdata.bgp.neighbors is defined %}
+router bgp {{ bgp.as }} vrf {{ vname }}
+{%     for n in vdata.bgp.neighbors %}
+{%       for af in ['ipv4','ipv6'] if n[af] is defined %}
+{{         ebgp_local_role(n,af) }}
+{%       endfor %}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
+CONFIG
+#
+# Change BGP configuration
+#
+vtysh -f /tmp/config
+vtysh -c 'write'
+#
+# Clear BGP sessions
+#
+vtysh -c 'clear bgp *'
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.bgp is defined and vdata.bgp.neighbors is defined %}
+vtysh -c 'clear bgp vrf {{ vname }} *'
+{%   endfor %}
+{% endif %}

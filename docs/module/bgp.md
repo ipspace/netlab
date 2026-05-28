@@ -46,6 +46,7 @@ _netlab_ BGP configuration module supports these features:
 Even more BGP features are implemented in the following plugins:
 
 * [bgp.session](plugin-bgp-session): implements numerous BGP session features, including session protection and AS-path manipulation.
+* [bgp.local_role](plugin-bgp-local-role): implements [RFC 9234](https://www.rfc-editor.org/rfc/rfc9234.html) BGP Roles on EBGP sessions (route-leak prevention).
 * [bgp.policy](plugin-bgp-policy): implements simple BGP routing policies, including weights, local preference, and MED.
 * [ebgp.multihop](plugin-ebgp-multihop): implements multihop EBGP sessions.
 * [bgp.domain](plugin-bgp-domain): allows you to build topologies that reuse the same BGP ASN in different network parts.

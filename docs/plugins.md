@@ -9,6 +9,7 @@
 
    plugins/bgp.domain.md
    plugins/bgp.session.md
+   plugins/bgp.local_role.md
    plugins/bgp.policy.md
    plugins/bonding.md
    plugins/ebgp.multihop.md

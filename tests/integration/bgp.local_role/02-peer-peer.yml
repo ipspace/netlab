@@ -1,0 +1,44 @@
+---
+message: |
+  Test RFC 9234 peer BGP roles on an EBGP session.
+
+plugin: [ bgp.local_role ]
+module: [ bgp ]
+
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ peer ]
+
+defaults.bgp.as: 65000
+
+nodes:
+  dut:
+    bgp.as: 65001
+  peer:
+    bgp.as: 65002
+    loopback.ipv4: 172.16.10.1/32
+
+links:
+- dut:
+    bgp.local_role: peer
+  peer:
+    bgp.local_role: peer
+
+validate:
+  session:
+    description: Check peer/peer EBGP session
+    wait_msg: Waiting for EBGP session establishment
+    wait: ebgp_session
+    nodes: [ dut ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'peer')
+
+  pfx:
+    description: Check that peer loopback is received on DUT
+    wait: bgp_scan_time
+    wait_msg: Waiting for BGP convergence
+    nodes: [ dut ]
+    plugin: bgp_prefix(nodes.peer.loopback.ipv4)
