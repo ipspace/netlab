@@ -40,8 +40,6 @@ def _check_strict_without_role(
 
 def _check_ibgp_local_role(ndata: Box, topology: Box, intf: typing.Optional[Box] = None) -> None:
   """Report an error if RFC 9234 role attributes are set on an IBGP session."""
-  if not _check_strict_without_role(ndata, topology, intf):
-    return
   for attr in _ATTR_LIST:
     if not modules.get_effective_module_attribute(
         path=f"bgp.{attr}", intf=intf, node=ndata, topology=topology):
@@ -54,13 +52,6 @@ def _check_ibgp_local_role(ndata: Box, topology: Box, intf: typing.Optional[Box]
       category=log.IncorrectValue,
       module=_config_name,
     )
-    return
-
-
-def _check_node_ibgp_local_role(ndata: Box, topology: Box) -> None:
-  """Reject node-level role attributes when the node has IBGP neighbors."""
-  for _ngb in _bgp.neighbors(ndata, select=["ibgp", "localas_ibgp"]):
-    _check_ibgp_local_role(ndata, topology)
     return
 
 
@@ -105,10 +96,8 @@ def post_transform(topology: Box) -> None:
 
     _bgp.cleanup_neighbor_attributes(ndata, topology, _ATTR_LIST)
 
-    for intf, ngb in _bgp.intf_neighbors(ndata, select=["ebgp"]):
-      apply_neighbor_attributes(ndata, ngb, intf, topology)
-
-    _check_node_ibgp_local_role(ndata, topology)
-
-    for intf, ngb in _bgp.intf_neighbors(ndata, select=["ibgp", "localas_ibgp"]):
-      _check_ibgp_local_role(ndata, topology, intf)
+    for intf, ngb in _bgp.intf_neighbors(ndata, select=["ibgp", "ebgp", "localas_ibgp"]):
+      if ngb.type == "ebgp":
+        apply_neighbor_attributes(ndata, ngb, intf, topology)
+      else:
+        _check_ibgp_local_role(ndata, topology, intf)
