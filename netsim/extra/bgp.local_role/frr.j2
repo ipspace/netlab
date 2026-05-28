@@ -2,9 +2,7 @@
 #
 {% macro ebgp_local_role(n,af) -%}
 {%   set peer = n[af] if n[af] is string else n.local_if|default('?') %}
-{%   if n.local_role is defined %}
   neighbor {{ peer }} local-role {{ n.local_role }}{% if n.local_role_strict|default(False) %} strict-mode{% endif +%}
-{%   endif %}
 {%- endmacro %}
 {#
 
@@ -15,7 +13,9 @@ cat >/tmp/config <<CONFIG
 router bgp {{ bgp.as }}
 {% for n in bgp.neighbors %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
-{{     ebgp_local_role(n,af) }}
+{%     if n.local_role is defined %}
+{{       ebgp_local_role(n,af) }}
+{%     endif %}
 {%   endfor %}
 {% endfor %}
 
@@ -24,7 +24,9 @@ router bgp {{ bgp.as }}
 router bgp {{ bgp.as }} vrf {{ vname }}
 {%     for n in vdata.bgp.neighbors %}
 {%       for af in ['ipv4','ipv6'] if n[af] is defined %}
-{{         ebgp_local_role(n,af) }}
+{%         if n.local_role is defined %}
+{{           ebgp_local_role(n,af) }}
+{%         endif %}
 {%       endfor %}
 {%     endfor %}
 {%   endfor %}
