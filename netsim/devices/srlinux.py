@@ -13,6 +13,63 @@ from ..utils import log
 from ..utils import routing as _routing
 from . import _Quirks, need_ansible_collection, report_quirk
 
+# containerlab nokia_srlinux type enum (schemas/clab.schema.json)
+_CLAB_TYPE_CANONICAL: dict[str, str] = {
+  'ixsa1': 'ixs-a1',
+  'ixs-a1': 'ixs-a1',
+  'ixrd1': 'ixr-d1',
+  'ixr-d1': 'ixr-d1',
+  'ixrd2': 'ixr-d2',
+  'ixr-d2': 'ixr-d2',
+  'ixrd3': 'ixr-d3',
+  'ixr-d3': 'ixr-d3',
+  'ixrd2l': 'ixr-d2l',
+  'ixr-d2l': 'ixr-d2l',
+  'ixrd3l': 'ixr-d3l',
+  'ixr-d3l': 'ixr-d3l',
+  'ixrd4': 'ixr-d4',
+  'ixr-d4': 'ixr-d4',
+  'ixrd5': 'ixr-d5',
+  'ixr-d5': 'ixr-d5',
+  'ixrh2': 'ixr-h2',
+  'ixr-h2': 'ixr-h2',
+  'ixrh3': 'ixr-h3',
+  'ixr-h3': 'ixr-h3',
+  'ixrh4': 'ixr-h4',
+  'ixr-h4': 'ixr-h4',
+  'ixrh432d': 'ixr-h4-32d',
+  'ixr-h4-32d': 'ixr-h4-32d',
+  'ixrh5': 'ixr-h5',
+  'ixr-h5': 'ixr-h5',
+  'ixrh564d': 'ixr-h5-64d',
+  'ixr-h5-64d': 'ixr-h5-64d',
+  'ixrh564o': 'ixr-h5-64o',
+  'ixr-h5-64o': 'ixr-h5-64o',
+  'ixr6': 'ixr-6',
+  'ixr-6': 'ixr-6',
+  'ixr6e': 'ixr-6e',
+  'ixr-6e': 'ixr-6e',
+  'ixr10': 'ixr-10',
+  'ixr-10': 'ixr-10',
+  'ixr10e': 'ixr-10e',
+  'ixr-10e': 'ixr-10e',
+  'ixr18e': 'ixr-18e',
+  'ixr-18e': 'ixr-18e',
+  'sxr1x44s': 'sxr-1x-44s',
+  'sxr-1x-44s': 'sxr-1x-44s',
+  'sxr1d32d': 'sxr-1d-32d',
+  'sxr-1d-32d': 'sxr-1d-32d',
+  'sxr-1-32d': 'sxr-1-32d',
+  'ixrx1b': 'ixr-x1b',
+  'ixr-x1b': 'ixr-x1b',
+  'ixrx3b': 'ixr-x3b',
+  'ixr-x3b': 'ixr-x3b',
+  'ixr-x4': 'ixr-x4',
+  'ixr-x4-d': 'ixr-x4-d',
+}
+VALID_CLAB_TYPES = tuple(sorted(set(_CLAB_TYPE_CANONICAL.values())))
+
+CLAB_DEFAULT_TYPE = 'ixr-d2'
 
 def check_prefix_deny(node: Box) -> None:
   """Report a quirk when prefix filters use a deny action (unsupported on SR Linux)."""
@@ -95,6 +152,35 @@ def normalize_interface_descriptions(node: Box) -> None:
     if intf.get('name'):
       intf.name = intf.name.replace('->','~').replace('[','').replace(']','')
 
+def normalize_clab_type(node: Box, topology: Box) -> str:
+  """Validate clab.type and map legacy undashed names to hyphenated containerlab values."""
+  dt = node.get('clab.type', CLAB_DEFAULT_TYPE)
+  if a_devices.get_provider(node, topology.defaults) != 'clab':
+    return dt
+
+  canonical = _CLAB_TYPE_CANONICAL.get(dt)
+  if canonical:
+    if canonical != dt:
+      report_quirk(
+        text=f'Normalized legacy clab.type "{dt}" to "{canonical}" on node {node.name}',
+        more_hints=['Use hyphenated containerlab type names (for example ixr-6e instead of ixr6e)'],
+        node=node,
+        quirk='clab_type_legacy',
+        category=Warning)
+      node.clab.type = canonical
+    return canonical
+
+  report_quirk(
+    text=f'Invalid clab.type "{dt}" on node {node.name}',
+    more_hints=[
+      'Use a documented SR Linux hardware type (see https://containerlab.dev/manual/kinds/srl/#types)',
+      f'Valid types: {", ".join(VALID_CLAB_TYPES)}',
+    ],
+    node=node,
+    quirk='clab_type',
+    category=log.IncorrectValue)
+  return "invalid"
+
 def license_needed(dt: str, features: Box) -> bool:
   """Return True when the emulated platform requires an SR Linux license for MPLS/SR."""
   p_list = features.get('mpls._platforms',[])
@@ -137,7 +223,7 @@ class SRLINUX(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
-    dt = node.get('clab.type','ixr-d2')   # Default to ixr-d2, which is a 7220 IXR
+    dt = normalize_clab_type(node, topology)
     set_api_version(node)
     features = a_devices.get_device_features(node,topology.defaults)
     normalize_interface_descriptions(node)
@@ -185,10 +271,9 @@ class SRLINUX(_Quirks):
 
     if ('mpls' in mods or 'sr' in mods) and not is_licensed:
       report_quirk(
-         text=f'SR-MPLS only supported on 7250 IXR and 7730 SXR routers (node {node.name})',
-         more_hints=[f'Use e.g. clab.type "ixr-6e" instead of {dt}'],
+         text=f'MPLS works only on (emulated) 7250-IXR and 7730-SXR routers (node {node.name})',
+         more_hints=['Set node clab.type to a different device model (see https://containerlab.dev/manual/kinds/srl/)'],
          node=node,
-         quirk='sr_mpls_platform',
          category=log.IncorrectValue)
 
     if 'routing' in mods and node.get('routing.prefix',None):
