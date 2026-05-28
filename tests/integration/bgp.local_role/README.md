@@ -8,3 +8,8 @@ Specify the device under test with environment variables:
 $ export NETLAB_DEVICE=frr
 $ export NETLAB_PROVIDER=clab
 ```
+
+Validation tests run on the FRR probe nodes only, so the DUT can be FRR or BIRD.
+
+The `01-provider-customer` topology includes an **upstream** provider that advertises a
+prefix the DUT must not leak to the **peer** session (RFC 9234 OTC rules).

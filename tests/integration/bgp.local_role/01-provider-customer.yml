@@ -1,6 +1,8 @@
 ---
 message: |
-  Test RFC 9234 provider/customer BGP roles on EBGP sessions.
+  Test RFC 9234 provider/customer and peer BGP roles, including route-leak
+  prevention: a prefix learned from an upstream provider must not be advertised
+  to a lateral peer session.
 
 plugin: [ bgp.local_role ]
 module: [ bgp ]
@@ -11,7 +13,7 @@ groups:
   probes:
     device: frr
     provider: clab
-    members: [ customer, peer ]
+    members: [ customer, peer, upstream ]
 
 defaults.bgp.as: 65000
 
@@ -24,8 +26,15 @@ nodes:
   peer:
     bgp.as: 65003
     loopback.ipv4: 172.16.3.1/32
+  upstream:
+    bgp.as: 65004
+    loopback.ipv4: 172.16.4.1/32
 
 links:
+- dut:
+    bgp.local_role: customer
+  upstream:
+    bgp.local_role: provider
 - dut:
     bgp.local_role: provider
   customer:
@@ -36,23 +45,50 @@ links:
     bgp.local_role: peer
 
 validate:
-  session_customer:
-    description: Check provider/customer EBGP session
+  session_upstream:
+    description: Check provider/customer EBGP session toward upstream (FRR probe to DUT)
     wait_msg: Waiting for EBGP session establishment
     wait: ebgp_session
-    nodes: [ dut ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'customer')
+    nodes: [ upstream ]
+    devices: [ frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  session_customer:
+    description: Check provider/customer EBGP session toward customer (FRR probe to DUT)
+    wait_msg: Waiting for EBGP session establishment
+    wait: ebgp_session
+    nodes: [ customer ]
+    devices: [ frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
 
   session_peer:
-    description: Check peer/peer EBGP session
+    description: Check peer/peer EBGP session (FRR probe to DUT)
     wait_msg: Waiting for EBGP session establishment
     wait: ebgp_session
-    nodes: [ dut ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'peer')
+    nodes: [ peer ]
+    devices: [ frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
 
-  pfx_customer:
-    description: Check that customer loopback is received on DUT
+  pfx_upstream:
+    description: Check that upstream advertises its loopback
     wait: bgp_scan_time
     wait_msg: Waiting for BGP convergence
-    nodes: [ dut ]
+    nodes: [ upstream ]
+    devices: [ frr ]
+    plugin: bgp_prefix(nodes.upstream.loopback.ipv4)
+
+  pfx_customer:
+    description: Check that customer advertises its loopback
+    wait: bgp_scan_time
+    wait_msg: Waiting for BGP convergence
+    nodes: [ customer ]
+    devices: [ frr ]
     plugin: bgp_prefix(nodes.customer.loopback.ipv4)
+
+  pfx_no_leak:
+    description: Check that upstream prefix is not leaked to the peer session
+    wait: bgp_scan_time
+    wait_msg: Waiting for BGP convergence
+    nodes: [ peer ]
+    devices: [ frr ]
+    plugin: bgp_prefix(nodes.upstream.loopback.ipv4,state='missing')
