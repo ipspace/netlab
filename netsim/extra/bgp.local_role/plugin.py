@@ -18,8 +18,30 @@ def _use_plugin_template(node: Box) -> bool:
   return not (node.get("_daemon") and node.device == "bird")
 
 
+def _check_strict_without_role(
+    ndata: Box, topology: Box, intf: typing.Optional[Box] = None) -> bool:
+  """Reject bgp.local_role_strict without bgp.local_role. Return True if the check passed."""
+  strict = modules.get_effective_module_attribute(
+    path="bgp.local_role_strict", intf=intf, node=ndata, topology=topology)
+  role = modules.get_effective_module_attribute(
+    path="bgp.local_role", intf=intf, node=ndata, topology=topology)
+  if strict and not role:
+    where = f"node {ndata.name}"
+    if intf is not None:
+      where += f" interface {intf.name}"
+    log.error(
+      f"Cannot use bgp.local_role_strict without bgp.local_role ({where})",
+      category=log.IncorrectValue,
+      module=_config_name,
+    )
+    return False
+  return True
+
+
 def _check_ibgp_local_role(ndata: Box, topology: Box, intf: typing.Optional[Box] = None) -> None:
   """Report an error if RFC 9234 role attributes are set on an IBGP session."""
+  if not _check_strict_without_role(ndata, topology, intf):
+    return
   for attr in _ATTR_LIST:
     if not modules.get_effective_module_attribute(
         path=f"bgp.{attr}", intf=intf, node=ndata, topology=topology):
@@ -48,6 +70,9 @@ def apply_neighbor_attributes(node: Box, ngb: Box, intf: Box, topology: Box) -> 
   Returns:
     True if at least one attribute was applied to the neighbor.
   """
+  if not _check_strict_without_role(node, topology, intf):
+    return False
+
   values: dict[str, typing.Any] = {}
   for attr in _ATTR_LIST:
     attr_value = modules.get_effective_module_attribute(
