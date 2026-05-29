@@ -13,63 +13,16 @@ from ..utils import log
 from ..utils import routing as _routing
 from . import _Quirks, need_ansible_collection, report_quirk
 
-# containerlab nokia_srlinux type enum (schemas/clab.schema.json)
-_CLAB_TYPE_CANONICAL: dict[str, str] = {
-  'ixsa1': 'ixs-a1',
-  'ixs-a1': 'ixs-a1',
-  'ixrd1': 'ixr-d1',
-  'ixr-d1': 'ixr-d1',
-  'ixrd2': 'ixr-d2',
-  'ixr-d2': 'ixr-d2',
-  'ixrd3': 'ixr-d3',
-  'ixr-d3': 'ixr-d3',
-  'ixrd2l': 'ixr-d2l',
-  'ixr-d2l': 'ixr-d2l',
-  'ixrd3l': 'ixr-d3l',
-  'ixr-d3l': 'ixr-d3l',
-  'ixrd4': 'ixr-d4',
-  'ixr-d4': 'ixr-d4',
-  'ixrd5': 'ixr-d5',
-  'ixr-d5': 'ixr-d5',
-  'ixrh2': 'ixr-h2',
-  'ixr-h2': 'ixr-h2',
-  'ixrh3': 'ixr-h3',
-  'ixr-h3': 'ixr-h3',
-  'ixrh4': 'ixr-h4',
-  'ixr-h4': 'ixr-h4',
-  'ixrh432d': 'ixr-h4-32d',
-  'ixr-h4-32d': 'ixr-h4-32d',
-  'ixrh5': 'ixr-h5',
-  'ixr-h5': 'ixr-h5',
-  'ixrh564d': 'ixr-h5-64d',
-  'ixr-h5-64d': 'ixr-h5-64d',
-  'ixrh564o': 'ixr-h5-64o',
-  'ixr-h5-64o': 'ixr-h5-64o',
-  'ixr6': 'ixr-6',
-  'ixr-6': 'ixr-6',
-  'ixr6e': 'ixr-6e',
-  'ixr-6e': 'ixr-6e',
-  'ixr10': 'ixr-10',
-  'ixr-10': 'ixr-10',
-  'ixr10e': 'ixr-10e',
-  'ixr-10e': 'ixr-10e',
-  'ixr18e': 'ixr-18e',
-  'ixr-18e': 'ixr-18e',
-  'sxr1x44s': 'sxr-1x-44s',
-  'sxr-1x-44s': 'sxr-1x-44s',
-  'sxr1d32d': 'sxr-1d-32d',
-  'sxr-1d-32d': 'sxr-1d-32d',
-  'sxr-1-32d': 'sxr-1-32d',
-  'ixrx1b': 'ixr-x1b',
-  'ixr-x1b': 'ixr-x1b',
-  'ixrx3b': 'ixr-x3b',
-  'ixr-x3b': 'ixr-x3b',
-  'ixr-x4': 'ixr-x4',
-  'ixr-x4-d': 'ixr-x4-d',
-}
-VALID_CLAB_TYPES = tuple(sorted(set(_CLAB_TYPE_CANONICAL.values())))
-
 CLAB_DEFAULT_TYPE = 'ixr-d2'
+
+def hyphenate_legacy_clab_type(dt: str, clab_types: Box) -> str:
+  """Convert undashed legacy clab.type to canonical form (1 or 2 hyphen insertions)."""
+
+  for name in clab_types.keys():
+    if name.replace('-', '') == dt:
+      return name
+
+  return "unknown"
 
 def check_prefix_deny(node: Box) -> None:
   """Report a quirk when prefix filters use a deny action (unsupported on SR Linux)."""
@@ -158,23 +111,30 @@ def normalize_clab_type(node: Box, topology: Box) -> str:
   if a_devices.get_provider(node, topology.defaults) != 'clab':
     return dt
 
-  canonical = _CLAB_TYPE_CANONICAL.get(dt)
-  if canonical:
-    if canonical != dt:
+  clab_types = a_devices.get_device_attribute(node, 'clab_types', topology.defaults)
+  if not isinstance(clab_types, Box):
+    return dt
+
+  original = dt
+  if '-' not in dt:
+    dt = hyphenate_legacy_clab_type(dt, clab_types)
+
+  if dt in clab_types:
+    if dt != original:
       report_quirk(
-        text=f'Normalized legacy clab.type "{dt}" to "{canonical}" on node {node.name}',
+        text=f'Normalized legacy clab.type "{original}" to "{dt}" on node {node.name}',
         more_hints=['Use hyphenated containerlab type names (for example ixr-6e instead of ixr6e)'],
         node=node,
         quirk='clab_type_legacy',
         category=Warning)
-      node.clab.type = canonical
-    return canonical
+      node.clab.type = dt
+    return dt
 
   report_quirk(
     text=f'Invalid clab.type "{dt}" on node {node.name}',
     more_hints=[
       'Use a documented SR Linux hardware type (see https://containerlab.dev/manual/kinds/srl/#types)',
-      f'Valid types: {", ".join(VALID_CLAB_TYPES)}',
+      f'Valid types: {", ".join(clab_types.keys())}',
     ],
     node=node,
     quirk='clab_type',
