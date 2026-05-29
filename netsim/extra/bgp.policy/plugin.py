@@ -170,9 +170,6 @@ def _use_role_plugin_template(node: Box) -> bool:
 
 def apply_role_attributes(node: Box, ngb: Box, intf: Box, topology: Box) -> bool:
   """Copy bgp.role* interface attributes to an EBGP neighbor."""
-  if not _bgp.check_device_attribute_support('role', node, ngb, topology, _config_name):
-    return False
-
   values: dict[str, typing.Any] = {}
   for attr in _ROLE_ATTR_LIST:
     attr_value = modules.get_effective_module_attribute(
@@ -181,6 +178,9 @@ def apply_role_attributes(node: Box, ngb: Box, intf: Box, topology: Box) -> bool
       values[attr] = attr_value
 
   if not values:
+    return False
+
+  if not _bgp.check_device_attribute_support('role', node, ngb, topology, _config_name):
     return False
 
   if 'role_strict' in values and 'role' not in values:
