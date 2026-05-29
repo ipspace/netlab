@@ -168,44 +168,9 @@ def _use_role_plugin_template(node: Box) -> bool:
   """Return False for the BIRD daemon (roles are rendered in daemons/bird/bgp.j2)."""
   return not (node.get('_daemon') and node.device == 'bird')
 
-def _check_role_strict_without_role(
-    ndata: Box, topology: Box, intf: typing.Optional[Box] = None) -> bool:
-  """Reject bgp.role_strict without bgp.role. Return True if the check passed."""
-  strict = modules.get_effective_module_attribute(
-    path='bgp.role_strict', intf=intf, node=ndata, topology=topology)
-  role = modules.get_effective_module_attribute(
-    path='bgp.role', intf=intf, node=ndata, topology=topology)
-  if strict and not role:
-    where = f'node {ndata.name}'
-    if intf is not None:
-      where += f' interface {intf.name}'
-    log.error(
-      f'Cannot use bgp.role_strict without bgp.role ({where})',
-      category=log.IncorrectValue,
-      module=_config_name,
-    )
-    return False
-  return True
-
-def _check_ibgp_role(ndata: Box, topology: Box, intf: typing.Optional[Box] = None) -> None:
-  """Report an error if RFC 9234 role attributes are set on an IBGP session."""
-  for attr in _ROLE_ATTR_LIST:
-    if not modules.get_effective_module_attribute(
-        path=f'bgp.{attr}', intf=intf, node=ndata, topology=topology):
-      continue
-    where = f'node {ndata.name}'
-    if intf is not None:
-      where += f' interface {intf.name}'
-    log.error(
-      f'Cannot use bgp.{attr} on IBGP session ({where})',
-      category=log.IncorrectValue,
-      module=_config_name,
-    )
-    return
-
 def apply_role_attributes(node: Box, ngb: Box, intf: Box, topology: Box) -> bool:
   """Copy bgp.role* interface attributes to an EBGP neighbor."""
-  if not _check_role_strict_without_role(node, topology, intf):
+  if not _bgp.check_device_attribute_support('role', node, ngb, topology, _config_name):
     return False
 
   values: dict[str, typing.Any] = {}
@@ -218,7 +183,15 @@ def apply_role_attributes(node: Box, ngb: Box, intf: Box, topology: Box) -> bool
   if not values:
     return False
 
-  if not _bgp.check_device_attribute_support('role', node, ngb, topology, _config_name):
+  if 'role_strict' in values and 'role' not in values:
+    where = f'node {node.name}'
+    if intf is not None:
+      where += f' interface {intf.name}'
+    log.error(
+      f'Cannot use bgp.role_strict without bgp.role ({where})',
+      category=log.IncorrectValue,
+      module=_config_name,
+    )
     return False
 
   for attr, attr_value in values.items():
@@ -392,13 +365,8 @@ def post_transform(topology: Box) -> None:
     copy_locpref = False if default_locpref else 'locpref' in ndata.bgp
 
     # Iterate over BGP neighbors and apply bgp.policy interface attributes to EBGP sessions.
-    # Also reject RFC 9234 role attributes on IBGP sessions.
     #
-    for (intf,ngb) in _bgp.intf_neighbors(ndata,select=['ibgp','ebgp','localas_ibgp']):
-      if ngb.type != 'ebgp':
-        _check_ibgp_role(ndata,topology,intf)
-        continue
-
+    for (intf,ngb) in _bgp.intf_neighbors(ndata,select=['ebgp']):
       policy_idx += 1
       bgp_bandwidth = intf.get('bgp.bandwidth',False)
       if bgp_bandwidth:
