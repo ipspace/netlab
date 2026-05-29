@@ -15,14 +15,6 @@ from . import _Quirks, need_ansible_collection, report_quirk
 
 CLAB_DEFAULT_TYPE = 'ixr-d2'
 
-def hyphenate_legacy_clab_type(dt: str, clab_types: Box) -> str:
-  """Convert undashed legacy clab.type to canonical form (1 or 2 hyphen insertions)."""
-
-  for name in clab_types.keys():
-    if name.replace('-', '') == dt:
-      return name
-
-  return "unknown"
 
 def check_prefix_deny(node: Box) -> None:
   """Report a quirk when prefix filters use a deny action (unsupported on SR Linux)."""
@@ -105,6 +97,15 @@ def normalize_interface_descriptions(node: Box) -> None:
     if intf.get('name'):
       intf.name = intf.name.replace('->','~').replace('[','').replace(']','')
 
+def hyphenate_legacy_clab_type(dt: str, clab_types: Box) -> str:
+  """Convert undashed legacy clab.type to canonical form (1 or 2 hyphen insertions)."""
+
+  for name in clab_types.keys():
+    if name.replace('-', '') == dt:
+      return name
+
+  return "unknown"
+
 def normalize_clab_type(node: Box, topology: Box) -> str:
   """Validate clab.type and map legacy undashed names to hyphenated containerlab values."""
   dt = node.get('clab.type', CLAB_DEFAULT_TYPE)
@@ -131,7 +132,7 @@ def normalize_clab_type(node: Box, topology: Box) -> str:
     return dt
 
   report_quirk(
-    text=f'Invalid clab.type "{dt}" on node {node.name}',
+    text=f'Invalid clab.type "{original}" on node {node.name}',
     more_hints=[
       'Use a documented SR Linux hardware type (see https://containerlab.dev/manual/kinds/srl/#types)',
       f'Valid types: {", ".join(clab_types.keys())}',
