@@ -2,7 +2,7 @@ import typing
 
 from box import Box
 
-from netsim import api, data
+from netsim import api, data, modules
 from netsim.augment import devices
 from netsim.data import types
 from netsim.modules.routing.policy import check_routing_policy, import_routing_policy
@@ -11,7 +11,10 @@ from netsim.utils import routing as _bgp
 
 _config_name = 'bgp.policy'
 
-_requires    = [ 'bgp' ]
+_requires        = [ 'bgp' ]
+_execute_after    = [ 'bgp.session' ]
+
+_ROLE_ATTR_LIST   = [ 'role', 'role_strict' ]
 
 @types.type_test()
 def must_be_autobw(
@@ -160,6 +163,71 @@ def apply_config(node: Box, ngb: Box) -> None:
   global _config_name
   api.node_config(node,_config_name)                    # Remember that we have to do extra configuration
   _bgp.clear_bgp_session(node,ngb)
+
+def _use_role_plugin_template(node: Box) -> bool:
+  """Return False for the BIRD daemon (roles are rendered in daemons/bird/bgp.j2)."""
+  return not (node.get('_daemon') and node.device == 'bird')
+
+def _check_role_strict_without_role(
+    ndata: Box, topology: Box, intf: typing.Optional[Box] = None) -> bool:
+  """Reject bgp.role_strict without bgp.role. Return True if the check passed."""
+  strict = modules.get_effective_module_attribute(
+    path='bgp.role_strict', intf=intf, node=ndata, topology=topology)
+  role = modules.get_effective_module_attribute(
+    path='bgp.role', intf=intf, node=ndata, topology=topology)
+  if strict and not role:
+    where = f'node {ndata.name}'
+    if intf is not None:
+      where += f' interface {intf.name}'
+    log.error(
+      f'Cannot use bgp.role_strict without bgp.role ({where})',
+      category=log.IncorrectValue,
+      module=_config_name,
+    )
+    return False
+  return True
+
+def _check_ibgp_role(ndata: Box, topology: Box, intf: typing.Optional[Box] = None) -> None:
+  """Report an error if RFC 9234 role attributes are set on an IBGP session."""
+  for attr in _ROLE_ATTR_LIST:
+    if not modules.get_effective_module_attribute(
+        path=f'bgp.{attr}', intf=intf, node=ndata, topology=topology):
+      continue
+    where = f'node {ndata.name}'
+    if intf is not None:
+      where += f' interface {intf.name}'
+    log.error(
+      f'Cannot use bgp.{attr} on IBGP session ({where})',
+      category=log.IncorrectValue,
+      module=_config_name,
+    )
+    return
+
+def apply_role_attributes(node: Box, ngb: Box, intf: Box, topology: Box) -> bool:
+  """Copy bgp.role* interface attributes to an EBGP neighbor."""
+  if not _check_role_strict_without_role(node, topology, intf):
+    return False
+
+  values: dict[str, typing.Any] = {}
+  for attr in _ROLE_ATTR_LIST:
+    attr_value = modules.get_effective_module_attribute(
+      path=f'bgp.{attr}', intf=intf, node=node)
+    if attr_value:
+      values[attr] = attr_value
+
+  if not values:
+    return False
+
+  if not _bgp.check_device_attribute_support('role', node, ngb, topology, _config_name):
+    return False
+
+  for attr, attr_value in values.items():
+    ngb[attr] = attr_value
+
+  if _use_role_plugin_template(node):
+    apply_config(node, ngb)
+
+  return True
 
 '''
 Apply attributes supported by bgp.policy plugin to a single neighbor
@@ -313,7 +381,7 @@ def post_transform(topology: Box) -> None:
       continue
 
     route_aggregation(ndata,topology)
-    _bgp.cleanup_neighbor_attributes(ndata,topology,_attr_list + [ 'policy' ])
+    _bgp.cleanup_neighbor_attributes(ndata,topology,_attr_list + _ROLE_ATTR_LIST + [ 'policy' ])
     policy_idx = 0
 
     # Get _default_locpref feature flag (could be None), then figure out if we need to copy
@@ -323,10 +391,14 @@ def post_transform(topology: Box) -> None:
     default_locpref = _bgp.get_device_bgp_feature('_default_locpref',ndata,topology)
     copy_locpref = False if default_locpref else 'locpref' in ndata.bgp
 
-    # Now iterate over all EBGP neighbors (global and VRF) and apply bgp.policy interface
-    # attributes to the neighbors
+    # Iterate over BGP neighbors and apply bgp.policy interface attributes to EBGP sessions.
+    # Also reject RFC 9234 role attributes on IBGP sessions.
     #
-    for (intf,ngb) in _bgp.intf_neighbors(ndata,select=['ebgp']):
+    for (intf,ngb) in _bgp.intf_neighbors(ndata,select=['ibgp','ebgp','localas_ibgp']):
+      if ngb.type != 'ebgp':
+        _check_ibgp_role(ndata,topology,intf)
+        continue
+
       policy_idx += 1
       bgp_bandwidth = intf.get('bgp.bandwidth',False)
       if bgp_bandwidth:
@@ -338,6 +410,7 @@ def post_transform(topology: Box) -> None:
             communities.append('extended')
       if copy_locpref and not intf.get('bgp.locpref',False):
         intf.bgp.locpref = ndata.bgp.locpref
+      apply_role_attributes(ndata,ngb,intf,topology)
       if intf.get('bgp.policy',{}):
         apply_bgp_routing_policy(ndata,ngb,intf,topology)
       if apply_policy_attributes(ndata,ngb,intf,topology):  # If we applied at least some bgp.policy attribute to the neighbor

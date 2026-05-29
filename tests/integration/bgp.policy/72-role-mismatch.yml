@@ -1,0 +1,65 @@
+---
+message: |
+  Test that a correctly configured provider/customer session with strict mode
+  comes up even when another EBGP session on the same router has incompatible
+  strict-mode roles (provider vs peer).
+
+plugin: [ bgp.policy ]
+module: [ bgp ]
+
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ bad, good ]
+
+defaults.bgp.as: 65000
+defaults.bgp.role_strict: true
+
+nodes:
+  dut:
+    bgp.as: 65001
+  bad:
+    bgp.as: 65199
+  good:
+    bgp.as: 65198
+    loopback.ipv4: 172.16.98.1/32
+
+links:
+- dut:
+    bgp.role: provider
+  bad:
+    bgp.role: peer
+- dut:
+    bgp.role: provider
+  good:
+    bgp.role: customer
+
+validate:
+  session_good:
+    description: Check that the provider/customer strict-mode session is established
+    wait_msg: Waiting for EBGP session establishment
+    wait: ebgp_session
+    nodes: [ good ]
+    devices: [ frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  wait:
+    description: Wait a few seconds before checking the mismatched session
+    wait: 5
+
+  session_bad:
+    description: Check that incompatible strict-mode roles prevent session establishment
+    nodes: [ bad ]
+    devices: [ frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',state=['Idle','Active'])
+
+  pfx_good:
+    description: Check that good advertises its loopback
+    wait: bgp_scan_time
+    wait_msg: Waiting for BGP convergence
+    nodes: [ good ]
+    devices: [ frr ]
+    plugin: bgp_prefix(nodes.good.loopback.ipv4)

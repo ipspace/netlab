@@ -11,24 +11,33 @@ bgp:
     p_attr:                                               # BGP policy attributes
       direct: [ weight, prefix_filter, as_filter ]        # Things that can be applied directly to a neighbor
       node: [ locpref ]
-      link: [ locpref, med ]
-      interface: [ locpref, med, prepend, weight ]
+      link: [ locpref, med, role, role_strict ]
+      interface: [ locpref, med, prepend, weight, role, role_strict ]
       compound:                                           # Things that have to be applied to in/out policy
         locpref: in
         med: out
         prepend: out
         bandwidth: both
 
-    interface:
-      policy:
-        in: str
-        out: str
-      bandwidth:
-        _alt_types: [ autobw ]
-        in: autobw
-        out: autobw
-
+    role:
+      attr: [ role, role_strict ]
+    global:
+      role:
+        _description: |
+          Local BGP Role for the EBGP session (RFC 9234). Negotiated in the BGP OPEN
+          message to prevent route leaks; enables automatic Only-to-Customer handling.
+        type: str
+        valid_values: [ provider, customer, peer, rs-server, rs-client ]
+      role_strict:
+        _description: |
+          Require the remote router to advertise a compatible BGP Role capability
+          (RFC 9234 strict mode); otherwise the session is not established.
+        type: bool
     node:
+      role:
+        copy: global
+      role_strict:
+        copy: global
       aggregate:
         type: list
         _subtype:
@@ -38,6 +47,23 @@ bgp:
           suppress_policy: str
           attributes: str
           _alt_types: [ prefix_str ]
+    link:
+      role:
+        copy: global
+      role_strict:
+        copy: global
+    interface:
+      policy:
+        in: str
+        out: str
+      bandwidth:
+        _alt_types: [ autobw ]
+        in: autobw
+        out: autobw
+      role:
+        copy: global
+      role_strict:
+        copy: global
     vrf:
       aggregate:
         copy: node
