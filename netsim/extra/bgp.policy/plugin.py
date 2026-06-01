@@ -20,17 +20,72 @@ def must_be_autobw(
       min_value:  typing.Optional[int] = None,          # Minimum value
       max_value:  typing.Optional[int] = None,          # Maximum value
                 ) -> dict:
-  
+
   expected_type = { '_type': 'auto-bandwidth (an integer or keyword "auto")' }
 
   if isinstance(value,str):
     if value == 'auto':
       return { '_valid': True } 
-    
+
   result = types.check_num_type(value,min_value,max_value)
   return expected_type if '_type' in result else result
 
 types.register_type('autobw',must_be_autobw)
+
+'''
+bgp.role accepts a string or a dict; _alt_types only call registered must_be_* functions
+(see autobw). Until https://github.com/ipspace/netlab/issues/3430 lands, validate dict
+roles here. Schema and valid_values live in defaults.yml.
+'''
+
+def _bgp_role_values() -> list[str]:
+  from netsim.data import validate as vmod
+
+  ta = vmod.topo_attributes
+  role_def = ta.get('bgp_role_name') if isinstance(ta,Box) else None
+  if isinstance(role_def,Box) and 'valid_values' in role_def:
+    return list(role_def.valid_values)
+  return [ 'provider', 'customer', 'peer', 'rs-server', 'rs-client' ]
+
+@types.type_test()
+def must_be_bgp_role(
+      value: typing.Any,
+      valid_values: typing.Optional[list] = None,
+                ) -> dict:
+
+  values = valid_values or _bgp_role_values()
+  values_hint = f'({",".join(values)})'
+
+  if isinstance(value,str):
+    return { '_valid': True } if value in values else { '_type': f'a BGP role {values_hint}' }
+
+  if isinstance(value,Box):
+    name = value.get('name',None)
+    strict = value.get('strict',None)
+    if name and name not in values:
+      return { '_type': f'bgp_role dictionary with name attribute {values_hint}' }
+    if not name:
+      return { '_type': f'bgp_role dictionary with name attribute {values_hint}' }
+    if strict is not None and not isinstance(strict,bool):
+      return { '_type': 'bgp_role dictionary with optional strict boolean' }
+    return { '_valid': True }
+
+  return { '_type': f'a BGP role (string or bgp_role dictionary with name attribute {values_hint})' }
+
+@types.type_test()
+def must_be_bgp_role_strict(
+      value: typing.Any,
+                ) -> dict:
+
+  if isinstance(value,Box) and value.get('strict') is not None:
+    if isinstance(value.get('strict'),bool):
+      return { '_valid': True }
+    return { '_type': 'bgp_role_strict dictionary with strict boolean' }
+
+  return { '_type': 'bgp_role_strict dictionary with strict attribute' }
+
+types.register_type('bgp_role',must_be_bgp_role)
+types.register_type('bgp_role_strict',must_be_bgp_role_strict)
 
 """
 copy_routing_attributes: copy select routing policy SET attributes into BGP node/link/interface attributes

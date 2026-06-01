@@ -333,52 +333,25 @@ def validate_list(
 validate_alt_type -- deal with dictionaries that could be specified as something else
 """
 
-def validate_alt_type(
-      data: typing.Any,
-      data_type: Box,
-      parent: typing.Optional[Box],
-      key: typing.Any,
-      parent_path: str = '',
-      module: str = 'attributes') -> dict:
-  global topo_attributes, topo_pointer, list_of_modules
-
+def validate_alt_type(data: typing.Any, data_type: Box) -> dict:
   if type(data).__name__ in data_type._alt_types:       # Simple check: is type name in alt types?
     return { '_valid': True }                           # Got it, no need for more complex validation
 
   v_alt_err: list = []
-  topology = topo_pointer or get_empty_box()
 
   for at in data_type._alt_types:                       # Iterate over alt-types
     validation_function = getattr(_tv,f'must_be_{at}',None)
-    if validation_function:                             # Registered type (example: autobw)
-      v_result = validation_function(
-                    parent=None,
-                    key=data,
-                    path=parent_path,
-                    _raw_status=True)
-      if v_result.get('_valid',False):
-        return v_result
-      v_alt_err.append(v_result.get('_value','') or v_result.get('_type',''))
-      continue
+    if not validation_function:                         # Is alt-type a data type with a validation function?
+      continue                                          # ... nope, get out of here
 
-    if topo_attributes and at in topo_attributes:       # User-defined data type from defaults.attributes
-      alt_dt = transform_validation_shortcuts(topo_attributes[at])
-      ok = validate_item(
-                parent=parent,
-                key=key,
-                data_type=alt_dt,
-                parent_path=parent_path,
-                data_name='value',
-                module=module,
-                module_source='',
-                topology=topology,
-                attr_list=[],
-                attributes=topology.defaults.attributes,
-                enabled_modules=list_of_modules)
-      if ok is not False:
-        return { '_valid': True, 'value': parent[key] if parent is not None else data }
-
-    v_alt_err.append(at)
+    v_result = validation_function(                     # Try to validate
+                  parent=None,                          # ... a standalone value
+                  key=data,                             # ... specified in this parameter
+                  path='',                              # ... no valid path, but we have to supply something 
+                  _raw_status=True)                     # ... and return raw validation status
+    if v_result.get('_valid',False):
+      return v_result
+    v_alt_err.append(v_result.get('_value','') or v_result.get('_type',''))
 
   return { '_alt_types': v_alt_err }                    # No alt data type matched, return the collected error messages
 
@@ -416,17 +389,17 @@ def transform_validation_shortcuts(data_type: typing.Any) -> typing.Union[Box,di
 
   if isinstance(data_type,str):                             # Do we have a user-defined data type?
     if topo_attributes and data_type in topo_attributes:    # User-defined data type has to be in defaults.attributes
-      return transform_validation_shortcuts(topo_attributes[data_type])
+      data_type = topo_attributes[data_type]                # ... if that's the case, fetch it and continue processing
 
   if isinstance(data_type,str):                             # Convert a a simple type with no extra attributes
     return { 'type': data_type }                            # ... into a dummy data type dictionary
 
   # Validating a dictionary against a dictionary of elements without a specified type
   if isinstance(data_type,Box):
-    inner_type = data_type.get('type')                            # user-defined type reference
-    if isinstance(inner_type,str) and topo_attributes and inner_type in topo_attributes:
-      base_type = transform_validation_shortcuts(topo_attributes[inner_type])
-      data_type = get_box(base_type) + get_box({ k:v for k,v in data_type.items() if k != 'type' })
+    if 'type' in data_type and isinstance(data_type.type,str):
+      if topo_attributes and data_type.type in topo_attributes:
+        base_type = transform_validation_shortcuts(topo_attributes[data_type.type])
+        data_type = get_box(base_type) + get_box({ k:v for k,v in data_type.items() if k != 'type' })
 
     if not 'type' in data_type:
       data_keys = { k:v for k,v in data_type.items() if not k.startswith('_') }
@@ -621,13 +594,7 @@ def validate_item(
   if '_alt_types' in data_type:                                       # Deal with alternate types first
     alt_context = { '_alt_types': data_type._alt_types }
     if type(data).__name__ != data_type.get('type',''):               # Does it make sense to check alternate types?
-      alt_result = validate_alt_type(
-                      data,
-                      data_type,
-                      parent,
-                      key,
-                      parent_path,
-                      module)                                       # Do we have alt data type (potentially returning modified value)
+      alt_result = validate_alt_type(data,data_type)                  # Do we have alt data type (potentially returning modified value)
       if alt_result.get('_valid',False):                              # Did we get a valid alt-type?
         if alt_result.get('value',None):                              # Did it rewrite value?
           if parent is not None:       
