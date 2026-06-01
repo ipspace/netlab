@@ -14,8 +14,6 @@ _config_name = 'bgp.policy'
 _requires        = [ 'bgp' ]
 _execute_after    = [ 'bgp.session' ]
 
-_ROLE_ATTR_LIST   = [ 'role', 'role_strict' ]
-
 @types.type_test()
 def must_be_autobw(
       value: typing.Any,
@@ -33,6 +31,34 @@ def must_be_autobw(
   return expected_type if '_type' in result else result
 
 types.register_type('autobw',must_be_autobw)
+
+_BGP_ROLE_VALUES = [ 'provider', 'customer', 'peer', 'rs-server', 'rs-client' ]
+
+@types.type_test()
+def must_be_bgp_role(
+      value: typing.Any,
+      valid_values: typing.Optional[list] = None,
+                ) -> dict:
+
+  values = valid_values or _BGP_ROLE_VALUES
+
+  if isinstance(value,str):
+    return { '_valid': True } if value in values else { '_type': f'a BGP role ({",".join(values)})' }
+
+  if isinstance(value,Box):
+    name = value.get('name',None)
+    strict = value.get('strict',False)
+    if name and name not in values:
+      return { '_type': f'bgp_role dictionary with name attribute ({",".join(values)})' }
+    if not name and not strict:
+      return { '_type': 'bgp_role dictionary with name and/or strict attributes' }
+    if strict is not None and not isinstance(strict,bool):
+      return { '_type': 'bgp_role dictionary with optional strict boolean' }
+    return { '_valid': True }
+
+  return { '_type': 'a BGP role (string or dictionary with name and optional strict)' }
+
+types.register_type('bgp_role',must_be_bgp_role)
 
 """
 copy_routing_attributes: copy select routing policy SET attributes into BGP node/link/interface attributes
@@ -164,43 +190,37 @@ def apply_config(node: Box, ngb: Box) -> None:
   api.node_config(node,_config_name)                    # Remember that we have to do extra configuration
   _bgp.clear_bgp_session(node,ngb)
 
-def _use_role_plugin_template(node: Box) -> bool:
-  """Return False for the BIRD daemon (roles are rendered in daemons/bird/bgp.j2)."""
-  return not (node.get('_daemon') and node.device == 'bird')
+'''
+effective_bgp_role: build the neighbor **role** dictionary from inherited **bgp.role** settings.
 
-def apply_role_attributes(node: Box, ngb: Box, intf: Box, topology: Box) -> bool:
-  """Copy bgp.role* interface attributes to an EBGP neighbor."""
-  values: dict[str, typing.Any] = {}
-  for attr in _ROLE_ATTR_LIST:
-    attr_value = modules.get_effective_module_attribute(
-      path=f'bgp.{attr}', intf=intf, node=node)
-    if attr_value:
-      values[attr] = attr_value
+Walk the interface, node, topology, and defaults objects (in that order) and collect:
 
-  if not values:
-    return False
+* **name** -- from a string role or from the **name** key of a role dictionary. Later
+  objects override earlier ones only when they supply a new name.
+* **strict** -- set to _true_ when any object sets **bgp.role.strict** or **strict** inside
+  a role dictionary. Strict mode is never turned off by a later object.
 
-  if not _bgp.check_device_attribute_support('role', node, ngb, topology, _config_name):
-    return False
-
-  if 'role_strict' in values and 'role' not in values:
-    where = f'node {node.name}'
-    if intf is not None:
-      where += f' interface {intf.name}'
-    log.error(
-      f'Cannot use bgp.role_strict without bgp.role ({where})',
-      category=log.IncorrectValue,
-      module=_config_name,
-    )
-    return False
-
-  for attr, attr_value in values.items():
-    ngb[attr] = attr_value
-
-  if _use_role_plugin_template(node):
-    apply_config(node, ngb)
-
-  return True
+Return a ``{ name, strict? }`` Box suitable for BGP neighbor data, or *None* when no role
+name was found (for example, only **defaults.bgp.role.strict** is set).
+'''
+def effective_bgp_role(intf: typing.Optional[Box], node: Box, topology: Box) -> typing.Optional[Box]:
+  name: typing.Optional[str] = None
+  strict = False
+  for obj in (intf,node,topology,topology.defaults):
+    r = obj.get('bgp.role') if obj else None
+    if isinstance(r,str):
+      name = r
+    elif isinstance(r,Box):
+      name = r.name or name
+      strict = strict or bool(r.get('strict'))
+    if obj and obj.get('bgp.role.strict'):
+      strict = True
+  if not name:
+    return None
+  role = data.get_box({ 'name': name })
+  if strict:
+    role.strict = True
+  return role
 
 '''
 Apply attributes supported by bgp.policy plugin to a single neighbor
@@ -348,13 +368,14 @@ def post_transform(topology: Box) -> None:
   _direct   = topology.defaults.bgp.attributes.p_attr.direct
   _compound = topology.defaults.bgp.attributes.p_attr.compound
   _attr_list = _direct + list(_compound.keys())
+  role_attrs = topology.defaults.bgp.attributes.role.attr
 
   for n, ndata in topology.nodes.items():
     if 'bgp' not in ndata.get('module',[]):                 # Skip nodes not running BGP
       continue
 
     route_aggregation(ndata,topology)
-    _bgp.cleanup_neighbor_attributes(ndata,topology,_attr_list + _ROLE_ATTR_LIST + [ 'policy' ])
+    _bgp.cleanup_neighbor_attributes(ndata,topology,_attr_list + role_attrs + [ 'policy' ])
     policy_idx = 0
 
     # Get _default_locpref feature flag (could be None), then figure out if we need to copy
@@ -378,7 +399,10 @@ def post_transform(topology: Box) -> None:
             communities.append('extended')
       if copy_locpref and not intf.get('bgp.locpref',False):
         intf.bgp.locpref = ndata.bgp.locpref
-      apply_role_attributes(ndata,ngb,intf,topology)
+      role = effective_bgp_role(intf,ndata,topology)
+      if role and _bgp.check_device_attribute_support('role',ndata,ngb,topology,_config_name):
+        ngb.role = role
+        apply_config(ndata,ngb)
       if intf.get('bgp.policy',{}):
         apply_bgp_routing_policy(ndata,ngb,intf,topology)
       if apply_policy_attributes(ndata,ngb,intf,topology):  # If we applied at least some bgp.policy attribute to the neighbor

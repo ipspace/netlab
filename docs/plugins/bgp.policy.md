@@ -27,8 +27,7 @@ The plugin adds the following BGP link attributes:
 * **bgp.policy** is a dictionary that applies [predefined routing policies](generic-routing-policies) to inbound (**in**) or outbound (**out**) BGP updates.
 * **bgp.prepend** is a dictionary configuring outbound AS-path prepending. It can contain a **count** attribute (number of times the node AS is prepended) or a **path** attribute (the prepended AS-path as a string[^ASPS])
 * **bgp.weight** is an integer attribute that sets per-neighbor weight.
-* **bgp.role** -- the local BGP role for an EBGP session (RFC 9234). Valid values: **provider**, **customer**, **peer**, **rs-server**, **rs-client**.
-* **bgp.role_strict** -- when set to _true_, the BGP session is established only if the remote router also advertises a compatible BGP Role capability (RFC 9234 strict mode).
+* **bgp.role** -- the local BGP role for an EBGP session (RFC 9234). Specify a role name (**provider**, **customer**, **peer**, **rs-server**, **rs-client**) or a dictionary with **name** (same values) and optional **strict** set to _true_ for RFC 9234 strict mode.
 
 [^BCP]: _netlab_ configures network devices to propagate BGP Link Bandwidth extended community on IBGP sessions. The value advertised in IBGP updates is device-dependent and could be the value attached to the best path or the aggregate of EBGP values.
 
@@ -52,10 +51,9 @@ The following table describes where you could apply individual attributes:
 | policy     |  ❌   |    ✅     |  ❌  |
 | prepend    |  ❌   |    ✅     |  ❌  |
 | role       |  ✅  |    ✅     |  ❌  |
-| role_strict|  ✅  |    ✅     |  ❌  |
 | weight     |  ❌   |    ✅     |  ❌  |
 
-BGP role attributes can also be specified at the global or link level. The plugin applies **bgp.role** and **bgp.role_strict** to **EBGP** neighbors only. Using these attributes on IBGP sessions results in a configuration error.
+BGP role attributes can also be specified at the global or link level. The plugin applies **bgp.role** to **EBGP** neighbors only. Using this attribute on IBGP sessions results in a configuration error.
 
 ## Platform Support
 
@@ -89,45 +87,6 @@ See [BGP Policies Test Results](https://release.netlab.tools/_html/coverage.bgp.
 * Arista EOS and Aruba CX do not support node-level default local preference. Node-level **bgp.locpref** attribute (if specified) is thus applied to all interfaces that do not have an explicit **bgp.locpref** attribute. That might interfere with the **bgp.policy** interface attributes.
 * FRR implements BGP Roles starting with release 8.4. BIRD implements them starting with release 2.0.11. On BIRD, BGP roles are rendered into the BGP module configuration file (`daemons/bird/bgp.j2`).
 
-(plugin-bgp-policy-role)=
-## BGP Roles (RFC 9234)
-
-When both routers implement RFC 9234, the local role on one router must match the expected remote role on the other:
-
-| Local role | Remote role |
-|------------|-------------|
-| provider   | customer    |
-| customer   | provider    |
-| peer       | peer        |
-| rs-server  | rs-client   |
-| rs-client  | rs-server   |
-
-You can use BGP roles together with **[bgp.session](bgp.session.md)** session attributes. List **bgp.session** before **bgp.policy** if you use route server session features:
-
-```
-plugin: [ bgp.session, bgp.policy ]
-```
-
-Example:
-
-```yaml
-plugin: [ bgp.policy ]
-module: [ bgp ]
-
-nodes: [ isp, customer, peer ]
-
-links:
-- isp:
-    bgp.role: provider
-  customer:
-    bgp.role: customer
-- isp:
-    bgp.role: peer
-  peer:
-    bgp.role: peer
-```
-
-Integration test cases for BGP roles are in the `tests/integration/bgp.policy` directory (`70-role-*` files). A sample topology file is in `tests/topology/input/bgp-role.yml`.
 
 ## Applying Routing Policies to EBGP Neighbors
 
@@ -262,6 +221,59 @@ nodes:
       med_73:
       - set.med: 73
 ```
+
+(plugin-bgp-policy-role)=
+## BGP Roles (RFC 9234)
+
+When both routers implement RFC 9234, the local role on one router must match the expected remote role on the other:
+
+| Local role | Remote role |
+|------------|-------------|
+| provider   | customer    |
+| customer   | provider    |
+| peer       | peer        |
+| rs-server  | rs-client   |
+| rs-client  | rs-server   |
+
+You can use BGP roles together with **[bgp.session](bgp.session.md)** session attributes. List **bgp.session** before **bgp.policy** if you use route server session features:
+
+```
+plugin: [ bgp.session, bgp.policy ]
+```
+
+Example:
+
+```yaml
+plugin: [ bgp.policy ]
+module: [ bgp ]
+
+nodes: [ isp, customer, peer ]
+
+links:
+- isp:
+    bgp.role: provider
+  customer:
+    bgp.role: customer
+- isp:
+    bgp.role: peer
+  peer:
+    bgp.role: peer
+```
+
+Strict mode is enabled with the **strict** attribute in the **bgp.role** dictionary, or globally with **defaults.bgp.role.strict** (or **bgp.role.strict** in lab topology settings):
+
+
+```yaml
+links:
+- dut:
+    bgp.role:
+      name: provider
+      strict: true
+  customer:
+    bgp.role: customer
+```
+
+Integration test cases for BGP roles are in the `tests/integration/bgp.policy` directory (`70-bgp-roles.yml`). A sample topology file is in `tests/topology/input/bgp-role.yml`.
 
 ## Sample Topologies
 

@@ -1,8 +1,8 @@
 ---
 message: |
-  Test RFC 9234 provider/customer and peer BGP roles, including route-leak
-  prevention: a prefix learned from an upstream provider must not be advertised
-  to a lateral peer session.
+  Test RFC 9234 BGP roles on EBGP sessions: provider/customer and peer/peer
+  sessions (including route-leak prevention), and strict-mode role mismatch
+  handling when another session on the same router has incompatible roles.
 
 plugin: [ bgp.policy ]
 module: [ bgp ]
@@ -13,7 +13,7 @@ groups:
   probes:
     device: frr
     provider: clab
-    members: [ customer, peer, upstream ]
+    members: [ customer, peer, upstream, bad, good ]
 
 defaults.bgp.as: 65000
 
@@ -29,6 +29,11 @@ nodes:
   upstream:
     bgp.as: 65004
     loopback.ipv4: 172.16.4.1/32
+  bad:
+    bgp.as: 65199
+  good:
+    bgp.as: 65198
+    loopback.ipv4: 172.16.98.1/32
 
 links:
 - dut:
@@ -43,6 +48,22 @@ links:
     bgp.role: peer
   peer:
     bgp.role: peer
+- dut:
+    bgp.role:
+      name: provider
+      strict: true
+  bad:
+    bgp.role:
+      name: peer
+      strict: true
+- dut:
+    bgp.role:
+      name: provider
+      strict: true
+  good:
+    bgp.role:
+      name: customer
+      strict: true
 
 validate:
   session_upstream:
@@ -69,6 +90,24 @@ validate:
     devices: [ frr ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
 
+  session_good:
+    description: Check that the provider/customer strict-mode session is established
+    wait_msg: Waiting for EBGP session establishment
+    wait: ebgp_session
+    nodes: [ good ]
+    devices: [ frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  wait:
+    description: Wait a few seconds before checking the mismatched session
+    wait: 5
+
+  session_bad:
+    description: Check that incompatible strict-mode roles prevent session establishment
+    nodes: [ bad ]
+    devices: [ frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',state=['Idle','Active'])
+
   pfx_upstream:
     description: Check that upstream advertises its loopback
     wait: bgp_scan_time
@@ -85,6 +124,14 @@ validate:
     devices: [ frr ]
     plugin: bgp_prefix(nodes.customer.loopback.ipv4)
 
+  pfx_peer:
+    description: Check that peer advertises its loopback
+    wait: bgp_scan_time
+    wait_msg: Waiting for BGP convergence
+    nodes: [ peer ]
+    devices: [ frr ]
+    plugin: bgp_prefix(nodes.peer.loopback.ipv4)
+
   pfx_no_leak:
     description: Check that upstream prefix is not leaked to the peer session
     wait: bgp_scan_time
@@ -92,3 +139,11 @@ validate:
     nodes: [ peer ]
     devices: [ frr ]
     plugin: bgp_prefix(nodes.upstream.loopback.ipv4,state='missing')
+
+  pfx_good:
+    description: Check that good advertises its loopback
+    wait: bgp_scan_time
+    wait_msg: Waiting for BGP convergence
+    nodes: [ good ]
+    devices: [ frr ]
+    plugin: bgp_prefix(nodes.good.loopback.ipv4)

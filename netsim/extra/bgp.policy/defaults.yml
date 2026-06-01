@@ -6,13 +6,22 @@
 # extra settings you can specify here are 'bandwidth' and '_default_locpref'
 #
 
+attributes:
+  bgp_role:
+    name:
+      _required: True
+      type: str
+      valid_values: [ provider, customer, peer, rs-server, rs-client ]
+    strict:
+      type: bool
+
 bgp:
   attributes:
     p_attr:                                               # BGP policy attributes
       direct: [ weight, prefix_filter, as_filter ]        # Things that can be applied directly to a neighbor
       node: [ locpref ]
-      link: [ locpref, med, role, role_strict ]
-      interface: [ locpref, med, prepend, weight, role, role_strict ]
+      link: [ locpref, med, role ]
+      interface: [ locpref, med, prepend, weight, role ]
       compound:                                           # Things that have to be applied to in/out policy
         locpref: in
         med: out
@@ -20,23 +29,20 @@ bgp:
         bandwidth: both
 
     role:
-      attr: [ role, role_strict ]
+      attr: [ role ]
     global:
       role:
         _description: |
           Local BGP Role for the EBGP session (RFC 9234). Negotiated in the BGP OPEN
           message to prevent route leaks; enables automatic Only-to-Customer handling.
+          Specify a role name or a dictionary with **name** and optional **strict** set to
+          _true_ for RFC 9234 strict mode. Global strict mode can be enabled with
+          **defaults.bgp.role.strict**.
         type: str
         valid_values: [ provider, customer, peer, rs-server, rs-client ]
-      role_strict:
-        _description: |
-          Require the remote router to advertise a compatible BGP Role capability
-          (RFC 9234 strict mode); otherwise the session is not established.
-        type: bool
+        _alt_types: [ bgp_role ]
     node:
       role:
-        copy: global
-      role_strict:
         copy: global
       aggregate:
         type: list
@@ -50,8 +56,6 @@ bgp:
     link:
       role:
         copy: global
-      role_strict:
-        copy: global
     interface:
       policy:
         in: str
@@ -61,8 +65,6 @@ bgp:
         in: autobw
         out: autobw
       role:
-        copy: global
-      role_strict:
         copy: global
     vrf:
       aggregate:
