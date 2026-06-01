@@ -423,10 +423,10 @@ def transform_validation_shortcuts(data_type: typing.Any) -> typing.Union[Box,di
 
   # Validating a dictionary against a dictionary of elements without a specified type
   if isinstance(data_type,Box):
-    if 'type' in data_type and isinstance(data_type.type,str):
-      if topo_attributes and data_type.type in topo_attributes:
-        base_type = transform_validation_shortcuts(topo_attributes[data_type.type])
-        data_type = get_box(base_type) + get_box({ k:v for k,v in data_type.items() if k != 'type' })
+    inner_type = data_type.get('type')                            # user-defined type reference
+    if isinstance(inner_type,str) and topo_attributes and inner_type in topo_attributes:
+      base_type = transform_validation_shortcuts(topo_attributes[inner_type])
+      data_type = get_box(base_type) + get_box({ k:v for k,v in data_type.items() if k != 'type' })
 
     if not 'type' in data_type:
       data_keys = { k:v for k,v in data_type.items() if not k.startswith('_') }

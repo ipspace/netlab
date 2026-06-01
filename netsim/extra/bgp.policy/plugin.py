@@ -2,7 +2,7 @@ import typing
 
 from box import Box
 
-from netsim import api, data, modules
+from netsim import api, data
 from netsim.augment import devices
 from netsim.data import types
 from netsim.modules.routing.policy import check_routing_policy, import_routing_policy
