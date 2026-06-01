@@ -32,34 +32,6 @@ def must_be_autobw(
 
 types.register_type('autobw',must_be_autobw)
 
-_BGP_ROLE_VALUES = [ 'provider', 'customer', 'peer', 'rs-server', 'rs-client' ]
-
-@types.type_test()
-def must_be_bgp_role(
-      value: typing.Any,
-      valid_values: typing.Optional[list] = None,
-                ) -> dict:
-
-  values = valid_values or _BGP_ROLE_VALUES
-
-  if isinstance(value,str):
-    return { '_valid': True } if value in values else { '_type': f'a BGP role ({",".join(values)})' }
-
-  if isinstance(value,Box):
-    name = value.get('name',None)
-    strict = value.get('strict',False)
-    if name and name not in values:
-      return { '_type': f'bgp_role dictionary with name attribute ({",".join(values)})' }
-    if not name and not strict:
-      return { '_type': 'bgp_role dictionary with name and/or strict attributes' }
-    if strict is not None and not isinstance(strict,bool):
-      return { '_type': 'bgp_role dictionary with optional strict boolean' }
-    return { '_valid': True }
-
-  return { '_type': 'a BGP role (string or dictionary with name and optional strict)' }
-
-types.register_type('bgp_role',must_be_bgp_role)
-
 """
 copy_routing_attributes: copy select routing policy SET attributes into BGP node/link/interface attributes
 to minimize data duplication

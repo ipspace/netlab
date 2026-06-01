@@ -7,15 +7,23 @@
 #
 
 attributes:
+  bgp_role_name:
+    type: str
+    valid_values: [ provider, customer, peer, rs-server, rs-client ]
   bgp_role:
     name:
       _required: True
-      type: str
-      valid_values: [ provider, customer, peer, rs-server, rs-client ]
+      type: bgp_role_name
     strict:
+      type: bool
+  bgp_role_strict:
+    strict:
+      _required: True
       type: bool
 
 bgp:
+  no_propagate:
+    role:
   attributes:
     p_attr:                                               # BGP policy attributes
       direct: [ weight, prefix_filter, as_filter ]        # Things that can be applied directly to a neighbor
@@ -38,9 +46,8 @@ bgp:
           Specify a role name or a dictionary with **name** and optional **strict** set to
           _true_ for RFC 9234 strict mode. Global strict mode can be enabled with
           **defaults.bgp.role.strict**.
-        type: str
-        valid_values: [ provider, customer, peer, rs-server, rs-client ]
-        _alt_types: [ bgp_role ]
+        type: bgp_role_name
+        _alt_types: [ bgp_role, bgp_role_strict ]
     node:
       role:
         copy: global
@@ -55,7 +62,8 @@ bgp:
           _alt_types: [ prefix_str ]
     link:
       role:
-        copy: global
+        type: bgp_role_name
+        _alt_types: [ bgp_role ]
     interface:
       policy:
         in: str
@@ -65,7 +73,7 @@ bgp:
         in: autobw
         out: autobw
       role:
-        copy: global
+        copy: link
     vrf:
       aggregate:
         copy: node
