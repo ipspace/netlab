@@ -218,17 +218,8 @@ def apply_config(node: Box, ngb: Box) -> None:
   _bgp.clear_bgp_session(node,ngb)
 
 '''
-effective_bgp_role: build the neighbor **role** dictionary from inherited **bgp.role** settings.
-
-Walk the interface, node, topology, and defaults objects (in that order) and collect:
-
-* **name** -- from a string role or from the **name** key of a role dictionary. Later
-  objects override earlier ones only when they supply a new name.
-* **strict** -- set to _true_ when any object sets **bgp.role.strict** or **strict** inside
-  a role dictionary. Strict mode is never turned off by a later object.
-
-Return a ``{ name, strict? }`` Box suitable for BGP neighbor data, or *None* when no role
-name was found (for example, only **defaults.bgp.role.strict** is set).
+effective_bgp_role: merge **bgp.role** from interface, node, topology, and defaults into
+a normalized ``{ name, strict? }`` Box for neighbor data.
 '''
 def effective_bgp_role(intf: typing.Optional[Box], node: Box, topology: Box) -> typing.Optional[Box]:
   name: typing.Optional[str] = None
@@ -395,14 +386,13 @@ def post_transform(topology: Box) -> None:
   _direct   = topology.defaults.bgp.attributes.p_attr.direct
   _compound = topology.defaults.bgp.attributes.p_attr.compound
   _attr_list = _direct + list(_compound.keys())
-  role_attrs = topology.defaults.bgp.attributes.role.attr
 
   for n, ndata in topology.nodes.items():
     if 'bgp' not in ndata.get('module',[]):                 # Skip nodes not running BGP
       continue
 
     route_aggregation(ndata,topology)
-    _bgp.cleanup_neighbor_attributes(ndata,topology,_attr_list + role_attrs + [ 'policy' ])
+    _bgp.cleanup_neighbor_attributes(ndata,topology,_attr_list + [ 'policy' ])
     policy_idx = 0
 
     # Get _default_locpref feature flag (could be None), then figure out if we need to copy
@@ -427,9 +417,8 @@ def post_transform(topology: Box) -> None:
       if copy_locpref and not intf.get('bgp.locpref',False):
         intf.bgp.locpref = ndata.bgp.locpref
       role = effective_bgp_role(intf,ndata,topology)
-      if role and _bgp.check_device_attribute_support('role',ndata,ngb,topology,_config_name):
-        ngb.role = role
-        apply_config(ndata,ngb)
+      if role:
+        intf.bgp.role = role
       if intf.get('bgp.policy',{}):
         apply_bgp_routing_policy(ndata,ngb,intf,topology)
       if apply_policy_attributes(ndata,ngb,intf,topology):  # If we applied at least some bgp.policy attribute to the neighbor
