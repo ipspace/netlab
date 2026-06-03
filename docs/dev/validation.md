@@ -501,7 +501,7 @@ ospf:
 Some _netlab_ attributes that are supposed to be dictionaries can accept non-dictionary values. You can use the **_value_to_dict** type definition key to specify a template dictionary that is used to create a replacement dictionary. The values of the replacement dictionary can be f-strings with `{value}` representing the original value.
 
 ```{warning}
-The `{value}`string could be interpreted as a YAML dictionary and MUST therefore be quoted.
+The `{value}` string could be interpreted as a YAML dictionary and MUST therefore be quoted.
 ```
 
 For example, to transform a BGP role specified as a string into a dictionary with the role name and `strict` flag, use this type definition:
