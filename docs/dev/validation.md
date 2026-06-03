@@ -377,10 +377,6 @@ af:
 
 Consider using user-defined data types if you use the same data structure in multiple places. You can define them in **defaults.attributes** and use them to validate any attribute.
 
-```{note}
-When using user-defined data types, you must specify them as a string value of a validated attribute. You cannot use user-defined data types as a value for **‌type** validation attribute.
-```
-
 For example, the **bgp.session** plugin defines BGP timers as `exbs_timers` user-defined data type:
 
 ```
