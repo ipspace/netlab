@@ -2,6 +2,7 @@
 # Data validation routines
 #
 
+import ast
 import typing
 
 from box import Box
@@ -495,7 +496,7 @@ def transform_value_to_dict(data: typing.Any, mapping: typing.Any) -> typing.Any
 
   result = strings.eval_format(mapping,{ 'value': data })
   try:                                            # Evalute f-string and try evaluate its results
-    return eval(result)                           # as we could use f-string to generate a list or a computed int
+    return ast.literal_eval(result)               # as we could use f-string to generate a list or a computed int
   except Exception:
     return result                                 # If the f-string result doesn't parse, return it as string
 
