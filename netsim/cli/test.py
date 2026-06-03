@@ -114,8 +114,9 @@ def run(cli_args: typing.List[str]) -> None:
   if args.verbose:
     log.set_logging_flags(args)
 
-  log.section_header('Checking',f'{args.provider} installation')
-  external_commands.run_probes(settings,args.provider)
+  if args.provider in settings.providers:
+    log.section_header('Checking',f'{args.provider} installation')
+    external_commands.run_probes(settings,args.provider)
 
   copy_topology(args)
   force_cleanup = False
