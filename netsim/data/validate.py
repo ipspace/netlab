@@ -575,11 +575,11 @@ def validate_item(
       parent[key] = transform_value_to_dict(data,data_type._value_to_dict)
     except Exception as ex:
       log.error(                                                    # ... to log all dependency errors
-        f"Cannot transform value of attribute {parent_path}.{key}' into a dictionary",
+        f"Cannot transform value of attribute '{parent_path}.{key}' into a dictionary",
         more_data=[str(ex)],
         category=log.IncorrectValue,
         module=module)
-      return
+      return False
 
     data = parent[key]
     data_type = Box(data_type)
