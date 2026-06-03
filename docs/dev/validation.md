@@ -427,7 +427,7 @@ Some *netlab* attributes could take a dictionary value, alternate values (*True*
 
 ### Specifying Alternate Data Types
 
-**_alt_types** list (commonly used within a dictionary of valid attributes) specifies alternate data types that can be used instead of the primary data type. The types in the **_alt_types** list cannot be user-defined data types.
+**_alt_types** list (commonly used within a dictionary of valid attributes) specifies alternate data types that can be used instead of the primary data type.
 
 **Example:** ***igp*.af** attribute can take a dictionary of address families, or it could be left empty (*None*) to tell *netlab* to use the address families defined on the node:
 

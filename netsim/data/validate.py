@@ -334,24 +334,29 @@ validate_alt_type -- deal with dictionaries that could be specified as something
 """
 
 def validate_alt_type(data: typing.Any, data_type: Box) -> dict:
-  if type(data).__name__ in data_type._alt_types:       # Simple check: is type name in alt types?
+  alt_types = get_a_list(data_type._alt_types)
+  if type(data).__name__ in alt_types:                  # Simple check: is type name in alt types?
     return { '_valid': True }                           # Got it, no need for more complex validation
 
   v_alt_err: list = []
 
-  for at in data_type._alt_types:                       # Iterate over alt-types
-    validation_function = getattr(_tv,f'must_be_{at}',None)
+  for at in alt_types:                                  # Iterate over alt-types
+    at_data_type = get_box(transform_validation_shortcuts(at))
+    validation_function = getattr(_tv,f'must_be_{at_data_type.type}',None)
     if not validation_function:                         # Is alt-type a data type with a validation function?
       continue                                          # ... nope, get out of here
 
+    # Pass user-defined type constraints (for example valid_values) to the base validator.
     v_result = validation_function(                     # Try to validate
                   parent=None,                          # ... a standalone value
                   key=data,                             # ... specified in this parameter
                   path='',                              # ... no valid path, but we have to supply something 
-                  _raw_status=True)                     # ... and return raw validation status
+                  _raw_status=True,
+                  **{ k:v for k,v in at_data_type.items() if not k.startswith('_') and k != 'type' })
     if v_result.get('_valid',False):
       return v_result
-    v_alt_err.append(v_result.get('_value','') or v_result.get('_type',''))
+    v_alt_err.append(at if v_result.get('_value',None) == 'Invalid value' else
+                     v_result.get('_value','') or v_result.get('_type',''))
 
   return { '_alt_types': v_alt_err }                    # No alt data type matched, return the collected error messages
 
