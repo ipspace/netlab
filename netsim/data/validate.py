@@ -7,7 +7,7 @@ import typing
 from box import Box
 
 from ..utils import log
-from . import get_a_list, get_empty_box
+from . import get_a_list, get_box, get_empty_box
 
 # We also need to import the whole data.types module to be able to do validation function lookup
 from . import types as _tv
@@ -395,6 +395,11 @@ def transform_validation_shortcuts(data_type: typing.Any) -> typing.Union[Box,di
 
   # Validating a dictionary against a dictionary of elements without a specified type
   if isinstance(data_type,Box):
+    if 'type' in data_type and isinstance(data_type.type,str):
+      if topo_attributes and data_type.type in topo_attributes:
+        base_type = transform_validation_shortcuts(topo_attributes[data_type.type])
+        data_type = get_box(base_type) + get_box({ k:v for k,v in data_type.items() if k != 'type' })
+
     if not 'type' in data_type:
       data_keys = { k:v for k,v in data_type.items() if not k.startswith('_') }
       data_type = Box({ k:v for k,v in data_type.items() if k.startswith('_') })

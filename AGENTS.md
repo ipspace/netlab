@@ -92,6 +92,11 @@ With the Box settings used in the topology data structure:
 * The interim dictionaries are created automatically: `a.b.c=1` works even when `a.b` does not exist yet.
 * The dotted paths can be used in indices (for example, `a['b.c'] = 1`) and in **in** tests (for example `'b.c' in a`)
 
+IMPORTANT -- the Box objects must have the default_box and box_dots flags set to work as expected:
+
+* When creating a new Box object from a dictionary, use data.get_box function
+* When creating an empty Box object, use data.get_empty_box function
+
 ### Using Jinja2 templates
 
 * The Jinja2 environment uses a custom `undefined` method that can handle dictionary hierarchy. For example, `a.b.c is defined` returns False instead of crashing even when `a.b` does not exist. There is no need for an extra `a.b is defined` guard.

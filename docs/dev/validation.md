@@ -83,7 +83,7 @@ The dictionary-based approach allows in-depth validation of nested attributes, w
 (dev-valid-data-types)=
 ## Valid Data Types
 
-Validator recognizes standard Python data types (**str**, **int**, **float**, **bool**, **list** or **dict**) and the following networking-specific data types:
+Validator recognizes standard Python data types (**str**, **int**, **float**, **bool**, **list** or **dict**), the following networking-specific data types, and [user-defined data types](validate-user-types).
 
 | Data type.     | Meaning |
 |----------------|---------|
@@ -104,7 +104,7 @@ Validator recognizes standard Python data types (**str**, **int**, **float**, **
 | **r_proto**    | Routing protocol identifier |
 | **time**       | Time duration specified in seconds (`s`) or milliseconds (`ms`) |
  
-The data type can be specified as a string (without additional parameters) or a dictionary with a **type** attribute (data type as a string) and other type-specific validation parameters.
+The data type can be specified as a string (without additional parameters) or a dictionary with a **type** attribute (data type as a string) and other type-specific validation parameters. When specifying a user-defined data type with the **type** attribute, the definition of the user-defined data type is *merged* with the type definition.
 
 For example, VLAN link parameters include **access** and **native**, which can be any string value, as well as **mode** that must have one of the predefined values:
 
@@ -410,16 +410,6 @@ bgp:
 ...
     node:
       timers: exbs_timers
-```
-
-Please note that the following definition (using `exbs_timers` as the value of `timers` **type** attribute) would not work:
-
-```
-bgp:
-  attributes:
-    global:
-      timers:
-        type: exbs_timers ### INVALID, WON'T WORK
 ```
 
 You can use the `_namespace` attribute within the user-defined data types to add attributes from other objects. For example, as you can use link attributes in VLAN definitions, the **vlan** definition (see `modules/vlan.yml`) includes the `_namespace` attribute:
