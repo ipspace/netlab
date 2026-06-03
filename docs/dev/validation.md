@@ -495,6 +495,43 @@ ospf:
         ipv6: bool
 ```
 
+(validation-value-to-dict)=
+### Dictionary Specified As a Single Value
+
+Some _netlab_ attributes that are supposed to be dictionaries can accept non-dictionary values. You can use the **_value_to_dict** type definition key to specify a template dictionary that is used to create a replacement dictionary. The values of the replacement dictionary can be f-strings with `{value}` representing the original value.
+
+```{warning}
+The `{value}`string could be interpreted as a YAML dictionary and MUST therefore be quoted.
+```
+
+For example, to transform a BGP role specified as a string into a dictionary with the role name and `strict` flag, use this type definition:
+
+```
+attributes:
+  node:
+    role:
+      name:
+        type: str
+        valid_values: [ provider, customer, peer, rs-server, rs-client ]
+      strict: bool
+      _value_to_dict:
+        name: '{value}'
+        strict: False
+```
+
+You can often use the `_value_to_dict` functionality instead of `_alt_types` or custom data transformation. For example, the following data type definition for the BGP community attribute replaced a chunk of somewhat convoluted Python code:
+
+```
+attributes:
+  global:
+    community:
+      ibgp: { type: list, _subtype: bgp_community_type }
+      ebgp: { type: list, _subtype: bgp_community_type }
+      _value_to_dict:
+        ibgp: '{value}'
+        ebgp: '{value}'
+```
+
 (validation-ip-address)=
 ## IP Address Validation
 
