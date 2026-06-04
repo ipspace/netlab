@@ -410,7 +410,7 @@ def type_test(
                   module=module,
                   context=context):
           status['_value'] = 'Invalid value'
-          pass
+          status['_valid'] = False
 
       if '_raw_status' in context:                        # Did the caller request raw status?
         status['value'] = value                           # ... he did, add transformed value to it
