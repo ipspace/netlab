@@ -197,18 +197,6 @@ def start_lab(
   if not run_command(exec_command):
     log.fatal(f"{exec_command} failed, aborting...",cli_command)
 
-def run_cli_hooks(settings: Box, cli_command: str, hook: str) -> None:
-  hook_key = f'netlab.{cli_command}.{hook}'
-  cmd = settings.get(hook_key,None)
-  if log.VERBOSE >= 2:
-    print(f"CLI hook {hook_key}: {cmd}")
-  if not cmd:
-    return
-  if log.VERBOSE:
-    log.info(f'Running {hook} CLI hook',module=cli_command,more_data=[cmd])
-  if not run_command(cmd):
-    log.fatal(f'CLI hook {hook} returned an error, aborting...',cli_command)
-
 def deploy_configs(
       command: str = "test",
       fast: typing.Optional[bool] = False,

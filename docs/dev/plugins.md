@@ -13,6 +13,8 @@ The plugin name specifies either a Python file name (without the `.py` extension
 This is an underdocumented feature. Performing operations beyond simple data transformation might require digging through the source code. Before proceeding, you might want to [open a discussion on *netlab* GitHub repository](https://github.com/ipspace/netlab/discussions).
 ```
 
+## Plugin Hooks
+
 Plugins can define well-known functions that are invoked during the [topology transformation process](transform.md), which includes these steps:
 
 * execute plugin **init** function
@@ -34,9 +36,26 @@ Every plugin function is called with a single *topology* argument: the current t
 
 Plugins extending [configuration modules](../modules.md) might have to define additional module attributes. The [module attribute lists](module-attributes.md) must be extended before any module validation code is executed, either with the plugin defaults or in the plugin **init** function.
 
+## Plugin CLI Hooks
+
+Plugins are usually used in the data transformation process, but could also be used in later stages of configuration file creation and lab management.
+
+A plugin can add its name to the `defaults.netlab.create.plugin` list to be called at the time the configuration files are created:
+
+* The `output` hook is called before any output modules are called and before netlab finalizes the [search path lists](change-search-paths).
+* The `post_output` hook is called after the output modules have created the configuration files.
+
+A plugin can also be called during the **[netlab up](netlab-up)**/**[netlab down](netlab-down)** processing:
+
+* The plugin must add its name to the `defaults.netlab._command_.plugin` list (where _command_ is **up** or **down**)
+* Whenever a netlab command calls a [CLI hook](dev-cli-hooks), it calls the plugin pre-shell hook before the CLI command is executed and the plugin post-shell hook after the CLI command has successfully completed[^SC]
+* The plugin hook name is created from the CLI hook name and the `pre_shell_` and `post_shell_` prefixes. For example, `pre_shell_pre_start_lab` hook is called before the `pre_start_lab` CLI command is executed, and the `post_shell_pre_start_lab` hook is called after the CLI command has completed.
+
+[^SC]: The post-shell hook is obviously not called if the CLI command fails.
+
 ## Plugin Metadata
 
-A plugin can specify global variables that are used to influence the plugin behavior or order of execution:
+A plugin can specify global variables that are used to influence the plugin's behavior or order of execution:
 
 * `_requires`: A list of prerequisite modules and plugins. _netlab_ will abort if any prerequisite plugins are not listed in the **topology.plugin** list, or if any of the prerequisite modules are not used by at least one node.
 * `_execute_after`: A list of plugins that should execute before the current plugin. For example, the **ebgp.multihop** plugin has to be executed after **ebgp.utils** plugin, and therefore defines `_execute_after = [ 'ebgp.utils' ]`

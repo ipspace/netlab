@@ -18,6 +18,7 @@ from .. import augment
 from ..outputs import _TopologyOutput
 from ..utils import log, strings
 from . import common_parse_args, error_and_exit, lab_status_log, load_topology, topology_parse_args
+from ._hooks import cli_plugin_hooks
 
 
 #
@@ -179,15 +180,7 @@ def run(cli_args: typing.List[str],
     if args.devices:
       args.output.devices = {}
 
-  # Iterate over plugins that registered 'output' hook
-  # We have to reload the plugin as the original 'Plugin' dictionary was removed
-  # as the last step in the topology transformation process
-  #
-  for p_name in topology.defaults.netlab.create.get('plugin',[]):
-    plugin = augment.plugin.load_plugin(p_name,topology)
-    if plugin:
-      augment.plugin.execute_plugin_hook('output',plugin,topology)
-
+  cli_plugin_hooks(topology,'create','output')
   # Adjust search paths before creating output files. This step cannot be done
   # earlier in the process because the plugins might create directories that
   # are used in search paths
@@ -203,5 +196,7 @@ def run(cli_args: typing.List[str],
       log.exit_on_error()
     else:
       log.error('Unknown output format %s' % output_format,log.IncorrectValue,'create')
+
+  cli_plugin_hooks(topology,'create','post_output')
 
   return topology
