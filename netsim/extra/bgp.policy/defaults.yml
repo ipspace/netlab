@@ -6,10 +6,16 @@
 # extra settings you can specify here are 'bandwidth' and '_default_locpref'
 #
 
-attributes:
-  bgp_role_name:
-    type: str
-    valid_values: &bgp_role_values [ provider, customer, peer, rs-server, rs-client ]
+attributes:                   # User-defined data types (see dev/validation.md#validate-user-types)
+  bgp_role:
+    name:
+      type: str
+      valid_values: [ provider, customer, peer, rs-server, rs-client ]
+      _required: True
+    strict: bool
+    _value_to_dict:
+      name: '{value}'
+      strict: False
 
 bgp:
   no_propagate:
@@ -29,17 +35,14 @@ bgp:
     global:
       role:
         _description: |
-          Local BGP Role for the EBGP session (RFC 9234). Negotiated in the BGP OPEN
-          message to prevent route leaks; enables automatic Only-to-Customer handling.
-          Specify a role name or a dictionary with **name** and optional **strict** set to
-          _true_ for RFC 9234 strict mode. Global strict mode can be enabled with
-          **defaults.bgp.role.strict**.
-        type: str
-        valid_values: *bgp_role_values
-        _alt_types: [ bgp_role, bgp_role_strict ]
+          RFC 9234 strict mode for EBGP sessions. Use **defaults.bgp.role.strict** (or **bgp.role.strict**
+          in lab topology settings) to enable strict mode globally. Per-neighbor roles are set with
+          **bgp.role** on links or interfaces.
+        strict:
+          type: bool
+          _required: True   # BUG: not enforced — defaults.bgp.role is never validated; empty {} passes validate_item
     node:
-      role:
-        copy: global
+      role: bgp_role
       aggregate:
         type: list
         _subtype:
@@ -50,10 +53,7 @@ bgp:
           attributes: str
           _alt_types: [ prefix_str ]
     link:
-      role:
-        type: str
-        valid_values: *bgp_role_values
-        _alt_types: [ bgp_role ]
+      role: bgp_role
     interface:
       policy:
         in: str

@@ -5,6 +5,7 @@ from box import Box
 from netsim import api, data
 from netsim.augment import devices
 from netsim.data import types
+from netsim.modules import get_effective_module_attribute
 from netsim.modules.routing.policy import check_routing_policy, import_routing_policy
 from netsim.utils import log
 from netsim.utils import routing as _bgp
@@ -31,61 +32,6 @@ def must_be_autobw(
   return expected_type if '_type' in result else result
 
 types.register_type('autobw',must_be_autobw)
-
-'''
-bgp.role accepts a string or a dict; _alt_types only call registered must_be_* functions
-(see autobw). Until https://github.com/ipspace/netlab/issues/3430 lands, validate dict
-roles here. Schema and valid_values live in defaults.yml.
-'''
-
-def _bgp_role_values() -> list[str]:
-  from netsim.data import validate as vmod
-
-  ta = vmod.topo_attributes
-  role_def = ta.get('bgp_role_name') if isinstance(ta,Box) else None
-  if isinstance(role_def,Box) and 'valid_values' in role_def:
-    return list(role_def.valid_values)
-  return [ 'provider', 'customer', 'peer', 'rs-server', 'rs-client' ]
-
-@types.type_test()
-def must_be_bgp_role(
-      value: typing.Any,
-      valid_values: typing.Optional[list] = None,
-                ) -> dict:
-
-  values = valid_values or _bgp_role_values()
-  values_hint = f'({",".join(values)})'
-
-  if isinstance(value,str):
-    return { '_valid': True } if value in values else { '_type': f'a BGP role {values_hint}' }
-
-  if isinstance(value,Box):
-    name = value.get('name',None)
-    strict = value.get('strict',None)
-    if name and name not in values:
-      return { '_type': f'bgp_role dictionary with name attribute {values_hint}' }
-    if not name:
-      return { '_type': f'bgp_role dictionary with name attribute {values_hint}' }
-    if strict is not None and not isinstance(strict,bool):
-      return { '_type': 'bgp_role dictionary with optional strict boolean' }
-    return { '_valid': True }
-
-  return { '_type': f'a BGP role (string or bgp_role dictionary with name attribute {values_hint})' }
-
-@types.type_test()
-def must_be_bgp_role_strict(
-      value: typing.Any,
-                ) -> dict:
-
-  if isinstance(value,Box) and value.get('strict') is not None:
-    if isinstance(value.get('strict'),bool):
-      return { '_valid': True }
-    return { '_type': 'bgp_role_strict dictionary with strict boolean' }
-
-  return { '_type': 'bgp_role_strict dictionary with strict attribute' }
-
-types.register_type('bgp_role',must_be_bgp_role)
-types.register_type('bgp_role_strict',must_be_bgp_role_strict)
 
 """
 copy_routing_attributes: copy select routing policy SET attributes into BGP node/link/interface attributes
@@ -216,29 +162,6 @@ def apply_config(node: Box, ngb: Box) -> None:
   global _config_name
   api.node_config(node,_config_name)                    # Remember that we have to do extra configuration
   _bgp.clear_bgp_session(node,ngb)
-
-'''
-effective_bgp_role: merge **bgp.role** from interface, node, topology, and defaults into
-a normalized ``{ name, strict? }`` Box for neighbor data.
-'''
-def effective_bgp_role(intf: typing.Optional[Box], node: Box, topology: Box) -> typing.Optional[Box]:
-  name: typing.Optional[str] = None
-  strict = False
-  for obj in (intf,node,topology,topology.defaults):
-    r = obj.get('bgp.role') if obj else None
-    if isinstance(r,str):
-      name = r
-    elif isinstance(r,Box):
-      name = r.name or name
-      strict = strict or bool(r.get('strict'))
-    if obj and obj.get('bgp.role.strict'):
-      strict = True
-  if not name:
-    return None
-  role = data.get_box({ 'name': name })
-  if strict:
-    role.strict = True
-  return role
 
 '''
 Apply attributes supported by bgp.policy plugin to a single neighbor
@@ -416,7 +339,8 @@ def post_transform(topology: Box) -> None:
             communities.append('extended')
       if copy_locpref and not intf.get('bgp.locpref',False):
         intf.bgp.locpref = ndata.bgp.locpref
-      role = effective_bgp_role(intf,ndata,topology)
+      role = get_effective_module_attribute(
+        'bgp.role',intf=intf,node=ndata,topology=topology,defaults=topology.defaults)
       if role:
         intf.bgp.role = role
       if intf.get('bgp.policy',{}):
