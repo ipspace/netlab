@@ -358,7 +358,7 @@ def validate_alt_type(data: typing.Any, data_type: Box) -> dict:
     v_alt_err.append(at if v_result.get('_value',None) == 'Invalid value' else
                      v_result.get('_value','') or v_result.get('_type',''))
 
-  return { '_alt_types': v_alt_err }                    # No alt data type matched, return the collected error messages
+  return { '_alt_types': v_alt_err or alt_types }       # No alt data type matched, return the collected error messages
 
 
 """
