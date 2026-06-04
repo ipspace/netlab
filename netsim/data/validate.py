@@ -637,7 +637,7 @@ def validate_item(
           data_name=data_name,                                      # Pass name of the data
           module=module,                                            # ... and the module
           **validation_attr)                                        # And any other attributes
-  if not OK:
+  if OK is None:
     return OK
 
   if parent is not None:                                            # Validation function might have changed the parent value
