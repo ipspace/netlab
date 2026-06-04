@@ -403,7 +403,7 @@ def transform_validation_shortcuts(data_type: typing.Any) -> typing.Union[Box,di
 
     if not 'type' in data_type:
       data_keys = { k:v for k,v in data_type.items() if not k.startswith('_') }
-      data_type = Box({ k:v for k,v in data_type.items() if k.startswith('_') })
+      data_type = get_box({ k:v for k,v in data_type.items() if k.startswith('_') })
       data_type.type = 'dict'
       data_type._keys = data_keys
 
@@ -571,7 +571,7 @@ def validate_item(
   if isinstance(data,list) and '_list_to_dict' in data_type and parent is not None:
     parent[key] = { k: data_type._list_to_dict for k in data }        # Transform lists into a dictionary (updating parent will make it into a Box)
     data = parent[key]
-    data_type = Box(data_type)                                        # and fix datatype definition
+    data_type = get_box(data_type)                                    # and fix datatype definition
 
   # Another corner case: data type is a dictionary, we have a non-dict value, and the data type definition
   # gives us a template to transform that value into a dictionary
@@ -588,7 +588,7 @@ def validate_item(
       return False
 
     data = parent[key]
-    data_type = Box(data_type)
+    data_type = get_box(data_type)
 
   alt_context = {}                                                    # Alt-type context passed to validation functions
   if '_alt_types' in data_type:                                       # Deal with alternate types first
