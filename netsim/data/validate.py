@@ -2,11 +2,12 @@
 # Data validation routines
 #
 
+import ast
 import typing
 
 from box import Box
 
-from ..utils import log
+from ..utils import log, strings
 from . import get_a_list, get_box, get_empty_box
 
 # We also need to import the whole data.types module to be able to do validation function lookup
@@ -487,6 +488,23 @@ def check_valid_with(
           category=log.IncorrectAttr,
           module=module)
 
+def transform_value_to_dict(data: typing.Any, mapping: typing.Any) -> typing.Any:
+  """
+  Transform a non-dict value to a dictionary using 'mapping' template
+  """
+  if isinstance(mapping,dict):                    # Recursively transform boxes and dicts
+    return get_box({ k: transform_value_to_dict(data,v) for k,v in mapping.items() })
+  if isinstance(mapping,list):                    # Recursively transform lists
+    return [ transform_value_to_dict(data,v) for v in mapping ]
+  if not isinstance(mapping,str) or '{' not in mapping:
+    return mapping                                # Return values that are not f-string verbatim
+
+  result = strings.eval_format(mapping,{ 'value': data })
+  try:                                            # Evalute f-string and try evaluate its results
+    return ast.literal_eval(result)               # as we could use f-string to generate a list or a computed int
+  except Exception:
+    return result                                 # If the f-string result doesn't parse, return it as string
+
 """
 validate_item -- validate a single item from an object:
 
@@ -554,6 +572,23 @@ def validate_item(
     parent[key] = { k: data_type._list_to_dict for k in data }        # Transform lists into a dictionary (updating parent will make it into a Box)
     data = parent[key]
     data_type = Box(data_type)                                        # and fix datatype definition
+
+  # Another corner case: data type is a dictionary, we have a non-dict value, and the data type definition
+  # gives us a template to transform that value into a dictionary
+  #
+  if not isinstance(data,dict) and '_value_to_dict' in data_type and parent is not None:
+    try:
+      parent[key] = transform_value_to_dict(data,data_type._value_to_dict)
+    except Exception as ex:
+      log.error(                                                    # ... to log all dependency errors
+        f"Cannot transform value of attribute '{parent_path}.{key}' into a dictionary",
+        more_data=[str(ex)],
+        category=log.IncorrectValue,
+        module=module)
+      return False
+
+    data = parent[key]
+    data_type = Box(data_type)
 
   alt_context = {}                                                    # Alt-type context passed to validation functions
   if '_alt_types' in data_type:                                       # Deal with alternate types first

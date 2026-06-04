@@ -4,7 +4,10 @@
 # topology file
 #
 
+import contextlib
+import difflib
 import glob
+import io
 import os
 import pathlib
 import sys
@@ -64,9 +67,21 @@ def transformation_results(test_case: str, tmp_path: pathlib.Path) -> typing.Tup
 
   return (result,expected)
 
+def report_mismatch(test_case: str, label: str, actual: str, expected: str) -> None:
+  if actual == expected:
+    return
+
+  diff = "".join(
+    difflib.unified_diff(
+      expected.splitlines(keepends=True),
+      actual.splitlines(keepends=True),
+      fromfile="expected",
+      tofile="actual"))
+  pytest.fail(f"{label} mismatch for {test_case}\n{diff}",pytrace=False)
+
 def run_transformation_test(test_case: str, tmp_path: pathlib.Path) -> None:
   (result,expected) = transformation_results(test_case,tmp_path)
-  assert result == expected, f"transformation mismatch for {test_case}"
+  report_mismatch(test_case,"transformation",result,expected)
 
 @pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
 @pytest.mark.parametrize('test_case',sorted(glob.glob('topology/input/*yml')))
@@ -91,7 +106,8 @@ def test_coverage_verbose_cases(tmp_path_factory: pytest.TempPathFactory) -> Non
 def error_results(test_case: str) -> typing.Tuple[str, str]:
   log.set_flag(raise_error = True)
   with pytest.raises(log.ErrorAbort):
-    run_test(test_case)
+    with contextlib.redirect_stderr(io.StringIO()) as _:
+      run_test(test_case)
 
   error_log = '\n'.join(log.get_error_log())
   log_file = pathlib.Path(test_case.replace('.yml','.log'))
@@ -100,7 +116,7 @@ def error_results(test_case: str) -> typing.Tuple[str, str]:
   
 def run_error_case(test_case: str) -> None:
   (error_log,expected_log) = error_results(test_case)
-  assert error_log == expected_log, f"error-log mismatch for {test_case}"
+  report_mismatch(test_case,"error-log",error_log,expected_log)
 
 @pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
 @pytest.mark.parametrize('test_case',sorted(glob.glob('errors/*yml')))

@@ -61,33 +61,6 @@ def check_bgp_parameters(node: Box, topology: Box) -> None:
 
   must_be_asn(parent=node,key='bgp.as',path=f'nodes.{node.name}',module='bgp')
 
-  if "community" in node.bgp:
-    bgp_comm = node.bgp.community
-    if isinstance(bgp_comm,str):
-      node.bgp.community = { 'ibgp' : [ bgp_comm ], 'ebgp': [ bgp_comm ]}
-    elif isinstance(bgp_comm,list):
-      node.bgp.community = { 'ibgp' : bgp_comm, 'ebgp': bgp_comm }
-    elif not(isinstance(bgp_comm,dict)):
-      log.error(
-        f"bgp.community attribute in node {node.name} should be a string, a list, or a dictionary (found: {bgp_comm})",
-        log.IncorrectType,
-        'bgp')
-      return
-
-    for k in node.bgp.community.keys():
-      if not k in ['ibgp','ebgp']:
-        log.error(
-          text=f"Invalid BGP community setting in {k} node {node.name}",
-          category=log.IncorrectValue,
-          module='bgp')
-      else:
-        must_be_list(
-          parent=node.bgp.community,
-          path=f'nodes.{node.name}.bgp.community',
-          key=k,
-          valid_values=topology['defaults.attributes.global.bgp_community_type.valid_values'],
-          module='bgp')
-
 def validate_bgp_sessions(node: Box, sessions: Box, attribute: str) -> bool:
   OK = True
   for k in list(sessions.keys()):

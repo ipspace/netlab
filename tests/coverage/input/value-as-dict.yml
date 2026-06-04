@@ -1,0 +1,34 @@
+#
+# This code coverage topology tests the _value_to_dict functionality using a custom data type and
+# BGP community expansion
+#
+defaults:
+  device: none
+  bgp.warnings.missing_igp: False
+  attributes:
+    node:
+      brn:
+        name:
+          type: str
+          valid_values: [ provider, customer, peer, rs-server, rs-client ]
+        strict: bool
+        _value_to_dict:
+          name: '{value}'
+          strict: False
+
+module: [ bgp ]
+bgp.as: 65000
+
+nodes:
+  a:
+    brn: provider
+    bgp.community: standard                       # Single-value BGP community
+  b:
+    brn:
+      name: customer
+      strict: True
+    bgp.community: [ standard, extended ]         # List of BGP communities, have to be applied to IBGP and EBGP
+  c:
+    bgp.community.ibgp: standard                  # String value must be transformed to list
+  d:
+    bgp.community.ibgp: [ extended ]              # Leave as-is
