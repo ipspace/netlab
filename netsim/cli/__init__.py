@@ -508,6 +508,9 @@ quick_commands = {
   'alias': lambda x: help.print_usage('alias.txt')
 }
 
+def main() -> None:
+  lab_commands(sys.argv[0])
+
 def lab_commands(script: str) -> None:
   global NETLAB_SCRIPT,NETLAB_COMMAND
   NETLAB_SCRIPT = script
