@@ -11,7 +11,8 @@ The hooks are registered in the netlab[command] system defaults:
 
 * Plugin hooks are registered in the 'plugin' list. All plugins are
   examined for every hook.
-* CLI hooks are registered in the 
+* CLI hooks are registered in the _hook_ string. A single CLI command
+  can be executed for every hook.
 """
 from box import Box
 
@@ -25,20 +26,22 @@ def cli_plugin_hooks(topology: Box, cli_command: str, hook: str) -> None:
   """
   Iterate over plugins that registered the comamnd hook
   
-  Note: we have to reload plugins every time the hooks are called
-  as the original 'Plugin' dictionary was removed as the last step
-  in the topology transformation process
+  Note: we're caching the loaded plugins to avoid repeated attempts
+  to load the same plugins. We cannot use the original 'Plugin'
+  dictionary as it's removed as the last step in the topology
+  transformation process
   """
   global P_CACHE
-  for p_name in topology.defaults.netlab[cli_command].get('plugin',[]):
-    if p_name in P_CACHE:
-      p_module = P_CACHE[p_name]
+  p_list = topology.defaults.get(f'netlab.{cli_command}.plugin',[])
+  for p_name in p_list:
+    if p_name in P_CACHE:                                   # Have we tried to load the plugin before?
+      p_module = P_CACHE[p_name]                            # Use the previous result
     else:
-      p_module = a_plugin.load_plugin(p_name,topology)
-      P_CACHE[p_name] = p_module
+      p_module = a_plugin.load_plugin(p_name,topology)      # Try to load the plugin
+      P_CACHE[p_name] = p_module                            # And cache whatever we got (including the failure)
 
-    if p_module:
-      a_plugin.execute_plugin_hook(hook,p_module,topology)
+    if p_module:                                            # Did we succeed in loading the plugin?
+      a_plugin.execute_plugin_hook(hook,p_module,topology)  # Try to execute the relevant plugin hook
 
 def cli_shell_hooks(settings: Box, cli_command: str, hook: str) -> None:
   hook_key = f'netlab.{cli_command}.{hook}'
