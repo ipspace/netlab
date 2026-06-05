@@ -2,7 +2,7 @@ message:
   The test uses "netlab up" CLI hooks to create extra files. The
   validation script checks for the presence of those files.
 
-plugin: [ files ]
+plugin: [ files, up_hook ]
 
 provider: clab
 defaults.device: linux
@@ -23,15 +23,11 @@ files:
     echo "topology=$NETLAB_ARGS_TOPOLOGY" >pre_start.hook
   validate.sh: |
     set -e
-    if [ -f pre_start.hook ]; then
-      echo "Pre-start hook was executed"
-    else
-      echo "No artifact of the pre-start hook"
-      exit 1
-    fi
-    if [ -f post_start.hook ]; then
-      echo "Post-start hook was executed"
-    else
-      echo "No artifact of the post-start hook"
-      exit 1
-    fi
+    for hook in pre_probe pre_start post_start; do
+      if [ -f "${hook}.hook" ]; then
+        echo "${hook} hook was executed"
+      else
+        echo "No artifact of the ${hook} hook"
+        exit 1
+      fi
+    done

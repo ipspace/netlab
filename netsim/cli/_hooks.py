@@ -33,12 +33,19 @@ def cli_plugin_hooks(topology: Box, cli_command: str, hook: str) -> None:
   """
   global P_CACHE
   p_list = topology.defaults.get(f'netlab.{cli_command}.plugin',[])
+  if log.VERBOSE >= 3:
+    print(f"CLI command {cli_command} plugin hooks: {p_list} hook: {hook}")
   for p_name in p_list:
     if p_name in P_CACHE:                                   # Have we tried to load the plugin before?
       p_module = P_CACHE[p_name]                            # Use the previous result
     else:
       p_module = a_plugin.load_plugin(p_name,topology)      # Try to load the plugin
       P_CACHE[p_name] = p_module                            # And cache whatever we got (including the failure)
+      if log.VERBOSE >= 3:
+        if p_module:
+          print(f"Loaded CLI hook plugin {p_name}")
+        else:
+          print(f"Failed to load CLI hook plugin {p_name}")
 
     if p_module:                                            # Did we succeed in loading the plugin?
       a_plugin.execute_plugin_hook(hook,p_module,topology)  # Try to execute the relevant plugin hook
