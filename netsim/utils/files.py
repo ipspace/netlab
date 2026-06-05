@@ -10,6 +10,8 @@ import sys
 import textwrap
 import typing
 
+from box import Box
+
 from ..data import global_vars
 from . import log
 
@@ -48,24 +50,36 @@ def get_sysdir() -> pathlib.Path:
 def get_curdir() -> pathlib.Path:
   return pathlib.Path(os.path.expanduser(".")).resolve()
 
-#
-# Get the usual search path (current directory, user home directory, system-wide settings, package settings)
-#
-# If needer, augment the search path componentswith a subdirectory path. User/system subdirectory could
-# be different from package subdirectory
-#
-
 def get_search_path(
       path_component: typing.Optional[str] = None,
-      pkg_path_component: typing.Optional[str] = None) -> list:
-  path = [ get_curdir(),get_userdir(),get_sysdir() ]
-  if path_component:
-    path = [ pc / path_component for pc in path ]
+      pkg_path_component: typing.Optional[str] = None,
+      topology: typing.Optional[Box] = None) -> list:
+  """
+  Get the usual search path (current directory, user home directory, system-wide settings, package settings)
+  Use topology 'user_locations' path if the topology is specified, otherwise the hard-coded components
+
+  If needer, augment the search path componentswith a subdirectory path. User/system subdirectory could
+  be different from package subdirectory
+  """
+
+  path = None                                               # We know nothing about search paths
+  if topology:                                              # Did the caller specify topology locations to use?
+    path = topology.defaults.get('paths.user_locations',[]) # Fetch user locations from the topology
+    if path:                                                # Did we get user locations?
+      path = [ pathlib.Path(pc) for pc in path ]            # Turn them in Path objects to be compatible with hardcoded data
+
+  if not path or not isinstance(path,list):                 # Are user locations legit?
+    path = [ get_curdir(),get_userdir(),get_sysdir() ]      # Nope, use default
+
+  if path_component:                                        # Did the caller specify final component of search paths?
+    path = [ pc / path_component for pc in path ]           # He did... let's adjust the search paths
     pkg_path_component = pkg_path_component or path_component
 
+  # Finally, append package directory -- top-level or adjusted with the path component
+  #
   path.append(get_moddir() / pkg_path_component if pkg_path_component else get_moddir())
 
-  return [ str(pc) for pc in path ]
+  return [ str(pc) for pc in path ]                         # And return a list of strings (not Path objects)
 
 #
 # Get absolute path to a file (handling paths relative to other files and home directories)

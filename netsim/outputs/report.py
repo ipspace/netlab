@@ -62,7 +62,7 @@ class REPORT(_TopologyOutput):
 
   def write(self, topo: Box) -> None:
     global EXTRA_PATH
-    EXTRA_PATH = _files.get_search_path("reports")
+    EXTRA_PATH = _files.get_search_path("reports",topology=topo)
     outfile = self.select_output_file('-')
     if outfile is None:
       return

@@ -47,7 +47,7 @@ def create_tool_config(tool: str, topology: Box) -> None:
                         j2_file=config.template,
                         data=topo_data,
                         path=f'tools/{tool}',
-                        extra_path=_files.get_search_path(f'tools/{tool}'))
+                        extra_path=_files.get_search_path(f'tools/{tool}',topology=topo_data))
       except Exception as ex:
         log.fatal(
           text=f"Error rendering {config.template}\n{strings.extra_data_printout(str(ex))}",

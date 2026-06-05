@@ -233,8 +233,7 @@ def ansible_config(
     cfg_text = templates.render_template(
                 j2_file='ansible.cfg.j2',
                 data={'inventory': inventory_file or 'hosts.yml'},
-                path='templates',
-                extra_path=_files.get_search_path('ansible'))
+                extra_path=_files.get_search_path('templates'))
   except Exception as ex:
     log.fatal(
       text=f"Error rendering ansible.cfg\n{strings.extra_data_printout(str(ex))}",
