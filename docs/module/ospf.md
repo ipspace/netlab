@@ -63,7 +63,7 @@ The following table describes the per-platform support of individual router-leve
 | Dell OS10 ([❗](caveats-os10)) | ✅| ✅| ✅| ✅| ✅|
 | Cumulus Linux 5.x (NVUE) | ✅| ✅| ❌ | ✅ | ✅|
 | Extreme Networks EXOS    | ✅| ✅| ✅| ❌ | ❌ | 
-| Fortinet FortiOS         |[❗](caveats-fortios)| ✅ | ❌ | ❌ | ❌ |
+| Fortinet FortiOS         |[❗](caveats-fortios)| ✅ | ✅ | ❌ | ❌ |
 | FRR                      | ✅| ✅| ✅| ✅| ✅|
 | Junos[^Junos]            | ✅| ✅| ✅| ✅| ❌ |
 | Mikrotik RouterOS 6      | ✅| ❌ | ❌ | ❌ | ❌ |

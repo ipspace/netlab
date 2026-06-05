@@ -1,26 +1,37 @@
 {% set vdom_traffic = netlab_vdom|default(vdom) %}
 {% set multi_vdom = vdom_traffic != vdom %}
-
-{% if multi_vdom %}
-config vdom
-    edit {{ vdom_traffic }}
-{% endif %}
-
-config router ospf
+{#
+  Shared OSPFv2/OSPFv3 renderer. 'proto' is the FortiOS render token ('ospf' or 'ospf6') and
+  doubles as the address-family fork discriminator. 'intf_list' is pre-filtered by the caller to
+  the interfaces that run OSPF on this AF, so the macro never sees an off-AF interface.
+#}
+{% macro ospf_config(proto, intf_list, ospf) %}
+{% set intf_stanza = proto ~ '-interface' %}
+{% set passive_intfs = intf_list|selectattr('ospf.passive', 'defined')|selectattr('ospf.passive')|map(attribute='ifname')|list %}
+config router {{ proto }}
     set router-id {{ ospf.router_id }}
 {%  if ospf.reference_bandwidth is defined %}
     set auto-cost-ref-bandwidth {{ ospf.reference_bandwidth }}
 {%  endif %}
-{%  set passive_intfs = netlab_interfaces|selectattr('ospf', 'defined')|selectattr('ospf.passive', 'defined')|selectattr('ospf.passive')|map(attribute='ifname')|list %}
 {%  if passive_intfs|length > 0 %}
     set passive-interface {{ passive_intfs|join(' ') }}
 {%  endif %}
-{%  if netlab_interfaces|selectattr('ospf', 'defined')|list|length > 0 %}
 
-    config ospf-interface
-{%  for intf in netlab_interfaces if 'ospf' in intf %}
+    config area
+{%  for area_data in ospf.areas|default([]) %}
+        edit {{ area_data.area }}
+        next
+{%  endfor %}
+    end
+{%  if intf_list|length > 0 %}
+
+    config {{ intf_stanza }}
+{%      for intf in intf_list %}
         edit "{{ intf.ifname }}"
             set interface "{{ intf.ifname }}"
+{%          if proto == 'ospf6' %}
+            set area-id {{ intf.ospf.area }}
+{%          endif %}
 {%          if intf.ospf.network_type is defined %}
             set network-type {{ intf.ospf.network_type }}
 {%          endif %}
@@ -36,33 +47,41 @@ config router ospf
 {%          if intf.ospf.priority is defined %}
             set priority {{ intf.ospf.priority }}
 {%          endif %}
-{%          if intf.ospf.password is defined %}
+{%          if proto == 'ospf' and intf.ospf.password is defined %}
             set authentication text
             set authentication-key {{ intf.ospf.password }}
 {%          endif %}
             set status enable
         next
-{%  endfor %}
+{%      endfor %}
     end
 {%  endif %}
-
-    config area
-{%  for area_data in ospf.areas|default([]) %}
-        edit {{ area_data.area }}
-        next
-{%  endfor %}
-    end
+{%  if proto == 'ospf' %}
 
     config network
-{%  for intf in netlab_interfaces if intf.ospf.area is defined %}
+{%      for intf in intf_list if intf.ospf.area is defined %}
         edit {{ loop.index }}
             set prefix {{ intf.ipv4|ansible.utils.ipaddr('subnet') }}
             set area {{ intf.ospf.area }}
         next
-{%  endfor %}
+{%      endfor %}
     end
+{%  endif %}
 end
-
+{% endmacro %}
+{% if multi_vdom %}
+config vdom
+    edit {{ vdom_traffic }}
+{% endif %}
+{% set ospf_intf = netlab_interfaces|selectattr('ospf', 'defined')|list %}
+{% set v4 = ospf_intf|selectattr('ipv4', 'defined')|list %}
+{% set v6 = ospf_intf|selectattr('ipv6', 'defined')|list %}
+{% if ospf.af.ipv4 is defined %}
+{{ ospf_config('ospf', v4, ospf) }}
+{% endif %}
+{% if ospf.af.ipv6 is defined %}
+{{ ospf_config('ospf6', v6, ospf) }}
+{% endif %}
 {% if multi_vdom %}
 end
 {% endif %}

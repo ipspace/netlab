@@ -523,6 +523,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Cumulus Linux NVUE    |  ❌ | ❌ | ❌ | ✅ | ❌ |
 | Dell OS10             | ✅ | ❌ | ❌ | ✅ | ❌ |
 | Extreme Networks EXOS | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Fortinet FortiOS      | ✅ | ❌ | ❌ | ❌ | ❌ |
 | FRR                   | ✅ | ✅ | ❌ | ✅ | ❌ |
 | Junos[^Junos]         | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
 | Mikrotik RouterOS 6   |  ❌ | ❌ | ❌ | ✅ | ❌ |
