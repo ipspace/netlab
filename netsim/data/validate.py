@@ -329,11 +329,12 @@ def validate_list(
 
   return return_value                             # Return final status
 
-"""
-validate_alt_type -- deal with dictionaries that could be specified as something else
-"""
 
 def validate_alt_type(data: typing.Any, data_type: Box) -> dict:
+  """
+  validate_alt_type -- deal with data types (usually dicts) that could be specified as another
+  data type (listed in the _alt_types list)
+  """
   alt_types = get_a_list(data_type._alt_types)
   if type(data).__name__ in alt_types:                  # Simple check: is type name in alt types?
     return { '_valid': True }                           # Got it, no need for more complex validation
@@ -352,7 +353,7 @@ def validate_alt_type(data: typing.Any, data_type: Box) -> dict:
                   key=data,                             # ... specified in this parameter
                   path='',                              # ... no valid path, but we have to supply something 
                   _raw_status=True,
-                  **{ k:v for k,v in at_data_type.items() if not k.startswith('_') and k != 'type' })
+                  **get_validation_attr(at_data_type))
     if v_result.get('_valid',False):
       return v_result
     v_alt_err.append(at if v_result.get('_value',None) == 'Invalid value' else
@@ -361,16 +362,17 @@ def validate_alt_type(data: typing.Any, data_type: Box) -> dict:
   return { '_alt_types': v_alt_err or alt_types }       # No alt data type matched, return the collected error messages
 
 
-"""
-validate_value -- validate a single value (not from an object)
-"""
-
 def validate_value(
       value: typing.Any,
       data_type: str,
       path: str,
       module: typing.Optional[str] = None,              # Module name to display in error messages
       **kwargs: typing.Any) -> typing.Any:
+  """
+  validate_value -- validate a single value (not from an object)
+
+  Can be used only to validate "simple" types with a validation function.
+  """
   global _bi,_tv
 
   validation_function = getattr(_tv,f'must_be_{data_type}',None)      # Try to get validation function
@@ -385,11 +387,12 @@ def validate_value(
             module=module,
             **kwargs)                                   # Pass context parameters straight to the validation function
 
-"""
-transform_validation_shortcuts -- transform str/list/dict type definition shortcuts into structured definitions
-"""
 
 def transform_validation_shortcuts(data_type: typing.Any) -> typing.Union[Box,dict]:
+  """
+  transform_validation_shortcuts -- transform str/list/dict type definition shortcuts into structured
+  definitions and resolve user-defined types
+  """
   global topo_attributes
 
   if isinstance(data_type,str):                             # Do we have a user-defined data type?
@@ -510,24 +513,26 @@ def transform_value_to_dict(data: typing.Any, mapping: typing.Any) -> typing.Any
   except Exception:
     return result                                 # If the f-string result doesn't parse, return it as string
 
-"""
-validate_item -- validate a single item from an object:
+PASS_ATTRIBUTES: typing.Final[list] = ['_hint','_help']
 
-* Return if the data type is None (= not validated)
-* Compare data types names if the data type is a string (OK, a bit more complex than that)
-* Recursively validate a dictionary
+def get_validation_attr(data_type: dict) -> dict:
+  """
+  get_validation_attr: Given a data type definition, extract the attributes that
+  have to be passed to the must_be_X validation function:
 
-To make matters worse, we cannot pass the item-to-validate directly into the function
-but have to invoke it with parent dictionary and key, so we can forward these elements
-to "must_be_something" routines.
-"""
+  * Remove "type" (it's used in the validation function name)
+  * Remove everything starting with "_" apart from a few attributes used in the
+    must_be_X wrappers
+  * Everything else must be a valid argument for the must_be_X function
+  """
+  return {
+    k:v for k,v in data_type.items()
+      if (not k.startswith('_') and k != 'type') or k in PASS_ATTRIBUTES }
 
 subtype_validation: dict = {
   'dict': validate_dictionary,
   'list': validate_list
 }
-
-PASS_ATTRIBUTES: typing.Final[list] = ['_hint','_help']
 
 def validate_item(
       parent: typing.Optional[Box],
@@ -541,6 +546,17 @@ def validate_item(
       attr_list: list,
       attributes: Box,
       enabled_modules: list) -> typing.Any:
+  """
+  validate_item -- validate a single item from an object:
+
+  * Return if the data type is None (= not validated)
+  * Compare data types names if the data type is a string (OK, a bit more complex than that)
+  * Recursively validate a dictionary
+
+  To make matters worse, we cannot pass the item-to-validate directly into the function
+  but have to invoke it with parent dictionary and key, so we can forward these elements
+  to "must_be_something" routines.
+"""
 
   global _bi,_tv,subtype_validation,PASS_ATTRIBUTES
 
@@ -611,9 +627,7 @@ def validate_item(
         alt_context['_alt_types'] = alt_result['_alt_types']
 
   # Copy data type into validation attributes, skipping validation attributes and data type name
-  validation_attr = { 
-    k:v for k,v in data_type.items() 
-      if (not k.startswith('_') and k != 'type') or k in PASS_ATTRIBUTES }
+  validation_attr = get_validation_attr(data_type)
   if '_alt_types' in alt_context:
     validation_attr['_alt_types'] = alt_context['_alt_types']
 
