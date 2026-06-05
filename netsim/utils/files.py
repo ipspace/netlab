@@ -56,10 +56,10 @@ def get_search_path(
       topology: typing.Optional[Box] = None) -> list:
   """
   Get the usual search path (current directory, user home directory, system-wide settings, package settings)
-  Use topology 'user_locations' path if the topology is specified, otherwise the hard-coded components
+  Use topology 'user_locations' paths if the topology is specified, otherwise the hard-coded components
 
-  If needer, augment the search path componentswith a subdirectory path. User/system subdirectory could
-  be different from package subdirectory
+  If needed, augment the search path components with a subdirectory path. User/system subdirectory could
+  be different from the package subdirectory
   """
 
   path = None                                               # We know nothing about search paths
