@@ -11,4 +11,4 @@ If you want to change *netlab* source code, need the latest development version,
 
 Next step: [create the lab environment](lab)
 
-[^NST]: This command will break on Ubuntu 22.04 unless you upgrade **pip** and **setuptools** packages with `pip3 install --upgrade pip setuptools`. You will have to add the `--break-system-packages` flag when running **pip3** on never Ubuntu versions unless you created a Python virtual environment.
+[^NST]: This command will break on Ubuntu 22.04 unless you upgrade **pip** and **setuptools** packages with `pip3 install --upgrade pip setuptools`. You will have to add the `--break-system-packages` flag when running **pip3** on newer Ubuntu versions unless you created a Python virtual environment.
