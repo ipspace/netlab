@@ -515,7 +515,7 @@ def transform_value_to_dict(data: typing.Any, mapping: typing.Any) -> typing.Any
 
 PASS_ATTRIBUTES: typing.Final[list] = ['_hint','_help']
 
-def get_validation_attr(data_type: dict) -> dict:
+def get_validation_attr(data_type: typing.Union[dict,Box]) -> dict:
   """
   get_validation_attr: Given a data type definition, extract the attributes that
   have to be passed to the must_be_X validation function:
@@ -556,7 +556,7 @@ def validate_item(
   To make matters worse, we cannot pass the item-to-validate directly into the function
   but have to invoke it with parent dictionary and key, so we can forward these elements
   to "must_be_something" routines.
-"""
+  """
 
   global _bi,_tv,subtype_validation,PASS_ATTRIBUTES
 
