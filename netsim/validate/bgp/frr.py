@@ -246,8 +246,6 @@ BGP prefix validation function:
 """
 def show_bgp_prefix(pfx: str, af: str = 'ipv4', vrf: str = 'default', **kwargs: typing.Any) -> str:
   pfx = _rp_utils.get_prefix(pfx)
-  if vrf == 'default':
-    return f"bgp {af} {pfx} json"
   return f"bgp vrf {vrf} {af} unicast {pfx} json"
 
 def valid_bgp_prefix(
