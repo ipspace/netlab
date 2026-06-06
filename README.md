@@ -17,7 +17,7 @@ Interested? [Read the documentation](https://netlab.tools) (also available on [G
 
 ## Releases
 
-The latest release is [release 26.05](https://github.com/ipspace/netlab/releases/tag/release_26.05). It should be pretty stable, but if you encounter bugs, please report them as [GitHub issues](https://github.com/ipspace/netlab/issues/new/choose) and use [release 26.04](https://github.com/ipspace/netlab/releases/tag/release_26.04).
+The latest release is [release 26.06](https://github.com/ipspace/netlab/releases/tag/release_26.06). It should be pretty stable, but if you encounter bugs, please report them as [GitHub issues](https://github.com/ipspace/netlab/issues/new/choose) and use [release 26.05](https://github.com/ipspace/netlab/releases/tag/release_26.05).
 
 <!--
 or [1.8.4-post2](https://github.com/ipspace/netlab/releases/tag/release_1.8.4-post2).

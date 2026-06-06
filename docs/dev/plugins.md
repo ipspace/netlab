@@ -13,6 +13,7 @@ The plugin name specifies either a Python file name (without the `.py` extension
 This is an underdocumented feature. Performing operations beyond simple data transformation might require digging through the source code. Before proceeding, you might want to [open a discussion on *netlab* GitHub repository](https://github.com/ipspace/netlab/discussions).
 ```
 
+(dev-plugin-hooks)=
 ## Plugin Hooks
 
 Plugins can define well-known functions that are invoked during the [topology transformation process](transform.md), which includes these steps:
@@ -36,6 +37,7 @@ Every plugin function is called with a single *topology* argument: the current t
 
 Plugins extending [configuration modules](../modules.md) might have to define additional module attributes. The [module attribute lists](module-attributes.md) must be extended before any module validation code is executed, either with the plugin defaults or in the plugin **init** function.
 
+(dev-plugin-cli-hooks)=
 ## Plugin CLI Hooks
 
 Plugins are usually used in the data transformation process, but could also be used in later stages of configuration file creation and lab management.

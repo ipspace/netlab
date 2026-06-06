@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+**Release 26.06 (2026-06-07)**
+
+* Nokia SR Linux supports [SR-MPLS](module-sr-mpls) over IPv6 and [MPLS/VPN](mpls-l3vpn-supported-platforms) services.
+* FortiOS supports [OSPFv3](module-ospf).
+* **[netlab install](netlab-install)** scripts work on Ubuntu 26.04
+* You can [build custom Linux Vagrant boxes](linux-build) and set the full box name with the **[netlab libvirt package](netlab-libvirt-package)** command.
+
+[More details](release-26.06) and [breaking changes](release-26.06-breaking)
+
 **Release 26.05 (2026-05-16)**
 
 * Support for [global BGP routes with SRv6 next hops](module-srv6-services) on FRR and IOS XR
@@ -142,6 +151,7 @@ For older releases, check the [release notes archive](release-archive.md).
    :caption: Individual release notes
    :maxdepth: 1
 
+   release/26.06.md
    release/26.05.md
    release/26.04.md
    release/26.03.md
