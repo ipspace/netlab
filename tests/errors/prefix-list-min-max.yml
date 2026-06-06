@@ -1,0 +1,47 @@
+---
+message: |
+  The topology tests prefix list min/max error handling
+
+provider: clab                # To make IOL work
+module: [ routing ]
+
+routing.prefix:
+  test_1:
+  - ipv4: 10.0.0.0/8          # Fails everywhere
+    min: 7                    # Incorrect, must be >= 8
+    max: 33                   # Incorrect, must be <= 32
+    sequence: 1
+  - ipv4: 172.17.0.0/16       # Fails everywhere
+    min: 18
+    max: 17                   # Incorrect must be >= 18
+    sequence: 2
+  - ipv4: 172.17.3.4/32       # Fails everywhere
+    min: 32
+    max: 32                   # Cannot use min/max on maximum-length prefix
+    sequence: 3
+  - ipv4: 172.16.0.0/16       # Fails on IOS
+    min: 16
+    max: 18
+    sequence: 4
+  - ipv4: 192.168.0.0/24      # Fails on IOS
+    min: 24
+    max: 24
+    sequence: 5
+  - ipv4: 192.168.1.0/24      # Should work everywhere
+    min: 25
+    max: 25
+    sequence: 6
+  - ipv4: 192.168.2.0/24      # Should work everywhere
+    min: 25
+    max: 29
+    sequence: 7
+
+nodes:
+  r1:
+    device: frr
+    box: none                 # To ensure idempotence when images change
+    routing.prefix.test_1:    # Import prefix list
+  r2:
+    device: iol
+    box: non
+    routing.prefix.test_1:
