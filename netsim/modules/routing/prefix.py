@@ -112,7 +112,7 @@ def create_pfx_af_entry(p_entry: Box, af: str, p_name: str, node: Box, min_stric
   pfx_len = ipaddress.ip_network(p_entry[af]).prefixlen
 
   for m_kw in ('min','max'):
-    if pfx_len == pfx_max:
+    if m_kw in p_entry and pfx_len == pfx_max:
       log.error(
         f'Cannot use prefix filter {m_kw} keyword with prefix {p_entry[af]}',
         more_data=[f'Node {node.name} (device {node.device}) policy {p_name} sequence# {p_entry.sequence}'],
