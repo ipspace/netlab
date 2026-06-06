@@ -76,12 +76,19 @@ def adjust_pfx_min_max(
     return                                        # ... so we can just pop the unnecessary entry
 
   m_value = p_entry[m_kw].get(af,None)
-  if m_value < min_pfx_len:                                 
-    log.error(
-      f'Prefix filter {af}.{m_kw} value should be >= {min_pfx_len} (limited by {p_entry[af]})',
-      more_data=[f'Node {node.name} (device {node.device}) policy {p_name} sequence# {p_entry.sequence}'],
-      category=log.IncorrectValue,
-      module='routing')
+  if m_value < min_pfx_len:                       # The minimum prefix length is too low
+    if min_pfx_len > max_pfx_len:                 # Is this caused by /32 (or /128) prefix on an IOS-like device?
+      log.error(
+        f'Cannot use prefix filter {m_kw} keyword with prefix {p_entry[af]}',
+        more_data=[f'Node {node.name} (device {node.device}) policy {p_name} sequence# {p_entry.sequence}'],
+        category=log.IncorrectValue,
+        module='routing')
+    else:
+      log.error(
+        f'Prefix filter {af}.{m_kw} value should be >= {min_pfx_len} (limited by {p_entry[af]})',
+        more_data=[f'Node {node.name} (device {node.device}) policy {p_name} sequence# {p_entry.sequence}'],
+        category=log.IncorrectValue,
+        module='routing')
 
   if m_value > max_pfx_len:
     log.error(
@@ -112,16 +119,8 @@ def create_pfx_af_entry(p_entry: Box, af: str, p_name: str, node: Box, min_stric
   pfx_len = ipaddress.ip_network(p_entry[af]).prefixlen
 
   for m_kw in ('min','max'):
-    if m_kw in p_entry and pfx_len == pfx_max:
-      log.error(
-        f'Cannot use prefix filter {m_kw} keyword with prefix {p_entry[af]}',
-        more_data=[f'Node {node.name} (device {node.device}) policy {p_name} sequence# {p_entry.sequence}'],
-        category=log.IncorrectValue,
-        module='routing')
-      return af_p_entry
-    else:
-      pfx_min = pfx_len + 1 if min_strict else pfx_len
-      adjust_pfx_min_max(af_p_entry,m_kw,af,p_name,node,min_pfx_len=pfx_min,max_pfx_len=pfx_max)
+    pfx_min = pfx_len + 1 if min_strict else pfx_len
+    adjust_pfx_min_max(af_p_entry,m_kw,af,p_name,node,min_pfx_len=pfx_min,max_pfx_len=pfx_max)
 
   if 'min' in af_p_entry and 'max' in af_p_entry and af_p_entry.min > af_p_entry.max:
     log.error(
