@@ -10,63 +10,63 @@
 {% set passive_intfs = intf_list|selectattr('ospf.passive', 'defined')|selectattr('ospf.passive')|map(attribute='ifname')|list %}
 config router {{ proto }}
     set router-id {{ ospf.router_id }}
-{%  if ospf.reference_bandwidth is defined %}
+{% if ospf.reference_bandwidth is defined %}
     set auto-cost-ref-bandwidth {{ ospf.reference_bandwidth }}
-{%  endif %}
-{%  if passive_intfs|length > 0 %}
+{% endif %}
+{% if passive_intfs|length > 0 %}
     set passive-interface {{ passive_intfs|join(' ') }}
-{%  endif %}
+{% endif %}
 
     config area
-{%  for area_data in ospf.areas|default([]) %}
+{% for area_data in ospf.areas|default([]) %}
         edit {{ area_data.area }}
         next
-{%  endfor %}
+{% endfor %}
     end
-{%  if intf_list|length > 0 %}
+{% if intf_list|length > 0 %}
 
     config {{ intf_stanza }}
-{%      for intf in intf_list %}
+{%   for intf in intf_list %}
         edit "{{ intf.ifname }}"
             set interface "{{ intf.ifname }}"
-{%          if proto == 'ospf6' %}
+{%     if proto == 'ospf6' %}
             set area-id {{ intf.ospf.area }}
-{%          endif %}
-{%          if intf.ospf.network_type is defined %}
+{%     endif %}
+{%     if intf.ospf.network_type is defined %}
             set network-type {{ intf.ospf.network_type }}
-{%          endif %}
-{%          if intf.ospf.cost is defined %}
+{%     endif %}
+{%     if intf.ospf.cost is defined %}
             set cost {{ intf.ospf.cost }}
-{%          endif %}
-{%          if intf.ospf.timers.hello is defined %}
+{%     endif %}
+{%     if intf.ospf.timers.hello is defined %}
             set hello-interval {{ intf.ospf.timers.hello }}
-{%          endif %}
-{%          if intf.ospf.timers.dead is defined %}
+{%     endif %}
+{%     if intf.ospf.timers.dead is defined %}
             set dead-interval {{ intf.ospf.timers.dead }}
-{%          endif %}
-{%          if intf.ospf.priority is defined %}
+{%     endif %}
+{%     if intf.ospf.priority is defined %}
             set priority {{ intf.ospf.priority }}
-{%          endif %}
-{%          if proto == 'ospf' and intf.ospf.password is defined %}
+{%     endif %}
+{%     if proto == 'ospf' and intf.ospf.password is defined %}
             set authentication text
             set authentication-key {{ intf.ospf.password }}
-{%          endif %}
+{%     endif %}
             set status enable
         next
-{%      endfor %}
+{%   endfor %}
     end
-{%  endif %}
-{%  if proto == 'ospf' %}
+{% endif %}
+{% if proto == 'ospf' %}
 
     config network
-{%      for intf in intf_list if intf.ospf.area is defined %}
+{%   for intf in intf_list if intf.ospf.area is defined %}
         edit {{ loop.index }}
             set prefix {{ intf.ipv4|ansible.utils.ipaddr('subnet') }}
             set area {{ intf.ospf.area }}
         next
-{%      endfor %}
+{%   endfor %}
     end
-{%  endif %}
+{% endif %}
 end
 {% endmacro %}
 {% if multi_vdom %}
