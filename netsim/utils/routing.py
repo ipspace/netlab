@@ -178,12 +178,13 @@ def check_device_attribute_support(attr: str, ndata: Box, neigh: Box, topology: 
   if not isinstance(enabled,list):                          # The only other option is a list of supported providers
     return True                                             # Not that, must be OK
 
-  if not devices.get_provider(ndata,topology.defaults) in enabled:
+  n_provider = devices.get_provider(ndata,topology.defaults)
+  if n_provider not in enabled:
     if ndata.get(f'_invalid_provider.{attr}',False):        # Did we already report the problem?
       return False
     ndata._invalid_provider[attr] = True
     log.error(                                              # Provider used on node is not supported
-      f'Node {ndata.name} (device {ndata.device}) does not support BGP attribute {attr} when running with {topology.provider} provider',
+      f'Node {ndata.name} (device {ndata.device}) does not support BGP attribute {attr} when running with {n_provider} provider',
       log.IncorrectValue,
       module)
     return False
