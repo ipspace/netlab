@@ -504,14 +504,16 @@ def error_and_exit(errmsg: str,**kwargs: typing.Any) -> typing.NoReturn:
 # a 'run' function, and if it does, we call it with the remaining arguments.
 #
 
-quick_commands = {
-  'alias': lambda x: help.print_usage('alias.txt')
-}
-
 def main() -> None:
   script = sys.argv[0]                                      # Find how netlab was executed
   script = shutil.which(script) or script                   # Find the actual command if no directory was specified
   lab_commands(os.path.realpath(script))                    # Turn that into real path so 'netlab' can be called even after cwd()
+
+def loading_error(ex: Exception, modname: str) -> typing.NoReturn:
+  error_and_exit(
+    f"Internal error: cannot import {modname}: {str(ex)}",
+    more_hints=[f'Start python3 and execute "import {modname}" for more details'],
+    module='netlab')
 
 def lab_commands(script: str) -> None:
   global NETLAB_SCRIPT,NETLAB_COMMAND
@@ -527,24 +529,20 @@ def lab_commands(script: str) -> None:
   if cmd in ['-h','--help']:
     cmd = 'help'
 
-  if cmd == 'debug':
-    arg_start = 3
-    cmd = sys.argv[2]
-    mod = importlib.import_module("."+sys.argv[2],__name__)
-  elif quick_commands.get(cmd,None):
-    quick_commands[cmd](sys.argv[arg_start:])
-    return
-
   NETLAB_COMMAND = cmd
+  modname = f"{__name__}.{cmd}"
   try:
     mod = importlib.import_module("."+cmd,__name__)
-  except ModuleNotFoundError:
-   error_and_exit(
-     f'Unknown command {cmd}',
-     module='netlab',
-     more_hints=[ "Use 'netlab help' to get the list of valid commands" ])
+  except ModuleNotFoundError as ex:
+    if modname in str(ex):
+      error_and_exit(
+        f'Unknown command {cmd}',
+        module='netlab',
+        more_hints=[ "Use 'netlab help' to get the list of valid commands" ])
+    else:
+      loading_error(ex,modname)
   except Exception as ex:
-    log.fatal(f"Error importing {__name__}.{cmd}: {ex}")
+    loading_error(ex,modname)
 
   stats.stats_counter_update(f'cli.{cmd}.start')
   if mod:
@@ -553,8 +551,8 @@ def lab_commands(script: str) -> None:
       stats.stats_counter_update(f'cli.{cmd}.done')
       return
     else:
-      log.fatal(f"Module {__name__}.{cmd} does not have a valid entry point")
+      error_and_exit(f"Module {modname} does not have a valid entry point")
   else:
-    log.fatal(f'Could not import module {__name__}.{cmd}')
+    error_and_exit(f'Could not import module {modname}')
 
   sys.exit(1)
