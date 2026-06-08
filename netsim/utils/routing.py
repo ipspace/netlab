@@ -129,19 +129,60 @@ def get_device_bgp_feature(attr: str, ndata: Box, topology: Box) -> typing.Optio
   return features.bgp.get(attr,None)
 
 def check_device_attribute_support(attr: str, ndata: Box, neigh: Box, topology: Box, module: str) -> bool:
-  enabled = get_device_bgp_feature(attr,ndata,topology)
-  if not enabled:
-    log.error(
+  """
+  Check whether the specified BGP attribute is supported by the specified node.
+  The BGP neighbor data is provided mostly for error messages
+  """
+
+  def check_attr_value(value: typing.Any, enabled: Box) -> bool:
+    """
+    Given an attribute value which could be a list or a string, check whether the value(s)
+    are valid for the current device. Note that this is the "supported by the device' check.
+    Crazy values should have been filtered by the data validation code.
+    """
+    if isinstance(value,str):                               # Do we have a string value?
+      if not value in enabled.valid:                        # Easy, compare it to the list of supported values
+        inv_cache_key = f'_invalid_value.{module}.{attr}'   # Did we already report the error for this value?
+        if value in ndata.get(inv_cache_key,[]):
+          return False                                      # We did, don't do it twice, just return "failed"
+        data.append_to_list(ndata,inv_cache_key,value)      # Remember the value we reported
+        log.error(                                          # ... and report unsupported value
+          f'Node {ndata.name} (device {ndata.device}) does not support BGP attribute {attr} value {value}',
+          log.IncorrectValue,
+          module)
+        return False
+    elif isinstance(value,list):                            # Oh, the value is a list of keywords
+      for elem in value:                                    # So we have to iterate over all of them...
+        if not check_attr_value(elem,enabled):
+          return False
+
+    return True                                             # We cannot check other values, assuming they're OK
+  
+  enabled = get_device_bgp_feature(attr,ndata,topology)     # Get feature data for the attribute
+  if not enabled:                                           # No feature information or not valid?
+    log.error(                                              # Report an error
       f'Attribute {attr} used on BGP neighbor {neigh.name} is not supported by node {ndata.name} (device {ndata.device})',
       log.IncorrectValue,
       module)
     return False
 
-  if not isinstance(enabled,list):
+  if enabled is True:                                       # Unconditionally supported?
+    return True                                             # Cool
+  
+  if isinstance(enabled,Box):                               # Feature specified as a dict?
+    if 'valid' in enabled:                                  # Maybe it contains supported values?
+      n_value = neigh.get(attr,True)                        # If so, fetch the attribute value
+      return(check_attr_value(n_value,enabled))             # ... and compare it to supported values
     return True
 
-  if not topology.provider in enabled:
-    log.error(
+  if not isinstance(enabled,list):                          # The only other option is a list of supported providers
+    return True                                             # Not that, must be OK
+
+  if not devices.get_provider(ndata,topology.defaults) in enabled:
+    if ndata.get(f'_invalid_provider.{attr}',False):        # Did we already report the problem?
+      return False
+    ndata._invalid_provider[attr] = True
+    log.error(                                              # Provider used on node is not supported
       f'Node {ndata.name} (device {ndata.device}) does not support BGP attribute {attr} when running with {topology.provider} provider',
       log.IncorrectValue,
       module)

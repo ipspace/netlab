@@ -50,9 +50,10 @@ def apply_neighbor_attributes(node: Box, ngb: Box, intf: typing.Optional[Box], a
     if not attr_value:                                  # Attribute not defined in interface or node, move on
       continue
 
+    ngb[attr] = attr_value                              # Set neighbor attribute from interface/node value
+
     # Check that the node(device) supports the desired attribute
     OK = OK and _bgp.check_device_attribute_support(attr,node,ngb,topology,_config_name)
-    ngb[attr] = attr_value                              # Set neighbor attribute from interface/node value
     mark_plugin_config(node,ngb)                        # Remember that we have to do extra configuration
 
   return OK
