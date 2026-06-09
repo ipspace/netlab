@@ -17,4 +17,18 @@
             {{ ansible_user }}@{{ ansible_host }}
       responses:
         '.*#': "{{ lookup('template', config_template) }}\nexit\n"
+    register: fortios_cli_result
+    # The CLI fallback exists because the config-script API returns HTTP 500 on
+    # some FortiOS releases (e.g. 7.0.17) even for valid configuration, so we must
+    # not treat the API failure as fatal. But 'expect' reports success whenever the
+    # SSH session closes cleanly, which it does even when FortiOS rejected every
+    # command. Scan the transcript for FortiOS error markers so a malformed config
+    # fails loudly instead of being silently accepted. The markers are anchored to
+    # the start of a line (allowing FortiOS's numeric 'NNNN:' prefix) so an echoed
+    # configuration value that merely contains the text cannot trigger a false failure.
+    vars:
+      fos_config_error: '^(\d+: )?(Command fail\. Return code|Unknown action|command parse error)'
+    failed_when: >-
+      fortios_cli_result.rc != 0 or
+      fortios_cli_result.stdout is search(fos_config_error, multiline=true)
     tags: [ print_action, always ]
