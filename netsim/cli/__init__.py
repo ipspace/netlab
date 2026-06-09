@@ -534,7 +534,7 @@ def lab_commands(script: str) -> None:
   try:
     mod = importlib.import_module("."+cmd,__name__)
   except ModuleNotFoundError as ex:
-    if modname in str(ex):
+    if getattr(ex,'name',None) == modname:
       error_and_exit(
         f'Unknown command {cmd}',
         module='netlab',
