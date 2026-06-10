@@ -341,7 +341,7 @@ def post_transform(topology: Box) -> None:
         intf.bgp.locpref = ndata.bgp.locpref
       role = get_effective_module_attribute(
         'bgp.role',intf=intf,node=ndata,topology=topology,defaults=topology.defaults)
-      if role:
+      if isinstance(role,dict) and 'name' in role:
         intf.bgp.role = role
       if intf.get('bgp.policy',{}):
         apply_bgp_routing_policy(ndata,ngb,intf,topology)
