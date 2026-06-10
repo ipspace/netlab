@@ -5,7 +5,7 @@ The **bgp.policy** plugin implements simple BGP routing policies :
 
 * Per-neighbor AS-path prepending, BGP link bandwidth, BGP local preference, BGP MED, and BGP weights
 * Default local preference
-* [RFC 9234](https://www.rfc-editor.org/rfc/rfc9234.html) BGP Roles on EBGP sessions (route-leak prevention)
+* [RFC 9234](https://www.rfc-editor.org/rfc/rfc9234.html) BGP Roles (route-leak prevention) on EBGP sessions
 
 You can also use this plugin to apply inbound and outbound [generic routing policies](generic-routing-policies) to EBGP neighbors.
 
@@ -31,7 +31,7 @@ The plugin adds the following BGP link attributes:
 
 [^BCP]: _netlab_ configures network devices to propagate BGP Link Bandwidth extended community on IBGP sessions. The value advertised in IBGP updates is device-dependent and could be the value attached to the best path or the aggregate of EBGP values.
 
-[^PSV]: The allowed values are platform-dependent. For example, Arista EOS and FRR can set bandwidth values in both directions but cannot add interface bandwidth. In contrast, Cisco IOS/XE can only add interface bandwidth to incoming EBGP updates.
+[^PSV]: The allowed values are platform-dependent. For example, Arista EOS and FRR can set bandwidth values in both directions, but cannot add interface bandwidth. In contrast, Cisco IOS/XE can only add interface bandwidth to incoming EBGP updates.
 
 [^ASPS]: You must quote a single AS number that you want to prepend with the **path** attribute; otherwise, the YAML parser treats it as an integer.
 
@@ -53,7 +53,7 @@ The following table describes where you could apply individual attributes:
 | role       |  ✅  |    ✅     |  ❌  |
 | weight     |  ❌   |    ✅     |  ❌  |
 
-BGP role attributes can also be specified at the global or link level. The plugin applies **bgp.role** to **EBGP** neighbors only. Using this attribute on IBGP sessions results in a configuration error.
+The **bgp.role** attributes can also be specified at the global (**bgp.role.strict** only) or link level. The plugin applies global- or node-level **bgp.role** value only to EBGP neighbors. Using this attribute on IBGP sessions results in a configuration error.
 
 ## Platform Support
 
@@ -86,7 +86,6 @@ See [BGP Policies Test Results](https://release.netlab.tools/_html/coverage.bgp.
 
 * Arista EOS and Aruba CX do not support node-level default local preference. Node-level **bgp.locpref** attribute (if specified) is thus applied to all interfaces that do not have an explicit **bgp.locpref** attribute. That might interfere with the **bgp.policy** interface attributes.
 * FRR implements BGP Roles starting with release 8.4. BIRD implements them starting with release 2.0.11. On BIRD, BGP roles are rendered into the BGP module configuration file (`daemons/bird/bgp.j2`).
-
 
 ## Applying Routing Policies to EBGP Neighbors
 
@@ -235,13 +234,13 @@ When both routers implement RFC 9234, the local role on one router must match th
 | rs-server  | rs-client   |
 | rs-client  | rs-server   |
 
-You can use BGP roles together with **[bgp.session](bgp.session.md)** session attributes. List **bgp.session** before **bgp.policy** if you use route server session features:
+You can use BGP roles together with **[bgp.session](bgp.session.md)** session attributes. In that case, you have to specify the **bgp.session** plugin before the **bgp.policy** one:
 
 ```
 plugin: [ bgp.session, bgp.policy ]
 ```
 
-Example:
+Sample topology:
 
 ```yaml
 plugin: [ bgp.policy ]
@@ -262,7 +261,6 @@ links:
 
 Strict mode is enabled with the **strict** attribute in the **bgp.role** dictionary, or globally with **defaults.bgp.role.strict** (or **bgp.role.strict** in lab topology settings):
 
-
 ```yaml
 links:
 - dut:
@@ -273,11 +271,11 @@ links:
     bgp.role: customer
 ```
 
-Integration test cases for BGP roles are in the `tests/integration/bgp.policy` directory (`70-bgp-roles.yml`). A sample topology file is in `tests/topology/input/bgp-role.yml`.
+You'll find a more complex lab topology in the [netlab integration tests](https://github.com/ipspace/netlab/tree/dev/tests/integration) (`bgp.policy/70-bgp-roles.yml`).
 
 ## Sample Topologies
 
-The following topology illustrates a simple primary/backup scenario in which a CE-router uses weights and MED to select primary/backup uplinks.
+The following topology illustrates a simple primary/backup scenario in which a CE router uses weights and MED to select primary/backup uplinks.
 
 ```
 ---
