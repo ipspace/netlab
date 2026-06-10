@@ -43,8 +43,32 @@
 {%   endif %}
 {%   if n.rs|default(False) %}
   neighbor {{ peer }} route-server-client
-{%   endif %} 
+{%   endif %}
+{%   if n.gr is defined %}
+  neighbor {{ peer }} graceful-restart{{ "-"+n.gr if n.gr != 'enable' }}
+{%   endif %}
 {%- endmacro %}
+{#
+
+#}
+{% macro bgp_gr(bgp) %}
+{%   if bgp.gr.restart_time is defined %}
+  bgp graceful-restart restart-time {{ bgp.gr.restart_time }}
+{%   endif %}
+{%   if bgp.gr.update_delay is defined %}
+  update-delay {{ bgp.gr.update_delay }}
+{%   endif %}
+{%   if bgp.gr.stalepath_time is defined %}
+  bgp graceful-restart stalepath-time {{ bgp.gr.stalepath_time }}
+{%   endif %}
+{%   set gr_state = bgp.gr.state|default('helper') %}
+{%   if gr_state == 'disable' %}
+  bgp graceful-restart-disable
+{%   endif %}
+{%   if gr_state == 'enable' %}
+  bgp graceful-restart
+{%   endif %}
+{% endmacro %}
 {#
 
 #}
@@ -52,6 +76,9 @@ set -e
 cat >/tmp/config <<CONFIG
 !
 router bgp {{ bgp.as }}
+{% if bgp.gr is defined %}
+{{   bgp_gr(bgp) }}
+{% endif %}
 {% for n in bgp.neighbors %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
 {%   set peer = n[af] if n[af] is string else n.local_if|default('?') %}

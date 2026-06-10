@@ -1,0 +1,80 @@
+message: |
+  This lab tests the BGP graceful restart functionality.
+
+plugin: [ bgp.session ]
+module: [ bgp ]
+
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
+addressing.p2p.ipv6: 2001:db8:3::/48
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2, x3 ]
+
+nodes:
+  dut:
+    bgp.as: 65000
+    bgp.gr:
+      update_delay: 17
+      restart_time: 13
+      stalepath_time: 23
+      state: disable
+  x1:
+    bgp.as: 65101
+  x2:
+    bgp.as: 65102
+  x3:
+    bgp.as: 65103
+
+links:
+- dut.bgp.gr: enable
+  x1:
+- dut.bgp.gr: helper
+  x2:
+- dut:
+  x3:
+
+validate:
+  session_v4:
+    description: Check IPv4 EBGP sessions with DUT
+    wait_msg: Waiting for EBGP session establishment
+    wait: ebgp_session
+    nodes: [ x1, x2, x3 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  session_v6:
+    description: Check IPv6 EBGP sessions with DUT
+    wait_msg: Waiting for EBGP session establishment
+    wait: ebgp_session
+    nodes: [ x1, x2, x3 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
+
+  gr_enable:
+    description: Check per-neighbor GR enabled mode
+    nodes: [ x1 ]
+    show:
+      frr: "bgp neighbors json"
+    valid:
+      frr: >-
+        result["{{ bgp.neighbors[0].ipv4 }}"].gracefulRestartInfo.remoteGrMode == "Restart"
+
+  gr_helper:
+    description: Check per-neighbor GR helper mode
+    nodes: [ x2 ]
+    show:
+      frr: "bgp neighbors json"
+    valid:
+      frr: >-
+        result["{{ bgp.neighbors[0].ipv4 }}"].gracefulRestartInfo.remoteGrMode == "Helper"
+
+  gr_disable:
+    description: Check that GR is disabled on dut
+    nodes: [ x3 ]
+    show:
+      frr: "bgp neighbors json"
+    valid:
+      frr: >-
+        result["{{ bgp.neighbors[0].ipv4 }}"].gracefulRestartInfo.remoteGrMode == "Disable"

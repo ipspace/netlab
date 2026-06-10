@@ -18,6 +18,7 @@ The plugin adds the following BGP session attributes:
 * **bgp.as_override** is a boolean attribute that controls whether a BGP router replaces peer AS with its own AS.
 * **bgp.bfd** is a boolean attribute that enables BFD with BGP neighbors.
 * **bgp.default_originate** is a boolean attribute that controls whether a BGP router advertises a default route to its neighbor(s).
+* **bgp.gr** defines [BGP graceful restart](plugin-bgp-session-gr) capabilities
 * **bgp.gtsm** is an integer attribute that enables the Generic TTL Security Mechanism (GTSM). A *true* value sets it to 1 (the remote router can be up to one hop away).
 * **bgp.passive** is a boolean attribute that makes a node act as a passive BGP peer[^PBP] on an interface or on all applicable sessions (when specified as a node parameter).
 * **bgp.password** is a string attribute that specifies the MD5  or TCP-AO password used on EBGP sessions.
@@ -44,6 +45,7 @@ BGP session attributes can be specified at the global, node, link, or interface 
 | as_override           |    ❌   |  ❌   |  ❌   |    ✅     |
 | bfd                   |   ✅   |  ✅  |  ✅  |    ✅     |
 | default_originate     |    ❌   |  ✅  |  ❌   |    ✅     |
+| gr                    |    ❌   |  ✅  |  ✅  |    ✅     |
 | gtsm                  |   ✅   |  ✅  |  ✅  |    ✅     |
 | passive               |    ❌   |  ✅  |   ❌  |    ✅     |
 | password              |   ✅   |  ✅  |  ✅  |    ✅     |
@@ -57,23 +59,23 @@ BGP session attributes can be specified at the global, node, link, or interface 
 The plugin implements generic BGP session features for the following platforms:
 
 (bgp-session-platforms)=
-| Operating system    | default<br>originate | BGP<br>timers |  BFD | Passive<br>peer |
-| ------------------- | :--: | :--: | :--: | :--: |
-| Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  |
-| Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |   ❌  |
-| Cisco IOSv/IOSvL2   |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cisco IOS XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cisco IOS XR[^XR]   |  ✅  |  ✅  |   ❌  |  ✅  |
-| Cisco Nexus OS      |  ✅  |  ✅  |   ❌  |  ✅  |
-| Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |
-| Dell OS10           |  ✅  |  ✅  |  ✅  |  ❌  |
-| FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |
-| Junos[^Junos]       |  ✅  |  ✅  |  ✅  |  ✅  |
-| Mikrotik RouterOS 7 |  ✅  |   ❌  |   ❌  |   ❌  |
-| Nokia SR Linux      |  ✅  |  ✅  |  ✅  |  ✅  |
-| Nokia SR OS         |  ✅  |   ❌  |   ❌  |   ❌  |
-| OpenBSD             |  ✅  |  ✅  |   ❌  |  ✅  |
-| VyOS                |  ✅  |   ❌  |   ❌  |   ❌  |
+| Operating system    | default<br>originate | BGP<br>timers |  BFD | Passive<br>peer | Graceful<br>Restart |
+| ------------------- | :--: | :--: | :--: | :--: | :--: |
+| Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  | ✅  |
+| Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |   ❌  |  ❌  |
+| Cisco IOSv/IOSvL2   |  ✅  |  ✅  |  ✅  |  ✅  |  ❌  |
+| Cisco IOS XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |  ❌  |
+| Cisco IOS XR[^XR]   |  ✅  |  ✅  |   ❌  |  ✅  |  ❌  |
+| Cisco Nexus OS      |  ✅  |  ✅  |   ❌  |  ✅  |  ❌  |
+| Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |  ❌  |
+| Dell OS10           |  ✅  |  ✅  |  ✅  |   ❌  |  ❌  |
+| FRR                 |  ✅  |  ✅  |  ✅  |  ✅  | ✅  |
+| Junos[^Junos]       |  ✅  |  ✅  |  ✅  |  ✅  |  ❌  |
+| Mikrotik RouterOS 7 |  ✅  |   ❌  |   ❌  |   ❌  |  ❌  |
+| Nokia SR Linux      |  ✅  |  ✅  |  ✅  |  ✅  |  ❌  |
+| Nokia SR OS         |  ✅  |   ❌  |   ❌  |   ❌  |  ❌  |
+| OpenBSD             |  ✅  |  ✅  |   ❌  |  ✅  |  ❌  |
+| VyOS                |  ✅  |   ❌  |   ❌  |   ❌  |  ❌  |
 
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
@@ -225,6 +227,37 @@ Introducing a BGP route server to an IP subnet also prunes the full mesh of EBGP
 | Regular BGP router | Regular BGP route  | removed  |
 
 Please note that an IBGP session between route servers in the same autonomous system is retained and might generate a warning unless you also run an IGP between the route servers. To remove the IBGP session between route servers, set the `bgp.sessions.ipv4: [ ebgp ]` and `bgp.sessions.ipv6: [ ebgp ]` node attributes on route server nodes.
+
+(plugin-bgp-session-gr)=
+## BGP Graceful Restart Capabilities
+
+BGP Graceful Restart capabilities can be defined per node or per EBGP neighbor. The node-level **bgp.gr** attribute is a dictionary with these parameters (it can also be specified as the **bgp.gr.state** string value):
+
+* **bgp.gr.state** -- node Graceful Restart state (`enable`, `disable` or `helper).
+* **bgp.gr.restart_time** -- the expected neighbor restart time (integer, up to 3600 seconds)
+* **bgp.gr.stalepath_time** -- the time after which the stale paths are purged (integer, up to 3600 seconds)
+* **bgp.gr.update_delay** -- the maximum initial BGP update delay (integer, up to 3600 seconds)
+
+```{warning}
+* The built-in device BGP Graceful Restart default (usually: helper) is not changed unless you specify node-level **bgp.gr.state‌** value.
+* _netlab_ does its best to configure node-level **‌bgp.gr** parameters. Some devices do not support all of them, and we only test the `disable` node-level **‌bgp.gr.state** in integration tests.
+```
+
+You can also specify per-EBGP-neighbor **bgp.gr** state, a string value with values from node-level **bgp.gr.state** parameter.
+
+In the following topology snipper, the router acts as a GR helper, but not for the X1 EBGP peer:
+
+```
+nodes:
+  rtr:
+    bgp.as: 65000
+    bgp.gr.state: helper
+
+links:
+- rtr:
+    bgp.gr: disable
+  x1:
+```
 
 ## Test Topology
 

@@ -1,6 +1,6 @@
 import typing
 
-from box import Box
+from box import Box, BoxList
 
 from netsim import api, modules
 from netsim.data import append_to_list
@@ -41,12 +41,16 @@ def mark_plugin_config(node: Box, ngb: Box) -> None:
 Apply attributes supported by bgp.session plugin to a single neighbor
 Returns False is some of the attributes are not supported
 '''
-def apply_neighbor_attributes(node: Box, ngb: Box, intf: typing.Optional[Box], apply_list: list, topology: Box) -> bool:
-  global _config_name
+NO_PROPAGATE: typing.Union[Box,BoxList]
 
+def apply_neighbor_attributes(node: Box, ngb: Box, intf: typing.Optional[Box], apply_list: list, topology: Box) -> bool:
+  global _config_name, NO_PROPAGATE
   OK = True
   for attr in apply_list:
-    attr_value = modules.get_effective_module_attribute(path=f'bgp.{attr}',intf=intf,node=node)
+    if attr in NO_PROPAGATE:                            # Can we propagate attribute from node to interface?
+      attr_value = intf.get(f'bgp.{attr}',None) if intf else None
+    else:
+      attr_value = modules.get_effective_module_attribute(path=f'bgp.{attr}',intf=intf,node=node)
     if not attr_value:                                  # Attribute not defined in interface or node, move on
       continue
 
@@ -239,6 +243,9 @@ interface BGP parameters supported by this plugin into BGP neighbor parameters
 '''
 
 def post_transform(topology: Box) -> None:
+  global NO_PROPAGATE
+  NO_PROPAGATE = topology.defaults.bgp.attributes.session.no_propagate
+
   have_rs = False
   for ndata in topology.nodes.values():
     if not 'bgp' in ndata.get('module',[]):                 # Skip nodes not running BGP

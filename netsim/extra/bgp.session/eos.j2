@@ -42,7 +42,35 @@
 {%   if n.as_override|default(False) %}
   neighbor {{ peer }} as-path remote-as replace out
 {%   endif %}
+{%   if n.gr is defined %}
+{%     if n.gr == 'enable' %}
+  neighbor {{ peer }} graceful-restart
+{%     elif n.gr == 'disable' %}
+  no neighbor {{ peer }} graceful-restart
+  no neighbor {{ peer }} graceful-restart-helper
+{%     elif n.gr == 'helper' %}
+  neighbor {{ peer }} graceful-restart-helper
+{%     endif %}
+{%   endif %}
 {%- endmacro %}
+
+{% macro bgp_gr(bgp) %}
+{%   if bgp.gr.restart_time is defined %}
+  graceful-restart restart-time {{ bgp.gr.restart_time }}
+{%   endif %}
+{%   if bgp.gr.stalepath_time is defined %}
+  graceful-restart stalepath-time {{ bgp.gr.stalepath_time }}
+{%   endif %}
+{%   set gr_state = bgp.gr.state|default('helper') %}
+{%   if gr_state == 'disable' %}
+  no graceful-restart
+  no graceful-restart-helper
+{%   elif gr_state == 'enable' %}
+  graceful-restart
+{%   elif gr_state == 'helper' %}
+  graceful-restart-helper
+{%   endif %}
+{% endmacro %}
 
 !
 {% for pwd in bgp._ao_secrets|default([]) %}
@@ -54,6 +82,9 @@ management security
 !
 {% endfor %}
 router bgp {{ bgp.as }}
+{% if bgp.gr is defined %}
+{{   bgp_gr(bgp) }}
+{% endif %}
 {% for af in ['ipv4','ipv6'] %}
 {%   for n in bgp.neighbors if n[af] is defined %}
 {{     ebgp_session(n,af,bgp) -}}
