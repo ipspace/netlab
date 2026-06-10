@@ -34,21 +34,18 @@ nodes:
   good:
     bgp.as: 65198
     loopback.ipv4: 172.16.98.1/32
+  legacy:
+    bgp.as: 65197
+    loopback.ipv4: 172.16.97.1/32
 
 links:
-- dut:
-    bgp.role: customer
-  upstream:
-    bgp.role: provider
-- dut:
-    bgp.role: provider
-  customer:
-    bgp.role: customer
-- dut:
-    bgp.role: peer
-  peer:
-    bgp.role: peer
-- dut:
+- dut.bgp.role: customer          # Valid: custom-to-provider
+  upstream.bgp.role: provider
+- dut.bgp.role: provider          # Valid: provider-to-customer
+  customer.bgp.role: customer
+- dut.bgp.role: peer              # Valid: peer-to-peer
+  peer.bgp.role: peer
+- dut:                            # Strict role validation, fails due to role mismatch
     bgp.role:
       name: provider
       strict: true
@@ -56,7 +53,7 @@ links:
     bgp.role:
       name: peer
       strict: true
-- dut:
+- dut:                            # Valid strict role validation
     bgp.role:
       name: provider
       strict: true
@@ -64,29 +61,15 @@ links:
     bgp.role:
       name: customer
       strict: true
+- dut.bgp.role: peer              # Legacy peer without a role
+  legacy:
 
 validate:
-  session_upstream:
-    description: Check provider/customer EBGP session toward upstream (FRR probe to DUT)
+  valid_roles:
+    description: Check expected EBGP sessions
     wait_msg: Waiting for EBGP session establishment
     wait: ebgp_session
-    nodes: [ upstream ]
-    devices: [ frr ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
-
-  session_customer:
-    description: Check provider/customer EBGP session toward customer (FRR probe to DUT)
-    wait_msg: Waiting for EBGP session establishment
-    wait: ebgp_session
-    nodes: [ customer ]
-    devices: [ frr ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
-
-  session_peer:
-    description: Check peer/peer EBGP session (FRR probe to DUT)
-    wait_msg: Waiting for EBGP session establishment
-    wait: ebgp_session
-    nodes: [ peer ]
+    nodes: [ upstream, customer, peer ]
     devices: [ frr ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
 
@@ -95,6 +78,14 @@ validate:
     wait_msg: Waiting for EBGP session establishment
     wait: ebgp_session
     nodes: [ good ]
+    devices: [ frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  session_legacy:
+    description: Check that the legacy session (no role on neighbor) is established
+    wait_msg: Waiting for EBGP session establishment
+    wait: ebgp_session
+    nodes: [ legacy ]
     devices: [ frr ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
 
@@ -108,42 +99,46 @@ validate:
     devices: [ frr ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut',state=['Idle','Active'])
 
-  pfx_upstream:
-    description: Check that upstream advertises its loopback
+  adv_customer:
+    description: Check that the customer prefix is advertised to everyone
     wait: bgp_scan_time
     wait_msg: Waiting for BGP convergence
-    nodes: [ upstream ]
-    devices: [ frr ]
-    plugin: bgp_prefix(nodes.upstream.loopback.ipv4)
-
-  pfx_customer:
-    description: Check that customer advertises its loopback
-    wait: bgp_scan_time
-    wait_msg: Waiting for BGP convergence
-    nodes: [ customer ]
+    nodes: [ good, peer, upstream, legacy ]
     devices: [ frr ]
     plugin: bgp_prefix(nodes.customer.loopback.ipv4)
 
-  pfx_peer:
-    description: Check that peer advertises its loopback
+  adv_good:
+    description: Check that the other customer prefix is advertised to everyone
     wait: bgp_scan_time
     wait_msg: Waiting for BGP convergence
-    nodes: [ peer ]
+    nodes: [ customer, peer, upstream, legacy ]
     devices: [ frr ]
-    plugin: bgp_prefix(nodes.peer.loopback.ipv4)
+    plugin: bgp_prefix(nodes.customer.loopback.ipv4)
 
-  pfx_no_leak:
-    description: Check that upstream prefix is not leaked to the peer session
+  adv_legacy:
+    description: Check that the legacy prefix is advertised to customers
     wait: bgp_scan_time
     wait_msg: Waiting for BGP convergence
-    nodes: [ peer ]
+    nodes: [ good, customer ]
+    devices: [ frr ]
+    plugin: bgp_prefix(nodes.good.loopback.ipv4)
+
+  adv_upstream:
+    description: Check that the upstream prefix is advertised to customers
+    wait: bgp_scan_time
+    wait_msg: Waiting for BGP convergence
+    nodes: [ customer, good ]
+    devices: [ frr ]
+    plugin: bgp_prefix(nodes.upstream.loopback.ipv4)
+
+  blk_upstream:
+    description: Check that upstream prefix is not leaked to the peer session
+    nodes: [ peer, legacy ]
     devices: [ frr ]
     plugin: bgp_prefix(nodes.upstream.loopback.ipv4,state='missing')
 
-  pfx_good:
-    description: Check that good advertises its loopback
-    wait: bgp_scan_time
-    wait_msg: Waiting for BGP convergence
-    nodes: [ good ]
+  blk_legacy:
+    description: Check that the legacy prefix is not advertised to peers or upstreams
+    nodes: [ peer, upstream ]
     devices: [ frr ]
-    plugin: bgp_prefix(nodes.good.loopback.ipv4)
+    plugin: bgp_prefix(nodes.legacy.loopback.ipv4,state='missing')
