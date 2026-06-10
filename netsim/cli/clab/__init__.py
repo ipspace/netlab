@@ -6,12 +6,12 @@
 import argparse
 import typing
 
-from ..utils import log
-from ..utils import read as _read
-from . import parser_subcommands, subcommand_usage
-from .clab_actions import build as _build
-from .clab_actions import cleanup as _cleanup
-from .clab_actions import tarball as _tarball
+from ...utils import log
+from ...utils import read as _read
+from .. import parser_subcommands, subcommand_usage
+from . import build as _build
+from . import cleanup as _cleanup
+from . import tarball as _tarball
 
 clab_dispatch: dict = {
   'tarball': {

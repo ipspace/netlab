@@ -119,6 +119,11 @@ def build_image(image: str, tag: typing.Optional[str]) -> None:
     strings.print_colored_text('[HICCUP]   ','yellow',None)
     print(f"Cannot remove image {tag}, continuing")
 
+  strings.print_colored_text('[WORKING]  ','green',None)
+  print(f"Prune docker layers and builder cache")
+  external_commands.run_command(f'docker image prune -f',ignore_errors=True)
+  external_commands.run_command(f'docker builder prune -f',ignore_errors=True)
+
   workdir = os.getcwd()
   print()
   strings.print_colored_text('[WORKING]  ','green',None)
