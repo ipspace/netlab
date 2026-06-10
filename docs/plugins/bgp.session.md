@@ -233,19 +233,19 @@ Please note that an IBGP session between route servers in the same autonomous sy
 
 BGP Graceful Restart capabilities can be defined per node or per EBGP neighbor. The node-level **bgp.gr** attribute is a dictionary with these parameters (it can also be specified as the **bgp.gr.state** string value):
 
-* **bgp.gr.state** -- node Graceful Restart state (`enable`, `disable` or `helper).
+* **bgp.gr.state** -- node Graceful Restart state (`enable`, `disable` or `helper`).
 * **bgp.gr.restart_time** -- the expected neighbor restart time (integer, up to 3600 seconds)
 * **bgp.gr.stalepath_time** -- the time after which the stale paths are purged (integer, up to 3600 seconds)
 * **bgp.gr.update_delay** -- the maximum initial BGP update delay (integer, up to 3600 seconds)
 
 ```{warning}
-* The built-in device BGP Graceful Restart default (usually: helper) is not changed unless you specify node-level **bgp.gr.state‌** value.
-* _netlab_ does its best to configure node-level **‌bgp.gr** parameters. Some devices do not support all of them, and we only test the `disable` node-level **‌bgp.gr.state** in integration tests.
+* The built-in device BGP Graceful Restart default (usually: helper) is not changed unless you specify node-level **bgp.gr.state** value.
+* _netlab_ does its best to configure node-level **bgp.gr** parameters. Some devices do not support all of them, and we only test the `disable` node-level **bgp.gr.state** in integration tests.
 ```
 
 You can also specify per-EBGP-neighbor **bgp.gr** state, a string value with values from node-level **bgp.gr.state** parameter.
 
-In the following topology snipper, the router acts as a GR helper, but not for the X1 EBGP peer:
+In the following topology snippet, the router acts as a GR helper, but not for the X1 EBGP peer:
 
 ```
 nodes:
