@@ -236,7 +236,6 @@ BGP Graceful Restart capabilities can be defined per node, per VRF, or per EBGP 
 * **bgp.gr.state** -- node Graceful Restart state (`enable`, `disable` or `helper`).
 * **bgp.gr.restart_time** -- the expected neighbor restart time (integer, up to 3600 seconds)
 * **bgp.gr.stalepath_time** -- the time after which the stale paths are purged (integer, up to 3600 seconds)
-* **bgp.gr.update_delay** -- the maximum initial BGP update delay (integer, up to 3600 seconds)
 
 ```{warning}
 * The built-in device BGP Graceful Restart default (usually: helper) is not changed unless you specify node-level **bgp.gr.state** value.
