@@ -1,7 +1,7 @@
 message: |
   This lab tests the BGP graceful restart functionality.
 
-plugin: [ bgp.session ]
+plugin: [ bgp.session, test.vrf_check ]
 module: [ bgp ]
 
 defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
@@ -12,13 +12,17 @@ groups:
   probes:
     device: frr
     provider: clab
-    members: [ x1, x2, x3 ]
+    members: [ x1, x2, x3, v1, v2 ]
+
+vrfs:
+  tenant:
+    bgp.gr: disable
 
 nodes:
   dut:
+    module: [ bgp, vrf ]
     bgp.as: 65000
     bgp.gr:
-      update_delay: 17
       restart_time: 13
       stalepath_time: 23
       state: disable
@@ -28,6 +32,10 @@ nodes:
     bgp.as: 65102
   x3:
     bgp.as: 65103
+  v1:
+    bgp.as: 65201
+  v2:
+    bgp.as: 65202
 
 links:
 - dut.bgp.gr: enable
@@ -36,13 +44,19 @@ links:
   x2:
 - dut:
   x3:
+- dut.bgp.gr: enable
+  v1:
+  vrf: tenant
+- dut:
+  v2:
+  vrf: tenant
 
 validate:
   session_v4:
     description: Check IPv4 EBGP sessions with DUT
     wait_msg: Waiting for EBGP session establishment
     wait: ebgp_session
-    nodes: [ x1, x2, x3 ]
+    nodes: [ x1, x2, x3, v1, v2 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
 
   session_v6:
@@ -54,7 +68,7 @@ validate:
 
   gr_enable:
     description: Check per-neighbor GR enabled mode
-    nodes: [ x1 ]
+    nodes: [ x1, v1 ]
     show:
       frr: "bgp neighbors json"
     valid:
@@ -72,7 +86,7 @@ validate:
 
   gr_disable:
     description: Check that GR is disabled on dut
-    nodes: [ x3 ]
+    nodes: [ x3, v2 ]
     show:
       frr: "bgp neighbors json"
     valid:

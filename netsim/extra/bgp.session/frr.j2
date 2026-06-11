@@ -55,13 +55,10 @@
 {%   if bgp.gr.restart_time is defined %}
   bgp graceful-restart restart-time {{ bgp.gr.restart_time }}
 {%   endif %}
-{%   if bgp.gr.update_delay is defined %}
-  update-delay {{ bgp.gr.update_delay }}
-{%   endif %}
 {%   if bgp.gr.stalepath_time is defined %}
   bgp graceful-restart stalepath-time {{ bgp.gr.stalepath_time }}
 {%   endif %}
-{%   set gr_state = bgp.gr.state|default('helper') %}
+{%   set gr_state = bgp.gr.state %}
 {%   if gr_state == 'disable' %}
   bgp graceful-restart-disable
 {%   endif %}
@@ -108,6 +105,9 @@ router bgp {{ bgp.as }}
 {% if vrfs is defined %}
 {%   for vname,vdata in vrfs.items() if vdata.bgp is defined and vdata.bgp.neighbors is defined %}
 router bgp {{ bgp.as }} vrf {{ vname }}
+{%     if vdata.bgp.gr is defined %}
+{{       bgp_gr(vdata.bgp) }}
+{%     endif %}
 {%     for af in ['ipv4','ipv6'] if af in vdata.af|default({}) %}
 {%       for n in vdata.bgp.neighbors if n[af] is defined %}
 {%         set peer = n[af] if n[af] is string else n.local_if|default('?') %}

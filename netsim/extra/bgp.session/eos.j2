@@ -61,7 +61,7 @@
 {%   if bgp.gr.stalepath_time is defined %}
   graceful-restart stalepath-time {{ bgp.gr.stalepath_time }}
 {%   endif %}
-{%   set gr_state = bgp.gr.state|default('helper') %}
+{%   set gr_state = bgp.gr.state %}
 {%   if gr_state == 'disable' %}
   no graceful-restart
   no graceful-restart-helper
@@ -101,23 +101,26 @@ router bgp {{ bgp.as }}
 {% endfor %}
 !
 {% if vrfs is defined %}
-{% for vname,vdata in vrfs.items() if vdata.bgp is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.bgp is defined %}
  vrf {{ vname }}
-{% for af in ['ipv4','ipv6'] %}
-{%   for n in bgp.neighbors if n[af] is defined %}
-{{     ebgp_session(n,af,bgp) -}}
-{%   endfor %}
-{% endfor %}
+{%     if vdata.bgp.gr is defined %}
+{{       bgp_gr(vdata.bgp) }}
+{%     endif %}
+{%     for af in ['ipv4','ipv6'] %}
+{%       for n in bgp.neighbors if n[af] is defined %}
+{{         ebgp_session(n,af,bgp) -}}
+{%       endfor %}
+{%     endfor %}
 !
-{%   for af in ['ipv4','ipv6'] %}
-{%     for n in vdata.bgp.neighbors if n[af] is defined %}
-{%       if loop.first %}
+{%     for af in ['ipv4','ipv6'] %}
+{%       for n in vdata.bgp.neighbors if n[af] is defined %}
+{%         if loop.first %}
    address-family {{ af }}
-{%       endif %}
-{{       ebgp_neighbor(n,af) -}}
+{%         endif %}
+{{         ebgp_neighbor(n,af) -}}
+{%       endfor %}
 {%     endfor %}
 {%   endfor %}
-{% endfor %}
 {% endif %}
 !
 {% if netlab_config_mode|default('') == 'sh' %}

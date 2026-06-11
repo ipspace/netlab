@@ -39,20 +39,20 @@ The plugin adds the following BGP session attributes:
 
 BGP session attributes can be specified at the global, node, link, or interface (node-to-link attachment) level. The following table describes where you could apply individual attributes:
 
-| BGP session attribute | Global | Node | Link | Interface |
-|-----------------------|:------:|:----:|:----:|:---------:|
-| allowas_in            |    ❌   |  ❌   |  ❌   |    ✅     |
-| as_override           |    ❌   |  ❌   |  ❌   |    ✅     |
-| bfd                   |   ✅   |  ✅  |  ✅  |    ✅     |
-| default_originate     |    ❌   |  ✅  |  ❌   |    ✅     |
-| gr                    |    ❌   |  ✅  |  ✅  |    ✅     |
-| gtsm                  |   ✅   |  ✅  |  ✅  |    ✅     |
-| passive               |    ❌   |  ✅  |   ❌  |    ✅     |
-| password              |   ✅   |  ✅  |  ✅  |    ✅     |
-| remove_private_as     |    ❌   |  ❌   |  ❌   |    ✅     |
-| rs                    |    ❌   |  ✅  |   ❌  |    ✅     |
-| tcp_ao                |   ✅   |  ✅  |  ✅  |    ✅     |
-| timers                |   ✅   |  ✅  |  ✅  |    ✅     |
+| BGP session attribute | Global | Node | Link | Interface | VRF |
+|-----------------------|:--:|:--:|:--:|:--:|:--:|
+| allowas_in            | ❌  | ❌  | ❌  | ✅ | ❌  |
+| as_override           | ❌  | ❌  | ❌  | ✅ | ❌  |
+| bfd                   | ✅ | ✅ | ✅ | ✅ | ❌  |
+| default_originate     | ❌  | ✅ | ❌  | ✅ | ❌  |
+| gr                    | ❌  | ✅ | ✅ | ✅ | ✅ |
+| gtsm                  | ✅ | ✅ | ✅ | ✅ | ❌  |
+| passive               | ❌  | ✅ | ❌  | ✅ | ❌  |
+| password              | ✅ | ✅ | ✅ | ✅ | ❌  |
+| remove_private_as     | ❌  | ❌  | ❌  | ✅ | ❌  |
+| rs                    | ❌  | ✅ | ❌  | ✅ | ❌  |
+| tcp_ao                | ✅ | ✅ | ✅ | ✅ | ❌  |
+| timers                | ✅ | ✅  |✅ | ✅ | ❌  |
 
 ## Platform Support
 
@@ -231,7 +231,7 @@ Please note that an IBGP session between route servers in the same autonomous sy
 (plugin-bgp-session-gr)=
 ## BGP Graceful Restart Capabilities
 
-BGP Graceful Restart capabilities can be defined per node or per EBGP neighbor. The node-level **bgp.gr** attribute is a dictionary with these parameters (it can also be specified as the **bgp.gr.state** string value):
+BGP Graceful Restart capabilities can be defined per node, per VRF, or per EBGP neighbor. The node- and VRF-level **bgp.gr** attribute is a dictionary with these parameters (it can also be specified as the **bgp.gr.state** string value):
 
 * **bgp.gr.state** -- node Graceful Restart state (`enable`, `disable` or `helper`).
 * **bgp.gr.restart_time** -- the expected neighbor restart time (integer, up to 3600 seconds)
@@ -240,6 +240,7 @@ BGP Graceful Restart capabilities can be defined per node or per EBGP neighbor. 
 
 ```{warning}
 * The built-in device BGP Graceful Restart default (usually: helper) is not changed unless you specify node-level **bgp.gr.state** value.
+* The node-level **‌bgp.gr** parameters are not applied to VRF BGP instances. Usually, you have to define **‌bgp.gr** on the VRFs to get non-default behavior.
 * _netlab_ does its best to configure node-level **bgp.gr** parameters. Some devices do not support all of them, and we only test the `disable` node-level **bgp.gr.state** in integration tests.
 ```
 
