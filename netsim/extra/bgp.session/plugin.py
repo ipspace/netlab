@@ -31,11 +31,12 @@ def get_attribute_list(apply_list: typing.Any, topology: Box) -> list:
 '''
 Mark that the node needs a plugin config, and potentially cleared BGP sessions
 '''
-def mark_plugin_config(node: Box, ngb: Box) -> None:
+def mark_plugin_config(node: Box, ngb: typing.Optional[Box]) -> None:
   global _config_name
 
   api.node_config(node,_config_name)                  # Remember that we have to do extra configuration
-  _bgp.clear_bgp_session(node,ngb)
+  if ngb:
+    _bgp.clear_bgp_session(node,ngb)
 
 '''
 Apply attributes supported by bgp.session plugin to a single neighbor
@@ -57,16 +58,17 @@ def apply_neighbor_attributes(node: Box, ngb: Box, intf: typing.Optional[Box], a
     ngb[attr] = attr_value                              # Set neighbor attribute from interface/node value
 
     # Check that the node(device) supports the desired attribute
-    OK = OK and _bgp.check_device_attribute_support(attr,node,ngb,topology,_config_name)
+    OK = OK and _bgp.check_device_attribute_support(
+                  attr,node,topology=topology,module=_config_name,neigh=ngb)
     mark_plugin_config(node,ngb)                        # Remember that we have to do extra configuration
 
   return OK
 
-'''
-Copy local session attributes to BGP neighbors because we need
-them there in the configuration templates
-'''
 def copy_local_attributes(ndata: Box, topology: Box) -> None:
+  '''
+  Copy local session attributes to BGP neighbors because we need
+  them there in the configuration templates
+  '''
   apply = ndata.get('bgp.session.apply',{ 'ebgp': None })     # By default we apply all session attributes only to EBGP neighbors
 
   OK = True
@@ -84,6 +86,35 @@ def copy_local_attributes(ndata: Box, topology: Box) -> None:
     # Iterate over neighbors that have associated interfaces (all EBGP neighbors are supposed to be directly connected)
     for (intf,ngb) in _bgp.intf_neighbors(ndata,select=['ebgp']):
       apply_neighbor_attributes(ndata,ngb,intf,apply_list,topology)
+
+def check_node_attributes(ndata: Box, topology: Box) -> None:
+  '''
+  Some bgp.session attributes (like bgp.gr) can be specified on the node level.
+  Check that the device supports them, and mark the device as needing extra config
+  if we find at least one of them.
+  '''
+
+  global _config_name
+
+  attrs = topology.defaults.bgp.attributes.session.attr
+  fail_list = []
+  deploy = False
+  for (rp_data,_,_) in _bgp.rp_data(ndata,'bgp'):               # Iterate over all BGP data
+    for attr in attrs:
+      if attr not in rp_data:                                   # Irrelevant attribute, move on
+        continue
+      if attr in fail_list:                                     # We know we can't support the attribute
+        continue
+
+      if _bgp.check_device_attribute_support(
+            attr,ndata,topology=topology,module=_config_name,rp_data=rp_data):
+        deploy = True                                           # Attribute supported, we need config
+      else:
+        fail_list.append(attr)                                  # Remember we already triggered an error
+    return deploy
+
+  if deploy:                                                    # Do we need to deploy config?
+    mark_plugin_config(ndata,None)
 
 '''
 For platforms that collect tcp_ao secrets in global management profiles
@@ -169,7 +200,8 @@ def set_rs_client(ndata: Box, ngb: Box, topology: Box) -> None:
       r_ngb.rs_client = True                              # Else mark remote node as being a RS client
       mark_plugin_config(r_ndata,r_ngb)                   # Remember that we have to do extra configuration
       r_ndata.bgp.rs_client = True                        # And also that the node is a RS client
-      if not _bgp.check_device_attribute_support('rs_client',r_ndata,r_ngb,topology,_config_name):
+      if not _bgp.check_device_attribute_support(
+              'rs_client',r_ndata,topology=topology,module=_config_name,neigh=r_ngb):
         log.error(
           f'Node {r_ndata.name} cannot have an EBGP session with a BGP Route Server {ndata.name}',
           category=log.IncorrectType,
@@ -250,6 +282,8 @@ def post_transform(topology: Box) -> None:
   for ndata in topology.nodes.values():
     if not 'bgp' in ndata.get('module',[]):                 # Skip nodes not running BGP
       continue
+
+    check_node_attributes(ndata,topology)                   # Check node-level bgp.session attributes
 
     _bgp.cleanup_neighbor_attributes(ndata,topology,topology.defaults.bgp.attributes.session.attr)
     copy_local_attributes(ndata,topology)

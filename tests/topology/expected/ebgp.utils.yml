@@ -18,7 +18,7 @@ bgp:
           local_as: 123
           multihop: 255
         ifindex: 20000
-        ifname: _ebgp_multihop_5
+        ifname: _ebgp_multihop_6
         ipv4: 10.0.0.2/32
         node: r2
       - _mh_bgp_session: true
@@ -27,7 +27,7 @@ bgp:
           local_as: 456
           multihop: 255
         ifindex: 20000
-        ifname: _ebgp_multihop_5
+        ifname: _ebgp_multihop_6
         ipv4: 10.0.0.3/32
         node: r3
   next_hop_self: true
@@ -46,6 +46,9 @@ groups:
   as65003:
     members:
     - r3
+  as65004:
+    members:
+    - r4
 input:
 - topology/input/ebgp.utils.yml
 - package:topology-defaults.yml
@@ -101,26 +104,42 @@ links:
   prefix:
     ipv4: 10.1.0.8/30
   type: p2p
+- _linkname: links[4]
+  interfaces:
+  - ifindex: 4
+    ifname: Ethernet4
+    ipv4: 10.1.0.13/30
+    node: r1
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.14/30
+    node: r4
+  linkindex: 4
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.12/30
+  role: external
+  type: p2p
 - _linkname: vrfs.red.links[1]
   bgp:
     password: InVrf
   interfaces:
   - bgp:
       default_originate: true
-    ifindex: 4
-    ifname: Ethernet4
-    ipv4: 10.1.0.13/30
+    ifindex: 5
+    ifname: Ethernet5
+    ipv4: 10.1.0.17/30
     node: r1
   - bgp:
       allowas_in: 1
     ifindex: 2
     ifname: Ethernet2
-    ipv4: 10.1.0.14/30
+    ipv4: 10.1.0.18/30
     node: r2
-  linkindex: 4
+  linkindex: 5
   node_count: 2
   prefix:
-    ipv4: 10.1.0.12/30
+    ipv4: 10.1.0.16/30
   role: external
   type: p2p
   vrf: red
@@ -143,6 +162,7 @@ nodes:
       - 10.0.0.4
       - 10.1.0.2
       - 10.1.0.6
+      - 10.1.0.14
       advertise:
       - ipv4: 10.0.0.1/32
       advertise_loopback: true
@@ -198,6 +218,18 @@ nodes:
         ipv4: 10.1.0.6
         name: r3
         password: SomethingElse
+        timers:
+          hold: 10
+          keepalive: 3
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65004
+        default_originate: true
+        ifindex: 4
+        ipv4: 10.1.0.14
+        name: r4
+        password: Secret
         timers:
           hold: 10
           keepalive: 3
@@ -259,21 +291,33 @@ nodes:
         ipv4: 10.1.0.10/30
         node: rr
       type: p2p
-    - bgp:
-        default_originate: true
-        password: InVrf
-      ifindex: 4
+    - ifindex: 4
       ifname: Ethernet4
       ipv4: 10.1.0.13/30
       linkindex: 4
       mac_address: caf0.0001.0004
+      name: r1 -> r4
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.14/30
+        node: r4
+      role: external
+      type: p2p
+    - bgp:
+        default_originate: true
+        password: InVrf
+      ifindex: 5
+      ifname: Ethernet5
+      ipv4: 10.1.0.17/30
+      linkindex: 5
+      mac_address: caf0.0001.0005
       name: r1 -> r2
       neighbors:
       - bgp:
           allowas_in: 1
           password: InVrf
         ifname: Ethernet2
-        ipv4: 10.1.0.14/30
+        ipv4: 10.1.0.18/30
         node: r2
         vrf: red
       role: external
@@ -305,7 +349,7 @@ nodes:
           ipv4: true
         bgp:
           _session_clear:
-          - 10.1.0.14
+          - 10.1.0.18
           import:
             connected:
               auto: true
@@ -316,8 +360,8 @@ nodes:
               ipv4: true
             as: 65002
             default_originate: true
-            ifindex: 4
-            ipv4: 10.1.0.14
+            ifindex: 5
+            ipv4: 10.1.0.18
             name: r2
             password: InVrf
             timers:
@@ -425,16 +469,16 @@ nodes:
         password: InVrf
       ifindex: 2
       ifname: Ethernet2
-      ipv4: 10.1.0.14/30
-      linkindex: 4
+      ipv4: 10.1.0.18/30
+      linkindex: 5
       mac_address: caf0.0002.0002
       name: r2 -> r1
       neighbors:
       - bgp:
           default_originate: true
           password: InVrf
-        ifname: Ethernet4
-        ipv4: 10.1.0.13/30
+        ifname: Ethernet5
+        ipv4: 10.1.0.17/30
         node: r1
         vrf: red
       role: external
@@ -466,7 +510,7 @@ nodes:
           ipv4: true
         bgp:
           _session_clear:
-          - 10.1.0.13
+          - 10.1.0.17
           import:
             connected:
               auto: true
@@ -478,7 +522,7 @@ nodes:
             allowas_in: 1
             as: 65001
             ifindex: 2
-            ipv4: 10.1.0.13
+            ipv4: 10.1.0.17
             name: r1
             password: InVrf
             timers:
@@ -602,6 +646,89 @@ nodes:
     module:
     - bgp
     name: r3
+    role: router
+  r4:
+    af:
+      ipv4: true
+    bgp:
+      _cprop_order:
+      - standard
+      - extended
+      - large
+      - link-bandwidth
+      _session_clear:
+      - 10.1.0.13
+      advertise:
+      - ipv4: 10.0.0.5/32
+      advertise_loopback: true
+      as: 65004
+      community:
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      gr:
+        state: enable
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65001
+        ifindex: 1
+        ipv4: 10.1.0.13
+        name: r1
+        password: Secret
+        timers:
+          hold: 10
+          keepalive: 3
+        type: ebgp
+      next_hop_self: true
+      password: Secret
+      router_id: 10.0.0.5
+      timers:
+        hold: 10
+        keepalive: 3
+    box: arista/veos
+    config:
+    - bgp.session
+    device: eos
+    id: 5
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.14/30
+      linkindex: 4
+      mac_address: caf0.0005.0001
+      name: r4 -> r1
+      neighbors:
+      - ifname: Ethernet4
+        ipv4: 10.1.0.13/30
+        node: r1
+      role: external
+      type: p2p
+    loopback:
+      bgp:
+        advertise: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.5/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.105
+      mac: ca:fe:00:05:00:00
+    module:
+    - bgp
+    name: r4
     role: router
   rr:
     af:

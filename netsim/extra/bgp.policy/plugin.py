@@ -177,7 +177,8 @@ def apply_policy_attributes(node: Box, ngb: Box, intf: Box, topology: Box) -> bo
       continue
 
     # Check that the node(device) supports the desired attribute
-    if not _bgp.check_device_attribute_support(attr,node,ngb,topology,_config_name):
+    if not _bgp.check_device_attribute_support(
+              attr,node,topology=topology,module=_config_name,neigh=ngb):
       continue
 
     Found = True

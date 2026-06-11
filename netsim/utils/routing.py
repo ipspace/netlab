@@ -128,7 +128,13 @@ def get_device_bgp_feature(attr: str, ndata: Box, topology: Box) -> typing.Optio
   features = devices.get_device_features(ndata,topology.defaults)
   return features.bgp.get(attr,None)
 
-def check_device_attribute_support(attr: str, ndata: Box, neigh: Box, topology: Box, module: str) -> bool:
+def check_device_attribute_support(
+      attr: str,
+      ndata: Box,
+      topology: Box,
+      module: str,
+      neigh: typing.Optional[Box] = None,
+      rp_data: typing.Optional[Box] = None) -> bool:
   """
   Check whether the specified BGP attribute is supported by the specified node.
   The BGP neighbor data is provided mostly for error messages
@@ -160,8 +166,9 @@ def check_device_attribute_support(attr: str, ndata: Box, neigh: Box, topology: 
   
   enabled = get_device_bgp_feature(attr,ndata,topology)     # Get feature data for the attribute
   if not enabled:                                           # No feature information or not valid?
+    ngb_info = f' used on BGP neighbor {neigh.name}' if neigh else ''
     log.error(                                              # Report an error
-      f'Attribute {attr} used on BGP neighbor {neigh.name} is not supported by node {ndata.name} (device {ndata.device})',
+      f'Attribute {attr}{ngb_info} is not supported by node {ndata.name} (device {ndata.device})',
       log.IncorrectValue,
       module)
     return False
@@ -171,7 +178,12 @@ def check_device_attribute_support(attr: str, ndata: Box, neigh: Box, topology: 
   
   if isinstance(enabled,Box):                               # Feature specified as a dict?
     if 'valid' in enabled:                                  # Maybe it contains supported values?
-      n_value = neigh.get(attr,True)                        # If so, fetch the attribute value
+      if neigh:                                             # If so, fetch the attribute value...
+        n_value = neigh.get(attr,True)                      # ... from the neighbor when specified
+      elif rp_data:                                         # ... or from routing protocol data
+        rp_data.get(attr,True)                              # ... or from the node data
+      else:
+        n_value = True                                      # ... or assume it must be 'true'
       return(check_attr_value(n_value,enabled))             # ... and compare it to supported values
     return True
 
