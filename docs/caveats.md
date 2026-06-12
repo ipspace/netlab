@@ -348,6 +348,12 @@ Device-specific parameters:
 
 * A FortiGate firewall does not pass any traffic by default. If you want the firewall to behave like a router after the initial configuration, set the `netlab_default_policy` node- or group variable to `True`. To create a disabled default policy, set the `netlab_default_policy.enable` variable to `False`.
 
+[BGP graceful restart](plugin-bgp-session-gr) (**bgp.session** plugin):
+
+* FortiOS has no helper-only graceful restart mode: it either advertises the full restart capability or stays silent. The only valid **bgp.gr** states are therefore `enable` and `disable`; a node-level `state: helper` leaves the device default (graceful restart disabled) in place.
+* FortiOS accepts the graceful restart timers in the 1-3600 second range. A value of 0 (allowed by the _netlab_ schema) is rejected by the device during configuration deployment.
+* Enabling graceful restart on any BGP neighbor also enables the global FortiOS **graceful-restart** switch, which preserves the forwarding state across a routing restart. Advertising the capability without it would announce forwarding-state preservation the device does not deliver.
+
 Device configuration:
 
 * Use a recent version of Ansible and **fortinet.fortios** Ansible Galaxy collection (version 2.3.6 or later)

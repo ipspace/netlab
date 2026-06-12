@@ -69,6 +69,7 @@ The plugin implements generic BGP session features for the following platforms:
 | Cisco Nexus OS      |  ✅  |  ✅  |   ❌  |  ✅  |  ❌  |
 | Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |  ❌  |
 | Dell OS10           |  ✅  |  ✅  |  ✅  |   ❌  |  ❌  |
+| Fortinet FortiOS    |   ❌  |  ✅  |   ❌  |  ✅  | ✅[❗](caveats-fortios) |
 | FRR                 |  ✅  |  ✅  |  ✅  |  ✅  | ✅  |
 | Junos[^Junos]       |  ✅  |  ✅  |  ✅  |  ✅  |  ❌  |
 | Mikrotik RouterOS 7 |  ✅  |   ❌  |   ❌  |   ❌  |  ❌  |
@@ -106,6 +107,7 @@ BGP session security features are available on these platforms:
 | Cisco Nexus OS      |    ✅    | ✅  |  ❌  |
 | Cumulus Linux       |    ✅    | ✅  |  ❌  |
 | Dell OS10           |    ✅    | ❌  |  ❌  |
+| Fortinet FortiOS    |    ✅    | ❌  |  ❌  |
 | FRR                 |    ✅    | ✅  |  ❌  |
 | Junos[^Junos]       |    ✅    | ❌  |  ❌  |
 | Mikrotik RouterOS 7 |    ✅    | ❌  |  ❌  |

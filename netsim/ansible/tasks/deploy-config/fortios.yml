@@ -1,10 +1,15 @@
+- name: "Render FortiOS {{ netsim_action }} configuration from {{ config_template }}"
+  set_fact:
+    fortios_config_text: "{{ lookup('template', config_template) }}"
+  tags: [ print_action, always ]
+
 - block:
   - name: "fortios_monitor: deploying {{ netsim_action }} from {{ config_template }}"
     fortinet.fortios.fortios_monitor:
       selector: upload.system.config-script
       params:
         filename: set_initial_config
-        file_content: "{{ lookup('template', config_template) | b64encode }}"
+        file_content: "{{ fortios_config_text | b64encode }}"
     tags: [ print_action, always ]
   rescue:
   - name: "FortiOS CLI: deploying {{ netsim_action }} from {{ config_template }}"
@@ -16,7 +21,7 @@
             -o StrictHostKeyChecking=no
             {{ ansible_user }}@{{ ansible_host }}
       responses:
-        '.*#': "{{ lookup('template', config_template) }}\nexit\n"
+        '.*#': "{{ fortios_config_text }}\nexit\n"
     register: fortios_cli_result
     # The CLI fallback exists because the config-script API returns HTTP 500 on
     # some FortiOS releases (e.g. 7.0.17) even for valid configuration, so we must
@@ -32,3 +37,4 @@
       fortios_cli_result.rc != 0 or
       fortios_cli_result.stdout is search(fos_config_error, multiline=true)
     tags: [ print_action, always ]
+  when: fortios_config_text | trim != ''

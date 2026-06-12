@@ -1,0 +1,157 @@
+{#
+    BGP timers are tuned for fast convergence in a lab, pulling FortiOS defaults
+    to the aggressive end the way netlab does on other platforms:
+
+    * scan-time 5             - background next-hop scanner, 60s default lowered to
+                                the 5s minimum (matches Cisco IOS/IOS-XR 'bgp scan-time 5')
+    * connect-timer 10        - ConnectRetryTimer, 120s default lowered to 10s
+                                (matches SR Linux, whose default is likewise 120s)
+    * advertisement-interval 1 - per-neighbor MRAI, 30s default lowered to 1s
+                                (matches SR Linux / SR OS; the one knob RFC 7938 endorses)
+#}
+{% set vdom_traffic = netlab_vdom|default(vdom) %}
+{% set multi_vdom = vdom_traffic != vdom %}
+
+{% if multi_vdom %}
+config vdom
+    edit {{ vdom_traffic }}
+{% endif %}
+
+config router bgp
+    set as {{ bgp.as }}
+    set router-id {{ bgp.router_id }}
+{#
+    Graceful restart (bgp.gr attribute of the bgp.session plugin). Live-verified on
+    FortiOS 8.0.0: the per-neighbor capability-graceful-restart knob (in the neighbor
+    blocks below) drives everything protocol-visible -- capability advertisement,
+    helper behaviour, the R-bit cycle -- while this global switch only preserves the
+    kernel FIB across a routing restart. A neighbor capability without the global
+    switch would advertise an F-bit the dataplane cannot honour, so any enabled
+    neighbor forces the switch on, even when the node-level state is 'disable'.
+
+    FortiOS accepts the GR timers only in the 1-3600 range; the netlab schema allows
+    0, which fails at deployment.
+#}
+{% set gr_enabled_neighbors = bgp.neighbors|default([])|selectattr('gr','defined')|selectattr('gr','eq','enable')|list %}
+{% if bgp.gr.state|default('') == 'enable' or gr_enabled_neighbors %}
+    set graceful-restart enable
+{% elif bgp.gr.state|default('') == 'disable' %}
+    set graceful-restart disable
+{% endif %}
+{% if bgp.gr.restart_time is defined %}
+    set graceful-restart-time {{ bgp.gr.restart_time }}
+{% endif %}
+{% if bgp.gr.stalepath_time is defined %}
+    set graceful-stalepath-time {{ bgp.gr.stalepath_time }}
+{% endif %}
+    set ibgp-multipath enable
+    set ebgp-multipath enable
+    set scan-time 5
+
+{% if bgp.rr|default(False) and bgp.rr_cluster_id is defined %}
+    set cluster-id {{ bgp.rr_cluster_id }}
+{% endif %}
+
+    config neighbor
+{#
+    Each numbered neighbor address is a separate FortiOS session. A neighbor entry
+    carrying both an IPv4 and an IPv6 address therefore yields two `edit` blocks.
+
+    A session is emitted only for an address family that is actually activated. Since
+    cross-AF next hops (RFC 8950) are not supported here, a transport only ever carries
+    its own family, so a deactivated family has no session to belong to. Were the edit
+    emitted with the family disabled, FortiOS would still bring the session to Established
+    with no address family negotiated - behaviour RFC 5492 section 5 permits, but contrary
+    to netlab's separate-session-per-AF model, which treats a deactivated family as the
+    absence of a session. Omitting the edit keeps the peer in Active/Idle to match.
+#}
+{% for n in bgp.neighbors %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined and n[af] is string and n.activate[af]|default(False) %}
+        edit "{{ n[af] }}"
+            set remote-as {{ n.as }}
+            set advertisement-interval 1
+            set connect-timer 10
+{%       if n._source_intf is defined %}
+            set update-source "{{ n._source_intf.ifname }}"
+{%       endif %}
+{#         Activate the address family matching this session's transport, disable the other.
+           The loop above guarantees the matching family is the activated one. #}
+{%       if af == 'ipv4' %}
+            set activate enable
+            set activate6 disable
+{%       else %}
+            set activate disable
+            set activate6 enable
+{%       endif %}
+{%       if n.next_hop_self|default(False) %}
+            set next-hop-self{{ '6' if af == 'ipv6' else '' }} enable
+{%       endif %}
+{%       if n.rr_client|default(False) %}
+            set route-reflector-client{{ '6' if af == 'ipv6' else '' }} enable
+{%       endif %}
+{%       if n.type in bgp.community|default({}) %}
+            set send-community{{ '6' if af == 'ipv6' else '' }} {{ 'both' if bgp.community[n.type]|length > 1 else bgp.community[n.type][0] }}
+{%       endif %}
+{#         Session attributes copied onto neighbors by the bgp.session plugin, grouped
+           together. They are rendered here rather than in a bgp.session config snippet
+           (see extra/bgp.session/fortios.j2) so that node-level bgp.gr works even when
+           no per-neighbor attribute schedules that snippet. n.timers.min_hold has no
+           FortiOS equivalent and is ignored. A 'helper' state never reaches the
+           capability: FortiOS has no helper-only mode, so per-neighbor 'helper' is
+           rejected at transform time and a node-level one is ignored here. #}
+{%       if n.description is defined %}
+            set description "{{ n.name }}"
+{%       endif %}
+{%       if n.password is defined %}
+            set password {{ n.password }}
+{%       endif %}
+{%       if n.passive|default(False) %}
+            set passive enable
+{%       endif %}
+{%       if n.timers is defined %}
+            set keep-alive-timer {{ n.timers.keepalive|default(60) }}
+            set holdtime-timer {{ n.timers.hold|default(180) }}
+{%       endif %}
+{%       set gr_state = n.gr|default(bgp.gr.state|default('')) %}
+{%       if gr_state in ['enable','disable'] %}
+            set capability-graceful-restart{{ '6' if af == 'ipv6' else '' }} {{ gr_state }}
+{%       endif %}
+        next
+{%   endfor %}
+{% endfor %}
+    end
+
+{#  IPv4 prefixes to advertise (FortiOS wants address + dotted netmask) #}
+    config network
+{% for pfx in bgp.advertise|default([]) if 'ipv4' in pfx %}
+        edit {{ loop.index }}
+            set prefix {{ pfx.ipv4|ansible.utils.ipaddr('network') }} {{ pfx.ipv4|ansible.utils.ipaddr('netmask') }}
+        next
+{% endfor %}
+    end
+
+{#  IPv6 prefixes to advertise (CIDR) #}
+    config network6
+{% for pfx in bgp.advertise|default([]) if 'ipv6' in pfx %}
+        edit {{ loop.index }}
+            set prefix6 {{ pfx.ipv6 }}
+        next
+{% endfor %}
+    end
+
+{#  Redistribution into BGP. FortiOS keeps separate IPv4 (redistribute) and IPv6
+    (redistribute6) tables; emit both for each imported protocol so dual-stack import
+    works. netlab proto names match FortiOS keywords; under redistribute6 "ospf" is OSPFv3. #}
+{% for proto in bgp.import|default({}) %}
+    config redistribute "{{ proto }}"
+        set status enable
+    end
+    config redistribute6 "{{ proto }}"
+        set status enable
+    end
+{% endfor %}
+end
+
+{% if multi_vdom %}
+end
+{% endif %}

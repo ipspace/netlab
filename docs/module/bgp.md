@@ -67,6 +67,7 @@ The following features are only supported on a subset of platforms:
 | Cumulus Linux 4.x        |  ✅ |  ❌  |  ✅ |  ✅ |
 | Cumulus Linux 5.x (NVUE) |  ✅ |  ❌  |  ✅ |  ❌ |
 | Dell OS10                |  ✅ | ✅ |  ✅ |  ✅ |
+| Fortinet FortiOS         |  ✅ |  ❌  |  ✅ |  ❌  |
 | FRR                      |  ✅ | ✅ |  ✅ |  ✅ |
 | Junos[^Junos]            |  ✅ | ✅ |  ✅ |  ✅ |
 | Nokia SR Linux           |  ✅ |  ❌  |  ✅ [❗](caveats-srlinux) |  ✅ [❗](caveats-srlinux) |
