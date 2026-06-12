@@ -59,7 +59,7 @@ function remove_private_as() {
 {#
  Build a BGP export filter per neighbor type, to filter communities
 #}
-{% for ntype in [ 'ebgp', 'ibgp', 'localas_ibgp' ] %}
+{% for ntype in [ 'ebgp', 'ibgp', 'localas_ibgp', 'confed_ebgp' ] %}
 function bgp_export_{{ ntype }}( bool originate_default; bool rem_private_as ) {
 {%   set list = bgp.community[ntype]|default([]) %}
 {%   if 'standard' not in list %}
@@ -82,7 +82,18 @@ function bgp_export_{{ ntype }}( bool originate_default; bool rem_private_as ) {
 protocol bgp bgp_{{ n.name }}_{{ af }} {
 {%     set loopback = loopback|default({}) %}
 {%     set local_ip = loopback[af]|default('') %}
-  local {{ local_ip.split('/')[0] if n.type == 'ibgp' else '' }} as {{ n.local_as|default(bgp.as) }};
+{%     set local_as = n.local_as|default(bgp.as) %}
+{%     if n.type == 'ibgp' %}
+  local {{ local_ip.split('/')[0] }} as {{ local_as }};
+{%     else %}
+  local as {{ local_as }};
+{%     endif %}
+{%     if bgp.confederation is defined %}
+  confederation {{ bgp.confederation.as }};
+{%       if n.type == 'confed_ebgp' %}
+  confederation member yes;
+{%       endif %}
+{%     endif %}
   neighbor {{ n[af] }} as {{ n['as'] }};
   connect retry time 5;
   error wait time 5,10;
@@ -133,8 +144,8 @@ protocol bgp bgp_{{ n.name }}_{{ af }} {
     import all;
     export filter { bgp_export_{{ n.type }}( {{ 'true' if n.get('default_originate') else 'false' }},
                                              {{ 'true' if n.get('remove_private_as') else 'false' }}); };
-{%       if 'next_hop_self' in bgp and bgp.next_hop_self and 'ibgp' in n.type %}
-    next hop self {{ 'on' if n.type == 'localas_ibgp' else 'ebgp' }};
+{%       if n.next_hop_self|default(false) or ('next_hop_self' in bgp and bgp.next_hop_self and 'ibgp' in n.type) %}
+    next hop self {{ 'on' if n.next_hop_self|default(false) == 'all' or n.type == 'localas_ibgp' else 'ebgp' }};
 {%       endif %}
 {%       if _af=='ipv4' and n.ipv4_rfc8950|default(False) %}
     extended next hop on;

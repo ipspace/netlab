@@ -263,6 +263,41 @@ You also have to modify the "set peer name" logic in AF configuration:
 {%   endfor %}
 ```
 
+(dev-bgp-confederation-bird)=
+## Configuring BGP Confederations on BIRD
+
+BIRD BGP configuration templates for the **bird** device are stored in `netsim/daemons/bird/`. Enable confederation support with the **features.bgp.confederation** device feature (see `netsim/daemons/bird.yml`).
+
+Unlike traditional NOS implementations that configure confederation parameters once in the BGP routing process, BIRD uses a separate BGP protocol instance for every neighbor and address family. Configure confederation parameters in each protocol block:
+
+```
+protocol bgp bgp_r2_ipv4 {
+{%     if n.type == 'ibgp' %}
+  local {{ local_ip.split('/')[0] }} as {{ local_as }};
+{%     else %}
+  local as {{ local_as }};
+{%     endif %}
+{%     if bgp.confederation is defined %}
+  confederation {{ bgp.confederation.as }};
+{%       if n.type == 'confed_ebgp' %}
+  confederation member yes;
+{%       endif %}
+{%     endif %}
+  neighbor {{ n.ipv4 }} as {{ n.as }};
+  ipv4 {
+    import all;
+    export filter { bgp_export_{{ n.type }}( false, false ); };
+{%       if n.next_hop_self|default(false) %}
+    next hop self {{ 'on' if n.next_hop_self == 'all' else 'ebgp' }};
+{%       endif %}
+  };
+}
+```
+
+Use **confederation member yes** on **confed_ebgp** neighbors. The BGP module also creates a **bgp_export_confed_ebgp** export filter for those sessions.
+
+You can test BGP confederations with the **bird** device using the `tests/integration/bgp/40-confederation.yml` topology.
+
 (dev-bgp-vrf)=
 ## Configuring VRF BGP Instances
 
