@@ -13,6 +13,7 @@ import typing
 import requests
 from box import Box
 
+from ...augment import devices
 from ...utils import files as _files
 from ...utils import log, strings, templates
 from ...utils import read as _read
@@ -75,7 +76,7 @@ def get_description(dfname: str) -> str:
 
   except:
     return '-- failed --'
-  
+
   return '???'
 
 def get_device_name(df_path: str) -> str:
@@ -90,15 +91,6 @@ def dockerfile_uses_sw_download_url(df_path: str) -> bool:
   """Return ``True`` if the Dockerfile declares ``ARG SW_DOWNLOAD_URL``."""
   return bool(SW_DOWNLOAD_URL_ARG.search(pathlib.Path(df_path).read_text()))
 
-def get_device_clab_data(device: str, defaults: Box) -> Box:
-  """Return the ``clab`` settings for a device from ``defaults.devices`` or ``defaults.daemons``."""
-  for namespace in ('devices','daemons'):
-    device_data = defaults.get(namespace,{}).get(device,{})
-    if device_data:
-      return device_data.get('clab',{})
-
-  return Box(default_box=True)
-
 def get_sw_version(device: str, defaults: Box) -> typing.Optional[str]:
   """Return the software version to build.
 
@@ -108,11 +100,13 @@ def get_sw_version(device: str, defaults: Box) -> typing.Optional[str]:
   if env_version:
     return env_version
 
-  return get_device_clab_data(device,defaults).get('sw_version',None)
+  node = Box({'device': device, 'provider': 'clab'}, default_box=True, box_dots=True)
+  return devices.get_provider_data(node,defaults).get('sw_version',None)
 
 def get_sw_download_url(device: str, sw_version: str, defaults: Box) -> typing.Optional[str]:
   """Return the source download URL with ``{sw_version}`` substituted in ``clab.sw_download_url``."""
-  url_template = get_device_clab_data(device,defaults).get('sw_download_url',None)
+  node = Box({'device': device, 'provider': 'clab'}, default_box=True, box_dots=True)
+  url_template = devices.get_provider_data(node,defaults).get('sw_download_url',None)
   if not url_template:
     return None
 
@@ -153,10 +147,10 @@ def render_j2_dockerfile(df_path: str, tmp_dir: str, defaults: Box) -> str:
   """
   if not df_path.endswith('.j2'):
     return df_path  # Regular Dockerfile, use as-is
-  
+
   strings.print_colored_text('[TEMPLATE] ','cyan',None)
   print(f"Rendering Jinja2 template from {os.path.basename(df_path)}")
-  
+
   # Render template (fail() is available as a standard Jinja2 global function)
   try:
     templates.write_template(
@@ -169,10 +163,10 @@ def render_j2_dockerfile(df_path: str, tmp_dir: str, defaults: Box) -> str:
     log.fatal(
       f'Failed to render Dockerfile template {os.path.basename(df_path)}: {str(ex)}',
       module='build')
-  
+
   strings.print_colored_text('[RENDERED] ','green',None)
-  print(f"Template rendered to temporary Dockerfile")
-  
+  print("Template rendered to temporary Dockerfile")
+
   return os.path.join(tmp_dir, 'Dockerfile')
 
 def print_sw_version_build_hint(device: str, sw_version: str) -> None:
@@ -308,10 +302,11 @@ def clab_build(args: argparse.Namespace, settings: Box) -> None:
 
   if args.image:
     try:
-      defaults = _read.system_defaults().defaults
+      topology = _read.system_defaults()
+      devices.merge_daemons(topology)
     except Exception as ex:
       log.fatal(f'Could not load system defaults: {str(ex)}', module='build')
-    build_image(args.image,args.tag,defaults)
+    build_image(args.image,args.tag,topology.defaults)
     return
 
   log.fatal('Specify image to build or "--list". Use "--help" to get help')
