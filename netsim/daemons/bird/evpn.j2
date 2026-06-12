@@ -1,0 +1,68 @@
+{% macro bird_ec(rt) %}(rt, {{ rt.split(':')[0] }}, {{ rt.split(':')[1] }}){% endmacro %}
+
+evpn table evpntab;
+
+{% if vxlan is defined and vxlan.flooding|default('') == 'evpn' %}
+{% for vname in vxlan.vlans|default([]) if vlans[vname].vni is defined and 'evpn' in vlans[vname] %}
+{% set vlan = vlans[vname] %}
+protocol bridge bridge_{{ vname }} {
+  eth { table eth_{{ vname }}; export all; };
+  bridge device "vlan{{ vlan.id }}";
+  vlan filtering;
+};
+
+protocol evpn evpn_{{ vname }} {
+  eth { table eth_{{ vname }}; };
+  evpn { table evpntab; import all; export all; };
+  rd {{ vlan.evpn.rd }};
+{% for rt in vlan.evpn.import|default([]) %}
+  import target {{ bird_ec(rt) }};
+{% endfor %}
+{% for rt in vlan.evpn.export|default([]) %}
+  export target {{ bird_ec(rt) }};
+{% endfor %}
+  vni {{ vlan.vni }};
+  vid {{ vlan.id }};
+  encapsulation vxlan {
+    tunnel device "vxlan{{ vlan.vni }}";
+    router address {{ vxlan.vtep }};
+  };
+};
+{% endfor %}
+{% endif %}
+
+{% for vname,vdata in vrfs|default({})|dictsort %}
+{% if 'evpn' in vdata and vdata.evpn.transit_vni is defined %}
+eth table eth_vrf_{{ vname }};
+
+protocol evpn evpn_vrf_{{ vname }} {
+  eth { table eth_vrf_{{ vname }}; };
+  evpn { table evpntab; import all; export all; };
+  rd {{ vdata.rd }};
+{% for rt in vdata.import|default([]) %}
+  import target {{ bird_ec(rt) }};
+{% endfor %}
+{% for rt in vdata.export|default([]) %}
+  export target {{ bird_ec(rt) }};
+{% endfor %}
+  vni {{ vdata.evpn.transit_vni }};
+  encapsulation vxlan {
+    tunnel device "vxlan{{ vdata.evpn.transit_vni }}";
+    router address {{ vxlan.vtep }};
+  };
+};
+{% endif %}
+{% endfor %}
+
+{% for n in bgp.neighbors|default([]) if n.evpn|default(false) %}
+{% set loopback = loopback|default({}) %}
+{% set local_ip = loopback[n.evpn]|default('') %}
+protocol bgp bgp_{{ n.name }}_evpn {
+  local {{ local_ip.split('/')[0] if n.type == 'ibgp' and local_ip is string else '' }} as {{ n.local_as|default(bgp.as) }};
+  neighbor {{ n[n.evpn] }} as {{ n['as'] }};
+  evpn { table evpntab; import all; export all; };
+  connect retry time 5;
+  error wait time 5,10;
+  startup hold time 10;
+};
+{% endfor %}
