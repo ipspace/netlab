@@ -1,0 +1,59 @@
+# syntax=docker/dockerfile:1
+# --- Stage 1: Build Stage ---
+FROM debian:bookworm-slim AS builder
+
+# Install compilation dependencies
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y \
+    build-essential \
+    flex \
+    bison \
+    libncurses-dev \
+    libreadline-dev \
+    libssh-dev \
+    autoconf \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set BIRD version, 2.19.1 was released on 2026-06-09
+ENV BIRD_VERSION=2.19.1
+
+# Download and extract source code
+RUN wget https://bird.nic.cz/download/bird-${BIRD_VERSION}.tar.gz \
+    && tar -xzf bird-${BIRD_VERSION}.tar.gz
+
+WORKDIR /bird-${BIRD_VERSION}
+
+# Configure, compile, and install
+RUN ./configure --prefix=/usr --sysconfdir=/etc/bird --localstatedir=/var \
+    && make -j$(nproc) \
+    && make install
+
+# --- Stage 2: Runtime Stage ---
+FROM debian:bookworm-slim
+
+LABEL maintainer="Netlab project <netlab.tools>"
+LABEL description="BIRD Internet Routing Daemon (bird.network.cz) v2 built from source"
+
+# Install runtime dependencies
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y \
+    libreadline8 \
+    libssh-4 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy binaries and built directories from the builder stage
+COPY --from=builder /usr/sbin/bird /usr/sbin/bird
+COPY --from=builder /usr/sbin/birdcl /usr/sbin/birdcl
+COPY --from=builder /etc/bird /etc/bird
+
+# Create runtime directory for control sockets
+RUN mkdir -p /var/run
+
+# Expose BGP (179) and OSPF (89) routing ports
+EXPOSE 179
+
+# Run BIRD in the foreground with the default config path
+CMD ["/usr/sbin/bird", "-f", "-c", "/etc/bird/bird.conf"]
