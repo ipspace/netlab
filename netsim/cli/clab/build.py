@@ -23,6 +23,7 @@ SW_DOWNLOAD_URL_ARG = re.compile(r'^\s*ARG\s+SW_DOWNLOAD_URL\b', re.MULTILINE)
 
 
 def build_parser(parser: argparse.ArgumentParser) -> None:
+  """Add CLI arguments for the **netlab clab build** command."""
   parser.add_argument(
     '-l','--list',
     dest='list',
@@ -42,6 +43,11 @@ def build_parser(parser: argparse.ArgumentParser) -> None:
     help='Routing daemon name')
 
 def get_dockerfiles() -> dict:
+  """Return a mapping of build target names to Dockerfile paths.
+
+  Build target names combine the daemon directory name with any Dockerfile suffix
+  (for example, ``bird.v2_from_src`` maps to ``daemons/bird/Dockerfile.v2_from_src``).
+  """
   d_path = _files.get_traversable_path('package:daemons')
   d_list = _files.get_globbed_files(d_path,'*/Dockerfile*')
 
@@ -57,6 +63,7 @@ def get_dockerfiles() -> dict:
   return df_dict
 
 def get_description(dfname: str) -> str:
+  """Extract the ``description=`` value from a Dockerfile ``LABEL`` line."""
   try:
     df_lines = pathlib.Path(dfname).read_text().split('\n')
     for line in df_lines:
@@ -72,15 +79,19 @@ def get_description(dfname: str) -> str:
   return '???'
 
 def get_device_name(df_path: str) -> str:
+  """Return the daemon/device name from a Dockerfile path (the parent directory name)."""
   return os.path.basename(os.path.dirname(df_path))
 
 def dockerfile_uses_sw_version(df_path: str) -> bool:
+  """Return ``True`` if the Dockerfile declares ``ARG SW_VERSION``."""
   return bool(SW_VERSION_ARG.search(pathlib.Path(df_path).read_text()))
 
 def dockerfile_uses_sw_download_url(df_path: str) -> bool:
+  """Return ``True`` if the Dockerfile declares ``ARG SW_DOWNLOAD_URL``."""
   return bool(SW_DOWNLOAD_URL_ARG.search(pathlib.Path(df_path).read_text()))
 
 def get_device_clab_data(device: str, defaults: Box) -> Box:
+  """Return the ``clab`` settings for a device from ``defaults.devices`` or ``defaults.daemons``."""
   for namespace in ('devices','daemons'):
     device_data = defaults.get(namespace,{}).get(device,{})
     if device_data:
@@ -89,6 +100,10 @@ def get_device_clab_data(device: str, defaults: Box) -> Box:
   return Box(default_box=True)
 
 def get_sw_version(device: str, defaults: Box) -> typing.Optional[str]:
+  """Return the software version to build.
+
+  Resolution order: ``SW_VERSION`` environment variable, then ``clab.sw_version`` in device defaults.
+  """
   env_version = os.environ.get('SW_VERSION')
   if env_version:
     return env_version
@@ -96,6 +111,7 @@ def get_sw_version(device: str, defaults: Box) -> typing.Optional[str]:
   return get_device_clab_data(device,defaults).get('sw_version',None)
 
 def get_sw_download_url(device: str, sw_version: str, defaults: Box) -> typing.Optional[str]:
+  """Return the source download URL with ``{sw_version}`` substituted in ``clab.sw_download_url``."""
   url_template = get_device_clab_data(device,defaults).get('sw_download_url',None)
   if not url_template:
     return None
@@ -103,6 +119,10 @@ def get_sw_download_url(device: str, sw_version: str, defaults: Box) -> typing.O
   return url_template.replace('{sw_version}',sw_version)
 
 def verify_sw_download(url: str, sw_version: str, device: str) -> None:
+  """Verify that the source tarball exists at *url* before starting a Docker build.
+
+  Issues a fatal error when the HTTP ``HEAD`` request fails or returns a non-success status code.
+  """
   try:
     response = requests.head(url, allow_redirects=True, timeout=30)
   except requests.RequestException as ex:
@@ -126,11 +146,10 @@ def verify_sw_download(url: str, sw_version: str, device: str) -> None:
     module='build')
 
 def render_j2_dockerfile(df_path: str, tmp_dir: str, defaults: Box) -> str:
-  """
-  Render Dockerfile.j2 if needed, return path to use for build.
-  
-  If the Dockerfile ends with .j2, it's a Jinja2 template and needs to be rendered
-  with netlab device defaults before building.
+  """Render a ``Dockerfile.j2`` template and return the path to use for ``docker build``.
+
+  Regular Dockerfiles are returned unchanged. Jinja2 templates are rendered with *defaults*
+  into *tmp_dir* as ``Dockerfile``.
   """
   if not df_path.endswith('.j2'):
     return df_path  # Regular Dockerfile, use as-is
@@ -157,6 +176,7 @@ def render_j2_dockerfile(df_path: str, tmp_dir: str, defaults: Box) -> str:
   return os.path.join(tmp_dir, 'Dockerfile')
 
 def print_sw_version_build_hint(device: str, sw_version: str) -> None:
+  """Print a user hint after a failed build when source download errors were detected."""
   build_output = external_commands.CAPTURED_STDOUT + external_commands.CAPTURED_STDERR
   if 'ERROR: Cannot download' not in build_output and '404 Not Found' not in build_output:
     return
@@ -167,6 +187,12 @@ def print_sw_version_build_hint(device: str, sw_version: str) -> None:
   print('Pick a valid release or change SW_VERSION / clab.sw_version.')
 
 def build_image(image: str, tag: typing.Optional[str], defaults: Box) -> None:
+  """Build a daemon container image with ``docker build``.
+
+  Resolves software version and download URL settings, verifies remote tarballs when configured,
+  and passes ``SW_VERSION`` / ``SW_DOWNLOAD_URL`` build arguments to Docker when the selected
+  Dockerfile declares the corresponding ``ARG`` instructions.
+  """
   df_dict = get_dockerfiles()
   if not image in df_dict:
     log.fatal(f'Unknown daemon/image {image}, use "netlab clab build -l" to list available images')
@@ -228,9 +254,9 @@ def build_image(image: str, tag: typing.Optional[str], defaults: Box) -> None:
       print(f"Cannot remove image {tag}, continuing")
 
     strings.print_colored_text('[WORKING]  ','green',None)
-    print(f"Prune docker layers and builder cache")
-    external_commands.run_command(f'docker image prune -f',ignore_errors=True)
-    external_commands.run_command(f'docker builder prune -f',ignore_errors=True)
+    print("Prune docker layers and builder cache")
+    external_commands.run_command('docker image prune -f',ignore_errors=True)
+    external_commands.run_command('docker builder prune -f',ignore_errors=True)
 
     print()
     strings.print_colored_text('[WORKING]  ','green',None)
@@ -261,6 +287,7 @@ def build_image(image: str, tag: typing.Optional[str], defaults: Box) -> None:
   external_commands.run_command(f'docker image ls {tag}',ignore_errors=True)
 
 def list_dockerfiles() -> None:
+  """List available daemon Dockerfiles and their default container tags."""
   rows = []
   df_dict = get_dockerfiles()
   for daemon in sorted(df_dict.keys()):
@@ -274,10 +301,11 @@ The 'netlab clab build' command can be used to build the following container ima
   strings.print_table(['daemon','default tag','description'],rows,inter_row_line=False)
 
 def clab_build(args: argparse.Namespace, settings: Box) -> None:
+  """Execute the **netlab clab build** subcommand."""
   if args.list:
     list_dockerfiles()
     return
-  
+
   if args.image:
     try:
       defaults = _read.system_defaults().defaults
@@ -285,5 +313,5 @@ def clab_build(args: argparse.Namespace, settings: Box) -> None:
       log.fatal(f'Could not load system defaults: {str(ex)}', module='build')
     build_image(args.image,args.tag,defaults)
     return
-  
+
   log.fatal('Specify image to build or "--list". Use "--help" to get help')
