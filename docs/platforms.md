@@ -57,7 +57,7 @@
 
 | Daemon          | netlab device type | support level |
 | --------------- | ------------------ | ------------- |
-| BIRD Internet Routing Daemon [❗](caveats-bird) | bird               | full |
+| BIRD Internet Routing Daemon [❗](caveats-bird) ([build](build-bird)) | bird               | full |
 | dnsmasq DHCP server [❗](caveats-dnsmasq) | dnsmasq | full |
 | [Kubernetes in Docker](plugin-kind) | kind | best effort |
 

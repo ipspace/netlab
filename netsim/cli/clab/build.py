@@ -6,15 +6,20 @@
 import argparse
 import os
 import pathlib
+import re
 import tempfile
 import typing
 
+import requests
 from box import Box
 
 from ...utils import files as _files
 from ...utils import log, strings, templates
 from ...utils import read as _read
 from .. import external_commands
+
+SW_VERSION_ARG = re.compile(r'^\s*ARG\s+SW_VERSION\b', re.MULTILINE)
+SW_DOWNLOAD_URL_ARG = re.compile(r'^\s*ARG\s+SW_DOWNLOAD_URL\b', re.MULTILINE)
 
 
 def build_parser(parser: argparse.ArgumentParser) -> None:
@@ -66,7 +71,61 @@ def get_description(dfname: str) -> str:
   
   return '???'
 
-def render_j2_dockerfile(df_path: str, tmp_dir: str) -> str:
+def get_device_name(df_path: str) -> str:
+  return os.path.basename(os.path.dirname(df_path))
+
+def dockerfile_uses_sw_version(df_path: str) -> bool:
+  return bool(SW_VERSION_ARG.search(pathlib.Path(df_path).read_text()))
+
+def dockerfile_uses_sw_download_url(df_path: str) -> bool:
+  return bool(SW_DOWNLOAD_URL_ARG.search(pathlib.Path(df_path).read_text()))
+
+def get_device_clab_data(device: str, defaults: Box) -> Box:
+  for namespace in ('devices','daemons'):
+    device_data = defaults.get(namespace,{}).get(device,{})
+    if device_data:
+      return device_data.get('clab',{})
+
+  return Box(default_box=True)
+
+def get_sw_version(device: str, defaults: Box) -> typing.Optional[str]:
+  env_version = os.environ.get('SW_VERSION')
+  if env_version:
+    return env_version
+
+  return get_device_clab_data(device,defaults).get('sw_version',None)
+
+def get_sw_download_url(device: str, sw_version: str, defaults: Box) -> typing.Optional[str]:
+  url_template = get_device_clab_data(device,defaults).get('sw_download_url',None)
+  if not url_template:
+    return None
+
+  return url_template.replace('{sw_version}',sw_version)
+
+def verify_sw_download(url: str, sw_version: str, device: str) -> None:
+  try:
+    response = requests.head(url, allow_redirects=True, timeout=30)
+  except requests.RequestException as ex:
+    log.fatal(
+      '\n'.join([
+        f'Cannot verify {device} version {sw_version} at {url}: {ex}',
+        'Check your network connection and the download URL in device defaults.',
+        f'Set SW_VERSION or defaults.daemons.{device}.clab.sw_version to a valid release.',
+      ]),
+      module='build')
+
+  if response.ok:
+    return
+
+  log.fatal(
+    '\n'.join([
+      f'Cannot download {device} version {sw_version}: {url} (HTTP {response.status_code})',
+      'See the vendor download page for valid releases.',
+      f'Set SW_VERSION or defaults.daemons.{device}.clab.sw_version to an existing version.',
+    ]),
+    module='build')
+
+def render_j2_dockerfile(df_path: str, tmp_dir: str, defaults: Box) -> str:
   """
   Render Dockerfile.j2 if needed, return path to use for build.
   
@@ -79,15 +138,14 @@ def render_j2_dockerfile(df_path: str, tmp_dir: str) -> str:
   strings.print_colored_text('[TEMPLATE] ','cyan',None)
   print(f"Rendering Jinja2 template from {os.path.basename(df_path)}")
   
-  # Load topology defaults to get device credentials
-  try:
-    defaults = _read.system_defaults().defaults
-  except Exception as ex:
-    log.fatal(f'Could not load system defaults: {str(ex)}', module='build')
-  
   # Render template (fail() is available as a standard Jinja2 global function)
   try:
-    templates.write_template(os.path.dirname(df_path), os.path.basename(df_path), {'defaults': defaults}, tmp_dir, 'Dockerfile')
+    templates.write_template(
+      os.path.dirname(df_path),
+      os.path.basename(df_path),
+      {'defaults': defaults},
+      tmp_dir,
+      'Dockerfile')
   except Exception as ex:
     log.fatal(
       f'Failed to render Dockerfile template {os.path.basename(df_path)}: {str(ex)}',
@@ -98,45 +156,95 @@ def render_j2_dockerfile(df_path: str, tmp_dir: str) -> str:
   
   return os.path.join(tmp_dir, 'Dockerfile')
 
-def build_image(image: str, tag: typing.Optional[str]) -> None:
-  if tag is None or not tag:
-    tag = f'netlab/{image}:latest'
+def print_sw_version_build_hint(device: str, sw_version: str) -> None:
+  build_output = external_commands.CAPTURED_STDOUT + external_commands.CAPTURED_STDERR
+  if 'ERROR: Cannot download' not in build_output and '404 Not Found' not in build_output:
+    return
 
+  print()
+  strings.print_colored_text('[HINT]     ','yellow',None)
+  print(f'{device} version {sw_version} could not be downloaded.')
+  print('Pick a valid release or change SW_VERSION / clab.sw_version.')
+
+def build_image(image: str, tag: typing.Optional[str], defaults: Box) -> None:
   df_dict = get_dockerfiles()
   if not image in df_dict:
     log.fatal(f'Unknown daemon/image {image}, use "netlab clab build -l" to list available images')
 
-  strings.print_colored_text('[STARTING] ','green',None)
-  print(f"Building container image {image} with tag {tag}")
-
-  strings.print_colored_text('[WORKING]  ','green',None)
-  print(f"Trying to remove existing container image {tag}")
-
-  if external_commands.run_command(f'docker image rm {tag}',ignore_errors=True,check_result=False):
-    strings.print_colored_text('[REMOVED]  ','green',None)
-    print(f"Removed existing image {tag}")
-  else:
-    strings.print_colored_text('[HICCUP]   ','yellow',None)
-    print(f"Cannot remove image {tag}, continuing")
-
-  strings.print_colored_text('[WORKING]  ','green',None)
-  print(f"Prune docker layers and builder cache")
-  external_commands.run_command(f'docker image prune -f',ignore_errors=True)
-  external_commands.run_command(f'docker builder prune -f',ignore_errors=True)
-
+  df_path = df_dict[image]
+  device = get_device_name(df_path)
   workdir = os.getcwd()
-  print()
-  strings.print_colored_text('[WORKING]  ','green',None)
-  print(f"Building container image {tag}")
+  sw_version: typing.Optional[str] = None
 
   with tempfile.TemporaryDirectory() as tmp:
     os.chdir(tmp)
-    
-    # Render Dockerfile.j2 if needed, otherwise use original path
-    dockerfile_to_use = render_j2_dockerfile(df_dict[image], tmp)
-    
+
+    dockerfile_to_use = render_j2_dockerfile(df_path, tmp, defaults)
+    uses_sw_version = dockerfile_uses_sw_version(dockerfile_to_use)
+    uses_sw_download_url = dockerfile_uses_sw_download_url(dockerfile_to_use)
+    download_url: typing.Optional[str] = None
+
+    if uses_sw_version:
+      sw_version = get_sw_version(device,defaults)
+      if not sw_version:
+        log.fatal(
+          '\n'.join([
+            f'Cannot build {image}: no software version specified.',
+            'Set the SW_VERSION environment variable or '
+            f'defaults.daemons.{device}.clab.sw_version',
+          ]),
+          module='build')
+
+      download_url = get_sw_download_url(device,sw_version,defaults)
+      if uses_sw_download_url and not download_url:
+        log.fatal(
+          '\n'.join([
+            f'Cannot build {image}: no software download URL specified.',
+            f'Set defaults.daemons.{device}.clab.sw_download_url',
+          ]),
+          module='build')
+
+      if download_url:
+        strings.print_colored_text('[CHECKING] ','cyan',None)
+        print(f"Verifying {device} version {sw_version} at {download_url}")
+        verify_sw_download(download_url,sw_version,device)
+
+    if tag is None or not tag:
+      tag = f'netlab/{image}:{sw_version}' if sw_version else f'netlab/{image}:latest'
+
+    strings.print_colored_text('[STARTING] ','green',None)
+    print(f"Building container image {image} with tag {tag}")
+    if sw_version:
+      print(f"Software version: {sw_version}")
+
+    strings.print_colored_text('[WORKING]  ','green',None)
+    print(f"Trying to remove existing container image {tag}")
+
+    if external_commands.run_command(f'docker image rm {tag}',ignore_errors=True,check_result=False):
+      strings.print_colored_text('[REMOVED]  ','green',None)
+      print(f"Removed existing image {tag}")
+    else:
+      strings.print_colored_text('[HICCUP]   ','yellow',None)
+      print(f"Cannot remove image {tag}, continuing")
+
+    strings.print_colored_text('[WORKING]  ','green',None)
+    print(f"Prune docker layers and builder cache")
+    external_commands.run_command(f'docker image prune -f',ignore_errors=True)
+    external_commands.run_command(f'docker builder prune -f',ignore_errors=True)
+
+    print()
+    strings.print_colored_text('[WORKING]  ','green',None)
+    print(f"Building container image {tag}")
+
+    build_cmd: typing.List[str] = ['docker','build','-t',tag,'-f',dockerfile_to_use]
+    if sw_version:
+      build_cmd.extend(['--build-arg',f'SW_VERSION={sw_version}'])
+    if download_url:
+      build_cmd.extend(['--build-arg',f'SW_DOWNLOAD_URL={download_url}'])
+    build_cmd.append('.')
+
     status = external_commands.run_command(
-      f'docker build -t {tag} -f {dockerfile_to_use} .',
+      build_cmd,
       ignore_errors=True,
       check_result=False)
     if status:
@@ -145,6 +253,8 @@ def build_image(image: str, tag: typing.Optional[str]) -> None:
     else:
       strings.print_colored_text('[FAILED]   ','red',None)
       print(f"Failed to build the container image {tag} for {image} daemon")
+      if sw_version:
+        print_sw_version_build_hint(device,sw_version)
 
   os.chdir(workdir)
   print()
@@ -169,7 +279,11 @@ def clab_build(args: argparse.Namespace, settings: Box) -> None:
     return
   
   if args.image:
-    build_image(args.image,args.tag)
+    try:
+      defaults = _read.system_defaults().defaults
+    except Exception as ex:
+      log.fatal(f'Could not load system defaults: {str(ex)}', module='build')
+    build_image(args.image,args.tag,defaults)
     return
   
   log.fatal('Specify image to build or "--list". Use "--help" to get help')

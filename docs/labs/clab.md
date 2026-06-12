@@ -30,7 +30,7 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 |------------------------|------------------------------|
 | Arista cEOS            | ceos:4.31.2F                 |
 | Aruba CX               | vrnetlab/aruba_arubaos-cx:20240731173624 |
-| BIRD                   | netlab/bird:latest           |
+| BIRD [❗](build-bird)  | netlab/bird:latest           |
 | Cisco 8000v            | cisco/cisco-8201-32fh:24.4.1 |
 | Cisco ASAv             | vrnetlab/cisco_asav:9-16-4-57 |
 | Cisco Catalyst 8000v   | vrnetlab/vr-c8000v:17.13.01a |
@@ -59,7 +59,7 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | VyOS                   | ghcr.io/sysoleg/vyos-container |
 
 * Cumulus VX, FRR, Linux, Nokia SR Linux, and VyOS images are automatically downloaded from public container registries.
-* Build the BIRD, dnsmasq, and Netscaler images with the **netlab clab build** command.
+* Build the BIRD, dnsmasq, and Netscaler images with the **netlab clab build** command. BIRD supports several build targets and configurable source releases — see [](build-bird) for details.
 * The Arista cEOS image has to be [downloaded and installed manually](ceos.md).
 * Nokia SR OS and SR-SIM container images require a license; see also [vrnetlab instructions](https://containerlab.srlinux.dev/manual/vrnetlab/).
 * Follow Cisco's documentation to install the IOS XRd container, making sure the container image name matches the one _netlab_ uses (alternatively, [change the default image name](default-device-image) for the IOS XRd container).
@@ -417,6 +417,7 @@ server.
    :hidden:
 
    ceos.md
+   bird.md
    linux.md
    netscaler.md
 ..

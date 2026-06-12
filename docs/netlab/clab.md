@@ -87,6 +87,17 @@ $ netlab clab build bird.v3 --tag netlab/bird:latest
 
 * Change the container image with the **image** node parameter or the **defaults.daemons._daemon_.clab.image** [default setting](topo-defaults).
 
+Some source-build Dockerfiles accept a configurable software version. _netlab_ passes the resolved version to Docker as the **SW_VERSION** build argument when the Dockerfile declares `ARG SW_VERSION`. The version is taken from (in order of precedence):
+
+* The **SW_VERSION** environment variable
+* The per-device **clab.sw_version** default (for example, **defaults.daemons.bird.clab.sw_version**)
+
+When no **--tag** is specified, the resolved version becomes the default container tag (`netlab/_image_:_version_` instead of `:latest`).
+
+Before starting the Docker build, _netlab_ can verify that the source tarball exists when **clab.sw_download_url** is configured in device defaults. Invalid versions fail immediately with a clear error message.
+
+See [Building BIRD containers](../labs/bird.md) for version-specific examples.
+
 (netlab-clab-cleanup)=
 ## Docker Cleanup
 

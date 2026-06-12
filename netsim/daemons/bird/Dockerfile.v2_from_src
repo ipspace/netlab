@@ -16,14 +16,18 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Set BIRD version, 2.19.1 was released on 2026-06-09
-ENV BIRD_VERSION=2.19.1
+ARG SW_VERSION
+ARG SW_DOWNLOAD_URL
 
 # Download and extract source code
-RUN wget https://bird.nic.cz/download/bird-${BIRD_VERSION}.tar.gz \
-    && tar -xzf bird-${BIRD_VERSION}.tar.gz
+RUN set -e; \
+    if ! wget -q -O /tmp/sw-src.tar.gz "$SW_DOWNLOAD_URL"; then \
+      echo "ERROR: Cannot download BIRD ${SW_VERSION} from ${SW_DOWNLOAD_URL} — version may not exist"; \
+      exit 1; \
+    fi; \
+    tar -xzf /tmp/sw-src.tar.gz
 
-WORKDIR /bird-${BIRD_VERSION}
+WORKDIR /bird-${SW_VERSION}
 
 # Configure, compile, and install
 RUN ./configure --prefix=/usr --sysconfdir=/etc/bird --localstatedir=/var \
