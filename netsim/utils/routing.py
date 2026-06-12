@@ -181,7 +181,7 @@ def check_device_attribute_support(
       if neigh:                                             # If so, fetch the attribute value...
         n_value = neigh.get(attr,True)                      # ... from the neighbor when specified
       elif rp_data:                                         # ... or from routing protocol data
-        rp_data.get(attr,True)                              # ... or from the node data
+        n_value = rp_data.get(attr,True)                    # ... or from the node data
       else:
         n_value = True                                      # ... or assume it must be 'true'
       return(check_attr_value(n_value,enabled))             # ... and compare it to supported values
