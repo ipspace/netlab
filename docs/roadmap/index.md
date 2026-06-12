@@ -7,6 +7,7 @@ These documents describe potential future _netlab_ functionality. Please feel fr
    :maxdepth: 1
 
    tools.md
+   clab-bridge.md
    external-interface.md
    usage.md
 ```
