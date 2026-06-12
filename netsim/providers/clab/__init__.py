@@ -91,8 +91,8 @@ class Containerlab(_Provider):
         return stat_box
 
       return stat_box
-    except:
-      log.error('Cannot execute "docker ps": {ex}',category=log.FatalError,module='clab')
+    except Exception as ex:
+      log.error(f'Cannot execute "docker ps": {ex}',category=log.FatalError,module='clab')
       return get_empty_box()
 
   """
