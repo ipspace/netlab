@@ -62,6 +62,9 @@ def transform_setup(topology: Box) -> None:
   providers.select_primary_provider(topology)
   log.exit_on_error()
 
+  providers.execute("init",topology)                        # Provider initialization cannot be done before selecting primary provider
+  log.exit_on_error()
+
   augment.nodes.augment_node_provider_data(topology)
   augment.nodes.augment_node_system_data(topology)
   log.exit_on_error()
