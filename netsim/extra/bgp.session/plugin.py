@@ -111,7 +111,6 @@ def check_node_attributes(ndata: Box, topology: Box) -> None:
         deploy = True                                           # Attribute supported, we need config
       else:
         fail_list.append(attr)                                  # Remember we already triggered an error
-    return deploy
 
   if deploy:                                                    # Do we need to deploy config?
     mark_plugin_config(ndata,None)
