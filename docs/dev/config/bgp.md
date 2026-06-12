@@ -82,7 +82,7 @@ A description of a BGP neighbor might have these parameters:
 * **local_as** (optional) -- Local autonomous system (when using **local-as** functionality)
 * **local_if** (optional) -- Local interface name for "unnumbered" BGP neighbors (EBGP sessions over IPv6 LLA configured as interface sessions)
 * **name** -- Neighbor name (used in descriptions)
-* **next_hop_self** (optional) -- use "next-hop-self" for this neighbor. Can contain **ebgp** (change next hop for EBGP routes) or **always** (change next hop for all routes, including reflected IBGP routes).
+* **next_hop_self** (optional) -- use "next-hop-self" for this neighbor. Can contain **ebgp** (change next hop for EBGP routes) or **all** (change next hop for all routes, including reflected IBGP routes).
 * **rr_client** (optional) -- the neighbor is a route-reflector client
 * **replace_global_as** (optional) -- for neighbors with **local_as**, replace true AS with the local AS (typically results in **no-prepend replace-as** parameters of the **neighbor local-as** configuration command).
 * **type** -- Neighbor type: **ibgp**, **ebgp**, **confed_ebgp** or **localas_ibgp**. The **confed_ebgp** type is used for intra-confederation EBGP sessions, the **localas_ibgp** type is used when the **local_as** turns an EBGP session into a fake IBGP session.
