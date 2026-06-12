@@ -112,6 +112,16 @@ def get_sw_download_url(device: str, sw_version: str, defaults: Box) -> typing.O
 
   return url_template.replace('{sw_version}',sw_version)
 
+def get_default_tag(image: str, df_path: str, defaults: Box) -> str:
+  """Return the default container tag for a build target."""
+  device = get_device_name(df_path)
+  if dockerfile_uses_sw_version(df_path):
+    sw_version = get_sw_version(device,defaults)
+    if sw_version:
+      return f'netlab/{image}:{sw_version}'
+
+  return f'netlab/{image}:latest'
+
 def verify_sw_download(url: str, sw_version: str, device: str) -> None:
   """Verify that the source tarball exists at *url* before starting a Docker build.
 
@@ -230,7 +240,7 @@ def build_image(image: str, tag: typing.Optional[str], defaults: Box) -> None:
         verify_sw_download(download_url,sw_version,device)
 
     if tag is None or not tag:
-      tag = f'netlab/{image}:{sw_version}' if sw_version else f'netlab/{image}:latest'
+      tag = get_default_tag(image, dockerfile_to_use, defaults)
 
     strings.print_colored_text('[STARTING] ','green',None)
     print(f"Building container image {image} with tag {tag}")
@@ -282,12 +292,16 @@ def build_image(image: str, tag: typing.Optional[str], defaults: Box) -> None:
 
 def list_dockerfiles() -> None:
   """List available daemon Dockerfiles and their default container tags."""
+  topology = _read.system_defaults()
+  devices.merge_daemons(topology)
+  defaults = topology.defaults
+
   rows = []
   df_dict = get_dockerfiles()
   for daemon in sorted(df_dict.keys()):
     # Strip .j2 extension from daemon name if present for display
     display_name = daemon.replace('.j2', '')
-    rows.append([display_name, f'netlab/{display_name}:latest', get_description(df_dict[daemon])])
+    rows.append([display_name, get_default_tag(daemon, df_dict[daemon], defaults), get_description(df_dict[daemon])])
 
   print("""
 The 'netlab clab build' command can be used to build the following container images

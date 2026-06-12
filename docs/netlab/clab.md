@@ -68,13 +68,15 @@ $ netlab clab build -l
 
 The 'netlab clab build' command can be used to build the following container images
 
-┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ daemon  ┃ default tag           ┃ description                                       ┃
-┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ bird    │ netlab/bird:latest    │ BIRD Internet Routing Daemon (bird.network.cz)    │
-│ bird.v3 │ netlab/bird.v3:latest │ BIRD Internet Routing Daemon (bird.network.cz) v3 │
-│ dnsmasq │ netlab/dnsmasq:latest │ dnsmasq DHCP server                               │
-└─────────┴───────────────────────┴───────────────────────────────────────────────────┘
+┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ daemon           ┃ default tag                      ┃ description                                                          ┃
+┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ bird             │ netlab/bird:latest               │ BIRD Internet Routing Daemon (bird.network.cz)                       │
+│ bird.v2_from_src │ netlab/bird.v2_from_src:2.19.1   │ BIRD Internet Routing Daemon v2 built from source using user version │
+│ bird.v3          │ netlab/bird.v3:latest            │ BIRD Internet Routing Daemon v3                                      │
+│ dnsmasq          │ netlab/dnsmasq:latest            │ dnsmasq DHCP server                                                  │
+│ netscaler        │ netlab/netscaler:latest          │ Citrix Netscaler ADC CPX for containerlab                            │
+└──────────────────┴──────────────────────────────────┴──────────────────────────────────────────────────────────────────────┘
 ```
 
 For some daemons, you can build containers using different versions of that daemon. To use a non-default version of the daemon, you can:
@@ -93,8 +95,6 @@ Some source-build Dockerfiles accept a configurable software version. _netlab_ p
 * The per-device **clab.sw_version** default (for example, **defaults.daemons.bird.clab.sw_version**)
 
 When no **--tag** is specified, the resolved version becomes the default container tag (`netlab/_image_:_version_` instead of `:latest`).
-
-Before starting the Docker build, _netlab_ can verify that the source tarball exists when **clab.sw_download_url** is configured in device defaults. Invalid versions fail immediately with a clear error message.
 
 See [Building BIRD containers](../labs/bird.md) for version-specific examples.
 
