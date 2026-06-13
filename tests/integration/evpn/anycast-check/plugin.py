@@ -22,7 +22,7 @@ def pre_transform(topology: Box) -> None:
   node = get_box({'device': def_device})
   features = get_device_features(node,topology.defaults)
 
-  if 'anycast' in features.get('gateway.protocol'):
+  if 'anycast' in features.get('gateway.protocol', []):
     topology.validate.pop('anycast',None)
     return
 
