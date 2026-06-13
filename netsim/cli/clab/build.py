@@ -72,41 +72,6 @@ def get_description(dfname: str) -> str:
 
   return '???'
 
-def get_device_name(df_path: str) -> str:
-  """Return the daemon/device name from a Dockerfile path (the parent directory name)."""
-  return os.path.basename(os.path.dirname(df_path))
-
-def get_device_clab_sw_version(device: str, defaults: Box) -> typing.Optional[str]:
-  """Return ``clab.sw_version`` from daemon defaults, or *None* if not defined."""
-  daemon = defaults.daemons.get(device)
-  if not daemon or 'clab' not in daemon:
-    return None
-
-  return daemon.clab.get('sw_version',None)
-
-def device_supports_sw_version(device: str, defaults: Box) -> bool:
-  """Return *True* when the daemon defines ``clab.sw_version`` in device defaults."""
-  daemon = defaults.daemons.get(device)
-  if not daemon or 'clab' not in daemon:
-    return False
-
-  return 'sw_version' in daemon.clab
-
-def get_resolved_sw_version(
-  device: str,
-  image: str,
-  defaults: Box,
-  cli_version: typing.Optional[str] = None,
-) -> typing.Optional[str]:
-  """Return the software version to build from the CLI flag or device defaults."""
-  if cli_version:
-    return cli_version
-
-  if image == device:
-    return None
-
-  return get_device_clab_sw_version(device,defaults)
-
 def render_j2_dockerfile(
   df_path: str,
   tmp_dir: str,
@@ -158,13 +123,14 @@ def build_image(
     log.fatal(f'Unknown daemon/image {image}, use "netlab clab build -l" to list available images')
 
   df_path = df_dict[image]
-  device = get_device_name(df_path)
-  if sw_version and not device_supports_sw_version(device,defaults):
+  device = os.path.basename(os.path.dirname(df_path))
+  if sw_version and 'sw_version' not in defaults.daemons[device].clab:
     log.fatal(
       f'--sw-version cannot be used with {image} (defaults.daemons.{device}.clab.sw_version is not defined)',
       module='build')
 
-  resolved_sw_version = get_resolved_sw_version(device,image,defaults,sw_version)
+  resolved_sw_version = sw_version if sw_version else (
+    defaults.daemons[device].clab.get('sw_version',None) if image != device else None)
 
   if not tag:
     tag = f'netlab/{image}:{sw_version}' if sw_version else f'netlab/{image}:latest'
