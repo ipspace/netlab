@@ -66,12 +66,13 @@ def get_description(dfname: str) -> str:
         continue
       if not 'description=' in line:
         continue
+      line = line.replace('{{ _sw_version }}','configurable')
       return line.split('description=')[1].replace('"','')
 
-  except:
+  except Exception:
     return '-- failed --'
 
-  return '???'
+  return '-- no description --'
 
 def render_j2_dockerfile(
   df_path: str,
@@ -139,6 +140,7 @@ def build_image(
   strings.print_colored_text('[STARTING] ','green',None)
   print(f"Building container image {image} with tag {tag}")
   if resolved_sw_version:
+    strings.print_colored_text('[BUILDING] ','green',None)
     print(f"Software version: {resolved_sw_version}")
 
   strings.print_colored_text('[WORKING]  ','green',None)
