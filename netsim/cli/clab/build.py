@@ -10,6 +10,7 @@ import tempfile
 import typing
 
 from box import Box
+from jinja2.exceptions import TemplateError
 
 from ...utils import files as _files
 from ...utils import log, strings, templates
@@ -59,7 +60,7 @@ def get_dockerfiles() -> dict:
 
 def get_description(dfname: str) -> str:
   try:
-    df_lines = pathlib.Path(dfname).read_text().split('\n')
+    df_lines = pathlib.Path(dfname).read_text(encoding='utf-8').split('\n')
     for line in df_lines:
       if not line.startswith('LABEL'):
         continue
@@ -102,7 +103,7 @@ def render_j2_dockerfile(
       template_data,
       tmp_dir,
       'Dockerfile')
-  except Exception as ex:
+  except (TemplateError, ValueError) as ex:
     log.fatal(
       f'Failed to render Dockerfile template {os.path.basename(df_path)}: {str(ex)}',
       module='build')
@@ -151,7 +152,7 @@ def build_image(
     print(f"Cannot remove image {tag}, continuing")
 
   strings.print_colored_text('[WORKING]  ','green',None)
-  print(f"Prune docker layers and builder cache")
+  print("Prune docker layers and builder cache")
   external_commands.run_command('docker image prune -f',ignore_errors=True)
   external_commands.run_command('docker builder prune -f',ignore_errors=True)
 
