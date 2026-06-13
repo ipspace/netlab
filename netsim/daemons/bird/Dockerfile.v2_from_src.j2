@@ -16,18 +16,22 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-ARG SW_VERSION
-ARG SW_DOWNLOAD_URL
+{% set _clab = defaults.daemons.bird.clab %}
+{% set _sw_version = sw_version if sw_version is defined else _clab.sw_version %}
+{% if not _sw_version %}{{ fail('sw_version must be defined in defaults.daemons.bird.clab') }}{% endif %}
+{% set _url = _clab.sw_download_url %}
+{% if not _url %}{{ fail('sw_download_url must be defined in defaults.daemons.bird.clab') }}{% endif %}
+{% set _sw_download_url = _url.replace('{sw_version}', _sw_version) %}
 
 # Download and extract source code
 RUN set -e; \
-    if ! wget -q -O /tmp/sw-src.tar.gz "$SW_DOWNLOAD_URL"; then \
-      echo "ERROR: Cannot download BIRD ${SW_VERSION} from ${SW_DOWNLOAD_URL} — version may not exist"; \
+    if ! wget -q -O /tmp/sw-src.tar.gz "{{ _sw_download_url }}"; then \
+      echo "ERROR: Cannot download BIRD {{ _sw_version }} from {{ _sw_download_url }} — version may not exist"; \
       exit 1; \
     fi; \
     tar -xzf /tmp/sw-src.tar.gz
 
-WORKDIR /bird-${SW_VERSION}
+WORKDIR /bird-{{ _sw_version }}
 
 # Configure, compile, and install
 RUN ./configure --prefix=/usr --sysconfdir=/etc/bird --localstatedir=/var \
@@ -38,7 +42,7 @@ RUN ./configure --prefix=/usr --sysconfdir=/etc/bird --localstatedir=/var \
 FROM debian:bookworm-slim
 
 LABEL maintainer="Netlab project <netlab.tools>"
-LABEL description="BIRD Internet Routing Daemon (bird.network.cz) v2 built from source"
+LABEL description="BIRD Internet Routing Daemon v2 built from source ({{ _sw_version }})"
 
 # Install runtime dependencies
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \

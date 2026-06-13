@@ -39,13 +39,13 @@ netlab clab build bird.v3 --tag netlab/bird:latest
 
 ## Build from Source (v2, specific release)
 
-The **bird.v2_from_src** target compiles BIRD v2 from a source tarball. The default release comes from **defaults.daemons.bird.clab.sw_version** (currently 2.19.1). Override it with the **SW_VERSION** environment variable.
+The **bird.v2_from_src** target compiles BIRD v2 from a source tarball. The default release comes from **defaults.daemons.bird.clab.sw_version** (currently 2.19.1). Override it with the **--sw-version** parameter.
 
-The resolved version is passed to the Docker build as **SW_VERSION** and used as the default container tag.
+The resolved version is embedded in the rendered Dockerfile. When **--sw-version** is specified and **--tag** is omitted, the default container tag includes the version (`netlab/bird.v2_from_src:_version_`).
 
 ```
 netlab clab build bird.v2_from_src
-SW_VERSION=2.17.4 netlab clab build bird.v2_from_src
+netlab clab build bird.v2_from_src --sw-version 2.17.4
 ```
 
 To install a from-source build as the default BIRD image:
