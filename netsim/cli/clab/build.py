@@ -166,7 +166,7 @@ def build_image(
 
   resolved_sw_version = get_resolved_sw_version(device,image,defaults,sw_version)
 
-  if tag is None or not tag:
+  if not tag:
     tag = f'netlab/{image}:{sw_version}' if sw_version else f'netlab/{image}:latest'
 
   strings.print_colored_text('[STARTING] ','green',None)
