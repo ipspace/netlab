@@ -2,6 +2,12 @@
 router id {{ bgp.router_id }};
 {% endif %}
 
+{% for n in bgp.neighbors|default([]) if n.evpn|default(false) %}
+{%   if loop.first %}
+evpn table evpntab;
+{%   endif %}
+{% endfor %}
+
 {% for ngb in bgp.neighbors|default([]) if ngb.default_originate|default(False) %}
 {%   if loop.first %}
 {%     for _af in ['ipv4','ipv6'] if _af in af %}
@@ -149,6 +155,9 @@ protocol bgp bgp_{{ n.name }}_{{ af }} {
   };
 {%      endif %}
 {%     endfor %}
+{%     if n.evpn|default('') == af %}
+  evpn { table evpntab; import all; export all; };
+{%     endif %}
 }
 {%   endfor %}
 {% endfor %}

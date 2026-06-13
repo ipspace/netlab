@@ -6,6 +6,7 @@
 import argparse
 import os
 import pathlib
+import shutil
 import tempfile
 import typing
 
@@ -73,6 +74,21 @@ def get_description(dfname: str) -> str:
     return '-- failed --'
 
   return '-- no description --'
+
+def copy_docker_build_context(df_path: str, tmp_dir: str) -> None:
+  """
+  Copy supplemental build context files from the Dockerfile directory.
+
+  Jinja2 Dockerfiles are rendered into an empty temporary directory; any COPY
+  instructions need their sources copied alongside the rendered Dockerfile.
+  """
+  df_dir = os.path.dirname(df_path)
+  for name in os.listdir(df_dir):
+    if name.startswith('Dockerfile'):
+      continue
+    src = os.path.join(df_dir, name)
+    if os.path.isfile(src):
+      shutil.copy(src, os.path.join(tmp_dir, name))
 
 def render_j2_dockerfile(
   df_path: str,
@@ -168,6 +184,8 @@ def build_image(
 
     # Render Dockerfile.j2 if needed, otherwise use original path
     dockerfile_to_use = render_j2_dockerfile(df_dict[image], tmp, defaults, sw_version)
+    if df_dict[image].endswith('.j2'):
+      copy_docker_build_context(df_dict[image], tmp)
 
     status = external_commands.run_command(
       f'docker build -t {tag} -f {dockerfile_to_use} .',

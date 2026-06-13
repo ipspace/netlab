@@ -1,14 +1,11 @@
 {% macro bird_ec(rt) %}(rt, {{ rt.split(':')[0] }}, {{ rt.split(':')[1] }}){% endmacro %}
 
-evpn table evpntab;
-
 {% if vxlan is defined and vxlan.flooding|default('') == 'evpn' %}
 {% for vname in vxlan.vlans|default([]) if vlans[vname].vni is defined and 'evpn' in vlans[vname] %}
 {% set vlan = vlans[vname] %}
 protocol bridge bridge_{{ vname }} {
   eth { table eth_{{ vname }}; export all; };
   bridge device "vlan{{ vlan.id }}";
-  vlan filtering;
 };
 
 protocol evpn evpn_{{ vname }} {
@@ -52,17 +49,4 @@ protocol evpn evpn_vrf_{{ vname }} {
   };
 };
 {% endif %}
-{% endfor %}
-
-{% for n in bgp.neighbors|default([]) if n.evpn|default(false) %}
-{% set loopback = loopback|default({}) %}
-{% set local_ip = loopback[n.evpn]|default('') %}
-protocol bgp bgp_{{ n.name }}_evpn {
-  local {{ local_ip.split('/')[0] if n.type == 'ibgp' and local_ip is string else '' }} as {{ n.local_as|default(bgp.as) }};
-  neighbor {{ n[n.evpn] }} as {{ n['as'] }};
-  evpn { table evpntab; import all; export all; };
-  connect retry time 5;
-  error wait time 5,10;
-  startup hold time 10;
-};
 {% endfor %}

@@ -48,6 +48,10 @@ LABEL description="BIRD Internet Routing Daemon v2 built from source ({{ _sw_ver
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && apt-get install -y \
+    iproute2 \
+    iputils-ping \
+    net-tools \
+    procps \
     libreadline8 \
     libssh-4 \
     && rm -rf /var/lib/apt/lists/*
@@ -57,8 +61,13 @@ COPY --from=builder /usr/sbin/bird /usr/sbin/bird
 COPY --from=builder /usr/sbin/birdcl /usr/sbin/birdcl
 COPY --from=builder /etc/bird /etc/bird
 
-# Create runtime directory for control sockets
-RUN mkdir -p /var/run
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-# Run BIRD in the foreground with the default config path
-CMD ["/usr/sbin/bird", "-f", "-c", "/etc/bird/bird.conf"]
+# Create runtime directory for control sockets
+RUN mkdir -p /var/run /etc/config
+
+# Expose BGP (179) and OSPF (89) routing ports
+EXPOSE 179
+
+ENTRYPOINT ["/entrypoint.sh"]
