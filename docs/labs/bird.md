@@ -54,7 +54,7 @@ To install a from-source build as the default BIRD image:
 netlab clab build bird.v2_from_src --tag netlab/bird:latest
 ```
 
-Invalid or unavailable versions fail before the Docker build starts with a message naming the version and download URL. See [BIRD releases](https://bird.nic.cz/download/) for valid version numbers.
+Invalid or unavailable versions fail during the Docker build when the source tarball cannot be downloaded. See [BIRD releases](https://bird.nic.cz/download/) for valid version numbers.
 
 ## Using a Custom Image in a Lab Topology
 
