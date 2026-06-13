@@ -44,17 +44,20 @@ _netlab_ package includes *Dockerfiles* for several well-known routing daemons. 
 
 ```
 $ netlab clab build -h
-usage: netlab clab build [-h] [-l] [-t TAG] [image]
+usage: netlab clab build [-h] [-l] [-t TAG] [--sw-version SW_VERSION] [image]
 
 Build a routing daemon Docker container
 
 positional arguments:
-  image              Routing daemon name
+  image                 Routing daemon name
 
 options:
-  -h, --help         show this help message and exit
-  -l, --list         List available routing daemons
-  -t TAG, --tag TAG  Specify a non-default tag for the container image
+  -h, --help            show this help message and exit
+  -l, --list            List available routing daemons
+  -t TAG, --tag TAG     Specify a non-default tag for the container image
+  --sw-version SW_VERSION
+                        Software version for source-build container images
+                        (for example, BIRD release for bird.v2_from_src)
 ```
 
 For example, use `netlab clab build bird` to build the **netlab/bird:latest** container:
@@ -72,7 +75,7 @@ The 'netlab clab build' command can be used to build the following container ima
 ┃ daemon           ┃ default tag                      ┃ description                                                          ┃
 ┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
 │ bird             │ netlab/bird:latest               │ BIRD Internet Routing Daemon (bird.network.cz)                       │
-│ bird.v2_from_src │ netlab/bird.v2_from_src:2.19.1   │ BIRD Internet Routing Daemon v2 built from source using user version │
+│ bird.v2_from_src │ netlab/bird.v2_from_src:latest   │ BIRD Internet Routing Daemon v2 built from source (configurable)     │
 │ bird.v3          │ netlab/bird.v3:latest            │ BIRD Internet Routing Daemon v3                                      │
 │ dnsmasq          │ netlab/dnsmasq:latest            │ dnsmasq DHCP server                                                  │
 │ netscaler        │ netlab/netscaler:latest          │ Citrix Netscaler ADC CPX for containerlab                            │
@@ -81,7 +84,13 @@ The 'netlab clab build' command can be used to build the following container ima
 
 For some daemons, you can build containers using different versions of that daemon. To use a non-default version of the daemon, you can:
 
-* Specify the default container tag with the `--tag` parameter, for example:
+* Specify the software release with the **--sw-version** parameter, for example:
+
+```
+$ netlab clab build bird.v2_from_src --sw-version 2.17.4
+```
+
+* Specify the container tag with the **--tag** parameter, for example:
 
 ```
 $ netlab clab build bird.v3 --tag netlab/bird:latest
@@ -89,14 +98,7 @@ $ netlab clab build bird.v3 --tag netlab/bird:latest
 
 * Change the container image with the **image** node parameter or the **defaults.daemons._daemon_.clab.image** [default setting](topo-defaults).
 
-Some source-build Dockerfiles use a configurable software version. _netlab_ resolves the version when rendering the Jinja2 Dockerfile template. The version is taken from (in order of precedence):
-
-* The **--sw-version** CLI parameter
-* The per-device **clab.sw_version** default (for example, **defaults.daemons.bird.clab.sw_version**)
-
-When **--sw-version** is specified and **--tag** is omitted, the version becomes the default container tag (`netlab/_image_:_version_` instead of `:latest`).
-
-See [Building BIRD containers](../labs/bird.md) for version-specific examples.
+See [Building BIRD containers](../labs/bird.md) for configurable source releases.
 
 (netlab-clab-cleanup)=
 ## Docker Cleanup

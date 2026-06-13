@@ -13,7 +13,6 @@ from box import Box
 
 from ...utils import files as _files
 from ...utils import log, strings, templates
-from ...utils import read as _read
 from .. import external_commands
 
 
@@ -77,27 +76,43 @@ def get_device_name(df_path: str) -> str:
   """Return the daemon/device name from a Dockerfile path (the parent directory name)."""
   return os.path.basename(os.path.dirname(df_path))
 
-def get_resolved_sw_version(df_path: str, cli_version: typing.Optional[str] = None) -> typing.Optional[str]:
-  """Return the software version to build from the CLI flag or device defaults."""
-  if cli_version:
-    return cli_version
-
-  if not df_path.endswith('.j2'):
-    return None
-
-  device = get_device_name(df_path)
-  try:
-    defaults = _read.system_defaults().defaults
-  except Exception as ex:
-    log.fatal(f'Could not load system defaults: {str(ex)}', module='build')
-
+def get_device_clab_sw_version(device: str, defaults: Box) -> typing.Optional[str]:
+  """Return ``clab.sw_version`` from daemon defaults, or *None* if not defined."""
   daemon = defaults.daemons.get(device)
-  if not daemon:
+  if not daemon or 'clab' not in daemon:
     return None
 
   return daemon.clab.get('sw_version',None)
 
-def render_j2_dockerfile(df_path: str, tmp_dir: str, sw_version: typing.Optional[str] = None) -> str:
+def device_supports_sw_version(device: str, defaults: Box) -> bool:
+  """Return *True* when the daemon defines ``clab.sw_version`` in device defaults."""
+  daemon = defaults.daemons.get(device)
+  if not daemon or 'clab' not in daemon:
+    return False
+
+  return 'sw_version' in daemon.clab
+
+def get_resolved_sw_version(
+  device: str,
+  image: str,
+  defaults: Box,
+  cli_version: typing.Optional[str] = None,
+) -> typing.Optional[str]:
+  """Return the software version to build from the CLI flag or device defaults."""
+  if cli_version:
+    return cli_version
+
+  if image == device:
+    return None
+
+  return get_device_clab_sw_version(device,defaults)
+
+def render_j2_dockerfile(
+  df_path: str,
+  tmp_dir: str,
+  defaults: Box,
+  sw_version: typing.Optional[str] = None,
+) -> str:
   """
   Render Dockerfile.j2 if needed, return path to use for build.
 
@@ -109,12 +124,6 @@ def render_j2_dockerfile(df_path: str, tmp_dir: str, sw_version: typing.Optional
 
   strings.print_colored_text('[TEMPLATE] ','cyan',None)
   print(f"Rendering Jinja2 template from {os.path.basename(df_path)}")
-
-  # Load topology defaults to get device credentials
-  try:
-    defaults = _read.system_defaults().defaults
-  except Exception as ex:
-    log.fatal(f'Could not load system defaults: {str(ex)}', module='build')
 
   template_data: dict = {'defaults': defaults}
   if sw_version:
@@ -138,16 +147,24 @@ def render_j2_dockerfile(df_path: str, tmp_dir: str, sw_version: typing.Optional
 
   return os.path.join(tmp_dir, 'Dockerfile')
 
-def build_image(image: str, tag: typing.Optional[str], sw_version: typing.Optional[str] = None) -> None:
+def build_image(
+  image: str,
+  tag: typing.Optional[str],
+  defaults: Box,
+  sw_version: typing.Optional[str] = None,
+) -> None:
   df_dict = get_dockerfiles()
   if not image in df_dict:
     log.fatal(f'Unknown daemon/image {image}, use "netlab clab build -l" to list available images')
 
   df_path = df_dict[image]
-  if sw_version and not df_path.endswith('.j2'):
-    log.fatal(f'--sw-version cannot be used with {image} (not a source-build image)', module='build')
+  device = get_device_name(df_path)
+  if sw_version and not device_supports_sw_version(device,defaults):
+    log.fatal(
+      f'--sw-version cannot be used with {image} (defaults.daemons.{device}.clab.sw_version is not defined)',
+      module='build')
 
-  resolved_sw_version = get_resolved_sw_version(df_path,sw_version)
+  resolved_sw_version = get_resolved_sw_version(device,image,defaults,sw_version)
 
   if tag is None or not tag:
     tag = f'netlab/{image}:{sw_version}' if sw_version else f'netlab/{image}:latest'
@@ -181,7 +198,7 @@ def build_image(image: str, tag: typing.Optional[str], sw_version: typing.Option
     os.chdir(tmp)
 
     # Render Dockerfile.j2 if needed, otherwise use original path
-    dockerfile_to_use = render_j2_dockerfile(df_dict[image], tmp, sw_version)
+    dockerfile_to_use = render_j2_dockerfile(df_dict[image], tmp, defaults, sw_version)
 
     status = external_commands.run_command(
       f'docker build -t {tag} -f {dockerfile_to_use} .',
@@ -217,7 +234,7 @@ def clab_build(args: argparse.Namespace, settings: Box) -> None:
     return
 
   if args.image:
-    build_image(args.image,args.tag,args.sw_version)
+    build_image(args.image,args.tag,settings,args.sw_version)
     return
 
   log.fatal('Specify image to build or "--list". Use "--help" to get help')
