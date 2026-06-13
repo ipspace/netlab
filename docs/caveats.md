@@ -401,7 +401,7 @@ ansible_httpapi_port: 80
 * Many FRR configuration templates are not idempotent -- you cannot run **netlab initial** multiple times. Non-idempotent templates include VLAN and VRF configurations.
 * You can change the FRR default profile with the **netlab_frr_defaults** node parameter (`traditional` or `datacenter`, default is `datacenter`).
 * **netlab collect** downloads FRR configuration but not Linux interface configuration.
-* FRR has no default logging destinations. The initial device configuration adds file logging to `/tmp/logging`.
+* FRR has no default logging destinations. The initial device configuration adds file logging to `/var/log/frr/frr.log`.
 * _netlab_ automatically enables FRR daemons required by the _netlab_ modules you use on individual nodes in the `/etc/frr/daemons` FRRouting configuration file. Use the **frr.daemons** node attribute to enable additional FRRouting daemons.
 
 **FRR-Specific Node Attributes:**
