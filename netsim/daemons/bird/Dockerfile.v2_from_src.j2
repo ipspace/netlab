@@ -62,114 +62,20 @@ COPY --from=builder /usr/sbin/birdcl /usr/sbin/birdcl
 COPY --from=builder /etc/bird /etc/bird
 
 # Wait for netlab initial to execute bound /etc/config scripts, then start BIRD.
-# EVPN/VXLAN kernel interfaces must exist before BIRD starts (see bird/vlan.j2).
 RUN cat >/entrypoint.sh <<'ENTRYPOINT'
 #!/bin/bash
 set -e
 
-log() {
-  echo "bird: $*" >&2
-}
+marker="${NETLAB_CONFIG_DONE:-/var/run/netlab-config-done}"
+timeout="${NETLAB_CONFIG_WAIT:-120}"
 
-wait_for_netlab_config() {
-  local timeout="${NETLAB_CONFIG_WAIT:-120}"
-  local waited=0
-  local marker="${NETLAB_CONFIG_DONE:-/var/run/netlab-config-done}"
+while [ ! -f "$marker" ] && [ "$timeout" -gt 0 ]; do
+  sleep 1
+  timeout=$((timeout - 1))
+done
 
-  if ! compgen -G '/etc/config/[0-9]*-*.sh' > /dev/null; then
-    log "no netlab configuration scripts found, starting BIRD"
-    return 0
-  fi
+[ -f "$marker" ] || { echo "bird: timeout waiting for ${marker}" >&2; exit 1; }
 
-  log "waiting for netlab initial (${marker}, timeout ${timeout}s)"
-
-  while [ "$waited" -lt "$timeout" ]; do
-    if [ -f "$marker" ]; then
-      log "netlab configuration complete"
-      return 0
-    fi
-    if [ "$((waited % 10))" -eq 0 ]; then
-      log "still waiting for netlab initial (${waited}s elapsed)"
-    fi
-    sleep 1
-    waited=$((waited + 1))
-  done
-
-  log "timeout waiting for netlab initial (${marker})"
-  return 1
-}
-
-wait_for_evpn_kernel() {
-  if [ ! -f /etc/bird/evpn.mod.conf ]; then
-    return 0
-  fi
-
-  local timeout="${NETLAB_EVPN_WAIT:-30}"
-  local waited=0
-
-  log "waiting for EVPN kernel interfaces (timeout ${timeout}s)"
-
-  while [ "$waited" -lt "$timeout" ]; do
-    local ready=1
-
-    if ! compgen -G '/sys/class/net/vxlan*' > /dev/null; then
-      ready=0
-    else
-      for vx in /sys/class/net/vxlan*; do
-        local name="${vx##*/}"
-        if ! ip link show dev "$name" 2>/dev/null | grep -q 'master '; then
-          ready=0
-          break
-        fi
-      done
-    fi
-
-    if compgen -G '/sys/class/net/vlan*' > /dev/null; then
-      for br in /sys/class/net/vlan*; do
-        local name="${br##*/}"
-        local state
-        state="$(cat "/sys/class/net/$name/operstate" 2>/dev/null || echo down)"
-        if [ "$state" = "down" ]; then
-          ready=0
-          break
-        fi
-      done
-    else
-      ready=0
-    fi
-
-    if [ "$ready" -eq 1 ]; then
-      log "EVPN kernel interfaces ready"
-      return 0
-    fi
-
-    sleep 1
-    waited=$((waited + 1))
-  done
-
-  log "warning: timeout waiting for EVPN kernel interfaces"
-  return 0
-}
-
-wait_for_netlab_config
-wait_for_evpn_kernel
-
-log "network interfaces:"
-ip -br link >&2 || true
-
-if [ -f /etc/bird/bird.conf ]; then
-  log "checking BIRD configuration"
-  if bird -p -c /etc/bird/bird.conf >&2; then
-    log "BIRD configuration is valid"
-  else
-    log "BIRD configuration check failed"
-    exit 1
-  fi
-else
-  log "warning: /etc/bird/bird.conf not found"
-fi
-
-log "starting BIRD (foreground, debug on stderr)"
 exec bird -f -c /etc/bird/bird.conf -d
 ENTRYPOINT
 RUN chmod +x /entrypoint.sh
