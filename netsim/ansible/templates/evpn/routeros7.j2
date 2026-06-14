@@ -1,0 +1,9 @@
+{% for n in bgp.neighbors if n.ipv4 is defined and n.evpn|default(False) %}
+{%   set neigh_id = n.ipv4|replace('.', '_')|replace(':', '_') %}
+/routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] afi=evpn
+{%   if vlans is defined and 'vxlan' in module %}
+{%     for v in vlans.values() if v.evpn.evi is defined %}
+/routing/bgp/evpn add name={{ neigh_id }}-evpn disabled=no instance=main export.route-targets={{ v.evpn.export|join(',') }} import.route-targets={{ v.evpn.import|join(',') }} vni={{ v.vni }}
+{%     endfor %}
+{%   endif %}
+{% endfor %}
