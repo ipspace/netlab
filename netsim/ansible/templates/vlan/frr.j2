@@ -13,7 +13,6 @@ fi
 {% for i in interfaces if i.type == 'svi' %}
 if [ ! -e /sys/devices/virtual/net/{{ i.ifname }} ]; then
   ip link add {{ i.ifname }} type bridge
-  ip link set dev {{ i.ifname }} address {{ i.mac_address|ansible.utils.hwaddr('linux') }}
 {# If STP is required, enable it before bringing up the bridge device to avoid any forwarding loops #}
 {%  if 'stp' in module|default([]) and (i.stp|default(stp)).enable|default(True) %}
   ip link set {{ i.ifname }} type bridge stp_state 1
@@ -29,6 +28,7 @@ if [ ! -e /sys/devices/virtual/net/{{ i.ifname }} ]; then
   sysctl -w net.ipv6.conf.{{ i.ifname }}.disable_ipv6=1
 {%   endif %}
 fi
+  ip link set dev {{ i.ifname }} address {{ i.mac_address|ansible.utils.hwaddr('linux') }}
 {% endfor %}
 
 {# Add interfaces to VLAN bridges #}

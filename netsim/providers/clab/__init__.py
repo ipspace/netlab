@@ -125,7 +125,7 @@ class Containerlab(_Provider):
     if not cfg_files:                                          # No node files => no config to deploy here
       return
     node_name = self.get_node_name(node.name,topology)          # ... get container/namespace name
-    configs.deploy_container_config(node,node_name,deploy_list)
+    configs.deploy_container_config(node,node_name,deploy_list,topology)
 
   def capture_command(self, node: Box, topology: Box, args: argparse.Namespace) -> list:
     cmd = strings.string_to_list(topology.defaults.netlab.capture.command)

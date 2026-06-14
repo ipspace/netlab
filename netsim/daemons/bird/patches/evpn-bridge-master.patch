@@ -1,0 +1,34 @@
+--- a/proto/evpn/evpn.c
++++ b/proto/evpn/evpn.c
+@@ -978,8 +978,13 @@ evpn_if_notify(struct proto *P, unsigned flags, struct iface *iface)
+   if (iface != encap->tunnel_dev)
+     return;
+ 
+-  if ((p->p.proto_state == PS_START) && (flags & IF_CHANGE_UP))
+-    evpn_started(p, iface);
+-  else if (flags & IF_CHANGE_DOWN)
++  if (p->p.proto_state == PS_START)
++  {
++    if (evpn_validate_iface_attrs(p, iface))
++      evpn_started(p, iface);
++    return;
++  }
++
++  if (flags & IF_CHANGE_DOWN)
+     proto_notify_state(&p->p, evpn_shutdown(&p->p));
+ }
+@@ -1060,7 +1065,13 @@ evpn_start(struct proto *P)
+ 
+   struct evpn_encap *encap = evpn_get_encap(p);
+   p->vlan_pub = ps_publisher_new(p->p.pool, evpn_vlan_subscribe_hook, p);
+-  ps_attach_topic(p->vlan_pub, &vlan_requests, encap->tunnel_dev->master->name);
++  {
++    struct iface *bridge = encap->tunnel_dev->master;
++    if (!bridge && encap->tunnel_dev->master_index)
++      bridge = if_find_by_index(encap->tunnel_dev->master_index);
++    if (bridge)
++      ps_attach_topic(p->vlan_pub, &vlan_requests, bridge->name);
++  }
+ 
+   init_list(&p->vlans);
+   memset(&p->vlan_tag_hash, 0, sizeof(p->vlan_tag_hash));
