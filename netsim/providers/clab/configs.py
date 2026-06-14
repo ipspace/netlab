@@ -12,11 +12,8 @@ from ...data import append_to_list
 from ...utils import log, strings
 from . import utils
 
-def config_done_marker(node: Box, topology: Box) -> typing.Optional[str]:
-  return devices.get_node_group_var(node,'netlab_config_done',topology.defaults)
-
 def mark_config_done(node: Box, node_name: str, topology: Box) -> None:
-  marker = config_done_marker(node,topology)
+  marker = devices.get_node_group_var(node,'netlab_config_done',topology.defaults)
   if not marker:
     return
 
