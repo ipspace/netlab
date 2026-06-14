@@ -1,20 +1,20 @@
 
-/system identity set name="{{ inventory_hostname }}"
+/system/identity set name="{{ inventory_hostname }}"
 
-/interface bridge add name=loopback protocol-mode=none
+/interface/bridge add name=loopback protocol-mode=none
 
 {#
 # Add additional loopbacks
 #}
 {% for l in interfaces if l.type == 'loopback' %}
-/interface bridge add name={{l.ifname}} protocol-mode=none
+/interface/bridge add name={{ l.ifname }} protocol-mode=none
 {% endfor %}
 
 {% if loopback.ipv4 is defined %}
-/ip address add interface=loopback address={{ loopback.ipv4 }}
+/ip/address add interface=loopback address={{ loopback.ipv4 }}
 {% endif %}
 {% if loopback.ipv6 is defined %}
-/ipv6 address add interface=loopback address={{ loopback.ipv6 }}
+/ipv6/address add interface=loopback address={{ loopback.ipv6 }}
 {% endif %}
 
 {% if vlans is defined %}
@@ -28,33 +28,33 @@
 {% for l in interfaces|default([]) %}
 {%   set intf_type = 'vlan' if l.type == 'svi' else 'ethernet' %}
 
-{% if l.name is defined %}
-/interface {{ intf_type }} set comment="{{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}" {{ l.ifname }}
-{% elif l.type|default("") == "stub" %}
-/interface {{ intf_type }} set comment="Stub interface" {{ l.ifname }}
-{% endif %}
+{%   if l.name is defined %}
+/interface/{{ intf_type }} set comment="{{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}" {{ l.ifname }}
+{%   elif l.type|default("") == "stub" %}
+/interface/{{ intf_type }} set comment="Stub interface" {{ l.ifname }}
+{%   endif %}
 
-{% if l.mtu is defined %}
-/interface {{ intf_type }} set mtu={{ l.mtu }} {{ l.ifname }}
-{% endif %}
-{% if l.shutdown|default(False) %}
-/interface {{ intf_type }} set disabled=yes {{ l.ifname }}
-{% endif %}
+{%   if l.mtu is defined %}
+/interface/{{ intf_type }} set mtu={{ l.mtu }} {{ l.ifname }}
+{%   endif %}
+{%   if l.shutdown|default(False) %}
+/interface/{{ intf_type }} set disabled=yes {{ l.ifname }}
+{%   endif %}
 {#
 # Add same interface comment also to the IP Address, for better troubleshooting
 # Only supported in IPv4, for now.
 #}
-{% if 'ipv4' in l %}
-/ip address add interface={{ l.ifname }} address={{ l.ipv4 }}
-{%   if l.name is defined %}
-/ip address set [find where interface={{ l.ifname }}] comment="{{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}"
+{%   if 'ipv4' in l %}
+/ip/address add interface={{ l.ifname }} address={{ l.ipv4 }}
+{%     if l.name is defined %}
+/ip/address set [find where interface={{ l.ifname }}] comment="{{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}"
+{%     endif %}
 {%   endif %}
-{% endif %}
-{% if 'ipv6' in l %}
-/ipv6 address add interface={{ l.ifname }} address={{ l.ipv6 }}
-/ipv6 nd add interface={{ l.ifname }} advertise-dns=no ra-interval=3s-30s
-{% endif %}
+{%   if 'ipv6' in l %}
+/ipv6/address add interface={{ l.ifname }} address={{ l.ipv6 }}
+/ipv6/nd add interface={{ l.ifname }} advertise-dns=no ra-interval=3s-30s
+{%   endif %}
 
 {% endfor %}
 
-/ip neighbor discovery-settings set discover-interface-list=all
+/ip/neighbor/discovery-settings set discover-interface-list=all
