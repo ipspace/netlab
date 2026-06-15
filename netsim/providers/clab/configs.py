@@ -12,24 +12,6 @@ from ...data import append_to_list
 from ...utils import log, strings
 from . import utils
 
-
-def mark_config_done(node: Box, node_name: str, topology: Box) -> None:
-  marker = devices.get_node_group_var(node,'netlab_config_done',topology.defaults)
-  if not marker:
-    return
-
-  status = external_commands.run_command(
-              cmd=['docker','exec',node_name,'touch',marker],
-              ignore_errors=True,
-              return_exitcode=True)
-  if status != 0:
-    log.error(
-      f'Cannot create netlab configuration done marker on node {node.name}',
-      category=log.FatalError,
-      more_data=f'Executed command: docker exec {node_name} touch {marker}',
-      skip_header=True,
-      module='initial')
-
 '''
 add_default_config_mode: if the netlab_config_mode is set, add configured modules to _node_config dictionary
 '''
@@ -115,7 +97,7 @@ def generate_startup_config(n: Box) -> None:
     log.status_created()
     print(f"startup configuration for {n.name}",flush=True)
 
-def  deploy_container_config(node: Box, node_name: str, deploy_list: list, topology: Box) -> None:
+def  deploy_container_config(node: Box, node_name: str, deploy_list: list) -> None:
   for cfg_item in node.clab.config_templates:                 # Go through configuration files (we know they exist)
     mod_name = cfg_item.source                                # Get module name
     f_type = cfg_item.get('mode',None)
@@ -182,6 +164,3 @@ def  deploy_container_config(node: Box, node_name: str, deploy_list: list, topol
         module='initial')
       append_to_list(node._deploy,'failed',mod_name)
       break
-
-  if '_deploy.failed' not in node and '_deploy.success' in node:
-    mark_config_done(node,node_name,topology)
