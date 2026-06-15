@@ -7,16 +7,16 @@ set -e # Exit immediately when any command fails
 
 {% macro create_vxlan_interface(vni,br_name,vrf=None,mtu=1500) %}
 if [ ! -e /sys/devices/virtual/net/vxlan{{ vni }} ]; then
-ip link add vxlan{{ vni }} type vxlan \
-  id {{ vni }} \
-  dstport 4789 \
-  local {{ vxlan.vtep }} {{ 'nolearning' if use_evpn else '' }}
+  ip link add vxlan{{ vni }} type vxlan \
+    id {{ vni }} \
+    dstport 4789 \
+    local {{ vxlan.vtep }} {{ 'nolearning' if use_evpn else '' }}
 fi
 #
 # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
 if [ ! -e /sys/devices/virtual/net/{{ br_name}} ]; then
-ip link add {{ br_name }} type bridge
-ip link set up dev {{ br_name }}
+  ip link add {{ br_name }} type bridge
+  ip link set up dev {{ br_name }}
 fi
 ip link set dev vxlan{{ vni }} master {{ br_name }}
 ip link set {{ br_name }} type bridge stp_state 0
@@ -36,9 +36,9 @@ ip link set {{ br_name }} master {{ vrf }}
 # Create L3 VNIs with bridges and add to correct vrf table
 {% set _mtu = mtu|default(1500) %}
 {% if vrfs is defined %}
-{% for vname,vdata in vrfs.items() if 'evpn' in vdata and vdata.evpn.transit_vni is defined %}
-{{ create_vxlan_interface(vdata.evpn.transit_vni, "tvni-"+vdata.vrfidx|string,vname,_mtu) }}
-{% endfor %}
+{%   for vname,vdata in vrfs.items() if 'evpn' in vdata and vdata.evpn.transit_vni is defined %}
+{{     create_vxlan_interface(vdata.evpn.transit_vni, "tvni-"+vdata.vrfidx|string,vname,_mtu) }}
+{%   endfor %}
 {% endif %}
 
 {% if vxlan.vlans is defined %}
