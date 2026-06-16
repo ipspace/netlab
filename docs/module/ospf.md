@@ -32,6 +32,7 @@ Supported OSPF features:
 * [Route import](routing_import) (redistribution)
 * [Default route origination](ospf-default)
 * BFD (optionally with RFC9355 strict mode)
+* Graceful Restart (OSPFv2 only)
 * VRF OSPFv2 instances (on platforms with [VRF support](module-vrf-platform-support))
 * Stub and NSSA areas (implemented in a separate [ospf.areas plugin](plugin-ospf-areas))
 
@@ -105,6 +106,15 @@ The following devices support BFD with OSPF:
 
 **Notes:**
 * Mikrotik RouterOS and VyOS support BFD on OSPF only with the system default values for interval and multiplier.
+
+The following devices support OSPF graceful restart:
+
+| Operating system | Graceful<br/>Restart |
+| ---------------- | :--: |
+| FRR              |  ✅  |
+
+**Notes:**
+* OSPF graceful restart applies to OSPFv2 instances only.
 
 ```{tip}
 See [OSPFv2](https://release.netlab.tools/_html/coverage.ospf.ospfv2) and [OSPFv3](https://release.netlab.tools/_html/coverage.ospf.ospfv3) Integration Tests Results for more details.
@@ -189,6 +199,7 @@ OSPF routing daemons support these optional OSPF interface attributes:
 * **ospf.area** -- default OSPF area (default: 0.0.0.0). Used on links/interfaces (including the loopback interface) without an explicit OSPF area.
 * **ospf.bfd** -- enable BFD for OSPF (default: False)
 * **ospf.bfd.strict** enables RFC9355 BFD Strict-Mode (default: False)
+* **ospf.gr** -- OSPF graceful restart (OSPFv2 only). A dictionary with **ospf.gr.state** (`enable`, `disable`, or `helper`) and optional **ospf.gr.grace_period** (1–1800 seconds). You can also set **ospf.gr** to one of the **state** string values.
 * **ospf.default** -- External default route origination ([more details](ospf-default))
 * **ospf.digest** -- default OSPFv2 digest authentication parameters. Applies to all interfaces without an explicit **ospf.digest** setting.
 * **ospf.import** -- [import (redistribute) routes](routing_import) into the global OSPF instance. By default, no routes are redistributed into the global OSPF instance.
@@ -203,7 +214,7 @@ You can specify most node parameters as global values (top-level topology elemen
 
 ## VRF Parameters
 
-* You can use most OSPF node parameters (for example, **area**, **digest**, **password**, or **timers**) in VRF definitions to change the VRF OSPF instance configuration.
+* You can use most OSPF node parameters (for example, **area**, **digest**, **gr**, **password**, or **timers**) in VRF definitions to change the VRF OSPF instance configuration.
 * By default, _netlab_ redistributes BGP- and connected routes into VRF OSPF instances on all network devices. You can change that on devices supporting configurable route import with the **[ospf.import](routing_import)** VRF parameter.
 * You can change the [router ID](routing_router_id) of a VRF OSPF instance with **ospf.router_id** parameter. Use this parameter when building back-to-back links between VRFs on the same node.
 * Set **ospf.active** to *True* to force a VRF to use OSPF even when no routers are attached to the VRF interfaces.

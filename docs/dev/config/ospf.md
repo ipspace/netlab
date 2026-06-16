@@ -29,6 +29,7 @@ You can use the following device **features.ospf** [device features](dev-device-
 * **timers** -- OSPF timers
 * **priority** -- DR election priority
 * **password** -- Simple OSPFv2 authentication
+* **gr** -- OSPF graceful restart (OSPFv2 only)
 
 (dev-ospf-af)=
 ## Supporting Multiple Address Families
@@ -66,6 +67,7 @@ These parameters are set in the node or VRF **ospf** dictionary:
 
 * **ospf.router_id** -- OSPF router ID (always present, should be an IPv4 address). Always set the OSPF router ID for OSPFv3 routing processes to ensure we have a usable router ID in IPv6-only deployments
 * **ospf.reference_bandwidth** -- reference bandwidth (optional)
+* **ospf.gr** -- graceful restart settings: **state** (`enable`, `disable`, or `helper`) and optional **grace_period** (integer, 1–1800 seconds)
 * **ospf.unnumbered** -- OSPF is ran on at least one unnumbered IPV4 interface (optional)
 * **ospf.area** -- default OSPF area (always present)
 

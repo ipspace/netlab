@@ -1,6 +1,13 @@
 # OSPFv2/OSPFv3 default settings and attributes
 #
 ---
+_top:
+  attributes:
+    ospf_gr_state:
+      type: str
+      valid_values: [ enable, disable, helper ]
+      _required: True
+
 area: 0.0.0.0
 transform_after: [ vlan, vrf ]
 config_after: [ vlan, dhcp, routing ]
@@ -39,6 +46,13 @@ attributes:
         cost: int
         type: { type: str, valid_values: [ e1, e2 ] }
     digest: { type: dict }
+    gr:
+      type: dict
+      _keys:
+        state: ospf_gr_state
+        grace_period: { type: int, min_value: 1, max_value: 1800 }
+      _value_to_dict:
+        state: '{value}'
     import: _r_import
     passive:
     password: { copy: global }
@@ -51,7 +65,7 @@ attributes:
   node_copy: [ area, passive, digest, password, priority, timers ]
 
   vrf_aware: [ area ]
-  vrf_copy: [ area, router_id, reference_bandwidth ]
+  vrf_copy: [ area, router_id, reference_bandwidth, gr ]
   vrf:
     active: bool
     af: { copy: global }
@@ -59,6 +73,7 @@ attributes:
     import: _r_import
     default: { copy: node }
     digest: { copy: node }
+    gr: { copy: node }
     passive: bool
     password: { copy: global }
     router_id: { copy: node }
@@ -86,6 +101,7 @@ attributes:
 features:
   default: Originate external default route
   digest: MD5 authentication
+  gr: OSPF graceful restart (restarting router and helper)
   import: Import routes from other routing protocols
   password: Cleartext authentication
   priority: Router priority

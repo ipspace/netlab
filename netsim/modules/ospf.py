@@ -139,6 +139,23 @@ def adjust_interface_timers(node: Box) -> None:
         module='ospf',
         category=log.IncorrectValue)
 
+def check_gr_support(node: Box, features: Box) -> None:
+  for (o_data,_,vrf) in _ospf.rp_data(node,'ospf'):
+    if 'gr' not in o_data or o_data.gr.get('state','enable') == 'disable':
+      continue
+
+    vrf_info = f' in VRF {vrf}' if vrf else ''
+    if not o_data.get('af',{}).get('ipv4'):
+      log.error(
+        f'OSPF graceful restart requires OSPFv2 (ipv4){vrf_info} on node {node.name}',
+        log.IncorrectValue,
+        'ospf')
+    if not features.get('ospf.gr',False):
+      log.error(
+        f'Device {node.device} does not support ospf.gr{vrf_info} on node {node.name}',
+        log.IncorrectValue,
+        'ospf')
+
 class OSPF(_Module):
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
@@ -182,6 +199,7 @@ class OSPF(_Module):
     _routing.check_vrf_protocol_support(node,'ospf','ipv4','ospfv2',topology)
     _routing.check_vrf_protocol_support(node,'ospf','ipv6','ospfv3',topology)
     _routing.check_intf_support(node,'ospf',topology)
-    
+    check_gr_support(node,features)
+
     # Collect OSPF areas from interfaces (similar to ospf.areas plugin but without extra attributes)
     collect_ospf_areas(node)

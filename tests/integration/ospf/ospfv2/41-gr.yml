@@ -1,0 +1,50 @@
+---
+message: |
+  This lab tests OSPF graceful restart configuration. The device under test runs
+  OSPFv2 with graceful restart enabled; an FRR probe runs in helper mode.
+
+defaults.sources.extra: [ ../../wait_times.yml, ../../warnings.yml ]
+module: [ ospf ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2 ]
+    module: [ ospf ]
+
+nodes:
+  dut:
+    ospf.gr:
+      state: enable
+      grace_period: 60
+  x1:
+  x2:
+    ospf.gr: helper
+
+links:
+- dut:
+  x1:
+- dut:
+  x2:
+
+validate:
+  adj_x1:
+    description: Check OSPF adjacency with X1
+    wait_msg: Waiting for OSPF adjacency process to complete
+    wait: ospfv2_adj_p2p
+    nodes: [ x1 ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  adj_x2:
+    description: Check OSPF adjacency with X2
+    wait_msg: Waiting for OSPF adjacency process to complete
+    wait: ospfv2_adj_p2p
+    nodes: [ x2 ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  gr_helper:
+    description: Check OSPF GR helper configuration on probe
+    nodes: [ x2 ]
+    show:
+      frr: ip ospf graceful-restart helper json
+    valid:
+      frr: result.helperSupport == "Enabled"
