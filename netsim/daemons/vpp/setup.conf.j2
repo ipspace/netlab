@@ -14,40 +14,42 @@ lcp lcp-auto-subint off
 
 exec /etc/vpp/clab-interfaces.vpp
 
-{% for l in interfaces %}
-{%   set host_if = 'host-' ~ l.ifname %}
-set interface state {{ host_if }} {{ 'down' if l.shutdown|default(False) else 'up' }}
+{% for l in netlab_interfaces %}
+{%   if l.type|default('') == 'loopback' %}
+create loopback interface instance {{ l.ifindex|default(0) }}
+{%   endif %}
+set interface state {{ l.ifname }} {{ 'down' if l.shutdown|default(False) else 'up' }}
 {% if l.ipv4 is defined and (l.ipv4 is string or l._parent_ipv4 is defined) %}
-set interface ip address {{ host_if }} {{ l.ipv4 if l.ipv4 is string else l._parent_ipv4 }}
+set interface ip address {{ l.ifname }} {{ l.ipv4 if l.ipv4 is string else l._parent_ipv4 }}
 {% endif %}
 {% if 'ipv6' in l %}
 {%   if l.ipv6 is string and l.ipv6|ansible.utils.ipv6 %}
-set interface ip address {{ host_if }} {{ l.ipv6 }}
+set interface ip address {{ l.ifname }} {{ l.ipv6 }}
 {%   endif %}
-{%   if role == 'router' %}
+{%   if role == 'router' and l.type|default('') != 'loopback' %}
 {%     if l.ra.disable|default(false) is true %}
-ip6 nd {{ host_if }} ra-suppress
+ip6 nd {{ l.ifname }} ra-suppress
 {%     else %}
-ip6 nd {{ host_if }} ra-interval 5
+ip6 nd {{ l.ifname }} ra-interval 5
 {%       if 'ra' in l and l.ipv6 is string %}
 {%         set nd_prefix = l.ipv6|ansible.utils.ipaddr(0) %}
 {%         set nd_no_autoconfig = 'no-autoconfig' if l.ra.slaac|default(true) is false else '' %}
 {%         set nd_off_link = 'off-link' if l.ra.onlink|default(true) is false else '' %}
 {%         if nd_no_autoconfig or nd_off_link %}
-ip6 nd {{ host_if }} prefix {{ nd_prefix }} infinite {{ nd_no_autoconfig }} {{ nd_off_link }}
+ip6 nd {{ l.ifname }} prefix {{ nd_prefix }} infinite {{ nd_no_autoconfig }} {{ nd_off_link }}
 {%         else %}
-ip6 nd {{ host_if }} prefix {{ nd_prefix }} default
+ip6 nd {{ l.ifname }} prefix {{ nd_prefix }} default
 {%         endif %}
 {%       endif %}
 {%       if l.ra.dhcp|default(false) == 'all' %}
-ip6 nd {{ host_if }} ra-managed-config-flag
+ip6 nd {{ l.ifname }} ra-managed-config-flag
 {%       endif %}
 {%       if l.ra.dhcp|default(false) == 'other' %}
-ip6 nd {{ host_if }} ra-other-config-flag
+ip6 nd {{ l.ifname }} ra-other-config-flag
 {%       endif %}
 {%     endif %}
-{%   elif role == 'host' %}
-ip6 nd address autoconfig host-{{ l.ifname }} default-route
+{%   elif role == 'host' and l.type|default('') != 'loopback' %}
+ip6 nd address autoconfig {{ l.ifname }} default-route
 {%   endif %}
 {% endif %}
 {% endfor %}
