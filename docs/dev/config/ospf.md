@@ -29,7 +29,7 @@ You can use the following device **features.ospf** [device features](dev-device-
 * **timers** -- OSPF timers
 * **priority** -- DR election priority
 * **password** -- Simple OSPFv2 authentication
-* **gr** -- OSPF graceful restart (OSPFv2 only)
+* **gr** -- OSPF graceful restart. A list of supported address families (`ipv4` for OSPFv2, `ipv6` for OSPFv3).
 
 (dev-ospf-af)=
 ## Supporting Multiple Address Families
