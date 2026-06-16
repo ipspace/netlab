@@ -43,6 +43,21 @@ router ospf6 vrf {{ ospf_vrf }}
 router ospf6
 {% endif %}
  ospf6 router-id {{ ospf_data.router_id }}
+{% if ospf_data.get('gr.state','disable') != 'disable' %}
+{%   set gr_state = ospf_data.gr.state %}
+{%   if gr_state == 'enable' %}
+{%     if ospf_data.gr.grace_period is defined %}
+ graceful-restart grace-period {{ ospf_data.gr.grace_period }}
+{%     else %}
+ graceful-restart
+{%     endif %}
+{%   elif gr_state == 'helper' %}
+ graceful-restart helper enable
+{%     if ospf_data.gr.grace_period is defined %}
+ graceful-restart helper supported-grace-time {{ ospf_data.gr.grace_period }}
+{%     endif %}
+{%   endif %}
+{% endif %}
  timers lsa min-arrival 100
  timers throttle spf 10 50 500
 {{ ospf_default.config(ospf_data,'ipv6') }}

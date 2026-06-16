@@ -140,21 +140,19 @@ def adjust_interface_timers(node: Box) -> None:
         category=log.IncorrectValue)
 
 def check_gr_support(node: Box, features: Box) -> None:
+  gr_af = features.get('ospf.gr', [])
+
   for (o_data,_,vrf) in _ospf.rp_data(node,'ospf'):
-    if 'gr' not in o_data or o_data.gr.get('state','enable') == 'disable':
+    if o_data.get('gr.state', 'disable') == 'disable':
       continue
 
     vrf_info = f' in VRF {vrf}' if vrf else ''
-    if 'ipv4' not in o_data.af:
-      log.error(
-        f'OSPF graceful restart requires OSPFv2 (ipv4){vrf_info} on node {node.name}',
-        log.IncorrectValue,
-        'ospf')
-    if not features.get('ospf.gr',False):
-      log.error(
-        f'Device {node.device} does not support ospf.gr{vrf_info} on node {node.name}',
-        log.IncorrectValue,
-        'ospf')
+    for af in o_data.af:
+      if af not in gr_af:
+        log.error(
+          f'Device {node.device} does not support ospf.gr for {af}{vrf_info} on node {node.name}',
+          log.IncorrectValue,
+          'ospf')
 
 class OSPF(_Module):
 
