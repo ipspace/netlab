@@ -118,4 +118,23 @@ RUN apt-get update && apt-get install -y -V ./*.deb; \
 
 RUN mkdir -p /var/log/vpp
 
-CMD ["/usr/bin/vpp", "-c", "/etc/vpp/startup.conf"]
+# Wait for netlab initial to configure the host netns, then start VPP.
+RUN cat >/entrypoint.sh <<'ENTRYPOINT'
+#!/bin/bash
+set -e
+
+marker="${NETLAB_CONFIG_DONE:-/var/run/netlab-config-done}"
+timeout="${NETLAB_CONFIG_WAIT:-120}"
+
+while [ ! -f "$marker" ] && [ "$timeout" -gt 0 ]; do
+  sleep 1
+  timeout=$((timeout - 1))
+done
+
+[ -f "$marker" ] || { echo "vpp: timeout waiting for ${marker}" >&2; exit 1; }
+
+exec /usr/bin/vpp -c /etc/vpp/startup.conf
+ENTRYPOINT
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
