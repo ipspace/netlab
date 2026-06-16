@@ -333,7 +333,6 @@ Netlab enables VRRPv3 by default on Dell OS10, overriding any platform defaults.
 
 * You must build the VPP container image with the **netlab clab build vpp** command. See [](build-vpp) for version options.
 * VPP is available only on the [containerlab](labs/clab.md) provider.
-* VPP nodes support the **router** (default) and **bridge** roles but not the **host** role. See [](platform-host) for the list of devices that can act as IP hosts.
 
 (caveats-exos)=
 ## Extreme Networks EXOS
