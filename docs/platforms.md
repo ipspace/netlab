@@ -84,7 +84,7 @@ Most devices behave as routers (or layer-3 switches); the following devices can 
 |-----------------------|:--:|:--:| :--:|
 | Arista EOS            | ✅ | ✅ | ✅ |
 | BIRD                  | ✅ | ✅ | ❌  |
-| VPP                   | ✅ | ✅ | ✅ |
+| VPP                   | ✅ | ❌  | ✅ |
 | Cisco IOS/IOS XE[^18v]| ✅ | ✅ | ✅ |
 | dnsmasq               | ❌  | ✅ | ❌  |
 | FRRouting             | ✅ | ✅ | ✅ |
