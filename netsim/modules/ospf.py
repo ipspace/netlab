@@ -145,7 +145,7 @@ def check_gr_support(node: Box, features: Box) -> None:
       continue
 
     vrf_info = f' in VRF {vrf}' if vrf else ''
-    if not o_data.get('af',{}).get('ipv4'):
+    if 'ipv4' not in o_data.af:
       log.error(
         f'OSPF graceful restart requires OSPFv2 (ipv4){vrf_info} on node {node.name}',
         log.IncorrectValue,
