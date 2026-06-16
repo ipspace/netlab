@@ -552,7 +552,7 @@ def cleanup_non_ansible_config(n: Box) -> None:
       # ... also, build netlab_ansible_skip_module list because the module will be configured
       # ... in another way
       #
-      if kn == n.device or kn in n.get('module',[]) or kn in n.get('config',[]) or kn == 'initial':
+      if kn == n.device or kn in n.get('module',[]) or kn in n.get('config',[]) or kn == 'initial' or kn.endswith('.conf'):
         data.append_to_list(n,'netlab_ansible_skip_module',kn)
       else:
         n[kw].pop(k,None)                                     # Config template not used, remove it
