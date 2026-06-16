@@ -2,28 +2,18 @@
    BGP neighbor definition
 #}
 {% macro neighbor(n,ip,bgp,instance) %}
-
 {%   set neigh_id = ip|replace('.', '_')|replace(':', '_') %}
 /routing/bgp/connection add template={{ instance }} instance={{ instance }} name={{ neigh_id }} remote.address={{ ip }} remote.as={{ n.as }} comment="{{ n.name }}" local.role=ebgp
-/routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] router-id=bgp_router_id
-
+/routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] afi={{ 'ipv6' if ':' in ip else 'ip' }}
 {%   if n.type == 'ibgp' %}
 /routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] local.role=ibgp local.address=loopback
-
-{%     if n.rr|default('') %}
-/routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] local.role=ibgp-rr-client
-{%     endif %}
-
 {%     if bgp.rr|default('') and not n.rr|default('') %}
 /routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] local.role=ibgp-rr
 {%     endif %}
-
 {%   endif %}
-
-{%    if bgp.next_hop_self is defined and bgp.next_hop_self %}
+{%   if bgp.next_hop_self is defined and bgp.next_hop_self %}
 /routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] nexthop-choice=force-self
-{%    endif %}
-
+{%   endif %}
 {%- endmacro %}
 
 {#
@@ -32,5 +22,5 @@
 {% macro bgp_network(af,pfx) %}
 # BGP Network now is controlled by simple ACL
 {%   set kw = af.replace('v4','') %}
-/{{ kw }}/firewall/address-list/ add list=bgp-networks address={{ pfx|ansible.utils.ipaddr('0') }}
+/{{ kw }}/firewall/address-list add list=bgp-networks address={{ pfx|ansible.utils.ipaddr('0') }}
 {%- endmacro %}
