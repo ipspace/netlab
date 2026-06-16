@@ -234,7 +234,7 @@ _netlab_ uses Ansible playbooks and device-specific task lists to deploy device 
 |--------|----------|---------------------------------|
 | bird   | clab     | **bash** scripts or daemon configuration files[^BBS] |
 | dnsmasq | clab    | **bash** scripts or daemon configuration files[^DBS] |
-| vpp    | clab     | host netns **bash** scripts and daemon configuration files[^VPPC] |
+| vpp    | clab     | **bash** scripts and daemon configuration files[^VPPC] |
 | FRRouting    | clab     | **bash** or **vtysh** scripts[^FRRBV] |
 | Junos cRPD | clab | **bash** scripts[^cRBS] |
 | KinD   | clab     | **bash** scripts copied into and executed in containers |
@@ -248,7 +248,7 @@ _netlab_ uses Ansible playbooks and device-specific task lists to deploy device 
 
 [^DBS]: Initial device configurations, VLANs, static routes, and link aggregation are configured with **bash** scripts. All other features are configured with the dnsmasq configuration files.
 
-[^VPPC]: Linux interface setup runs in the container network namespace on the host. VPP **startup.conf** and **setup.conf** are deployed as daemon configuration files. The container waits for **netlab initial** to finish before starting VPP.
+[^VPPC]: Initial device configuration is deployed with **bash** scripts executed within the container. VPP **startup.conf** and **setup.conf** are deployed as daemon configuration files. The container waits for **netlab initial** to finish before starting VPP.
 
 [^cRBS]: The configuration deployment uses a custom **bash** script that calls **cli** command to execute **load merge** followed by **commit**. The custom script is used as the *shebang* interpreter for the configuration snippets.
 
