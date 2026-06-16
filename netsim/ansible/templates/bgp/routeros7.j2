@@ -13,6 +13,18 @@
 /routing/bgp/instance set [/routing/bgp/instance find name=main] cluster-id={{ bgp.rr_cluster_id }}
 {% endif %}
 
+{#
+  Add route-map for next-hop-self
+#}
+{% for n in bgp.neighbors %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{%     if n.type == 'ebgp' %}
+/routing/filter/rule add chain=rr-out-bgp rule="if ( bgp-input-remote-addr == {{n[af]}} ) { set gw {{bgp.router_id}}; accept; }"
+{%     endif %}
+{%   endfor %}
+{% endfor %}
+/routing/filter/rule add chain=rr-out-bgp rule="accept;"
+
 {% for n in bgp.neighbors %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
 {{     bgpcfg.neighbor(n,n[af],bgp,'main') }}
