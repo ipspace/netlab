@@ -1,19 +1,30 @@
 #
-# Rendered as /etc/vpp/setup.conf
+# bound to /etc/vpp/setup.conf
 #
 
+mpls table add 0
+set ip neighbor-config ip4 age 900
+set ip neighbor-config ip6 age 900
+lcp default netns dataplane
+lcp lcp-sync on
+# lcp lcp-sync-unnumbered on  # not in VPP 26.02-release
+lcp param del-static-on-link-down on
+lcp param del-dynamic-on-link-down on
+lcp lcp-auto-subint off
+
+exec /etc/vpp/clab-interfaces.vpp
+
 {% for l in interfaces %}
-create host-interface name {{ l.ifname }}
-set interface state host-{{ l.ifname }} up
+{%   set host_if = 'host-' ~ l.ifname %}
+set interface state {{ host_if }} {{ 'down' if l.shutdown|default(False) else 'up' }}
 {% if l.ipv4 is defined and (l.ipv4 is string or l._parent_ipv4 is defined) %}
-set interface ip address host-{{ l.ifname }} {{ l.ipv4 if l.ipv4 is string else l._parent_ipv4 }}
+set interface ip address {{ host_if }} {{ l.ipv4 if l.ipv4 is string else l._parent_ipv4 }}
 {% endif %}
 {% if 'ipv6' in l %}
 {%   if l.ipv6 is string and l.ipv6|ansible.utils.ipv6 %}
-set interface ip address host-{{ l.ifname }} {{ l.ipv6 }}
+set interface ip address {{ host_if }} {{ l.ipv6 }}
 {%   endif %}
 {%   if role == 'router' %}
-{%     set host_if = 'host-' ~ l.ifname %}
 {%     if l.ra.disable|default(false) is true %}
 ip6 nd {{ host_if }} ra-suppress
 {%     else %}

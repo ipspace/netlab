@@ -1,8 +1,12 @@
 unix {
   nodaemon
   nosyslog
+  
+  full-coredump
   cli-listen /run/vpp/cli.sock
-  gid vpp
+  cli-prompt vpp-clab#
+  cli-no-pager
+  poll-sleep-usec 100
   startup-config /etc/vpp/setup.conf
 }
 
@@ -10,19 +14,24 @@ api-trace {
   on
 }
 
-#
-# TODO for future FRR integration
-#
-# plugins {
-#     plugin default { enable }
-#     plugin af_packet_plugin.so { enable }
-#     plugin linux_nl_plugin.so { enable }
-#     plugin linux_cp_plugin.so { enable }
-# }
-# 
-# linux-cp {
-#     lcp-sync
-#     lcp-auto-subint
-# Forces the LCP TAP interfaces into an isolated namespace
-#     namespace dataplane 
-# }
+plugins {
+  plugin default { disable }
+  plugin acl_plugin.so { enable }
+  plugin af_packet_plugin.so { enable }
+  plugin geneve_plugin.so { enable }
+  plugin gre_plugin.so { enable }
+  plugin ipip_plugin.so { enable }
+  plugin linux_cp_plugin.so { enable }
+  plugin linux_nl_plugin.so { enable }
+  plugin sflow_plugin.so { enable }
+  plugin tap_plugin.so { enable }
+  plugin vxlan_plugin.so { enable }
+}
+
+linux-cp {
+  default netns dataplane
+  lcp-sync
+  lcp-auto-subint
+  del-static-on-link-down
+  del-dynamic-on-link-down
+}

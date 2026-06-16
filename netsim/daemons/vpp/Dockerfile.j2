@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 		ca-certificates \
 		curl \
 		gnupg \
+		iproute2 \
 	&& rm -rf /var/lib/apt/lists/*
 
 ARG REPO
@@ -119,7 +120,7 @@ RUN apt-get update && apt-get install -y -V ./*.deb; \
 RUN mkdir -p /var/log/vpp
 
 # Wait for netlab initial to configure the host netns, then start VPP.
-RUN cat >/entrypoint.sh <<'ENTRYPOINT'
+RUN cat >/entrypoint.sh <<'ENTRYPOINT_SH_EOF'
 #!/bin/bash
 set -e
 
@@ -134,7 +135,8 @@ done
 [ -f "$marker" ] || { echo "vpp: timeout waiting for ${marker}" >&2; exit 1; }
 
 exec /usr/bin/vpp -c /etc/vpp/startup.conf
-ENTRYPOINT
+ENTRYPOINT_SH_EOF
+
 RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
