@@ -13,23 +13,38 @@
 /routing/bgp/instance set [/routing/bgp/instance find name=main] cluster-id={{ bgp.rr_cluster_id }}
 {% endif %}
 
+
 {#
   Add route-map for next-hop-self
 #}
 {% for n in bgp.neighbors %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
 {%     if n.type == 'ebgp' %}
-/routing/filter/rule add chain=rr-out-bgp rule="if ( bgp-input-remote-addr == {{n[af]}} ) { set gw {{bgp.router_id}}; accept; }"
+/routing/filter/rule add chain=filter_rr_self_ebgp rule="if ( bgp-input-remote-addr == {{n[af]}} ) { set gw {{bgp.router_id}};}"
 {%     endif %}
 {%   endfor %}
 {% endfor %}
-/routing/filter/rule add chain=rr-out-bgp rule="accept;"
+/routing/filter/rule add chain=filter_rr_self_ebgp rule="return;"
+
+{#
+  Add route-maps for excluding different community types
+#}
+/routing/filter/rule/add chain=rm_extended_communities rule="delete bgp-ext-communities rt; delete bgp-ext-communities soo; delete bgp-ext-communities other;"
+/routing/filter/rule/add chain=rm_extended_communities rule="return;"
+/routing/filter/rule/add chain=rm_large_communities rule="delete bgp-lrg-communities all;"
+/routing/filter/rule/add chain=rm_large_communities rule="return;"
+/routing/filter/rule/add chain=rm_standard_communities rule="delete bgp-std-communities other; delete bgp-ext-communities wk;"
+/routing/filter/rule/add chain=rm_standard_communities rule="jump rm_large_communities;"
+/routing/filter/rule/add chain=rm_standard_communities rule="return;"
+
 
 {% for n in bgp.neighbors %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
 {{     bgpcfg.neighbor(n,n[af],bgp,'main') }}
+{{     bgpcfg.neighbor_community(n,n[af],bgp) }}
 {%   endfor %}
 {% endfor %}
+
 
 {# Set networks to announce #}
 {% for af in ['ipv4','ipv6'] %}

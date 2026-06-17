@@ -5,19 +5,40 @@
 {%   set neigh_id = ip|replace('.', '_')|replace(':', '_') %}
 /routing/bgp/connection add template={{ instance }} instance={{ instance }} name={{ neigh_id }} remote.address={{ ip }} remote.as={{ n.as }} comment="{{ n.name }}" local.role=ebgp
 /routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] afi={{ 'ipv6' if ':' in ip else 'ip' }}
+/routing/filter/rule add chain=filter_{{neigh_id}} rule="accept;"
 {%   if n.type == 'ibgp' %}
-/routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] local.role=ibgp local.address=loopback
 {%     if bgp.rr|default('') and not n.rr|default('') %}
 /routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] local.role=ibgp-rr
+{%     else %}
+/routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] local.role=ibgp local.address=loopback
 {%     endif %}
-{%   endif %}
-{%   if bgp.next_hop_self is defined and bgp.next_hop_self %}
+{%     if bgp.next_hop_self is defined and bgp.next_hop_self %}
 {# cannot use force-nexthop-self as it overrides any filters
 /routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] nexthop-choice=force-self
 #}
-/routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] output.filter-chain=rr-out-bgp
+/routing/filter/rule add chain=filter_{{ neigh_id }}] rule="jump filter_rr_self_ebgp;" place-before=0
+/routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] output.filter-chain=filter_{{neigh_id}}
+{%     endif %}
 {%   endif %}
 {%- endmacro %}
+
+
+
+{#
+   BGP community propagation configuration
+#}
+{% macro neighbor_community(n,ip,bgp) %}
+{%   set neigh_id = ip|replace('.', '_')|replace(':', '_') %}
+{% if n.type in bgp.community|default({}) %}
+{%   set c_list = bgp.community[n.type] %}
+{# delete communities that should not be advertised #}
+{% set all_c_types = ['standard', 'large', 'extended'] %}
+{% set excl_list = all_c_types | reject('in', c_list) | list %}
+{%     for c_type in excl_list %}
+/routing/filter/rule/add chain=filter_{{neigh_id}} rule="jump rm_{{c_type}}_communities;" place-before=0
+{%     endfor %}
+{% endif %}
+{%- endmacro -%}
 
 {#
    BGP network statement
