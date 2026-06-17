@@ -150,7 +150,7 @@ def check_gr_support(node: Box, features: Box) -> None:
     for af in o_data.af:
       if af not in gr_af:
         log.error(
-          f'Device {node.device} does not support ospf.gr for {af}{vrf_info} on node {node.name}',
+          f'Device {node.device} does not support OSPF Graceful Restart for {af} (node {node.name}{vrf_info})',
           log.IncorrectValue,
           'ospf')
 
