@@ -25,7 +25,11 @@ or [1.8.4-post2](https://github.com/ipspace/netlab/releases/tag/release_1.8.4-po
 If you encounter bugs using release 1.7.x, please downgrade to [1.6.4](https://github.com/ipspace/netlab/releases/tag/release_1.6.4) and [open a GitHub issue](https://github.com/ipspace/netlab/issues).
 -->
 
-## An Overview of CLI Commands
+## Common netlab CLI Commands
+
+This section introduces common **netlab** commands. You'll find more details and the complete list of supported commands in the [_netlab_ command reference](https://netlab.tools/netlab/cli/).
+
+### Starting and Stopping the Lab
 
 **netlab up**
 : Uses **[netlab create](https://netlab.tools/netlab/create/)** to create configuration files, starts the virtual lab, and uses **[netlab initial](https://netlab.tools/netlab/initial/)** to deploy device configurations, including IP addressing, LLDP, OSPF, BGP, IS-IS, EIGRP, VRRP, VLANs, VRFs, MPLS, SR-MPLS, VXLAN, EVPN, and SRv6. [More details](https://netlab.tools/netlab/up/)
@@ -36,11 +40,18 @@ If you encounter bugs using release 1.7.x, please downgrade to [1.6.4](https://g
 **netlab restart**
 : Restart and/or reconfigure the virtual lab. [More details](https://netlab.tools/netlab/restart/)
 
+### Managing Device Configurations
+
 **netlab config**
 : [Applies additional Jinja2 configuration templates](https://netlab.tools/netlab/config/) to network devices.
 
 **netlab collect**
 : Using Ansible fact gathering or other device-specific Ansible modules, [collects device configurations](https://netlab.tools/netlab/collect/) and saves them in the specified directory (default: **config**).
+
+**netlab create**
+: Creates device configurations (in `node_files` directory), virtualization-related configurations, and network automation inventory. You can also [use this command](https://netlab.tools/netlab/create/) to inspect transformed data and create graphs or reports.
+
+### Working with Lab Devices
 
 **netlab connect**
 : Use SSH or **docker exec** to [connect to a lab device](https://netlab.tools/netlab/connect/) using device names, management network IP addresses (**ansible_host**), SSH port, and username/passwords specified in lab topology or *netlab* device defaults.
@@ -48,11 +59,18 @@ If you encounter bugs using release 1.7.x, please downgrade to [1.6.4](https://g
 **netlab exec**
 : Use SSH or **docker exec** to [execute a command on one or more network devices](https://netlab.tools/netlab/exec/) using device names, management network IP addresses (**ansible_host**), SSH port, and username/passwords specified in lab topology or *netlab* device defaults.
 
+**netlab status**
+: Displays lab- and device status. [More details](https://netlab.tools/netlab/status/)
+
+### Troubleshooting
+
 **netlab capture**
 : [Perform packet capture](https://netlab.tools/netlab/capture/) on VM- and container interfaces
 
 **netlab tc**
 : Disable, enable, display, or modify [link impairment](https://netlab.tools/links/#links-netem) parameters
+
+### Reports and Graphs
 
 **netlab report**
 : Creates a report from the transformed lab topology data.  [More details](https://netlab.tools/netlab/report/)
