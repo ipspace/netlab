@@ -144,23 +144,18 @@ def check_gr(node: Box, features: Box) -> None:
   Check device support for OSPF Graceful Restart when restart or helper mode is configured.
   """
   gr_af = features.get('ospf.gr', [])
+  if len(gr_af) == 2:                                 # Both IPv4 and IPv6 are supported -> ok
+    return
 
   for (o_data,_,vrf) in _ospf.rp_data(node,'ospf'):
     if 'gr' not in o_data:
       continue
 
-    restart = o_data.gr.get('restart',False)
-    helper = o_data.gr.get('helper',False)
-    restart_configured = restart is True or 'restart.grace_period' in o_data.gr
-    helper_configured = helper is True or 'helper.grace_period' in o_data.gr
-    if not restart_configured and not helper_configured:
-      continue
-
     vrf_info = f' in VRF {vrf}' if vrf else ''
 
     for af in o_data.af:
-      if af not in gr_af:
-        log.error(
+      if af not in gr_af:                             # Technically it could be gr.restart: False
+        log.error(                                    # ... but we still call foul on that
           f'Device {node.device} does not support OSPF Graceful Restart for {af} (node {node.name}{vrf_info})',
           log.IncorrectValue,
           'ospf')
