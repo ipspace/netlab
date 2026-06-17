@@ -1,7 +1,7 @@
 ---
 message: |
-  This lab tests OSPF graceful restart helper behavior. The device under test
-  should retain the FRR probe loopback route during a planned OSPF restart.
+  This lab tests OSPFv3 graceful restart helper behavior. The device under test
+  should retain the FRR probe loopback route during a planned OSPFv3 restart.
 
 defaults.sources.extra: [ ../../wait_times.yml, ../../warnings.yml ]
 module: [ ospf ]
@@ -33,27 +33,27 @@ links:
 
 validate:
   adj:
-    description: Check OSPF adjacency with X1
-    wait_msg: Waiting for OSPF adjacency process to complete
-    wait: ospfv2_adj_p2p
+    description: Check OSPFv3 adjacency with X1
+    wait_msg: Waiting for OSPFv3 adjacency process to complete
+    wait: ospfv3_adj_p2p
     nodes: [ x1 ]
-    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+    plugin: ospf6_neighbor(nodes.dut.ospf.router_id)
   route_before:
     description: Check X1 loopback route on DUT
     wait_msg: Waiting for SPF to complete
-    wait: ospfv2_spf
+    wait: ospfv3_spf
     nodes: [ dut ]
-    plugin: ospf_prefix(nodes.x1.loopback.ipv4)
+    plugin: ospf6_prefix(nodes.x1.loopback.ipv6)
   gr_stop:
-    description: Start planned OSPF graceful restart on X1
+    description: Start planned OSPFv3 graceful restart on X1
     nodes: [ x1 ]
     devices: [ frr ]
     exec: >-
-      vtysh -c "graceful-restart prepare ip ospf" && kill -STOP $(pidof ospfd)
+      vtysh -c "graceful-restart prepare ipv6 ospf" && kill -STOP $(pidof ospf6d)
   wait_gr:
     description: Wait for the graceful restart to start
     wait: 5
   route_during_gr:
     description: Check X1 loopback route on DUT during graceful restart
     nodes: [ dut ]
-    plugin: ospf_prefix(nodes.x1.loopback.ipv4)
+    plugin: ospf6_prefix(nodes.x1.loopback.ipv6)

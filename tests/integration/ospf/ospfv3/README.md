@@ -16,6 +16,7 @@ You can run the following tests:
 * `03-cost.yml` -- Tests OSPFv3 interface costs
 * `04-passive.yml` -- Tests passive and stub OSPFv3 interfaces
 * `05-unnumbered.yml` -- Tests OSPFv3 on IPv6 LLA interfaces.
+* `41-gr.yml` -- Tests OSPFv3 graceful restart helper route retention
 
 Each test includes a validation suite that can be run with the `netlab validate` command.
 
