@@ -1,0 +1,23 @@
+{% for l in interfaces|default([]) if bfd|default(False) or l.bfd|default(False) %}
+{%   set disable_bfd = l.bfd is defined and not l.bfd %}
+{%   if not disable_bfd %}
+/routing/bfd/configuration add interfaces={{ l.ifname }} min-tx {{ 
+   link_bfd.min_tx|default(bfd.min_tx)|default(500) }}ms min-rx {{ 
+   link_bfd.min_rx|default(bfd.min_rx)|default(500) }}ms multiplier {{
+   link_bfd.multiplier|default(bfd.multiplier)|default(3)
+   }}
+{%   else %}
+ /routing/bfd/configuration add interfaces={{ l.ifname }} forbid-bfd=true
+{%   endif %}
+{% endfor %}
+
+{#
+To be able to filter multi-hop sessions, addresses or address-list properties can be used to match the destination, as well as the appropriate VRF, if
+a session is not running in the "main" VRF.
+/ip firewall address-list
+add address=10.155.255.183 list=bgp_allow_bfd
+add address=10.155.255.217 list=bgp_allow_bfd
+/routing bfd configuration
+add addresses=111.111.0.0/16 vrf=vrf1
+add address-list=bgp_allow_bfd
+#}
