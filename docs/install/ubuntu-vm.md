@@ -7,19 +7,19 @@ The easiest way to set up your lab environment is to create a Ubuntu virtual mac
 
 ![Running Ubuntu VM on a desktop OS](ubuntu-on-desktop-os.png)
 
-[^1]: The *libvirt* Vagrant plugin starts all network devices in parallel, resulting in a much faster lab setup than Vagrant with Virtualbox.
+[^1]: The *libvirt* Vagrant plugin starts all network devices in parallel.
 
 [^2]: See also the [tutorial created by Leo Kirchner](https://blog.kirchne.red/posts/netsim-tools-quickstart/).
 
 ```{warning}
 Running *‌libvirt* within an Ubuntu VM requires *‌nested virtualization*. You don't need nested virtualization to run Docker containers within a Ubuntu VM.
 
-Nested virtualization was available in VMware Workstation/Fusion for years and was recently added to VirtualBox. While VMware products perform flawlessly, we experienced unacceptable performance with VirtualBox nested virtualization on some Intel CPUs.
+Nested virtualization was available in VMware Workstation/Fusion for years and perform flawlessly.
 ```
 
 [Canonical Multipass](https://multipass.run/) is probably the easiest way to start a Ubuntu VM on your laptop if you don't need nested virtualization. Create an instance with [as much RAM and as many CPU cores](https://multipass.run/docs/create-an-instance#heading--create-an-instance-with-custom-cpu-number-disk-and-ram) as you can afford, and [install the necessary software on it](ubuntu-vm-manual).
 
-You can also use [Vagrant](ubuntu-vm-vagrant) or [create the virtual machine yourself](ubuntu-vm-manual) (using, for example, VirtualBox or VMware GUI)
+You can also use [Vagrant](ubuntu-vm-vagrant) or [create the virtual machine yourself](ubuntu-vm-manual) (using, for example VMware GUI)
 
 (ubuntu-vm-vagrant)=
 ## Creating Ubuntu VM with Vagrant
@@ -33,7 +33,7 @@ You can use Vagrant on your computer to set up an Ubuntu VM. Vagrant will automa
 
 Installation steps:
 
-* Install [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or VMware Fusion/Workstation
+* Install VMware Fusion/Workstation
 * Install [Vagrant](https://www.vagrantup.com/docs/installation)
 * Install [Vagrant VMware provider](https://www.vagrantup.com/docs/providers/vmware) if you're using VMware Workstation/Fusion.
 * Create an empty directory. In that directory, create a **Vagrantfile** with the following content[^BB]. Change the **memory**/**memsize** or **cpus**/**numvcpus** settings to fit your hardware.
@@ -43,12 +43,6 @@ Installation steps:
 ```
 Vagrant.configure("2") do |config|
   config.vm.box = "bento/ubuntu-24.04"
-
-  config.vm.provider "virtualbox" do |vb|
-    vb.memory = "8192"
-    vb.cpus = 4
-    vb.customize ['modifyvm', :id, '--nested-hw-virt', 'on']
-  end
 
   config.vm.provider "vmware_fusion" do |v|
     v.vmx["memsize"] = 8192

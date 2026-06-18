@@ -274,7 +274,6 @@ See also [common IOS XR caveats](caveats-iosxr)
 Cumulus Linux 4.x is retired. While there are no plans to remove it from _netlab_, we will not add new features or run integration tests.
 ```
 
-* The Cumulus VX 4.4.0 Vagrant box for VirtualBox is broken. *netlab* is using Cumulus VX 4.3.0 with *virtualbox* virtualization provider.
 * The Cumulus VX 4.x uses Python version 3.7, which recent versions of Ansible refuse to work with. We have to use the **raw** module to communicate with Cumulus VX 4.x virtual machines.
 * Cumulus VX 4.x uses an ancient versions of FRR (7.5; current release is 10.2) with numerous issues or. For example, it silently ignores OSPF passive interfaces inside VRFs
 

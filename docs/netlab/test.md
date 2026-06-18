@@ -6,12 +6,12 @@
 ## Usage
 
 ```text
-usage: netlab test [-h] [-w WORKDIR] [-v] {clab,virtualbox,grpc,libvirt}
+usage: netlab test [-h] [-w WORKDIR] [-v] {clab,grpc,libvirt}
 
 Test virtual lab installation
 
 positional arguments:
-  {clab,virtualbox,grpc,libvirt}
+  {clab,grpc,libvirt}
                         Run tests for the specified provider/environment
 
 options:

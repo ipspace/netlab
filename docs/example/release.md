@@ -15,11 +15,11 @@ For example, these are the container/box names _netlab_ release 1.9.0 uses for A
 % netlab show images -d eos
 eos image names by virtualization provider
 
-┏━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
-┃ device ┃ clab         ┃ libvirt     ┃ virtualbox  ┃
-┡━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
-│ eos    │ ceos:4.32.1F │ arista/veos │ arista/veos │
-└────────┴──────────────┴─────────────┴─────────────┘
+┏━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
+┃ device ┃ clab         ┃ libvirt     ┃
+┡━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
+│ eos    │ ceos:4.32.1F │ arista/veos │
+└────────┴──────────────┴─────────────┘
 ```
 
 Assuming you have multiple `arista/veos` Vagrant boxes installed, Vagrant uses the one with the highest version number.  For example, with the following Vagrant boxes installed on a server, Vagrant uses `arista/veos:4.31.2F`.

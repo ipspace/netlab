@@ -14,13 +14,13 @@ Here's what you have to do:
 ## Adding a Box Name to Topology Defaults
 
 * Find your device settings within `netsim/devices` directory
-* Add a new key *provider* key for the target device (valid keys are `libvirt`, `virtualbox` or `clab`). Add **image** parameter under the *provider* key. Its value is the expected Vagrant box name or Docker container.
+* Add a new key *provider* key for the target device (valid keys are `libvirt` or `clab`). Add **image** parameter under the *provider* key. Its value is the expected Vagrant box name or Docker container.
 
 Example (`routeros.yml`):
 
 ```
 interface_name: ether%d
-virtualbox:
+clab:
   image: mikrotik/chr
 ```
 
@@ -54,8 +54,6 @@ Example: Change Ansible connection for a Cumulus VX container:
 interface_name: swp{ifindex}
 libvirt:
   image: CumulusCommunity/cumulus-vx:4.4.0
-virtualbox:
-  image: CumulusCommunity/cumulus-vx:4.3.0
 group_vars:
   ansible_user: vagrant
   ansible_ssh_pass: vagrant
@@ -99,8 +97,6 @@ description: Arista vEOS
 mgmt_if: Management1
 loopback_interface_name: Loopback{ifindex}
 libvirt:
-  image: arista/veos
-virtualbox:
   image: arista/veos
 clab:
   image: ceos:4.31.2F

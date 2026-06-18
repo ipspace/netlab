@@ -100,7 +100,7 @@ Its printout looks similar to this one:
 
 After creating the configuration files, **netlab up** creates the virtual networking infrastructure (if needed) and starts the lab with **vagrant up** or **sudo containerlab deploy -t clab.yml**.
 
-You can expect to see a printout similar to the one below if you're using VirtualBox:
+You can expect to see a printout similar to the one below if you're using containerlab:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐

@@ -302,11 +302,11 @@ options:
 $ netlab show images -d eos
 eos image names by virtualization provider
 
-┏━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
-┃ device ┃ clab         ┃ libvirt     ┃ virtualbox  ┃
-┡━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
-│ eos    │ ceos:4.33.1F │ arista/veos │ arista/veos │
-└────────┴──────────────┴─────────────┴─────────────┘
+┏━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
+┃ device ┃ clab         ┃ libvirt     ┃
+┡━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
+│ eos    │ ceos:4.33.1F │ arista/veos │
+└────────┴──────────────┴─────────────┘
 ```
 
 * Display the container name for Cisco IOL:
@@ -329,7 +329,6 @@ $ netlab show images -d nxos --format yaml
 nxos:
   clab: vrnetlab/vr-n9kv:9.3.8
   libvirt: cisco/nexus9300v
-  virtualbox: cisco/nexus9300v
 ```
 
 (netlab-show-modules)=
@@ -885,7 +884,6 @@ Supported virtualization providers
 | clab       | containerlab with Docker | OK     |
 | external   | External devices         | OK     |
 | libvirt    | Vagrant with libvirt/KVM | OK     |
-| virtualbox | Vagrant with Virtualbox  | N/A    |
 +------------+--------------------------+--------+
 ```
 
@@ -905,12 +903,13 @@ Executing: virsh net-list
 Status: OK
 ```
 
-* Display the state of a failed/missing provider (Virtualbox was not installed on the host where the command was executed):
+* Display the state of a failed/missing provider ( clab not installed on the host where the command was executed):
 
 ```text
-$ netlab show providers -p virtualbox
-Status of virtualbox (Vagrant with Virtualbox):
+$ netlab show providers -p clab
+Status of clab (Container lab):
 
+##############
 Executing: VBoxManage -h
 Error executing VBoxManage -h:
   [Errno 2] No such file or directory: 'VBoxManage'

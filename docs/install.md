@@ -1,6 +1,6 @@
 # Installation
 
-*netlab* is a Python3 package[^NSL] that uses Python 3.10[^P310] or later. We recommend using _netlab_ on Linux (we're doing all our tests on Ubuntu), including Windows Subsystem for Linux or [Multipass on macOS](https://blog.ipspace.net/2024/03/netlab-bgp-apple-silicon/). While you might be able to get _netlab_ to run natively on Windows or macOS with VirtualBox, we no longer support that.
+*netlab* is a Python3 package[^NSL] that uses Python 3.10[^P310] or later. We recommend using _netlab_ on Linux (we're doing all our tests on Ubuntu), including Windows Subsystem for Linux or [Multipass on macOS](https://blog.ipspace.net/2024/03/netlab-bgp-apple-silicon/).
 
 [^P310]: Python 3.10 is the minimum supported version because it's the default Python distribution on Ubuntu 22.04.
 
@@ -13,7 +13,7 @@ _netlab_ is a high-level abstraction and orchestration tool that relies on other
 * VM/container orchestration: Vagrant or containerlab
 * Configuration deployment: Ansible 2.9.1[^ANS] or later
 
-[^NVB]: VirtualBox virtualization provider is still available, but no longer developed or supported.
+[^NVB]: VirtualBox virtualization provider has been removed as of XXXXX.
 
 [^ANS]: Ansible 2.9 has been tested with Arista EOS, Cisco IOS/IOL/IOS-XE, Cisco NX-OS, Junos, Cumulus Linux, FRR, generic Linux devices, and VyOS. Our [integration tests](https://release.netlab.tools/) use recent Ansible versions. Some devices might require additional Ansible collections; see [caveats](caveats.md) for further details.
 
@@ -26,7 +26,7 @@ If you already have an environment that can be used with *netlab*, please procee
 
 We have tested *netlab* with [libvirt/KVM and Vagrant](labs/libvirt.md) on Ubuntu and Fedora and with [Docker and containerlab](labs/clab.md) on Ubuntu[^VBH]. Both combinations should work on other Linux distributions. You can also run *netlab* in a [Linux virtual machine](install/ubuntu-vm.md) or a [Ubuntu instance in a public cloud](install/cloud.md).
 
-[^VBH]: Historically, netlab also ran on [VirtualBox and Vagrant](labs/virtualbox.md) on macOS with Intel silicon. That combination is no longer supported.
+[^VBH]: Historically, netlab also ran on [VirtualBox and Vagrant] on macOS with Intel silicon. That combination is no longer supported.
 
 When selecting the virtualization environment, consider the following:
 
@@ -34,7 +34,7 @@ When selecting the virtualization environment, consider the following:
 * **Vagrant provider for libvirt** supports parallel VM provisioning, resulting in pretty fast lab creation. Unfortunately, most vendors don't offer virtual devices packaged as libvirt Vagrant boxes, so you must build your boxes manually. The **[netlab libvirt package](netlab-libvirt-package)** usually does 90% of the work for you.
 * **Containers** provisioned with containerlab start much faster than virtual machines, but you can get only a few network devices in native container format (Arista cEOS, FRR, Nokia SR Linux, VyOS). On the other hand, the [**vrnetlab** fork by Roman Dodin](https://github.com/srl-labs/vrnetlab) can build containers running virtual machines for numerous network devices.
 
-We no longer recommend or support **VirtualBox**-based solutions. It is no longer needed on Windows; Windows Subsystem for Linux is a much better option. Apple stopped shipping x86-based hardware years ago, and no major vendor is shipping ARM-based VM images for network devices.
+Support of **VirtualBox**-based solutions has been removed. It is no longer needed on Windows; Windows Subsystem for Linux is a much better option. Apple stopped shipping x86-based hardware years ago, and no major vendor is shipping ARM-based VM images for network devices.
 
 (lab)=
 ## Creating the Lab Environment
@@ -81,4 +81,3 @@ If you want to get the latest development code or if you want to participate in 
 
 * [](lab-clab)
 * [](lab-libvirt)
-* [](lab-virtualbox) (no longer supported or maintained)

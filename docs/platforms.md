@@ -102,7 +102,6 @@ Most devices behave as routers (or layer-3 switches); the following devices can 
 **netlab create** can generate configuration files for these [virtualization providers](providers.md):
 
 * [vagrant-libvirt](https://github.com/vagrant-libvirt/vagrant-libvirt), including support for *veryisolated* private networks and UDP point-to-point tunnels.
-* [Vagrant VirtualBox provider](https://www.vagrantup.com/docs/providers/virtualbox)
 * [Containerlab](https://containerlab.srlinux.dev/)
 * External -- *meta* virtualization provider that allows you to configure external physical or virtual devices with *netlab*
 
@@ -110,49 +109,49 @@ You cannot use all supported network devices with all virtualization providers. 
 
 (platform-provider-support)=
 
-| Virtual network device | Vagrant<br />[Libvirt](labs/libvirt.md) | Vagrant<br />[Virtualbox](labs/virtualbox.md) | [Containerlab](labs/clab.md) |
+| Virtual network device | Vagrant<br />[Libvirt](labs/libvirt.md) | [Containerlab](labs/clab.md) |
 | ------------------ | :-: | :-: | :-: |
-| Arista vEOS        | [✅](build-eos)  | ✅  | [✅](build-ceos)  |
-| Aruba AOS-CX       | [✅](build-arubacx)  |  ❌  |  ✅[❗](clab-vrnetlab)  |
-| Cisco 8000v        |  ❌  |  ❌  | ✅ |
-| Cisco ASAv         | [✅](build-asav)  |  ❌  | ✅ [❗](clab-vrnetlab) |
-| Cisco Catalyst 8000v | [✅](build-cat8000v) |  ❌  |  ✅[❗](clab-vrnetlab)  |
-| Cisco CSR 1000v    | [✅](build-csr)  | ✅  |  ✅[❗](clab-vrnetlab) |
-| Cisco IOL          |  ❌ | ❌  |  ✅[❗](clab-vrnetlab) |
-| Cisco IOL L2       |  ❌ | ❌  |  ✅[❗](clab-vrnetlab) |
-| Cisco IOSv         | [✅](build-iosv)  | ✅  |  ✅[❗](clab-vrnetlab) |
-| Cisco IOSvL2       | [✅](build-iosvl2)|  ❌  | ✅[❗](clab-vrnetlab) |
-| Cisco IOS XRv/XRd  | [✅](build-iosxr) |  ❌  | ✅  |
-| Cisco Nexus 9300v  | [✅](build-nxos) [❗](caveats-nxos) | ✅  |  ✅[❗](clab-vrnetlab)  |
-| Cumulus Linux      | ✅  | ✅  | ✅[❗](caveats-cumulus) |
-| Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ✅[❗](caveats-cumulus) |
-| Dell OS10          | [✅](build-dellos10)  |  ❌  | ✅  |
-| Extreme Networks EXOS | [✅](build-exos)  |  ❌  | ✅[❗](clab-vrnetlab)  |
-| Fortinet FortiOS   | [✅](build-fortios)  |  ❌  |  ✅  |
-| FRR | [✅](build-frr)[❗](caveats-frr) | ✅[❗](caveats-frr) | ✅ |
-| Generic Linux (Ubuntu/Alpine) [❗](labs/linux.md) | ✅  | ✅  | ✅  |
-| Juniper cRPD       |  ❌  |  ❌  | ✅  |
-| Juniper cSRX       |  ❌  |  ❌  | ✅  |
-| Juniper vMX        |  ❌  |  ❌  | ✅[❗](clab-vrnetlab)   |
-| Juniper vPTX       | [✅](build-vptx)  |  ❌  | ✅[❗](clab-vrnetlab)  |
-| Juniper vSRX 3.0   | [✅](build-vsrx)  | ✅  | ✅[❗](caveats-vsrx)  |
-| vJunos-switch       |  ❌  |  ❌  | ✅[❗](clab-vrnetlab) |
-| vJunos-router       |  ❌  |  ❌  | ✅[❗](clab-vrnetlab) |
-| Mikrotik RouterOS 6 | ✅  |  ❌  |  ❌  |
-| Mikrotik RouterOS 7 | [✅](build-chr7)  |  ❌  |  ❌  |
-| Netscaler CPX       |  ❌  |  ❌  | ✅  |
-| Nokia SR Linux      |  ❌  |  ❌  | ✅  |
-| Nokia SR OS         |  ❌  |  ❌  | ✅  |
-| Nokia SR-SIM        |  ❌  |  ❌  | ✅  |
-| OpenBSD             | [✅](build-openbsd)  |  ❌  | [✅](clab-vrnetlab) |
-| Sonic               | [✅](build-sonic)  |  ❌  |  ❌  |
-| VyOS                | ✅  |  ❌  | ✅[❗](caveats-vyos) |
+| Arista vEOS        |  [✅](build-eos)  |  [✅](build-ceos)  |
+| Aruba AOS-CX       |  [✅](build-arubacx)  |  ✅[❗](clab-vrnetlab)  |
+| Cisco 8000v        |  ❌  |  ✅   |
+| Cisco ASAv         |  [✅](build-asav)  |  ✅ [❗](clab-vrnetlab)  |
+| Cisco Catalyst 8000v  |  [✅](build-cat8000v)  |  ✅[❗](clab-vrnetlab)  |
+| Cisco CSR 1000v    |  [✅](build-csr)  |  ✅[❗](clab-vrnetlab)  |
+| Cisco IOL          |  ❌  |  ✅[❗](clab-vrnetlab)  |
+| Cisco IOL L2       |  ❌  |  ✅[❗](clab-vrnetlab)  |
+| Cisco IOSv         |  [✅](build-iosv)  |  ✅[❗](clab-vrnetlab)  |
+| Cisco IOSvL2       |  [✅](build-iosvl2)  |  ✅[❗](clab-vrnetlab)  |
+| Cisco IOS XRv/XRd  |  [✅](build-iosxr)  |  ✅  |
+| Cisco Nexus 9300v  |  [✅](build-nxos) [❗](caveats-nxos)  |  ✅[❗](clab-vrnetlab)  |
+| Cumulus Linux      |  ✅  |  ✅[❗](caveats-cumulus)  |
+| Cumulus Linux 5.x (NVUE) |  ✅  |  ✅[❗](caveats-cumulus)  |
+| Dell OS10          |  [✅](build-dellos10)  |  ✅  |
+| Extreme Networks EXOS |  [✅](build-exos)  |  ✅[❗](clab-vrnetlab)  |
+| Fortinet FortiOS   |  [✅](build-fortios)  |  ✅  |
+| FRR |  [✅](build-frr)[❗](caveats-frr)  |  ✅  |
+| Generic Linux (Ubuntu/Alpine)  |  [❗](labs/linux.md)  |  ✅  |
+| Juniper cRPD       |  ❌  |  ✅   |
+| Juniper cSRX       |  ❌  |  ✅   |
+| Juniper vMX        |  ❌  |  ✅[❗](clab-vrnetlab)   |
+| Juniper vPTX       |  [✅](build-vptx)  |  ✅[❗](clab-vrnetlab)  |
+| Juniper vSRX 3.0   |  [✅](build-vsrx)  |  ✅[❗](caveats-vsrx)  |
+| vJunos-switch       |  ❌  |  ✅[❗](clab-vrnetlab)  |
+| vJunos-router       |  ❌  |  ✅[❗](clab-vrnetlab)  |
+| Mikrotik RouterOS 6 |  ✅  |  ❌  |
+| Mikrotik RouterOS 7 |  [✅](build-chr7)  |  ❌  |
+| Netscaler CPX       |  ❌  |  ✅  |
+| Nokia SR Linux      |  ❌  |  ✅  |
+| Nokia SR OS         |  ❌  |  ✅  |
+| Nokia SR-SIM        |  ❌  |  ✅  |
+| OpenBSD             |  [✅](build-openbsd)  |  [✅](clab-vrnetlab)  |
+| Sonic               |  [✅](build-sonic)  |  ❌  |
+| VyOS                |  ✅  |  ✅[❗](caveats-vyos)  |
 
 **Note:**
 
 * *external* provider can be used with all devices supported by *netlab*.
 
-Configuration files for Virtualbox and KVM/libvirt environments specify the number of virtual CPUs and memory allocated to individual network devices. These are the default values; you can change them with [node parameters](nodes.md#node-attributes).
+Configuration files for KVM/libvirt environments specify the number of virtual CPUs and memory allocated to individual network devices. These are the default values; you can change them with [node parameters](nodes.md#node-attributes).
 
 | Virtual network device     | netlab<br>device type | CPUs | memory | libvirt NIC model          |
 | -------------------------- | ------------------ | ---: | -----: | -------------------------: |

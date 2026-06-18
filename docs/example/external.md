@@ -24,7 +24,7 @@ Most box-building recipes for *libvirt* Vagrant boxes recommend using a manageme
 
 *libvirt* and *containerlab* [providers](../providers.md) create configuration files that connect all lab devices to a management network. Together with the [default route configured on network devices](external-connectivity-outgoing), it's always possible to reach the management IP address of every device in your lab, but you have to fix the routing in the external network -- the management network IPv4 prefix has to be reachable from the external network.
 
-Alternatively, use *[graphite](../extool/graphite.md)* for GUI-based SSH access to your lab network or port forwarding to map VM/container management TCP ports to the host ports. Port forwarding is always used with [Virtualbox](../labs/virtualbox.md), and configurable with [libvirt](libvirt-port-forwarding) and [containerlab](clab-port-forwarding) providers. Use **netlab report mgmt** to display the host-to-lab-device TCP port mapping.
+Alternatively, use *[graphite](../extool/graphite.md)* for GUI-based SSH access to your lab network or port forwarding to map VM/container management TCP ports to the host ports. Port forwarding is configurable with [libvirt](libvirt-port-forwarding) and [containerlab](clab-port-forwarding) providers. Use **netlab report mgmt** to display the host-to-lab-device TCP port mapping.
 
 ### Finding the Management IP Addresses
 
@@ -105,7 +105,6 @@ If you need control-plane connectivity to your lab devices (for example, you'd l
 
 To connect *libvirt* virtual machines or *containerlab* containers to the outside world, set [**libvirt.uplink**](libvirt-network-external) or [**clab.uplink**](clab-network-external) link attribute on any link in your topology.
 
-*VirtualBox* uses a different connectivity model. It maps device TCP/UDP ports into host TCP/UDP ports. The default ports mapped for each network device are **ssh**, **http**, and **netconf**. You can add further forwarded ports to the **defaults.providers.virtualbox.forwarded** parameter; the details are beyond the scope of this tutorial.
 
 (external-unprovisioned-devices)=
 ## Unprovisioned Devices

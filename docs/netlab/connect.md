@@ -43,7 +43,7 @@ The rest of the arguments are passed to SSH or docker exec command
 * `ansible_host`: IP address or alternate FQDN for the lab device (default: hostname specified on the command line)
 * `ansible_user`: remote username for SSH session (default: not specified)
 * `ansible_ssh_pass` to specify password (default: use SSH keys)
-* `ansible_port` to specify alternate SSH port (used primarily in VirtualBox environment)
+* `ansible_port` to specify alternate SSH port
 * `netlab_show_command`: command to execute when using the `--show` option. Primarily used to deal with FRR/Cumulus Linux running `vtysh` to execute **show** commands.
 
 [^cd]: FRR and Linux devices running under _containerlab_

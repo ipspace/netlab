@@ -7,7 +7,7 @@
 * **[clab](labs/clab.md)** -- Docker containers (tested on Ubuntu) orchestrated with *containerlab*.
 * **[external](labs/external.md)** -- meta-provider you can use to configure hardware devices.
 
-The **[virtualbox](labs/virtualbox.md)** provider is still available, but no longer tested or supported.
+The **[virtualbox]** provider is no longer available as of XXXX build.
 
 ```{note}
 Use **[‌netlab show providers](netlab-show-providers)** command to display the available virtualization providers.
