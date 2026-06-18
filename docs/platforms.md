@@ -363,6 +363,7 @@ The following interface addresses are supported on various platforms; most daemo
 | Nokia SR OS[^SROS]    | ✅  | ✅  | ✅  |  ❌  |
 | OpenBSD               | ✅  | ✅  |  ❌  |  ❌  |
 | Sonic                 | ✅  | ✅  | ✅  |  ❌  |
+| VPP                   | ✅  | ✅  | ✅  | ✅  |
 | VyOS                  | ✅  | ✅  | ✅  |  ❌  |
 
 ```{tip}
