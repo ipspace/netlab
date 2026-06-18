@@ -6,6 +6,7 @@
 /routing/bgp/connection add template={{ instance }} instance={{ instance }} name={{ neigh_id }} remote.address={{ ip }} remote.as={{ n.as }} comment="{{ n.name }}" local.role=ebgp
 /routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] afi={{ 'ipv6' if ':' in ip else 'ip' }}
 /routing/filter/rule add chain=filter_{{neigh_id}} rule="accept;"
+/routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] output.filter-chain=filter_{{neigh_id}}
 {%   if n.type == 'ibgp' %}
 {%     if bgp.rr|default('') and not n.rr|default('') %}
 /routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] local.role=ibgp-rr
@@ -13,11 +14,7 @@
 /routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] local.role=ibgp local.address=loopback
 {%     endif %}
 {%     if bgp.next_hop_self is defined and bgp.next_hop_self %}
-{# cannot use force-nexthop-self as it overrides any filters
-/routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] nexthop-choice=force-self
-#}
-/routing/filter/rule add chain=filter_{{ neigh_id }}] rule="jump filter_rr_self_ebgp;" place-before=0
-/routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] output.filter-chain=filter_{{neigh_id}}
+/routing/filter/rule add chain=filter_{{ neigh_id }} rule="jump filter_rr_self_ebgp;" place-before=0
 {%     endif %}
 {%   endif %}
 {%- endmacro %}
