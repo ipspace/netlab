@@ -89,6 +89,7 @@ nodes:
 * _netlab_ installs BIRD software in a container image running Ubuntu 24.04 when you use the default **netlab clab build bird** target (~2.14). Other build targets install different BIRD releases — see [](build-bird).
 * BIRD supports a single router ID used for BGP and OSPF.
 * The VM or container running BIRD in host mode starts with static routes pointing to one of the adjacent routers (see [](linux-forwarding)). After establishing routing adjacencies, BIRD copies BGP and OSPF into the kernel IP routing table.
+* The **bird** container starts BIRD in foreground mode with logging messages (including debugging messages) sent to *stderr*. Use the **docker logs** command to inspect the BIRD messages.
 
 ### OSPF Caveats
 

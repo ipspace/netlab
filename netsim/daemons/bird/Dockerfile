@@ -8,4 +8,4 @@ RUN mkdir /etc/bird && mkdir /run/bird && apt-get update && apt-get install -y i
 
 WORKDIR /root
 
-CMD [ "bird", "-c", "/etc/bird/bird.conf", "-d" ]
+CMD ["/usr/sbin/bird", "-d", "-c", "/etc/bird/bird.conf"]
