@@ -3,9 +3,11 @@
 #}
 {% macro neighbor(n,ip,bgp,instance) %}
 {%   set neigh_id = ip|replace('.', '_')|replace(':', '_') %}
-/routing/bgp/connection add template={{ instance }} instance={{ instance }} name={{ neigh_id }} remote.address={{ ip }} remote.as={{ n.as }} comment="{{ n.name }}" local.role=ebgp
+/routing/bgp/connection add template={{ instance }} instance=main name={{ neigh_id }} remote.address={{ ip }} remote.as={{ n.as }} comment="{{ n.name }}" local.role=ebgp
 /routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] afi={{ 'ipv6' if ':' in ip else 'ip' }}
+
 /routing/filter/rule add chain=filter_{{neigh_id}} rule="accept;"
+
 /routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] output.filter-chain=filter_{{neigh_id}}
 {%   if n.type == 'ibgp' %}
 {%     if bgp.rr|default('') and not n.rr|default('') %}
