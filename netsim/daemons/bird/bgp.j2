@@ -1,6 +1,16 @@
 {% if 'router_id' in bgp %}
 router id {{ bgp.router_id }};
 {% endif %}
+{% macro rt_value(rt) -%}
+(rt, {{ rt.split(':')[0] }}, {{ rt.split(':')[1] }})
+{%- endmacro %}
+{% macro tag_vrf_route(vrf_data) %}
+      netlab_vrf_rt.empty;
+{%   for rt in vrf_data.export|default([]) %}
+      netlab_vrf_rt.add({{ rt_value(rt) }});
+{%   endfor %}
+      accept;
+{% endmacro %}
 
 {% for ngb in bgp.neighbors|default([]) if ngb.default_originate|default(False) %}
 {%   if loop.first %}
@@ -185,8 +195,12 @@ protocol bgp bgp_{{ ('vrf_' + vrf_data.vrfidx|string + '_') if vrf_name else '' 
   {{ _af }} {
 {%       if vrf_name %}
     table vrf_{{ vrf_data.vrfidx }}_{{ _af }};
-{%       endif %}
+    import filter {
+{{ tag_vrf_route(vrf_data) }}
+    };
+{%       else %}
     import all;
+{%       endif %}
     export filter { bgp_export_{{ ('vrf_' + vrf_data.vrfidx|string + '_') if vrf_name else '' }}{{ n.type }}( {{ 'true' if n.get('default_originate') else 'false' }},
                                              {{ 'true' if n.get('remove_private_as') else 'false' }}); };
 {%       if n.next_hop_self|default(false) %}

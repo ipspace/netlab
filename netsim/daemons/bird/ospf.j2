@@ -1,4 +1,14 @@
 {% macro ospf_config(ospf,proto_suffix,vrf_name,ospf_interfaces,vrf_data) %}
+{% macro rt_value(rt) -%}
+(rt, {{ rt.split(':')[0] }}, {{ rt.split(':')[1] }})
+{%- endmacro %}
+{% macro tag_vrf_route(vrf_data) %}
+      netlab_vrf_rt.empty;
+{%   for rt in vrf_data.export|default([]) %}
+      netlab_vrf_rt.add({{ rt_value(rt) }});
+{%   endfor %}
+      accept;
+{% endmacro %}
 {% if 'router_id' in ospf and not vrf_name %}
 router id {{ ospf.router_id }};
 {% endif %}
@@ -17,6 +27,9 @@ protocol ospf {{ ver }} ospf_{{ proto_suffix }}_{{ ver }} {
   {{ af }} {
 {%     if vrf_name %}
     table vrf_{{ vrf_data.vrfidx }}_{{ af }};
+    import filter {
+{{ tag_vrf_route(vrf_data) }}
+    };
 {%     endif %}
 {%     if import_list %}
     export filter {

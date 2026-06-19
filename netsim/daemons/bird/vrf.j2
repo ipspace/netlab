@@ -2,10 +2,21 @@
 {% macro vrf_table(vdata,af) -%}
 vrf_{{ vdata.vrfidx }}_{{ af }}
 {%- endmacro %}
+{% macro rt_value(rt) -%}
+(rt, {{ rt.split(':')[0] }}, {{ rt.split(':')[1] }})
+{%- endmacro %}
+{% macro tag_vrf_route(vdata) %}
+      netlab_vrf_rt.empty;
+{%   for rt in vdata.export|default([]) %}
+      netlab_vrf_rt.add({{ rt_value(rt) }});
+{%   endfor %}
+      accept;
+{% endmacro -%}
 {% macro config_sr(sr_data,af) %}
 {%   set sr_nh = 'unreachable' if 'discard' in sr_data.nexthop else 'via ' + sr_data.nexthop[af] %}
 route {{ sr_data[af] }} {{ sr_nh }};
 {% endmacro -%}
+attribute eclist netlab_vrf_rt;
 {% for vname,vdata in vrfs|default({})|dictsort %}
 
 #
@@ -20,6 +31,9 @@ protocol direct direct_vrf_{{ vdata.vrfidx }}_{{ _af }} {
   vrf "{{ vname }}";
   {{ _af }} {
     table {{ vrf_table(vdata,_af) }};
+    import filter {
+{{ tag_vrf_route(vdata) }}
+    };
   };
 }
 
@@ -30,7 +44,9 @@ protocol kernel kernel_vrf_{{ vdata.vrfidx }}_{{ _af }} {
   {{ _af }} {
     table {{ vrf_table(vdata,_af) }};
     export all;
-    import all;
+    import filter {
+{{ tag_vrf_route(vdata) }}
+    };
   };
 }
 {%   endfor %}
@@ -41,6 +57,9 @@ protocol kernel kernel_vrf_{{ vdata.vrfidx }}_{{ _af }} {
 protocol static static_vrf_{{ vdata.vrfidx }}_{{ sr_af }} {
   {{ sr_af }} {
     table {{ vrf_table(vdata,sr_af) }};
+    import filter {
+{{ tag_vrf_route(vdata) }}
+    };
   };
   check link;
 {%       endif %}
@@ -49,5 +68,37 @@ protocol static static_vrf_{{ vdata.vrfidx }}_{{ sr_af }} {
 }
 {%       endif %}
 {%     endfor %}
+{%   endfor %}
+{% endfor %}
+
+{# Route leaking between VRF tables based on transformed import/export route targets #}
+{% for vname,vdata in vrfs|default({})|dictsort %}
+filter netlab_vrf_{{ vdata.vrfidx }}_import {
+{%   if vdata.import|default([]) %}
+  if netlab_vrf_rt ~ [ {% for rt in vdata.import %}{{ rt_value(rt) }}{% if not loop.last %}, {% endif %}{% endfor %} ] then accept;
+{%   endif %}
+  reject;
+}
+{% endfor %}
+{% for src_name,src_data in vrfs|default({})|dictsort %}
+{%   for dst_name,dst_data in vrfs|default({})|dictsort if src_data.vrfidx < dst_data.vrfidx %}
+{%     set leak = namespace(enabled=false) %}
+{%     for rt in src_data.export|default([]) if rt in dst_data.import|default([]) %}
+{%       set leak.enabled = true %}
+{%     endfor %}
+{%     for rt in dst_data.export|default([]) if rt in src_data.import|default([]) %}
+{%       set leak.enabled = true %}
+{%     endfor %}
+{%     if leak.enabled %}
+{%       for _af in ['ipv4','ipv6'] if _af in src_data.af and _af in dst_data.af %}
+
+protocol pipe pipe_vrf_{{ src_data.vrfidx }}_{{ dst_data.vrfidx }}_{{ _af }} {
+  table {{ vrf_table(src_data,_af) }};
+  peer table {{ vrf_table(dst_data,_af) }};
+  import filter netlab_vrf_{{ src_data.vrfidx }}_import;
+  export filter netlab_vrf_{{ dst_data.vrfidx }}_import;
+}
+{%       endfor %}
+{%     endif %}
 {%   endfor %}
 {% endfor %}
