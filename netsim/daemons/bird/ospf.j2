@@ -1,12 +1,19 @@
-{% if 'router_id' in ospf %}
+{% macro ospf_config(ospf,proto_suffix,vrf_name,ospf_interfaces,vrf_data) %}
+{% if 'router_id' in ospf and not vrf_name %}
 router id {{ ospf.router_id }};
 {% endif %}
 {% set KW_NETWORK_TYPE = { 'broadcast': 'bcast', 'point-to-point': 'ptp','point-to-multipoint': 'ptmp', 'non-broadcast': 'nbma' } %}
 {% for af in ['ipv4','ipv6'] if af in ospf.af %}
 {%   set ver = 'v2' if af == 'ipv4' else 'v3' %}
-protocol ospf {{ ver }} ospf_{{ ver }} {
+protocol ospf {{ ver }} ospf_{{ proto_suffix }}_{{ ver }} {
+{%   if vrf_name %}
+  vrf "{{ vrf_name }}";
+{%   endif %}
 {%   if ospf.import is defined %}
   {{ af }} {
+{%     if vrf_name %}
+    table vrf_{{ vrf_data.vrfidx }}_{{ af }};
+{%     endif %}
     export filter {
       if source ~ [ {% for p in ospf.import %}{{ netlab_import_map[p] }}{% if not loop.last %},{% endif %}{% endfor %} ] then {
         ospf_metric2 = 20;
@@ -49,9 +56,9 @@ protocol ospf {{ ver }} ospf_{{ ver }} {
       {{ r_data[af] }} hidden;
 {%     endfor %}
     };
-{%     for l in netlab_interfaces if af in l and l.ospf.area|default('') == adata.area %}
+{%     for l in ospf_interfaces if af in l and l.ospf.area|default('') == adata.area %}
 {%       if l.ifname == 'lo' and af == 'ipv6' %}
-    stubnet {{ loopback.ipv6 | ipaddr('address') }}/128;
+    stubnet {{ (vrf_data.loopback_address.ipv6 if vrf_name else loopback.ipv6) | ipaddr('address') }}/128;
 {%       endif %}
     interface "{{ l.ifname }}" {
 {%       if l.ospf.passive|default(False) or l.type == 'loopback' %}
@@ -83,4 +90,11 @@ protocol ospf {{ ver }} ospf_{{ ver }} {
   };
 {%   endfor %}
 }
+{% endfor %}
+{% endmacro %}
+{% if ospf is defined %}
+{{ ospf_config(ospf,'global','',netlab_interfaces,{}) }}
+{% endif %}
+{% for vname,vdata in vrfs|default({})|dictsort if vdata.ospf is defined %}
+{{ ospf_config(vdata.ospf,'vrf_' + vdata.vrfidx|string,vname,vdata.ospf.interfaces|default([]),vdata) }}
 {% endfor %}

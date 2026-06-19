@@ -46,6 +46,8 @@ def valid_ping(
     msg += f' size {pkt_len}'
 
   if expect == 'fail':
+    if not _result.stdout.strip():
+      return msg+' failed as expected'
     for kw in ("0 packets received","0 received","unreachable"):
       if kw in _result.stdout:
         return msg+' failed as expected'

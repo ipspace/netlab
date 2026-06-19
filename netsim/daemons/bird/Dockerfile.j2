@@ -60,6 +60,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     libreadline8 \
     libssh-4 \
     {{ _runtime_tools }} \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy binaries and built directories from the builder stage
@@ -85,5 +86,25 @@ RUN apt-get update && apt-get install -y bird3
 RUN mkdir -p /var/run
 
 WORKDIR /root
+RUN cat >/entrypoint.sh <<'ENTRYPOINT'
+#!/bin/sh
+set -e
+
+count=0
+while [ "$count" -lt 60 ] && [ ! -e /var/run/netlab-config-done ]; do
+  sleep 1
+  count=$((count + 1))
+done
+
+if [ ! -e /var/run/netlab-config-done ]; then
+  echo "bird: timeout waiting for /var/run/netlab-config-done" >&2
+  exit 1
+fi
+
+exec "$@"
+ENTRYPOINT
+RUN chmod +x /entrypoint.sh
+
 # Run BIRD in the foreground with the default config path
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["/usr/sbin/bird", "-d", "-c", "/etc/bird/bird.conf"]

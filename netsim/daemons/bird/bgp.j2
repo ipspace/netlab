@@ -12,17 +12,23 @@ protocol static static_bgp_default_{{ _af }} {
 {%     endfor %}
 {%   endif %}
 {% endfor %}
-{% for pfx_af in ['ipv4','ipv6'] %}
-{%   for pfx in bgp.advertise|default([]) if pfx_af in pfx %}
-{%     if loop.first %}
+{% macro bgp_advertise_list(list_name,pfx_list) %}
+{%   for pfx_af in ['ipv4','ipv6'] %}
+{%     for pfx in pfx_list|default([]) if pfx_af in pfx %}
+{%       if loop.first %}
 
-define bgp_advertise_{{ pfx_af }} = [
-{%     endif %}
+define {{ list_name }}_{{ pfx_af }} = [
+{%       endif %}
   {{ pfx[pfx_af] }}{% if not loop.last %},{% endif +%}
-{%     if loop.last %}
+{%       if loop.last %}
 ];
-{%     endif %}
+{%       endif %}
+{%     endfor %}
 {%   endfor %}
+{% endmacro %}
+{{ bgp_advertise_list('bgp_advertise',bgp.advertise) }}
+{% for vname,vdata in vrfs|default({})|dictsort if vdata.bgp is defined %}
+{{ bgp_advertise_list('bgp_advertise_vrf_' + vdata.vrfidx|string,vdata.bgp.advertise) }}
 {% endfor %}
 function bgp_prefixes( bool originate_default ) {
   if net.len = 0 && !originate_default
@@ -52,15 +58,37 @@ function bgp_prefixes( bool originate_default ) {
   reject "not accepted:", net, " source=", source, " preference=", preference, " proto=", proto;
 }
 
+{% for vname,vdata in vrfs|default({})|dictsort if vdata.bgp is defined %}
+function bgp_prefixes_vrf_{{ vdata.vrfidx }}( bool originate_default ) {
+  if net.len = 0 && !originate_default
+    then reject "Don't originate default route";
+
+  if source ~ [ RTS_BGP ]
+    then accept "BGP route:", net;
+
+  if source ~ [ RTS_DEVICE ]
+    then accept "connected route:", net;
+
+{%   for pfx_af in ['ipv4','ipv6'] %}
+{%     for pfx in vdata.bgp.advertise|default([]) if pfx_af in pfx %}
+{%       if loop.first %}
+
+  if net ~ bgp_advertise_vrf_{{ vdata.vrfidx }}_{{ pfx_af }} then accept "advertise prefix:", net;
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+
+  reject "not accepted:", net, " source=", source, " preference=", preference, " proto=", proto;
+}
+{% endfor %}
+
 function remove_private_as() {
   bgp_path.delete([64512..65534, 4200000000..4294967294]);
 }
 
-{#
- Build a BGP export filter per neighbor type, to filter communities
-#}
-{% for ntype in [ 'ebgp', 'ibgp', 'localas_ibgp', 'confed_ebgp' ] %}
-function bgp_export_{{ ntype }}( bool originate_default; bool rem_private_as ) {
+{# Build BGP export filters per neighbor type, to filter communities #}
+{% macro bgp_export_filter(func_name,ntype,prefix_func) %}
+function {{ func_name }}( bool originate_default; bool rem_private_as ) {
 {%   set list = bgp.community[ntype]|default([]) %}
 {%   if 'standard' not in list %}
   bgp_community.empty;
@@ -73,18 +101,34 @@ function bgp_export_{{ ntype }}( bool originate_default; bool rem_private_as ) {
 {%   endif %}
 
   if rem_private_as then remove_private_as();
-  bgp_prefixes(originate_default);
+  {{ prefix_func }}(originate_default);
 }
+{% endmacro %}
+{% for ntype in [ 'ebgp', 'ibgp', 'localas_ibgp', 'confed_ebgp' ] %}
+{{ bgp_export_filter('bgp_export_' + ntype,ntype,'bgp_prefixes') }}
+{% endfor %}
+{% for vname,vdata in vrfs|default({})|dictsort if vdata.bgp is defined %}
+{%   for ntype in [ 'ebgp', 'ibgp', 'localas_ibgp', 'confed_ebgp' ] %}
+{{ bgp_export_filter('bgp_export_vrf_' + vdata.vrfidx|string + '_' + ntype,ntype,'bgp_prefixes_vrf_' + vdata.vrfidx|string) }}
+{%   endfor %}
 {% endfor %}
 
-{% for n in bgp.neighbors %}
+{% macro bgp_session(n,bgp_data,vrf_name,vrf_data,bgp_interfaces) %}
 {%   for af in [ 'ipv4','ipv6' ] if af in n and n[af] is string %}
-protocol bgp bgp_{{ n.name }}_{{ af }} {
+protocol bgp bgp_{{ ('vrf_' + vrf_data.vrfidx|string + '_') if vrf_name else '' }}{{ n.name }}_{{ af }} {
+{%     if vrf_name %}
+  vrf "{{ vrf_name }}";
+{%     endif %}
 {%     set loopback = loopback|default({}) %}
-{%     set local_ip = loopback[af]|default('') %}
-  local {{ local_ip.split('/')[0] if n.type == 'ibgp' else '' }} as {{ n.local_as|default(bgp.as) }};
-{%     if bgp.confederation is defined %}
-  confederation {{ bgp.confederation.as }};
+{%     set local = namespace(ip=loopback[af]|default('')) %}
+{%     if n.type != 'ibgp' %}
+{%       for i in bgp_interfaces if af in i and (i.ifindex|default(0) == n.ifindex|default(-1) or i.ifname|default('') == n.local_if|default('')) %}
+{%         set local.ip = i[af] %}
+{%       endfor %}
+{%     endif %}
+  local {{ local.ip.split('/')[0] }} as {{ n.local_as|default(bgp_data.as|default(bgp.as)) }};
+{%     if bgp_data.confederation is defined %}
+  confederation {{ bgp_data.confederation.as }};
 {%       if n.type == 'confed_ebgp' %}
   confederation member yes;
 {%       endif %}
@@ -121,10 +165,10 @@ protocol bgp bgp_{{ n.name }}_{{ af }} {
   require roles;
 {%       endif %}
 {%     endif %}
-{%     if bgp.rr|default('') and ((not n.rr|default('') and n.type == 'ibgp') or n.type == 'localas_ibgp') %}
+{%     if bgp_data.rr|default('') and ((not n.rr|default('') and n.type == 'ibgp') or n.type == 'localas_ibgp') %}
   rr client;
-{%       if bgp.rr|default(False) and bgp.rr_cluster_id|default(False) %}
-  rr cluster id {{ bgp.rr_cluster_id }};
+{%       if bgp_data.rr|default(False) and bgp_data.rr_cluster_id|default(False) %}
+  rr cluster id {{ bgp_data.rr_cluster_id }};
 {%       endif %}
 {%     endif %}
 {%     if n.gtsm is defined %}
@@ -136,8 +180,11 @@ protocol bgp bgp_{{ n.name }}_{{ af }} {
 {%     for _af in [ 'ipv4','ipv6' ] if _af==af or (_af=='ipv4' and n.ipv4_rfc8950|default(False)) %}
 {%      if _af in n.activate and n.activate[_af] %}
   {{ _af }} {
+{%       if vrf_name %}
+    table vrf_{{ vrf_data.vrfidx }}_{{ _af }};
+{%       endif %}
     import all;
-    export filter { bgp_export_{{ n.type }}( {{ 'true' if n.get('default_originate') else 'false' }},
+    export filter { bgp_export_{{ ('vrf_' + vrf_data.vrfidx|string + '_') if vrf_name else '' }}{{ n.type }}( {{ 'true' if n.get('default_originate') else 'false' }},
                                              {{ 'true' if n.get('remove_private_as') else 'false' }}); };
 {%       if n.next_hop_self|default(false) %}
     next hop self {{ 'on' if n.next_hop_self == 'all' else 'ebgp' }};
@@ -150,5 +197,13 @@ protocol bgp bgp_{{ n.name }}_{{ af }} {
 {%      endif %}
 {%     endfor %}
 }
+{%   endfor %}
+{% endmacro %}
+{% for n in bgp.neighbors|default([]) %}
+{{ bgp_session(n,bgp,'',{},netlab_interfaces) }}
+{% endfor %}
+{% for vname,vdata in vrfs|default({})|dictsort if vdata.bgp is defined %}
+{%   for n in vdata.bgp.neighbors|default([]) %}
+{{ bgp_session(n,bgp,vname,vdata,netlab_interfaces) }}
 {%   endfor %}
 {% endfor %}
