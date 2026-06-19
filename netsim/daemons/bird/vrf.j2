@@ -73,7 +73,7 @@ protocol static static_vrf_{{ vdata.vrfidx }}_{{ sr_af }} {
 
 {# Route leaking between VRF tables based on transformed import/export route targets #}
 {% for vname,vdata in vrfs|default({})|dictsort %}
-filter netlab_vrf_{{ vdata.vrfidx }}_import {
+filter netlab_vrf_{{ vname }}_import {
 {%   if vdata.import|default([]) %}
   if netlab_vrf_rt ~ [ {% for rt in vdata.import %}{{ rt_value(rt) }}{% if not loop.last %}, {% endif %}{% endfor %} ] then accept;
 {%   endif %}
@@ -92,11 +92,11 @@ filter netlab_vrf_{{ vdata.vrfidx }}_import {
 {%     if leak.enabled %}
 {%       for _af in ['ipv4','ipv6'] if _af in src_data.af and _af in dst_data.af %}
 
-protocol pipe pipe_vrf_{{ src_data.vrfidx }}_{{ dst_data.vrfidx }}_{{ _af }} {
+protocol pipe pipe_vrf_{{ src_name }}_{{ dst_name }}_{{ _af }} {
   table {{ vrf_table(src_data,_af) }};
   peer table {{ vrf_table(dst_data,_af) }};
-  import filter netlab_vrf_{{ src_data.vrfidx }}_import;
-  export filter netlab_vrf_{{ dst_data.vrfidx }}_import;
+  import filter netlab_vrf_{{ src_name }}_import;
+  export filter netlab_vrf_{{ dst_name }}_import;
 }
 {%       endfor %}
 {%     endif %}
