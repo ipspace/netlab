@@ -68,6 +68,8 @@ def valid_ping(
     for kw in ("0 packets received","0 received","unreachable"):
       if kw in _result.stdout:
         return msg+' failed as expected'
+    if f"{ pkt_len + 8 if pkt_len else 64 } bytes from" not in _result.stdout:
+      return msg+' failed as expected'
     raise Exception(msg+' did not fail')
   else:
     if f"{ pkt_len + 8 if pkt_len else 64 } bytes from" in _result.stdout:

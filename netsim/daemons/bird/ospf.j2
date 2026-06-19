@@ -4,6 +4,7 @@ router id {{ ospf.router_id }};
 {% endif %}
 {% set KW_NETWORK_TYPE = { 'broadcast': 'bcast', 'point-to-point': 'ptp','point-to-multipoint': 'ptmp', 'non-broadcast': 'nbma' } %}
 {% for af in ['ipv4','ipv6'] if af in ospf.af %}
+{%   set import_list = ospf.import|default(['bgp','connected','static'] if vrf_name else []) %}
 {%   set ver = 'v2' if af == 'ipv4' else 'v3' %}
 protocol ospf {{ ver }} ospf_{{ proto_suffix }}_{{ ver }} {
 {%   if vrf_name %}
@@ -12,18 +13,20 @@ protocol ospf {{ ver }} ospf_{{ proto_suffix }}_{{ ver }} {
   router id {{ ospf.router_id }};
 {%     endif %}
 {%   endif %}
-{%   if ospf.import is defined %}
+{%   if import_list or vrf_name %}
   {{ af }} {
 {%     if vrf_name %}
     table vrf_{{ vrf_data.vrfidx }}_{{ af }};
 {%     endif %}
+{%     if import_list %}
     export filter {
-      if source ~ [ {% for p in ospf.import %}{{ netlab_import_map[p] }}{% if not loop.last %},{% endif %}{% endfor %} ] then {
+      if source ~ [ {% for p in import_list %}{{ netlab_import_map[p] }}{% if not loop.last %},{% endif %}{% endfor %} ] then {
         ospf_metric2 = 20;
         accept;
       }
       reject;
    };
+{%     endif %}
   };
 {%   endif %}
 {%   for adata in ospf.areas %}
