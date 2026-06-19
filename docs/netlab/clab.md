@@ -57,7 +57,7 @@ options:
   -t TAG, --tag TAG     Specify a non-default tag for the container image
   --sw-version SW_VERSION
                         Software version for source-build container images
-                        (for example, BIRD release for bird.v2_from_src)
+                        (for example, BIRD release or flavor)
 ```
 
 For example, use `netlab clab build bird` to build the **netlab/bird:latest** container:
@@ -75,8 +75,6 @@ The 'netlab clab build' command can be used to build the following container ima
 ┃ daemon           ┃ default tag                      ┃ description                                                          ┃
 ┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
 │ bird             │ netlab/bird:latest               │ BIRD Internet Routing Daemon (bird.network.cz)                       │
-│ bird.v2_from_src │ netlab/bird.v2_from_src:latest   │ BIRD Internet Routing Daemon v2 built from source (configurable)     │
-│ bird.v3          │ netlab/bird.v3:latest            │ BIRD Internet Routing Daemon v3                                      │
 │ dnsmasq          │ netlab/dnsmasq:latest            │ dnsmasq DHCP server                                                  │
 │ netscaler        │ netlab/netscaler:latest          │ Citrix Netscaler ADC CPX for containerlab                            │
 └──────────────────┴──────────────────────────────────┴──────────────────────────────────────────────────────────────────────┘
@@ -87,13 +85,13 @@ For some daemons, you can build containers using different versions of that daem
 * Specify the software release with the **--sw-version** parameter, for example:
 
 ```
-$ netlab clab build bird.v2_from_src --sw-version 2.17.4
+$ netlab clab build bird --sw-version 2.17.4
 ```
 
 * Specify the container tag with the **--tag** parameter, for example:
 
 ```
-$ netlab clab build bird.v3 --tag netlab/bird:latest
+$ netlab clab build bird --sw-version bird3 --tag netlab/bird:v3
 ```
 
 * Change the container image with the **image** node parameter or the **defaults.daemons._daemon_.clab.image** [default setting](topo-defaults).
