@@ -38,7 +38,7 @@ define {{ list_name }}_{{ pfx_af }} = [
 {% endmacro %}
 {{ bgp_advertise_list('bgp_advertise',bgp.advertise) }}
 {% for vname,vdata in vrfs|default({})|dictsort if vdata.bgp is defined %}
-{{ bgp_advertise_list('bgp_advertise_vrf_' + vdata.vrfidx|string,vdata.bgp.advertise) }}
+{{ bgp_advertise_list('bgp_advertise_vrf_' + vname,vdata.bgp.advertise) }}
 {% endfor %}
 function bgp_prefixes( bool originate_default ) {
   if net.len = 0 && !originate_default
@@ -69,7 +69,7 @@ function bgp_prefixes( bool originate_default ) {
 }
 
 {% for vname,vdata in vrfs|default({})|dictsort if vdata.bgp is defined %}
-function bgp_prefixes_vrf_{{ vdata.vrfidx }}( bool originate_default ) {
+function bgp_prefixes_vrf_{{ vname }}( bool originate_default ) {
   if net.len = 0 && !originate_default
     then reject "Don't originate default route";
 
@@ -86,7 +86,7 @@ function bgp_prefixes_vrf_{{ vdata.vrfidx }}( bool originate_default ) {
 {%     for pfx in vdata.bgp.advertise|default([]) if pfx_af in pfx %}
 {%       if loop.first %}
 
-  if net ~ bgp_advertise_vrf_{{ vdata.vrfidx }}_{{ pfx_af }} then accept "advertise prefix:", net;
+  if net ~ bgp_advertise_vrf_{{ vname }}_{{ pfx_af }} then accept "advertise prefix:", net;
 {%       endif %}
 {%     endfor %}
 {%   endfor %}
@@ -122,13 +122,13 @@ function {{ func_name }}( bool originate_default; bool rem_private_as ) {
 {% endfor %}
 {% for vname,vdata in vrfs|default({})|dictsort if vdata.bgp is defined %}
 {%   for ntype in [ 'ebgp', 'ibgp', 'localas_ibgp', 'confed_ebgp' ] %}
-{{ bgp_export_filter('bgp_export_vrf_' + vdata.vrfidx|string + '_' + ntype,ntype,'bgp_prefixes_vrf_' + vdata.vrfidx|string) }}
+{{ bgp_export_filter('bgp_export_vrf_' + vname + '_' + ntype,ntype,'bgp_prefixes_vrf_' + vname) }}
 {%   endfor %}
 {% endfor %}
 
 {% macro bgp_session(n,bgp_data,vrf_name,vrf_data,bgp_interfaces) %}
 {%   for af in [ 'ipv4','ipv6' ] if af in n and n[af] is string %}
-protocol bgp bgp_{{ ('vrf_' + vrf_data.vrfidx|string + '_') if vrf_name else '' }}{{ n.name }}_{{ af }} {
+protocol bgp bgp_{{ ('vrf_' + vrf_name + '_') if vrf_name else '' }}{{ n.name }}_{{ af }} {
 {%     if vrf_name %}
   vrf "{{ vrf_name }}";
 {%     endif %}
@@ -194,14 +194,14 @@ protocol bgp bgp_{{ ('vrf_' + vrf_data.vrfidx|string + '_') if vrf_name else '' 
 {%      if _af in n.activate and n.activate[_af] %}
   {{ _af }} {
 {%       if vrf_name %}
-    table vrf_{{ vrf_data.vrfidx }}_{{ _af }};
+    table vrf_{{ vrf_name }}_{{ _af }};
     import filter {
 {{ tag_vrf_route(vrf_data) }}
     };
 {%       else %}
     import all;
 {%       endif %}
-    export filter { bgp_export_{{ ('vrf_' + vrf_data.vrfidx|string + '_') if vrf_name else '' }}{{ n.type }}( {{ 'true' if n.get('default_originate') else 'false' }},
+    export filter { bgp_export_{{ ('vrf_' + vrf_name + '_') if vrf_name else '' }}{{ n.type }}( {{ 'true' if n.get('default_originate') else 'false' }},
                                              {{ 'true' if n.get('remove_private_as') else 'false' }}); };
 {%       if n.next_hop_self|default(false) %}
     next hop self {{ 'on' if n.next_hop_self == 'all' else 'ebgp' }};
