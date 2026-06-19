@@ -69,6 +69,7 @@ function bgp_prefixes( bool originate_default ) {
 }
 
 {% for vname,vdata in vrfs|default({})|dictsort if vdata.bgp is defined %}
+{%   set import_list = vdata.bgp.import|default(['connected','ospf']) %}
 function bgp_prefixes_vrf_{{ vname }}( bool originate_default ) {
   if net.len = 0 && !originate_default
     then reject "Don't originate default route";
@@ -76,12 +77,10 @@ function bgp_prefixes_vrf_{{ vname }}( bool originate_default ) {
   if source ~ [ RTS_BGP ]
     then accept "BGP route:", net;
 
-  if source ~ [ RTS_DEVICE ]
-    then accept "connected route:", net;
-
-  if source ~ [ RTS_OSPF ]
-    then accept "OSPF route:", net;
-
+{%   for proto in import_list %}
+  if source ~ [ {{ netlab_import_map[proto] }} ]
+    then accept "{{ proto }} route:", net;
+{%   endfor %}
 {%   for pfx_af in ['ipv4','ipv6'] %}
 {%     for pfx in vdata.bgp.advertise|default([]) if pfx_af in pfx %}
 {%       if loop.first %}
