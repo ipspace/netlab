@@ -97,14 +97,8 @@ protocol bgp bgp_{{ ('vrf_' + vrf_name + '_') if vrf_name else '' }}{{ n.name }}
   router id {{ vrf_data.bgp.router_id }};
 {%       endif %}
 {%     endif %}
-{%     set loopback = loopback|default({}) %}
-{%     set local = namespace(ip=loopback[af]|default('')) %}
-{%     if n.type != 'ibgp' %}
-{%       for i in bgp_interfaces if af in i and (i.ifindex|default(0) == n.ifindex|default(-1) or i.ifname|default('') == n.local_if|default('')) %}
-{%         set local.ip = i[af] %}
-{%       endfor %}
-{%     endif %}
-  local {{ local.ip.split('/')[0] }} as {{ n.local_as|default(bgp_data.as|default(bgp.as)) }};
+{%     set local_if = bgp_interfaces|selectattr('ifindex','eq',n.ifindex)|first if n.type != 'ibgp' else loopback %}
+  local {{ local_if[af]|ansible.utils.ipaddr('address') }} as {{ n.local_as|default(bgp_data.as|default(bgp.as)) }};
 {%     if bgp_data.confederation is defined %}
   confederation {{ bgp_data.confederation.as }};
 {%       if n.type == 'confed_ebgp' %}
