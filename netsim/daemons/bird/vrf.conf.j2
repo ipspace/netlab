@@ -1,12 +1,24 @@
 {# VRF routing tables and kernel synchronization #}
 {% import 'ospf.macros.j2' as bird_ospf with context %}
 {% import 'bgp.macros.j2' as bird_bgp with context %}
+
+{#
+ # vrf_table: Return the BIRD routing table name for a VRF address family.
+ #}
 {% macro vrf_table(vname,af) -%}
 vrf_{{ vname }}_{{ af }}
 {%- endmacro %}
+
+{#
+ # rt_value: Return a BIRD extended community route-target tuple from a netlab RT string.
+ #}
 {% macro rt_value(rt) -%}
 (rt, {{ rt.split(':')[0] }}, {{ rt.split(':')[1] }})
 {%- endmacro %}
+
+{#
+ # tag_vrf_route: Tag an imported VRF route with all export route targets configured on the VRF.
+ #}
 {% macro tag_vrf_route(vdata) %}
       netlab_vrf_rt.empty;
 {%   for rt in vdata.export|default([]) %}
@@ -14,10 +26,15 @@ vrf_{{ vname }}_{{ af }}
 {%   endfor %}
       accept;
 {% endmacro -%}
+
+{#
+ # config_sr: Render a static route with either a discard or next-hop action.
+ #}
 {% macro config_sr(sr_data,af) %}
 {%   set sr_nh = 'unreachable' if 'discard' in sr_data.nexthop else 'via ' + sr_data.nexthop[af] %}
 route {{ sr_data[af] }} {{ sr_nh }};
 {% endmacro -%}
+
 attribute eclist netlab_vrf_rt;
 {% for vname,vdata in vrfs|default({})|dictsort %}
 
