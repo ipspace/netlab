@@ -132,10 +132,9 @@ def ssh_connect(
   sys.stderr.flush()
   need_output = 'output' in p_args and p_args.output
   status = run_command(c_args,check_result=need_output,return_stdout=need_output,ignore_errors=True)
-  if not need_output:
+  if not need_output or status is False:
     return status
-  else:
-    return get_combined_output()
+  return get_combined_output()
 
 def quote_list(args: list) -> list:
   return [ f'"{arg}"' if " " in arg else arg for arg in args ]
