@@ -1,19 +1,4 @@
-#!/bin/sh
-set -x
-
-# Create VRF tables
-{% for vname,vdata in vrfs|default({})|dictsort %}
-if [ ! -e /sys/devices/virtual/net/{{ vname }} ]; then
-ip link add {{ vname }} type vrf table {{ vdata.vrfidx }}
-fi
-ip link set {{ vname }} up
-{% endfor %}
-
-# Move interfaces and loopbacks to VRFs
-{% for i in interfaces if i.vrf is defined %}
-sysctl -qw net.ipv6.conf.{{ i.ifname }}.keep_addr_on_down=1
-ip link set {{ i.ifname }} master {{ i.vrf }}
-{% endfor %}
+{% include "frr.vrf.j2" %}
 
 touch /var/run/vrf.done
 exit 0
