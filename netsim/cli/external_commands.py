@@ -77,6 +77,11 @@ def log_command(cmd: typing.Union[str,list], status: str) -> None:
 CAPTURED_STDOUT: str = ''
 CAPTURED_STDERR: str = ''
 
+def get_combined_output() -> str:
+  global CAPTURED_STDOUT, CAPTURED_STDERR
+  stderr = CAPTURED_STDERR.strip() + "\n" if CAPTURED_STDERR else ""
+  return stderr + CAPTURED_STDOUT
+
 def run_command(
     cmd : typing.Union[str,list],
     check_result : bool = False,
