@@ -547,7 +547,7 @@ def cleanup_non_ansible_config(n: Box) -> None:
       if k.startswith('_'):                                   # Skip internal mappings (will have to be redone later)
         continue
 
-      kn = k.removesuffix('@conf').replace('@','.')                                 # A workaround for aggressive de-dotting
+      kn = k.removesuffix('@conf').replace('@','.')           # A workaround for aggressive de-dotting
       # Leave config mappings for device configuration, module configuration, or extra configs
       # ... also, build netlab_ansible_skip_module list because the module will be configured
       # ... in another way
