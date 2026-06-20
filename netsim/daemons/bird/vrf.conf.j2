@@ -109,11 +109,20 @@ protocol static static_vrf_leak_{{ vname }}_{{ dst_name }}_{{ sr_af }} {
 {%       endfor %}
 {%     endfor %}
 {%   endfor %}
+
+{# VRF OSPF configuration #}
 {%   if vdata.ospf is defined %}
-{{ bird_ospf.ospf_config(vdata.ospf,'vrf_' + vname,vname,vdata.ospf.interfaces|default([]),vdata) }}
+{{     bird_ospf.ospf_config(vdata.ospf,'vrf_' + vname,vname,vdata.ospf.interfaces|default([]),vdata) }}
 {%   endif %}
+
+{# VRF BGP configuration #}
 {%   if vdata.bgp is defined %}
-{{ bird_bgp.bgp_vrf_config(vname,vdata,netlab_interfaces) }}
+{{     bird_bgp.bgp_advertise_list('bgp_advertise_vrf_' + vname,vdata.bgp.advertise) }}
+{{     bird_bgp.bgp_prefixes_function('bgp_prefixes_vrf_' + vname,vdata.bgp,'bgp_advertise_vrf_' + vname,vdata.bgp.import|default(['connected','ospf']),False) }}
+{{     bird_bgp.bgp_export_filters('bgp_export_vrf_' + vname + '_','bgp_prefixes_vrf_' + vname) }}
+{%     for n in vdata.bgp.neighbors|default([]) %}
+{{       bird_bgp.bgp_session(n,bgp,vname,vdata,netlab_interfaces) }}
+{%     endfor %}
 {%   endif %}
 {% endfor %}
 
