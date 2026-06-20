@@ -43,8 +43,8 @@ def check_daemon_dataplane_config(node: Box, topology: Box) -> None:
 
   node.netlab_dp_module = dp_module                                   # Remember the modules (we'll need them later)
   n_clab = node.clab                                                  # We also need to change clab data
-  n_clab.cmd = 'sh /etc/dataplane-wait.sh'                            # Entry point is now the "wait for dataplane config" script
-  n_clab.config_templates['dataplane-wait'] = '/etc/dataplane-wait.sh'
+  n_clab.cmd = '/etc/dataplane-wait.sh'                               # Entry point is now the "wait for dataplane config" script
+  n_clab.config_templates['dataplane-wait'] = '/etc/dataplane-wait.sh:sh'
   report_quirk(
     f"Control-plane daemon on node {node.name} will have to wait for {','.join(dp_module)} data-plane configuration",
     node=node,

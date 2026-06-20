@@ -175,7 +175,8 @@ def report_quirk(text: str, node: Box, quirk: str = '', info: bool = False, **kw
       kwargs['more_hints'] = [ q_hint ]
 
   # Now hope for the best ;)
-  if info:
-    log.info(text,**kwargs)
+  if info:                                        # Info messages need a special flag as we don't have log.Info category
+    kwargs.pop('category',None)                   # Also, the log.info function cannot accept 'category' argument, so remove it
+    log.info(text,**kwargs)                       # ... and call the info function
   else:
-    log.error(text,**kwargs)
+    log.error(text,**kwargs)                      # Otherwise, use regular error reporting
