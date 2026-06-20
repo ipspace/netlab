@@ -1,6 +1,3 @@
-{% if 'router_id' in bgp %}
-router id {{ bgp.router_id }};
-{% endif %}
 {% macro rt_value(rt) -%}
 (rt, {{ rt.split(':')[0] }}, {{ rt.split(':')[1] }})
 {%- endmacro %}
@@ -11,17 +8,18 @@ router id {{ bgp.router_id }};
 {%   endfor %}
       accept;
 {% endmacro %}
-
-{% for ngb in bgp.neighbors|default([]) if ngb.default_originate|default(False) %}
-{%   if loop.first %}
-{%     for _af in ['ipv4','ipv6'] if _af in af %}
+{% macro bgp_default_originate_routes(bgp_data) %}
+{%   for ngb in bgp_data.neighbors|default([]) if ngb.default_originate|default(False) %}
+{%     if loop.first %}
+{%       for _af in ['ipv4','ipv6'] if _af in af %}
 protocol static static_bgp_default_{{ _af }} {
   {{ _af }};
   route {{ '0.0.0.0/0' if _af=='ipv4' else '::/0' }} reject;
 }
-{%     endfor %}
-{%   endif %}
-{% endfor %}
+{%       endfor %}
+{%     endif %}
+{%   endfor %}
+{% endmacro %}
 {% macro bgp_advertise_list(list_name,pfx_list) %}
 {%   for pfx_af in ['ipv4','ipv6'] %}
 {%     for pfx in pfx_list|default([]) if pfx_af in pfx %}
@@ -36,67 +34,35 @@ define {{ list_name }}_{{ pfx_af }} = [
 {%     endfor %}
 {%   endfor %}
 {% endmacro %}
-{{ bgp_advertise_list('bgp_advertise',bgp.advertise) }}
-{% for vname,vdata in vrfs|default({})|dictsort if vdata.bgp is defined %}
-{{ bgp_advertise_list('bgp_advertise_vrf_' + vname,vdata.bgp.advertise) }}
-{% endfor %}
-function bgp_prefixes( bool originate_default ) {
+{% macro bgp_prefixes_function(func_name,bgp_data,list_name,import_list,include_default_static) %}
+function {{ func_name }}( bool originate_default ) {
   if net.len = 0 && !originate_default
     then reject "Don't originate default route";
 
   if source ~ [ RTS_BGP ]
     then accept "BGP route:", net;
 
+{%   if include_default_static %}
   if proto ~ "static_bgp_default*"
     then accept "BGP prefix origination:", net;
 
-{% if bgp.import is defined %}
-{%   for proto in bgp.import %}
-  if source ~ [ {{ netlab_import_map[proto] }} ]
-    then accept "{{ proto }} route:", net;
-{%   endfor %}
-{% endif %}
-{% for pfx_af in ['ipv4','ipv6'] %}
-{%   for pfx in bgp.advertise|default([]) if pfx_af in pfx %}
-{%     if loop.first %}
-
-  if net ~ bgp_advertise_{{ pfx_af }} then accept "advertise prefix:", net;
-{%     endif %}
-{%   endfor %}
-{% endfor %}
-
-  reject "not accepted:", net, " source=", source, " preference=", preference, " proto=", proto;
-}
-
-{% for vname,vdata in vrfs|default({})|dictsort if vdata.bgp is defined %}
-{%   set import_list = vdata.bgp.import|default(['connected','ospf']) %}
-function bgp_prefixes_vrf_{{ vname }}( bool originate_default ) {
-  if net.len = 0 && !originate_default
-    then reject "Don't originate default route";
-
-  if source ~ [ RTS_BGP ]
-    then accept "BGP route:", net;
-
-{%   for proto in import_list %}
+{%   endif %}
+{%   for proto in import_list|default([]) %}
   if source ~ [ {{ netlab_import_map[proto] }} ]
     then accept "{{ proto }} route:", net;
 {%   endfor %}
 {%   for pfx_af in ['ipv4','ipv6'] %}
-{%     for pfx in vdata.bgp.advertise|default([]) if pfx_af in pfx %}
+{%     for pfx in bgp_data.advertise|default([]) if pfx_af in pfx %}
 {%       if loop.first %}
 
-  if net ~ bgp_advertise_vrf_{{ vname }}_{{ pfx_af }} then accept "advertise prefix:", net;
+  if net ~ {{ list_name }}_{{ pfx_af }} then accept "advertise prefix:", net;
 {%       endif %}
 {%     endfor %}
 {%   endfor %}
 
   reject "not accepted:", net, " source=", source, " preference=", preference, " proto=", proto;
 }
-{% endfor %}
-
-function remove_private_as() {
-  bgp_path.delete([64512..65534, 4200000000..4294967294]);
-}
+{% endmacro %}
 
 {# Build BGP export filters per neighbor type, to filter communities #}
 {% macro bgp_export_filter(func_name,ntype,prefix_func) %}
@@ -112,18 +78,15 @@ function {{ func_name }}( bool originate_default; bool rem_private_as ) {
   bgp_ext_community.empty;
 {%   endif %}
 
-  if rem_private_as then remove_private_as();
+  if rem_private_as then bgp_path.delete([64512..65534, 4200000000..4294967294]);
   {{ prefix_func }}(originate_default);
 }
 {% endmacro %}
-{% for ntype in [ 'ebgp', 'ibgp', 'localas_ibgp', 'confed_ebgp' ] %}
-{{ bgp_export_filter('bgp_export_' + ntype,ntype,'bgp_prefixes') }}
-{% endfor %}
-{% for vname,vdata in vrfs|default({})|dictsort if vdata.bgp is defined %}
+{% macro bgp_export_filters(func_prefix,prefix_func) %}
 {%   for ntype in [ 'ebgp', 'ibgp', 'localas_ibgp', 'confed_ebgp' ] %}
-{{ bgp_export_filter('bgp_export_vrf_' + vname + '_' + ntype,ntype,'bgp_prefixes_vrf_' + vname) }}
+{{     bgp_export_filter(func_prefix + ntype,ntype,prefix_func) }}
 {%   endfor %}
-{% endfor %}
+{% endmacro %}
 
 {% macro bgp_session(n,bgp_data,vrf_name,vrf_data,bgp_interfaces) %}
 {%   for af in [ 'ipv4','ipv6' ] if af in n and n[af] is string %}
@@ -152,19 +115,19 @@ protocol bgp bgp_{{ ('vrf_' + vrf_name + '_') if vrf_name else '' }}{{ n.name }}
   connect retry time 5;
   error wait time 5,10;
   startup hold time 10;
-{% if n.local_if is defined %}
+{%     if n.local_if is defined %}
   interface "{{ n.local_if }}";
-{% endif %}
+{%     endif %}
 {%     if n.bfd is defined %}
   bfd yes;
 {%     endif %}
 {%     if n.passive is defined %}
   passive yes;
 {%     endif %}
-{%   if n.timers is defined %}
+{%     if n.timers is defined %}
   hold time {{ n.timers.hold|default(180) }};
   keepalive time {{ n.timers.keepalive|default(60) }};
-{%   endif %}
+{%     endif %}
 {%     if n.password is defined %}
   password "{{ n.password }}";
 {%     endif %}
@@ -193,12 +156,12 @@ protocol bgp bgp_{{ ('vrf_' + vrf_name + '_') if vrf_name else '' }}{{ n.name }}
 {%       endif %}
 {%     endif %}
 {%     for _af in [ 'ipv4','ipv6' ] if _af==af or (_af=='ipv4' and n.ipv4_rfc8950|default(False)) %}
-{%      if _af in n.activate and n.activate[_af] %}
+{%       if _af in n.activate and n.activate[_af] %}
   {{ _af }} {
 {%       if vrf_name %}
     table vrf_{{ vrf_name }}_{{ _af }};
     import filter {
-{{ tag_vrf_route(vrf_data) }}
+{{         tag_vrf_route(vrf_data) }}
     };
 {%       else %}
     import all;
@@ -213,16 +176,32 @@ protocol bgp bgp_{{ ('vrf_' + vrf_name + '_') if vrf_name else '' }}{{ n.name }}
     # require extended next hop on;
 {%       endif %}
   };
-{%      endif %}
+{%       endif %}
 {%     endfor %}
 }
 {%   endfor %}
 {% endmacro %}
-{% for n in bgp.neighbors|default([]) %}
-{{ bgp_session(n,bgp,'',{},netlab_interfaces) }}
-{% endfor %}
-{% for vname,vdata in vrfs|default({})|dictsort if vdata.bgp is defined %}
+{% macro bgp_vrf_config(vname,vdata,bgp_interfaces) %}
+{{   bgp_advertise_list('bgp_advertise_vrf_' + vname,vdata.bgp.advertise) }}
+{{   bgp_prefixes_function('bgp_prefixes_vrf_' + vname,vdata.bgp,'bgp_advertise_vrf_' + vname,vdata.bgp.import|default(['connected','ospf']),False) }}
+{{   bgp_export_filters('bgp_export_vrf_' + vname + '_','bgp_prefixes_vrf_' + vname) }}
 {%   for n in vdata.bgp.neighbors|default([]) %}
-{{ bgp_session(n,bgp,vname,vdata,netlab_interfaces) }}
+{{     bgp_session(n,bgp,vname,vdata,bgp_interfaces) }}
 {%   endfor %}
-{% endfor %}
+{% endmacro -%}
+
+{#
+ # Main BGP configuration
+ #}
+{% if not macro_only|default(False) %}
+{%   if 'router_id' in bgp %}
+router id {{ bgp.router_id }};
+{%   endif %}
+{{   bgp_default_originate_routes(bgp) }}
+{{   bgp_advertise_list('bgp_advertise',bgp.advertise) }}
+{{   bgp_prefixes_function('bgp_prefixes',bgp,'bgp_advertise',bgp.import|default([]),True) }}
+{{   bgp_export_filters('bgp_export_','bgp_prefixes') }}
+{%   for n in bgp.neighbors|default([]) %}
+{{     bgp_session(n,bgp,'',{},netlab_interfaces) }}
+{%   endfor %}
+{% endif %}

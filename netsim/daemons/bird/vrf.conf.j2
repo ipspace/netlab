@@ -16,6 +16,10 @@ vrf_{{ vname }}_{{ af }}
 {%   set sr_nh = 'unreachable' if 'discard' in sr_data.nexthop else 'via ' + sr_data.nexthop[af] %}
 route {{ sr_data[af] }} {{ sr_nh }};
 {% endmacro -%}
+{% set macro_only = True %}
+{% import 'ospf.j2' as bird_ospf with context %}
+{% import 'bgp.j2' as bird_bgp with context %}
+{% set macro_only = False %}
 attribute eclist netlab_vrf_rt;
 {% for vname,vdata in vrfs|default({})|dictsort %}
 
@@ -90,6 +94,12 @@ protocol static static_vrf_leak_{{ vname }}_{{ dst_name }}_{{ sr_af }} {
 {%       endfor %}
 {%     endfor %}
 {%   endfor %}
+{%   if vdata.ospf is defined %}
+{{ bird_ospf.ospf_config(vdata.ospf,'vrf_' + vname,vname,vdata.ospf.interfaces|default([]),vdata) }}
+{%   endif %}
+{%   if vdata.bgp is defined %}
+{{ bird_bgp.bgp_vrf_config(vname,vdata,netlab_interfaces) }}
+{%   endif %}
 {% endfor %}
 
 {# Route leaking between VRF tables based on transformed import/export route targets #}
