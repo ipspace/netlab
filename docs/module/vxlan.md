@@ -28,6 +28,7 @@ The following table describes the per-platform support of individual VXLAN featu
 | ------------------ | :-: | :-: | :-: |
 | Arista EOS         | ✅  | ✅  | ✅  |
 | Aruba AOS-CX       | ✅  | ✅  |  ❌  |
+| BIRD               | ✅  | ✅  | ✅  |
 | Cisco CSR 1000v    | ✅  | ✅  |  ❌  |
 | Cisco Catalyst 8000v | ✅ | ✅ |  ❌  |
 | Cisco IOL/IOLL2    | ✅ [❗](caveats-iol)  |  ❌  |  ❌  |

@@ -448,7 +448,7 @@ The layer-2 control plane [configuration modules](module-reference.md) are suppo
 | ------------------------- |:--:|:--:|
 | Arista EOS                | ✅ | ✅ |
 | Aruba CX                  | ✅ | ✅ |
-| bird                      | ❌  | ✅ |
+| BIRD                      | ❌  | ✅ |
 | Cumulus Linux             | ✅ | ✅ |
 | Cumulus Linux 5.x (NVUE)  | ✅ | ✅ |
 | Dell OS10                 | ✅ | ✅ |
@@ -463,6 +463,7 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | --------------------- |:--:|:--:|:--:|:--:|:--:|:--:|
 | Arista EOS            | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
 | Aruba AOS-CX          | ✅ | ✅ |  ✅[❗](caveats-aruba) | [❗](caveats-aruba) | ❌ | ❌ |
+| BIRD                  | ✅ |  ❌ | ✅ |  ❌ |  ❌ |  ❌ |
 | Cisco 8000v (IOS XR)  | ✅ | ✅ |  ❌ | ✅ | ✅ | ✅ |
 | Cisco Catalyst 8000v  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cisco CSR 1000v       | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
