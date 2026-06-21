@@ -36,7 +36,7 @@ def check_daemon_dataplane_config(node: Box, topology: Box) -> None:
   the '/etc/dataplane-wait.sh' script is available on the device.
 
   Some modules require a data-plane and control-plane (daemon) config. The 'extra_daemon_config'
-  feature must he set for such modules to generate extra entries in _daemon_config (for inclusion
+  feature must be set for such modules to generate extra entries in _daemon_config (for inclusion
   into daemon configuration) and config_templates (to generate the config files).
   """
   features = a_devices.get_device_features(node,topology.defaults)    # Get device features
