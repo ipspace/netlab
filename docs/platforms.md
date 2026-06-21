@@ -418,6 +418,7 @@ These devices support additional control-plane protocols or BGP address families
 | --------------------- | :-: | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  | ✅  | ✅  | ✅  |
+| BIRD                  |  ❌  |  ❌  |  ❌  | ✅  |
 | Cisco IOS XE[^XE]     | ✅  | ✅  | ✅  | ✅  |
 | Cisco IOSv/IOSvL2     | ✅  |  ❌  | ✅  | ✅  |
 | Cisco IOS XR[^XR]     |  ❌  | ✅  | ✅  | ✅  |

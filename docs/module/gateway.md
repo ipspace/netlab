@@ -21,6 +21,7 @@ The module is supported on these platforms:
 | --------------------- | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  | ✅  | ✅  |
+| BIRD                  | ✅  |  ❌  |  ❌  |
 | Cisco IOS XE[^18v]    |  ❌  | ✅  | ✅  |
 | Cisco IOS XR[^XR]     |  ❌  | ✅  | ✅  |
 | Cisco Nexus OS        |  ❌  | ✅  | ✅  |
