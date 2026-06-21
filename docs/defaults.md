@@ -87,7 +87,7 @@ defaults:
 When augmenting default settings, *netlab* uses a [deep dictionary merge](defaults-deep-merging), allowing you to overwrite a single setting deep in the defaults hierarchy without affecting other related settings. 
 
 (default-device-image)=
-For example, it's possible to replace the default Vagrant box name for a network device type without changing any other device parameter[^DD] ([more details](tutorial-release)):
+For example, it's possible to replace the default image (Vagrant box or Docker container) for a network device type without changing any other device parameter[^DD] ([more details](tutorial-release)):
 
 [^DD]: See [](topology/hierarchy.md) for an in-depth explanation of why attributes with hierarchical names work in *netlab*
 
@@ -98,7 +98,8 @@ defaults.devices.eos.image: arista/vEOS-lab-4.21.14M
 ```
 
 ```{tip}
-Vagrant box names do not have to include the image version. If you specify just the box name, Vagrant selects the latest (numerically highest) version. Container image names must include the image tag (version).
+* Vagrant box names do not have to include the image version. If you specify just the box name, Vagrant selects the latest (numerically highest) version.
+* Container image names must include the image tag (version).
 ```
 
 Change the provider-specific device images if you want to run your topology on multiple virtualization providers. This is how you can set different device image names for Arista EOS virtual machines and containers in the lab topology:
@@ -107,6 +108,10 @@ Change the provider-specific device images if you want to run your topology on m
 ---
 defaults.devices.eos.libvirt.image: arista/vEOS-lab-4.21.14M
 defaults.devices.eos.clab.image: "cEOS:latest"
+```
+
+```{tip}
+To change a daemon image (for example, BIRD image), change the **defaults.daemons._daemon_.clab.image** setting.
 ```
 
 You can also change the default image names in the user defaults file:

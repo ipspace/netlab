@@ -1,3 +1,4 @@
+(netlab-clab)=
 # Containerlab Utilities
 
 **netlab clab** performs these *containerlab*-related functions:
@@ -71,32 +72,28 @@ $ netlab clab build -l
 
 The 'netlab clab build' command can be used to build the following container images
 
-┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ daemon           ┃ default tag                      ┃ description                                                          ┃
-┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ bird             │ netlab/bird:latest               │ BIRD Internet Routing Daemon (bird.network.cz)                       │
-│ dnsmasq          │ netlab/dnsmasq:latest            │ dnsmasq DHCP server                                                  │
-│ netscaler        │ netlab/netscaler:latest          │ Citrix Netscaler ADC CPX for containerlab                            │
-└──────────────────┴──────────────────────────────────┴──────────────────────────────────────────────────────────────────────┘
+┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ daemon    ┃ default tag             ┃ description                                     ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ bird      │ netlab/bird:latest      │ BIRD Internet Routing Daemon (bird.network.cz)  │
+│ dnsmasq   │ netlab/dnsmasq:latest   │ dnsmasq DHCP server                             │
+│ netscaler │ netlab/netscaler:latest │ Citrix Netscaler ADC CPX for containerlab       │
+└───────────┴─────────────────────────┴─────────────────────────────────────────────────┘
 ```
 
-For some daemons, you can build containers using different versions of that daemon. To use a non-default version of the daemon, you can:
-
-* Specify the software release with the **--sw-version** parameter, for example:
+For some daemons, you can build containers using different versions of that daemon. To use a non-default version of the daemon, specify the software release with the **--sw-version** parameter (more details in [](build-bird)):
 
 ```
 $ netlab clab build bird --sw-version 2.17.4
 ```
 
-* Specify the container tag with the **--tag** parameter, for example:
+You can specify the tag for the custom container version with the **--tag** parameter, for example:
 
 ```
-$ netlab clab build bird --sw-version bird3 --tag netlab/bird:v3
+$ netlab clab build bird --sw-version 2.17.4 --tag netlab/bird:latest
 ```
 
-* Change the container image with the **image** node parameter or the **defaults.daemons._daemon_.clab.image** [default setting](topo-defaults).
-
-See [Building BIRD containers](../labs/bird.md) for configurable source releases.
+To use a custom container image, specify it with the **image** node parameter or the **defaults.daemons._daemon_.clab.image** [default setting](topo-defaults).
 
 (netlab-clab-cleanup)=
 ## Docker Cleanup

@@ -67,7 +67,7 @@ def get_description(dfname: str) -> str:
       if not 'description=' in line:
         continue
       line = line.replace('{{ _sw_version }}','configurable')
-      return line.split('description=')[1].replace('"','')
+      return line.split('description=')[1].replace('"','').replace('{{_sw_version}}','')
 
   except Exception:
     return '-- failed --'
