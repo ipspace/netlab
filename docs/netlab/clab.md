@@ -45,7 +45,7 @@ _netlab_ package includes *Dockerfiles* for several well-known routing daemons. 
 
 ```
 $ netlab clab build -h
-usage: netlab clab build [-h] [-l] [-t TAG] [--sw-version SW_VERSION] [image]
+usage: netlab clab build [-h] [-l] [-t TAG] [--version SW_VERSION] [image]
 
 Build a routing daemon Docker container
 
@@ -56,7 +56,7 @@ options:
   -h, --help            show this help message and exit
   -l, --list            List available routing daemons
   -t TAG, --tag TAG     Specify a non-default tag for the container image
-  --sw-version SW_VERSION
+  --version SW_VERSION
                         Software version for source-build container images
                         (for example, BIRD release or flavor)
 ```
@@ -81,16 +81,16 @@ The 'netlab clab build' command can be used to build the following container ima
 └───────────┴─────────────────────────┴─────────────────────────────────────────────────┘
 ```
 
-For some daemons, you can build containers using different versions of that daemon. To use a non-default version of the daemon, specify the software release with the **--sw-version** parameter (more details in [](build-bird)):
+For some daemons, you can build containers using different versions of that daemon. To use a non-default version of the daemon, specify the software release with the **--version** parameter (more details in [](build-bird)):
 
 ```
-$ netlab clab build bird --sw-version 2.17.4
+$ netlab clab build bird --version 2.17.4
 ```
 
 You can specify the tag for the custom container version with the **--tag** parameter, for example:
 
 ```
-$ netlab clab build bird --sw-version 2.17.4 --tag netlab/bird:latest
+$ netlab clab build bird --version 2.17.4 --tag netlab/bird:latest
 ```
 
 To use a custom container image, specify it with the **image** node parameter or the **defaults.daemons._daemon_.clab.image** [default setting](topo-defaults).

@@ -31,7 +31,7 @@ def build_parser(parser: argparse.ArgumentParser) -> None:
     help='Specify a non-default tag for the container image')
 
   parser.add_argument(
-    '--sw-version',
+    '--version',
     dest='sw_version',
     action='store',
     help='Software version for source-build container images (for example, BIRD release for bird.v2_from_src)')
@@ -128,7 +128,7 @@ def build_image(
   device = os.path.basename(os.path.dirname(df_path))
   if sw_version and 'sw_version' not in defaults.daemons[device].clab:
     log.fatal(
-      f'--sw-version cannot be used with {image} (defaults.daemons.{device}.clab.sw_version is not defined)',
+      f'--version cannot be used with {image} (defaults.daemons.{device}.clab.sw_version is not defined)',
       module='build')
 
   resolved_sw_version = sw_version if sw_version else (
