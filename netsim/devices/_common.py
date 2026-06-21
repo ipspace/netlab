@@ -34,6 +34,10 @@ def check_daemon_dataplane_config(node: Box, topology: Box) -> None:
   If such a module is found, the function puts plumbing in place to ensure the control-plane
   daemon is started only when the dataplane configuration is finished. It is assumed that
   the '/etc/dataplane-wait.sh' script is available on the device.
+
+  Some modules require a data-plane and control-plane (daemon) config. The 'extra_daemon_config'
+  feature must he set for such modules to generate extra entries in _daemon_config (for inclusion
+  into daemon configuration) and config_templates (to generate the config files).
   """
   features = a_devices.get_device_features(node,topology.defaults)    # Get device features
   dp_config = features.initial.get('dataplane_config',[])             # Do we have to take care of dataplane configs?
@@ -50,3 +54,10 @@ def check_daemon_dataplane_config(node: Box, topology: Box) -> None:
     node=node,
     quirk='dataplane_config',
     info=True)
+
+  cp_config = features.initial.get('extra_daemon_config',{})          # Finally, check whether we need extra daemon config files
+  for k,v in cp_config.items():
+    if k not in dp_module:                                            # Skip irrelevant modules
+      continue
+    node._daemon_config[k+'-daemon'] = v                              # This will include the config file into daemon config
+    n_clab.config_templates[k+'-daemon'] = v                          # ... and generate the config file from -daemon template
