@@ -5,11 +5,11 @@ BIRD containers are not available on public container registries. You must build
 
 You can use the **--version** parameter of the **netlab clab build bird** command to select the BIRD package flavor or a specific release compiled from the source tarball:
 
-| Build command | BIRD version | Method |
-|---------------|--------------|--------|
-| `netlab clab build bird` | Ubuntu 24.04 distro package (~2.14) | `apt install bird2` |
-| `netlab clab build bird --version v3` | CZNIC apt repo (v3) | pre-built packages |
-| `netlab clab build bird --version 2.17.4` | specific BIRD v2 release | compile from source tarball |
+| Build command | BIRD version | Installation Method |
+|---------------|--------------|---------------------|
+| `netlab clab build bird` | CZ.NIC apt repo (v3) | `apt-get install bird3` |
+| `netlab clab build bird --version v2` | Ubuntu 24.04 distro package (~2.14) | `apt-get install bird2` |
+| `netlab clab build bird --version 3.3.12` | specific BIRD v2 or v3 release | compile from source tarball |
 
 See [](netlab-clab-build) for more details and [](caveats-bird) for BIRD operational caveats.
 
@@ -20,33 +20,33 @@ See [](netlab-clab-build) for more details and [](caveats-bird) for BIRD operati
    :backlinks: none
 ```
 
-## Default Build (apt-based BIRD v2)
+## Default Build (BIRD v3)
 
-Build the default BIRD v2 container shipped with _netlab_:
+Build the default BIRD v3 container shipped with _netlab_:
 
 ```
 netlab clab build bird
 ```
 
-This installs the BIRD version provided by the Ubuntu 24.04 package repository (~2.14 at the time of this writing). The default container tag is `netlab/bird:latest` (you can change it with `--tag` parameter).
+This installs the latest BIRD v3 package from CZ.NIC repository on top of the Ubuntu 24.04 image. The default container tag is `netlab/bird:latest` (you can change it with `--tag` parameter).
 
-## Build BIRD v3 Container
+## Build BIRD v2 Container
 
-Build a BIRD v3 container from the CZNIC package repository:
-
-```
-netlab clab build bird --version v3
-```
-
-The default container tag is `netlab/bird:v3`. To use a different tag for the v3 build, use the `--tag` option, for example:
+Build a BIRD v2 container using the default Ubuntu 24.04 `bird2` package:
 
 ```
-netlab clab build bird --version v3 --tag netlab/bird:latest
+netlab clab build bird --version v2
+```
+
+The default container tag is `netlab/bird:v2`. Use the `--tag` option to get a different container tag, for example:
+
+```
+netlab clab build bird --version v2 --tag netlab/bird:latest
 ```
 
 Alternatively, [change the device image](default-device-image) with the **image** [node parameter](node-attributes) or [system defaults](topo-defaults).
 
-## Build Specific BIRD v2 Release from Source
+## Build Specific BIRD v2/v3 Release from Source
 
 When the **--version** parameter of the **netlab clab build** command is set to a version number, _netlab_ compiles that BIRD release from a source tarball. The Dockerfile template treats **v2** and **v3** as package-based builds; any other value is treated as a source release.
 
