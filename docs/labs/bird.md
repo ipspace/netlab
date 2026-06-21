@@ -8,7 +8,7 @@ You can use the **--sw-version** parameter of the **netlab clab build bird** com
 | Build command | BIRD version | Method |
 |---------------|--------------|--------|
 | `netlab clab build bird` | Ubuntu 24.04 distro package (~2.14) | `apt install bird2` |
-| `netlab clab build bird --sw-version bird3` | CZNIC apt repo (v3) | pre-built packages |
+| `netlab clab build bird --sw-version v3` | CZNIC apt repo (v3) | pre-built packages |
 | `netlab clab build bird --sw-version 2.17.4` | specific BIRD v2 release | compile from source tarball |
 
 See [](netlab-clab-build) for more details and [](caveats-bird) for BIRD operational caveats.
