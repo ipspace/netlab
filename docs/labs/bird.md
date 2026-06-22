@@ -28,7 +28,7 @@ Build the default BIRD v3 container shipped with _netlab_:
 netlab clab build bird
 ```
 
-This installs the latest BIRD v3 package from CZ.NIC repository on top of the Ubuntu 24.04 image. The default container tag is `netlab/bird:latest` (you can change it with `--tag` parameter).
+This installs the latest BIRD v3 package from CZ.NIC repository on top of the Debian Trixie image. The default container tag is `netlab/bird:latest` (you can change it with `--tag` parameter).
 
 ## Build BIRD v2 Container
 
