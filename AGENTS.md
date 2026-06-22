@@ -91,8 +91,6 @@ With the Box settings used in the topology data structure:
 
 * The interim dictionaries are created automatically: `a.b.c=1` works even when `a.b` does not exist yet.
 * The dotted paths can be used in indices (for example, `a['b.c'] = 1`) and in **in** tests (for example `'b.c' in a`)
-* Prefer `box.get('dotted.path', default)` over nested existence checks like `'gr' in box and box.gr.get('state', ...)`
-* When testing whether an optional feature is active, default to "off" (e.g. `'disable'`), not to an enabled state. Do not add `.get()` defaults for `_required` attributes — validation guarantees they are set when the parent object is present.
 
 IMPORTANT -- the Box objects must have the default_box and box_dots flags set to work as expected:
 
@@ -119,7 +117,6 @@ IMPORTANT -- the Box objects must have the default_box and box_dots flags set to
 - YAML files for configuration and topology definitions
 - Jinja2 templates for configuration generation
 - Global settings in `netsim/defaults/`
-- In module/plugin YAML (`netsim/modules/*.yml`, `netsim/extra/*/defaults.yml`), define user-defined attribute types only when the same structure is reused in multiple places. Inline `{ type: ..., valid_values: ... }` (and similar constraints) for single-use attributes instead of adding a named type in `_top` or `attributes`. See `docs/dev/validation.md` (User-Defined Data Types).
 
 ### Documentation
 - Docstrings follow Google style (not strictly enforced but preferred)
