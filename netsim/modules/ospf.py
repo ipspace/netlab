@@ -7,7 +7,7 @@ import ipaddress
 from box import Box
 
 from ..augment import devices
-from ..data import append_to_list
+from ..data import append_to_list, get_box
 from ..utils import log
 from ..utils import routing as _ospf
 from . import _Module, _routing, bfd
@@ -144,11 +144,16 @@ def check_gr(node: Box, features: Box) -> None:
   Check device support for OSPF Graceful Restart when restart or helper mode is configured.
   """
   gr_af = features.get('ospf.gr', [])
-  if len(gr_af) == 2:                                 # Both IPv4 and IPv6 are supported -> ok
-    return
 
   for (o_data,_,vrf) in _ospf.rp_data(node,'ospf'):
     if 'gr' not in o_data:
+      continue
+
+    for gr_action in ('restart','helper'):
+      if o_data.gr.get(gr_action,None) is True:
+        o_data.gr[gr_action] = get_box({ 'grace_period': 300 })
+
+    if len(gr_af) == 2:                               # Both IPv4 and IPv6 are supported -> ok
       continue
 
     vrf_info = f' in VRF {vrf}' if vrf else ''

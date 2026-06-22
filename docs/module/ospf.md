@@ -196,7 +196,7 @@ OSPF routing daemons support these optional OSPF interface attributes:
 * **ospf.area** -- default OSPF area (default: 0.0.0.0). Used on links/interfaces (including the loopback interface) without an explicit OSPF area.
 * **ospf.bfd** -- enable BFD for OSPF (default: False)
 * **ospf.bfd.strict** enables RFC9355 BFD Strict-Mode (default: False)
-* **ospf.gr** -- OSPF graceful restart settings. **ospf.gr.restart** can be `true` or a dictionary with **grace_period** (1–1800 seconds). **ospf.gr.helper** can be `true` or a dictionary with **grace_period** (10–1800 seconds). You can also set **ospf.gr** to a boolean value as a shortcut for **ospf.gr.restart**.
+* **ospf.gr** -- OSPF graceful restart settings. **ospf.gr.restart** can be `true` or a dictionary with **grace_period** (1–1800 seconds). **ospf.gr.helper** can be `true` or a dictionary with **grace_period** (10–1800 seconds). `true` values are normalized into a **grace_period** value of 300 seconds. You can also set **ospf.gr** to a boolean value as a shortcut for **ospf.gr.restart**.
 * **ospf.default** -- External default route origination ([more details](ospf-default))
 * **ospf.digest** -- default OSPFv2 digest authentication parameters. Applies to all interfaces without an explicit **ospf.digest** setting.
 * **ospf.import** -- [import (redistribute) routes](routing_import) into the global OSPF instance. By default, no routes are redistributed into the global OSPF instance.
