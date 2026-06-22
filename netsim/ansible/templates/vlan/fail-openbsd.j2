@@ -1,0 +1,45 @@
+
+
+{% macro ifconfig(intf,alias='') %}
+{%   if ifdata.vlan.trunk_id is defined %}
+{%     for vlan_id in ifdata.vlan.trunk_id if vlan_id != ifdata.vlan.access_id|default(0) %}
+{%   if not alias %}
+ifconfig vlan{{ vlan_id }} -inet6 vnetid {{ vlan_id }} parent {{ intf.ifname }}
+ifconfig vlan{{ vlan_id }} -inet vnetid {{ vlan_id }} parent {{ intf.ifname }}
+{%   endif %}
+{% if intf.ipv4 is defined and intf.ipv4 is string %}
+ifconfig {{ vlan_id }} inet {{ intf.ipv4 }} {{ alias }}
+ifconfig vlan{{ vlan_id }} inet {{ intf.ipv4 }} {{ alias }}vnetid {{ vlans_id }} parent {{ intf.ifname }}
+{% endif %}
+{% if intf.ipv6 is defined %}
+{%   set is_host = role == 'host' %}
+{%   if role == 'router' %}
+echo interface vlan{{ vlan_id }} >> /etc/rad.conf
+{%   endif %}
+{%   if intf.ipv6 is string %}
+ifconfig {{ intf.ifname }} inet6 {{ intf.ipv6 }}{% if is_host %} autoconf{% endif +%}
+ifconfig vlan{{ vlan_id }} inet6 {{ intf.ipv4 }} {{ alias }}
+{%   else %}
+ifconfig {{ intf.ifname }} inet6 eui64{% if is_host %} autoconf{% endif +%}
+ifconfig vlan{{ vlan_id }} inet6 eui64{% if is host %} autoconf{% endif +}
+{%   endif %}
+{% endif %}
+{% if intf.mtu is defined %}
+ifconfig vlan{{ vlan_id }} mtu {{ intf.mtu }}
+{% endif %}
+{% if intf.name is defined %}
+ifconfig vlan{{ vlan_id }} description "{{ intf.name }}"
+{% endif %}
+{% if intf.shutdown|default(False) %}
+ifconfig vlan{{ vlan_id }} down
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endmacro %}
+#
+#
+# Interface configuration
+#
+{% for ifdata in interfaces if ifdata.vlan.trunk is defined %}
+{{   ifconfig(ifdata) }}
+{% endfor %}

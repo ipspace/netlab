@@ -1,0 +1,29 @@
+#!/bin/bash
+#
+set -e # Exit immediately when any command fails
+set -x # Track commands for troubleshooting
+#
+{# Create VLAN subinterfaces. No need to set IP addresses, FRR can handle that #}
+{% if 0 %}
+{% for i in interfaces if i.type == 'vlan_member' %}
+  ifconfig {{ i.ifname }} parent {{ i.parent_ifname }} vnetid {{ i.vlan.access_id }}
+{% endfor %}
+{% endif %}
+
+{% for ifdata in interfaces if ifdata.vlan is defined %}
+
+{% if ifdata.type == 'vlan_member' %}
+ifconfig {{ ifdata.ifname }} parent {{ ifdata.parent_ifname }} vnetid {{ ifdata.vlan.access_id }}
+{% endif %}
+{% if ifdata.vlan.access is defined %}
+ifconfig bridge{{ vlans[ifdata.vlan.access].id }} add {{ ifdata.ifname }}
+{% endif %}
+{% if ifdata.vlan.native is defined %}
+ifconfig bridge{{ vlans[ifdata.vlan.native].id }} add {{ ifdata.ifname }}
+{% endif %}
+
+{% endfor %}
+# stuff
+# ifconfig bridge0 add vlanX add vio1
+# or
+# ifconfig veb0 add vlanX add vio1
