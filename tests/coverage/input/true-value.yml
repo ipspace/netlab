@@ -1,0 +1,45 @@
+message: |
+  This topology checks using bool values where dictionaries are expected
+  in the data model. A false value should remove the dictionary, a true
+  value should insert the default value (specified in 'true_value').
+
+  The topology is effectively replicating the OSPF Graceful Restart
+  scenario with a made-up "ospf.gx" attribute.
+
+defaults.device: none
+module: [ ospf ]
+
+defaults.ospf.attributes.node:
+  gx:
+    _value_to_dict:
+      restart: '{value}'
+    restart:
+      type: dict
+      _keys:
+        grace_period: { type: int, min_value: 1, max_value: 1800 }
+        _enabled: bool
+      true_value: { _enabled: True }
+    helper:
+      type: dict
+      _keys:
+        grace_period: { type: int, min_value: 10, max_value: 1800 }
+        _enabled: bool
+      true_value: { _enabled: True }
+
+groups:
+  gr_helper:
+    members: [ a1, a2, a3 ]
+    ospf.gx.helper: True
+
+nodes:
+  r1:
+    ospf.gx: True               # Using _value_to_dict -> true_value
+  r2:
+    ospf.gx.restart: True       # Using true_value
+  a1:                           # Using true_value
+  a2:
+    ospf.gx.helper: False       # Disable group-level value
+  a3:
+    ospf.gx: False              # Disable parent value
+
+links: [ r1-r2-a1-a2-a3 ]       # Need a link to keep OSPF module active
