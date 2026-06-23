@@ -98,13 +98,11 @@ attributes:
 
 ### Dictionaries Specified as True/False Values
 
-Sometimes we want an attribute that is defined as a dictionary specified as *True* (default value(s)) or *False* (do not use this attribute). You could achieve that with `_alt_types` (see above) and custom code transforming *True*/*False* values into desired attribute values, or you could get the job done with a slightly more convoluted data type definition and a bit more careful Jinja2 template.
+Sometimes we want an attribute that is expected to be a dictionary specified as *True* (enable the functionality with no extra parameters) or *False* (disable the functionality). You could achieve that with `_alt_types` (see above) and custom code transforming *True*/*False* values into desired attribute values, or you could get the job done with a slightly more convoluted data type definition.
 
-_netlab_ data validation code transforms a *False* value of an attribute that should be a dictionary into an empty dictionary. That behavior is hard-coded too deeply in the code to be changed; we have to live with it. The only way to disable it is to use `_alt_types: [ bool ]`, but then you'll have to deal with the *False* value in your code.
+To use the *True* value for a dictionary attribute, specify its `true_value`. That value will be used (and checked for validity) whenever the dictionary attribute has a *True* value in the lab topology.
 
-You can, however, specify the `true_value` for a dictionary attribute. That value will be used (and checked for validity) whenever the dictionary attribute has a *True* value in the lab topology.
-
-Consider, for example, the **ospf.gr** node attribute that has a single optional parameter (**grace_period**). You could define it like this:
+Consider, for example, the (imaginary) **ospf.gr** node attribute that has a single optional parameter (**timer**). You could define it like this:
 
 ```
 defaults.ospf.attributes.node:
@@ -125,7 +123,9 @@ defaults.ospf.attributes.node:
     true_value: {}
 ```
 
-However, the value we get when setting `ospf.gr: True` is indistinguishable from the value we get when setting `ospf.gr: False`. To make them different, we have to introduce an extra (hidden) attribute (for example, `_enabled`):
+However, the value we get when setting `ospf.gr: True` is indistinguishable from the value we get when setting `ospf.gr: False`. _netlab_ data validation code transforms a *False* value of an attribute that should be a list or a dictionary into an empty list/dictionary. That behavior is hard-coded too deeply in the code to be changed; we have to live with it, but you can use the `_remove_when_false` flag to force the removal of the attribute before it's type-checked.
+
+The final definition of our attribute is thus:
 
 ```
 defaults.ospf.attributes.node:
@@ -133,27 +133,22 @@ defaults.ospf.attributes.node:
     type: dict
     _keys:
       timer: int
-      _enabled_: bool
-    true_value: { _enabled: True }
+    true_value: {}
+    _remove_when_false: True
 ```
 
 Using that definition, the transformed **ospf.gr** attribute gets these values based on its initial value:
 
 | Initial value | Transformed value |
 |---------------|-------------------|
-| `False`       | `{}`                |
-| `True`        | `{ '_enabled' : True }` |
-| `timer: 3`    | `{ timer: 3 }` |
+| `False`       | not present       |
+| `True`        | `{}`              |
+| `timer: 3`    | `{ timer: 3 }`    |
 
 You can use these values to differentiate the scenarios in your Jinja2 template:
 
 ```
-{% if ospf.gr|default(False) %}
-# An ospf.gr parameter was defined, or ospf.gr was set to True
-#
-# Note: we cannot use `ospf.gr is defined` because the parameter
-# is defined even when it's set to False
-#
+{% if ospf.gr is defined %}
 ... enable ospf.gr functionality
 {%   if ospf.gr.timer is defined %}
 ... set ospf.gr.timer value

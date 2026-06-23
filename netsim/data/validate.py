@@ -8,7 +8,7 @@ import typing
 from box import Box
 
 from ..utils import log, strings
-from . import get_a_list, get_box, get_empty_box
+from . import append_to_list, get_a_list, get_box, get_empty_box
 
 # We also need to import the whole data.types module to be able to do validation function lookup
 from . import types as _tv
@@ -586,6 +586,17 @@ def validate_item(
         
     if rq_fail:                                                       # Attribute failed a dependency test, get out of here
       return False
+
+  # Do we have to remove the item when its value is False? Usually needed to deal with
+  # dictionaries that can be set to False.
+  #
+  # Note: the check is written in a way where the most-probable mismatch (the data value)
+  # is identified first, so we might never get to the 'do we have _remove_when_false' check
+  #
+  if data is False and parent is not None and data_type.get('_remove_when_false',False):
+    parent.pop(key,None)                                              # Remove the value
+    append_to_list(parent,'_removed_attr',key)                        # ... remember we did that
+    return True                                                       # ... and pretend life's good
 
   # We have to handle a weird corner case: AF (or similar) list that is really meant to be a dictionary
   #
