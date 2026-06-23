@@ -7,7 +7,7 @@ import ipaddress
 from box import Box
 
 from ..augment import devices
-from ..data import append_to_list, get_box
+from ..data import append_to_list
 from ..utils import log
 from ..utils import routing as _ospf
 from . import _Module, _routing, bfd
@@ -148,10 +148,6 @@ def check_gr(node: Box, features: Box) -> None:
   for (o_data,_,vrf) in _ospf.rp_data(node,'ospf'):
     if 'gr' not in o_data:
       continue
-
-    for gr_action in ('restart','helper'):
-      if o_data.gr.get(gr_action,None) is True:
-        o_data.gr[gr_action] = get_box({ 'grace_period': 300 })
 
     if len(gr_af) == 2:                               # Both IPv4 and IPv6 are supported -> ok
       continue
