@@ -20,10 +20,10 @@ groups:
     device: linux
     provider: clab
   switches:
-    members: [ l1, l2 ]
+    members: [ dut_l1, l2 ]
     module: [ vlan, vxlan, bgp, evpn ]
   core:
-    members: [ spine ]
+    members: [ dut_spine ]
     module: [ bgp, evpn ]
   x_switches:
     members: [ l2 ]
@@ -35,27 +35,27 @@ vlans:
     mode: bridge
     prefix:
       ipv4: 172.31.1.0/24
-    links: [ l1-h1, l2-h2 ]
+    links: [ dut_l1-h1, l2-h2 ]
 
 evpn.as: 65000
 evpn.session: [ ibgp, ebgp ]
 bgp.community.ebgp: [ standard, extended ]
 
 nodes:
-  spine:
+  dut_spine:
     bgp.as: 65100
-  l1:
+  dut_l1:
     bgp.as: 65201
   l2:
     bgp.as: 65202
 
 links:
-- l1:
-  spine:
+- dut_l1:
+  dut_spine:
   mtu: 1600
   prefix.ipv4: True
 - l2:
-  spine:
+  dut_spine:
   mtu: 1600
   prefix.ipv4: True
 
@@ -65,12 +65,12 @@ validate:
     wait: ebgp_session
     wait_msg: Wait for interface EBGP session to be established
     nodes: [ l2 ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'spine',intf=node.interfaces[0].ifname)
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut_spine',intf=node.interfaces[0].ifname)
 
   evpn_af:
     description: Check EVPN AF on EBGP session with Spine
     nodes: [ l2 ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'spine',intf=node.interfaces[0].ifname,activate='evpn')
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut_spine',intf=node.interfaces[0].ifname,activate='evpn')
     stop_on_error: True
 
   ping_red:
