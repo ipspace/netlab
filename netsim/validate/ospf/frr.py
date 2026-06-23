@@ -14,14 +14,14 @@ from .. import _common
 from . import OSPF_PREFIX_NAMES
 
 
-def show_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default') -> str:
+def show_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default', bfd: bool = False) -> str:
   try:
     ipaddress.IPv4Address(id)
   except Exception as exc:
     raise Exception(f'OSPF router ID {id} is not a valid IPv4 address') from exc
-  return f'ip ospf vrf {vrf} neighbor {id} json'
+  return f'ip ospf vrf {vrf} neighbor {id} detail json'
 
-def valid_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default') -> bool:
+def valid_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default', bfd: bool = False) -> bool:
   _result = global_vars.get_result_dict('_result')
 
   if vrf in _result:
@@ -36,6 +36,13 @@ def valid_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default') -> 
   if not present:
     raise Exception(f'Unexpected OSPFv2 neighbor {id} in state {n_state.nbrState}')
 
+  if bfd:
+    exit_msg = f'OSPFv2 neighbor {id} is in BFD state {n_state.peerBfdInfo.status}'
+    if n_state.peerBfdInfo and n_state.peerBfdInfo.status == "Up":
+      raise log.Result(exit_msg)
+    else:
+      raise Exception(exit_msg)
+
   exit_msg = f'OSPFv2 neighbor {id} is in state {n_state.nbrState}'
   if not n_state.nbrState.startswith('Full'):
     raise Exception(exit_msg)
@@ -49,7 +56,7 @@ def show_ospf6_neighbor(id: str, present: bool = True, vrf: str = 'default', **k
     raise Exception(f'OSPF router ID {id} is not a valid IPv4 address') from exc
   return f'ipv6 ospf6 vrf {vrf} neighbor {id} json'
 
-def valid_ospf6_neighbor(id: str, present: bool = True, vrf: str = 'default') -> bool:
+def valid_ospf6_neighbor(id: str, present: bool = True, vrf: str = 'default', bfd: bool = False) -> bool:
   _result = global_vars.get_result_dict('_result')
   vrf_name = '' if vrf == 'default' else f' in VRF {vrf}'
 
@@ -70,6 +77,13 @@ def valid_ospf6_neighbor(id: str, present: bool = True, vrf: str = 'default') ->
 
   if n_state.neighborState != 'Full':
     raise Exception(f'OSPFv3 neighbor {id}{vrf_name} is in state {n_state.neighborState}')
+
+  if bfd:
+    exit_msg = f'OSPFv3 neighbor {id} is in BFD state {n_state.peerBfdInfo.status}'
+    if n_state.peerBfdInfo and n_state.peerBfdInfo.status == "Up":
+      raise log.Result(exit_msg)
+    else:
+      raise Exception(exit_msg)
 
   return True
 

@@ -29,7 +29,7 @@ def get_ospf_neighbor_data(data: Box, *, id: str, proto: str, vrf: str = 'defaul
   ngb_list = [ ngb for ngb in ngb_list if ngb.routerId == id ]
   return ngb_list
 
-def show_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default') -> str:
+def show_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default', bfd: bool = False) -> str:
   try:
     ipaddress.IPv4Address(id)
   except:
@@ -41,7 +41,8 @@ def valid_ospf_neighbor(
       present: bool = True,
       vrf: str = 'default',*,
       proto: str='ospf',
-      proto_name: str = 'OSPFv2') -> bool:
+      proto_name: str = 'OSPFv2',
+      bfd: bool = False) -> bool:
   _result = global_vars.get_result_dict('_result')
   ngb_list = get_ospf_neighbor_data(_result,id=id,proto=proto,vrf=vrf)
 
@@ -53,6 +54,11 @@ def valid_ospf_neighbor(
   n_state = ngb_list[0]
   if not present:
     raise Exception(f'Unexpected {proto_name} neighbor {id} in state {n_state.adjacencyState}')
+
+  if bfd:
+    _common.report_state(
+      exit_msg=f'{proto_name} neighbor {id} is in BFD state {n_state.details.bfdState} ',
+      OK=n_state.details.bfdState == "up")
 
   _common.report_state(
     exit_msg=f'{proto_name} neighbor {id} is in state {n_state.adjacencyState}',
