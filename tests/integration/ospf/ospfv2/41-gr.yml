@@ -10,50 +10,51 @@ groups:
   probes:
     device: frr
     provider: clab
-    members: [ x1 ]
+    members: [ xgr, xp ]
     module: [ ospf ]
 
 nodes:
   dut:
     ospf.gr:
       helper:
-        grace_period: 123
-  x1:
+        grace_period: 600
+  xgr:
     ospf.gr:
       restart:
         grace_period: 60
+  xp:
+
+ospf.timers:
+  hello: 1
+  dead: 3
 
 links:
-- dut:
-  x1:
-  # Keep the GR retention test short: route_during_gr waits past this dead timer.
-  ospf.timers:
-    hello: 1
-    dead: 3
+- dut-xgr
+- dut-xp
 
 validate:
   adj:
-    description: Check OSPF adjacency with X1
+    description: Check OSPF adjacency with DUT
     wait_msg: Waiting for OSPF adjacency process to complete
     wait: ospfv2_adj_p2p
-    nodes: [ x1 ]
+    nodes: [ xgr, xp ]
     plugin: ospf_neighbor(nodes.dut.ospf.router_id)
-  route_before:
-    description: Check X1 loopback route on DUT
+  xgr_present:
+    description: Check XGR loopback route on XP
     wait_msg: Waiting for SPF to complete
     wait: ospfv2_spf
-    nodes: [ dut ]
-    plugin: ospf_prefix(nodes.x1.loopback.ipv4)
+    nodes: [ xp ]
+    plugin: ospf_prefix(nodes.xgr.loopback.ipv4)
   gr_stop:
-    description: Start planned OSPF graceful restart on X1
-    nodes: [ x1 ]
+    description: Start planned OSPF graceful restart on XGR
+    nodes: [ xgr ]
     devices: [ frr ]
     exec: >-
       vtysh -c "graceful-restart prepare ip ospf" && kill -STOP $(pidof ospfd)
   wait_gr:
-    description: Wait for the graceful restart to start
-    wait: 5
-  route_during_gr:
-    description: Check X1 loopback route on DUT during graceful restart
-    nodes: [ dut ]
-    plugin: ospf_prefix(nodes.x1.loopback.ipv4)
+    description: Wait a long while to ensure SPF has been run
+    wait: ospfv2_spf_long
+  gr_helper:
+    description: Check XGR loopback during graceful restart
+    nodes: [ xp ]
+    plugin: ospf_prefix(nodes.xgr.loopback.ipv4)
