@@ -1,0 +1,244 @@
+(dev-valid-data-types)=
+## Valid Data Types
+
+Validator recognizes standard Python data types (**str**, **int**, **float**, **bool**, **list** or **dict**), the following networking-specific data types, and [user-defined data types](validate-user-types).
+
+| Data type.     | Meaning |
+|----------------|---------|
+| **addr_pool**  | [Address pool](address-pools) |
+| **asn**        | AS number (2-octet or 4-octet) |
+| **asn2**       | 2-octet ASN |
+| **bool_false** | The only valid value is *false* |
+| **device**     | Valid device (platform) identifier |
+| **id**         | Identifier (containing A-Z, a-z, 0-9 and underscore) |
+| **ipv4**       | An IPv4 address, prefix, integer (offset in a subnet), or bool (unnumbered) |
+| **ipv6**       | An IPv6 address, prefix, integer (offset in a subnet), or bool (LLA only) |
+| **mac**        | MAC address in any format recognized by the `netaddr` library |
+| **named_pfx**  | [named prefix](named-prefixes) |
+| **net**        | IS-IS NET/NSAP |
+| **node_id**    | Valid node name |
+| **prefix_str** | An IPv4 or IPv6 prefix |
+| **rd**         | Route distinguisher (ASN:ID or IP:ID) |
+| **r_proto**    | Routing protocol identifier |
+| **time**       | Time duration specified in seconds (`s`) or milliseconds (`ms`) |
+ 
+The data type can be specified as a string (without additional parameters) or a dictionary with a **type** attribute (data type as a string) and other type-specific validation parameters. When specifying a user-defined data type with the **type** attribute, the definition of the user-defined data type is *merged* with the type definition.
+
+For example, VLAN link parameters include **access** and **native**, which can be any string value, as well as **mode** that must have one of the predefined values:
+
+```
+vlan:
+  attributes:
+    link:
+      access: str
+      native: str
+      mode:  { type: str, valid_values: [ bridge, irb, route] }
+```
+
+All attributes defined with a dictionary (**mode** in the above example, but not **access** or **native**) can use the following validation parameters:
+
+* **true_value** -- value to use when the parameter is set to *True*
+* **_requires** -- a list of modules that must be enabled in global- or node context to allow the use of this attribute. See `vrfs` in `modules/vrf.yml` and `vlans` in `modules/vlan.yml` for more details.
+* **_required** (bool) -- the attribute must be present in the parent dictionary[^CRQ]
+* **_default** -- the default value of the attribute. Added to the data structure when the attribute is not specified in the lab topology
+* **_valid_with** -- a list or dictionary of attributes that can be used with this attribute ([example](inter-attribute-examples)).
+* **_invalid_with** -- specifies attributes that cannot be used together with this attribute. Can be:
+
+  - A list of attribute names (this attribute cannot be used when any of the listed attributes are present)
+  - A dictionary where keys are attribute names and values specify that the conflict occurs when the conflicting attribute has (one of the) the specified value(s)
+
+* **_alt_types** -- [alternate data types](validation-alt-types)
+
+[^CRQ]: This does not make the parent dictionary mandatory, but if it's present, it must have the required attribute. Use a chain of `_required` attributes if you want to enforce the presence of an attribute deep in the data structure.
+
+See [](validation-definition-examples) and [](inter-attribute-examples) for more details.
+
+### Further Data Type Validation Options
+
+When an attribute has a data type defined with the **type** attribute, you can use the following attributes to perform value-based validations:
+
+{.wrap-cells}
+| Data type | Value validation option |
+|-----------|-------------------------|
+| **str**   | **valid_values** -- list of valid values |
+| **list**  | **valid_values** -- list of valid values, checked for every element in the list |
+|           | **create_empty** (bool) -- replace None value with an empty list |
+|           | **empty** (bool, default: True) -- can the list be empty? |
+|           | **make_list** (bool) -- force non-scalar values to become single-element lists |
+|           | **split_lines** (bool) -- split multi-line string value into multiple list elements |
+|           | **_subtype** -- validate values as belonging to the specified subtype |
+| **dict**  | **create_empty** (bool) -- replace None value with an empty dictionary |
+|           | **_keys** -- validation rules for individual dictionary keys. |
+|           | **_subtype** -- validate values as belonging to the specified subtype |
+|           | **_keytype** -- validate keys as belonging to the specified scalar type |
+|           | **_list_to_dict** -- [value can be specified as a list](validation-list-to-dict) |
+| **float** | **min_value** -- minimum parameter value |
+|           | **max_value** -- maximum parameter value |
+| **id**    | **max_length** -- maximum identifier length |
+| **int**   | **min_value** -- minimum parameter value |
+|           | **max_value** -- maximum parameter value |
+| **ipv4**  | **use** -- [the use of IPv4 address/prefix](validation-ip-address) |
+| **ipv6**  | **use** -- [the use of IPv6 address/prefix](validation-ip-address) |
+
+**Notes**
+* **_keys** attribute is rarely used in dictionary definitions. Using a [shortcut definition](validation-shortcut-type) is much better. See [examples](validation-definition-examples) for a counterexample.
+
+You can also specify additional hints and help messages with an attribute:
+
+| Keyword   | Meaning |
+|-----------|---------|
+| **_help** | Help displayed when a value does not match the data type.<br>Overrides the built-in help message |
+| **_hint** | Additional hint(s) displayed together with an error message.<br>Use this attribute to explain what could be wrong |
+
+(validation-error-type)=
+### Error Data Type
+
+Sometimes you want to display a very specific error message when encountering an invalid attribute. For example, the **config.inline** validation test attribute only works when the **[files](plugin-files)** plugin is enabled. You can use the **error** data type to catch such scenarios, for example:
+
+```
+_v_entry:                   # Validation entry
+  config:
+    inline:
+      type: error
+      _err_msg: Enable "files" plugin to use the "inline" configuration template
+    _alt_types: [ str ]
+```
+
+You can also use the **error** data type as a **_subtype** definition when an attribute can have a dictionary value only under very specific conditions. For example, the node **config** attribute is usually a list but could be a dictionary if the lab topology uses the **files** plugin:
+
+```
+node:
+  config: 
+    type: dict
+    _subtype:
+      type: error
+      _err_msg: Enable "files" plugin to use the inline node/group configuration template(s)
+    _alt_types: [ list ]
+```
+
+The **error** data type can have two additional attributes:
+
+* **_err_msg**: The text to display as a hint to the user
+* **_err_hint**: A hint from the **defaults.hints** dictionary to display as an explanation of the error
+
+(dev-valid-special-keys)=
+### Special Attribute Dictionary Keys
+
+The attribute dictionaries can contain these special keys:
+
+* **_namespace**: a list of additional namespaces recognized within the object. For example, the **vlan** object can contain **link** attributes (see `netlab show attributes vlan --format yaml` for an example)
+* **_description**: object description displayed in the **netlab show attributes** printout (see `netlab show attributes _v_entry --format yaml` for an example)
+
+(validation-definition-examples)=
+### Data Type Definition Examples
+
+VLAN ID is an integer between 1 and 4K. VXLAN ID is an integer between 1 and 16M. This is how they are defined in the **vlan** definition:
+
+```
+attributes:
+  vlan:
+    id: { type: int, min_value: 1, max_value: 4095 }
+    vni: { type: int, min_value: 1, max_value: 16777215 }
+```
+
+BGP sessions is a dictionary of per-AF BGP session types. The value of **bgp.attributes.global.sessions** is defined as a dictionary which triggers recursive validation:
+
+```
+bgp.attributes:
+  global:
+    sessions:
+      ipv4: [ ibgp, ebgp ]
+      ipv6: [ ibgp, ebgp ]
+```  
+
+Topology name definition contains an error message that should be more useful than the generic 'identifier is...' message:
+
+```
+global:
+  name: 
+    type: id
+    _help: |
+      Topology name should be no longer than 16 characters. It should start with a letter
+      and contain letters, underscores or numbers. netlab derives it from directory name
+      when it's not specified in the lab topology file.
+```
+
+*clab* provider parameters include a **type** attribute, colliding with the validation **type** attribute. Valid *clab* attributes thus have to be specified with **_keys** dictionary:
+
+```
+clab.attributes:
+  node:
+    type: dict
+    _keys:          # Make keys explicit to get around the 'type' attribute
+      binds:
+      kind: str
+      config_templates:
+      type: str
+      cmd: str
+      ...
+```
+
+The global **vlans** dictionary can be used only with the **vlan** module:
+
+```
+attributes:
+  global:
+    vlans:                        # vlans is a valid global parameter
+      type: dict                  # It's a dictionary
+      _requires: [ vlan ]         # ... that requires VLAN module
+```
+
+The global **vrfs** attribute is a dictionary of **vrf** definitions. The VRF names must be valid identifiers.
+
+```
+attributes:
+  global:
+    vrfs:                         # vrfs is a valid global parameter
+      type: dict                  # It's a dictionary
+      _subtype: vrf               # ... of VRF definitions
+      _keytype: id                # ... where the VRF names must be valid identifiers
+      _requires: [ vrf ]          # ... that requires VRF module
+```
+
+You can specify a list of BGP session types for the MPLS 6PE functionality. However, you can also specify a *True* value for the global **mpls.6pe** attribute to enable the feature. The *True* value gets translated into a default list (enable 6PE on IBGP sessions):
+
+```
+mpls:
+  attributes:
+    global:
+      6pe: { type: list, true_value: [ ibgp ] }
+```
+
+(inter-attribute-examples)=
+### Attribute Dependency Validation Examples
+
+The **delete.community.list** in a routing policy entry cannot be used with any other **delete.community** attributes. **‌**
+
+```
+      delete:
+        community:
+          standard: list
+          extended: list
+          large: list
+          list:
+            type: str
+            _valid_with: [ ]
+
+```
+
+The **set** or **delete** attributes of a routing policy cannot be used when the **action** attribute is set to **deny** (because the route is dropped anyway):
+
+```
+  attributes:
+    rp_entry:                       # Define routing policy entry
+      _description: Routing policy entry
+      action:
+        type: str
+        valid_values: [ permit, deny ]
+      set:
+        _invalid_with: { action: deny }
+        ...
+      delete:
+        _invalid_with: { action: deny }
+        ...
+```

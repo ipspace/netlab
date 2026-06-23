@@ -18,11 +18,11 @@ groups:
 vlans:
   red:
     vrf: tenant
-    links: [ s1-h1 ]
+    links: [ l2sw-h1 ]
     vni: 5000
   blue:
     vrf: tenant
-    links: [ s1-h2 ]
+    links: [ l2sw-h2 ]
     vni: 5001
 
 vrfs:
@@ -31,20 +31,21 @@ vrfs:
     ospf: False
 
 nodes:
-  s1:
+  dut:
+    module: [ vlan, vxlan, ospf, vrf ]
+    role: router
+    vlans:                                      # Bring VLANs to ROS (until we agree on a better solution)
+      red:
+      blue:
+  l2sw:
     module: [ vlan, vxlan, ospf ]
     vlan.mode: bridge
     device: frr
     provider: clab
-  ros:
-    module: [ vlan, vxlan, ospf, vrf ]
-    vlans:                                      # Bring VLANs to ROS (until we agree on a better solution)
-      red:
-      blue:
 
 links:
-- s1:
-  ros:
+- dut:
+  l2sw:
   mtu: 1600
 
 validate:
@@ -52,15 +53,15 @@ validate:
     description: Check OSPF adjacencies
     wait_msg: Waiting for OSPF adjacency process to complete
     wait: ospfv2_adj_p2p
-    nodes: [ s1 ]
-    plugin: ospf_neighbor(nodes.ros.ospf.router_id)
+    nodes: [ l2sw ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
     stop_on_error: True
   ping_gw:
     description: Host-to-router ping-based reachability tests
     wait_msg: Waiting for OSPF to do its magic
     wait: vxlan_ping
     nodes: [ h1, h2 ]
-    plugin: ping(nodes.ros.vrfs.tenant.loopback_address.ipv4)
+    plugin: ping(nodes.dut.vrfs.tenant.loopback_address.ipv4)
   ping_e2e:
     description: Host-to-host ping-based reachability tests
     wait_msg: We might have to wait a bit longer
@@ -70,10 +71,10 @@ validate:
 
 _fixup:
   arubacx:
-    nodes.s1.device: eos
+    nodes.l2sw.device: eos
     validate.warning:
       wait: 0
       level: warning
       fail: VXLAN-encapsulated ARP packets sent by Aruba CX have invalid IP packet length
     _delete:
-      nodes.s1.provider:
+      nodes.l2sw.provider:

@@ -394,7 +394,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Cumulus Linux 5.x (NVUE) | ✅ |  ❌  |   ❌   | ✅ [❗](caveats-cumulus-nvue)  |  ❌  |
 | Dell OS10             | ✅ [❗](caveats-os10) |   ❌   |   ❌   | ✅  |  ❌  |
 | Extreme Networks EXOS | ✅   |   ❌   |   ❌   |   ❌   |  ❌  |
-| Fortinet FortiOS      | ✅ [❗](caveats-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |
+| Fortinet FortiOS      | ✅ [❗](caveats-fortios) |   ❌   |   ❌   |  ✅  |  ❌  |
 | FRR                   | ✅   |  ✅   |   ❌  | ✅  |  ✅  |
 | Junos[^Junos]         | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
 | Mikrotik RouterOS 6   | ✅   |   ❌   |   ❌  | ✅  |   ❌  |
@@ -417,6 +417,7 @@ These devices support additional control-plane protocols or BGP address families
 | --------------------- | :-: | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  | ✅  | ✅  | ✅  |
+| BIRD                  |  ❌  |  ❌  |  ❌  | ✅  |
 | Cisco IOS XE[^XE]     | ✅  | ✅  | ✅  | ✅  |
 | Cisco IOSv/IOSvL2     | ✅  |  ❌  | ✅  | ✅  |
 | Cisco IOS XR[^XR]     |  ❌  | ✅  | ✅  | ✅  |
@@ -447,7 +448,7 @@ The layer-2 control plane [configuration modules](module-reference.md) are suppo
 | ------------------------- |:--:|:--:|
 | Arista EOS                | ✅ | ✅ |
 | Aruba CX                  | ✅ | ✅ |
-| bird                      | ❌  | ✅ |
+| BIRD                      | ❌  | ✅ |
 | Cumulus Linux             | ✅ | ✅ |
 | Cumulus Linux 5.x (NVUE)  | ✅ | ✅ |
 | Dell OS10                 | ✅ | ✅ |
@@ -462,6 +463,7 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | --------------------- |:--:|:--:|:--:|:--:|:--:|:--:|
 | Arista EOS            | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
 | Aruba AOS-CX          | ✅ | ✅ |  ✅[❗](caveats-aruba) | [❗](caveats-aruba) | ❌ | ❌ |
+| BIRD                  | ✅ |  ❌ | ✅ |  ❌ |  ❌ |  ❌ |
 | Cisco 8000v (IOS XR)  | ✅ | ✅ |  ❌ | ✅ | ✅ | ✅ |
 | Cisco Catalyst 8000v  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cisco CSR 1000v       | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
@@ -522,7 +524,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Cumulus Linux NVUE    |  ❌ | ❌ | ❌ | ✅ | ❌ |
 | Dell OS10             | ✅ | ❌ | ❌ | ✅ | ❌ |
 | Extreme Networks EXOS | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Fortinet FortiOS      | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Fortinet FortiOS      | ✅ | ❌ | ❌ | ✅ | ❌ |
 | FRR                   | ✅ | ✅ | ❌ | ✅ | ❌ |
 | Junos[^Junos]         | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
 | Mikrotik RouterOS 6   |  ❌ | ❌ | ❌ | ✅ | ❌ |

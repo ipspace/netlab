@@ -1,0 +1,47 @@
+(validate-user-types)=
+## User-Defined Data Types
+
+Consider using user-defined data types if you use the same data structure in multiple places. You can define them in **defaults.attributes** and use them to validate any attribute.
+
+For example, the **bgp.session** plugin defines BGP timers as `exbs_timers` user-defined data type:
+
+```
+attributes:                   # User-defined data types
+  exbs_timers:                # BGP timers: keepalive, hold, min_hold -- integers with a value range
+    keepalive:
+      type: int
+      min_value: 1
+      max_value: 300
+    hold:
+      type: int
+      min_value: 3
+      max_value: 3600
+    min_hold:
+      type: int
+      min_value: 3
+      max_value: 3600
+```
+
+The `exbs_timers` data type is then used to validate **bgp.timers** global- and node attribute:
+
+```
+bgp:
+  attributes:
+    global:
+      timers: exbs_timers
+...
+    node:
+      timers: exbs_timers
+```
+
+You can use the `_namespace` attribute within the user-defined data types to add attributes from other objects. For example, as you can use link attributes in VLAN definitions, the **vlan** definition (see `modules/vlan.yml`) includes the `_namespace` attribute:
+
+```
+attributes:
+  vlan:                           # Define the VLAN object type
+    id: { type: int, min_value: 1, max_value: 4095 }
+    vni: { type: int, min_value: 1, max_value: 16777215 }
+    mode: { type: str, valid_values: [ bridge, irb, route ] }
+    prefix:
+    _namespace: [ link ]          # VLANs can include link attributes
+```

@@ -1,0 +1,42 @@
+#!/bin/sh
+#
+# This script can be used by containers that need additional data plane configuration
+# before the root process is started
+#
+# The list of data-plane modules should be in "netlab_dp_module" node variable and the
+# daemon start command should be in "netlab_start_daemon" node/group variable. Optional
+# "netlab_dp_timeout" variable specifies how long the script waits until it crashes
+# the container.
+#
+# The data-plane configuration scripts should create /var/run/_module_.done file when
+# they complete their task
+#
+DP_LIST="{{ netlab_dp_module|join(' ') }}"
+START_TIME=$(date +%s)
+TIMEOUT={{ netlab_dp_timeout|default(600)|int }}
+DEADLINE=$((START_TIME + TIMEOUT))
+echo "Waiting $TIMEOUT seconds for data-plane configuration modules $DP_LIST"
+while true; do
+  missing=""
+
+  for file in $DP_LIST; do
+    if [ ! -e "/var/run/$file.done" ]; then
+      echo "Still waiting for $file data-plane configuration"
+      missing="$file"
+      break
+    fi
+  done
+
+  if [ -z "$missing" ]; then
+    break
+  fi
+
+  if [ "$(date +%s)" -ge "$DEADLINE" ]; then
+    echo "The data-plane configuration did not complete within $TIMEOUT seconds"
+    exit 1
+  fi
+
+  sleep 1
+done
+echo "Data-plane configuration complete, starting {{ netlab_device_type }} daemon"
+exec {{ netlab_start_daemon }}

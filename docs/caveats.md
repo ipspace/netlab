@@ -84,11 +84,11 @@ nodes:
 (caveats-bird)=
 ## BIRD Internet Routing Daemon
 
-* You must build the BIRD container image with the **netlab clab build bird** command. See [](build-bird) for build targets and version options.
+* You must build the BIRD container image with the **netlab clab build bird** command. Without additional arguments, that command installs the latest BIRD v3 package from CZ.NIC BIRD repository on top of Ubuntu 24.04. See [](build-bird) for build targets and version options.
 * BIRD is implemented as a pure control-plane daemon running as a container with a single external interface. You can set the node **role** to **router** to turn a BIRD instance into a more traditional networking device with a loopback interface.
-* _netlab_ installs BIRD software in a container image running Ubuntu 24.04 when you use the default **netlab clab build bird** target (~2.14). Other build targets install different BIRD releases — see [](build-bird).
 * BIRD supports a single router ID used for BGP and OSPF.
 * The VM or container running BIRD in host mode starts with static routes pointing to one of the adjacent routers (see [](linux-forwarding)). After establishing routing adjacencies, BIRD copies BGP and OSPF into the kernel IP routing table.
+* The **bird** container starts BIRD in foreground mode with logging messages (including debugging messages) sent to *stderr*. Use the **docker logs** command to inspect the BIRD messages.
 
 ### OSPF Caveats
 
@@ -347,6 +347,12 @@ Device-specific parameters:
 
 * A FortiGate firewall does not pass any traffic by default. If you want the firewall to behave like a router after the initial configuration, set the `netlab_default_policy` node- or group variable to `True`. To create a disabled default policy, set the `netlab_default_policy.enable` variable to `False`.
 
+[BGP graceful restart](plugin-bgp-session-gr) (**bgp.session** plugin):
+
+* FortiOS has no helper-only graceful restart mode: it either advertises the full restart capability or stays silent. The only valid **bgp.gr** states are therefore `enable` and `disable`; a node-level `state: helper` leaves the device default (graceful restart disabled) in place.
+* FortiOS accepts the graceful restart timers in the 1-3600 second range. A value of 0 (allowed by the _netlab_ schema) is rejected by the device during configuration deployment.
+* Enabling graceful restart on any BGP neighbor also enables the global FortiOS **graceful-restart** switch, which preserves the forwarding state across a routing restart. Advertising the capability without it would announce forwarding-state preservation the device does not deliver.
+
 Device configuration:
 
 * Use a recent version of Ansible and **fortinet.fortios** Ansible Galaxy collection (version 2.3.6 or later)
@@ -400,7 +406,7 @@ ansible_httpapi_port: 80
 * Many FRR configuration templates are not idempotent -- you cannot run **netlab initial** multiple times. Non-idempotent templates include VLAN and VRF configurations.
 * You can change the FRR default profile with the **netlab_frr_defaults** node parameter (`traditional` or `datacenter`, default is `datacenter`).
 * **netlab collect** downloads FRR configuration but not Linux interface configuration.
-* FRR has no default logging destinations. The initial device configuration adds file logging to `/tmp/logging`.
+* FRR has no default logging destinations. The initial device configuration adds file logging to `/var/log/frr/frr.log`.
 * _netlab_ automatically enables FRR daemons required by the _netlab_ modules you use on individual nodes in the `/etc/frr/daemons` FRRouting configuration file. Use the **frr.daemons** node attribute to enable additional FRRouting daemons.
 
 **FRR-Specific Node Attributes:**

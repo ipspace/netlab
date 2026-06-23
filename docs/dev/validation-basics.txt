@@ -1,0 +1,70 @@
+(dev-valid-basics)=
+## Attribute Validation Basics
+
+Various data model transformation routines check:
+
+* Global attributes defined in `attributes.global`
+* Address pool attributes defined in `attributes.pool`
+* Group attributes defined in `attributes.group` and augmented with `attributes.node`
+* Node attributes defined in `attributes.node`
+* Link attributes combined from `attributes.link` and `attributes.link_internal`
+* Interface attributes combined from `attributes.interface` and `attributes.link` but without `attributes.link_no_propagate`
+* VLAN attributes defined in `attributes.vlan`
+* VRF attributes defined in `attributes.vrf`
+* Prefix attributes defined in `attributes.prefix`
+
+Group, node, link, interface, VLAN, and VRF attributes are augmented with module attributes based on modules configured on individual groups, nodes (node and interface attributes), or the list of all modules used in a lab topology (link, VLAN, VRF attributes).
+
+**attributes** dictionary has additional elements that define extra attributes and propagation of attributes between lab topology objects:
+
+* **internal** global attributes are valid but not checked
+* **link_internal** link attributes are valid but not checked
+* Link module attributes are copied to interface attributes unless the module is mentioned in the **link_module_no_propagate** list
+* Pool attributes are copied to prefixes unless they are mentioned in the **pool_no_copy** list
+* Node attributes mentioned in the **node_copy** list are copied into node's interfaces
+* Global module attributes are copied into node attributes unless they're listed in a module **no_propagate** list
+* Individual modules could use additional values in the **attributes** dictionary. For example, the VLAN module uses the **vlan_no_propagate** list to control which VLAN attributes are not copied into links or SVI interfaces.
+
+## Specifying Valid Attributes
+
+Core- or module-specific attribute types that are validated (**global**, **node**, **link**, **interface**, **pool**, **prefix**, **groups**, **vlan**, **vrf**) are specified as dictionaries of valid attributes.
+
+The keys of the data type definition dictionaries are the valid attribute names, the values are the attribute data type descriptions (see also [](dev-valid-special-keys)).
+
+For example, this is the definition of valid **gateway** attributes and their data types:
+
+```
+gateway:
+  attributes:
+    global:
+      id: int
+      protocol: { type: str, valid_values: [ anycast, vrrp ] }
+      anycast:
+        unicast: bool
+        mac: mac
+      vrrp:
+        group: int
+        priority: int
+        preempt: bool
+    node:
+      protocol:
+      anycast:
+      vrrp:
+    link:
+      id: int
+      ipv4: { type: ipv4, use: interface }
+      protocol: { type: str, valid_values: [ anycast, vrrp ] }
+      anycast:
+        unicast: bool
+        mac: mac
+      vrrp:
+        group: int
+        priority: int
+        preempt: bool
+```
+
+The dictionary-based approach allows in-depth validation of nested attributes, where each attribute could be:
+
+* Another dictionary without the **type** key (use for nested attributes)
+* A string specifying the desired data type.
+* A dictionary specifying the data type in **type** key, and containing additional parameters described in [](dev-valid-data-types).

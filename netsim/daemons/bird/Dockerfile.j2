@@ -1,0 +1,89 @@
+{%- set _sw_version = sw_version|default("v3") -%}
+{%- set _base_image = "debian:trixie-slim" -%}
+{%- set _runtime_tools = "iputils-ping net-tools iproute2 procps" -%}
+{%- set _is_bird2 = _sw_version == "v2" -%}
+{%- set _is_bird3 = _sw_version == "v3" -%}
+{%- set _from_source = not (_is_bird2 or _is_bird3) -%}
+{%- if _from_source -%}
+# syntax=docker/dockerfile:1
+# --- Stage 1: Build Stage ---
+FROM {{ _base_image }} AS builder
+
+# Install compilation dependencies
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y \
+    build-essential \
+    flex \
+    bison \
+    libncurses-dev \
+    libreadline-dev \
+    libssh-dev \
+    autoconf \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+{%- set _clab = defaults.daemons.bird.clab %}
+{%- set _url = _clab.sw_download_url %}
+{%- if not _url %}{{ fail('sw_download_url must be defined in defaults.daemons.bird.clab') }}{% endif %}
+{%- set _sw_download_url = _url.replace('{sw_version}', _sw_version) %}
+
+# Download and extract source code
+RUN set -e; \
+    if ! wget -q -O /tmp/sw-src.tar.gz "{{ _sw_download_url }}"; then \
+      echo "ERROR: Cannot download BIRD {{ _sw_version }} from {{ _sw_download_url }} - version may not exist"; \
+      exit 1; \
+    fi; \
+    tar -xzf /tmp/sw-src.tar.gz
+
+WORKDIR /bird-{{ _sw_version }}
+
+# Configure, compile, and install
+RUN ./configure --prefix=/usr --sysconfdir=/etc/bird --localstatedir=/var \
+    && make -j$(nproc) \
+    && make install
+
+# --- Stage 2: Runtime Stage ---
+{% endif -%}
+
+FROM {{ _base_image }}
+ENV DEBIAN_FRONTEND=noninteractive
+
+LABEL maintainer="Netlab project <netlab.tools>"
+LABEL description="BIRD Internet Routing Daemon (bird.network.cz) {{_sw_version}}"
+
+{% if _from_source %}
+# Install runtime dependencies
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y \
+    libreadline8 \
+    libssh-4 \
+    {{ _runtime_tools }} \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy binaries and built directories from the builder stage
+COPY --from=builder /usr/sbin/bird /usr/sbin/bird
+COPY --from=builder /usr/sbin/birdcl /usr/sbin/birdcl
+COPY --from=builder /etc/bird /etc/bird
+
+{% else %}
+RUN mkdir /etc/bird && mkdir /run/bird && apt-get update && \
+    apt-get install -y {{ _runtime_tools }}{% if _is_bird2 %} bird2{% else %} apt-transport-https ca-certificates wget{% endif %}
+
+{% if _is_bird3 %}
+RUN wget -O /usr/share/keyrings/cznic-labs-pkg.gpg https://pkg.labs.nic.cz/gpg
+
+RUN echo "deb [signed-by=/usr/share/keyrings/cznic-labs-pkg.gpg] https://pkg.labs.nic.cz/bird3 trixie main" \
+    | tee /etc/apt/sources.list.d/cznic-labs-bird3.list
+
+RUN apt-get update && apt-get install -y bird3
+{% endif %}
+{% endif %}
+
+# Create runtime directory for control sockets
+RUN mkdir -p /var/run
+
+WORKDIR /root
+# Run BIRD in the foreground with the default config path
+CMD ["/usr/sbin/bird", "-d", "-c", "/etc/bird/bird.conf"]

@@ -1,0 +1,20 @@
+{% for intf in interfaces if intf.gateway.protocol|default('none') == 'vrrp' %}
+{%   for afm in ['ipv4','ipv6'] if afm in intf.gateway %}
+{%     set v_if = 'vrrp%s-%s-%s'|format('6' if afm == 'ipv6' else '',intf.ifindex,intf.gateway.vrrp.group) %}
+{%     set v_mac = intf.gateway.vrrp.mac[afm] %}
+if [ ! -e /sys/class/net/{{ v_if }} ]; then
+  ip link add {{ v_if }} link {{ intf.ifname }} type macvlan mode bridge
+  ip link set dev {{ v_if }} address {{ v_mac }} addrgenmode {{ 'none' if afm == 'ipv4' else 'random' }}
+  ip addr add {{ intf.gateway[afm] }} dev {{ v_if }}
+{%     if afm=='ipv4' %}
+  sysctl -w net.ipv4.conf.{{ intf.ifname }}.arp_announce=2
+  sysctl -w net.ipv4.conf.{{ intf.ifname }}.arp_ignore=2
+  sysctl -w net.ipv4.conf.{{ intf.ifname }}.arp_accept=1
+{%     endif %}
+{%     if 'vrf' in intf %}
+  ip link set dev {{ v_if }} master {{ intf.vrf }}
+{%     endif %}
+  ip link set dev {{ v_if }} up
+fi
+{%   endfor %}
+{% endfor %}

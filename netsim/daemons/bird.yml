@@ -22,6 +22,7 @@ clab:
     netlab_show_command: [ birdc, 'show $@' ]
     docker_shell: bash -il
     netlab_config_mode: sh
+    netlab_start_daemon: "/usr/sbin/bird -d -c /etc/bird/bird.conf"
   image: netlab/bird:latest
   build: True
   sw_version: 2.19.1
@@ -30,7 +31,12 @@ clab:
     initial:
       roles: [ host, router ]
       config_mode: [ sh ]
-libvirt:                        # Not yet available on libvirt
+      dataplane_config: [ vxlan, vrf ]
+      extra_daemon_config:
+        vrf: /etc/bird/vrf.mod.conf
+libvirt:                        # Not yet available on libvirt or virtualbox
+  image:
+virtualbox:
   image:
 features:
   bfd: true
@@ -68,6 +74,8 @@ features:
   routing:
     static.discard: true
   dhcp: false
+  gateway:
+    protocol: [ anycast ]
   initial:
     ipv4:
       unnumbered: peer
@@ -75,3 +83,6 @@ features:
       lla: true
     reload: false
     roles: [ host, router ]
+  vxlan:
+    vtep6: true
+#  vrf: {}                           # Placeholder, has to be replaced with the real VRF code

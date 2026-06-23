@@ -128,12 +128,22 @@ echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
 
 {% if not netlab_initial_reload|default(False) %}
 #
+# Ensure FRR's log directory exists before enabling file logging
+#
+mkdir -p /var/log/frr && chown frr:frr /var/log/frr
+#
 # Rest of initial configuration done through VTYSH
 #
 cat >/tmp/config <<CONFIG
 hostname {{ inventory_hostname }}
 !
-log file /tmp/logging
+{#
+  Log to /var/log/frr, FRR's canonical log directory. A /tmp destination is
+  rejected by the host AppArmor bgpd/staticd profiles (shipped in the apparmor
+  package), which permit /var/log/frr/* but deny /tmp; on FRR 10.4 that rejection
+  is fatal and aborts initial configuration.
+#}
+log file /var/log/frr/frr.log
 {% from '_debug_commands.j2' import enable_debugging %}
 {{ enable_debugging(frr.debug,prefix='debug') }}
 !
