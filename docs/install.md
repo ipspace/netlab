@@ -8,12 +8,10 @@
 
 _netlab_ is a high-level abstraction and orchestration tool that relies on other tools to provide the low-level functionality:
 
-* VM/container virtualization with KVM or Docker[^NVB]
+* VM/container virtualization with KVM or Docker
 * Virtualization API: libvirt (used with KVM on Linux)
 * VM/container orchestration: Vagrant or containerlab
 * Configuration deployment: Ansible 2.9.1[^ANS] or later
-
-[^NVB]: VirtualBox virtualization provider has been removed as of XXXXX.
 
 [^ANS]: Ansible 2.9 has been tested with Arista EOS, Cisco IOS/IOL/IOS-XE, Cisco NX-OS, Junos, Cumulus Linux, FRR, generic Linux devices, and VyOS. Our [integration tests](https://release.netlab.tools/) use recent Ansible versions. Some devices might require additional Ansible collections; see [caveats](caveats.md) for further details.
 
@@ -24,9 +22,11 @@ If you already have an environment that can be used with *netlab*, please procee
 (platform)=
 ## Selecting the Platform and Low-Level Tools
 
-We have tested *netlab* with [libvirt/KVM and Vagrant](labs/libvirt.md) on Ubuntu and Fedora and with [Docker and containerlab](labs/clab.md) on Ubuntu[^VBH]. Both combinations should work on other Linux distributions. You can also run *netlab* in a [Linux virtual machine](install/ubuntu-vm.md) or a [Ubuntu instance in a public cloud](install/cloud.md).
+We are testing *netlab* with [libvirt/Vagrant](labs/libvirt.md) and [Docker/containerlab](labs/clab.md) on Ubuntu[^VBH]. Both combinations should work on other Linux distributions, but probably require manual software installation.
 
-[^VBH]: Historically, netlab also ran on [VirtualBox and Vagrant] on macOS with Intel silicon. That combination is no longer supported.
+You can also run *netlab* in a [Linux virtual machine](install/ubuntu-vm.md) or a [Ubuntu instance in a public cloud](install/cloud.md).
+
+[^VBH]: Historically, netlab also ran on VirtualBox/Vagrant on macOS with Intel silicon. That combination is no longer supported.
 
 When selecting the virtualization environment, consider the following:
 
@@ -34,7 +34,7 @@ When selecting the virtualization environment, consider the following:
 * **Vagrant provider for libvirt** supports parallel VM provisioning, resulting in pretty fast lab creation. Unfortunately, most vendors don't offer virtual devices packaged as libvirt Vagrant boxes, so you must build your boxes manually. The **[netlab libvirt package](netlab-libvirt-package)** usually does 90% of the work for you.
 * **Containers** provisioned with containerlab start much faster than virtual machines, but you can get only a few network devices in native container format (Arista cEOS, FRR, Nokia SR Linux, VyOS). On the other hand, the [**vrnetlab** fork by Roman Dodin](https://github.com/srl-labs/vrnetlab) can build containers running virtual machines for numerous network devices.
 
-Support of **VirtualBox**-based solutions has been removed. It is no longer needed on Windows; Windows Subsystem for Linux is a much better option. Apple stopped shipping x86-based hardware years ago, and no major vendor is shipping ARM-based VM images for network devices.
+**VirtualBox** support (available in earlier _netlab_ releases) has been removed. It is no longer needed on Windows; Windows Subsystem for Linux is a much better option. Apple stopped shipping x86-based hardware years ago, and no major vendor is shipping ARM-based VM images for network devices.
 
 (lab)=
 ## Creating the Lab Environment

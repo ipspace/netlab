@@ -110,7 +110,7 @@ You cannot use all supported network devices with all virtualization providers. 
 (platform-provider-support)=
 
 | Virtual network device | Vagrant<br />[Libvirt](labs/libvirt.md) | [Containerlab](labs/clab.md) |
-| ------------------ | :-: | :-: | :-: |
+| ------------------ | :-: | :-: |
 | Arista vEOS        |  [✅](build-eos)  |  [✅](build-ceos)  |
 | Aruba AOS-CX       |  [✅](build-arubacx)  |  ✅[❗](clab-vrnetlab)  |
 | Cisco 8000v        |  ❌  |  ✅   |
@@ -151,7 +151,7 @@ You cannot use all supported network devices with all virtualization providers. 
 
 * *external* provider can be used with all devices supported by *netlab*.
 
-Configuration files for KVM/libvirt environments specify the number of virtual CPUs and memory allocated to individual network devices. These are the default values; you can change them with [node parameters](nodes.md#node-attributes).
+Vagrant configuration files for KVM/libvirt environments specify the number of virtual CPUs and the amount of memory allocated to each network device. These are the default values; you can change them with [node parameters](nodes.md#node-attributes).
 
 | Virtual network device     | netlab<br>device type | CPUs | memory | libvirt NIC model          |
 | -------------------------- | ------------------ | ---: | -----: | -------------------------: |

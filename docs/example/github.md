@@ -48,7 +48,6 @@ To run the lab with other network devices, replace **defaults.device** value wit
 | Device | netlab device code |
 |--------|--------------------|
 | Arista cEOS | eos |
-| Cumulus VX  | cumulus |
 | Nokia SR Linux | srlinux |
 | VyOS | vyos |
 
@@ -128,7 +127,7 @@ INFO[0000] Adding ssh config for containerlab nodes
 
 ### Deploy Device Configurations
 
-To configure the lab devices, **netlab up** runs **[netlab initial](netlab-initial)** command, which runs an Ansible playbook. Its printouts are overly verbose, so we'll skip them.
+To configure the lab devices, **netlab up** runs **[netlab initial](netlab-initial)** command, which usually runs an Ansible playbook. Its printouts are overly verbose, so we'll skip them.
 
 The **netlab up** process should conclude with a `[SUCCESS] Lab devices configured` message.
 

@@ -21,13 +21,13 @@ Example (`routeros.yml`):
 ```
 interface_name: ether%d
 clab:
-  image: mikrotik/chr
+  image: vrnetlab/mikrotik_routeros:7.18.2
 ```
 
 Recommended:
 
 * Use standard Docker Hub container names (which can include the version number in *tag* field)
-* If you need a version number for a Vagrant image downloaded from Vagrant Cloud, use *user/image:version* format (example: `CumulusCommunity/cumulus-vx:4.3.0`)
+* If you need a version number for a Vagrant image downloaded from Vagrant Cloud, use *user/image:version* format (example: `debian/bookworm64:12.20260519.1`)
 
 ## Changing Provider-Specific Device Settings
 
@@ -42,28 +42,27 @@ There are four types of settings you can change:
 ```
 mgmt_if: Management1
 clab:
-  mgmt_if: Management0devices:
+  mgmt_if: Management0
   image: ceos:4.31.2F
 ```
 
 **Ansible group variables** (easy) -- values specified in **group_vars** section of device-and-provider-specific settings overwrite the device defaults. 
 
-Example: Change Ansible connection for a Cumulus VX container:
+Example: Change Ansible connection for an Arista cEOS container:
 
 ```
-interface_name: swp{ifindex}
-libvirt:
-  image: CumulusCommunity/cumulus-vx:4.4.0
 group_vars:
   ansible_user: vagrant
   ansible_ssh_pass: vagrant
-  ansible_network_os: cumulus
-  ansible_connection: paramiko
+  ansible_network_os: eos
+  ansible_connection: network_cli
+libvirt:
+  image: arista/veos
 clab:
-  image: networkop/cx:4.4.0
+  image: ceos:4.34.2F
   group_vars:
-    ansible_connection: docker
-    ansible_user: root
+    ansible_user: admin
+    ansible_ssh_pass: admin
 ```
 
 **Node parameters** (manageable)-- the **node** dictionary within provider-specific device settings is copied into node data under _provider_ key.
@@ -73,16 +72,16 @@ Example: *containerlab* needs a *device kind* setting in its configuration file.
 Solution: use **node** dictionary within **clab** device parameters:
 
 ```
-interface_name: swp{ifindex}
+interface_name: Ethernet{ifindex}
+loopback_interface_name: Loopback{ifindex}
 loopback_interface_name: "lo{ifindex}"
-mgmt_if: eth0
+mgmt_if: Management1
 libvirt:
-  image: CumulusCommunity/cumulus-vx:4.4.0
+  image: arista/veos
 clab:
   node:
-    kind: cvx
-    runtime: docker
-  image: networkop/cx:4.4.0
+    kind: ceos
+  image: ceos:4.34.2F
 ```
 
 **Interface names** (mind-boggling). Interface names used by the network device might differ from the interface names used by virtualization provider (example: Arista cEOS on *containerlab*).

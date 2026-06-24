@@ -1,25 +1,23 @@
 (install-ubuntu-vm)=
 # Ubuntu VM Installation
 
-Suppose you'd like to use *netlab* with *libvirt*[^1] or run network devices as containers on a Windows- or MacOS-based computer. You'll have to run the whole toolchain needed to create networking labs (netlab ⇨ Vagrant ⇨ libvirt ⇨ KVM) within a Linux virtual machine.
+Suppose you'd like to use *netlab* with *libvirt* or run network devices as containers on a Windows- or MacOS-based computer. You'll have to run the whole toolchain needed to create networking labs (netlab ⇨ Vagrant ⇨ libvirt ⇨ KVM) within a Linux virtual machine.
 
 The easiest way to set up your lab environment is to create a Ubuntu virtual machine and use the **netlab install** command within that virtual machine to install the required software packages[^2]. You could also run _netlab_ on a [Ubuntu instance in a public cloud](cloud.md).
 
 ![Running Ubuntu VM on a desktop OS](ubuntu-on-desktop-os.png)
 
-[^1]: The *libvirt* Vagrant plugin starts all network devices in parallel.
-
 [^2]: See also the [tutorial created by Leo Kirchner](https://blog.kirchne.red/posts/netsim-tools-quickstart/).
 
 ```{warning}
 Running *‌libvirt* within an Ubuntu VM requires *‌nested virtualization*. You don't need nested virtualization to run Docker containers within a Ubuntu VM.
-
-Nested virtualization was available in VMware Workstation/Fusion for years and perform flawlessly.
 ```
 
-[Canonical Multipass](https://multipass.run/) is probably the easiest way to start a Ubuntu VM on your laptop if you don't need nested virtualization. Create an instance with [as much RAM and as many CPU cores](https://multipass.run/docs/create-an-instance#heading--create-an-instance-with-custom-cpu-number-disk-and-ram) as you can afford, and [install the necessary software on it](ubuntu-vm-manual).
+The easiest way to get a Ubuntu VM on a Windows machine is to use Windows Subsystem for Linux.
 
-You can also use [Vagrant](ubuntu-vm-vagrant) or [create the virtual machine yourself](ubuntu-vm-manual) (using, for example VMware GUI)
+On other platforms, [Canonical Multipass](https://multipass.run/) is probably the easiest way to start a Ubuntu VM on your laptop if you don't need nested virtualization. Create an instance with [as much RAM and as many CPU cores](https://multipass.run/docs/create-an-instance#heading--create-an-instance-with-custom-cpu-number-disk-and-ram) as you can afford, and [install the necessary software on it](ubuntu-vm-manual).
+
+You can also use [Vagrant](ubuntu-vm-vagrant) or [create the virtual machine yourself](ubuntu-vm-manual) (using, for example, VMware GUI).
 
 (ubuntu-vm-vagrant)=
 ## Creating Ubuntu VM with Vagrant

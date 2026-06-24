@@ -14,7 +14,7 @@ Release 2.0.1 includes [bug](bug-fixes-2.0.1) and [documentation](doc-fixes-2.0.
 * **bridge** nodes can be used as [simple bridges](node-role-bridge) or to [implement multi-access links](node-bridge-lan)
 * **[netlab defaults](netlab-defaults)** command provides **sysctl**-like CLI interface to user/system defaults.
 * SRv6: [BGP L3VPN support](module-srv6)
-* [VirtualBox and direct Windows/macOS installations](lab-virtualbox) are obsolete
+* VirtualBox and direct Windows/macOS installations are obsolete
 
 [More details...](release-2.0.0)
 

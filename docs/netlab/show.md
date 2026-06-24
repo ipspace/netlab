@@ -903,16 +903,15 @@ Executing: virsh net-list
 Status: OK
 ```
 
-* Display the state of a failed/missing provider ( clab not installed on the host where the command was executed):
+* Display the state of a failed/missing provider (clab not installed on the host where the command was executed):
 
 ```text
 $ netlab show providers -p clab
-Status of clab (Container lab):
+Status of clab (containerlab with Docker):
 
-##############
-Executing: VBoxManage -h
-Error executing VBoxManage -h:
-  [Errno 2] No such file or directory: 'VBoxManage'
+Executing: containerlab version
+Error executing containerlab version:
+  [Errno 2] No such file or directory: 'containerlab'
 
 Status: N/A
 ```
