@@ -25,6 +25,7 @@ The following table describes high-level per-platform support of generic routing
 | ------------------ |:--:|:--:|:--:|:--:|:--:|
 | Arista EOS         | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Aruba AOS-CX       | ✅ | ✅ | ✅ | ✅ | ✅ |
+| BIRD               | ❌  | ❌  | ❌  | ❌  | ✅ |
 | Cisco IOS/IOS XE[^18v] | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cisco IOS XR[^XR]  | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cisco Nexus OS     | ❌  | ❌  | ❌  | ❌  | ✅ |

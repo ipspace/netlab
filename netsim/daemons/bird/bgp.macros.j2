@@ -1,0 +1,205 @@
+{#
+ # rt_value: Return a BIRD extended community route-target tuple from a netlab RT string.
+ #}
+{% macro rt_value(rt) -%}
+(rt, {{ rt.split(':')[0] }}, {{ rt.split(':')[1] }})
+{%- endmacro %}
+
+{#
+ # tag_vrf_route: Tag an imported VRF route with all export route targets configured on the VRF.
+ #}
+{% macro tag_vrf_route(vrf_data) %}
+      netlab_vrf_rt.empty;
+{%   for rt in vrf_data.export|default([]) %}
+      netlab_vrf_rt.add({{ rt_value(rt) }});
+{%   endfor %}
+      accept;
+{% endmacro %}
+
+{#
+ # bgp_default_originate_routes: Render reject static routes used to originate default routes toward selected BGP neighbors.
+ #}
+{% macro bgp_default_originate_routes(bgp_data) %}
+{%   for ngb in bgp_data.neighbors|default([]) if ngb.default_originate|default(False) %}
+{%     if loop.first %}
+{%       for _af in ['ipv4','ipv6'] if _af in af %}
+protocol static static_bgp_default_{{ _af }} {
+  {{ _af }};
+  route {{ '0.0.0.0/0' if _af=='ipv4' else '::/0' }} reject;
+}
+{%       endfor %}
+{%     endif %}
+{%   endfor %}
+{% endmacro %}
+
+{#
+ # bgp_advertise_list: Render BIRD prefix-set definitions for the configured advertise list.
+ #}
+{% macro bgp_advertise_list(list_name,pfx_list) %}
+{%   for pfx_af in ['ipv4','ipv6'] %}
+{%     for pfx in pfx_list|default([]) if pfx_af in pfx %}
+{%       if loop.first %}
+
+define {{ list_name }}_{{ pfx_af }} = [
+{%       endif %}
+  {{ pfx[pfx_af] }}{% if not loop.last %},{% endif +%}
+{%       if loop.last %}
+];
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{% endmacro %}
+
+{#
+ # bgp_prefixes_function: Render the BGP export prefix-selection function used by neighbor export filters.
+ #}
+{% macro bgp_prefixes_function(func_name,bgp_data,list_name,import_list,include_default_static) %}
+function {{ func_name }}( bool originate_default ) {
+  if net.len = 0 && !originate_default
+    then reject "Don't originate default route";
+
+  if source ~ [ RTS_BGP ]
+    then accept "BGP route:", net;
+
+{%   if include_default_static %}
+  if proto ~ "static_bgp_default*"
+    then accept "BGP prefix origination:", net;
+
+{%   endif %}
+{%   for proto in import_list|default([]) %}
+  if source ~ [ {{ netlab_import_map[proto] }} ]
+    then accept "{{ proto }} route:", net;
+{%   endfor %}
+{%   for pfx_af in ['ipv4','ipv6'] %}
+{%     for pfx in bgp_data.advertise|default([]) if pfx_af in pfx %}
+{%       if loop.first %}
+
+  if net ~ {{ list_name }}_{{ pfx_af }} then accept "advertise prefix:", net;
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+
+  reject "not accepted:", net, " source=", source, " preference=", preference, " proto=", proto;
+}
+{% endmacro %}
+
+{#
+ # bgp_export_filter: Render one BGP export filter function for a neighbor type and community policy.
+ #}
+{% macro bgp_export_filter(func_name,ntype,prefix_func) %}
+function {{ func_name }}( bool originate_default; bool rem_private_as ) {
+{%   set list = bgp.community[ntype]|default([]) %}
+{%   if 'standard' not in list %}
+  bgp_community.empty;
+{%   endif %}
+{%   if 'large' not in list %}
+  bgp_large_community.empty;
+{%   endif %}
+{%   if 'extended' not in list %}
+  bgp_ext_community.empty;
+{%   endif %}
+
+  if rem_private_as then bgp_path.delete([64512..65534, 4200000000..4294967294]);
+  {{ prefix_func }}(originate_default);
+}
+{% endmacro %}
+
+{#
+ # bgp_export_filters: Render all BGP export filter functions needed by the global or VRF BGP instance.
+ #}
+{% macro bgp_export_filters(func_prefix,prefix_func) %}
+{%   for ntype in [ 'ebgp', 'ibgp', 'localas_ibgp', 'confed_ebgp' ] %}
+{{     bgp_export_filter(func_prefix + ntype,ntype,prefix_func) }}
+{%   endfor %}
+{% endmacro %}
+
+{#
+ # bgp_session: Render per-address-family BGP protocol instances for a single transformed neighbor.
+ #}
+{% macro bgp_session(n,bgp_data,vrf_name,vrf_data,bgp_interfaces) %}
+{%   for af in [ 'ipv4','ipv6' ] if af in n and n[af] is string %}
+protocol bgp bgp_{{ ('vrf_' + vrf_name + '_') if vrf_name else '' }}{{ n.name }}_{{ af }} {
+{%     if vrf_name %}
+  vrf "{{ vrf_name }}";
+{%       if 'router_id' in vrf_data.bgp %}
+  router id {{ vrf_data.bgp.router_id }};
+{%       endif %}
+{%     endif %}
+{%     set local_if = bgp_interfaces|selectattr('ifindex','eq',n.ifindex)|first if n.type != 'ibgp' else loopback %}
+  local {{ local_if[af]|ansible.utils.ipaddr('address') }} as {{ n.local_as|default(bgp_data.as|default(bgp.as)) }};
+{%     if bgp_data.confederation is defined %}
+  confederation {{ bgp_data.confederation.as }};
+{%       if n.type == 'confed_ebgp' %}
+  confederation member yes;
+{%       endif %}
+{%     endif %}
+  neighbor {{ n[af] }} as {{ n['as'] }};
+  connect retry time 5;
+  error wait time 5,10;
+  startup hold time 10;
+{%     if n.local_if is defined %}
+  interface "{{ n.local_if }}";
+{%     endif %}
+{%     if n.bfd is defined %}
+  bfd yes;
+{%     endif %}
+{%     if n.passive is defined %}
+  passive yes;
+{%     endif %}
+{%     if n.timers is defined %}
+  hold time {{ n.timers.hold|default(180) }};
+  keepalive time {{ n.timers.keepalive|default(60) }};
+{%     endif %}
+{%     if n.password is defined %}
+  password "{{ n.password }}";
+{%     endif %}
+{%     if n.rs|default(False) %}
+  rs client;
+{%     endif %}
+{%     if n.rs_client|default(False) %}
+  enforce first as off;
+{%     endif %}
+{%     if n.role is defined %}
+  local role {{ n.role.name|replace('-', '_') }};
+{%       if n.role.strict|default(False) %}
+  require roles;
+{%       endif %}
+{%     endif %}
+{%     if bgp_data.rr|default('') and ((not n.rr|default('') and n.type == 'ibgp') or n.type == 'localas_ibgp') %}
+  rr client;
+{%       if bgp_data.rr|default(False) and bgp_data.rr_cluster_id|default(False) %}
+  rr cluster id {{ bgp_data.rr_cluster_id }};
+{%       endif %}
+{%     endif %}
+{%     if n.gtsm is defined %}
+  ttl security on;
+{%       if n.type=='ibgp' %}
+  multihop {{ n.gtsm }};
+{%       endif %}
+{%     endif %}
+{%     for _af in [ 'ipv4','ipv6' ] if _af==af or (_af=='ipv4' and n.ipv4_rfc8950|default(False)) %}
+{%       if _af in n.activate and n.activate[_af] %}
+  {{ _af }} {
+{%       if vrf_name %}
+    table vrf_{{ vrf_name }}_{{ _af }};
+    import filter {
+{{         tag_vrf_route(vrf_data) }}
+    };
+{%       else %}
+    import all;
+{%       endif %}
+    export filter { bgp_export_{{ ('vrf_' + vrf_name + '_') if vrf_name else '' }}{{ n.type }}( {{ 'true' if n.get('default_originate') else 'false' }},
+                                             {{ 'true' if n.get('remove_private_as') else 'false' }}); };
+{%       if n.next_hop_self|default(false) %}
+    next hop self {{ 'on' if n.next_hop_self == 'all' else 'ebgp' }};
+{%       endif %}
+{%       if _af=='ipv4' and n.ipv4_rfc8950|default(False) %}
+    extended next hop on;
+    # require extended next hop on;
+{%       endif %}
+  };
+{%       endif %}
+{%     endfor %}
+}
+{%   endfor %}
+{% endmacro -%}

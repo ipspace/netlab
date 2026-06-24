@@ -86,7 +86,7 @@ nodes:
 
 * You must build the BIRD container image with the **netlab clab build bird** command. Without additional arguments, that command installs the latest BIRD v3 package from CZ.NIC BIRD repository on top of Ubuntu 24.04. See [](build-bird) for build targets and version options.
 * BIRD is implemented as a pure control-plane daemon running as a container with a single external interface. You can set the node **role** to **router** to turn a BIRD instance into a more traditional networking device with a loopback interface.
-* BIRD supports a single router ID used for BGP and OSPF.
+* BIRD uses the node BGP router ID as the default router ID for BGP and OSPF protocol instances.
 * The VM or container running BIRD in host mode starts with static routes pointing to one of the adjacent routers (see [](linux-forwarding)). After establishing routing adjacencies, BIRD copies BGP and OSPF into the kernel IP routing table.
 * The **bird** container starts BIRD in foreground mode with logging messages (including debugging messages) sent to *stderr*. Use the **docker logs** command to inspect the BIRD messages.
 

@@ -19,6 +19,7 @@ VRFs are supported on these platforms:
 | --------------------- | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  | ✅  | ✅  |
+| BIRD                  | ✅  | ✅  | ✅  |
 | Cisco IOS             | ✅  | ✅  | ✅  |
 | Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  |
 | Cisco IOS XR[^XR]     | ✅  | ✅  | ✅  |
@@ -51,6 +52,7 @@ These platforms support routing protocols in VRFs:
 | --------------------- | :-: | :-: | :-: | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  | ❌  | ❌  | ✅ |
 | Aruba AOS-CX          | ✅  | ✅  | ✅  | ❌  | ❌  | ❌  |
+| BIRD                  | ✅  | ✅  | ✅  | ❌  | ❌  | ❌  |
 | Cisco IOS/IOSvL2      | ✅ [❗](caveats-iosv) | ✅  | ✅  | ✅  | ✅  | ❌  |
 | Cisco IOS XE[^18v]    | ✅ [❗](caveats-csr) | ✅  | ✅  | ✅  | ✅  | ❌  |
 | Cisco IOS XR[^XR]     | ✅ | ✅  | ✅  | ❌  | ❌  | ✅  |
