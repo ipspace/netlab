@@ -136,7 +136,9 @@ protocol kernel kernel_vrf_{{ vname }}_{{ _af }} {
 {%   for sr_af in vdata.af %}
 {%     for sr_data in routing.static|default([]) if sr_data.nexthop.vrf|default(None) == vname and not sr_data.vrf|default(None) and sr_af in sr_data %}
 {%       if loop.first %}
-
+{#
+ # Render a static protocol for a VRF-to-default table leak.
+ #}
 {{ static_protocol(static_leak_name(vname,'default',sr_af),vrf_table(vname,sr_af),sr_af) }}
 {%       endif %}
   {{ bird_routing.config_sr(sr_data,sr_af) }}
@@ -144,13 +146,11 @@ protocol kernel kernel_vrf_{{ vname }}_{{ _af }} {
 }
 {%       endif %}
 {%     endfor %}
-{%   endfor %}
-{% endfor %}
-{% for vname,vdata in vrfs|default({})|dictsort %}
-{%   for sr_af in vdata.af %}
 {%     for sr_data in routing.static|default([]) if 'vrf' in sr_data.nexthop and not sr_data.nexthop.vrf and sr_data.vrf|default(None) == vname and sr_af in sr_data %}
 {%       if loop.first %}
-
+{#
+ # Render a static protocol for a default-to-VRF table leak.
+ #}
 {{ static_protocol(static_leak_name('default',vname,sr_af),vrf_table('default',sr_af),sr_af,vdata) }}
 {%       endif %}
   {{ bird_routing.config_sr(sr_data,sr_af) }}
