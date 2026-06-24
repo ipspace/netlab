@@ -22,24 +22,22 @@ create loopback interface instance {{ lb_instance }}
 {%   else %}
 {%     set vpp_if = 'host-' ~ l.ifname %}
 {%   endif %}
-{%   set has_ipv4 = l.ipv4 is defined and l.ipv4 is not false %}
+{%   set has_ipv4 = 'ipv4' in l and l.ipv4 is not false %}
 {%   set has_ipv6 = 'ipv6' in l and l.ipv6 is not false %}
+{% if l.mtu is defined %}
+set interface mtu {{ l.mtu }} {{ vpp_if }}
+{% endif %}
 {%   if has_ipv4 or has_ipv6 %}
 lcp create {{ vpp_if }} host-if {{ l.ifname }}
 {%   endif %}
 set interface state {{ vpp_if }} {{ 'down' if l.shutdown|default(False) else 'up' }}
-{% if l.mtu is defined %}
-set interface mtu {{ l.mtu }} {{ vpp_if }}
-{% endif %}
 {% if l.ipv4 is defined and l.ipv4 is string %}
 set interface ip address {{ vpp_if }} {{ l.ipv4 }}
 {% elif l._parent_intf is defined %}
 set interface unnumbered {{ vpp_if }} use {{ l._parent_intf }}
 {% endif %}
 {% if 'ipv6' in l and l.ipv6 is string and l.ipv6|ansible.utils.ipv6 %}
-{%   if l.ipv6 is string and l.ipv6|ansible.utils.ipv6 %}
 set interface ip address {{ vpp_if }} {{ l.ipv6 }}
-{%   endif %}
 {%   if not is_loopback %}
 {%     if role == 'router' %}
 {%       if l.ra.disable|default(false) is true %}
@@ -68,4 +66,8 @@ ip6 nd address autoconfig {{ vpp_if }} default-route
 {%     endif %}
 {%   endif %}
 {% endif %}
+{% endfor %}
+
+{% for m in module|default([]) %}
+exec /etc/vpp/config/{{ m }}.vpp
 {% endfor %}

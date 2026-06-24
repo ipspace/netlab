@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 		curl \
 		gnupg \
 		iproute2 \
+		procps \
 	&& rm -rf /var/lib/apt/lists/*
 
 ARG REPO
@@ -112,31 +113,18 @@ function die () {
 get_vpp
 GETVPP
 
-RUN apt-get update && apt-get install -y -V ./*.deb; \
+RUN set -eux; \
+	sysctl_bin="$(command -v sysctl)"; \
+	mv "$sysctl_bin" "${sysctl_bin}.real"; \
+	printf '#!/bin/sh\nexit 0\n' > "$sysctl_bin"; \
+	chmod +x "$sysctl_bin"; \
+	apt-get update; \
+	apt-get install -y -V ./*.deb; \
+	mv "${sysctl_bin}.real" "$sysctl_bin"; \
 	dpkg-query -f '${Version}\n' -W vpp > /vpp/version; \
 	rm -rf vom*.deb vpp-dbg*.deb; \
 	rm -rf /var/lib/apt/lists/*;
 
 RUN mkdir -p /var/log/vpp
 
-# Wait for netlab initial to configure the host netns, then start VPP.
-RUN cat >/entrypoint.sh <<'ENTRYPOINT_SH_EOF'
-#!/bin/bash
-set -e
-
-marker="${NETLAB_CONFIG_DONE:-/var/run/netlab-config-done}"
-timeout="${NETLAB_CONFIG_WAIT:-120}"
-
-while [ ! -f "$marker" ] && [ "$timeout" -gt 0 ]; do
-  sleep 1
-  timeout=$((timeout - 1))
-done
-
-[ -f "$marker" ] || { echo "vpp: timeout waiting for ${marker}" >&2; exit 1; }
-
-exec /usr/bin/vpp -c /etc/vpp/startup.conf
-ENTRYPOINT_SH_EOF
-
-RUN chmod +x /entrypoint.sh
-
-ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/usr/bin/vpp", "-c", "/etc/vpp/startup.conf"]
