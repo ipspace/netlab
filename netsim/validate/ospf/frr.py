@@ -64,7 +64,7 @@ def valid_ospf6_neighbor(id: str, present: bool = True, vrf: str = 'default') ->
     if not present:
       return True
     raise Exception(f'There is no OSPFv3 neighbor {id}{vrf_name}')
-  else:  
+  else:
     if not present:
       raise Exception(f'Unexpected OSPFv3 neighbor {id}{vrf_name} in state {n_state.neighborState}')
 
@@ -109,7 +109,7 @@ def valid_ospf_prefix(
             names = OSPF_PREFIX_NAMES)
 
 def show_ospf6_prefix(pfx: str, **kwargs: typing.Any) -> str:
-  return f'ipv6 ospf6 route detail json'
+  return 'ipv6 ospf6 route detail json'
 
 def get_ospf6_prefix(pfx: str, data: Box) -> typing.Optional[Box]:
   return data.get('routes').get(pfx,None)
@@ -122,8 +122,6 @@ def check_ospf6_cost(data: list, value: typing.Any, **kwargs: typing.Any) -> lis
       m_value.append(p)
 
   return m_value
-
-  return [ p for p in data if p.metricCost == value ]
 
 def check_ospf6_rt(data: list, value: typing.Any, **kwargs: typing.Any) -> list:
   return [ p for p in data if p.pathType == value ]
@@ -158,10 +156,10 @@ def valid_ipv6_route(
 
   if not _result:
     raise Exception(f'The routing table has no {proto} routes')
-  
+
   if not pfx in _result:
     raise Exception(f'The prefix {pfx} is not in the routing table or not a {proto} route')
-  
+
   pfx_data = _result[pfx][0]
   if cost is not None and cost != pfx_data.metric:
     raise Exception(f'Invalid OSPF end-to-end cost for prefix {pfx}: expected {cost} actual {pfx_data.metric}')
