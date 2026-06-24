@@ -19,12 +19,18 @@
 {#
  # bgp_default_originate_routes: Render reject static routes used to originate default routes toward selected BGP neighbors.
  #}
-{% macro bgp_default_originate_routes(bgp_data) %}
+{% macro bgp_default_originate_routes(bgp_data,proto_suffix='',table_name='',af_list=['ipv4','ipv6']) %}
 {%   for ngb in bgp_data.neighbors|default([]) if ngb.default_originate|default(False) %}
 {%     if loop.first %}
-{%       for _af in ['ipv4','ipv6'] if _af in af %}
-protocol static static_bgp_default_{{ _af }} {
+{%       for _af in af_list if _af in af %}
+protocol static static_bgp_default{{ proto_suffix }}_{{ _af }} {
+{%         if table_name %}
+  {{ _af }} {
+    table {{ table_name }};
+  };
+{%         else %}
   {{ _af }};
+{%         endif %}
   route {{ '0.0.0.0/0' if _af=='ipv4' else '::/0' }} reject;
 }
 {%       endfor %}
