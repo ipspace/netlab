@@ -4,10 +4,21 @@
 {% import 'routing.j2' as bird_routing with context %}
 
 {#
- # vrf_table: Return the BIRD routing table name for a VRF address family.
+ # vrf_table: Return the BIRD routing table name for a VRF/default address family.
  #}
 {% macro vrf_table(vname,af) -%}
+{%   if vname == 'default' -%}
+master{{ '4' if af == 'ipv4' else '6' }}
+{%-  else -%}
 vrf_{{ vname }}_{{ af }}
+{%-  endif %}
+{%- endmacro %}
+
+{#
+ # static_leak_name: Return the BIRD protocol name for an inter-table static route.
+ #}
+{% macro static_leak_name(src_name,dst_name,af) -%}
+static_vrf_leak_{{ src_name }}_{{ dst_name }}_{{ af }}
 {%- endmacro %}
 
 {#
@@ -28,17 +39,33 @@ vrf_{{ vname }}_{{ af }}
       accept;
 {% endmacro -%}
 
+{#
+ # static_protocol: Render a BIRD static protocol header.
+ #}
+{% macro static_protocol(proto_name,table_name,sr_af,tag_data=None) %}
+protocol static {{ proto_name }} {
+  {{ sr_af }} {
+    table {{ table_name }};
+{%   if tag_data is not none %}
+    import filter {
+{{ tag_vrf_route(tag_data) }}
+    };
+{%   endif %}
+  };
+  check link;
+{% endmacro -%}
+
 attribute eclist netlab_vrf_rt;
 {% for vname,vdata in vrfs|default({})|dictsort %}
 
 #
 # VRF {{ vname }}
 #
-{%   for _af in ['ipv4','ipv6'] if _af in vdata.af %}
+{%   for _af in vdata.af %}
 {{ _af }} table {{ vrf_table(vname,_af) }};
 {%   endfor %}
 
-{%   for _af in ['ipv4','ipv6'] if _af in vdata.af %}
+{%   for _af in vdata.af %}
 protocol direct direct_vrf_{{ vname }}_{{ _af }} {
   vrf "{{ vname }}";
   {{ _af }} {
@@ -66,14 +93,7 @@ protocol kernel kernel_vrf_{{ vname }}_{{ _af }} {
 {%     for sr_data in routing.static|default([]) if sr_data.vrf|default('') == vname and 'vrf' not in sr_data.nexthop and sr_af in sr_data %}
 {%       if loop.first %}
 
-protocol static static_vrf_{{ vname }}_{{ sr_af }} {
-  {{ sr_af }} {
-    table {{ vrf_table(vname,sr_af) }};
-    import filter {
-{{ tag_vrf_route(vdata) }}
-    };
-  };
-  check link;
+{{ static_protocol('static_vrf_' + vname + '_' + sr_af,vrf_table(vname,sr_af),sr_af,vdata) }}
 {%       endif %}
   {{ bird_routing.config_sr(sr_data,sr_af) }}
 {%       if loop.last %}
@@ -81,28 +101,6 @@ protocol static static_vrf_{{ vname }}_{{ sr_af }} {
 {%       endif %}
 {%     endfor %}
 {%   endfor %}
-{%   for dst_name,dst_data in vrfs|default({})|dictsort if dst_name != vname %}
-{%     for sr_af in ['ipv4','ipv6'] %}
-{%       for sr_data in routing.static|default([]) if sr_data.nexthop.vrf|default(None) == vname and sr_data.vrf|default(None) == dst_name and sr_af in sr_data %}
-{%         if loop.first %}
-
-protocol static static_vrf_leak_{{ vname }}_{{ dst_name }}_{{ sr_af }} {
-  {{ sr_af }} {
-    table {{ vrf_table(vname,sr_af) }};
-    import filter {
-{{ tag_vrf_route(dst_data) }}
-    };
-  };
-  check link;
-{%         endif %}
-  {{ bird_routing.config_sr(sr_data,sr_af) }}
-{%         if loop.last %}
-}
-{%         endif %}
-{%       endfor %}
-{%     endfor %}
-{%   endfor %}
-
 {# VRF OSPF configuration #}
 {%   if vdata.ospf is defined %}
 {{     bird_ospf.ospf_config(vdata.ospf,'vrf_' + vname,vname,vdata.ospf.interfaces|default([]),vdata) }}
@@ -118,6 +116,50 @@ protocol static static_vrf_leak_{{ vname }}_{{ dst_name }}_{{ sr_af }} {
 {%     endfor %}
 {%   endif %}
 {% endfor %}
+{% for src_name,src_data in vrfs|default({})|dictsort %}
+{%   for dst_name,dst_data in vrfs|default({})|dictsort if dst_name != src_name %}
+{%     for sr_af in src_data.af if sr_af in dst_data.af %}
+{%       for sr_data in routing.static|default([]) if sr_data.nexthop.vrf|default(None) == src_name and sr_data.vrf|default(None) == dst_name and sr_af in sr_data %}
+{%         if loop.first %}
+
+{{ static_protocol(static_leak_name(src_name,dst_name,sr_af),vrf_table(src_name,sr_af),sr_af,dst_data) }}
+{%         endif %}
+  {{ bird_routing.config_sr(sr_data,sr_af) }}
+{%         if loop.last %}
+}
+{%         endif %}
+{%       endfor %}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
+{% for vname,vdata in vrfs|default({})|dictsort %}
+{%   for sr_af in vdata.af %}
+{%     for sr_data in routing.static|default([]) if sr_data.nexthop.vrf|default(None) == vname and not sr_data.vrf|default(None) and sr_af in sr_data %}
+{%       if loop.first %}
+
+{{ static_protocol(static_leak_name(vname,'default',sr_af),vrf_table(vname,sr_af),sr_af) }}
+{%       endif %}
+  {{ bird_routing.config_sr(sr_data,sr_af) }}
+{%       if loop.last %}
+}
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
+{% for vname,vdata in vrfs|default({})|dictsort %}
+{%   for sr_af in vdata.af %}
+{%     for sr_data in routing.static|default([]) if 'vrf' in sr_data.nexthop and not sr_data.nexthop.vrf and sr_data.vrf|default(None) == vname and sr_af in sr_data %}
+{%       if loop.first %}
+
+{{ static_protocol(static_leak_name('default',vname,sr_af),vrf_table('default',sr_af),sr_af,vdata) }}
+{%       endif %}
+  {{ bird_routing.config_sr(sr_data,sr_af) }}
+{%       if loop.last %}
+}
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
 
 {# Route leaking between VRF tables based on transformed import/export route targets #}
 {% for vname,vdata in vrfs|default({})|dictsort %}
@@ -128,9 +170,26 @@ filter netlab_vrf_{{ vname }}_import {
   reject;
 }
 {% endfor %}
+{% for vname,vdata in vrfs|default({})|dictsort %}
+{%   for _af in vdata.af %}
+
+protocol pipe pipe_vrf_default_{{ vname }}_{{ _af }} {
+  table {{ vrf_table('default',_af) }};
+  peer table {{ vrf_table(vname,_af) }};
+  import filter {
+    if proto ~ "{{ static_leak_name(vname,'default',_af) }}" then accept;
+    reject;
+  };
+  export filter {
+    if proto ~ "{{ static_leak_name('default',vname,_af) }}" then accept;
+    reject;
+  };
+}
+{%   endfor %}
+{% endfor %}
 {% for src_name,src_data in vrfs|default({})|dictsort %}
 {%   for dst_name,dst_data in vrfs|default({})|dictsort if src_data.vrfidx < dst_data.vrfidx %}
-{%       for _af in ['ipv4','ipv6'] if _af in src_data.af and _af in dst_data.af %}
+{%     for _af in src_data.af if _af in dst_data.af %}
 
 protocol pipe pipe_vrf_{{ src_name }}_{{ dst_name }}_{{ _af }} {
   table {{ vrf_table(src_name,_af) }};
@@ -138,6 +197,6 @@ protocol pipe pipe_vrf_{{ src_name }}_{{ dst_name }}_{{ _af }} {
   import filter netlab_vrf_{{ src_name }}_import;
   export filter netlab_vrf_{{ dst_name }}_import;
 }
-{%       endfor %}
+{%     endfor %}
 {%   endfor %}
 {% endfor %}
