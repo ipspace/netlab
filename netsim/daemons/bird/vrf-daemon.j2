@@ -130,6 +130,9 @@ filter netlab_vrf_{{ vname }}_import {
 {% endfor %}
 {% for src_name,src_data in vrfs|default({})|dictsort %}
 {%   for dst_name,dst_data in vrfs|default({})|dictsort if src_data.vrfidx < dst_data.vrfidx %}
+{%     set src_to_dst = src_data.export|default([])|select('in',dst_data.import|default([]))|list %}
+{%     set dst_to_src = dst_data.export|default([])|select('in',src_data.import|default([]))|list %}
+{%     if src_to_dst or dst_to_src %}
 {%       for _af in ['ipv4','ipv6'] if _af in src_data.af and _af in dst_data.af %}
 
 protocol pipe pipe_vrf_{{ src_name }}_{{ dst_name }}_{{ _af }} {
@@ -139,5 +142,6 @@ protocol pipe pipe_vrf_{{ src_name }}_{{ dst_name }}_{{ _af }} {
   export filter netlab_vrf_{{ dst_name }}_import;
 }
 {%       endfor %}
+{%     endif %}
 {%   endfor %}
 {% endfor %}
