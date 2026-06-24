@@ -1,6 +1,7 @@
 {# VRF routing tables and kernel synchronization #}
 {% import 'ospf.macros.j2' as bird_ospf with context %}
 {% import 'bgp.macros.j2' as bird_bgp with context %}
+{% import 'routing.j2' as bird_routing with context %}
 
 {#
  # vrf_table: Return the BIRD routing table name for a VRF address family.
@@ -25,14 +26,6 @@ vrf_{{ vname }}_{{ af }}
       netlab_vrf_rt.add({{ rt_value(rt) }});
 {%   endfor %}
       accept;
-{% endmacro -%}
-
-{#
- # config_sr: Render a static route with either a discard or next-hop action.
- #}
-{% macro config_sr(sr_data,af) %}
-{%   set sr_nh = 'unreachable' if 'discard' in sr_data.nexthop else 'via ' + sr_data.nexthop[af] %}
-route {{ sr_data[af] }} {{ sr_nh }};
 {% endmacro -%}
 
 attribute eclist netlab_vrf_rt;
@@ -82,7 +75,7 @@ protocol static static_vrf_{{ vname }}_{{ sr_af }} {
   };
   check link;
 {%       endif %}
-  {{ config_sr(sr_data,sr_af) }}
+  {{ bird_routing.config_sr(sr_data,sr_af) }}
 {%       if loop.last %}
 }
 {%       endif %}
@@ -102,7 +95,7 @@ protocol static static_vrf_leak_{{ vname }}_{{ dst_name }}_{{ sr_af }} {
   };
   check link;
 {%         endif %}
-  {{ config_sr(sr_data,sr_af) }}
+  {{ bird_routing.config_sr(sr_data,sr_af) }}
 {%         if loop.last %}
 }
 {%         endif %}
