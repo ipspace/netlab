@@ -120,28 +120,20 @@ protocol static static_vrf_leak_{{ vname }}_{{ dst_name }}_{{ sr_af }} {
 {% endfor %}
 
 {# Route leaking between VRF tables based on transformed import/export route targets #}
-{% for vname,vdata in vrfs|default({})|dictsort %}
-filter netlab_vrf_{{ vname }}_import {
-{%   if vdata.import|default([]) %}
-  if netlab_vrf_rt ~ [ {% for rt in vdata.import %}{{ rt_value(rt) }}{% if not loop.last %}, {% endif %}{% endfor %} ] then accept;
-{%   endif %}
-  reject;
-}
-{% endfor %}
 {% for src_name,src_data in vrfs|default({})|dictsort %}
-{%   for dst_name,dst_data in vrfs|default({})|dictsort if src_data.vrfidx < dst_data.vrfidx %}
-{%     set src_to_dst = src_data.export|default([])|select('in',dst_data.import|default([]))|list %}
-{%     set dst_to_src = dst_data.export|default([])|select('in',src_data.import|default([]))|list %}
-{%     if src_to_dst or dst_to_src %}
-{%       for _af in ['ipv4','ipv6'] if _af in src_data.af and _af in dst_data.af %}
+{%   for dst_name,dst_data in vrfs|default({})|dictsort if dst_name != src_name %}
+{%     for rt in dst_data.import|default([]) if rt in src_data.export|default([]) %}
+{%       if loop.first %}
+{%         for _af in src_data.af if _af in dst_data.af %}
 
 protocol pipe pipe_vrf_{{ src_name }}_{{ dst_name }}_{{ _af }} {
-  table {{ vrf_table(src_name,_af) }};
-  peer table {{ vrf_table(dst_name,_af) }};
-  import filter netlab_vrf_{{ src_name }}_import;
-  export filter netlab_vrf_{{ dst_name }}_import;
+  table {{ vrf_table(dst_name,_af) }};
+  peer table {{ vrf_table(src_name,_af) }};
+  import all;
+  export none;
 }
-{%       endfor %}
-{%     endif %}
+{%         endfor %}
+{%       endif %}
+{%     endfor %}
 {%   endfor %}
 {% endfor %}
