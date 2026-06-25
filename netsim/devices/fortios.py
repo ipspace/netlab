@@ -23,31 +23,37 @@ def check_bgp_gr_restart_time(node: Box) -> None:
 
 
 def check_ospf_gr(node: Box) -> None:
-  """
-  FortiOS drives OSPF graceful restart from a single 'set restart-mode graceful-restart'
-  keyword per address family. That switch makes the device both a restarting router and a
-  helper; the two roles cannot be configured independently. Reject the combinations the
-  device cannot honour, leaving the restart role (which a helper rides along with) to render.
-  """
   for o_data,_,vname in _routing.rp_data(node,'ospf'):
     gr = o_data.get('gr',None)
-    restart_on = isinstance(gr,dict) and 'restart' in gr             # restart role explicitly enabled
-    helper_on = isinstance(gr,dict) and 'helper' in gr               # helper role explicitly enabled
-    helper_off = removed_attributes(o_data,'gr.helper')              # helper role explicitly disabled
+    if not isinstance(gr,dict):
+      continue
+
+    restart_on = 'restart' in gr
+    helper_on = 'helper' in gr
+    helper_off = removed_attributes(o_data,'gr.helper')
     vrf_info = f' in VRF {vname}' if vname else ''
 
-    if helper_on and not restart_on:                                 # Helper without restart: FortiOS would
-      log.error(                                                     # ... have to make the restart promise too
+    # FortiOS has one OSPF GR switch. Restart implies helper on FortiOS,
+    # but helper-only input must not enable forwarding-state preservation.
+    if helper_on and not restart_on:
+      log.error(
         f'FortiOS cannot enable the OSPF graceful-restart helper role without restart '
         f'(set ospf.gr.restart) on node {node.name}{vrf_info}',
         log.IncorrectValue,
         'fortios')
-    elif restart_on and helper_off:                                  # Restart with helper explicitly off:
-      log.error(                                                     # ... the two roles share one switch
+    elif restart_on and helper_off:
+      log.error(
         f'FortiOS cannot enable OSPF graceful-restart restart while ospf.gr.helper is disabled '
         f'on node {node.name}{vrf_info}',
         log.IncorrectValue,
         'fortios')
+
+    helper_data = gr.get('helper',{})
+    if isinstance(helper_data,dict) and 'grace_period' in helper_data:
+      log.warning(
+        text=f'FortiOS cannot limit OSPF graceful-restart helper grace period on node {node.name}{vrf_info}',
+        flag='gr_helper_grace',
+        module='ospf')
 
 
 class FortiOS(_Quirks):

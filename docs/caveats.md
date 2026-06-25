@@ -353,12 +353,6 @@ Device-specific parameters:
 * FortiOS accepts the graceful restart timers in the 1-3600 second range. A value of 0 (allowed by the _netlab_ schema) is rejected by the device during configuration deployment.
 * Enabling graceful restart on any BGP neighbor also enables the global FortiOS **graceful-restart** switch, which preserves the forwarding state across a routing restart. Advertising the capability without it would announce forwarding-state preservation the device does not deliver.
 
-OSPF graceful restart (**ospf.gr**):
-
-* FortiOS enables OSPF graceful restart with a single `set restart-mode graceful-restart` keyword in each of its two OSPF processes — `config router ospf` (OSPFv2) and `config router ospf6` (OSPFv3), which _netlab_ addresses as the IPv4 and IPv6 address families of its OSPF module. That one switch makes the device both a restarting router and a helper; the two roles cannot be configured independently.
-* Because the roles are coupled, _netlab_ rejects two combinations on FortiOS: enabling **ospf.gr.helper** without **ospf.gr.restart** (FortiOS cannot act as a helper without also promising to preserve its own forwarding state across a restart), and enabling **ospf.gr.restart** while explicitly disabling **ospf.gr.helper**. A node that enables **ospf.gr.restart** therefore also acts as a graceful-restart helper.
-* **ospf.gr.restart.grace_period** maps to the FortiOS **restart-period** keyword (range 1-3600 seconds, device default 120) — the grace period the restarting router advertises in its Grace-LSA (RFC 3623 for OSPFv2, RFC 5187 for OSPFv3). **ospf.gr.helper.grace_period** has no standard counterpart: those RFCs define only the restarting router's grace period, not a helper-side limit, so it is an FRR-specific extension (FRR's **supported-grace-time**) with nothing to map to on FortiOS, and it is not rendered.
-
 Device configuration:
 
 * Use a recent version of Ansible and **fortinet.fortios** Ansible Galaxy collection (version 2.3.6 or later)
