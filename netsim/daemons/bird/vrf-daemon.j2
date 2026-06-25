@@ -122,18 +122,21 @@ protocol static static_vrf_leak_{{ vname }}_{{ dst_name }}_{{ sr_af }} {
 {# Route leaking between VRF tables based on transformed import/export route targets #}
 {% for src_name,src_data in vrfs|default({})|dictsort %}
 {%   for dst_name,dst_data in vrfs|default({})|dictsort if dst_name != src_name %}
-{%     for rt in dst_data.import|default([]) if rt in src_data.export|default([]) %}
-{%       if loop.first %}
-{%         for _af in src_data.af if _af in dst_data.af %}
+{%     set import_rt = dst_data.import|default([])|select('in',src_data.export|default([]))|list %}
+{%     if import_rt %}
+{%       set bird_import_rt = import_rt|map('replace',':',', ')|join('), (rt, ') %}
+{%       for _af in src_data.af if _af in dst_data.af %}
 
 protocol pipe pipe_vrf_{{ src_name }}_{{ dst_name }}_{{ _af }} {
   table {{ vrf_table(dst_name,_af) }};
   peer table {{ vrf_table(src_name,_af) }};
-  import all;
+  import filter {
+    if netlab_vrf_rt ~ [ (rt, {{ bird_import_rt }}) ] then accept;
+    reject;
+  };
   export none;
 }
-{%         endfor %}
-{%       endif %}
-{%     endfor %}
+{%       endfor %}
+{%     endif %}
 {%   endfor %}
 {% endfor %}
