@@ -67,6 +67,24 @@ config router {{ proto }}
 {%   endfor %}
     end
 {% endif %}
+{#
+  default-origination and redistribution use the same keywords under 'ospf' and
+  'ospf6', so no AF fork; route-map/policy is skipped to match bgp/fortios.j2.
+#}
+{% if ospf.default is defined %}
+    set default-information-originate {{ 'always' if ospf.default.always|default(False) else 'enable' }}
+{%   if ospf.default.cost|default(0) %}
+    set default-information-metric {{ ospf.default.cost }}
+{%   endif %}
+{%   if ospf.default.type|default('') %}
+    set default-information-metric-type {{ ospf.default.type.replace('e','') }}
+{%   endif %}
+{% endif %}
+{% for proto in ospf.import|default({}) %}
+    config redistribute "{{ proto }}"
+        set status enable
+    end
+{% endfor %}
 end
 {% endmacro %}
 {% if multi_vdom %}
