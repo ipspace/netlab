@@ -17,22 +17,6 @@
 {% endmacro %}
 
 {#
- # bgp_default_originate_routes: Render reject static routes used to originate default routes toward selected BGP neighbors.
- #}
-{% macro bgp_default_originate_routes(bgp_data) %}
-{%   for ngb in bgp_data.neighbors|default([]) if ngb.default_originate|default(False) %}
-{%     if loop.first %}
-{%       for _af in ['ipv4','ipv6'] if _af in af %}
-protocol static static_bgp_default_{{ _af }} {
-  {{ _af }};
-  route {{ '0.0.0.0/0' if _af=='ipv4' else '::/0' }} reject;
-}
-{%       endfor %}
-{%     endif %}
-{%   endfor %}
-{% endmacro %}
-
-{#
  # bgp_advertise_list: Render BIRD prefix-set definitions for the configured advertise list.
  #}
 {% macro bgp_advertise_list(list_name,pfx_list) %}
@@ -55,17 +39,14 @@ define {{ list_name }}_{{ pfx_af }} = [
  #}
 {% macro bgp_prefixes_function(func_name,bgp_data,list_name,import_list,include_default_static) %}
 function {{ func_name }}( bool originate_default ) {
-  if net.len = 0 && !originate_default
-    then reject "Don't originate default route";
+  if net.len = 0
+    then if !originate_default
+      then reject "Don't originate default route";
+      else accept "BGP default route origination: ",net;
 
   if source ~ [ RTS_BGP ]
     then accept "BGP route:", net;
 
-{%   if include_default_static %}
-  if proto ~ "static_bgp_default*"
-    then accept "BGP prefix origination:", net;
-
-{%   endif %}
 {%   for proto in import_list|default([]) %}
   if source ~ [ {{ netlab_import_map[proto] }} ]
     then accept "{{ proto }} route:", net;
