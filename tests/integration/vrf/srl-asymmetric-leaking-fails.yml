@@ -1,0 +1,101 @@
+---
+message: |
+  The device under test has three VRFs with one OSPF-speaking CE router in
+  each VRF. Every VRF imports routes from exactly one other VRF:
+
+  * red imports green
+  * green imports blue
+  * blue imports red
+
+  The lab tests asymmetric inter-VRF route leaking by checking that every CE
+  router receives only the routes imported by its local VRF.
+
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
+defaults.interfaces.mtu: 1500
+
+groups:
+  _auto_create: True
+  ce:
+    members: [ r1, r2, r3 ]
+    module: [ ospf ]
+    device: frr
+    provider: clab
+  pe:
+    members: [ dut ]
+    module: [ vrf, ospf ]
+
+vrfs:
+  red:
+    import: [ green ]
+    links: [ dut-r1 ]
+  green:
+    import: [ blue ]
+    links: [ dut-r2 ]
+  blue:
+    import: [ red ]
+    links: [ dut-r3 ]
+
+nodes:          # Set different router ID on every OSPF process
+  dut:          # ... to keep Cisco IOS happy
+    id: 1
+    vrfs:
+      red:
+        ospf.router_id: 10.100.0.100
+      green:
+        ospf.router_id: 10.100.0.101
+      blue:
+        ospf.router_id: 10.100.0.102
+
+validate:
+  red_adj:
+    description: Check OSPF adjacencies in red VRF
+    wait_msg: Waiting for OSPF adjacencies to form
+    wait: ospfv2_adj_p2p
+    nodes: [ r1 ]
+    plugin: ospf_neighbor(nodes.dut.vrfs.red.ospf.router_id)
+    stop_on_error: true
+  green_adj:
+    description: Check OSPF adjacencies in green VRF
+    wait_msg: Waiting for OSPF adjacencies to form
+    wait: ospfv2_adj_p2p
+    nodes: [ r2 ]
+    plugin: ospf_neighbor(nodes.dut.vrfs.green.ospf.router_id)
+    stop_on_error: true
+  blue_adj:
+    description: Check OSPF adjacencies in blue VRF
+    wait_msg: Waiting for OSPF adjacencies to form
+    wait: ospfv2_adj_p2p
+    nodes: [ r3 ]
+    plugin: ospf_neighbor(nodes.dut.vrfs.blue.ospf.router_id)
+    stop_on_error: true
+  red_import:
+    description: Check green route imported into red VRF
+    wait: ospf_import
+    wait_msg: Waiting for inter-VRF OSPF route leaking
+    nodes: [ r1 ]
+    plugin: ospf_prefix(nodes.r2.loopback.ipv4)
+  red_no_blue:
+    description: Check blue route is not imported into red VRF
+    nodes: [ r1 ]
+    plugin: ospf_prefix(nodes.r3.loopback.ipv4,state='missing')
+  green_import:
+    description: Check blue route imported into green VRF
+    wait: ospf_import
+    wait_msg: Waiting for inter-VRF OSPF route leaking
+    nodes: [ r2 ]
+    plugin: ospf_prefix(nodes.r3.loopback.ipv4)
+  green_no_red:
+    description: Check red route is not imported into green VRF
+    nodes: [ r2 ]
+    plugin: ospf_prefix(nodes.r1.loopback.ipv4,state='missing')
+  blue_import:
+    description: Check red route imported into blue VRF
+    wait: ospf_import
+    wait_msg: Waiting for inter-VRF OSPF route leaking
+    nodes: [ r3 ]
+    plugin: ospf_prefix(nodes.r1.loopback.ipv4)
+  blue_no_green:
+    description: Check green route is not imported into blue VRF
+    nodes: [ r3 ]
+    plugin: ospf_prefix(nodes.r2.loopback.ipv4,state='missing')

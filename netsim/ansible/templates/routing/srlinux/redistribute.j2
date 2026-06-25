@@ -42,14 +42,20 @@
 {%   endif %}
 {%   for s_proto in p_data.import|default([]) %}
 {%     for srl_proto in netlab_match_protomap[s_proto] 
-         if (srl_proto != 'bgp-evpn' or evpn_active) and
-            (srl_proto != 'bgp-ipvpn' or (vrf != 'default' and mpls.vpn is defined)) %}
+         if (srl_proto != 'bgp-evpn' or evpn_active) and srl_proto != 'bgp-ipvpn' %}
     - name: export_{{ srl_proto }}
       match:
         protocol: {{ srl_proto }}
       action:
         policy-result: accept
 {%     endfor %}
+{%     if s_proto == 'bgp' and vrf != 'default' %}
+    - name: export_leaked
+      match:
+        network-instance-leaked-route: true
+      action:
+        policy-result: accept
+{%     endif %}
 {%   endfor %}
 {% endif %}
 {% endmacro %}
