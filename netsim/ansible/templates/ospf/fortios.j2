@@ -68,8 +68,9 @@ config router {{ proto }}
     end
 {% endif %}
 {#
-  default-origination and redistribution use the same keywords under 'ospf' and
-  'ospf6', so no AF fork; route-map/policy is skipped to match bgp/fortios.j2.
+  default-origination, redistribution, and restart mode use the same keywords
+  under 'ospf' and 'ospf6', so no AF fork; route-map/policy is skipped to match
+  bgp/fortios.j2.
 #}
 {% if ospf.default is defined %}
     set default-information-originate {{ 'always' if ospf.default.always|default(False) else 'enable' }}
@@ -85,6 +86,12 @@ config router {{ proto }}
         set status enable
     end
 {% endfor %}
+{% if ospf.gr.restart is defined %}
+    set restart-mode graceful-restart
+{%   if ospf.gr.restart.grace_period is defined %}
+    set restart-period {{ ospf.gr.restart.grace_period }}
+{%   endif %}
+{% endif %}
 end
 {% endmacro %}
 {% if multi_vdom %}
