@@ -31,6 +31,28 @@ updates:
 {{ bgp_config(vname,bgp.as,vdata.bgp.router_id|default(bgp.router_id),vdata.bgp,vdata) }}
 {% endif %}
 
+{% if vdata._leaked_routes|default(False) %}
+{%  for intf in interfaces|default([]) if intf.vrf|default('') == vname %}
+{%    set if_name_index = intf.ifname.split('.') %}
+{%    set if_name = if_name_index[0] %}
+{%    set if_index = if_name_index[1] if if_name_index|length > 1 else '0' %}
+{%    if intf.ipv4 is string or intf.ipv6 is string %}
+- path: /interface[name={{ if_name }}]/subinterface[index={{ if_index }}]
+  value:
+{%      for ip,arpnd in [('ipv4','arp'),('ipv6','neighbor-discovery')] %}
+{%        if intf[ip] is string %}
+    {{ ip }}:
+      {{ arpnd }}:
+        host-route:
+          populate:
+          - route-type: dynamic
+            datapath-programming: true
+{%        endif %}
+{%      endfor %}
+{%    endif %}
+{%  endfor %}
+{% endif %}
+
 - path: /network-instance[name={{vname}}]/protocols/bgp-vpn
   value:
     bgp-instance:
