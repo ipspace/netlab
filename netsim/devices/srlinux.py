@@ -201,19 +201,6 @@ class SRLINUX(_Quirks):
         is_licensed = True
 
     mods = node.get('module',[])
-    if 'vrf' in mods and 'evpn' not in mods:
-      vlist = []
-      for vname,vrf in node.get('vrfs', {}).items():
-        if len(vrf['import']) > 1 or len(vrf['export']) > 1:
-          vlist.append(vname)
-
-      if vlist:
-        report_quirk(
-          text='Inter-VRF route leaking is supported only in combination with BGP EVPN',
-          more_data=[ f'Node {node.name} VRF(s) {",".join(vlist)}' ],
-          node=node,
-          quirk='vrf_route_leaking',
-          category=log.IncorrectType)
 
     if 'bgp' in mods:
       cleanup_neighbor_transport(node,topology)
