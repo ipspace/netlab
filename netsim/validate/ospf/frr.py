@@ -44,9 +44,6 @@ def valid_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default', bfd
   if not bfd:
     raise log.Result(exit_msg)
 
-<<<<<<< HEAD
-def show_ospf6_neighbor(id: str, present: bool = True, vrf: str = 'default', **kwargs: typing.Any) -> str:
-=======
   exit_msg = f'OSPFv2 neighbor {id} is in BFD state {n_state.peerBfdInfo.status}'
   if not n_state.peerBfdInfo.status == "Up":
     raise Exception(exit_msg)
@@ -54,8 +51,7 @@ def show_ospf6_neighbor(id: str, present: bool = True, vrf: str = 'default', **k
   raise log.Result(exit_msg)
 
 
-def show_ospf6_neighbor(id: str, **kwargs: typing.Any) -> str:
->>>>>>> e01560d71 (Update BFD tests with received feedback)
+def show_ospf6_neighbor(id: str, present: bool = True, vrf: str = 'default', **kwargs: typing.Any) -> str:
   try:
     ipaddress.IPv4Address(id)
   except Exception as exc:
