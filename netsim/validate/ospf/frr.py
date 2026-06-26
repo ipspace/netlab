@@ -17,9 +17,9 @@ from . import OSPF_PREFIX_NAMES
 def show_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default') -> str:
   try:
     ipaddress.IPv4Address(id)
-  except:
-    raise Exception(f'OSPF router ID {id} is not a valid IPv4 address')
-  return f'ip ospf ' + (f'vrf {vrf} ' if vrf != 'default' else '') + f'neighbor {id} json'
+  except Exception as exc:
+    raise Exception(f'OSPF router ID {id} is not a valid IPv4 address') from exc
+  return f'ip ospf vrf {vrf} neighbor {id} json'
 
 def valid_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default') -> bool:
   _result = global_vars.get_result_dict('_result')
@@ -31,7 +31,7 @@ def valid_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default') -> 
     if not present:
       return True
     raise Exception(f'There is no OSPFv2 neighbor {id}')
-  
+
   n_state = _result[id][0]
   if not present:
     raise Exception(f'Unexpected OSPFv2 neighbor {id} in state {n_state.nbrState}')
@@ -42,15 +42,16 @@ def valid_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default') -> 
   else:
     raise log.Result(exit_msg)
 
-def show_ospf6_neighbor(id: str, **kwargs: typing.Any) -> str:
+def show_ospf6_neighbor(id: str, present: bool = True, vrf: str = 'default', **kwargs: typing.Any) -> str:
   try:
     ipaddress.IPv4Address(id)
-  except:
-    raise Exception(f'OSPF router ID {id} is not a valid IPv4 address')
-  return f'ipv6 ospf6 neighbor {id} json'
+  except Exception as exc:
+    raise Exception(f'OSPF router ID {id} is not a valid IPv4 address') from exc
+  return f'ipv6 ospf6 vrf {vrf} neighbor {id} json'
 
-def valid_ospf6_neighbor(id: str, present: bool = True) -> bool:
+def valid_ospf6_neighbor(id: str, present: bool = True, vrf: str = 'default') -> bool:
   _result = global_vars.get_result_dict('_result')
+  vrf_name = '' if vrf == 'default' else f' in VRF {vrf}'
 
   n_state = None
   for n_idx in _result.keys():
@@ -62,18 +63,18 @@ def valid_ospf6_neighbor(id: str, present: bool = True) -> bool:
   if n_state is None:
     if not present:
       return True
-    raise Exception(f'There is no OSPFv3 neighbor {id}')
-  else:  
+    raise Exception(f'There is no OSPFv3 neighbor {id}{vrf_name}')
+  else:
     if not present:
-      raise Exception(f'Unexpected OSPFv3 neighbor {id} in state {n_state.neighborState}')
+      raise Exception(f'Unexpected OSPFv3 neighbor {id}{vrf_name} in state {n_state.neighborState}')
 
   if n_state.neighborState != 'Full':
-    raise Exception(f'OSPFv3 neighbor {id} is in state {n_state.neighborState}')
+    raise Exception(f'OSPFv3 neighbor {id}{vrf_name} is in state {n_state.neighborState}')
 
   return True
 
 def show_ospf_prefix(pfx: str, **kwargs: typing.Any) -> str:
-  return f'ip ospf route json'
+  return 'ip ospf route json'
 
 def get_ospf_prefix(pfx: str, data: Box, **kwargs: typing.Any) -> typing.Optional[Box]:
   return data.get(pfx,None)
@@ -108,7 +109,7 @@ def valid_ospf_prefix(
             names = OSPF_PREFIX_NAMES)
 
 def show_ospf6_prefix(pfx: str, **kwargs: typing.Any) -> str:
-  return f'ipv6 ospf6 route detail json'
+  return 'ipv6 ospf6 route detail json'
 
 def get_ospf6_prefix(pfx: str, data: Box) -> typing.Optional[Box]:
   return data.get('routes').get(pfx,None)
@@ -121,8 +122,6 @@ def check_ospf6_cost(data: list, value: typing.Any, **kwargs: typing.Any) -> lis
       m_value.append(p)
 
   return m_value
-
-  return [ p for p in data if p.metricCost == value ]
 
 def check_ospf6_rt(data: list, value: typing.Any, **kwargs: typing.Any) -> list:
   return [ p for p in data if p.pathType == value ]
@@ -157,10 +156,10 @@ def valid_ipv6_route(
 
   if not _result:
     raise Exception(f'The routing table has no {proto} routes')
-  
+
   if not pfx in _result:
     raise Exception(f'The prefix {pfx} is not in the routing table or not a {proto} route')
-  
+
   pfx_data = _result[pfx][0]
   if cost is not None and cost != pfx_data.metric:
     raise Exception(f'Invalid OSPF end-to-end cost for prefix {pfx}: expected {cost} actual {pfx_data.metric}')
