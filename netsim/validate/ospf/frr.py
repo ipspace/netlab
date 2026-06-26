@@ -36,20 +36,26 @@ def valid_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default', bfd
   if not present:
     raise Exception(f'Unexpected OSPFv2 neighbor {id} in state {n_state.nbrState}')
 
-  if bfd:
-    exit_msg = f'OSPFv2 neighbor {id} is in BFD state {n_state.peerBfdInfo.status}'
-    if n_state.peerBfdInfo and n_state.peerBfdInfo.status == "Up":
-      raise log.Result(exit_msg)
-    else:
-      raise Exception(exit_msg)
 
   exit_msg = f'OSPFv2 neighbor {id} is in state {n_state.nbrState}'
   if not n_state.nbrState.startswith('Full'):
     raise Exception(exit_msg)
-  else:
+
+  if not bfd:
     raise log.Result(exit_msg)
 
+<<<<<<< HEAD
 def show_ospf6_neighbor(id: str, present: bool = True, vrf: str = 'default', **kwargs: typing.Any) -> str:
+=======
+  exit_msg = f'OSPFv2 neighbor {id} is in BFD state {n_state.peerBfdInfo.status}'
+  if not n_state.peerBfdInfo.status == "Up":
+    raise Exception(exit_msg)
+
+  raise log.Result(exit_msg)
+
+
+def show_ospf6_neighbor(id: str, **kwargs: typing.Any) -> str:
+>>>>>>> e01560d71 (Update BFD tests with received feedback)
   try:
     ipaddress.IPv4Address(id)
   except Exception as exc:

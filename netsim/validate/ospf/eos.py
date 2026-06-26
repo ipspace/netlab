@@ -55,14 +55,18 @@ def valid_ospf_neighbor(
   if not present:
     raise Exception(f'Unexpected {proto_name} neighbor {id} in state {n_state.adjacencyState}')
 
-  if bfd:
-    _common.report_state(
-      exit_msg=f'{proto_name} neighbor {id} is in BFD state {n_state.details.bfdState} ',
-      OK=n_state.details.bfdState == "up")
+  exit_msg = f'{proto_name} neighbor {id} is in state {n_state.adjacencyState}'
+  if not n_state.adjacencyState.startswith('full'):
+    raise Exception(exit_msg)
 
-  _common.report_state(
-    exit_msg=f'{proto_name} neighbor {id} is in state {n_state.adjacencyState}',
-    OK=n_state.adjacencyState.startswith('full'))
+  if not bfd:
+    raise log.Result(exit_msg)
+  
+  exit_msg = f'{proto_name} neighbor {id} is in BFD state {n_state.details.bfdState}'
+  if not n_state.details.bfdState == "up":
+    raise Exception(exit_msg)
+
+  raise log.Result(exit_msg)
 
 def show_ospf6_neighbor(id: str, present: bool = True, vrf: str = 'default', **kwargs: typing.Any) -> str:
   try:
