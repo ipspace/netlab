@@ -1,3 +1,29 @@
+{% macro bgp_common_policies() %}
+{#
+  Define default import/export policies for iBGP and eBGP: accept all
+#}
+- path: /routing-policy/policy[name=accept_all]
+  value:
+    default-action:
+      policy-result: accept
+
+- path: /routing-policy/community-set[name=ibgp-mark]
+  value:
+    member: [ "65536:0:65536" ]
+
+- path: /routing-policy/policy[name=ibgp-mark]
+  value:
+    default-action:
+      policy-result: reject
+    statement:
+    - name: mark-ibgp-routes
+      action:
+        bgp:
+          communities:
+            add: ibgp-mark
+        policy-result: accept
+{% endmacro %}
+
 {% macro bgp_export_prefix(vrf,prefix) %}
 - path: /routing-policy/prefix-set[name={{vrf}}_bgp_advertise]
   value:
@@ -180,6 +206,7 @@
     for loops are there to ensure the AF-IBGP export policy is defined
     only once)
 #}
+{{ bgp_common_policies() }}
 {{ bgp_export_policy(vrf,'bgp',import=vrf_bgp.import|default([])) }}
 {% if bgp.next_hop_self|default(False) and bgp.rr|default(False) %}
 {%   for n in vrf_bgp.neighbors|default([]) if n.type == 'ibgp' %}

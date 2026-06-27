@@ -27,28 +27,30 @@ updates:
    expression: "{{ vdata.as }}"
 {% endif %}
 
-{# Creata a community set with a single member for each imported community #}
-{% if vdata.import|default([]) %}
-{%  for c in vdata.import %}
-- path: /routing-policy/community-set[name=C{{ c|replace(':','_') }}]
-  value:
-   member:
-   - "target:{{ c }}" # Single member, else matching is AND
-{% endfor -%}
-{% endif %}
-
-{# Create a single community set for all exported communities, to be added upon import #}
-{% if vdata.export|default([]) %}
-- path: /routing-policy/community-set[name={{vname}}_export]
-  value:
-   member:
-{%  for c in vdata.export %}
-   - "target:{{ c }}"
-{%  endfor %}
-{% endif %}
-
 {% if 'bgp' in vdata and 'af' in vdata %}
 {{ bgp_config(vname,bgp.as,vdata.bgp.router_id|default(bgp.router_id),vdata.bgp,vdata) }}
+{% endif %}
+
+{% if vdata._leaked_routes|default(False) %}
+{%  for intf in interfaces|default([]) if intf.vrf|default('') == vname %}
+{%    set if_name_index = intf.ifname.split('.') %}
+{%    set if_name = if_name_index[0] %}
+{%    set if_index = if_name_index[1] if if_name_index|length > 1 else '0' %}
+{%    if intf.ipv4 is string or intf.ipv6 is string %}
+- path: /interface[name={{ if_name }}]/subinterface[index={{ if_index }}]
+  value:
+{%      for ip,arpnd in [('ipv4','arp'),('ipv6','neighbor-discovery')] %}
+{%        if intf[ip] is string %}
+    {{ ip }}:
+      {{ arpnd }}:
+        host-route:
+          populate:
+          - route-type: dynamic
+            datapath-programming: true
+{%        endif %}
+{%      endfor %}
+{%    endif %}
+{%  endfor %}
 {% endif %}
 
 - path: /network-instance[name={{vname}}]/protocols/bgp-vpn
@@ -83,9 +85,6 @@ updates:
   value:
    default-action:
     policy-result: "accept"
-    bgp:
-     communities:
-      add: "{{vname}}_export"
 
 - path: /routing-policy/policy[name={{ vname }}_vpn_import]
   value:
@@ -93,12 +92,13 @@ updates:
     policy-result: "reject"
    statement:
 {%  for c in vdata.import %}
-   - name: {{ 10 + loop.index }}
+{%    for src_name,src_data in vrfs.items() if c in src_data.export|default([]) %}
+   - name: {{ 10 + src_data.vrfidx }}
      match:
-      bgp:
-       community-set: "C{{ c|replace(':','_') }}"
+      origin-network-instance: "{{ src_name }}"
      action:
       policy-result: "accept"
+{%    endfor %}
 {%  endfor %}
 
 {% endif %}
