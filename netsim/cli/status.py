@@ -164,11 +164,15 @@ def fetch_node_status(ls: Box, topology: Box) -> None:
     p_module   = providers.get_provider_module(topology,n_provider)
     load_provider_status(p_status,n_provider,topology)
 
-    ls.nodes[n_name] = {
-      'device': n_data.device,
-      'mgmt':   n_data.mgmt.ipv4
-    }
-    node_stat = ls.nodes[n_name]
+    node_stat = ls.nodes[n_name] = get_empty_box()
+    for source_attr,status_attr in {
+      'device': 'device',
+      'mgmt.ipv4': 'mgmt',
+      'mgmt.ipv6': 'mgmt6' }.items():
+      attr_value = n_data.get(source_attr,None)
+      if attr_value:
+        node_stat[status_attr] = attr_value
+
     node_stat.connection = n_ext.ansible_connection
     if n_data.get('unmanaged',False):
       node_stat.image = 'unmanaged'
@@ -199,10 +203,12 @@ def fetch_node_status(ls: Box, topology: Box) -> None:
 
 def show_lab_nodes(ls: Box, topology: Box) -> None:
   rows = []
-  heading = [ 'node', 'device', 'image', 'mgmt IPv4', 'connection', 'provider', 'VM/container', 'status']
+  heading = [ 'node', 'device', 'image', 'mgmt IP', 'connection', 'provider', 'VM/container', 'status']
 
   for n_name,n_data in ls.nodes.items():
-    row = [ n_name, n_data.device, n_data.image, n_data.get('mgmt',''),
+    mgmt = "\n".join([ addr for addr in (n_data.get('mgmt'),n_data.get('mgmt6')) if addr ])
+
+    row = [ n_name, n_data.device, n_data.image, mgmt,
             n_data.connection, n_data.get('provider',''),
             n_data.get('provider_name',''), n_data.status ]
     rows.append(row)
