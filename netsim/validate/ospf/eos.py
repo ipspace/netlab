@@ -63,10 +63,7 @@ def valid_ospf_neighbor(
     raise log.Result(exit_msg)
   
   exit_msg = f'{proto_name} neighbor {id} is in BFD state {n_state.details.bfdState}'
-  if not n_state.details.bfdState == "up":
-    raise Exception(exit_msg)
-
-  raise log.Result(exit_msg)
+  _common.report_state(exit_msg,n_state.details.bfdState == "up")
 
 def show_ospf6_neighbor(id: str, present: bool = True, vrf: str = 'default', **kwargs: typing.Any) -> str:
   try:

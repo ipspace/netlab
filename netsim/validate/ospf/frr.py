@@ -77,17 +77,15 @@ def valid_ospf6_neighbor(id: str, present: bool = True, vrf: str = 'default', bf
     if not present:
       raise Exception(f'Unexpected OSPFv3 neighbor {id}{vrf_name} in state {n_state.neighborState}')
 
+  ngb_msg = f'OSPFv3 neighbor {id}{vrf_name} is in state {n_state.neighborState}'
   if n_state.neighborState != 'Full':
-    raise Exception(f'OSPFv3 neighbor {id}{vrf_name} is in state {n_state.neighborState}')
+    raise Exception(ngb_msg)
 
-  if bfd:
-    exit_msg = f'OSPFv3 neighbor {id} is in BFD state {n_state.peerBfdInfo.status}'
-    if n_state.peerBfdInfo and n_state.peerBfdInfo.status == "Up":
-      raise log.Result(exit_msg)
-    else:
-      raise Exception(exit_msg)
+  if not bfd:
+    raise log.Result(ngb_msg)
 
-  return True
+  exit_msg = f'OSPFv3 neighbor {id} is in BFD state {n_state.peerBfdInfo.status}'
+  _common.report_state(exit_msg,n_state.peerBfdInfo and n_state.peerBfdInfo.status == "Up")
 
 def show_ospf_prefix(pfx: str, **kwargs: typing.Any) -> str:
   return 'ip ospf route json'

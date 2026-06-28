@@ -1,52 +1,47 @@
 message: |
-  This topology tests the OSPFv3 with BFD
+  This topology tests the OSPFv2 with BFD
 
   * Multiple OSPF areas on ABR
   * BFD enabled on all interfaces
 
-addressing:
-  loopback:
-    ipv4: False
-    ipv6: 2001:db8:1::/48
-  lan:
-    ipv4: False
-    ipv6: 2001:db8:2::/48
-  p2p:
-    ipv4: False
-    ipv6: 2001:db8:3::/48
-
 defaults.sources.extra: [ ../../wait_times.yml, ../../warnings.yml ]
 module: [ ospf, bfd ]
 
-ospf.bfd.ipv6: True
+ospf.bfd.ipv4: True
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ bb, r1 ]
+    mtu: 1500
 
 nodes:
+  dut:
   bb:
-    ospf.router_id: 10.42.42.1
-  abr:
   r1:
     ospf.area: 1
 
 links:
-- bb-abr
-- abr:
+- dut-bb
+- dut:
   r1:
   ospf:
     area: 1
     cost: 42
     network_type: broadcast
-- abr:
+- dut:
 
 validate:
   adj:
     description: Check OSPF adjacencies
-    wait: ospfv3_adj_p2p
+    wait: ospfv2_adj_lan
     wait_msg: Waiting for OSPF adjacency process to complete
     nodes: [ r1, bb ]
-    plugin: ospf6_neighbor(nodes.abr.ospf.router_id)
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
   ospf_bfd:
     description: Check OSPF BFD adjacencies
-    wait: ospfv3_adj_p2p
+    wait: ospfv2_adj_p2p
     wait_msg: Waiting for OSPF BFD adjacency process to complete
     nodes: [ r1, bb ]
-    plugin: ospf6_neighbor(nodes.abr.ospf.router_id,bfd=True)
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id,bfd=True)
