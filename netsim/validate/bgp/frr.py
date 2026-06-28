@@ -82,14 +82,16 @@ def valid_bgp_neighbor(
 
   return f'Neighbor {n_addr} ({n_id}) is in state {data[n_addr].state}'
 
-def show_bgp_neighbor_details(ngb: list, n_id: str, af: str = 'ipv4', **kwargs: typing.Any) -> str:
+def show_bgp_neighbor_details(ngb: list, n_id: str, af: str = 'ipv4', bfd: bool = False, **kwargs: typing.Any) -> str:
   n_addr = _common.get_bgp_neighbor_id(ngb,n_id,af)
   return f'bgp neighbor {n_addr} json'
 
 def valid_bgp_neighbor_details(
       ngb: list,
       n_id: str,
-      af: str = 'ipv4',**kwargs: typing.Any) -> str:
+      af: str = 'ipv4',
+      bfd: bool = False,
+      **kwargs: typing.Any) -> str:
   _result = global_vars.get_result_dict('_result')
 
   n_addr = _common.get_bgp_neighbor_id(ngb,n_id,af)
@@ -100,6 +102,13 @@ def valid_bgp_neighbor_details(
       raise Exception(f'Neighbor data structure does not contain attribute {k}')
     if data[k] != v:
       raise Exception(f'{k} expected value {v} actual {data[k]}')
+
+  if bfd:
+    if data.peerBfdInfo:
+      if data.peerBfdInfo.status != "Up":
+        raise Exception(f'{k} expected value UP actual {data.peerBfdInfo.status}')
+    else:
+      raise Exception(f'Neighbor data structure does not contain attribute peerBfdInfo')
 
   return f'All specified BGP neighbor parameters have the expected values'
 
