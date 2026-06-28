@@ -1,0 +1,47 @@
+message: |
+  This topology tests the OSPFv2 with BFD
+
+  * Multiple OSPF areas on ABR
+  * BFD enabled on all interfaces
+
+defaults.sources.extra: [ ../../wait_times.yml, ../../warnings.yml ]
+module: [ ospf, bfd ]
+
+ospf.bfd.ipv4: True
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ bb, r1 ]
+    mtu: 1500
+
+nodes:
+  dut:
+  bb:
+  r1:
+    ospf.area: 1
+
+links:
+- dut-bb
+- dut:
+  r1:
+  ospf:
+    area: 1
+    cost: 42
+    network_type: broadcast
+- dut:
+
+validate:
+  adj:
+    description: Check OSPF adjacencies
+    wait: ospfv2_adj_lan
+    wait_msg: Waiting for OSPF adjacency process to complete
+    nodes: [ r1, bb ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  ospf_bfd:
+    description: Check OSPF BFD adjacencies
+    wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPF BFD adjacency process to complete
+    nodes: [ r1, bb ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id,bfd=True)
