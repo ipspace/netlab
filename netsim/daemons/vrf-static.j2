@@ -1,0 +1,64 @@
+{#
+   VRF static route configuration. We can safely assume that 'vrfs' and 'routing.static'
+   are defined.
+
+   Please note that we have to do static routes at the very end of VRF configuration as we
+   need the VRF tables defined before we can configure next hop lookups
+#}
+{% import 'routing.j2' as bird_routing with context %}
+{#
+   Simple intra-VRF static routes
+#}
+{% for vname in vrfs %}
+{%   for sr_af in ['ipv4','ipv6'] %}
+{%     for sr_data in routing.static if sr_data.vrf|default('') == vname and 'vrf' not in sr_data.nexthop and sr_af in sr_data %}
+{%       if loop.first %}
+
+protocol static static_vrf_{{ vname }}_{{ sr_af }} {
+  {{ sr_af }} {
+    table {{ vrf_table(vname,sr_af) }};
+    import filter vrf_{{ vname }}_tag;
+  };
+  check link;
+{%       endif %}
+  {{ bird_routing.config_sr(sr_data,sr_af) }}
+{%       if loop.last %}
+}
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
+
+{#
+   Inter-VRF static routes
+#}
+{% for vname in vrfs|list + [ None ] %}
+{%   for dst_name in vrfs|list + [ None ] if dst_name != vname %}
+{%     for sr_af in ['ipv4','ipv6'] %}
+{%       for sr_data in routing.static 
+             if ('vrf' in sr_data or 'vrf' in sr_data.nexthop) and
+                sr_data.vrf|default(None) == vname and
+                sr_data.nexthop.vrf|default(None) == dst_name
+                and sr_af in sr_data %}
+{%         if loop.first %}
+
+protocol static static_{{ 'vrf_' + vname if vname else 'global' }}_to_{{ dst_name or 'global' }}_{{ sr_af }} {
+{%           if vname %}
+  {{ sr_af }} {
+    table {{ vrf_table(vname,sr_af) }};
+    import filter vrf_{{ vname }}_tag;
+  };
+{%           else %}
+  {{ sr_af }};
+{%           endif %}
+  check link;
+  igp table {{ vrf_table(dst_name,sr_af) }};
+{%         endif %}
+  {{ bird_routing.config_sr(sr_data,sr_af) }}
+{%         if loop.last %}
+}
+{%         endif %}
+{%       endfor %}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}

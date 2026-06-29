@@ -1,0 +1,19 @@
+{% for src_name,src_data in vrfs|default({})|dictsort %}
+{%   for dst_name,dst_data in vrfs|default({})|dictsort if dst_name != src_name %}
+{%     set import_rt = dst_data._bird_import|default([])|select('in',src_data._bird_export|default([]))|list %}
+{%     if import_rt %}
+{%       for _af in src_data.af if _af in dst_data.af %}
+
+protocol pipe pipe_vrf_{{ src_name }}_{{ dst_name }}_{{ _af }} {
+  table {{ vrf_table(dst_name,_af) }};
+  peer table {{ vrf_table(src_name,_af) }};
+  import filter {
+    if netlab_vrf_rt ~ [ {{ import_rt|join(',') }} ] then accept;
+    reject;
+  };
+  export none;
+}
+{%       endfor %}
+{%     endif %}
+{%   endfor %}
+{% endfor %}
