@@ -26,6 +26,9 @@ The plugin runs during `netlab create` on the controller and generates self-cont
 
 The plugin is configured with the **multiserver** topology-level dictionary that has these parameters:
 
+:::{table}
+:class: table-wrap
+
 | Parameter | Type | Meaning |
 |-----------|------|---------|
 | **assignment** | string | How to assign nodes to workers: `explicit` (default) or `auto` |
@@ -35,13 +38,17 @@ The plugin is configured with the **multiserver** topology-level dictionary that
 | **output_dir** | string | Template for per-worker directory names (default: `server-{server_name}`); supports `{server_name}`, `{server_id}`, and `{name}` (topology name) |
 | **copy_dirs** | list | Subdirectories copied into every worker directory (default: `[group_vars, templates]`); overrides the default list |
 | **copy_files** | list | Top-level files copied into every worker directory (default: `[ansible.cfg]`); overrides the default list |
-| **extra_copy_dirs** | list | Additional subdirectories to copy on top of **copy_dirs** |
-| **extra_copy_files** | list | Additional top-level files to copy on top of **copy_files** |
+| **extra_copy_dirs** | list | Additional subdirectories to copy on top of **copy_dirs**. Use to copy plugins or configuration template directories to worker nodes. |
+| **extra_copy_files** | list | Additional top-level files to copy on top of **copy_files**. Use to copy standalone configuration templates to worker nodes. |
+:::
 
 (multiserver-servers)=
 ### Worker Parameters
 
 The **multiserver.servers** dictionary is keyed by worker name (e.g. `srv1`, `dc-east`). Each entry represents one worker. The name is used for per-worker directory names and log messages, and because workers are a dictionary, duplicate worker names are impossible. Each entry supports these parameters:
+
+:::{table}
+:class: table-wrap
 
 | Parameter | Type | Meaning |
 |-----------|------|---------|
@@ -51,17 +58,22 @@ The **multiserver.servers** dictionary is keyed by worker name (e.g. `srv1`, `dc
 | **members** | list | Individual node names assigned to this worker |
 | **vxlan_dev** | string | Worker interface to bind VXLAN tunnels to this worker |
 | **weight** | integer | Relative capacity for auto-assignment (default: `1`); a worker with `weight: 2` absorbs twice as many nodes before being considered as loaded as a worker with `weight: 1` |
+:::
 
 (multiserver-vxlan)=
 ### VXLAN Parameters
 
 Global VXLAN settings are specified in the **multiserver.vxlan** dictionary:
 
+:::{table}
+:class: table-wrap
+
 | Parameter | Type | Meaning |
 |-----------|------|---------|
 | **vni_base** | integer | Starting VNI for cross-worker links (default: `10000`) |
 | **dstport** | integer | UDP destination port for VXLAN traffic (default: `4789`) |
 | **dev** | string | **Required.** Default worker interface to bind VXLAN tunnels |
+:::
 
 VXLAN tunnels bind to the global interface specified in **multiserver.vxlan.dev**. If your workers use different interface names, you can override this interface per-worker using the **vxlan_dev** parameter under each worker in the **multiserver.servers** dictionary.
 
@@ -227,7 +239,7 @@ Each per-worker directory is self-contained and includes:
 * A tailored `clab.yml` with only the relevant nodes and cross-worker VXLAN interfaces
 * A filtered `netlab.snapshot.pickle` for use with `netlab up --snapshot`
 * A filtered `hosts.yml` containing only the nodes assigned to that worker, so `netlab initial` does not attempt to configure nodes on other workers
-* Copies of `node_files/` and `host_vars/` for only the nodes on that worker
+* Copies of `node_files/` and `host_vars/` for the nodes on that worker
 * Copies of the directories and files listed in **multiserver.copy_dirs** and **multiserver.copy_files**
 * Per-worker `vxlan-setup.sh` and `vxlan-teardown.sh` scripts (when multi-access VXLAN tunnels are needed), registered in that worker's snapshot as [CLI hooks](dev-cli-hooks) (`netlab.up.post_start_clab` / `netlab.down.pre_stop_clab`) so `netlab up` and `netlab down` run them automatically on the worker
 
@@ -235,7 +247,7 @@ Each per-worker directory is self-contained and includes:
 ## Deployment Workflow
 
 ```{note}
-The plugin does **not** orchestrate workers. It runs only on the controller during `netlab create`, where it generates a self-contained directory per worker. It never opens SSH connections, runs commands remotely, or copies files to other systems. You copy each directory to its worker yourself (Step 2), and `netlab` then runs **independently on each worker** (Step 3) — the per-worker VXLAN CLI hooks fire locally on that worker, not from the controller.
+The plugin does **not** orchestrate workers. It runs only on the controller during `netlab create`, where it generates a self-contained directory per worker. It never opens SSH connections, runs commands remotely, or copies files to other systems. Copy each directory to its worker yourself (Step 2), and start the local nodes with `netlab up --snapshot` **independently on each worker** (Step 3) — the per-worker VXLAN CLI hooks fire locally on that worker, not from the controller.
 ```
 
 **Step 1: Generate configurations** on the controller:
