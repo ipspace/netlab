@@ -1,14 +1,4 @@
 {% macro ospf_config(ospf,proto_suffix,vrf_name,ospf_interfaces,vrf_data) %}
-{% macro rt_value(rt) -%}
-(rt, {{ rt.split(':')[0] }}, {{ rt.split(':')[1] }})
-{%- endmacro %}
-{% macro tag_vrf_route(vrf_data) %}
-      netlab_vrf_rt.empty;
-{%   for rt in vrf_data.export|default([]) %}
-      netlab_vrf_rt.add({{ rt_value(rt) }});
-{%   endfor %}
-      accept;
-{% endmacro %}
 {% set KW_NETWORK_TYPE = { 'broadcast': 'bcast', 'point-to-point': 'ptp','point-to-multipoint': 'ptmp', 'non-broadcast': 'nbma' } %}
 {% for af in ['ipv4','ipv6'] if af in ospf.af %}
 {%   set import_list = ospf.import|default(['bgp','connected','static'] if vrf_name else []) %}
@@ -29,7 +19,7 @@ protocol ospf {{ ver }} ospf_{{ proto_suffix }}_{{ ver }} {
 {%     if import_list %}
     export filter {
 {%       if vrf_name and vrf_data.import|default([]) %}
-      if netlab_vrf_rt ~ [ {% for rt in vrf_data.import %}{{ rt_value(rt) }}{% if not loop.last %}, {% endif %}{% endfor %} ] then {
+      if netlab_vrf_rt ~ [ {{ vrf_data._bird_import|join(',') }} ] then {
         ospf_metric2 = 20;
         accept;
       }
