@@ -16,15 +16,14 @@ def bird_vrf_rt(node: Box) -> None:
       if kw not in vdata:                                   # Not relevant? Cool ;)
         continue
 
-      '''
-      The magic of the following line explained for people who don't want to study it ;)
-
-      * Iterate over all route targets in the import/export list
-      * Split the original route target (asn:rt or ip:rt) into its components
-      * Rejoin the RT components separated by commas (OK, I could have used replace, but this
-        is way cooler :-P )
-      * Add (rt,) around the RT components
-      '''
+      # The magic of the following line explained for people who don't want to study it ;)
+      #
+      # - Iterate over all route targets in the import/export list
+      # - Split the original route target (asn:rt or ip:rt) into its components
+      # - Rejoin the RT components separated by commas (OK, I could have used replace, but this
+      #   is way cooler :-P )
+      # - Add (rt,) around the RT components
+      #
       vdata[f'_bird_{kw}'] = [ '(rt,'+','.join(rt.split(':'))+')' for rt in vdata[kw]]
 
 class Bird(_Quirks):
