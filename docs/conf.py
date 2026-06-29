@@ -50,7 +50,8 @@ myst_enable_extensions = [
     "smartquotes",
     "strikethrough",
     "tasklist",
-    "attrs_block"
+    "attrs_block",
+    "colon_fence"
 ]
 
 suppress_warnings = ["myst.strikethrough"]
