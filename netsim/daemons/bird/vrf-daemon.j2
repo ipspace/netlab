@@ -11,24 +11,19 @@ vrf_{{ vname }}_{{ af }}
 {%- endmacro %}
 
 {#
- # rt_value: Return a BIRD extended community route-target tuple from a netlab RT string.
- #}
-{% macro rt_value(rt) -%}
-(rt, {{ rt.split(':')[0] }}, {{ rt.split(':')[1] }})
-{%- endmacro %}
-
-{#
  # tag_vrf_route: Tag an imported VRF route with all export route targets configured on the VRF.
  #}
 {% macro tag_vrf_route(vdata) %}
       netlab_vrf_rt.empty;
-{%   for rt in vdata.export|default([]) %}
-      netlab_vrf_rt.add({{ rt_value(rt) }});
+{%   for rt in vdata._bird_export|default([]) %}
+      netlab_vrf_rt.add({{ rt }});
 {%   endfor %}
       accept;
 {% endmacro -%}
 
 attribute eclist netlab_vrf_rt;
+attribute string netlab_vrf_name;
+
 {% for vname,vdata in vrfs|default({})|dictsort %}
 
 #
@@ -38,14 +33,21 @@ attribute eclist netlab_vrf_rt;
 {{ _af }} table {{ vrf_table(vname,_af) }};
 {%   endfor %}
 
+filter vrf_{{ vname }}_tag {
+  netlab_vrf_name = "{{ vname }}";
+  netlab_vrf_rt.empty;
+{%   for rt in vdata._bird_export|default([]) %}
+  netlab_vrf_rt.add({{ rt }});
+{%   endfor %}
+  accept;
+}
+
 {%   for _af in ['ipv4','ipv6'] if _af in vdata.af %}
 protocol direct direct_vrf_{{ vname }}_{{ _af }} {
   vrf "{{ vname }}";
   {{ _af }} {
     table {{ vrf_table(vname,_af) }};
-    import filter {
-{{ tag_vrf_route(vdata) }}
-    };
+    import filter vrf_{{ vname }}_tag;
   };
 }
 
@@ -56,9 +58,7 @@ protocol kernel kernel_vrf_{{ vname }}_{{ _af }} {
   {{ _af }} {
     table {{ vrf_table(vname,_af) }};
     export all;
-    import filter {
-{{ tag_vrf_route(vdata) }}
-    };
+    import filter vrf_{{ vname }}_tag;
   };
 }
 {%   endfor %}
@@ -69,9 +69,7 @@ protocol kernel kernel_vrf_{{ vname }}_{{ _af }} {
 protocol static static_vrf_{{ vname }}_{{ sr_af }} {
   {{ sr_af }} {
     table {{ vrf_table(vname,sr_af) }};
-    import filter {
-{{ tag_vrf_route(vdata) }}
-    };
+    import filter vrf_{{ vname }}_tag;
   };
   check link;
 {%       endif %}
@@ -122,16 +120,15 @@ protocol static static_vrf_leak_{{ vname }}_{{ dst_name }}_{{ sr_af }} {
 {# Route leaking between VRF tables based on transformed import/export route targets #}
 {% for src_name,src_data in vrfs|default({})|dictsort %}
 {%   for dst_name,dst_data in vrfs|default({})|dictsort if dst_name != src_name %}
-{%     set import_rt = dst_data.import|default([])|select('in',src_data.export|default([]))|list %}
+{%     set import_rt = dst_data._bird_import|default([])|select('in',src_data._bird_export|default([]))|list %}
 {%     if import_rt %}
-{%       set bird_import_rt = import_rt|map('replace',':',', ')|join('), (rt, ') %}
 {%       for _af in src_data.af if _af in dst_data.af %}
 
 protocol pipe pipe_vrf_{{ src_name }}_{{ dst_name }}_{{ _af }} {
   table {{ vrf_table(dst_name,_af) }};
   peer table {{ vrf_table(src_name,_af) }};
   import filter {
-    if netlab_vrf_rt ~ [ (rt, {{ bird_import_rt }}) ] then accept;
+    if netlab_vrf_rt ~ [ {{ import_rt|join(',') }} ] then accept;
     reject;
   };
   export none;
