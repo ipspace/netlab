@@ -1,0 +1,1079 @@
+bgp:
+  advertise_loopback: true
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
+groups:
+  as65000:
+    members:
+    - dut
+  as65001:
+    members:
+    - d2
+  as65002:
+    members:
+    - d3
+  as65011:
+    members:
+    - x1
+  as65012:
+    members:
+    - x2
+  as65100:
+    members:
+    - v1
+  as65101:
+    members:
+    - v2
+  as65200:
+    members:
+    - v3
+  as65300:
+    members:
+    - v4
+input:
+- coverage/input/bgp-default.yml
+- package:topology-defaults.yml
+links:
+- _linkname: links[1]
+  interfaces:
+  - bgp:
+      default_originate: true
+    ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.1/30
+    node: dut
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.2/30
+    node: x1
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  role: external
+  type: p2p
+- _linkname: links[2]
+  interfaces:
+  - bgp:
+      default_originate: true
+    ifindex: 2
+    ifname: eth2
+    ipv4: 10.1.0.5/30
+    node: dut
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.6/30
+    node: x2
+  linkindex: 2
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.4/30
+  role: external
+  type: p2p
+- _linkname: links[3]
+  interfaces:
+  - bgp:
+      default_originate: true
+    ifindex: 3
+    ifname: eth3
+    ipv4: 10.1.0.9/30
+    node: dut
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.10/30
+    node: v1
+  linkindex: 3
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.8/30
+  role: external
+  type: p2p
+  vrf: t1
+- _linkname: links[4]
+  interfaces:
+  - bgp:
+      default_originate: true
+    ifindex: 4
+    ifname: eth4
+    ipv4: 10.1.0.13/30
+    node: dut
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.14/30
+    node: v2
+  linkindex: 4
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.12/30
+  role: external
+  type: p2p
+  vrf: t1
+- _linkname: links[5]
+  interfaces:
+  - bgp:
+      default_originate: true
+    ifindex: 5
+    ifname: eth5
+    ipv4: 172.17.0.0/31
+    ipv6: 2001:db8:1::1/64
+    node: dut
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 172.17.0.1/31
+    ipv6: 2001:db8:1::2/64
+    node: v3
+  linkindex: 5
+  node_count: 2
+  pool: ds
+  prefix:
+    ipv4: 172.17.0.0/31
+    ipv6: 2001:db8:1::/64
+  role: external
+  type: p2p
+  vrf: t2
+- _linkname: links[6]
+  interfaces:
+  - bgp:
+      default_originate: true
+    ifindex: 6
+    ifname: eth6
+    ipv6: 2001:db8:2::1/64
+    node: dut
+  - ifindex: 2
+    ifname: eth2
+    ipv6: 2001:db8:2::2/64
+    node: v3
+  linkindex: 6
+  node_count: 2
+  pool: v6
+  prefix:
+    ipv6: 2001:db8:2::/64
+  role: external
+  type: p2p
+  vrf: t3
+- _linkname: links[7]
+  interfaces:
+  - bgp:
+      default_originate: true
+    ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.17/30
+    node: d2
+  - ifindex: 2
+    ifname: eth2
+    ipv4: 10.1.0.18/30
+    node: x1
+  linkindex: 7
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.16/30
+  role: external
+  type: p2p
+- _linkname: links[8]
+  interfaces:
+  - bgp:
+      default_originate: true
+    ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.21/30
+    node: d3
+  - ifindex: 3
+    ifname: eth3
+    ipv4: 10.1.0.22/30
+    node: x1
+  linkindex: 8
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.20/30
+  role: external
+  type: p2p
+message: 'Checks the default static route origination needed to originate the
+
+  BGP default route(s)
+
+  '
+module:
+- routing
+- bgp
+- vrf
+name: input
+nodes:
+  d2:
+    _features:
+      bgp:
+        default_originate: static
+    af:
+      ipv4: true
+    bgp:
+      _session_clear:
+      - 10.1.0.18
+      advertise:
+      - ipv4: 10.0.0.2/32
+      advertise_loopback: true
+      as: 65001
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65011
+        default_originate: true
+        ifindex: 1
+        ipv4: 10.1.0.18
+        name: x1
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.2
+    box: none
+    config:
+    - bgp.session
+    device: none
+    id: 2
+    interfaces:
+    - bgp:
+        default_originate: true
+      ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.17/30
+      linkindex: 7
+      name: d2 -> x1
+      neighbors:
+      - ifname: eth2
+        ipv4: 10.1.0.18/30
+        node: x1
+      role: external
+      type: p2p
+    loopback:
+      bgp:
+        advertise: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.102
+      mac: ca:fe:00:02:00:00
+    module:
+    - routing
+    - bgp
+    name: d2
+    routing:
+      static:
+      - floating: true
+        ipv4: 0.0.0.0/0
+        nexthop:
+          discard: true
+  d3:
+    af:
+      ipv4: true
+    bgp:
+      _session_clear:
+      - 10.1.0.22
+      advertise:
+      - ipv4: 10.0.0.3/32
+      advertise_loopback: true
+      as: 65002
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65011
+        default_originate: true
+        ifindex: 1
+        ipv4: 10.1.0.22
+        name: x1
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.3
+    box: none
+    config:
+    - bgp.session
+    device: none
+    id: 3
+    interfaces:
+    - bgp:
+        default_originate: true
+      ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.21/30
+      linkindex: 8
+      name: d3 -> x1
+      neighbors:
+      - ifname: eth3
+        ipv4: 10.1.0.22/30
+        node: x1
+      role: external
+      type: p2p
+    loopback:
+      bgp:
+        advertise: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.3/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.103
+      mac: ca:fe:00:03:00:00
+    module:
+    - bgp
+    name: d3
+  dut:
+    _features:
+      bgp:
+        default_originate: static
+    af:
+      ipv4: true
+      ipv6: true
+      vpnv4: true
+      vpnv6: true
+    bgp:
+      _session_clear:
+      - 10.1.0.2
+      - 10.1.0.6
+      advertise:
+      - ipv4: 10.0.0.1/32
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65011
+        default_originate: true
+        ifindex: 1
+        ipv4: 10.1.0.2
+        name: x1
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65012
+        default_originate: true
+        ifindex: 2
+        ipv4: 10.1.0.6
+        name: x2
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.1
+    box: none
+    config:
+    - bgp.session
+    device: none
+    id: 1
+    interfaces:
+    - bgp:
+        default_originate: true
+      ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      name: dut -> x1
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.2/30
+        node: x1
+      role: external
+      type: p2p
+    - bgp:
+        default_originate: true
+      ifindex: 2
+      ifname: eth2
+      ipv4: 10.1.0.5/30
+      linkindex: 2
+      name: dut -> x2
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.6/30
+        node: x2
+      role: external
+      type: p2p
+    - bgp:
+        default_originate: true
+      ifindex: 3
+      ifname: eth3
+      ipv4: 10.1.0.9/30
+      linkindex: 3
+      name: dut -> v1
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.10/30
+        node: v1
+      role: external
+      type: p2p
+      vrf: t1
+    - bgp:
+        default_originate: true
+      ifindex: 4
+      ifname: eth4
+      ipv4: 10.1.0.13/30
+      linkindex: 4
+      name: dut -> v2
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.14/30
+        node: v2
+      role: external
+      type: p2p
+      vrf: t1
+    - bgp:
+        default_originate: true
+      ifindex: 5
+      ifname: eth5
+      ipv4: 172.17.0.0/31
+      ipv6: 2001:db8:1::1/64
+      linkindex: 5
+      name: dut -> v3
+      neighbors:
+      - ifname: eth1
+        ipv4: 172.17.0.1/31
+        ipv6: 2001:db8:1::2/64
+        node: v3
+      pool: ds
+      role: external
+      type: p2p
+      vrf: t2
+    - bgp:
+        default_originate: true
+      ifindex: 6
+      ifname: eth6
+      ipv6: 2001:db8:2::1/64
+      linkindex: 6
+      name: dut -> v3
+      neighbors:
+      - ifname: eth2
+        ipv6: 2001:db8:2::2/64
+        node: v3
+      pool: v6
+      role: external
+      type: p2p
+      vrf: t3
+    loopback:
+      bgp:
+        advertise: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.101
+      mac: ca:fe:00:01:00:00
+    module:
+    - routing
+    - bgp
+    - vrf
+    name: dut
+    routing:
+      static:
+      - ipv4: 0.0.0.0/0
+        nexthop:
+          idx: 0
+          intf: eth5
+          ipv4: 172.17.0.1
+          ipv6: 2001:db8:1::2
+        vrf: t2
+      - floating: true
+        ipv4: 0.0.0.0/0
+        nexthop:
+          discard: true
+      - floating: true
+        ipv4: 0.0.0.0/0
+        nexthop:
+          discard: true
+        vrf: t1
+      - floating: true
+        ipv6: ::/0
+        nexthop:
+          discard: true
+        vrf: t2
+      - floating: true
+        ipv6: ::/0
+        nexthop:
+          discard: true
+        vrf: t3
+    vrf:
+      as: 65000
+    vrfs:
+      t1:
+        af:
+          ipv4: true
+        bgp:
+          _session_clear:
+          - 10.1.0.10
+          - 10.1.0.14
+          import:
+            connected:
+              auto: true
+          neighbors:
+          - _src_vrf: t1
+            activate:
+              ipv4: true
+            as: 65100
+            default_originate: true
+            ifindex: 3
+            ipv4: 10.1.0.10
+            name: v1
+            type: ebgp
+          - _src_vrf: t1
+            activate:
+              ipv4: true
+            as: 65101
+            default_originate: true
+            ifindex: 4
+            ipv4: 10.1.0.14
+            name: v2
+            type: ebgp
+        export:
+        - '65000:1'
+        id: 1
+        import:
+        - '65000:1'
+        rd: '65000:1'
+        vrfidx: 100
+      t2:
+        af:
+          ipv4: true
+          ipv6: true
+        bgp:
+          _session_clear:
+          - 172.17.0.1
+          - 2001:db8:1::2
+          import:
+            connected:
+              auto: true
+          neighbors:
+          - _src_vrf: t2
+            activate:
+              ipv4: true
+              ipv6: true
+            as: 65200
+            default_originate: true
+            ifindex: 5
+            ipv4: 172.17.0.1
+            ipv6: 2001:db8:1::2
+            name: v3
+            type: ebgp
+        export:
+        - '65000:2'
+        id: 2
+        import:
+        - '65000:2'
+        rd: '65000:2'
+        vrfidx: 101
+      t3:
+        af:
+          ipv6: true
+        bgp:
+          _session_clear:
+          - 2001:db8:2::2
+          import:
+            connected:
+              auto: true
+          neighbors:
+          - _src_vrf: t3
+            activate:
+              ipv6: true
+            as: 65200
+            default_originate: true
+            ifindex: 6
+            ipv6: 2001:db8:2::2
+            name: v3
+            type: ebgp
+        export:
+        - '65000:3'
+        id: 3
+        import:
+        - '65000:3'
+        rd: '65000:3'
+        vrfidx: 102
+  v1:
+    af:
+      ipv4: true
+    bgp:
+      advertise:
+      - ipv4: 10.0.0.6/32
+      advertise_loopback: true
+      as: 65100
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - _vrf: t1
+        activate:
+          ipv4: true
+        as: 65000
+        ifindex: 1
+        ipv4: 10.1.0.9
+        name: dut
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.6
+    box: none
+    device: none
+    id: 6
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.10/30
+      linkindex: 3
+      name: v1 -> dut
+      neighbors:
+      - bgp:
+          default_originate: true
+        ifname: eth3
+        ipv4: 10.1.0.9/30
+        node: dut
+        vrf: t1
+      role: external
+      type: p2p
+    loopback:
+      bgp:
+        advertise: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.6/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.106
+      mac: ca:fe:00:06:00:00
+    module:
+    - bgp
+    name: v1
+  v2:
+    af:
+      ipv4: true
+    bgp:
+      advertise:
+      - ipv4: 10.0.0.7/32
+      advertise_loopback: true
+      as: 65101
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - _vrf: t1
+        activate:
+          ipv4: true
+        as: 65000
+        ifindex: 1
+        ipv4: 10.1.0.13
+        name: dut
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.7
+    box: none
+    device: none
+    id: 7
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.14/30
+      linkindex: 4
+      name: v2 -> dut
+      neighbors:
+      - bgp:
+          default_originate: true
+        ifname: eth4
+        ipv4: 10.1.0.13/30
+        node: dut
+        vrf: t1
+      role: external
+      type: p2p
+    loopback:
+      bgp:
+        advertise: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.7/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.107
+      mac: ca:fe:00:07:00:00
+    module:
+    - bgp
+    name: v2
+  v3:
+    af:
+      ipv4: true
+      ipv6: true
+    bgp:
+      advertise:
+      - ipv4: 10.0.0.8/32
+      advertise_loopback: true
+      as: 65200
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      ipv4: true
+      ipv6: true
+      neighbors:
+      - _vrf: t2
+        activate:
+          ipv4: true
+          ipv6: true
+        as: 65000
+        ifindex: 1
+        ipv4: 172.17.0.0
+        ipv6: 2001:db8:1::1
+        name: dut
+        type: ebgp
+      - _vrf: t3
+        activate:
+          ipv6: true
+        as: 65000
+        ifindex: 2
+        ipv6: 2001:db8:2::1
+        name: dut
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.8
+    box: none
+    device: none
+    id: 8
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 172.17.0.1/31
+      ipv6: 2001:db8:1::2/64
+      linkindex: 5
+      name: v3 -> dut
+      neighbors:
+      - bgp:
+          default_originate: true
+        ifname: eth5
+        ipv4: 172.17.0.0/31
+        ipv6: 2001:db8:1::1/64
+        node: dut
+        vrf: t2
+      pool: ds
+      role: external
+      type: p2p
+    - ifindex: 2
+      ifname: eth2
+      ipv6: 2001:db8:2::2/64
+      linkindex: 6
+      name: v3 -> dut
+      neighbors:
+      - bgp:
+          default_originate: true
+        ifname: eth6
+        ipv6: 2001:db8:2::1/64
+        node: dut
+        vrf: t3
+      pool: v6
+      role: external
+      type: p2p
+    loopback:
+      bgp:
+        advertise: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.8/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.108
+      mac: ca:fe:00:08:00:00
+    module:
+    - bgp
+    name: v3
+  v4:
+    af:
+      ipv4: true
+    bgp:
+      advertise:
+      - ipv4: 10.0.0.9/32
+      advertise_loopback: true
+      as: 65300
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors: []
+      next_hop_self: true
+      router_id: 10.0.0.9
+    box: none
+    device: none
+    id: 9
+    interfaces: []
+    loopback:
+      bgp:
+        advertise: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.9/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.109
+      mac: ca:fe:00:09:00:00
+    module:
+    - bgp
+    name: v4
+  x1:
+    af:
+      ipv4: true
+    bgp:
+      advertise:
+      - ipv4: 10.0.0.4/32
+      advertise_loopback: true
+      as: 65011
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65000
+        ifindex: 1
+        ipv4: 10.1.0.1
+        name: dut
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65001
+        ifindex: 2
+        ipv4: 10.1.0.17
+        name: d2
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65002
+        ifindex: 3
+        ipv4: 10.1.0.21
+        name: d3
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.4
+    box: none
+    device: none
+    id: 4
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      name: x1 -> dut
+      neighbors:
+      - bgp:
+          default_originate: true
+        ifname: eth1
+        ipv4: 10.1.0.1/30
+        node: dut
+      role: external
+      type: p2p
+    - ifindex: 2
+      ifname: eth2
+      ipv4: 10.1.0.18/30
+      linkindex: 7
+      name: x1 -> d2
+      neighbors:
+      - bgp:
+          default_originate: true
+        ifname: eth1
+        ipv4: 10.1.0.17/30
+        node: d2
+      role: external
+      type: p2p
+    - ifindex: 3
+      ifname: eth3
+      ipv4: 10.1.0.22/30
+      linkindex: 8
+      name: x1 -> d3
+      neighbors:
+      - bgp:
+          default_originate: true
+        ifname: eth1
+        ipv4: 10.1.0.21/30
+        node: d3
+      role: external
+      type: p2p
+    loopback:
+      bgp:
+        advertise: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.4/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.104
+      mac: ca:fe:00:04:00:00
+    module:
+    - bgp
+    name: x1
+  x2:
+    af:
+      ipv4: true
+    bgp:
+      advertise:
+      - ipv4: 10.0.0.5/32
+      advertise_loopback: true
+      as: 65012
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65000
+        ifindex: 1
+        ipv4: 10.1.0.5
+        name: dut
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.5
+    box: none
+    device: none
+    id: 5
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.6/30
+      linkindex: 2
+      name: x2 -> dut
+      neighbors:
+      - bgp:
+          default_originate: true
+        ifname: eth2
+        ipv4: 10.1.0.5/30
+        node: dut
+      role: external
+      type: p2p
+    loopback:
+      bgp:
+        advertise: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.5/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.105
+      mac: ca:fe:00:05:00:00
+    module:
+    - bgp
+    name: x2
+plugin:
+- bgp.session
+prefix:
+  any:
+    ipv4: 0.0.0.0/0
+    ipv6: ::/0
+provider: libvirt
+vrf:
+  as: 65000
+vrfs:
+  t1:
+    export:
+    - '65000:1'
+    id: 1
+    import:
+    - '65000:1'
+    rd: '65000:1'
+  t2:
+    export:
+    - '65000:2'
+    id: 2
+    import:
+    - '65000:2'
+    rd: '65000:2'
+  t3:
+    export:
+    - '65000:3'
+    id: 3
+    import:
+    - '65000:3'
+    rd: '65000:3'

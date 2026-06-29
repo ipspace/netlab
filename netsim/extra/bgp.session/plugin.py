@@ -3,7 +3,7 @@ import typing
 from box import Box, BoxList
 
 from netsim import api, modules
-from netsim.data import append_to_list
+from netsim.data import append_to_list, get_box
 from netsim.utils import log
 from netsim.utils import routing as _bgp
 
@@ -157,6 +157,56 @@ def process_bfd_requests(ndata: Box, topology: Box) -> None:
         _config_name)
 
 '''
+Check whether a node originating a default route needs static default route(s)
+'''
+BGP_DEFAULT = {
+  'ipv4': { 'ipv4': '0.0.0.0/0', 'floating': True, 'nexthop.discard': True },
+  'ipv6': { 'ipv6': '::/0', 'floating': True, 'nexthop.discard': True }}
+
+def process_default_requests(ndata: Box, topology: Box) -> None:
+  if _bgp.get_device_bgp_feature('default_originate',ndata,topology) != 'static':
+    return                                        # The node does not need static routes to originate default
+
+  for ngb in _bgp.neighbors(ndata):
+    if not 'default_originate' in ngb:            # Does the neighbor need a BGP default route?
+      continue                                    # Nope? Cool
+
+    route_list = [                                # Find relevant static routes based on neighbor AFs
+      BGP_DEFAULT[af] for af in log.AF_LIST if af in ngb
+    ]
+    if not route_list:
+      continue
+
+    append_to_list(ndata,'module','routing')      # Activate the routing module in the node
+    append_to_list(topology,'module','routing')   # ... assuming the developer setting BGP features was sane ;)
+
+    # Get VRF (or global) data and its static routes
+    #
+    ngb_vrf = ngb.get('_src_vrf',None)
+    routes = ndata.get('routing.static',[])
+
+    for sr_data in route_list:                    # Iterate over routes that have to be added
+      for af in log.AF_LIST:                      # We have to check all AFs
+        if af not in sr_data:                     # Is this AF relevant for the current entry?
+          continue
+
+        # Get existing route(s) where the AF prefix matches what we need
+        have_routes = [ r for r in routes if af in r and r[af] == sr_data[af] ]
+        if ngb_vrf is None:                       # Filter the routes we found based on the VRF
+          have_routes = [ r for r in have_routes if 'vrf' not in r ]
+        else:
+          have_routes = [ r for r in have_routes if r.get('vrf',None) == ngb_vrf ]
+        if have_routes:                           # Did the user specify their own default route(s)?
+          continue                                # Cool, nothing to do ;)
+
+        # No per-AF default route in the target VRF yet, add it
+        #
+        sr_final = get_box(sr_data)               # Assume we can use the static route data as-is
+        if ngb_vrf:                               # But if we have a VRF neighbor, we have to add VRF info
+          sr_final.vrf = ngb_vrf
+        append_to_list(ndata,'routing.static',sr_final)
+
+'''
 Zap a BGP neighbor: remove all usable IP addresses, local_if and ifindex
 '''
 def zap_bgp_neighbor(ngb: Box) -> None:
@@ -288,6 +338,7 @@ def post_transform(topology: Box) -> None:
     copy_local_attributes(ndata,topology)
     process_tcpao_secrets(ndata,topology)
     process_bfd_requests(ndata,topology)
+    process_default_requests(ndata,topology)
     have_rs = process_rs_requests(ndata,topology) or have_rs
 
   # We need to do the RS-related EBGP session cleanup in a second pass

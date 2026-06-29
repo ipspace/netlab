@@ -1,0 +1,73 @@
+message: |
+  Checks the default static route origination needed to originate the
+  BGP default route(s)
+
+defaults.device: none
+module: [ bgp ]
+plugin: [ bgp.session ]
+
+addressing:
+  ds:
+    ipv4: 172.17.0.0/24
+    prefix: 31
+    ipv6: 2001:db8:1::/48
+  v6:
+    ipv6: 2001:db8:2::/48
+
+vrfs:
+  t1:
+  t2:
+  t3:
+
+nodes:
+  dut:                                          # Most extensive tests, check all global/VRF/AF combos
+    module: [ bgp, vrf, routing ]
+    bgp.as: 65000
+    _features.bgp.default_originate: static
+    routing.static:
+    - ipv4: 0.0.0.0/0
+      vrf: t2
+      nexthop.node: v3
+  d2:                                           # Ensure the 'routing' module is added to the node
+    module: [ bgp ]
+    _features.bgp.default_originate: static
+    bgp.as: 65001
+  d3:                                           # Ensure there are no static routes created for 'regular' device
+    module: [ bgp ]
+    bgp.as: 65002
+  x1:
+    bgp.as: 65011
+  x2:
+    bgp.as: 65012
+  v1:
+    bgp.as: 65100
+  v2:
+    bgp.as: 65101
+  v3:
+    bgp.as: 65200
+  v4:
+    bgp.as: 65300
+
+links:
+- dut.bgp.default_originate: True
+  x1:
+- dut.bgp.default_originate: True
+  x2:
+- dut.bgp.default_originate: True
+  v1:
+  vrf: t1
+- dut.bgp.default_originate: True
+  v2:
+  vrf: t1
+- dut.bgp.default_originate: True
+  v3:
+  vrf: t2
+  pool: ds
+- dut.bgp.default_originate: True
+  v3:
+  vrf: t3
+  pool: v6
+- d2.bgp.default_originate: True
+  x1:
+- d3.bgp.default_originate: True
+  x1:
