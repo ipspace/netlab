@@ -1,0 +1,33 @@
+{%   for _af in ['ipv4','ipv6'] if _af in vdata.af %}
+{{ _af }} table {{ vrf_table(vname,_af) }};
+{%   endfor %}
+
+filter vrf_{{ vname }}_tag {
+  netlab_vrf_name = "{{ vname }}";
+  netlab_vrf_rt.empty;
+{%   for rt in vdata._bird_export|default([]) %}
+  netlab_vrf_rt.add({{ rt }});
+{%   endfor %}
+  accept;
+}
+
+{%   for _af in ['ipv4','ipv6'] if _af in vdata.af %}
+protocol direct direct_vrf_{{ vname }}_{{ _af }} {
+  vrf "{{ vname }}";
+  {{ _af }} {
+    table {{ vrf_table(vname,_af) }};
+    import filter vrf_{{ vname }}_tag;
+  };
+}
+
+protocol kernel kernel_vrf_{{ vname }}_{{ _af }} {
+  vrf "{{ vname }}";
+  kernel table {{ vdata.vrfidx }};
+  learn;
+  {{ _af }} {
+    table {{ vrf_table(vname,_af) }};
+    export all;
+    import filter vrf_{{ vname }}_tag;
+  };
+}
+{%   endfor %}
