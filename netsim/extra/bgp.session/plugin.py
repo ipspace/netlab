@@ -201,9 +201,9 @@ def process_default_requests(ndata: Box, topology: Box) -> None:
 
         # No per-AF default route in the target VRF yet, add it
         #
-        sr_final = sr_data                        # Assume we can use the static route data as-is
+        sr_final = get_box(sr_data)               # Assume we can use the static route data as-is
         if ngb_vrf:                               # But if we have a VRF neighbor, we have to add VRF info
-          sr_final = get_box({'vrf': ngb_vrf}) + sr_data
+          sr_final.vrf = ngb_vrf
         append_to_list(ndata,'routing.static',sr_final)
 
 '''
