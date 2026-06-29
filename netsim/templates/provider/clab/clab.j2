@@ -98,16 +98,34 @@ topology:
 {%     endfor %}
 {%   endfor %}
 {% elif l.node_count == 2 %}
+{%   if l.clab.vxlan is defined %}
+{#
+    Cross-server P2P link via containerlab native VXLAN endpoint.
+    Only the local interface appears in l.interfaces (remote was pruned by the multiserver plugin).
+#}
+{%     for n in nodes.values() if not (n.unmanaged|default(False)) %}
+{%       for nl in n.interfaces|default([]) if nl.linkindex|default(0) == l.linkindex %}
+  - endpoints:
+    - "{{ n.name }}:{{ nl.clab.name|default(nl.ifname) }}"
+    - "host:vx{{ l.clab.vxlan.vni }}"
+    type: vxlan
+    remote: "{{ l.clab.vxlan.remote }}"
+    vni: {{ l.clab.vxlan.vni }}
+    udp-port: {{ l.clab.vxlan.dstport }}
+{%       endfor %}
+{%     endfor %}
+{%   else %}
 {#
     point-to-point link between two containers
 #}
   - endpoints:
-{%   for n in nodes.values() if not (n.unmanaged|default(False)) %}
-{%     for nl in n.interfaces|default([]) if nl.linkindex|default(0) == l.linkindex %}
-{%       set clab = nl.clab|default({}) %}
+{%     for n in nodes.values() if not (n.unmanaged|default(False)) %}
+{%       for nl in n.interfaces|default([]) if nl.linkindex|default(0) == l.linkindex %}
+{%         set clab = nl.clab|default({}) %}
     - "{{ n.name }}:{{ clab.name|default(nl.ifname) }}"
+{%       endfor %}
 {%     endfor %}
-{%   endfor %}
+{%   endif %}
 {% else %}
 {#
     link with more or less than two endpoints, or a multi-provider link

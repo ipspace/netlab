@@ -1,0 +1,64 @@
+---
+# Test explicit assignment in multiserver plugin.
+# Covers: groups+members assignment, local/cross-server P2P/bridge links,
+# mixed device kinds (eos, srlinux, frr).
+#
+provider: clab
+plugin: [ multiserver ]
+
+multiserver:
+  servers:
+    srv1:
+      host: 192.168.128.1
+      groups: [ server1_nodes ]
+      members: [ s1_member, srl1, frr1 ]
+      vxlan_dev: eth1
+    srv2:
+      host: 192.168.128.2
+      groups: [ server2_nodes ]
+      members: [ s2_member ]
+      vxlan_dev: eth1
+  assignment: explicit
+  vxlan:
+    vni_base: 20000
+    dstport: 4789
+    dev: eth1
+
+groups:
+  server1_nodes:
+    members: [ s1_g1 ]
+  server2_nodes:
+    members: [ s2_g1 ]
+
+nodes:
+  s1_g1:
+    device: eos
+  s1_member:
+    device: eos
+  srl1:
+    device: srlinux
+  frr1:
+    device: frr
+  s2_g1:
+    device: eos
+  s2_member:
+    device: eos
+
+links:
+  # Local links on server 1
+- s1_g1:
+  s1_member:
+- srl1:
+  frr1:
+  # Local link on server 2
+- s2_g1:
+  s2_member:
+  # Cross-server P2P links
+- s1_g1:
+  s2_g1:
+- srl1:
+  s2_g1:
+  # Cross-server multi-access bridge link (3+ endpoints across servers)
+- s1_member:
+  s2_member:
+  s1_g1:

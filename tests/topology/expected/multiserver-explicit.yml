@@ -1,0 +1,562 @@
+_multiserver:
+  assignment:
+    frr1: 1
+    s1_g1: 1
+    s1_member: 1
+    s2_g1: 2
+    s2_member: 2
+    srl1: 1
+  replicated: []
+  server_map:
+    1:
+      groups:
+      - server1_nodes
+      host: 192.168.128.1
+      id: 1
+      members:
+      - s1_member
+      - srl1
+      - frr1
+      vxlan_dev: eth1
+    2:
+      groups:
+      - server2_nodes
+      host: 192.168.128.2
+      id: 2
+      members:
+      - s2_member
+      vxlan_dev: eth1
+groups:
+  server1_nodes:
+    members:
+    - s1_g1
+  server2_nodes:
+    members:
+    - s2_g1
+input:
+- topology/input/multiserver-explicit.yml
+- package:topology-defaults.yml
+links:
+- _linkname: links[1]
+  _ms:
+    cross: false
+    servers:
+    - 1
+  interfaces:
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.1/30
+    node: s1_g1
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.2/30
+    node: s1_member
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  type: p2p
+- _linkname: links[2]
+  _ms:
+    cross: false
+    servers:
+    - 1
+  interfaces:
+  - ifindex: 1
+    ifname: ethernet-1/1
+    ipv4: 10.1.0.6/30
+    node: srl1
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.5/30
+    node: frr1
+  linkindex: 2
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.4/30
+  type: p2p
+- _linkname: links[3]
+  _ms:
+    cross: false
+    servers:
+    - 2
+  interfaces:
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.9/30
+    node: s2_g1
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.10/30
+    node: s2_member
+  linkindex: 3
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.8/30
+  type: p2p
+- _linkname: links[4]
+  _ms:
+    cross: true
+    servers:
+    - 1
+    - 2
+    vni: 20000
+  interfaces:
+  - ifindex: 2
+    ifname: Ethernet2
+    ipv4: 10.1.0.13/30
+    node: s1_g1
+  - ifindex: 2
+    ifname: Ethernet2
+    ipv4: 10.1.0.14/30
+    node: s2_g1
+  linkindex: 4
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.12/30
+  type: p2p
+- _linkname: links[5]
+  _ms:
+    cross: true
+    servers:
+    - 1
+    - 2
+    vni: 20001
+  interfaces:
+  - ifindex: 2
+    ifname: ethernet-1/2
+    ipv4: 10.1.0.18/30
+    node: srl1
+  - ifindex: 3
+    ifname: Ethernet3
+    ipv4: 10.1.0.17/30
+    node: s2_g1
+  linkindex: 5
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.16/30
+  type: p2p
+- _linkname: links[6]
+  _ms:
+    cross: true
+    servers:
+    - 1
+    - 2
+    vni: 20002
+  bridge: input_6
+  interfaces:
+  - ifindex: 2
+    ifname: Ethernet2
+    ipv4: 172.16.0.2/24
+    node: s1_member
+  - ifindex: 2
+    ifname: Ethernet2
+    ipv4: 172.16.0.6/24
+    node: s2_member
+  - ifindex: 3
+    ifname: Ethernet3
+    ipv4: 172.16.0.1/24
+    node: s1_g1
+  linkindex: 6
+  node_count: 3
+  prefix:
+    ipv4: 172.16.0.0/24
+  type: lan
+multiserver:
+  assignment: explicit
+  copy_dirs:
+  - group_vars
+  - templates
+  copy_files:
+  - ansible.cfg
+  output_dir: server-{server_name}
+  replicate: []
+  servers:
+    srv1:
+      groups:
+      - server1_nodes
+      host: 192.168.128.1
+      id: 1
+      members:
+      - s1_member
+      - srl1
+      - frr1
+      vxlan_dev: eth1
+    srv2:
+      groups:
+      - server2_nodes
+      host: 192.168.128.2
+      id: 2
+      members:
+      - s2_member
+      vxlan_dev: eth1
+  vxlan:
+    auto_start: true
+    dev: eth1
+    dstport: 4789
+    vni_base: 20000
+name: input
+nodes:
+  frr1:
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+    af:
+      ipv4: true
+    box: quay.io/frrouting/frr:10.6.1
+    clab:
+      binds:
+      - source: node_files/frr1/initial
+        target: /etc/config/01-initial.sh
+      - source: node_files/frr1/daemons
+        target: /etc/frr/daemons
+      - mode: ro
+        source: node_files/-shared-hosts
+        target: /etc/hosts
+      config_templates:
+      - mode: sh
+        source: initial
+        target: /etc/config/01-initial.sh
+      - source: daemons
+        target: /etc/frr/daemons
+      - mode: shared
+        source: hosts
+        target: /etc/hosts
+      exec:
+      - sleep 1
+      kind: linux
+    device: frr
+    hostname: clab-input-frr1
+    id: 4
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.5/30
+      linkindex: 2
+      mtu: 1500
+      name: frr1 -> srl1
+      neighbors:
+      - ifname: ethernet-1/1
+        ipv4: 10.1.0.6/30
+        node: srl1
+      type: p2p
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.4/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.104
+      mac: ca:fe:00:04:00:00
+    mtu: 1500
+    name: frr1
+    netlab_ansible_skip_module:
+    - initial
+    role: router
+  s1_g1:
+    af:
+      ipv4: true
+    box: ceos:4.34.2F
+    clab:
+      env:
+        CLAB_MGMT_VRF: management
+        INTFTYPE: et
+      kind: ceos
+    device: eos
+    hostname: clab-input-s1_g1
+    id: 1
+    interfaces:
+    - clab:
+        name: et1
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      mac_address: caf0.0001.0001
+      name: s1_g1 -> s1_member
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.2/30
+        node: s1_member
+      type: p2p
+    - clab:
+        name: et2
+      ifindex: 2
+      ifname: Ethernet2
+      ipv4: 10.1.0.13/30
+      linkindex: 4
+      mac_address: caf0.0001.0002
+      name: s1_g1 -> s2_g1
+      neighbors:
+      - ifname: Ethernet2
+        ipv4: 10.1.0.14/30
+        node: s2_g1
+      type: p2p
+    - bridge: input_6
+      clab:
+        name: et3
+      ifindex: 3
+      ifname: Ethernet3
+      ipv4: 172.16.0.1/24
+      linkindex: 6
+      mac_address: caf0.0001.0003
+      name: s1_g1 -> [s1_member,s2_member]
+      neighbors:
+      - ifname: Ethernet2
+        ipv4: 172.16.0.2/24
+        node: s1_member
+      - ifname: Ethernet2
+        ipv4: 172.16.0.6/24
+        node: s2_member
+      type: lan
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: Management0
+      ipv4: 192.168.121.101
+      mac: ca:fe:00:01:00:00
+    name: s1_g1
+    role: router
+  s1_member:
+    af:
+      ipv4: true
+    box: ceos:4.34.2F
+    clab:
+      env:
+        CLAB_MGMT_VRF: management
+        INTFTYPE: et
+      kind: ceos
+    device: eos
+    hostname: clab-input-s1_member
+    id: 2
+    interfaces:
+    - clab:
+        name: et1
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      mac_address: caf0.0002.0001
+      name: s1_member -> s1_g1
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.1/30
+        node: s1_g1
+      type: p2p
+    - bridge: input_6
+      clab:
+        name: et2
+      ifindex: 2
+      ifname: Ethernet2
+      ipv4: 172.16.0.2/24
+      linkindex: 6
+      mac_address: caf0.0002.0002
+      name: s1_member -> [s2_member,s1_g1]
+      neighbors:
+      - ifname: Ethernet2
+        ipv4: 172.16.0.6/24
+        node: s2_member
+      - ifname: Ethernet3
+        ipv4: 172.16.0.1/24
+        node: s1_g1
+      type: lan
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: Management0
+      ipv4: 192.168.121.102
+      mac: ca:fe:00:02:00:00
+    name: s1_member
+    role: router
+  s2_g1:
+    af:
+      ipv4: true
+    box: ceos:4.34.2F
+    clab:
+      env:
+        CLAB_MGMT_VRF: management
+        INTFTYPE: et
+      kind: ceos
+    device: eos
+    hostname: clab-input-s2_g1
+    id: 5
+    interfaces:
+    - clab:
+        name: et1
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.9/30
+      linkindex: 3
+      mac_address: caf0.0005.0001
+      name: s2_g1 -> s2_member
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.10/30
+        node: s2_member
+      type: p2p
+    - clab:
+        name: et2
+      ifindex: 2
+      ifname: Ethernet2
+      ipv4: 10.1.0.14/30
+      linkindex: 4
+      mac_address: caf0.0005.0002
+      name: s2_g1 -> s1_g1
+      neighbors:
+      - ifname: Ethernet2
+        ipv4: 10.1.0.13/30
+        node: s1_g1
+      type: p2p
+    - clab:
+        name: et3
+      ifindex: 3
+      ifname: Ethernet3
+      ipv4: 10.1.0.17/30
+      linkindex: 5
+      mac_address: caf0.0005.0003
+      name: s2_g1 -> srl1
+      neighbors:
+      - ifname: ethernet-1/2
+        ipv4: 10.1.0.18/30
+        node: srl1
+      type: p2p
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.5/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: Management0
+      ipv4: 192.168.121.105
+      mac: ca:fe:00:05:00:00
+    name: s2_g1
+    role: router
+  s2_member:
+    af:
+      ipv4: true
+    box: ceos:4.34.2F
+    clab:
+      env:
+        CLAB_MGMT_VRF: management
+        INTFTYPE: et
+      kind: ceos
+    device: eos
+    hostname: clab-input-s2_member
+    id: 6
+    interfaces:
+    - clab:
+        name: et1
+      ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.10/30
+      linkindex: 3
+      mac_address: caf0.0006.0001
+      name: s2_member -> s2_g1
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.9/30
+        node: s2_g1
+      type: p2p
+    - bridge: input_6
+      clab:
+        name: et2
+      ifindex: 2
+      ifname: Ethernet2
+      ipv4: 172.16.0.6/24
+      linkindex: 6
+      mac_address: caf0.0006.0002
+      name: s2_member -> [s1_member,s1_g1]
+      neighbors:
+      - ifname: Ethernet2
+        ipv4: 172.16.0.2/24
+        node: s1_member
+      - ifname: Ethernet3
+        ipv4: 172.16.0.1/24
+        node: s1_g1
+      type: lan
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.6/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: Management0
+      ipv4: 192.168.121.106
+      mac: ca:fe:00:06:00:00
+    name: s2_member
+    role: router
+  srl1:
+    _srl_version:
+    - 26
+    - 3
+    af:
+      ipv4: true
+    box: ghcr.io/nokia/srlinux:26.3.2
+    clab:
+      binds:
+      - source: node_files/srl1/hosts
+        target: /etc/hosts
+      config_templates:
+      - source: hosts
+        target: /etc/hosts
+      kind: srl
+      type: ixr-d2
+    device: srlinux
+    hostname: clab-input-srl1
+    id: 3
+    interfaces:
+    - clab:
+        name: e1-1
+      ifindex: 1
+      ifname: ethernet-1/1
+      ipv4: 10.1.0.6/30
+      linkindex: 2
+      name: srl1 ~ frr1
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.5/30
+        node: frr1
+      type: p2p
+    - clab:
+        name: e1-2
+      ifindex: 2
+      ifname: ethernet-1/2
+      ipv4: 10.1.0.18/30
+      linkindex: 5
+      name: srl1 ~ s2_g1
+      neighbors:
+      - ifname: Ethernet3
+        ipv4: 10.1.0.17/30
+        node: s2_g1
+      type: p2p
+    loopback:
+      ifindex: 0
+      ifname: lo0.0
+      ipv4: 10.0.0.3/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: mgmt0
+      ipv4: 192.168.121.103
+      mac: ca:fe:00:03:00:00
+    name: srl1
+plugin:
+- multiserver
+provider: clab

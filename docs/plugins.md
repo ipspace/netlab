@@ -19,6 +19,7 @@
    plugins/kind.md
    plugins/mlag.vtep.md
    plugins/multilab.md
+   plugins/multiserver.md
    plugins/node.clone.md
    plugins/ospf.areas.md
    plugins/vrrp.version.md

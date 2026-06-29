@@ -997,6 +997,45 @@ def must_be_node_id(value: typing.Any) -> dict:
   return { '_valid': True }
 
 @type_test()
+def must_be_group_id(value: typing.Any) -> dict:
+  if not isinstance(value,str):                                       # Otherwise it must be a string
+    return { '_type': 'valid group name (a string)' }
+
+  topology = global_vars.get_topology()               # Try to get current lab topology
+  if topology is None:                                # pragma: no-cover
+    log.fatal('Calling group_id validation before the topology has been initialized')
+
+  if value not in topology.get('groups',{}):
+    return {
+      '_type':    "group",
+      '_value':   f"valid group name (found {value})",
+      '_hint_id': "groups",
+      '_hint':    "Valid group names are "+", ".join(list(topology.get('groups',{})))
+    }
+
+  return { '_valid': True }
+
+@type_test()
+def must_be_node_or_group(value: typing.Any) -> dict:
+  if not isinstance(value,str):                                       # Otherwise it must be a string
+    return { '_type': 'valid node or group name (a string)' }
+
+  topology = global_vars.get_topology()               # Try to get current lab topology
+  if topology is None:                                # pragma: no-cover
+    log.fatal('Calling node_or_group validation before the topology has been initialized')
+
+  groups = topology.get('groups', {})
+  if value not in topology.nodes and value not in groups:
+    return {
+      '_type':    "node or group",
+      '_value':   f"valid node or group name (found {value})",
+      '_hint_id': "node_or_group",
+      '_hint':    "Valid node or group names are "+", ".join(list(topology.nodes) + list(groups))
+    }
+
+  return { '_valid': True }
+
+@type_test()
 def must_be_r_proto(value: typing.Any) -> dict:
   if not isinstance(value,str):
     return { '_type': 'routing protocol (a string)' }
