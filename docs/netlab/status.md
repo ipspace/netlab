@@ -47,7 +47,7 @@ Lab default in /home/user/net101/tools/X
   provider(s): clab
 
 ┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
-┃ node    ┃ device ┃ image                       ┃ mgmt IPv4       ┃ connection ┃ provider ┃ VM/container   ┃ status       ┃
+┃ node    ┃ device ┃ image                       ┃ mgmt IP         ┃ connection ┃ provider ┃ VM/container   ┃ status       ┃
 ┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━┩
 │ host-1  │ linux  │ python:3.9-alpine           │ 192.168.121.107 │ docker     │ clab     │ clab-X-host-1  │ Up 4 minutes │
 ├─────────┼────────┼─────────────────────────────┼─────────────────┼────────────┼──────────┼────────────────┼──────────────┤
