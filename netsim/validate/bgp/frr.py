@@ -106,9 +106,9 @@ def valid_bgp_neighbor_details(
   if bfd:
     if data.peerBfdInfo:
       if data.peerBfdInfo.status != 'Up':
-        raise Exception(f'{k} expected value UP actual {data.peerBfdInfo.status}')
+        raise Exception(f'BGP {k} expected value UP actual {data.peerBfdInfo.status}')
     else:
-      raise Exception(f'Neighbor data structure does not contain attribute peerBfdInfo')
+      raise Exception(f'No BFD information for BGP peer {n_id}')
 
   return f'All specified BGP neighbor parameters have the expected values'
 
