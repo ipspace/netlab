@@ -78,7 +78,7 @@ def valid_bgp_neighbor(
 
   return f'Neighbor {n_addr} ({n_id}) is in state {data[n_addr].peerState}'
 
-def show_bgp_neighbor_details(ngb: list, n_id: str, af: str='ipv4', *, activate: str = '', bfd: bool = False, **kwargs: typing.Any) -> str:
+def show_bgp_neighbor_details(ngb: list, n_id: str, af: str='ipv4', *, activate: str = '', **kwargs: typing.Any) -> str:
   n_addr = _common.get_bgp_neighbor_id(ngb,n_id,af)
   global af_lookup
   if not activate:
@@ -125,7 +125,7 @@ def valid_bgp_neighbor_details(
 
   result = f'The neighbor {n_addr} ({n_id}){act_err} is in BFD state {found.bfdState}'
   if not found.bfdState == 3:
-      raise Exception(f'{result} ( expected 3 - Up )')
+      raise Exception(f'{result} (expected 3 - Up)')
 
   return result
 
