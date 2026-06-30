@@ -126,19 +126,12 @@ ip link set {{ i.ifname }} {{ "down" if i.shutdown|default(False) else "up" }}
 # Add vtysh.conf file
 echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
 
+{% set frr_log_path = frr.logfile|default('/var/log/frr/frr.log') %}
 {% if not netlab_initial_reload|default(False) %}
 #
 # Ensure FRR's log directory exists before enabling file logging
 #
 mkdir -p /var/log/frr && chown frr:frr /var/log/frr
-{% if clab is defined %}
-#
-# Redirect FRR's log to the container's stdout so 'docker logs' works
-#
-FRR_LOG_OUTPUT="/proc/$(pgrep -f '^/bin/bash /usr/lib/frr/docker-start$')/fd/1"
-touch /var/log/frr/frr.log && chown frr:frr /var/log/frr/frr.log
-tail -n 0 -F /var/log/frr/frr.log >${FRR_LOG_OUTPUT} 2>&1 &
-{% endif %}
 #
 # Rest of initial configuration done through VTYSH
 #
@@ -152,7 +145,7 @@ hostname {{ inventory_hostname }}
   is fatal and aborts initial configuration.
 #}
 {% set frr_log_level = 'debugging' if frr.debug|default([]) else 'informational' %}
-log file {{ frr.logfile|default('/var/log/frr/frr.log') }} {{ frr_log_level }}
+log file {{ frr_log_path }} {{ frr_log_level }}
 {% from '_debug_commands.j2' import enable_debugging %}
 {{ enable_debugging(frr.debug,prefix='debug') }}
 !
@@ -233,5 +226,14 @@ do write
 CONFIG
 vtysh -f /tmp/config
 {% endif %}{# not netlab_initial_reload #}
+
+{% if clab is defined %}
+#
+# Redirect FRR's log to the container's stdout so 'docker logs' works
+#
+DOCKER_LOGS_STDOUT="/proc/1/fd/1"
+touch {{ frr_log_path }} && chown frr:frr {{ frr_log_path }}
+tail -n 0 -F {{ frr_log_path }} >${DOCKER_LOGS_STDOUT} 2>&1 &
+{% endif %}
 !
 exit 0
