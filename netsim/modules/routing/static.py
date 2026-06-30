@@ -220,9 +220,9 @@ def resolve_node_nexthop(sr_data: Box, node: Box, topology: Box) -> Box:
         continue
 
       node_found = True
-      if nh_link and nh_link != intf.get('name',None):
+      if intf.get('vrf',None) != nh_vrf:
         continue
-      if nh_vrf and nh_vrf != intf.get('vrf',None):
+      if nh_link and nh_link != intf.get('name',None):
         continue
 
       ngb_addr = extract_af_info(ngb,keep_prefix=False)
