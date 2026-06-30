@@ -293,7 +293,11 @@ def get_local_addr() -> str:
 #
 def execute_tool_commands(cmds: list, topology: Box) -> typing.Optional[str]:
   topology.sys.docker_net = ""
-  topology.sys.ipaddr = get_local_addr()
+
+  loc_addr = get_local_addr()
+  topology.sys.ipaddr = loc_addr
+  topology.sys.ipurl = f'[{loc_addr}]' if ':' in loc_addr else loc_addr
+
   if docker_is_used(topology):
     topology.sys.docker_net = f"--network={topology.addressing.mgmt.get('_network',None) or 'netlab_mgmt'}"
 
