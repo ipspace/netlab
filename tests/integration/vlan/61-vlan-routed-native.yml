@@ -3,7 +3,7 @@ message: |
   A router-on-a-stick is attached to a VLAN trunk and runs OSPF on all attached
   VLANs. One of the VLANs is a native VLAN between router-on-stick and switch.
 
-  * r1, r2, and ros should be able to ping each other
+  * r1, r2, and dut should be able to ping each other
 
   Please note it might take a while for the lab to work due to
   STP and OSPF setup phase
@@ -18,7 +18,7 @@ groups:
     device: frr
     provider: clab
   routers:
-    members: [ r1, r2, ros ]
+    members: [ r1, r2, dut ]
     module: [ ospf ]
   external:
     members: [ r1, r2 ]
@@ -32,7 +32,7 @@ vlans:
     links: [ r2-s1 ]
 
 nodes:
-  ros:
+  dut:
     module: [ ospf, vlan ]
     vlan.mode: route
     role: router
@@ -42,7 +42,7 @@ links:
   s2:
   vlan.trunk: [ red, blue ]
 - s2:
-  ros:
+  dut:
   vlan.trunk: [ red, blue ]
   vlan.native: red
 
@@ -52,15 +52,15 @@ validate:
     wait_msg: Waiting for OSPF adjacencies to form
     wait: ospfv2_adj_stp
     nodes: [ r1, r2 ]
-    plugin: ospf_neighbor(nodes.ros.ospf.router_id)
-  ping_ros:
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  ping_dut:
     description: Reaching router-on-stick
     wait: ospfv2_adj_lan
     wait_msg: Waiting for OSPF SPF to do its magic
     nodes: [ r1 ]
-    plugin: ping('ros',src=nodes.r1.loopback.ipv4)
+    plugin: ping('dut',src=nodes.r1.loopback.ipv4)
   ping_x:
-    description: Cross-VLAN reachability
+    description: Cduts-VLAN reachability
     wait: ping_long
     wait_msg: Waiting for OSPF SPF to do its magic
     nodes: [ r1 ]
