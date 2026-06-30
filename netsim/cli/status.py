@@ -164,7 +164,7 @@ def fetch_node_status(ls: Box, topology: Box) -> None:
     p_module   = providers.get_provider_module(topology,n_provider)
     load_provider_status(p_status,n_provider,topology)
 
-    node_stat = ls.nodes[n_name] = get_empty_box()
+    node_stat = get_empty_box()
     for source_attr,status_attr in {
       'device': 'device',
       'mgmt.ipv4': 'mgmt',
@@ -185,6 +185,8 @@ def fetch_node_status(ls: Box, topology: Box) -> None:
       node_stat.provider_name = wk_name
       wk_state = p_status[n_provider].get(wk_name,None) or p_status[n_provider].get(n_name,None) or get_empty_box()
       node_stat.status = wk_state.get('status','Unknown')
+
+    ls.nodes[n_name] = node_stat
 
   for t_name,t_data in topology.tools.items():
     n_provider = 'clab'
