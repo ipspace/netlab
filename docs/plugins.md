@@ -73,6 +73,7 @@ These plugins are included with _netlab_ and can be used in all lab topologies:
    plugins/firewall.zonebased.md
    plugins/mlag.vtep.md
    plugins/evpn.multihoming.md
+   plugins/tunnel.gre.md
 ```
 
 ```eval_rst

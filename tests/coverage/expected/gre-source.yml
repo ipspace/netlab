@@ -1,0 +1,268 @@
+input:
+- coverage/input/gre-source.yml
+- package:topology-defaults.yml
+links:
+- _linkname: links[1]
+  interfaces:
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.1/30
+    node: r1
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.2/30
+    node: r2
+  linkindex: 1
+  name: uplink
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  type: p2p
+- _linkname: links[2]
+  interfaces:
+  - ifindex: 2
+    ifname: eth2
+    ipv4: 10.1.0.5/30
+    node: r1
+  - ifindex: 2
+    ifname: eth2
+    ipv4: 10.1.0.6/30
+    node: r2
+    role: mobile
+  linkindex: 2
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.4/30
+  role: backup
+  type: p2p
+- _linkname: links[3]
+  bridge: input_3
+  interfaces:
+  - ifindex: 20000
+    ifname: Tunnel0
+    ipv4: 10.1.0.9/30
+    node: r1
+  - ifindex: 20000
+    ifname: Tunnel0
+    ipv4: 10.1.0.10/30
+    node: r2
+  linkindex: 3
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.8/30
+  tunnel:
+    mode: gre
+    source:
+      link:
+        name: uplink
+  type: tunnel
+- _linkname: links[4]
+  bridge: input_4
+  interfaces:
+  - ifindex: 20001
+    ifname: Tunnel1
+    ipv4: 10.1.0.13/30
+    node: r1
+    tunnel:
+      source:
+        link:
+          role: backup
+  - ifindex: 20001
+    ifname: Tunnel1
+    ipv4: 10.1.0.14/30
+    node: r2
+    tunnel:
+      source:
+        link:
+          role: mobile
+  linkindex: 4
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.12/30
+  tunnel:
+    mode: gre
+  type: tunnel
+message: 'Test the GRE tunnel.source options
+
+  '
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+    box: none
+    config:
+    - tunnel.gre
+    device: none
+    id: 1
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      name: uplink
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.2/30
+        node: r2
+      type: p2p
+    - ifindex: 2
+      ifname: eth2
+      ipv4: 10.1.0.5/30
+      linkindex: 2
+      name: r1 -> r2
+      neighbors:
+      - ifname: eth2
+        ipv4: 10.1.0.6/30
+        node: r2
+      role: backup
+      type: p2p
+    - ifindex: 20000
+      ifname: Tunnel0
+      ipv4: 10.1.0.9/30
+      linkindex: 3
+      name: r1 -> r2 [GRE tunnel]
+      neighbors:
+      - ifname: Tunnel0
+        ipv4: 10.1.0.10/30
+        node: r2
+      tunnel:
+        _destination:
+          ifname: eth1
+          ipv4: 10.1.0.2
+        _source:
+          ifname: eth1
+          ipv4: 10.1.0.1
+        af: ipv4
+        mode: gre
+        source:
+          link:
+            name: uplink
+      type: tunnel
+      virtual_interface: true
+    - ifindex: 20001
+      ifname: Tunnel1
+      ipv4: 10.1.0.13/30
+      linkindex: 4
+      name: r1 -> r2 [GRE tunnel]
+      neighbors:
+      - ifname: Tunnel1
+        ipv4: 10.1.0.14/30
+        node: r2
+      tunnel:
+        _destination:
+          ifname: eth2
+          ipv4: 10.1.0.6
+        _source:
+          ifname: eth2
+          ipv4: 10.1.0.5
+        af: ipv4
+        mode: gre
+        source:
+          link:
+            role: backup
+      type: tunnel
+      virtual_interface: true
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.101
+      mac: ca:fe:00:01:00:00
+    name: r1
+  r2:
+    af:
+      ipv4: true
+    box: none
+    config:
+    - tunnel.gre
+    device: none
+    id: 2
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      name: uplink
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.1/30
+        node: r1
+      type: p2p
+    - ifindex: 2
+      ifname: eth2
+      ipv4: 10.1.0.6/30
+      linkindex: 2
+      name: r2 -> r1
+      neighbors:
+      - ifname: eth2
+        ipv4: 10.1.0.5/30
+        node: r1
+      role: mobile
+      type: p2p
+    - ifindex: 20000
+      ifname: Tunnel0
+      ipv4: 10.1.0.10/30
+      linkindex: 3
+      name: r2 -> r1 [GRE tunnel]
+      neighbors:
+      - ifname: Tunnel0
+        ipv4: 10.1.0.9/30
+        node: r1
+      tunnel:
+        _destination:
+          ifname: eth1
+          ipv4: 10.1.0.1
+        _source:
+          ifname: eth1
+          ipv4: 10.1.0.2
+        af: ipv4
+        mode: gre
+        source:
+          link:
+            name: uplink
+      type: tunnel
+      virtual_interface: true
+    - ifindex: 20001
+      ifname: Tunnel1
+      ipv4: 10.1.0.14/30
+      linkindex: 4
+      name: r2 -> r1 [GRE tunnel]
+      neighbors:
+      - ifname: Tunnel1
+        ipv4: 10.1.0.13/30
+        node: r1
+      tunnel:
+        _destination:
+          ifname: eth2
+          ipv4: 10.1.0.5
+        _source:
+          ifname: eth2
+          ipv4: 10.1.0.6
+        af: ipv4
+        mode: gre
+        source:
+          link:
+            role: mobile
+      type: tunnel
+      virtual_interface: true
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.102
+      mac: ca:fe:00:02:00:00
+    name: r2
+plugin:
+- tunnel.gre
+provider: libvirt
