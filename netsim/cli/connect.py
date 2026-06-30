@@ -202,7 +202,11 @@ def connect_to_tool(
       need_output: bool = False) -> typing.Optional[typing.Union[bool,int,str]]:
 
   cmds = external_commands.get_tool_command(tool,'connect',topology,verbose=False)
-  topology.sys.ipaddr = external_commands.get_local_addr()
+
+  loc_addr = external_commands.get_local_addr()
+  topology.sys.ipaddr = loc_addr
+  topology.sys.ipurl = f'[{loc_addr}]' if ':' in loc_addr else loc_addr
+
   if cmds is None:
     msg = external_commands.get_tool_message(tool,topology)
     if not msg:
