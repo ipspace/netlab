@@ -411,7 +411,8 @@ ansible_httpapi_port: 80
 
 **FRR-Specific Node Attributes:**
 
-* You can use the **frr.debug** global- or node attribute to [enable debugging](node-debug-attribute) during the initial device configuration.
+* The **frr.debug** global- or node attribute to [enables debugging](node-debug-attribute) during the initial device configuration.
+* The **frr.logfile** attribute specifies the path to the FRR logging file (default: `/var/log/frr/frr.log`)
 * You can specify a list of additional FRRouting daemons you want to have enabled in the **frr.daemons** node attribute.
 
 **FRR VM caveats:**
