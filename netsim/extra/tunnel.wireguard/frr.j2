@@ -1,0 +1,49 @@
+#!/bin/bash
+#
+set -e
+#
+if ! command -v wg >/dev/null; then
+  echo "wireguard-tools package is not installed (should be installed during initial configuration)" >&2
+  exit 1
+fi
+#
+create_wg() {
+  local ifname="$1"
+  local addr="$2"
+  local private_key="$3"
+  local listen_port="$4"
+  local peer_key="$5"
+  local peer_endpoint="$6"
+  local peer_allowed="$7"
+  local keepalive="$8"
+  local mtu="$9"
+
+  if ! ip link show dev "${ifname}" >/dev/null 2>&1; then
+    ip link add dev "${ifname}" type wireguard
+  fi
+
+  wg set "${ifname}" \
+    private-key <(printf '%s\n' "${private_key}") \
+    listen-port "${listen_port}" \
+    peer "${peer_key}" \
+    allowed-ips "${peer_allowed}" \
+    endpoint "${peer_endpoint}" \
+    persistent-keepalive "${keepalive}"
+
+  ip address replace "${addr}" dev "${ifname}"
+  ip link set dev "${ifname}" mtu "${mtu}" up
+}
+#
+{% for intf in netlab_interfaces if intf.tunnel.mode|default('') in ['wireguard'] %}
+create_wg \
+  {{ intf.ifname }} \
+  {{ intf.ipv4 }} \
+  {{ intf.tunnel.private_key }} \
+  {{ intf.tunnel.listen_port }} \
+  {{ intf.tunnel._peer.public_key }} \
+  {{ intf.tunnel._peer.endpoint }} \
+  {{ intf.tunnel.allowed_ips }} \
+  {{ intf.tunnel.persistent_keepalive }} \
+  {{ intf.tunnel.mtu }}
+{% endfor %}
+exit 0

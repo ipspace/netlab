@@ -1,0 +1,242 @@
+
+import ipaddress
+import typing
+
+from box import Box
+
+from netsim import api
+from netsim.augment import devices
+from netsim.augment import links as _links
+from netsim.augment import nodes as _nodes
+from netsim.data import get_box
+from netsim.utils import log
+from netsim.utils import tunnel as _tunnel
+
+_config_name = 'tunnel.wireguard'
+
+def add_linux_packages(node: Box, topology: Box) -> None:
+  '''
+  Add wireguard-tools to the node package list.
+
+  Device group_vars cannot be extended from plugin defaults, so we have to copy
+  the device defaults and augment them on nodes using WireGuard tunnels.
+  Packages are installed during initial configuration before the management VRF is created.
+  '''
+  packages = get_box(devices.get_node_group_var(node,'netlab_linux_packages',topology.defaults) or {})
+  packages['wireguard-tools'] = 'wg'
+  node.netlab_linux_packages = packages
+
+def pre_link_transform(topology: Box) -> None:
+  '''
+  pre_link_transform hook: set tunnel link type, check whether WireGuard tunnels are P2P
+  '''
+  _tunnel.set_tunnel_type(topology)
+  for link in _tunnel.links(topology,'wireguard'):
+    if len(link.interfaces) != 2:
+      log.error(
+        f'A WireGuard tunnel must have exactly two nodes attached to it (link {link._linkname})',
+        category=log.IncorrectAttr,
+        module='tunnel.wireguard')
+
+def get_linkname(topology: Box, linkindex: int) -> str:
+  '''
+  Utility function: get the name of a link referenced in an interface.
+  Return 'unknown' when the link cannot be found
+  '''
+  link = _links.get_link_by_index(topology,linkindex)
+  return link._linkname if link is not None else 'unknown'
+
+def _interface_matches_source(
+      intf: Box,
+      t_intf: Box,
+      topology: Box,
+      t_af: str) -> bool:
+  t_vrf  = t_intf.get('tunnel.vrf',None)
+  t_type = t_intf.get('tunnel.source.type',None)
+  t_name = t_intf.get('tunnel.source.link.name',None)
+  t_role = t_intf.get('tunnel.source.link.role',None)
+
+  if t_type is None:
+    if intf.type in ['loopback','tunnel']:
+      return False
+  elif intf.type != t_type:
+    return False
+
+  if t_vrf is None:
+    if 'vrf' in intf:
+      return False
+  elif t_vrf != intf.get('vrf',None):
+    return False
+
+  if t_name and t_name != intf.get('name',None):
+    return False
+
+  if t_role:
+    if 'role' in intf:
+      if t_role != intf.role:
+        return False
+    else:
+      link = _links.get_link_by_index(topology,intf.linkindex)
+      if link is None or t_role != link.get('role',None):
+        return False
+
+  if t_af not in intf:
+    return False
+
+  return isinstance(intf[t_af],str)
+
+def get_wireguard_source(
+      ndata: Box,
+      intf: Box,
+      topology: Box,
+      peer_node: str) -> typing.Optional[Box]:
+  '''
+  Find the tunnel underlay interface. When the source is not pinned to a
+  specific interface, prefer the underlay link connected to the tunnel peer.
+  '''
+  t_af = intf.get('tunnel.af','ipv4')
+  t_source = intf.get('tunnel.source',Box())
+
+  if t_source.get('ifindex') or t_source.get('link.name'):
+    return _tunnel.get_tunnel_source(ndata,intf,topology)
+
+  iflist = ndata.get('interfaces',[])
+  if t_source.get('type') == 'loopback' and 'tunnel.vrf' not in intf and 'loopback' in ndata:
+    iflist = iflist + [ ndata.loopback ]
+
+  peer_match = None
+  first_match = None
+  for src_intf in iflist:
+    if not _interface_matches_source(src_intf,intf,topology,t_af):
+      continue
+
+    src_box = get_box({
+      'ifname': src_intf.ifname,
+      t_af: str(ipaddress.ip_interface(src_intf[t_af]).ip),
+    })
+    if first_match is None:
+      first_match = src_box
+    for ngb in src_intf.get('neighbors',[]):
+      if ngb.node == peer_node:
+        peer_match = src_box
+        break
+
+  return peer_match or first_match or _tunnel.get_tunnel_source(ndata,intf,topology)
+
+def post_transform(topology: Box) -> None:
+  '''
+  post_transform hook: check device support, set tunnel interface source/peer data
+  '''
+  node_iflist: dict = {}
+
+  # First pass: collect tunnel interfaces and check feature support
+  #
+  for node,ndata in topology.nodes.items():
+    first = True
+    node_iflist[node] = []
+
+    for intf in _tunnel.interfaces(ndata,'wireguard'):
+      if first:
+        first = False
+        if not _tunnel.check_feature(ndata,topology,f_name='wireguard',f_desc='WireGuard tunnels'):
+          break
+        api.node_config(ndata,_config_name)
+        add_linux_packages(ndata,topology)
+
+      for attr in ['private_key','public_key']:
+        if attr not in intf.tunnel:
+          log.error(
+            f'Missing tunnel.{attr} on node {node} interface {intf.ifname} ({intf.name})',
+            more_data=f'link {get_linkname(topology,intf.linkindex)}',
+            category=log.MissingValue,
+            module='tunnel.wireguard')
+
+      node_iflist[node].append(intf)
+
+  if log.get_error_count():
+    return
+
+  # Second pass: set defaults and tunnel source
+  #
+  for node in node_iflist:
+    ndata = topology.nodes[node]
+    for intf in node_iflist[node]:
+      if 'tunnel.af' not in intf:
+        intf.tunnel.af = 'ipv4'
+
+      if 'tunnel.allowed_ips' not in intf:
+        intf.tunnel.allowed_ips = '0.0.0.0/0'
+
+      if 'tunnel.persistent_keepalive' not in intf:
+        intf.tunnel.persistent_keepalive = 25
+
+      if 'tunnel.mtu' not in intf:
+        intf.tunnel.mtu = 1420
+
+      if len(intf.neighbors) != 1:
+        log.error(
+          f'WireGuard tunnel interface should have exactly one neighbor (found {len(intf.neighbors)})',
+          more_data=f'node {node} interface {intf.ifname} ({intf.name}) link {get_linkname(topology,intf.linkindex)}',
+          module='tunnel.wireguard',
+          category=log.IncorrectValue)
+        continue
+
+      ngb = intf.neighbors[0]
+      src_intf = get_wireguard_source(ndata,intf,topology,ngb.node)
+      if src_intf:
+        intf.tunnel._source = src_intf
+      else:
+        log.error(
+          f'Cannot get {intf.tunnel.af} tunnel source for link {get_linkname(topology,intf.linkindex)} on node {node}',
+          more_data=f'Tunnel source data: {intf.tunnel.source if "tunnel.source" in intf else "none"}',
+          category=log.MissingDependency,
+          module='tunnel')
+        continue
+
+      if 'name' in intf and '->' in intf.name and 'WireGuard' not in intf.name:
+        intf.name += ' [WireGuard tunnel]'
+
+  if log.get_error_count():
+    return
+
+  # Third pass: set tunnel peer data after all sources are known
+  #
+  for node in node_iflist:
+    for intf in node_iflist[node]:
+      if len(intf.neighbors) != 1:
+        continue
+
+      ngb = intf.neighbors[0]
+      ngb_intf = _nodes.get_node_interface(topology.nodes[ngb.node],ifname=ngb.ifname)
+      if not ngb_intf:
+        log.error(
+          f'Internal error: Cannot find the remote tunnel interface for interface {intf.ifname} on {node}',
+          category=log.FatalError,
+          module='tunnel.wireguard')
+        continue
+      if 'tunnel._source' not in ngb_intf:
+        log.error(
+          f'Cannot find tunnel peer endpoint for node {ngb.node}',
+          more_data=f'node {node} interface {intf.ifname} ({intf.name}) link {get_linkname(topology,intf.linkindex)}',
+          module='tunnel.wireguard',
+          category=log.MissingDependency)
+        continue
+      if 'tunnel.public_key' not in ngb_intf:
+        log.error(
+          f'Missing tunnel.public_key on peer node {ngb.node}',
+          more_data=f'node {node} interface {intf.ifname} ({intf.name}) link {get_linkname(topology,intf.linkindex)}',
+          module='tunnel.wireguard',
+          category=log.MissingValue)
+        continue
+      if 'tunnel.listen_port' not in ngb_intf:
+        log.error(
+          f'Missing tunnel.listen_port on peer node {ngb.node}',
+          more_data=f'node {node} interface {intf.ifname} ({intf.name}) link {get_linkname(topology,intf.linkindex)}',
+          module='tunnel.wireguard',
+          category=log.MissingValue)
+        continue
+
+      intf.tunnel._peer = Box({
+        'public_key': ngb_intf.tunnel.public_key,
+        'endpoint': f'{ngb_intf.tunnel._source[intf.tunnel.af]}:{ngb_intf.tunnel.listen_port}',
+      })
