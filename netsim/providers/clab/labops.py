@@ -109,11 +109,16 @@ def load_kmods(topology: Box) -> None:
 
     # At this point, we have device-specific dictionary mapping netlab modules into kernel modules
     #
-    for m in (['initial']+ndata.get('module',[])):          # Now iterate over all the netlab modules the node uses
-      if m not in kdata:                                    # ... and if the netlab modules does not need kernel modules
-        continue                                            # ... move on
-      for kmod in kdata[m]:                                 # Next, add individual kernel modules in the kdata entry
-        append_to_list(kmod_list,m,kmod)                    # ... to the module-specific list of kernel mdules
+    for m in (['initial']+ndata.get('module',[])+ndata.get('config',[])):
+      if m in kdata:
+        kmods = kdata[m]
+      else:
+        kmod_key = m.replace('.','@')                       # For modules like bgp.session, use the @-as-. hack  
+        if kmod_key not in kdata:
+          continue
+        kmods = kdata[kmod_key]
+      for kmod in kmods:
+        append_to_list(kmod_list,m,kmod)
 
   # Now we have lists of kernel modules that have to be loaded based on netlab modules used in lab topology
   # Next step: for every netlab module, load the missing kernel modules
