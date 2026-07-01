@@ -1,5 +1,7 @@
 
+import base64
 import ipaddress
+import subprocess
 import typing
 
 from box import Box
@@ -13,6 +15,94 @@ from netsim.utils import log
 from netsim.utils import tunnel as _tunnel
 
 _config_name = 'tunnel.wireguard'
+
+def public_key_from_private(private_key: str) -> str:
+  '''
+  Derive a WireGuard public key from a private key
+  '''
+  try:
+    return subprocess.check_output(
+      ['wg', 'pubkey'],
+      input=f'{private_key}\n',
+      text=True,
+      stderr=subprocess.DEVNULL).strip()
+  except (FileNotFoundError, subprocess.CalledProcessError, OSError):
+    pass
+
+  try:
+    from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
+  except ImportError:
+    log.fatal(
+      'Cannot derive WireGuard public key (install wireguard-tools or cryptography)',
+      module='tunnel.wireguard')
+
+  private_bytes = base64.b64decode(private_key)
+  public_bytes = X25519PrivateKey.from_private_bytes(private_bytes).public_key().public_bytes_raw()
+  return base64.b64encode(public_bytes).decode()
+
+def generate_keypair() -> tuple[str, str]:
+  '''
+  Generate a WireGuard private/public key pair
+  '''
+  try:
+    private_key = subprocess.check_output(
+      ['wg', 'genkey'],
+      text=True,
+      stderr=subprocess.DEVNULL).strip()
+    public_key = subprocess.check_output(
+      ['wg', 'pubkey'],
+      input=f'{private_key}\n',
+      text=True,
+      stderr=subprocess.DEVNULL).strip()
+    return private_key, public_key
+  except (FileNotFoundError, subprocess.CalledProcessError, OSError):
+    pass
+
+  try:
+    from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
+  except ImportError:
+    log.fatal(
+      'Cannot generate WireGuard keys (install wireguard-tools or cryptography)',
+      module='tunnel.wireguard')
+
+  key = X25519PrivateKey.generate()
+  private_key = base64.b64encode(key.private_bytes_raw()).decode()
+  public_key = base64.b64encode(key.public_key().public_bytes_raw()).decode()
+  return private_key, public_key
+
+def ensure_tunnel_keys(
+      node: str,
+      intf: Box,
+      topology: Box) -> None:
+  '''
+  Ensure tunnel interface data has a matching private/public key pair
+  '''
+  private_key = intf.tunnel.get('private_key',None)
+  public_key = intf.tunnel.get('public_key',None)
+  linkname = get_linkname(topology,intf.linkindex)
+
+  if private_key and public_key:
+    return
+
+  if public_key and not private_key:
+    log.error(
+      f'tunnel.public_key without tunnel.private_key on node {node} interface {intf.ifname} ({intf.name})',
+      more_data=f'link {linkname}',
+      category=log.IncorrectValue,
+      module='tunnel.wireguard')
+    return
+
+  if private_key:
+    intf.tunnel.public_key = public_key_from_private(private_key)
+    return
+
+  private_key, public_key = generate_keypair()
+  intf.tunnel.private_key = private_key
+  intf.tunnel.public_key = public_key
+  if log.VERBOSE:
+    log.info(
+      f'Generated WireGuard key pair for node {node} interface {intf.ifname} ({intf.name})',
+      module='tunnel.wireguard')
 
 def add_linux_packages(node: Box, topology: Box) -> None:
   '''
@@ -123,6 +213,22 @@ def get_wireguard_source(
 
   return peer_match or first_match or _tunnel.get_tunnel_source(ndata,intf,topology)
 
+def wireguard_link_local(intf: Box) -> typing.Optional[str]:
+  '''
+  Return a link-local IPv6 address for a WireGuard tunnel interface.
+
+  WireGuard devices are POINTOPOINT/NOARP and do not get a kernel-assigned
+  link-local address. OSPFv3 needs one to form adjacencies.
+  '''
+  if intf.get('tunnel.af') != 'ipv6' or 'ipv6' not in intf:
+    return None
+
+  if not isinstance(intf.ipv6,str):
+    return None
+
+  host_id = str(ipaddress.ip_interface(intf.ipv6).ip).split(':')[-1]
+  return f'fe80::{host_id}/64'
+
 def post_transform(topology: Box) -> None:
   '''
   post_transform hook: check device support, set tunnel interface source/peer data
@@ -143,14 +249,7 @@ def post_transform(topology: Box) -> None:
         api.node_config(ndata,_config_name)
         add_linux_packages(ndata,topology)
 
-      for attr in ['private_key','public_key']:
-        if attr not in intf.tunnel:
-          log.error(
-            f'Missing tunnel.{attr} on node {node} interface {intf.ifname} ({intf.name})',
-            more_data=f'link {get_linkname(topology,intf.linkindex)}',
-            category=log.MissingValue,
-            module='tunnel.wireguard')
-
+      ensure_tunnel_keys(node,intf,topology)
       node_iflist[node].append(intf)
 
   if log.get_error_count():
@@ -172,6 +271,10 @@ def post_transform(topology: Box) -> None:
 
       if 'tunnel.mtu' not in intf:
         intf.tunnel.mtu = 1420
+
+      link_local = wireguard_link_local(intf)
+      if link_local:
+        intf.tunnel._link_local = link_local
 
       if len(intf.neighbors) != 1:
         log.error(
@@ -236,7 +339,14 @@ def post_transform(topology: Box) -> None:
           category=log.MissingValue)
         continue
 
+      peer_ip = ngb_intf.tunnel._source[intf.tunnel.af]
+      listen_port = ngb_intf.tunnel.listen_port
+      if intf.tunnel.af == 'ipv6':
+        endpoint = f'[{peer_ip}]:{listen_port}'
+      else:
+        endpoint = f'{peer_ip}:{listen_port}'
+
       intf.tunnel._peer = Box({
         'public_key': ngb_intf.tunnel.public_key,
-        'endpoint': f'{ngb_intf.tunnel._source[intf.tunnel.af]}:{ngb_intf.tunnel.listen_port}',
+        'endpoint': endpoint,
       })

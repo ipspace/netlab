@@ -28,7 +28,7 @@ def set_tunnel_type(topology: Box) -> None:
   tunnel_status = global_vars.get('tunnel_status')
   if 'type_set' in tunnel_status:
     return
-  
+
   for link in topology.get('links',[]):
     if not link.get('tunnel.mode',None):
       continue
@@ -164,13 +164,14 @@ def check_feature(
   if df_value:
     if f_value is None:
       return True
-    
+
     if isinstance(df_value,list) and f_value in df_value:
       return True
-    
+
     if df_value == f_value:
       return True
-  
+
+
   log.error(
     f'Device {ndata.device} (node {ndata.name}) does not support {f_desc}',
     log.IncorrectValue,'tunnel')

@@ -7,19 +7,68 @@ if ! command -v wg >/dev/null; then
   exit 1
 fi
 #
+wait_wg_peer() {
+  local ifname="$1"
+  local peer="$2"
+  local tries=60
+
+  while [ "${tries}" -gt 0 ]; do
+    hs=$(wg show "${ifname}" latest-handshakes | awk -v p="${peer}" '$1 == p { print $2 }')
+    if [ -n "${hs}" ] && [ "${hs}" != "0" ]; then
+      return 0
+    fi
+    sleep 1
+    tries=$((tries - 1))
+  done
+  echo "WireGuard handshake with peer ${peer} on ${ifname} did not complete" >&2
+  return 1
+}
+#
+setup_wg_vrf_underlay() {
+  local peer_endpoint="$1"
+  local vrf_table="$2"
+  local rule_pref="$3"
+  local tunnel_af="$4"
+  local peer_ip=""
+  local peer_pfx=""
+
+  if [ "${tunnel_af}" = "ipv6" ]; then
+    peer_ip="${peer_endpoint#\[}"
+    peer_ip="${peer_ip%]:*}"
+    peer_pfx="/128"
+    if ! ip -6 rule show pref "${rule_pref}" 2>/dev/null | grep -q "lookup ${vrf_table}"; then
+      ip -6 rule add pref "${rule_pref}" to "${peer_ip}${peer_pfx}" lookup "${vrf_table}"
+    fi
+  else
+    peer_ip="${peer_endpoint%:*}"
+    peer_pfx="/32"
+    sysctl -qw net.ipv4.udp_l3mdev_accept=1
+    if ! ip rule show pref "${rule_pref}" 2>/dev/null | grep -q "lookup ${vrf_table}"; then
+      ip rule add pref "${rule_pref}" to "${peer_ip}${peer_pfx}" lookup "${vrf_table}"
+    fi
+  fi
+}
+#
 create_wg() {
   local ifname="$1"
-  local addr="$2"
-  local private_key="$3"
-  local listen_port="$4"
-  local peer_key="$5"
-  local peer_endpoint="$6"
-  local peer_allowed="$7"
-  local keepalive="$8"
-  local mtu="$9"
+  local private_key="$2"
+  local listen_port="$3"
+  local peer_key="$4"
+  local peer_endpoint="$5"
+  local peer_allowed="$6"
+  local keepalive="$7"
+  local mtu="$8"
+  local tunnel_af="${9:-ipv4}"
+  local link_local="${10:-}"
+  local vrf_table="${11:-}"
+  local rule_pref="${12:-}"
 
   if ! ip link show dev "${ifname}" >/dev/null 2>&1; then
     ip link add dev "${ifname}" type wireguard
+  fi
+
+  if [ -n "${vrf_table}" ] && [ -n "${rule_pref}" ]; then
+    setup_wg_vrf_underlay "${peer_endpoint}" "${vrf_table}" "${rule_pref}" "${tunnel_af}"
   fi
 
   wg set "${ifname}" \
@@ -30,20 +79,32 @@ create_wg() {
     endpoint "${peer_endpoint}" \
     persistent-keepalive "${keepalive}"
 
-  ip address replace "${addr}" dev "${ifname}"
   ip link set dev "${ifname}" mtu "${mtu}" up
+
+  if [ -n "${link_local}" ]; then
+    ip -6 addr add "${link_local}" dev "${ifname}" scope link 2>/dev/null || true
+  fi
+
+  wait_wg_peer "${ifname}" "${peer_key}"
 }
 #
 {% for intf in netlab_interfaces if intf.tunnel.mode|default('') in ['wireguard'] %}
+{%   set vrf_name = intf.tunnel.vrf|default('') %}
+{%   set vrf_table = vrfs[vrf_name].vrfidx if vrf_name and vrf_name in vrfs else '' %}
+{%   set rule_pref = 10000 + intf.ifindex if vrf_name and vrf_table else '' %}
 create_wg \
   {{ intf.ifname }} \
-  {{ intf.ipv4 }} \
   {{ intf.tunnel.private_key }} \
   {{ intf.tunnel.listen_port }} \
   {{ intf.tunnel._peer.public_key }} \
   {{ intf.tunnel._peer.endpoint }} \
   {{ intf.tunnel.allowed_ips }} \
   {{ intf.tunnel.persistent_keepalive }} \
-  {{ intf.tunnel.mtu }}
+  {{ intf.tunnel.mtu }} \
+  {{ intf.tunnel.af|default('ipv4') }} \
+  {{ intf.tunnel._link_local|default('') }}{% if vrf_name and vrf_table %} \
+  {{ vrf_table }} \
+  {{ rule_pref }}{% endif %}
+
 {% endfor %}
 exit 0

@@ -74,6 +74,7 @@ These plugins are included with _netlab_ and can be used in all lab topologies:
    plugins/mlag.vtep.md
    plugins/evpn.multihoming.md
    plugins/tunnel.gre.md
+   plugins/tunnel.wireguard.md
 ```
 
 ```eval_rst

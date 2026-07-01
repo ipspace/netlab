@@ -1,0 +1,74 @@
+---
+message: |
+  Test WireGuard tunnels over IPv6 transport in a transport VRF. The two
+  tested devices have a WireGuard tunnel in the transport VRF and run
+  (global) OSPFv3 over it. The probe should receive an OSPF route
+  advertised from the remote device (DUT_R1) and be able to ping its
+  loopback.
+
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
+addressing:
+  loopback:
+    ipv4: False
+    ipv6: 2001:db8:1::/48
+  lan:
+    ipv4: False
+    ipv6: 2001:db8:2::/48
+  p2p:
+    ipv4: False
+    ipv6: 2001:db8:3::/48
+
+plugin: [ tunnel.wireguard ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ r3 ]
+    module: [ ospf ]
+  ce:
+    members: [ dut_r1, dut_r2 ]
+    module: [ ospf, vrf ]
+
+vrfs:
+  transport:
+
+nodes:
+  dut_r1:
+  dut_r2:
+  r3:
+
+links:
+- group: core
+  ospf: False
+  vrf: transport
+  members: [ dut_r1-dut_r2 ]
+- group: site
+  members: [ dut_r2-r3 ]
+- dut_r1:
+  dut_r2:
+  tunnel.mode: wireguard
+  tunnel.af: ipv6
+  tunnel.allowed_ips: ::/0
+  tunnel.vrf: transport
+
+validate:
+  adj:
+    description: Check OSPFv3 adjacencies
+    wait: ospfv3_adj_p2p
+    wait_msg: Waiting for OSPFv3 adjacency process to complete
+    nodes: [ r3 ]
+    plugin: ospf6_neighbor(nodes.dut_r2.ospf.router_id)
+  pfx:
+    description: Check for DUT_R1 loopback prefix being propagated to R3
+    wait: ospfv3_spf_long
+    wait_msg: Waiting for SPF to do its magic
+    nodes: [ r3 ]
+    plugin: ospf6_prefix(nodes.dut_r1.loopback.ipv6)
+  ping:
+    description: Check end-to-end IPv6 connectivity
+    wait: ping
+    wait_msg: Still waiting for SPF...
+    nodes: [ r3 ]
+    plugin: ping(nodes.dut_r1.loopback.ipv6,af='ipv6')
