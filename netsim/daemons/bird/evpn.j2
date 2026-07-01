@@ -1,0 +1,52 @@
+{% if vxlan is defined and vxlan.flooding|default('') == 'evpn' %}
+{% for vname in vxlan.vlans|default([]) if vlans[vname].vni is defined and 'evpn' in vlans[vname] %}
+{% set vlan = vlans[vname] %}
+eth table eth_{{ vname }};
+
+protocol bridge bridge_{{ vname }} {
+  eth { table eth_{{ vname }}; export all; };
+  bridge device "vlan{{ vlan.id }}";
+}
+
+protocol evpn evpn_{{ vname }} {
+  eth { table eth_{{ vname }}; };
+  evpn { table evpntab; import all; export all; };
+  rd {{ vlan.evpn.rd }};
+{% for rt in vlan.evpn._bird_import|default([]) %}
+  import target {{ rt }};
+{% endfor %}
+{% for rt in vlan.evpn._bird_export|default([]) %}
+  export target {{ rt }};
+{% endfor %}
+  vni {{ vlan.vni }};
+  vid {{ vlan.id }};
+  encapsulation vxlan {
+    tunnel device "vxlan{{ vlan.vni }}";
+    router address {{ vxlan.vtep }};
+  };
+}
+{% endfor %}
+{% endif %}
+
+{% for vname,vdata in vrfs|default({})|dictsort %}
+{% if 'evpn' in vdata and vdata.evpn.transit_vni is defined %}
+eth table eth_vrf_{{ vname }};
+
+protocol evpn evpn_vrf_{{ vname }} {
+  eth { table eth_vrf_{{ vname }}; };
+  evpn { table evpntab; import all; export all; };
+  rd {{ vdata.rd }};
+{% for rt in vdata._bird_import|default([]) %}
+  import target {{ rt }};
+{% endfor %}
+{% for rt in vdata._bird_export|default([]) %}
+  export target {{ rt }};
+{% endfor %}
+  vni {{ vdata.evpn.transit_vni }};
+  encapsulation vxlan {
+    tunnel device "vxlan{{ vdata.evpn.transit_vni }}";
+    router address {{ vxlan.vtep }};
+  };
+}
+{% endif %}
+{% endfor %}
