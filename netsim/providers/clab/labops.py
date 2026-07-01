@@ -87,6 +87,21 @@ def get_loaded_kernel_modules() -> list:
   return [ line.split(' ')[0] for line in mod_list ]
 
 '''
+load_plugin_kmods: Collect kernel modules required by lab plugins
+'''
+def load_plugin_kmods(topology: Box, clab_kmods: Box, kmod_list: Box) -> None:
+  for p in topology.get('plugin',[]):
+    if p in clab_kmods:
+      kmods = clab_kmods[p]
+    else:
+      kmod_key = p.replace('.','@')   # For modules like bgp.session, use the @-as-. hack  
+      if kmod_key not in clab_kmods:
+        continue
+      kmods = clab_kmods[kmod_key]
+    for kmod in kmods:
+      append_to_list(kmod_list,p,kmod)
+
+'''
 load_kmods: Load kernel modules before starting containers
 
 The kernel modules needed for individual netlab modules are defined in provider- or device 'kmods'
@@ -97,6 +112,8 @@ def load_kmods(topology: Box) -> None:
   defs = topology.defaults
   clab_kmods = defs.providers.clab.kmods
   kmod_list  = get_empty_box()
+
+  load_plugin_kmods(topology,clab_kmods,kmod_list)
 
   for ndata in topology.nodes.values():                     # Iterate over all nodes
     if ndata.get('provider') != 'clab':                     # The node is not using clab provider, move on
@@ -109,16 +126,11 @@ def load_kmods(topology: Box) -> None:
 
     # At this point, we have device-specific dictionary mapping netlab modules into kernel modules
     #
-    for m in (['initial']+ndata.get('module',[])+ndata.get('config',[])):
-      if m in kdata:
-        kmods = kdata[m]
-      else:
-        kmod_key = m.replace('.','@')                       # For modules like bgp.session, use the @-as-. hack  
-        if kmod_key not in kdata:
-          continue
-        kmods = kdata[kmod_key]
-      for kmod in kmods:
-        append_to_list(kmod_list,m,kmod)
+    for m in (['initial']+ndata.get('module',[])):          # Now iterate over all the netlab modules the node uses
+      if m not in kdata:                                    # ... and if the netlab modules does not need kernel modules
+        continue                                            # ... move on
+      for kmod in kdata[m]:                                 # Next, add individual kernel modules in the kdata entry
+        append_to_list(kmod_list,m,kmod)                    # ... to the module-specific list of kernel mdules
 
   # Now we have lists of kernel modules that have to be loaded based on netlab modules used in lab topology
   # Next step: for every netlab module, load the missing kernel modules
