@@ -126,6 +126,7 @@ ip link set {{ i.ifname }} {{ "down" if i.shutdown|default(False) else "up" }}
 # Add vtysh.conf file
 echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
 
+{% set frr_log_path = frr.logfile|default('/var/log/frr/frr.log') %}
 {% if not netlab_initial_reload|default(False) %}
 #
 # Ensure FRR's log directory exists before enabling file logging
@@ -143,7 +144,8 @@ hostname {{ inventory_hostname }}
   package), which permit /var/log/frr/* but deny /tmp; on FRR 10.4 that rejection
   is fatal and aborts initial configuration.
 #}
-log file {{ frr.logfile|default('/var/log/frr/frr.log') }}
+{% set frr_log_level = 'debugging' if frr.debug|default([]) else 'informational' %}
+log file {{ frr_log_path }} {{ frr_log_level }}
 {% from '_debug_commands.j2' import enable_debugging %}
 {{ enable_debugging(frr.debug,prefix='debug') }}
 !
@@ -224,5 +226,13 @@ do write
 CONFIG
 vtysh -f /tmp/config
 {% endif %}{# not netlab_initial_reload #}
+
+{% if clab is defined %}
+#
+# Redirect FRR's log to the container's stdout so 'docker logs' works
+#
+DOCKER_LOGS_STDOUT="/proc/1/fd/1"
+tail -n 0 -F {{ frr_log_path }} >${DOCKER_LOGS_STDOUT} 2>&1 &
+{% endif %}
 !
 exit 0
