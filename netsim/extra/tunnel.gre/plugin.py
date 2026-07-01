@@ -17,7 +17,7 @@ def pre_link_transform(topology: Box) -> None:
   for link in _tunnel.links(topology,'gre'):
     if len(link.interfaces) != 2:
       log.error(
-        'A GRE tunnel must have exactly two nodes attached to it (link {link._linkname})',
+        f'A GRE tunnel must have exactly two nodes attached to it (link {link._linkname})',
         category=log.IncorrectAttr,
         module='tunnel.gre')
 

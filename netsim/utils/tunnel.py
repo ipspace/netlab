@@ -54,7 +54,7 @@ def interfaces(node: Box, tunnel_type: str) -> typing.Generator:
 def get_tunnel_source(ndata: Box, t_intf: Box, topology: Box) -> typing.Optional[Box]:
   '''
   Find the tunnel source interface using (in descending order) tunnel.type,
-  tunnel.vrf, tunnel.link.name and tunnel.link.role. Viable interface(s) are
+  tunnel.vrf, and various tunnel.source parameters. Viable interface(s) are
   also checked for desired transport AF. The first viable interface is returned
   '''
   t_vrf  = t_intf.get('tunnel.vrf',None)
@@ -65,7 +65,7 @@ def get_tunnel_source(ndata: Box, t_intf: Box, topology: Box) -> typing.Optional
 
   iflist = ndata.get('interfaces',[])
   if 'loopback' in ndata and t_type == 'loopback' and t_vrf is None:
-    iflist += [ ndata.loopback ]
+    iflist = iflist + [ ndata.loopback ]
 
   for intf in iflist:
     if t_type is None:                            # No type means 'not loopback or tunnel'
