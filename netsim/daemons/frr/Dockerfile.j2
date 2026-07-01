@@ -1,0 +1,119 @@
+{%- set _sw_version = sw_version|default("master") -%}
+{%- set _base_image = "debian:trixie-slim" -%}
+{%- set _runtime_tools = "iputils-ping iproute2 procps" -%}
+{%- set _clab = defaults.devices.frr.clab -%}
+{%- set _default_url = 'https://github.com/FRRouting/frr/archive/refs/heads/master.tar.gz' if _sw_version == 'master' else 'https://github.com/FRRouting/frr/archive/refs/tags/frr-{sw_version}.tar.gz' -%}
+{%- set _url = _clab.get('sw_download_url', _default_url) -%}
+{%- set _sw_download_url = _url.replace('{sw_version}', _sw_version) if '{sw_version}' in _url else _url -%}
+# syntax=docker/dockerfile:1
+# --- Stage 1: Build Stage ---
+FROM {{ _base_image }} AS builder
+
+# Install compilation dependencies
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y \
+    autoconf \
+    automake \
+    bison \
+    build-essential \
+    cmake \
+    flex \
+    libcap-dev \
+    libelf-dev \
+    libjson-c-dev \
+    libreadline-dev \
+    libtool \
+    libyang-dev \
+    make \
+    pkg-config \
+    python3 \
+    python3-dev \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and extract source code
+RUN set -e; \
+    if ! wget -q -O /tmp/sw-src.tar.gz "{{ _sw_download_url }}"; then \
+      echo "ERROR: Cannot download FRR {{ _sw_version }} from {{ _sw_download_url }} - version may not exist"; \
+      exit 1; \
+    fi; \
+    mkdir -p /build && \
+    tar -xzf /tmp/sw-src.tar.gz -C /build && \
+    mv /build/frr-* /build/frr
+
+WORKDIR /build/frr
+
+# Configure, compile, and install
+RUN ./bootstrap.sh \
+    && ./configure \
+      --prefix=/usr \
+      --sysconfdir=/etc \
+      --localstatedir=/var \
+      --sbindir=/usr/lib/frr \
+      --enable-multipath=64 \
+      --enable-user=frr \
+      --enable-group=frr \
+      --enable-vty-group=frrvty \
+      --enable-configfile-mask=0640 \
+      --enable-logfile-mask=0640 \
+      --enable-fpm \
+      --disable-doc \
+      --disable-grpc \
+      --disable-protobuf \
+    && make -j$(nproc) \
+    && make install DESTDIR=/frr-staging
+
+# --- Stage 2: Runtime Stage ---
+FROM {{ _base_image }}
+ENV DEBIAN_FRONTEND=noninteractive
+
+LABEL maintainer="Netlab project <netlab.tools>"
+LABEL description="FRRouting (FRR) {{ _sw_version }}"
+
+# Install runtime dependencies
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y \
+    libc-ares2 \
+    libcap2 \
+    libelf1 \
+    libjson-c5 \
+    libreadline8 \
+    libyang3 \
+    {{ _runtime_tools }} \
+    tini \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create FRR users and groups
+RUN groupadd --system frr \
+    && groupadd --system frrvty \
+    && useradd --system -g frr -G frrvty -d /var/opt/frr \
+       -c "FRR suite" -s /bin/false frr
+
+# Create runtime directories
+RUN mkdir -p /etc/frr /var/run/frr /var/log/frr /var/opt/frr \
+    && chown -R frr:frr /etc/frr /var/run/frr /var/log/frr /var/opt/frr
+
+# Copy binaries, libraries, and modules from the builder stage
+COPY --from=builder /frr-staging/usr/lib/ /usr/lib/
+COPY --from=builder /frr-staging/usr/bin/vtysh /usr/bin/vtysh
+COPY --from=builder /build/frr/tools/etc/frr/ /etc/frr/
+
+# docker-start: set MPLS label range before zebra installs LSPs (see netlab mpls/sr templates)
+RUN printf '%s\n' \
+    '#!/bin/bash' \
+    'sysctl -qw net.mpls.platform_labels=1048575 2>/dev/null || true' \
+    'source /usr/lib/frr/frrcommon.sh' \
+    'exec /usr/lib/frr/watchfrr $(daemon_list)' \
+    > /usr/lib/frr/docker-start \
+    && chmod 0755 /usr/lib/frr/docker-start
+
+# watchfrr always starts zebra and staticd; empty configs must exist
+RUN ldconfig \
+    && touch /etc/frr/zebra.conf /etc/frr/staticd.conf \
+    && chown -R frr:frr /etc/frr
+
+WORKDIR /root
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["/usr/lib/frr/docker-start"]
