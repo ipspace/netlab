@@ -1,0 +1,39 @@
+message: |
+  The lab tests the creation of an OSPF/IBGP leaf-spine fabric
+  with the 'fabric' plugin
+
+provider: clab
+defaults.device: frr
+defaults.sources.extra: [ ../../integration/wait_times.yml ]
+
+module: [ospf, bgp]
+
+bgp.as: 65000
+ospf.timers:
+  hello: 1
+  dead: 3
+
+plugin: [fabric]
+fabric.spines: 2
+fabric.leafs: 4
+fabric.spine.bgp.rr: true
+
+validate:
+  ospf_adj:
+    description: Check OSPF adjacencies with S1
+    wait: ospfv2_adj_p2p
+    nodes: [ L1, L2, L3, L4 ]
+    wait_msg: Waiting for OSPF adjacency process to complete
+    plugin: ospf_neighbor(nodes.S1.ospf.router_id)
+  ibgp_adj:
+    description: Check IBGP sessions with S1
+    wait_msg: Wait for BGP sessions to be established
+    wait: ibgp_session
+    nodes: [ L1, L2, L3, L4 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'S1')
+  ibgp_route:
+    description: Check IBGP route propagation
+    wait_msg: Wait for BGP convergence
+    wait: bgp_scan_time
+    nodes: [ L1, L2, L3 ]
+    plugin: bgp_prefix(nodes.L4.loopback.ipv4)

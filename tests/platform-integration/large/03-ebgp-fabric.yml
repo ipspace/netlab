@@ -1,0 +1,31 @@
+message: |
+  The lab tests the creation of an EBGP leaf-spine fabric
+  with the 'fabric' plugin
+
+provider: clab
+defaults.device: frr
+defaults.sources.extra: [ ../../integration/wait_times.yml ]
+
+module: [bgp]
+plugin: [fabric]
+bgp.sessions.ipv4: [ ebgp ]
+
+fabric:
+  spines: 2
+  leafs: 4
+  spine.bgp.as: 65100
+  leaf.bgp.as: '{65000 + count}'
+
+validate:
+  bgp_adj:
+    description: Check EBGP sessions with S1
+    wait_msg: Wait for BGP sessions to be established
+    wait: ibgp_session
+    nodes: [ L1, L2, L3, L4 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'S1')
+  bgp_route:
+    description: Check EBGP route propagation
+    wait_msg: Wait for BGP convergence
+    wait: bgp_scan_time
+    nodes: [ L1, L2, L3 ]
+    plugin: bgp_prefix(nodes.L4.loopback.ipv4)
