@@ -415,18 +415,19 @@ ansible_httpapi_port: 80
 * The **frr.logfile** attribute specifies the path to the FRR logging file (default: `/var/log/frr/frr.log`)
 * You can specify a list of additional FRRouting daemons you want to have enabled in the **frr.daemons** node attribute.
 
-**FRR VM caveats:**
+**FRR VM Caveats:**
 
 * The VM version of FRR is a Debian VM. The FRR package is downloaded and installed during **vagrant up** processing in the libvirt environment. To postpone the FRR installation to the initial configuration process, set the node variable **netlab_quick_start** to `true`.
 * You can [build a custom FRR VM](build-frr) with a preinstalled **frr** package to speed up the **vagrant up** processing.
 
-**FRR container caveats:**
+**FRR Container Features and Caveats:**
 
+* FRR logging messages are copied to the container *stdout*. You can always inspect them with **docker logs _containername_** (which you can find with the **netlab status** command).
 * FRR containers need host kernel modules (drivers) to implement the data-plane functionality of *vrf*, *mpls*, and *vxlan* netlab modules. The kernel modules are automatically loaded (when available) during the **netlab up** processing.
 * VRF and VXLAN kernel modules are usually bundled with a Linux distribution. If your Ubuntu distribution does not include the MPLS drivers, try installing them with `sudo apt install linux-generic`.
 * You cannot load kernel modules in GitHub Codespaces and thus cannot use *vrf*, *mpls*, or *vxlan* modules on FRRouting nodes in that environment.
 * FRR containers have a management VRF. Use `ip vrf exec mgmt <command>` to run a CLI command that needs access to the outside world through the management interface. To disable the management VRF, set the **netlab_mgmt_vrf** node parameter to *False*.
-* FRR initial container configuration might fail if your Ubuntu distribution does not include the VRF kernel module. Install the VRF kernel module with the `sudo apt install linux-generic` and reboot the server.
+* FRR initial container configuration might fail if your Ubuntu distribution does not include the VRF kernel module. Install the VRF kernel module with `sudo apt install linux-generic`, then reboot the server.
 
 **FRR Implementation Caveats:**
 
