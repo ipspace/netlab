@@ -94,7 +94,7 @@ def load_plugin_kmods(topology: Box, clab_kmods: Box, kmod_list: Box) -> None:
     if p in clab_kmods:
       kmods = clab_kmods[p]
     else:
-      kmod_key = p.replace('.','@')   # For modules like bgp.session, use the @-as-. hack  
+      kmod_key = p.replace('.','@')   # For modules like bgp.session, use the @-as-. hack
       if kmod_key not in clab_kmods:
         continue
       kmods = clab_kmods[kmod_key]
