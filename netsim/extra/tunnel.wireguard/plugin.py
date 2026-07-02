@@ -293,9 +293,6 @@ def post_transform(topology: Box) -> None:
       if 'tunnel.allowed_ips' not in intf:
         intf.tunnel.allowed_ips = '::/0' if intf.tunnel.af == 'ipv6' else '0.0.0.0/0'
 
-      if 'tunnel.persistent_keepalive' not in intf:
-        intf.tunnel.persistent_keepalive = 25
-
       # Tell the initial config script to create a WireGuard netdev (with an
       # optional IPv6 link-local address) before FRR is configured.
       intf._linux_device_type = 'wireguard'
@@ -312,7 +309,7 @@ def post_transform(topology: Box) -> None:
       ngb = intf.neighbors[0]
       src_intf = get_wireguard_source(ndata,intf,topology,ngb.node)
       if src_intf:
-        intf.tunnel._source = src_intf
+        intf.tunnel._source_intf = src_intf
         # Derive the WireGuard interface MTU from the underlay source interface
         # MTU minus the encapsulation overhead (80 bytes for an IPv6 underlay,
         # 60 bytes for an IPv4 underlay) so it scales with jumbo-frame underlays.
@@ -348,7 +345,7 @@ def post_transform(topology: Box) -> None:
           category=log.FatalError,
           module='tunnel.wireguard')
         continue
-      if 'tunnel._source' not in ngb_intf:
+      if 'tunnel._source_intf' not in ngb_intf:
         log.error(
           f'Cannot find tunnel peer endpoint for node {ngb.node}',
           more_data=f'node {node} interface {intf.ifname} ({intf.name}) link {get_linkname(topology,intf.linkindex)}',
@@ -370,7 +367,7 @@ def post_transform(topology: Box) -> None:
           category=log.MissingValue)
         continue
 
-      peer_ip = ngb_intf.tunnel._source[intf.tunnel.af]
+      peer_ip = ngb_intf.tunnel._source_intf[intf.tunnel.af]
       listen_port = ngb_intf.tunnel.listen_port
       if intf.tunnel.af == 'ipv6':
         endpoint = f'[{peer_ip}]:{listen_port}'
