@@ -91,9 +91,9 @@ def add_linux_packages(node: Box, topology: Box) -> None:
   '''
   Add wireguard-tools to the node package list.
 
-  Device group_vars cannot be extended from plugin defaults, so we have to copy
-  the device defaults and augment them on nodes using WireGuard tunnels.
-  Packages are installed during initial configuration before the management VRF is created.
+  Set netlab_linux_packages per node (not device-wide) to install
+  wireguard-tools only on nodes with tunnels. The host var replaces the group
+  var, so start from the device defaults. Installed during initial config.
   '''
   packages = get_box(devices.get_node_group_var(node,'netlab_linux_packages',topology.defaults) or {})
   packages['wireguard-tools'] = 'wg'
