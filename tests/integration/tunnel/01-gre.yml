@@ -1,0 +1,61 @@
+---
+message: |
+  Test the GRE tunnels. The two tested devices have a GRE tunnel and run
+  OSPF over it. The probe should receive an OSPF route advertised from the
+  remote device (DUT_R1) and be able to ping its loopback.
+
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
+plugin: [ tunnel.gre ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ core, r3 ]
+  ce:
+    members: [ dut_r1, dut_r2 ]
+    routing.static:
+    - ipv4: 0.0.0.0/0
+      nexthop.node: core
+
+module: [ ospf, routing ]
+
+nodes:
+  dut_r1:
+  dut_r2:
+  core:
+    module: []
+  r3:
+
+links:
+- group: core
+  ospf: False
+  role: core
+  members: [ dut_r1-core, dut_r2-core ]
+- group: site
+  members: [ dut_r2-r3 ]
+- group: gre
+  tunnel.mode: gre
+  tunnel.source.link.role: core
+  members: [ dut_r1-dut_r2 ]
+
+validate:
+  adj:
+    description: Check OSPF adjacencies
+    wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPF adjacency process to complete
+    nodes: [ r3 ]
+    plugin: ospf_neighbor(nodes.dut_r2.ospf.router_id)
+  pfx:
+    description: Check for DUT_R1 loopback prefix being propagated to R3
+    wait: ospfv2_spf_long
+    wait_msg: Waiting for SPF to do its magic
+    nodes: [ r3 ]
+    plugin: ospf_prefix(nodes.dut_r1.loopback.ipv4)
+  ping:
+    description: Check end-to-end connectivity
+    wait: ping
+    wait_msg: Still waiting for SPF...
+    nodes: [ r3 ]
+    plugin: ping(nodes.dut_r1.loopback.ipv4)
