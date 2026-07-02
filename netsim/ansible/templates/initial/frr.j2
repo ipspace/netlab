@@ -96,15 +96,18 @@ fi
 sysctl -w net.ipv4.conf.all.arp_announce=2
 
 #
-# Create loopbacks, stub and lag/bond devices
+# Create loopbacks, stub, lag/bond and tunnel devices
 #
-{% for i in netlab_interfaces if i.type in ['loopback','stub','lag','bond'] %}
+{% for i in netlab_interfaces if i.type in ['loopback','stub','lag','bond','tunnel'] %}
 if [ ! -e /sys/class/net/{{ i.ifname }} ]; then
   if [ ! -e /sys/devices/virtual/net/{{ i.ifname }} ]; then
 {%   if i.type in ['lag','bond'] %}
 {{     create_bond_dev(i,node_provider) }}
 {%   else %}
-    ip link add {{ i.ifname }} type dummy
+    ip link add {{ i.ifname }} type {{ i._linux_device_type|default('dummy') }}
+{%   endif %}
+{%   if i._ipv6_link_local is defined %}
+    ip -6 addr add {{ i._ipv6_link_local }} dev {{ i.ifname }} scope link
 {%   endif %}
     ip link set dev {{ i.ifname }} {{ "down" if i.shutdown|default(False) else "up" }}
   fi

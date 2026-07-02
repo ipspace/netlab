@@ -51,14 +51,9 @@ create_wg() {
   local keepalive="$7"
   local mtu="$8"
   local tunnel_af="${9:-ipv4}"
-  local link_local="${10:-}"
-  local vrf_table="${11:-}"
-  local rule_pref="${12:-}"
+  local vrf_table="${10:-}"
+  local rule_pref="${11:-}"
   local wg_fwmark=""
-
-  if ! ip link show dev "${ifname}" >/dev/null 2>&1; then
-    ip link add dev "${ifname}" type wireguard
-  fi
 
   if [ -n "${vrf_table}" ] && [ -n "${rule_pref}" ]; then
     setup_wg_vrf_underlay "${vrf_table}" "${rule_pref}" "${tunnel_af}"
@@ -76,10 +71,6 @@ create_wg() {
 
   ip link set dev "${ifname}" mtu "${mtu}" up
 
-  if [ -n "${link_local}" ]; then
-    ip -6 addr add "${link_local}" dev "${ifname}" scope link 2>/dev/null || true
-  fi
-
   wait_wg_peer "${ifname}" "${peer_key}"
 }
 #
@@ -96,8 +87,7 @@ create_wg \
   {{ intf.tunnel.allowed_ips }} \
   {{ intf.tunnel.persistent_keepalive }} \
   {{ intf.tunnel.mtu }} \
-  {{ intf.tunnel.af|default('ipv4') }} \
-  {{ intf.tunnel._link_local|default('') }}{% if vrf_name and vrf_table %} \
+  {{ intf.tunnel.af|default('ipv4') }}{% if vrf_name and vrf_table %} \
   {{ vrf_table }} \
   {{ rule_pref }}{% endif %}
 

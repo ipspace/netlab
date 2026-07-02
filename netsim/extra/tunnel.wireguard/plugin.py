@@ -1,5 +1,4 @@
 
-import base64
 import ipaddress
 import subprocess
 import typing
@@ -18,7 +17,7 @@ _config_name = 'tunnel.wireguard'
 
 def public_key_from_private(private_key: str) -> str:
   '''
-  Derive a WireGuard public key from a private key
+  Derive a WireGuard public key from a private key using wireguard-tools
   '''
   try:
     return subprocess.check_output(
@@ -27,22 +26,14 @@ def public_key_from_private(private_key: str) -> str:
       text=True,
       stderr=subprocess.DEVNULL).strip()
   except (FileNotFoundError, subprocess.CalledProcessError, OSError):
-    pass
-
-  try:
-    from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
-  except ImportError:
     log.fatal(
-      'Cannot derive WireGuard public key (install wireguard-tools or cryptography)',
+      'Cannot derive WireGuard public key (install wireguard-tools, '
+      'or configure tunnel.private_key and tunnel.public_key)',
       module='tunnel.wireguard')
-
-  private_bytes = base64.b64decode(private_key)
-  public_bytes = X25519PrivateKey.from_private_bytes(private_bytes).public_key().public_bytes_raw()
-  return base64.b64encode(public_bytes).decode()
 
 def generate_keypair() -> tuple[str, str]:
   '''
-  Generate a WireGuard private/public key pair
+  Generate a WireGuard private/public key pair using wireguard-tools
   '''
   try:
     private_key = subprocess.check_output(
@@ -56,19 +47,10 @@ def generate_keypair() -> tuple[str, str]:
       stderr=subprocess.DEVNULL).strip()
     return private_key, public_key
   except (FileNotFoundError, subprocess.CalledProcessError, OSError):
-    pass
-
-  try:
-    from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
-  except ImportError:
     log.fatal(
-      'Cannot generate WireGuard keys (install wireguard-tools or cryptography)',
+      'Cannot generate WireGuard keys (install wireguard-tools, '
+      'or configure tunnel.private_key and tunnel.public_key)',
       module='tunnel.wireguard')
-
-  key = X25519PrivateKey.generate()
-  private_key = base64.b64encode(key.private_bytes_raw()).decode()
-  public_key = base64.b64encode(key.public_key().public_bytes_raw()).decode()
-  return private_key, public_key
 
 def ensure_tunnel_keys(
       node: str,
@@ -213,21 +195,24 @@ def get_wireguard_source(
 
   return peer_match or first_match or _tunnel.get_tunnel_source(ndata,intf,topology)
 
-def wireguard_link_local(intf: Box) -> typing.Optional[str]:
+def wireguard_link_local(intf: Box) -> None:
   '''
-  Return a link-local IPv6 address for a WireGuard tunnel interface.
+  Set an IPv6 link-local address on a WireGuard tunnel interface.
 
-  WireGuard devices are POINTOPOINT/NOARP and do not get a kernel-assigned
-  link-local address. OSPFv3 needs one to form adjacencies.
+  WireGuard devices are ARPHRD_NONE (link/none), so the kernel forces
+  addr_gen_mode to 'none' and never assigns a link-local address (random and
+  stable-privacy modes are ignored). OSPFv3 needs one to form adjacencies, so
+  we derive a deterministic address that the initial config script assigns when
+  the interface is created.
   '''
   if intf.get('tunnel.af') != 'ipv6' or 'ipv6' not in intf:
-    return None
+    return
 
   if not isinstance(intf.ipv6,str):
-    return None
+    return
 
   host_id = str(ipaddress.ip_interface(intf.ipv6).ip).split(':')[-1]
-  return f'fe80::{host_id}/64'
+  intf._ipv6_link_local = f'fe80::{host_id}/64'
 
 def post_transform(topology: Box) -> None:
   '''
@@ -272,9 +257,10 @@ def post_transform(topology: Box) -> None:
       if 'tunnel.mtu' not in intf:
         intf.tunnel.mtu = 1420
 
-      link_local = wireguard_link_local(intf)
-      if link_local:
-        intf.tunnel._link_local = link_local
+      # Tell the initial config script to create a WireGuard netdev (with an
+      # optional IPv6 link-local address) before FRR is configured.
+      intf._linux_device_type = 'wireguard'
+      wireguard_link_local(intf)
 
       if len(intf.neighbors) != 1:
         log.error(

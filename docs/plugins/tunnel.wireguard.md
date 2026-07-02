@@ -50,7 +50,7 @@ You do not have to specify WireGuard keys in the lab topology. During the topolo
 * If only **tunnel.private_key** is specified, the plugin derives **tunnel.public_key** from it.
 * If only **tunnel.public_key** is specified, the transformation fails.
 
-Key generation uses the **wireguard-tools** commands (`wg genkey` and `wg pubkey`) when they are available on the host running **netlab create**. Otherwise, the plugin uses the Python **cryptography** library.
+Key generation uses the **wireguard-tools** commands (`wg genkey` and `wg pubkey`), which must be available on the host running **netlab create**. If **wireguard-tools** is not installed, the transformation fails; in that case, either install the package or specify both **tunnel.private_key** and **tunnel.public_key** in the lab topology.
 
 The remote peer's **tunnel.public_key** and UDP endpoint do not have to be specified; they are taken from the peer device attached to the same tunnel.
 
