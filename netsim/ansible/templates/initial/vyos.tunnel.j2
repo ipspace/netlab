@@ -1,0 +1,16 @@
+{# Initial VyOS GRE tunnel implementation needs to be tackled here,
+   otherwise it will be impossible to use the tunnel interface by other modules.
+#}
+{% for intf in netlab_interfaces if intf.tunnel.mode|default('') in ['gre'] %}
+
+# In VyOS, GRE tunnels can be established over both IPv4 (encapsulation gre) and IPv6 (encapsulation ip6gre) transport networks.
+
+set interfaces tunnel {{ intf.ifname }} encapsulation 'gre'
+{%   if intf.tunnel.af == 'ipv6' %}
+set interfaces tunnel {{ intf.ifname }} encapsulation 'ip6gre'
+{%   endif %}
+
+set interfaces tunnel {{ intf.ifname }} source-address {{ intf.tunnel._source[intf.tunnel.af] }}
+set interfaces tunnel {{ intf.ifname }} remote {{ intf.tunnel._destination[intf.tunnel.af] }}
+
+{% endfor %}
