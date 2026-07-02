@@ -242,11 +242,24 @@ def post_transform(topology: Box) -> None:
 
   # Second pass: set defaults and tunnel source
   #
-  for node in node_iflist:
+  for node,iflist in node_iflist.items():
     ndata = topology.nodes[node]
-    for intf in node_iflist[node]:
+    for intf in iflist:
+      # Resolve tunnel defaults in code. We cannot rely on schema _default values
+      # because those are materialized on the per-node interface entries during
+      # link validation (before link->interface propagation) and would then win
+      # over an explicit link-level override during the interface merge.
+      if 'tunnel.af' not in intf:
+        intf.tunnel.af = 'ipv4'
+
       if 'tunnel.allowed_ips' not in intf:
         intf.tunnel.allowed_ips = '::/0' if intf.tunnel.af == 'ipv6' else '0.0.0.0/0'
+
+      if 'tunnel.persistent_keepalive' not in intf:
+        intf.tunnel.persistent_keepalive = 25
+
+      if 'tunnel.mtu' not in intf:
+        intf.tunnel.mtu = 1420
 
       # Tell the initial config script to create a WireGuard netdev (with an
       # optional IPv6 link-local address) before FRR is configured.
@@ -281,8 +294,8 @@ def post_transform(topology: Box) -> None:
 
   # Third pass: set tunnel peer data after all sources are known
   #
-  for node in node_iflist:
-    for intf in node_iflist[node]:
+  for node,iflist in node_iflist.items():
+    for intf in iflist:
       if len(intf.neighbors) != 1:
         continue
 
