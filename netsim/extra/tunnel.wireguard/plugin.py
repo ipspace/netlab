@@ -249,7 +249,7 @@ def post_transform(topology: Box) -> None:
         intf.tunnel.af = 'ipv4'
 
       if 'tunnel.allowed_ips' not in intf:
-        intf.tunnel.allowed_ips = '0.0.0.0/0'
+        intf.tunnel.allowed_ips = '::/0' if intf.tunnel.af == 'ipv6' else '0.0.0.0/0'
 
       if 'tunnel.persistent_keepalive' not in intf:
         intf.tunnel.persistent_keepalive = 25

@@ -34,7 +34,7 @@ The link/interface parameters supported by this plugin include:
 * **tunnel.private_key** (base64 string) -- this node's WireGuard private key (auto-generated when missing)
 * **tunnel.public_key** (base64 string) -- this node's WireGuard public key (derived or auto-generated when missing)
 * **tunnel.listen_port** (integer, 1-65535) -- UDP listen port (default: `51820`)
-* **tunnel.allowed_ips** (prefix string) -- allowed IPs for the remote peer (default: `0.0.0.0/0`)
+* **tunnel.allowed_ips** (prefix string) -- the peer's WireGuard [allowed IPs](plugin-tunnel-wireguard-allowed-ips) (default: `0.0.0.0/0` for IPv4 tunnels, `::/0` for IPv6 tunnels)
 * **tunnel.persistent_keepalive** (integer) -- keepalive interval in seconds (default: `25`)
 * **tunnel.mtu** (integer) -- tunnel interface MTU (default: `1420`)
 * **tunnel.af** (`ipv4` or `ipv6`) -- the transport address family (default: `ipv4`)
@@ -55,6 +55,18 @@ Key generation uses the **wireguard-tools** commands (`wg genkey` and `wg pubkey
 The remote peer's **tunnel.public_key** and UDP endpoint do not have to be specified; they are taken from the peer device attached to the same tunnel.
 
 Specify **tunnel.private_key**, **tunnel.public_key**, and **tunnel.listen_port** only when you need stable keys across lab recreations or non-default UDP ports.
+
+(plugin-tunnel-wireguard-allowed-ips)=
+## Allowed IPs
+
+**tunnel.allowed_ips** maps to WireGuard's *allowed IPs* (its cryptokey-routing table) for the remote peer. It is not an ACL applied to the transport (underlay) traffic; it filters the **inner** packets carried by the tunnel and serves two purposes at once:
+
+* **Outbound** -- only inner packets whose destination falls within **tunnel.allowed_ips** are encrypted and sent to the peer. Packets to any other destination are not routed into the tunnel.
+* **Inbound** -- decrypted packets are accepted only if their source address falls within **tunnel.allowed_ips**; anything else is dropped.
+
+These tunnels are point-to-point with a single peer and typically run a dynamic routing protocol (OSPF or OSPFv3) over the tunnel, where the set of prefixes reachable across the tunnel is not known in advance. The plugin therefore defaults **tunnel.allowed_ips** to a default route (`0.0.0.0/0` for IPv4 tunnels, `::/0` for IPv6 tunnels) so that any inner traffic and any dynamically learned next hop is permitted in both directions.
+
+Set **tunnel.allowed_ips** to a narrower prefix only when you want to restrict which inner destinations may traverse the tunnel (for example, a static point-to-point tunnel without a routing protocol). The value applies to a single peer, so it must be wide enough to cover every inner prefix you expect that peer to send or receive.
 
 (plugin-tunnel-wireguard-source)=
 ## Specifying Tunnel Source and Destination
@@ -82,7 +94,7 @@ The device configuration script:
 
 * Creates the WireGuard interface, configures the peer, and waits up to 60 seconds for the WireGuard handshake to complete.
 * Assigns a link-local IPv6 address to the tunnel interface when **tunnel.af** is **ipv6**. WireGuard interfaces do not get a kernel-assigned link-local address; OSPFv3 needs one to form adjacencies over the tunnel.
-* Configures transport-VRF underlay routing when **tunnel.vrf** is set. The WireGuard interface stays in the global routing table; encrypted packets are marked with **fwmark** and steered into the transport VRF routing table with a policy routing rule. IPv4 transport tunnels also enable **net.ipv4.udp_l3mdev_accept**.
+* Configures transport-VRF underlay routing when **tunnel.vrf** is set. The WireGuard interface stays in the global routing table; encrypted packets are marked with **fwmark** and steered into the transport VRF routing table with a policy routing rule. It also enables **net.ipv4.udp_l3mdev_accept** so the global WireGuard listening socket accepts packets arriving on the VRF underlay. That sysctl governs both IPv4 and IPv6 UDP sockets (there is no **net.ipv6** counterpart), so it applies to IPv4 and IPv6 transport tunnels alike.
 
 ## Examples
 
@@ -106,64 +118,6 @@ links:
 ```
 
 You can find an integration test based on this topology in `tests/integration/tunnel/03-wireguard.yml`.
-
-(wireguard-tunnel-vrf-example)=
-### WireGuard tunnel in a transport VRF
-
-The following topology builds a two-router network with a WireGuard tunnel in the **transport** VRF. Keys are auto-generated here as well:
-
-```
-plugin: [ tunnel.wireguard ]
-module: [ ospf, vrf ]
-
-vrfs:
-  transport:
-
-links:
-- r1:
-  r2:
-  vrf: transport
-- r1:
-  r2:
-  tunnel.mode: wireguard
-  tunnel.vrf: transport
-```
-
-You can find an integration test based on this topology in `tests/integration/tunnel/04-wireguard-vrf.yml`. That test uses explicit keys and a non-default **tunnel.listen_port** to keep UDP ports stable across lab runs.
-
-(wireguard-tunnel-ipv6-example)=
-### WireGuard tunnel over IPv6 transport
-
-The following topology builds a WireGuard tunnel with IPv6 transport addresses and OSPFv3 over the tunnel. Set **tunnel.allowed_ips** to **::/0** for IPv6 tunnels:
-
-```
-plugin: [ tunnel.wireguard ]
-module: [ ospf ]
-
-addressing:
-  loopback:
-    ipv4: False
-    ipv6: 2001:db8:1::/48
-  lan:
-    ipv4: False
-    ipv6: 2001:db8:2::/48
-  p2p:
-    ipv4: False
-    ipv6: 2001:db8:3::/48
-
-links:
-- r1:
-  r2:
-  role: core
-- r1:
-  r2:
-  tunnel.mode: wireguard
-  tunnel.af: ipv6
-  tunnel.allowed_ips: ::/0
-  tunnel.source.link.role: core
-```
-
-You can find an integration test based on this topology in `tests/integration/tunnel/05-wireguard-ipv6.yml`.
 
 (wireguard-tunnel-vrf-ipv6-example)=
 ### WireGuard tunnel in a transport VRF with IPv6 transport
@@ -196,7 +150,6 @@ links:
   r2:
   tunnel.mode: wireguard
   tunnel.af: ipv6
-  tunnel.allowed_ips: ::/0
   tunnel.vrf: transport
 ```
 
