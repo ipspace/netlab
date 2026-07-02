@@ -11,6 +11,7 @@ from netsim.augment import links as _links
 from netsim.augment import nodes as _nodes
 from netsim.data import get_box
 from netsim.utils import log
+from netsim.utils import routing as _routing
 from netsim.utils import tunnel as _tunnel
 
 _config_name = 'tunnel.wireguard'
@@ -118,11 +119,17 @@ def get_linkname(topology: Box, linkindex: int) -> str:
   link = _links.get_link_by_index(topology,linkindex)
   return link._linkname if link is not None else 'unknown'
 
-def _interface_matches_source(
+def _interface_has_af(intf: Box, af: str) -> bool:
+  return af in intf and isinstance(intf[af],str)
+
+def _interface_matches_constraints(
       intf: Box,
       t_intf: Box,
-      topology: Box,
-      t_af: str) -> bool:
+      topology: Box) -> bool:
+  '''
+  Check whether an interface matches the tunnel.source constraints
+  (interface type, VRF, link name, and link role) regardless of address family
+  '''
   t_vrf  = t_intf.get('tunnel.vrf',None)
   t_type = t_intf.get('tunnel.source.type',None)
   t_name = t_intf.get('tunnel.source.link.name',None)
@@ -152,10 +159,41 @@ def _interface_matches_source(
       if link is None or t_role != link.get('role',None):
         return False
 
-  if t_af not in intf:
-    return False
+  return True
 
-  return isinstance(intf[t_af],str)
+def _interface_matches_source(
+      intf: Box,
+      t_intf: Box,
+      topology: Box,
+      t_af: str) -> bool:
+  return _interface_matches_constraints(intf,t_intf,topology) and _interface_has_af(intf,t_af)
+
+def _source_iflist(ndata: Box, intf: Box) -> list:
+  '''
+  Return the candidate underlay source interfaces, adding the loopback when the
+  tunnel source is pinned to a (global) loopback
+  '''
+  iflist = ndata.get('interfaces',[])
+  if intf.get('tunnel.source.type') == 'loopback' and 'tunnel.vrf' not in intf and 'loopback' in ndata:
+    iflist = iflist + [ ndata.loopback ]
+  return iflist
+
+def infer_tunnel_af(ndata: Box, intf: Box, topology: Box) -> str:
+  '''
+  Infer the tunnel transport address family from the candidate underlay
+  interfaces. Prefer IPv4 when available (backward compatible), fall back to
+  IPv6 for IPv6-only underlays.
+  '''
+  has_ipv6 = False
+  for src_intf in _source_iflist(ndata,intf):
+    if not _interface_matches_constraints(src_intf,intf,topology):
+      continue
+    if _interface_has_af(src_intf,'ipv4'):
+      return 'ipv4'
+    if _interface_has_af(src_intf,'ipv6'):
+      has_ipv6 = True
+
+  return 'ipv6' if has_ipv6 else 'ipv4'
 
 def get_wireguard_source(
       ndata: Box,
@@ -172,9 +210,7 @@ def get_wireguard_source(
   if t_source.get('ifindex') or t_source.get('link.name'):
     return _tunnel.get_tunnel_source(ndata,intf,topology)
 
-  iflist = ndata.get('interfaces',[])
-  if t_source.get('type') == 'loopback' and 'tunnel.vrf' not in intf and 'loopback' in ndata:
-    iflist = iflist + [ ndata.loopback ]
+  iflist = _source_iflist(ndata,intf)
 
   peer_match = None
   first_match = None
@@ -211,8 +247,9 @@ def wireguard_link_local(intf: Box) -> None:
   if not isinstance(intf.ipv6,str):
     return
 
-  host_id = str(ipaddress.ip_interface(intf.ipv6).ip).split(':')[-1]
-  intf._ipv6_link_local = f'fe80::{host_id}/64'
+  # Reuse the interface identifier (low 64 bits) of the overlay address so the
+  # two tunnel endpoints get distinct link-local addresses.
+  intf._ipv6_link_local = _routing.get_ipv6_link_local(intf.ipv6)
 
 def post_transform(topology: Box) -> None:
   '''
@@ -250,7 +287,7 @@ def post_transform(topology: Box) -> None:
       # link validation (before link->interface propagation) and would then win
       # over an explicit link-level override during the interface merge.
       if 'tunnel.af' not in intf:
-        intf.tunnel.af = 'ipv4'
+        intf.tunnel.af = infer_tunnel_af(ndata,intf,topology)
 
       if 'tunnel.allowed_ips' not in intf:
         intf.tunnel.allowed_ips = '::/0' if intf.tunnel.af == 'ipv6' else '0.0.0.0/0'

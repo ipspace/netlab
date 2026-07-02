@@ -26,6 +26,15 @@ def get_address(addr: str) -> str:
 def get_prefix(addr: str) -> str:
   return str(ipaddress.ip_interface(addr).network)
 
+# Derive a deterministic IPv6 link-local address (fe80::/64) reusing the low 64
+# bits (interface identifier) of the supplied IPv6 address or prefix. The IID is
+# unique per interface, so the two ends of a point-to-point link never collide
+# (unlike a node-local ifindex).
+#
+def get_ipv6_link_local(addr: typing.Union[str,int]) -> str:
+  iid = int(ipaddress.ip_interface(addr).ip) & ((1 << 64) - 1)
+  return f'{ipaddress.IPv6Address((0xfe80 << 112) | iid)}/64'
+
 # try_intf_address is used when validation functions need an IP address from an
 # interface address. The target address could be hostname, so we only try our best
 #

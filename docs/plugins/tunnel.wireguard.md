@@ -37,7 +37,7 @@ The link/interface parameters supported by this plugin include:
 * **tunnel.allowed_ips** (prefix string) -- the peer's WireGuard [allowed IPs](plugin-tunnel-wireguard-allowed-ips) (default: `0.0.0.0/0` for IPv4 tunnels, `::/0` for IPv6 tunnels)
 * **tunnel.persistent_keepalive** (integer) -- keepalive interval in seconds (default: `25`)
 * **tunnel.mtu** (integer) -- tunnel interface MTU (default: `1420`)
-* **tunnel.af** (`ipv4` or `ipv6`) -- the transport address family (default: `ipv4`)
+* **tunnel.af** (`ipv4` or `ipv6`) -- the transport address family. When not specified, it is inferred from the underlay source interface: `ipv4` when an IPv4 address is available, `ipv6` for an IPv6-only underlay.
 * **tunnel.vrf** (VRF name) -- the transport VRF (default: global routing table)
 * **tunnel.source** -- the [source interface](plugin-tunnel-wireguard-source) for the tunnel underlay
 
@@ -122,7 +122,7 @@ You can find an integration test based on this topology in `tests/integration/tu
 (wireguard-tunnel-vrf-ipv6-example)=
 ### WireGuard tunnel in a transport VRF with IPv6 transport
 
-Combine **tunnel.vrf** and **tunnel.af: ipv6** to run the WireGuard underlay in a transport VRF while keeping the tunnel interface and routing protocols such as OSPFv3 in the global routing table:
+Set **tunnel.vrf** to run the WireGuard underlay in a transport VRF while keeping the tunnel interface and routing protocols such as OSPFv3 in the global routing table. The IPv6 transport address family is inferred from the IPv6-only underlay:
 
 ```
 plugin: [ tunnel.wireguard ]
@@ -149,7 +149,6 @@ links:
 - r1:
   r2:
   tunnel.mode: wireguard
-  tunnel.af: ipv6
   tunnel.vrf: transport
 ```
 
