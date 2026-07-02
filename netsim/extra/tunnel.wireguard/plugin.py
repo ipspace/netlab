@@ -315,7 +315,7 @@ def post_transform(topology: Box) -> None:
         # 60 bytes for an IPv4 underlay) so it scales with jumbo-frame underlays.
         if 'mtu' not in intf:
           overhead = 80 if intf.tunnel.af == 'ipv6' else 60
-          intf.mtu = src_intf.get('mtu',1500) - overhead
+          intf.mtu = src_intf.get('mtu',ndata.get('mtu',1500)) - overhead
       else:
         log.error(
           f'Cannot get {intf.tunnel.af} tunnel source for link {get_linkname(topology,intf.linkindex)} on node {node}',
