@@ -55,6 +55,7 @@ The following table describes the per-platform support of individual router-leve
 | ------------------------ |:-:|:-:|:-:|:-:|:-:|
 | Arista EOS               | ✅| ✅| ✅| ✅| ✅|
 | Aruba AOS-CX             | ✅| ✅| ✅| ✅| ✅|
+| BIRD                     | ✅| ✅| ✅| ✅| ❌ | 
 | Cisco ASAv               | ✅| ✅| ❌ | ❌ | ✅|
 | Cisco IOSv/IOSvL2        | ✅| ✅| ✅| ✅| ✅|
 | Cisco IOS XE[^18v]       | ✅| ✅| ✅| ✅| ✅|
@@ -93,6 +94,7 @@ The following devices support BFD with OSPF:
 | ------------------------ | :--: | :--: |
 | Arista EOS               |  ✅  |  ❌   |
 | Aruba AOS-CX             |  ✅  |  ❌   |
+| BIRD                     |  ✅  |  ❌   |
 | Cisco IOS                |  ✅  |  ❌   |
 | Cisco IOS XE[^18v]       |  ✅  |  ❌   |
 | Cisco Nexus OS           |  ✅  |  ❌   |
@@ -118,12 +120,6 @@ The following devices support OSPF graceful restart:
 See [OSPFv2](https://release.netlab.tools/_html/coverage.ospf.ospfv2) and [OSPFv3](https://release.netlab.tools/_html/coverage.ospf.ospfv3) Integration Tests Results for more details.
 ```
 
-OSPF is also supported on these [routing daemons](platform-daemons):
-
-| Operating system         | Areas | Reference<br/>bandwidth | OSPFv3 | BFD  | BFD<br/>Strict-Mode |
-| ------------------------ |:--:|:--:|:--:|:--:|:--:|
-| BIRD                     | ✅ | ❌  | ✅ | ❌  | ❌  |
-
 (ospf-interface-support)=
 The following table documents the common interface-level OSPF features:
 
@@ -131,6 +127,7 @@ The following table documents the common interface-level OSPF features:
 | ------------------------ |:--:|:--:|:--:|:--:|
 | Arista EOS               | ✅ | ✅ | ✅ | ✅ |
 | Aruba AOS-CX             | ✅ | ✅ | ✅  | ✅ |
+| BIRD                     | ✅ | ✅ | ✅(*) | ✅ |
 | Cisco ASAv               | ✅ | [❗](caveats-asav) | ❌  | ✅ |
 | Cisco IOS                | ✅ | ✅ | ❌  | ✅ |
 | Cisco IOS XE[^18v]       | ✅ | ✅ | ✅ | ✅ |
@@ -153,16 +150,8 @@ The following table documents the common interface-level OSPF features:
 **Notes:**
 * Arista EOS, Cisco Nexus OS, SR Linux, and Dell OS10 support point-to-point and broadcast network types. Other network types will not be configured.
 * SR OS supports point-to-point, broadcast, and non-broadcast network types. It will not configure a point-to-multipoint network type.
-
-OSPF routing daemons support these interface-level features:
-
-| Operating system         | Cost  | Network<br />type | Unnumbered<br />IPv4 interfaces | Passive<br />interfaces |
-| ------------------------ |:--:|:--:|:--:|:--:|
-| BIRD                     | ✅ | ✅ | ✅(*) | ✅ |
-
-**Notes:**
-* Routing daemons usually have a single interface. Running OSPF on them seems frivolous unless you need OSPF to get paths toward remote endpoints of IBGP sessions.
-* Unnumbered IPv4 interface support requires a single unnumbered peer 
+* Control-plane daemons like BIRD usually have a single interface. Running OSPF on them seems frivolous unless you need OSPF to get paths toward remote endpoints of IBGP sessions.
+* Unnumbered IPv4 interfaces on BIRD require a single unnumbered peer 
 
 (ospf-interface-optional-support)=
 These devices also support optional OSPF interface attributes:
@@ -171,6 +160,7 @@ These devices also support optional OSPF interface attributes:
 | ------------------------ |:--:|:--:|:--:|:--:|
 | Arista EOS               | ✅ | ✅ | ✅ | ❌  |
 | Aruba AOS-CX             | ✅ | ✅ | ✅ | ❌  |
+| BIRD                     | ✅ | ✅ | ✅ | ❌ |
 | Cisco ASAv               | ✅ | ✅ | ✅ | ❌  |
 | Cisco IOSv/IOSvL2        | ✅ | ✅ | ✅ | ❌  |
 | Cisco IOS XE[^18v]       | ✅ | ✅ | ✅ | ❌  |
@@ -182,12 +172,6 @@ These devices also support optional OSPF interface attributes:
 | Extreme Networks EXOS    | ✅ | ✅ | ❌  | ❌  |
 | Junos[^Junos]            | ✅ | ✅ | ✅ | ❌  | 
 | OpenBSD                  | ✅ | ✅ | ✅ | ❌  |
-
-OSPF routing daemons support these optional OSPF interface attributes:
-
-| Operating system         | Interface<br>timers | Router<br />priority | Cleartext<br>password | MD5<br>digest |
-| ------------------------ |:--:|:--:|:--:|:--:|
-| BIRD                     | ✅ | ✅ | ✅ | ❌ |
 
 (ospf-node-parameters)=
 ## Node Parameters

@@ -82,7 +82,7 @@ Most devices behave as routers (or layer-3 switches); the following devices can 
 | Device | router | host | bridge |
 |-----------------------|:--:|:--:| :--:|
 | Arista EOS            | ✅ | ✅ | ✅ |
-| Bird                  | ✅ | ✅ | ❌  |
+| BIRD                  | ✅ | ✅ | ❌  |
 | Cisco IOS/IOS XE[^18v]| ✅ | ✅ | ✅ |
 | dnsmasq               | ❌  | ✅ | ❌  |
 | FRRouting             | ✅ | ✅ | ✅ |
@@ -241,7 +241,7 @@ _netlab_ uses Ansible playbooks and device-specific task lists to deploy device 
 
 [^LBS]: Initial device configurations, static routes, VLANs, and interface bonding are configured with host-side scripts executed in the container namespace. Custom configuration templates are assumed to be Linux scripts executed within the container ([more details](generic-linux-devices)).
 
-[^BBS]: Initial device configurations, VLANs, and link aggregation are configured with **bash** scripts. All other features are configured with the Bird configuration files.
+[^BBS]: Initial device configurations, VLANs, and link aggregation are configured with **bash** scripts. All other features are configured with the BIRD configuration files.
 
 [^DBS]: Initial device configurations, VLANs, static routes, and link aggregation are configured with **bash** scripts. All other features are configured with the dnsmasq configuration files.
 
@@ -386,6 +386,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | --------------------- | :--: | :--: | :--: | :--: | :--: |
 | Arista EOS            | ✅   |  ✅  |   ❌  |  ✅  |  ✅  |
 | Aruba AOS-CX          | ✅   |  ❌   |   ❌  |  ✅  |   ❌  |
+| BIRD Internet Routing Daemon | ✅ [❗](caveats-bird) | ❌ | ❌ | ✅ [❗](caveats-bird) | ❌ |
 | Cisco ASAv            | ✅ [❗](caveats-asav) | ✅ [❗](caveats-asav) | ❌ | ✅ | ❌ |
 | Cisco IOS/IOS XE[^18v]| ✅   |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco IOS XR[^XR]     | ✅   |  ✅  |   ❌  |  ✅  |   ❌  |
@@ -404,12 +405,6 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | OpenBSD               | ✅   |   ❌   |   ❌  | ✅   | ✅   |
 | Sonic                 |  ❌   |   ❌   |   ❌  | ✅  |   ❌  |
 | VyOS                  | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
-
-Routing protocol [configuration modules](module-reference.md) are also supported on these daemons:
-
-| Operating system      | [OSPF](module/ospf.md) | [IS-IS](module/isis.md) | [BGP](module/bgp.md) | [RIPv2/ng](module/ripv2.md) |
-|------------------------------|:--:|:--:|:--:|:--:|
-| BIRD Internet Routing Daemon | ✅ [❗](caveats-bird) | ❌ | ✅ [❗](caveats-bird) | ❌ |
 
 These devices support additional control-plane protocols or BGP address families:
 
@@ -494,15 +489,10 @@ Network services [configuration modules](module-reference.md) are supported on t
 | Operating system      | [DHCP](module/dhcp.md) | [DHCPv6](module/dhcp.md) |
 | --------------------- | :--: | :--: |
 | Arista EOS            | ✅   |  ✅  |
+| dnsmasq               | ✅   |  ✅  |
 | Cisco CSR 1000v       | ✅   |  ✅  |
 | Cisco IOSv/IOSvL2     | ✅   |  ✅  |
 | Cumulus Linux         | ✅   |  ✅  |
-
-Network services [configuration modules](module-reference.md) are also supported on these daemons:
-
-| Operating system      | [DHCP](module/dhcp.md) | [DHCPv6](module/dhcp.md) |
-| --------------------- | :--: | :--: |
-| dnsmasq               | ✅   |  ✅  |
 
 ```{tip}
 See [integration test results](https://release.netlab.tools/) for more details.
@@ -516,6 +506,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | --------------------- |:--:|:--:|:--:|:--:|:--:|
 | Arista EOS            | ✅ | ✅ | ❌ | ✅ | ✅ |
 | Aruba AOS-CX          | ✅ | ❌ | ❌ | ✅ | ❌ |
+| BIRD                  | ✅ | ❌ | ❌ | ✅ | ❌ |
 | Cisco ASAv            | ❌ | ✅ | ❌ | ✅ | ❌ |
 | Cisco IOS/IOS XE[^18v]| ✅ | ✅ | ✅ | ✅ | ❌ |
 | Cisco IOS XR[^XR]     | ✅ | ✅ | ❌ | ✅ | ✅ |
