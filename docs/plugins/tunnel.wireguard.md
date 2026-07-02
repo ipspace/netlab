@@ -36,7 +36,7 @@ The link/interface parameters supported by this plugin include:
 * **tunnel.listen_port** (integer, 1-65535) -- UDP listen port (default: `51820`)
 * **tunnel.allowed_ips** (prefix string) -- the peer's WireGuard [allowed IPs](plugin-tunnel-wireguard-allowed-ips) (default: `0.0.0.0/0` for IPv4 tunnels, `::/0` for IPv6 tunnels)
 * **tunnel.persistent_keepalive** (integer) -- keepalive interval in seconds (default: `25`)
-* **tunnel.mtu** (integer) -- tunnel interface MTU (default: `1420`)
+* **mtu** (integer) -- the WireGuard tunnel interface MTU (the standard link/interface `mtu` attribute). When not specified, it is derived from the underlay source interface MTU minus the WireGuard encapsulation overhead (60 bytes for an IPv4 underlay, 80 bytes for an IPv6 underlay), so it scales with jumbo-frame underlays. With a 1500-byte underlay this yields `1440` for IPv4 transport and `1420` for IPv6 transport.
 * **tunnel.af** (`ipv4` or `ipv6`) -- the transport address family. When not specified, it is inferred from the underlay source interface: `ipv4` when an IPv4 address is available, `ipv6` for an IPv6-only underlay.
 * **tunnel.vrf** (VRF name) -- the transport VRF (default: global routing table)
 * **tunnel.source** -- the [source interface](plugin-tunnel-wireguard-source) for the tunnel underlay

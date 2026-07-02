@@ -220,6 +220,7 @@ def get_wireguard_source(
 
     src_box = get_box({
       'ifname': src_intf.ifname,
+      'mtu': src_intf.get('mtu',1500),
       t_af: str(ipaddress.ip_interface(src_intf[t_af]).ip),
     })
     if first_match is None:
@@ -295,9 +296,6 @@ def post_transform(topology: Box) -> None:
       if 'tunnel.persistent_keepalive' not in intf:
         intf.tunnel.persistent_keepalive = 25
 
-      if 'tunnel.mtu' not in intf:
-        intf.tunnel.mtu = 1420
-
       # Tell the initial config script to create a WireGuard netdev (with an
       # optional IPv6 link-local address) before FRR is configured.
       intf._linux_device_type = 'wireguard'
@@ -315,6 +313,12 @@ def post_transform(topology: Box) -> None:
       src_intf = get_wireguard_source(ndata,intf,topology,ngb.node)
       if src_intf:
         intf.tunnel._source = src_intf
+        # Derive the WireGuard interface MTU from the underlay source interface
+        # MTU minus the encapsulation overhead (80 bytes for an IPv6 underlay,
+        # 60 bytes for an IPv4 underlay) so it scales with jumbo-frame underlays.
+        if 'mtu' not in intf:
+          overhead = 80 if intf.tunnel.af == 'ipv6' else 60
+          intf.mtu = src_intf.get('mtu',1500) - overhead
       else:
         log.error(
           f'Cannot get {intf.tunnel.af} tunnel source for link {get_linkname(topology,intf.linkindex)} on node {node}',
