@@ -29,15 +29,20 @@ setup_wg_vrf_underlay() {
   local rule_pref="$2"
   local tunnel_af="$3"
 
-  if [ "${tunnel_af}" = "ipv6" ]; then
-    if ! ip -6 rule show pref "${rule_pref}" 2>/dev/null | grep -q "fwmark ${rule_pref}.*lookup ${vrf_table}"; then
-      ip -6 rule add pref "${rule_pref}" fwmark "${rule_pref}" lookup "${vrf_table}"
-    fi
-  else
-    sysctl -qw net.ipv4.udp_l3mdev_accept=1
-    if ! ip rule show pref "${rule_pref}" 2>/dev/null | grep -q "fwmark ${rule_pref}.*lookup ${vrf_table}"; then
-      ip rule add pref "${rule_pref}" fwmark "${rule_pref}" lookup "${vrf_table}"
-    fi
+  # The global WireGuard listening socket must accept encrypted packets that
+  # arrive on a VRF (l3mdev) underlay interface. This is gated by the kernel's
+  # udp_l3mdev_accept toggle, which is exposed only as net.ipv4.udp_l3mdev_accept
+  # even though it applies to IPv6 too: the UDP l3mdev socket-match helper reads
+  # net->ipv4.sysctl_udp_l3mdev_accept regardless of the socket's address family,
+  # and there is deliberately no net.ipv6 counterpart. So we set it for both the
+  # IPv4 and IPv6 tunnel underlays.
+  sysctl -qw net.ipv4.udp_l3mdev_accept=1
+
+  local ip_af=""
+  [ "${tunnel_af}" = "ipv6" ] && ip_af="-6"
+
+  if ! ip ${ip_af} rule show pref "${rule_pref}" 2>/dev/null | grep -q "fwmark ${rule_pref}.*lookup ${vrf_table}"; then
+    ip ${ip_af} rule add pref "${rule_pref}" fwmark "${rule_pref}" lookup "${vrf_table}"
   fi
 }
 #
