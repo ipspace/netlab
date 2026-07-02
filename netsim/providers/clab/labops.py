@@ -110,14 +110,10 @@ def load_kmods(topology: Box) -> None:
     # At this point, we have device-specific dictionary mapping netlab modules into kernel modules
     #
     for m in (['initial']+ndata.get('module',[])+ndata.get('config',[])):  # Now iterate over all the netlab modules the node uses
-      if m in kdata:
-        kmods = kdata[m]
-      else:
-        kmod_key = m.replace('.','@')                       # For plugins like tunnel.gre, use the @-as-. hack
-        if kmod_key not in kdata:                           # ... and if the netlab modules does not need kernel modules
-          continue                                          # ... move on
-        kmods = kdata[kmod_key]
-      for kmod in kmods:                                    # Next, add individual kernel modules in the kdata entry
+      kmod_key = m.replace('.','@')                         # Module names have no dots, plugins like tunnel.gre need to use @-as-.
+      if kmod_key not in kdata:                             # The netlab module does not need any kernel modules
+        continue                                            # ... move on
+      for kmod in kdata[kmod_key]:                          # Next, add individual kernel modules in the kdata entry
         append_to_list(kmod_list,m,kmod)                    # ... to the module-specific list of kernel mdules
 
   # Now we have lists of kernel modules that have to be loaded based on netlab modules used in lab topology
