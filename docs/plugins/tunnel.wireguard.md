@@ -88,7 +88,7 @@ The tunnel destination does not have to be specified; it's taken from the source
 
 ## Device Configuration
 
-On FRR nodes using the **clab** provider, the plugin installs the **wireguard-tools** package during the **initial** device configuration (before the management VRF is created) and configures tunnels with a shell script deployed after the **vrf** module (when used).
+The plugin works on FRR nodes with either the **clab** or **libvirt** provider. It adds the **wireguard-tools** package to the node's package list, which is installed during the **initial** device configuration (on the **clab** provider, before the management VRF is created). Tunnels are then configured with a shell script deployed after the **vrf** module (when used).
 
 The device configuration script:
 
