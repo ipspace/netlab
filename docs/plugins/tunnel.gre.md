@@ -10,6 +10,7 @@ The plugin includes Jinja2 templates for the following platforms:
 | Operating system    | GRE over<br>IPv4 | GRE over<br>IPv6 | Transport<br>VRF |
 |--------------|:-:|:-:|:-:|
 | Cisco IOS/XE[^18v] |✅|✅|✅|
+| FRR                 |✅|✅|✅|
 
 [^18v]: Includes Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
