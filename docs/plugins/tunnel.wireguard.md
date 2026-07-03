@@ -34,7 +34,7 @@ The link/interface parameters supported by this plugin include:
 * **tunnel.private_key** (base64 string) -- this node's WireGuard private key (auto-generated when missing)
 * **tunnel.public_key** (base64 string) -- this node's WireGuard public key (derived or auto-generated when missing)
 * **tunnel.listen_port** (integer, 1-65535) -- UDP listen port (default: `51820`)
-* **tunnel.allowed_ips** (prefix string) -- the peer's WireGuard [allowed IPs](plugin-tunnel-wireguard-allowed-ips) (default: `0.0.0.0/0` for IPv4 tunnels, `::/0` for IPv6 tunnels)
+* **tunnel.allowed_ips** (prefix string) -- the peer's WireGuard [allowed IPs](plugin-tunnel-wireguard-allowed-ips) (default: a default route per active address family, so `0.0.0.0/0`, `::/0`, or both `0.0.0.0/0,::/0` for a dual-stack tunnel)
 * **tunnel.persistent_keepalive** (integer) -- keepalive interval in seconds (default: `25`)
 * **mtu** (integer) -- the WireGuard tunnel interface MTU (the standard link/interface `mtu` attribute). When not specified, it is derived from the underlay source interface MTU minus the WireGuard encapsulation overhead (60 bytes for an IPv4 underlay, 80 bytes for an IPv6 underlay), so it scales with jumbo-frame underlays. With a 1500-byte underlay this yields `1440` for IPv4 transport and `1420` for IPv6 transport.
 * **tunnel.af** (`ipv4` or `ipv6`) -- the transport address family. When not specified, it is inferred from the underlay source interface: `ipv4` when an IPv4 address is available, `ipv6` for an IPv6-only underlay.
@@ -64,7 +64,7 @@ Specify **tunnel.private_key**, **tunnel.public_key**, and **tunnel.listen_port*
 * **Outbound** -- only inner packets whose destination falls within **tunnel.allowed_ips** are encrypted and sent to the peer. Packets to any other destination are not routed into the tunnel.
 * **Inbound** -- decrypted packets are accepted only if their source address falls within **tunnel.allowed_ips**; anything else is dropped.
 
-These tunnels are point-to-point with a single peer and typically run a dynamic routing protocol (OSPF or OSPFv3) over the tunnel, where the set of prefixes reachable across the tunnel is not known in advance. The plugin therefore defaults **tunnel.allowed_ips** to a default route (`0.0.0.0/0` for IPv4 tunnels, `::/0` for IPv6 tunnels) so that any inner traffic and any dynamically learned next hop is permitted in both directions.
+These tunnels are point-to-point with a single peer and typically run a dynamic routing protocol (OSPF or OSPFv3) over the tunnel, where the set of prefixes reachable across the tunnel is not known in advance. The plugin therefore defaults **tunnel.allowed_ips** to a default route per active address family so that any inner traffic and any dynamically learned next hop is permitted in both directions. The active address families are taken from the transport VRF when the tunnel is in a VRF, otherwise from the node's global routing table, so a dual-stack tunnel defaults to `0.0.0.0/0,::/0`.
 
 Set **tunnel.allowed_ips** to a narrower prefix only when you want to restrict which inner destinations may traverse the tunnel (for example, a static point-to-point tunnel without a routing protocol). The value applies to a single peer, so it must be wide enough to cover every inner prefix you expect that peer to send or receive.
 

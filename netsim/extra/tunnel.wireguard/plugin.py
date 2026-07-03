@@ -1,7 +1,6 @@
 
 import ipaddress
 import subprocess
-import typing
 
 from box import Box
 
@@ -12,7 +11,8 @@ from netsim.augment import nodes as _nodes
 from netsim.data import get_box
 from netsim.utils import log
 from netsim.utils import routing as _routing
-from netsim.utils import tunnel as _tunnel
+
+from .. import tunnel as _tunnel
 
 _config_name = 'tunnel.wireguard'
 
@@ -119,119 +119,6 @@ def get_linkname(topology: Box, linkindex: int) -> str:
   link = _links.get_link_by_index(topology,linkindex)
   return link._linkname if link is not None else 'unknown'
 
-def _interface_has_af(intf: Box, af: str) -> bool:
-  return af in intf and isinstance(intf[af],str)
-
-def _interface_matches_constraints(
-      intf: Box,
-      t_intf: Box,
-      topology: Box) -> bool:
-  '''
-  Check whether an interface matches the tunnel.source constraints
-  (interface type, VRF, link name, and link role) regardless of address family
-  '''
-  t_vrf  = t_intf.get('tunnel.vrf',None)
-  t_type = t_intf.get('tunnel.source.type',None)
-  t_name = t_intf.get('tunnel.source.link.name',None)
-  t_role = t_intf.get('tunnel.source.link.role',None)
-
-  if t_type is None:
-    if intf.type in ['loopback','tunnel']:
-      return False
-  elif intf.type != t_type:
-    return False
-
-  if t_vrf is None:
-    if 'vrf' in intf:
-      return False
-  elif t_vrf != intf.get('vrf',None):
-    return False
-
-  if t_name and t_name != intf.get('name',None):
-    return False
-
-  if t_role:
-    if 'role' in intf:
-      if t_role != intf.role:
-        return False
-    else:
-      link = _links.get_link_by_index(topology,intf.linkindex)
-      if link is None or t_role != link.get('role',None):
-        return False
-
-  return True
-
-def _interface_matches_source(
-      intf: Box,
-      t_intf: Box,
-      topology: Box,
-      t_af: str) -> bool:
-  return _interface_matches_constraints(intf,t_intf,topology) and _interface_has_af(intf,t_af)
-
-def _source_iflist(ndata: Box, intf: Box) -> list:
-  '''
-  Return the candidate underlay source interfaces, adding the loopback when the
-  tunnel source is pinned to a (global) loopback
-  '''
-  iflist = ndata.get('interfaces',[])
-  if intf.get('tunnel.source.type') == 'loopback' and 'tunnel.vrf' not in intf and 'loopback' in ndata:
-    iflist = iflist + [ ndata.loopback ]
-  return iflist
-
-def infer_tunnel_af(ndata: Box, intf: Box, topology: Box) -> str:
-  '''
-  Infer the tunnel transport address family from the candidate underlay
-  interfaces. Prefer IPv4 when available (backward compatible), fall back to
-  IPv6 for IPv6-only underlays.
-  '''
-  has_ipv6 = False
-  for src_intf in _source_iflist(ndata,intf):
-    if not _interface_matches_constraints(src_intf,intf,topology):
-      continue
-    if _interface_has_af(src_intf,'ipv4'):
-      return 'ipv4'
-    if _interface_has_af(src_intf,'ipv6'):
-      has_ipv6 = True
-
-  return 'ipv6' if has_ipv6 else 'ipv4'
-
-def get_wireguard_source(
-      ndata: Box,
-      intf: Box,
-      topology: Box,
-      peer_node: str) -> typing.Optional[Box]:
-  '''
-  Find the tunnel underlay interface. When the source is not pinned to a
-  specific interface, prefer the underlay link connected to the tunnel peer.
-  '''
-  t_af = intf.get('tunnel.af','ipv4')
-  t_source = intf.get('tunnel.source',Box())
-
-  if t_source.get('ifindex') or t_source.get('link.name'):
-    return _tunnel.get_tunnel_source(ndata,intf,topology)
-
-  iflist = _source_iflist(ndata,intf)
-
-  peer_match = None
-  first_match = None
-  for src_intf in iflist:
-    if not _interface_matches_source(src_intf,intf,topology,t_af):
-      continue
-
-    src_box = get_box({
-      'ifname': src_intf.ifname,
-      'mtu': src_intf.get('mtu',1500),
-      t_af: str(ipaddress.ip_interface(src_intf[t_af]).ip),
-    })
-    if first_match is None:
-      first_match = src_box
-    for ngb in src_intf.get('neighbors',[]):
-      if ngb.node == peer_node:
-        peer_match = src_box
-        break
-
-  return peer_match or first_match or _tunnel.get_tunnel_source(ndata,intf,topology)
-
 def wireguard_link_local(intf: Box) -> None:
   '''
   Set an IPv6 link-local address on a WireGuard tunnel interface.
@@ -283,21 +170,6 @@ def post_transform(topology: Box) -> None:
   for node,iflist in node_iflist.items():
     ndata = topology.nodes[node]
     for intf in iflist:
-      # Resolve tunnel defaults in code. We cannot rely on schema _default values
-      # because those are materialized on the per-node interface entries during
-      # link validation (before link->interface propagation) and would then win
-      # over an explicit link-level override during the interface merge.
-      if 'tunnel.af' not in intf:
-        intf.tunnel.af = infer_tunnel_af(ndata,intf,topology)
-
-      if 'tunnel.allowed_ips' not in intf:
-        intf.tunnel.allowed_ips = '::/0' if intf.tunnel.af == 'ipv6' else '0.0.0.0/0'
-
-      # Tell the initial config script to create a WireGuard netdev (with an
-      # optional IPv6 link-local address) before FRR is configured.
-      intf._linux_device_type = 'wireguard'
-      wireguard_link_local(intf)
-
       if len(intf.neighbors) != 1:
         log.error(
           f'WireGuard tunnel interface should have exactly one neighbor (found {len(intf.neighbors)})',
@@ -306,23 +178,48 @@ def post_transform(topology: Box) -> None:
           category=log.IncorrectValue)
         continue
 
-      ngb = intf.neighbors[0]
-      src_intf = get_wireguard_source(ndata,intf,topology,ngb.node)
-      if src_intf:
-        intf.tunnel._source_intf = src_intf
-        # Derive the WireGuard interface MTU from the underlay source interface
-        # MTU minus the encapsulation overhead (80 bytes for an IPv6 underlay,
-        # 60 bytes for an IPv4 underlay) so it scales with jumbo-frame underlays.
-        if 'mtu' not in intf:
-          overhead = 80 if intf.tunnel.af == 'ipv6' else 60
-          intf.mtu = src_intf.get('mtu',ndata.get('mtu',1500)) - overhead
-      else:
+      # Let the shared helper pick the underlay source interface (filtered on
+      # tunnel.af when set), then infer the transport AF from the selected
+      # interface: prefer IPv4, fall back to IPv6 for IPv6-only underlays.
+      u_iflist = _tunnel.get_tunnel_source(ndata,intf,topology)
+      if not u_iflist:
         log.error(
-          f'Cannot get {intf.tunnel.af} tunnel source for link {get_linkname(topology,intf.linkindex)} on node {node}',
+          f'Cannot get a tunnel source for link {get_linkname(topology,intf.linkindex)} on node {node}',
           more_data=f'Tunnel source data: {intf.tunnel.source if "tunnel.source" in intf else "none"}',
           category=log.MissingDependency,
           module='tunnel')
         continue
+
+      u_intf = u_iflist[0]
+      if 'tunnel.af' not in intf:
+        intf.tunnel.af = 'ipv4' if ('ipv4' in u_intf and isinstance(u_intf.ipv4,str)) else 'ipv6'
+
+      src_intf = get_box({
+        'ifname': u_intf.ifname,
+        'mtu': u_intf.get('mtu',ndata.get('mtu',1500)),
+        intf.tunnel.af: str(ipaddress.ip_interface(u_intf[intf.tunnel.af]).ip),
+      })
+      intf.tunnel._source_intf = src_intf
+
+      # Default the peer's allowed IPs (the inner/overlay prefixes carried by the
+      # tunnel) to a default route per active address family. Use the node's global
+      # active AFs, so dual-stack tunnels permit both ranges.
+      if 'tunnel.allowed_ips' not in intf:
+        af_active = ndata.get('af',{})
+        ranges = [ prefix for af,prefix in (('ipv4','0.0.0.0/0'),('ipv6','::/0')) if af_active.get(af) ]
+        intf.tunnel.allowed_ips = ','.join(ranges) or '0.0.0.0/0'
+
+      # Derive the WireGuard interface MTU from the underlay source interface
+      # MTU minus the encapsulation overhead (80 bytes for an IPv6 underlay,
+      # 60 bytes for an IPv4 underlay) so it scales with jumbo-frame underlays.
+      if 'mtu' not in intf:
+        overhead = 80 if intf.tunnel.af == 'ipv6' else 60
+        intf.mtu = src_intf.mtu - overhead
+
+      # Tell the initial config script to create a WireGuard netdev (with an
+      # optional IPv6 link-local address) before FRR is configured.
+      intf._linux_device_type = 'wireguard'
+      wireguard_link_local(intf)
 
       if 'name' in intf and '->' in intf.name and 'WireGuard' not in intf.name:
         intf.name += ' [WireGuard tunnel]'

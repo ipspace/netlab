@@ -61,14 +61,16 @@ def interfaces(node: Box, tunnel_type: str) -> typing.Generator:
 def get_tunnel_source(ndata: Box, t_intf: Box, topology: Box) -> typing.List[Box]:
   '''
   Find the tunnel source interface using (in descending order) tunnel.type,
-  tunnel.vrf, and various tunnel.source parameters. Viable interface(s) are
-  also checked for desired transport AF. Returns the list of viable interfaces.
+  tunnel.vrf, and various tunnel.source parameters. When tunnel.af is set,
+  only interfaces enabled for that transport AF are considered; otherwise
+  only interfaces with at least one numbered address are included. Returns
+  the list of viable interfaces.
   '''
   t_vrf  = t_intf.get('tunnel.vrf',None)
   t_type = t_intf.get('tunnel.source.type',None)
   t_name = t_intf.get('tunnel.source.link.name',None)
   t_role = t_intf.get('tunnel.source.link.role',None)
-  t_af   = t_intf.get('tunnel.af',None)
+  t_af   = t_intf.get('tunnel.af',None)           # Optional transport AF: filter interfaces on it when set
 
   iflist = ndata.get('interfaces',[])
   if 'loopback' in ndata and t_type == 'loopback' and t_vrf is None:
@@ -106,6 +108,8 @@ def get_tunnel_source(ndata: Box, t_intf: Box, topology: Box) -> typing.List[Box
         continue
       if not isinstance(intf[t_af],str):          # Cannot run tunnels from unnumbered interfaces
         continue
+    elif not any(af in intf and isinstance(intf[af],str) for af in ('ipv4','ipv6')):
+      continue
 
     underlay_iflist.append(intf)
 
@@ -119,6 +123,7 @@ def set_tunnel_source(t_intf: Box, u_iflist: list, ndata: Box, topology: Box) ->
   if u_iflist:
     u_intf = u_iflist[0]
     t_intf.tunnel._source.ifname = u_intf.ifname
+    t_intf.tunnel._source.mtu = u_intf.get('mtu',ndata.get('mtu',1500))
     t_af = t_intf.get('tunnel.af',None)
     for af in log.AF_LIST:
       if (t_af is None or af == t_af) and af in u_intf:
