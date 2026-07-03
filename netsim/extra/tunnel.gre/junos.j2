@@ -1,0 +1,25 @@
+{% if netlab_device_type in [ 'vjunos-router' ] %}
+chassis {
+    fpc 0 {
+        pic 0 {
+            tunnel-services bandwidth 1g;
+        }
+    }
+}
+{% endif %}
+
+interfaces {
+
+{% for intf in netlab_interfaces if intf.tunnel.mode|default('') in ['gre'] %}
+    {{intf.ifname}} {
+      tunnel {
+            source {{ intf.tunnel._source[intf.tunnel.af] }};
+            destination {{ intf.tunnel._destination[intf.tunnel.af] }};
+{%   if intf.tunnel.vrf is defined %}
+            routing-instance destination {{ intf.tunnel.vrf }}
+{%   endif %}
+      }
+    }
+{% endfor %}
+
+}
