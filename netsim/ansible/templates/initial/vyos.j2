@@ -13,6 +13,9 @@ set system host-name 'vyos-{{ inventory_hostname | replace("_","-") }}'
 {% if vlans is defined %}
 {% include 'vyos.vlan.j2' %}
 {% endif %}
+{% for x_dp in config|default([]) %}
+{%  include x_dp + '/vyos.initial.j2' ignore missing %}
+{% endfor %}
 
 {% if loopback.ipv4 is defined %}
 set interfaces dummy dum0 address {{ loopback.ipv4 }}
@@ -36,6 +39,8 @@ set interfaces dummy dum0 address {{ loopback.ipv6 }}
 {%     set ns.iface_level = "dummy" %}
 {%   elif l.ifname.startswith('bond') %}
 {%     set ns.iface_level = "bonding" %}
+{%   elif l.ifname.startswith('tun') %}
+{%     set ns.iface_level = "tunnel" %}
 {%   endif %}
 {#
 # Split interface name with vif, if needed
