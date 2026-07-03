@@ -158,9 +158,7 @@ def post_transform(topology: Box) -> None:
           category=log.IncorrectValue)
         continue
 
-      # Let the shared helper pick the underlay source interface (filtered on
-      # tunnel.af when set), then infer the transport AF from the selected
-      # interface: prefer IPv4, fall back to IPv6 for IPv6-only underlays.
+      # Let the shared helper pick the underlay source interface (filtered on tunnel.af when set)
       u_iflist = _tunnel.get_tunnel_source(ndata,intf,topology)
       if not u_iflist:
         log.error(
