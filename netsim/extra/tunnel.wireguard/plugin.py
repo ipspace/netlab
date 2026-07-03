@@ -187,14 +187,14 @@ def post_transform(topology: Box) -> None:
       # adjacencies, so on an IPv6 tunnel we derive a deterministic address from
       # the overlay interface identifier (low 64 bits) -- distinct per endpoint
       # -- for the initial config script to assign when it creates the interface.
-      if intf.tunnel.af == 'ipv6':
+      af_active = ndata.get('af',{})
+      if 'ipv6' in af_active:
         intf._ipv6_link_local = _routing.get_ipv6_link_local(intf.ipv6)
 
       # Default the peer's allowed IPs (the inner/overlay prefixes carried by the
       # tunnel) to a default route per active address family. Use the node's global
       # active AFs, so dual-stack tunnels permit both ranges.
       if 'tunnel.allowed_ips' not in intf:
-        af_active = ndata.get('af',{})
         ranges = [ prefix for af,prefix in (('ipv4','0.0.0.0/0'),('ipv6','::/0')) if af_active.get(af) ]
         intf.tunnel.allowed_ips = ','.join(ranges) or '0.0.0.0/0'
 
