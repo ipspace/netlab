@@ -119,26 +119,6 @@ def get_linkname(topology: Box, linkindex: int) -> str:
   link = _links.get_link_by_index(topology,linkindex)
   return link._linkname if link is not None else 'unknown'
 
-def wireguard_link_local(intf: Box) -> None:
-  '''
-  Set an IPv6 link-local address on a WireGuard tunnel interface.
-
-  WireGuard devices are ARPHRD_NONE (link/none), so the kernel forces
-  addr_gen_mode to 'none' and never assigns a link-local address (random and
-  stable-privacy modes are ignored). OSPFv3 needs one to form adjacencies, so
-  we derive a deterministic address that the initial config script assigns when
-  the interface is created.
-  '''
-  if intf.get('tunnel.af') != 'ipv6' or 'ipv6' not in intf:
-    return
-
-  if not isinstance(intf.ipv6,str):
-    return
-
-  # Reuse the interface identifier (low 64 bits) of the overlay address so the
-  # two tunnel endpoints get distinct link-local addresses.
-  intf._ipv6_link_local = _routing.get_ipv6_link_local(intf.ipv6)
-
 def post_transform(topology: Box) -> None:
   '''
   post_transform hook: check device support, set tunnel interface source/peer data
@@ -201,6 +181,15 @@ def post_transform(topology: Box) -> None:
       })
       intf.tunnel._source_intf = src_intf
 
+      # WireGuard devices are ARPHRD_NONE (link/none), so the kernel forces
+      # addr_gen_mode to 'none' and never assigns an IPv6 link-local address
+      # (random and stable-privacy modes are ignored). OSPFv3 needs one to form
+      # adjacencies, so on an IPv6 tunnel we derive a deterministic address from
+      # the overlay interface identifier (low 64 bits) -- distinct per endpoint
+      # -- for the initial config script to assign when it creates the interface.
+      if intf.tunnel.af == 'ipv6':
+        intf._ipv6_link_local = _routing.get_ipv6_link_local(intf.ipv6)
+
       # Default the peer's allowed IPs (the inner/overlay prefixes carried by the
       # tunnel) to a default route per active address family. Use the node's global
       # active AFs, so dual-stack tunnels permit both ranges.
@@ -219,7 +208,6 @@ def post_transform(topology: Box) -> None:
       # Tell the initial config script to create a WireGuard netdev (with an
       # optional IPv6 link-local address) before FRR is configured.
       intf._linux_device_type = 'wireguard'
-      wireguard_link_local(intf)
 
       if 'name' in intf and '->' in intf.name and 'WireGuard' not in intf.name:
         intf.name += ' [WireGuard tunnel]'
