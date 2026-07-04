@@ -215,6 +215,7 @@ def template_lookup_name(f_name: str, cfg_name: str, node: Box, topology: Box) -
 
   node._template_vars.config_module = cfg_name
   node._template_vars.custom_config = cfg_name
+  node._template_vars.custom_slash_config = cfg_name.replace('.','/')
   try:
     return _strings.eval_format(f_name,node._template_vars)
   except Exception as ex:
