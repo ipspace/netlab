@@ -7,11 +7,18 @@ import typing
 
 from box import Box
 
-from ..augment import devices as a_devices
-from ..augment import links as _links
-from ..data import get_box, global_vars
-from . import log
+from ...augment import devices as a_devices
+from ...augment import links as _links
+from ...data import get_empty_box, global_vars
+from ...utils import log
 
+
+def init(topology: Box) -> typing.NoReturn:
+  '''
+  Just in case someone has a great idea to use the 'tunnel' plugin, we
+  have to set them straight
+  '''
+  log.fatal("You cannot use the 'tunnel' plugin. Use a plugin for the tunnel mode you're interested in")
 
 def set_tunnel_type(topology: Box) -> None:
   """
@@ -51,21 +58,23 @@ def interfaces(node: Box, tunnel_type: str) -> typing.Generator:
     if intf.get('tunnel.mode',None) == tunnel_type:
       yield intf
 
-def get_tunnel_source(ndata: Box, t_intf: Box, topology: Box) -> typing.Optional[Box]:
+def get_tunnel_source(ndata: Box, t_intf: Box, topology: Box) -> typing.List[Box]:
   '''
   Find the tunnel source interface using (in descending order) tunnel.type,
   tunnel.vrf, and various tunnel.source parameters. Viable interface(s) are
-  also checked for desired transport AF. The first viable interface is returned
+  also checked for desired transport AF. Returns the list of viable interfaces.
   '''
   t_vrf  = t_intf.get('tunnel.vrf',None)
   t_type = t_intf.get('tunnel.source.type',None)
   t_name = t_intf.get('tunnel.source.link.name',None)
   t_role = t_intf.get('tunnel.source.link.role',None)
-  t_af   = t_intf.get('tunnel.af','ipv4')
+  t_af   = t_intf.get('tunnel.af',None)
 
   iflist = ndata.get('interfaces',[])
   if 'loopback' in ndata and t_type == 'loopback' and t_vrf is None:
     iflist = iflist + [ ndata.loopback ]
+
+  underlay_iflist = []
 
   for intf in iflist:
     if t_type is None:                            # No type means 'not loopback or tunnel'
@@ -90,17 +99,55 @@ def get_tunnel_source(ndata: Box, t_intf: Box, topology: Box) -> typing.Optional
       else:                                       # No interface role, let's check link role
         link = _links.get_link_by_index(topology,intf.linkindex)
         if link is None or t_role != link.get('role',None):
-          continue                                  # Mismatch in link role
+          continue                                # Mismatch in link role
 
-    if t_af not in intf:                          # Is the interface enabled for the desired tunnel transport AF
-      continue
+    if t_af:
+      if t_af not in intf:                        # Is the interface enabled for the desired tunnel transport AF
+        continue
+      if not isinstance(intf[t_af],str):          # Cannot run tunnels from unnumbered interfaces
+        continue
 
-    if not isinstance(intf[t_af],str):            # Cannot run tunnels from unnumbered interfaces
-      continue
+    underlay_iflist.append(intf)
 
-    return get_box({'ifname': intf.ifname, t_af: str(ipaddress.ip_interface(intf[t_af]).ip) })
+  return underlay_iflist
 
-  return None
+def set_tunnel_source(t_intf: Box, u_iflist: list, ndata: Box, topology: Box) -> bool:
+  '''
+  Set the tunnel interface _source parameters (ifname, optional AF)
+  or report an error
+  '''
+  if u_iflist:
+    u_intf = u_iflist[0]
+    t_intf.tunnel._source.ifname = u_intf.ifname
+    t_af = t_intf.get('tunnel.af',None)
+    for af in log.AF_LIST:
+      if (t_af is None or af == t_af) and af in u_intf:
+        if isinstance(u_intf[af],str):                      # We need just IP addresses for numbered interfaces
+          t_intf.tunnel._source[af] = str(ipaddress.ip_interface(u_intf[af]).ip)
+        else:                                               # Or 'True' for unnumbered ones (if supported)
+          t_intf.tunnel._source[af] = u_intf[af]
+
+    return True
+
+  msg_af = f'{t_intf.tunnel.af} ' if t_intf.get('tunnel.af',None) else ''
+  linkname = _links.get_linkname(topology,t_intf.linkindex)
+  t_src = get_empty_box()
+  if 'vrf' in t_intf.tunnel:
+    t_src.vrf = t_intf.tunnel.vrf
+  if 'tunnel.source' in t_intf:
+    t_src += t_intf.tunnel.source
+
+  log.error(
+    f'Cannot get {msg_af}tunnel source for link {linkname} on node {ndata.name}',
+    more_data=f'Tunnel source data: {t_src or "none"}',
+    category=log.MissingDependency,
+    module='tunnel')
+
+  return False
+
+def set_tunnel_name(intf: Box, t_mode: str) -> None:
+  if 'name' in intf and '->' in intf.name and t_mode not in intf.name:
+    intf.name += f' [{t_mode} tunnel]'
 
 def check_feature(
       ndata: Box,
