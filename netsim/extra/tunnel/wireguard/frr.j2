@@ -80,6 +80,9 @@ create_wg() {
 }
 #
 {% for intf in netlab_interfaces if intf.tunnel.mode|default('') in ['wireguard'] %}
+{%   set af = intf.tunnel.af %}
+{%   set dst = intf.tunnel._destination %}
+{%   set peer_endpoint = ('[' ~ dst[af] ~ ']:' ~ dst.listen_port) if af == 'ipv6' else (dst[af] ~ ':' ~ dst.listen_port) %}
 {%   set vrf_name = intf.tunnel.vrf|default('') %}
 {%   set vrf_table = vrfs[vrf_name].vrfidx if vrf_name and vrf_name in vrfs else '' %}
 {%   set rule_pref = 10000 + intf.ifindex if vrf_name and vrf_table else '' %}
@@ -87,8 +90,8 @@ create_wg \
   {{ intf.ifname }} \
   {{ intf.tunnel.private_key }} \
   {{ intf.tunnel.listen_port }} \
-  {{ intf.tunnel._peer.public_key }} \
-  {{ intf.tunnel._peer.endpoint }} \
+  {{ dst.public_key }} \
+  {{ peer_endpoint }} \
   {{ intf.tunnel.allowed_ips }} \
   {{ intf.tunnel.persistent_keepalive }} \
   {{ intf.mtu }} \

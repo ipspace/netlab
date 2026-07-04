@@ -49,18 +49,17 @@ def feature_check(topology: Box, t_mode: str, t_desc: str) -> dict:
 
   return node_iflist
 
-def tunnel_source(
+def tunnel_source_interfaces(
       topology: Box,
       node_iflist: dict,
       default_af: typing.Optional[str] = None,
-      t_name: str = '') -> None:
+      t_name: str = '') -> typing.Generator[tuple[Box, Box], None, None]:
   '''
-  Iterate over nodes using tunnels and figures out the source interfaces
-  for all tunnel interfaces
+  Set tunnel._source on each tunnel interface and yield (ndata, intf) tuples
+  for interfaces where the source lookup succeeded.
 
-  - node_iflist: contains lists of tunnel interfaces (returned by tunnel_feature_check)
-  - default_af:  has to be set for tunnels that are not dual-stack-aware
-  - t_name:      the string to add to interface description once we know it's a valid tunnel
+  Tunnel plugins can iterate over the generator to apply type-specific tweaks
+  after the shared source data is in place.
   '''
   for node in node_iflist.keys():
     ndata = topology.nodes[node]
@@ -74,6 +73,24 @@ def tunnel_source(
 
       if t_name:
         _tunnel.set_tunnel_name(intf,t_name)
+
+      yield ndata,intf
+
+def tunnel_source(
+      topology: Box,
+      node_iflist: dict,
+      default_af: typing.Optional[str] = None,
+      t_name: str = '') -> None:
+  '''
+  Iterate over nodes using tunnels and figures out the source interfaces
+  for all tunnel interfaces
+
+  - node_iflist: contains lists of tunnel interfaces (returned by tunnel_feature_check)
+  - default_af:  has to be set for tunnels that are not dual-stack-aware
+  - t_name:      the string to add to interface description once we know it's a valid tunnel
+  '''
+  for _ in tunnel_source_interfaces(topology,node_iflist,default_af,t_name):
+    pass
 
 def tunnel_destination(
       topology: Box,
