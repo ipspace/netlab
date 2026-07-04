@@ -27,7 +27,7 @@ VIRTUAL_INTERFACE_TYPES: typing.Final[typing.List[str]] = [
 # - get_linkname: returns a link name given its linkindex
 # - get_next_linkindex: returns a unique linkindex for a new link
 # - set_linkindex: Assign unique linkindex to every link
-# - set_linkname: Assign names to all links without them
+# - set_linknames: Assign names to all links without them
 
 def get_link_by_index(topology: Box, idx: int) -> typing.Optional[Box]:
   '''

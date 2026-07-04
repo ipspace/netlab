@@ -31,12 +31,11 @@ def feature_check(topology: Box, t_mode: str, t_desc: str) -> dict:
     if not t_iflist:                                        # No tunnel interfaces on this node?
       continue                                              # Cool, move on
 
-    node_iflist[node] = t_iflist
     if not _tunnel.check_feature(ndata,topology,f_name=t_mode,f_desc=t_desc):
       continue                                              # Device does not support tunnel features, move on
 
     VRF_OK = True
-    for intf in node_iflist[node]:                          # Next check: VRF features
+    for intf in t_iflist:                                   # Next check: VRF features
       if not 'tunnel.vrf' in intf:                          # Tunnel does not use transport VRF? Cool, move on
         continue
       VRF_OK = _tunnel.check_feature(ndata,topology,f_name=t_mode,f_desc=f'VRF {t_desc}',f_value='vrf')
@@ -45,6 +44,7 @@ def feature_check(topology: Box, t_mode: str, t_desc: str) -> dict:
     if not VRF_OK:                                          # If VRF check failed, move to next node
       continue
 
+    node_iflist[node] = t_iflist
     api.node_config(ndata,f'tunnel.{t_mode}')               # Remember that we need to configure tunnels
 
   return node_iflist
@@ -107,7 +107,7 @@ def tunnel_destination(
         log.error(
           f'Cannot find tunnel destination for node {ngb.node}',
           more_data=f'node {node} interface {intf.ifname} ({intf.name}) link {linkname}',
-          module='tunnel.{t_mode}',
+          module=f'tunnel.{t_mode}',
           category=log.MissingDependency)
         continue
 

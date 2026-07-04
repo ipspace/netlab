@@ -129,11 +129,11 @@ def set_tunnel_source(t_intf: Box, u_iflist: list, ndata: Box, topology: Box) ->
 
     return True
 
-  msg_af = t_intf.tunnel.af + ' ' if 'tunnel.af' in t_intf else ''
+  msg_af = f'{t_intf.tunnel.af} ' if t_intf.get('tunnel.af',None) else ''
   linkname = _links.get_linkname(topology,t_intf.linkindex)
   t_src = get_empty_box()
   if 'vrf' in t_intf.tunnel:
-    t_src.vrf = t_intf.vrf
+    t_src.vrf = t_intf.tunnel.vrf
   if 'tunnel.source' in t_intf:
     t_src += t_intf.tunnel.source
 
