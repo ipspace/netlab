@@ -27,16 +27,13 @@ def feature_check(topology: Box, t_mode: str, t_desc: str) -> dict:
   node_iflist: dict = {}
 
   for node,ndata in topology.nodes.items():
-    node_iflist[node] = []
-
-    # Initial interface pass: collect tunnel interfaces
-    #
-    node_iflist[node] = [ intf for intf in _tunnel.interfaces(ndata,'gre') ]
-    if not node_iflist:                                     # No GRE interfaces on this node?
+    t_iflist = [ intf for intf in _tunnel.interfaces(ndata,t_mode) ]
+    if not t_iflist:                                        # No tunnel interfaces on this node?
       continue                                              # Cool, move on
 
+    node_iflist[node] = t_iflist
     if not _tunnel.check_feature(ndata,topology,f_name=t_mode,f_desc=t_desc):
-      continue                                              # Device does not support GRE features, move on
+      continue                                              # Device does not support tunnel features, move on
 
     VRF_OK = True
     for intf in node_iflist[node]:                          # Next check: VRF features
@@ -110,7 +107,7 @@ def tunnel_destination(
         log.error(
           f'Cannot find tunnel destination for node {ngb.node}',
           more_data=f'node {node} interface {intf.ifname} ({intf.name}) link {linkname}',
-          module='tunnel.gre',
+          module='tunnel.{t_mode}',
           category=log.MissingDependency)
         continue
 

@@ -62,7 +62,7 @@ def get_tunnel_source(ndata: Box, t_intf: Box, topology: Box) -> typing.List[Box
   '''
   Find the tunnel source interface using (in descending order) tunnel.type,
   tunnel.vrf, and various tunnel.source parameters. Viable interface(s) are
-  also checked for desired transport AF. The first viable interface is returned
+  also checked for desired transport AF. Returns the list of viable interfaces.
   '''
   t_vrf  = t_intf.get('tunnel.vrf',None)
   t_type = t_intf.get('tunnel.source.type',None)
@@ -121,15 +121,18 @@ def set_tunnel_source(t_intf: Box, u_iflist: list, ndata: Box, topology: Box) ->
     t_intf.tunnel._source.ifname = u_intf.ifname
     t_af = t_intf.get('tunnel.af',None)
     for af in log.AF_LIST:
-      if t_af is None or af == t_af:
-        t_intf.tunnel._source[af] = str(ipaddress.ip_interface(u_intf[af]).ip)
+      if (t_af is None or af == t_af) and af in u_intf:
+        if isinstance(u_intf[af],str):                      # We need just IP addresses for numbered interfaces
+          t_intf.tunnel._source[af] = str(ipaddress.ip_interface(u_intf[af]).ip)
+        else:                                               # Or 'True' for unnumbered ones (if supported)
+          t_intf.tunnel._source[af] = u_intf[af]
 
     return True
 
   msg_af = t_intf.tunnel.af + ' ' if 'tunnel.af' in t_intf else ''
   linkname = _links.get_linkname(topology,t_intf.linkindex)
   t_src = get_empty_box()
-  if 'vrf' in t_intf:
+  if 'vrf' in t_intf.tunnel:
     t_src.vrf = t_intf.vrf
   if 'tunnel.source' in t_intf:
     t_src += t_intf.tunnel.source
