@@ -152,4 +152,4 @@ links:
   tunnel.vrf: transport
 ```
 
-You can find an integration test based on this topology in `tests/integration/tunnel/06-wireguard-vrf-ipv6.yml`.
+You can find a dual-stack integration test based on this topology in `tests/integration/tunnel/06-wireguard-vrf-dual-stack.yml`.
