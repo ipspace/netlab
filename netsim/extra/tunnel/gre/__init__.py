@@ -1,9 +1,6 @@
 
 from box import Box
 
-from netsim import api
-from netsim.augment import links as _links
-from netsim.augment import nodes as _nodes
 from netsim.utils import log
 
 from ... import tunnel as _tunnel
