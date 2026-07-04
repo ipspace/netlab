@@ -12,7 +12,7 @@ from netsim.data import get_box
 from netsim.utils import log
 from netsim.utils import routing as _routing
 
-from .. import tunnel as _tunnel
+from ... import tunnel as _tunnel
 
 _config_name = 'tunnel.wireguard'
 
