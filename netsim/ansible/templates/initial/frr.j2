@@ -112,10 +112,9 @@ if [ ! -e /sys/class/net/{{ i.ifname }} ]; then
 {%   else %}
     ip link add {{ i.ifname }} type {{ 'wireguard' if i.tunnel.mode|default('') == 'wireguard' else 'dummy' }}
 {%   endif %}
-{%   if i._ipv6_link_local is defined %}
-    ip -6 addr add {{ i._ipv6_link_local }} dev {{ i.ifname }} scope link
-{%   endif %}
+{%   if i.type == 'loopback' %}
     ip link set dev {{ i.ifname }} {{ "down" if i.shutdown|default(False) else "up" }}
+{%   endif %}
   fi
 fi
 {% endfor %}
@@ -126,6 +125,9 @@ fi
 {% for i in interfaces if i.type in ['lan','p2p','stub','lag','bond','tunnel'] %}
 ip link set {{ i.ifname }} down
 {{ linux_intf_sysctl(i,role) }}
+{%   if i._ipv6_link_local is defined %}
+ip -6 addr add {{ i._ipv6_link_local }} dev {{ i.ifname }} scope link
+{%   endif %}
 {% endfor %}
 
 #
