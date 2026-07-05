@@ -3,7 +3,7 @@
 #
 from box import Box
 
-from ..utils import log
+from ..utils import log, routing as _routing
 from . import _Quirks, report_quirk
 
 """
@@ -24,10 +24,25 @@ def check_stp_on_trunks(node: Box, topology: Box) -> None:
       more_data=err_data,
       node=node)
 
+def wireguard_ipv6_link_local(node: Box) -> None:
+  '''
+  WireGuard netdevs are ARPHRD_NONE and never get a kernel-assigned IPv6 link-local
+  address. OSPFv3 needs one on overlay IPv6 tunnels, so derive a deterministic address
+  for the initial config script.
+  '''
+  for intf in node.get('interfaces',[]):
+    if intf.get('tunnel.mode') != 'wireguard':
+      continue
+    if 'ipv6' not in intf:
+      continue
+    intf._ipv6_link_local = _routing.get_ipv6_link_local(intf.ipv6)
+
 class FRR(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
+    wireguard_ipv6_link_local(node)
+
     mods = node.get('module',[])
     if 'stp' in mods and node.get('stp.enable',True):
       if log.debug_active('quirks'):

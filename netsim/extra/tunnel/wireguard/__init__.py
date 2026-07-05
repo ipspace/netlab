@@ -7,7 +7,6 @@ from netsim.augment import devices
 from netsim.augment import links as _links
 from netsim.data import get_box
 from netsim.utils import log
-from netsim.utils import routing as _routing
 
 from ... import tunnel as _tunnel
 from .. import _p2p
@@ -111,19 +110,10 @@ def wireguard_intf_defaults(ndata: Box, intf: Box, topology: Box) -> bool:
     src = intf.tunnel._source
     intf.tunnel.af = 'ipv4' if 'ipv4' in src else 'ipv6'
 
-  # WireGuard devices are ARPHRD_NONE (link/none), so the kernel forces
-  # addr_gen_mode to 'none' and never assigns an IPv6 link-local address
-  # (random and stable-privacy modes are ignored). OSPFv3 needs one to form
-  # adjacencies, so on an IPv6 tunnel we derive a deterministic address from
-  # the overlay interface identifier (low 64 bits) -- distinct per endpoint
-  # -- for the initial config script to assign when it creates the interface.
-  af_active = ndata.get('af',{})
-  if 'ipv6' in af_active:
-    intf._ipv6_link_local = _routing.get_ipv6_link_local(intf.ipv6)
-
   # Default the peer's allowed IPs (the inner/overlay prefixes carried by the
   # tunnel) to a default route per active address family. Use the node's global
   # active AFs, so dual-stack tunnels permit both ranges.
+  af_active = ndata.get('af',{})
   if 'tunnel.allowed_ips' not in intf:
     ranges = [ prefix for af,prefix in (('ipv4','0.0.0.0/0'),('ipv6','::/0')) if af_active.get(af) ]
     intf.tunnel.allowed_ips = ','.join(ranges) or '0.0.0.0/0'
@@ -134,10 +124,6 @@ def wireguard_intf_defaults(ndata: Box, intf: Box, topology: Box) -> bool:
   if 'mtu' not in intf:
     overhead = 80 if intf.tunnel.af == 'ipv6' else 60
     intf.mtu = intf.tunnel._source.mtu - overhead
-
-  # Tell the initial config script to create a WireGuard netdev (with an
-  # optional IPv6 link-local address) before FRR is configured.
-  intf._linux_device_type = 'wireguard'
 
   # Peer nodes reach us via the underlay addresses in tunnel._source. Copy the
   # WireGuard socket attributes there too so tunnel_destination can set

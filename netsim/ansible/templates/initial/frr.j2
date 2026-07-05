@@ -103,8 +103,14 @@ if [ ! -e /sys/class/net/{{ i.ifname }} ]; then
   if [ ! -e /sys/devices/virtual/net/{{ i.ifname }} ]; then
 {%   if i.type in ['lag','bond'] %}
 {{     create_bond_dev(i,node_provider) }}
+{%   elif i.tunnel.mode|default('') == 'gre' %}
+{%     set af = i.tunnel.af|default('ipv4') %}
+{%     set gre_mode = 'ip6gre' if af == 'ipv6' else 'gre' %}
+    ip tunnel add {{ i.ifname }} mode {{ gre_mode }} \
+      local {{ i.tunnel._source[af] }} remote {{ i.tunnel._destination[af] }} \
+      dev {{ i.tunnel._source.ifname }} ttl 255
 {%   else %}
-    ip link add {{ i.ifname }} type {{ i._linux_device_type|default('dummy') }}
+    ip link add {{ i.ifname }} type {{ 'wireguard' if i.tunnel.mode|default('') == 'wireguard' else 'dummy' }}
 {%   endif %}
 {%   if i._ipv6_link_local is defined %}
     ip -6 addr add {{ i._ipv6_link_local }} dev {{ i.ifname }} scope link
