@@ -1,0 +1,56 @@
+message: |
+  Check the 'ping' validation plugin
+
+plugin: [ files ]
+
+defaults.netlab.integration:
+  validate: bash validate_logic.sh
+
+# Node device type set via default groups
+#
+nodes: [ dut_frr, h1 ]
+
+links: [ dut_frr-h1 ]
+
+validate:
+  ping_OK:
+    nodes: [ dut_frr ]
+    plugin: ping('h1')
+  ping_FAIL:
+    nodes: [ dut_frr ]
+    plugin: ping('172.42.42.42')
+  ping_WARN:
+    nodes: [ dut_frr ]
+    plugin: ping('172.42.42.42')
+    level: warning
+  ping_EXPECT:
+    nodes: [ dut_frr ]
+    plugin: ping('172.42.42.42')
+    _expect_fail: True
+  ping_XP_NF:
+    nodes: [ dut_frr ]
+    plugin: ping('h1')
+    _expect_fail: True
+
+files:
+  validate_logic.sh: |
+    check_validate() {
+      netlab validate -q $1                         # execute a test
+      EXIT_CODE=$?
+      if [ $EXIT_CODE -ne $2 ]; then                # did we get the expected exit code?
+        echo "===================================================================="
+        echo "FAIL: $1 scenario returned exit code $EXIT_CODE (expected $2)"
+        echo "===================================================================="
+        exit 1
+      fi
+      echo "===================================================================="
+      echo "SUCCESS: $1 passed with exit code $2"
+      echo "===================================================================="
+      echo
+    }
+
+    check_validate ping_OK 0
+    check_validate ping_EXPECT 0
+    check_validate ping_FAIL 1
+    check_validate ping_WARN 3
+    check_validate ping_XP_NF 1
