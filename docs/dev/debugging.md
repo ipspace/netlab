@@ -119,7 +119,7 @@ nodes:
 ```
 
 ### FRRouting
-Enable debug conditions:
+Enable debug conditions. On containerlab deployments, this also relays FRR log file output to container *stdout* (visible via **docker logs**):
 ```yaml
 nodes:
   router1:

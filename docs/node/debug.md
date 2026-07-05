@@ -47,6 +47,7 @@ Finally, you might be worried that the symptoms you're experiencing depend on th
 * The contents of the **_device_.debug** attribute are device-specific. *netlab* currently does not have multi-vendor **debug** capabilites.
 * The values of the **_device_.debug** attribute are not checked. They must be relevant to the underlying network device, or you'll get configuration errors during the initial configuration
 * The initial device configuration template supplies the mandatory prefix (for example, **do debug**). You only have to list the debugging conditions, for example:
+* On FRR containers, setting **frr.debug** also relays log file output to container *stdout* (visible via **docker logs**).
 
 ```
 nodes:
