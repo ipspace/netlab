@@ -198,6 +198,7 @@ def execute_validation_plugin(
       report.log_progress(msg,topology)
       report.increase_pass_count(v_entry)
     elif report_error:
-      report.increase_fail_count(v_entry)
+      if not v_entry.get('_expect_fail',False):
+        report.increase_fail_count(v_entry)
 
   return OK if OK is None else bool(OK)

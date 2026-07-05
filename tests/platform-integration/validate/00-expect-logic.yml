@@ -1,0 +1,59 @@
+message: |
+  Check the 'ping' validation plugin
+
+plugin: [ files ]
+
+defaults.netlab.integration:
+  validate: bash validate_logic.sh
+
+# Node device type set via default groups
+#
+nodes: [ dut_frr, h1 ]
+
+links: [ dut_frr-h1 ]
+
+validate:
+  ping_OK:
+    nodes: [ dut_frr ]
+    plugin: ping('h1')
+  ping_FAIL:
+    nodes: [ dut_frr ]
+    plugin: ping('172.42.42.42')
+  ping_WARN:
+    nodes: [ dut_frr ]
+    plugin: ping('172.42.42.42')
+    level: warning
+  ping_EXPECT:
+    nodes: [ dut_frr ]
+    plugin: ping('172.42.42.42')
+    _expect_fail: True
+
+files:
+  validate_logic.sh: |
+    if ! netlab validate ping_OK -q; then           # OK should succeed
+      echo "OK test failed"
+      exit 1
+    fi
+    echo "OK test completed"
+    echo ""
+    #
+    if ! netlab validate ping_EXPECT -q; then       # EXPECT (to fail) should also succeed
+      echo "EXPECT-to-fail test did not succeed"
+      exit 1
+    fi
+    echo "EXPECT-to-fail test completed"
+    echo ""
+    if netlab validate ping_FAIL; then              # FAIL should FAIL
+      echo "A test that should fail did not"
+      exit 1
+    fi
+    echo "FAIL test failed as expected"
+    echo ""
+    netlab validate ping_WARN
+    WARN_EXIT=$?
+    if [ $WARN_EXIT -ne 3 ]; then                   # WARN should fail with error code 3
+      echo "A test that should generate a warning did not return exit code 3 (got $WARN_EXIT)"
+      exit 1
+    fi
+    echo "WARN test behaved as expected"
+    echo ""

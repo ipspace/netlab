@@ -100,7 +100,8 @@ def p_test_fail(n_name: str, v_entry: Box, topology: Box, fail_msg: str = '') ->
   if v_entry.get('level') == 'warning':
     log_failure(err,topology,f_status='WARNING',f_color='bright_yellow')
   else:
-    log_failure(err,topology)
+    f_color = 'bright_yellow' if v_entry.get('_expect_fail',False) else 'bright_red'
+    log_failure(err,topology,f_color=f_color)
 
 # Print "test passed"
 #
