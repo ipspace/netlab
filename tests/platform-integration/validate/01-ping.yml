@@ -1,0 +1,58 @@
+message: |
+  Check the 'ping' validation plugin
+
+defaults.sources.extra: [ ../../integration/wait_times.yml ]
+
+# Node device type set via default groups
+#
+nodes: [ dut_eos, dut_frr, dut_linux, h1, h2 ]
+
+links:
+- interfaces: [ dut_eos, dut_frr, dut_linux, h1 ]
+  prefix.ipv4: 172.16.1.0/24
+- interfaces: [ dut_eos, dut_frr, dut_linux, h2 ]
+  prefix.ipv6: 2001:db8:0:1::/64
+- interfaces: [ dut_eos, dut_frr, dut_linux ]
+  prefix.ipv4: 172.16.2.0/24
+  prefix.ipv6: 2001:db8:0:2::/64
+
+validate:
+  ping_v4_OK:
+    nodes: [ dut_eos, dut_frr, dut_linux ]
+    wait: ping
+    plugin: ping('h1',af='ipv4')
+  ping_v6_OK:
+    nodes: [ dut_eos, dut_frr, dut_linux ]
+    wait: ping
+    plugin: ping('h2',af='ipv6')
+  ping_v4_len:
+    nodes: [ dut_eos, dut_frr, dut_linux ]
+    plugin: ping('h1',af='ipv4',pkt_len=80,count=1)
+  ping_v6_len:
+    nodes: [ dut_eos, dut_frr, dut_linux ]
+    plugin: ping('h2',af='ipv6',pkt_len=80,count=1)
+  ping_v4_nh:
+    nodes: [ dut_eos, dut_frr, dut_linux ]
+    plugin: ping('h2',af='ipv4')
+    _expect_fail: True
+  ping_v6_nh:
+    nodes: [ dut_eos, dut_frr, dut_linux ]
+    plugin: ping('h1',af='ipv6')
+    _expect_fail: True
+  ping_v4_nr:
+    nodes: [ dut_eos, dut_frr, dut_linux ]
+    plugin: ping('172.16.2.42',count=2)
+    _expect_fail: True
+  ping_v6_nr:
+    nodes: [ dut_eos, dut_frr, dut_linux ]
+    plugin: ping('2001:db8:0:2::42/64',af='ipv6',count=2)
+    _expect_fail: True
+
+#
+#  It would be nice to test the ping sizes, but an error in the 'show_x' part of the
+#  plugin processing is not yet considering the '_expect_fail' parameter. TBD...
+#
+#  ping_size:
+#    nodes: [ dut_eos, dut_frr, dut_linux ]
+#    plugin: ping('h1',pkt_len=32)
+#    _expect_fail: True
