@@ -3,7 +3,8 @@
 #
 from box import Box
 
-from ..utils import log, routing as _routing
+from ..utils import log
+from ..utils import routing as _routing
 from . import _Quirks, report_quirk
 
 """
