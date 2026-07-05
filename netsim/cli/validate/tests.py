@@ -263,9 +263,11 @@ def execute_validation_test(
   if v_entry.get('_expect_fail',False):           # Do we expect the test to fail (used for plugin validation)
     if ret_value:
       report.log_failure('The test did not fail as expected',topology)
+      report.increase_fail_count(v_entry)
       return False
     else:
       report.p_test_pass(v_entry,topology)
+      report.increase_pass_count(v_entry)
       return True
 
   if ret_value:                                   # If we got to 'True'
