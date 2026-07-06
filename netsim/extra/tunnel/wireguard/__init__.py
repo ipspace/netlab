@@ -1,4 +1,3 @@
-
 import subprocess
 
 from box import Box
@@ -7,6 +6,7 @@ from netsim.augment import devices
 from netsim.augment import links as _links
 from netsim.data import get_box
 from netsim.utils import log
+from netsim.utils import routing as _routing
 
 from ... import tunnel as _tunnel
 from .. import _p2p
@@ -109,6 +109,12 @@ def wireguard_intf_defaults(ndata: Box, intf: Box, topology: Box) -> bool:
     src = intf.tunnel._source
     intf.tunnel.af = 'ipv4' if 'ipv4' in src else 'ipv6'
 
+  # WireGuard netdevs are ARPHRD_NONE and never get a kernel-assigned IPv6 link-local
+  # address. OSPFv3 needs one on overlay IPv6 tunnels, so derive a deterministic address
+  # for the initial config script.
+  if 'ipv6' in intf:
+    intf._ipv6_link_local = _routing.get_ipv6_link_local(intf.ipv6)
+
   # Default the peer's allowed IPs (the inner/overlay prefixes carried by the
   # tunnel) to a default route per active address family. Use the node's global
   # active AFs, so dual-stack tunnels permit both ranges.
@@ -153,7 +159,7 @@ def post_transform(topology: Box) -> None:
   node_iflist = _p2p.feature_check(topology,t_mode='wireguard',t_desc='WireGuard tunnels')
   _p2p.tunnel_source(topology,node_iflist,t_name='WireGuard')
 
-  for node in node_iflist.keys():
+  for node in node_iflist:
     ndata = topology.nodes[node]
     for intf in _tunnel.interfaces(ndata,'wireguard'):
       if 'wireguard-tools' not in ndata.netlab_linux_packages:
