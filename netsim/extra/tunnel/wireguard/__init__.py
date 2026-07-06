@@ -106,8 +106,7 @@ def wireguard_intf_defaults(ndata: Box, intf: Box, topology: Box) -> bool:
 
   # Auto-derive the transport AF from the selected source interface, preferring IPv4 for dual-stack tunnels.
   if 'tunnel.af' not in intf:
-    src = intf.tunnel._source
-    intf.tunnel.af = 'ipv4' if 'ipv4' in src else 'ipv6'
+    intf.tunnel.af = 'ipv4' if 'ipv4' in intf.tunnel._source else 'ipv6'
 
   # WireGuard netdevs are ARPHRD_NONE and never get a kernel-assigned IPv6 link-local
   # address. OSPFv3 needs one on overlay IPv6 tunnels, so derive a deterministic address
@@ -118,8 +117,8 @@ def wireguard_intf_defaults(ndata: Box, intf: Box, topology: Box) -> bool:
   # Default the peer's allowed IPs (the inner/overlay prefixes carried by the
   # tunnel) to a default route per active address family. Use the node's global
   # active AFs, so dual-stack tunnels permit both ranges.
-  af_active = ndata.get('af',{})
   if 'tunnel.allowed_ips' not in intf:
+    af_active = ndata.get('af',{})
     ranges = [ prefix for af,prefix in (('ipv4','0.0.0.0/0'),('ipv6','::/0')) if af_active.get(af) ]
     intf.tunnel.allowed_ips = ','.join(ranges) or '0.0.0.0/0'
 
