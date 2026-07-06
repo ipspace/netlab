@@ -105,7 +105,6 @@ def wireguard_intf_defaults(ndata: Box, intf: Box, topology: Box) -> bool:
     return False
 
   # Auto-derive the transport AF from the selected source interface, preferring IPv4 for dual-stack tunnels.
-  # This logic could be moved to the shared tunnel_source_interfaces function
   if 'tunnel.af' not in intf:
     src = intf.tunnel._source
     intf.tunnel.af = 'ipv4' if 'ipv4' in src else 'ipv6'
@@ -152,13 +151,16 @@ def post_transform(topology: Box) -> None:
   # Use shared P2P tunnel function to check feature support
   #
   node_iflist = _p2p.feature_check(topology,t_mode='wireguard',t_desc='WireGuard tunnels')
+  _p2p.tunnel_source(topology,node_iflist,t_name='WireGuard')
 
-  for ndata,intf in _p2p.tunnel_source_interfaces(topology,node_iflist,t_name='WireGuard'):
-    if 'wireguard-tools' not in ndata.netlab_linux_packages:
-      add_linux_packages(ndata,topology)
+  for node in node_iflist.keys():
+    ndata = topology.nodes[node]
+    for intf in _tunnel.interfaces(ndata,'wireguard'):
+      if 'wireguard-tools' not in ndata.netlab_linux_packages:
+        add_linux_packages(ndata,topology)
 
-    if not wireguard_intf_defaults(ndata,intf,topology):
-      return
+      if not wireguard_intf_defaults(ndata,intf,topology):
+        return
 
   if log.get_error_count():                                 # Has someone reported an error?
     return                                                  # Might have been us, no reason to continue

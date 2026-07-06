@@ -7,23 +7,6 @@ if ! command -v wg >/dev/null; then
   exit 1
 fi
 #
-wait_wg_peer() {
-  local ifname="$1"
-  local peer="$2"
-  local tries=60
-
-  while [ "${tries}" -gt 0 ]; do
-    hs=$(wg show "${ifname}" latest-handshakes | awk -v p="${peer}" '$1 == p { print $2 }')
-    if [ -n "${hs}" ] && [ "${hs}" != "0" ]; then
-      return 0
-    fi
-    sleep 1
-    tries=$((tries - 1))
-  done
-  echo "WireGuard handshake with peer ${peer} on ${ifname} did not complete" >&2
-  return 1
-}
-#
 setup_wg_vrf_underlay() {
   local vrf_table="$1"
   local rule_pref="$2"
@@ -75,8 +58,6 @@ create_wg() {
     persistent-keepalive "${keepalive}"
 
   ip link set dev "${ifname}" mtu "${mtu}" up
-
-  wait_wg_peer "${ifname}" "${peer_key}"
 }
 #
 {% for intf in netlab_interfaces if intf.tunnel.mode|default('') in ['wireguard'] %}

@@ -95,22 +95,20 @@ fi
 #
 sysctl -w net.ipv4.conf.all.arp_announce=2
 
+{% for x_dp in config|default([]) %}
+{%  include x_dp + '/frr.initial.j2' ignore missing %}
+{% endfor %}
+
 #
-# Create loopbacks, stub, lag/bond and tunnel devices
+# Create loopbacks, stub, lag/bond devices
 #
-{% for i in netlab_interfaces if i.type in ['loopback','stub','lag','bond','tunnel'] %}
+{% for i in netlab_interfaces if i.type in ['loopback','stub','lag','bond'] %}
 if [ ! -e /sys/class/net/{{ i.ifname }} ]; then
   if [ ! -e /sys/devices/virtual/net/{{ i.ifname }} ]; then
 {%   if i.type in ['lag','bond'] %}
 {{     create_bond_dev(i,node_provider) }}
-{%   elif i.tunnel.mode|default('') == 'gre' %}
-{%     set af = i.tunnel.af|default('ipv4') %}
-{%     set gre_mode = 'ip6gre' if af == 'ipv6' else 'gre' %}
-    ip tunnel add {{ i.ifname }} mode {{ gre_mode }} \
-      local {{ i.tunnel._source[af] }} remote {{ i.tunnel._destination[af] }} \
-      dev {{ i.tunnel._source.ifname }} ttl 255
 {%   else %}
-    ip link add {{ i.ifname }} type {{ 'wireguard' if i.tunnel.mode|default('') == 'wireguard' else 'dummy' }}
+    ip link add {{ i.ifname }} type dummy
 {%   endif %}
 {%   if i.type == 'loopback' %}
     ip link set dev {{ i.ifname }} {{ "down" if i.shutdown|default(False) else "up" }}

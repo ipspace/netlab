@@ -1,0 +1,12 @@
+{# Create GRE tunnel interfaces during initial device configuration #}
+{% for intf in netlab_interfaces if intf.tunnel.mode|default('') in ['gre'] %}
+if [ ! -e /sys/class/net/{{ intf.ifname }} ]; then
+  if [ ! -e /sys/devices/virtual/net/{{ intf.ifname }} ]; then
+{%   set af = intf.tunnel.af|default('ipv4') %}
+{%   set gre_mode = 'ip6gre' if af == 'ipv6' else 'gre' %}
+    ip tunnel add {{ intf.ifname }} mode {{ gre_mode }} \
+      local {{ intf.tunnel._source[af] }} remote {{ intf.tunnel._destination[af] }} \
+      dev {{ intf.tunnel._source.ifname }} ttl 255
+  fi
+fi
+{% endfor %}

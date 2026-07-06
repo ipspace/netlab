@@ -49,33 +49,6 @@ def feature_check(topology: Box, t_mode: str, t_desc: str) -> dict:
 
   return node_iflist
 
-def tunnel_source_interfaces(
-      topology: Box,
-      node_iflist: dict,
-      default_af: typing.Optional[str] = None,
-      t_name: str = '') -> typing.Generator[tuple[Box, Box], None, None]:
-  '''
-  Set tunnel._source on each tunnel interface and yield (ndata, intf) tuples
-  for interfaces where the source lookup succeeded.
-
-  Tunnel plugins can iterate over the generator to apply type-specific tweaks
-  after the shared source data is in place.
-  '''
-  for node in node_iflist.keys():
-    ndata = topology.nodes[node]
-    for intf in node_iflist[node]:
-      if 'tunnel.af' not in intf and default_af:
-        intf.tunnel.af = default_af                         # Set the default AF for the tunnel
-
-      u_iflist = _tunnel.get_tunnel_source(ndata,intf,topology)
-      if not _tunnel.set_tunnel_source(intf,u_iflist,ndata,topology):
-        continue
-
-      if t_name:
-        _tunnel.set_tunnel_name(intf,t_name)
-
-      yield ndata,intf
-
 def tunnel_source(
       topology: Box,
       node_iflist: dict,
@@ -89,8 +62,18 @@ def tunnel_source(
   - default_af:  has to be set for tunnels that are not dual-stack-aware
   - t_name:      the string to add to interface description once we know it's a valid tunnel
   '''
-  for _ in tunnel_source_interfaces(topology,node_iflist,default_af,t_name):
-    pass
+  for node in node_iflist.keys():
+    ndata = topology.nodes[node]
+    for intf in node_iflist[node]:
+      if 'tunnel.af' not in intf and default_af:
+        intf.tunnel.af = default_af                         # Set the default AF for the tunnel
+
+      u_iflist = _tunnel.get_tunnel_source(ndata,intf,topology)
+      if not _tunnel.set_tunnel_source(intf,u_iflist,ndata,topology):
+        continue
+
+      if t_name:
+        _tunnel.set_tunnel_name(intf,t_name)
 
 def tunnel_destination(
       topology: Box,
