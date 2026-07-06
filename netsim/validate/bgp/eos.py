@@ -31,15 +31,21 @@ af_lookup: typing.Final[dict] = {
   'vpnv6': 'vpn-ipv6'
 }
 
-def show_bgp_neighbor(ngb: list, n_id: str, af: str='ipv4', *, activate: str = '', **kwargs: typing.Any) -> str:
+def show_bgp_neighbor(
+      ngb: list,
+      n_id: str,
+      af: str='ipv4', *, 
+      vrf: str = 'default', 
+      activate: str = '', **kwargs: typing.Any) -> str:
   global af_lookup
-  if not activate:  
-    return 'bgp summary | json'
-
-  if activate not in af_lookup:
+  if not activate:
+    bgp_cmd = 'bgp summary'
+  elif activate not in af_lookup:
     raise Exception(f'Unsupported address family {activate}')
+  else:
+    bgp_cmd = f'bgp {af_lookup[activate]} summary'
 
-  return f'bgp {af_lookup[activate]} summary | json'
+  return f'{bgp_cmd} vrf {vrf} | json'
 
 def valid_bgp_neighbor(
       ngb: list,
@@ -59,7 +65,6 @@ def valid_bgp_neighbor(
 #    n_addr = intf
   
   data = check_vrf_data(_result,vrf,'peers','BGP peers')
-
   act_err = f' in address family {activate}' if activate else ''
   if not n_addr in data:
     result = f'The router has no BGP neighbor with {af} address {n_addr} ({n_id}){act_err}'
