@@ -83,6 +83,40 @@ def valid_bgp_neighbor(
 
   return f'Neighbor {n_addr} ({n_id}) is in state {data[n_addr].peerState}'
 
+def show_bgp_neighbor_details(ngb: list, n_id: str, af: str='ipv4', **kwargs: typing.Any) -> str:
+  n_addr = _common.get_bgp_neighbor_id(ngb,n_id,af)
+  return f'bgp neighbors {n_addr} | json'
+
+def valid_bgp_neighbor_details(
+      ngb: list,
+      n_id: str,
+      af: str = 'ipv4',
+      bfd: typing.Optional[bool] = None,
+      **kwargs: typing.Any) -> str:
+
+  vrf = 'default'
+  _result = global_vars.get_result_dict('_result')
+  n_addr = _common.get_bgp_neighbor_id(ngb,n_id,af)
+
+  data = check_vrf_data(_result,vrf,'peerList','BGP peers')
+
+  found = next((item for item in data if item.peerAddress == n_addr),None)
+  if not found:
+    raise Exception(f'The router has no BGP neighbor with {af} address {n_addr} ({n_id})')
+
+  result = f'All specified BGP neighbor parameters have the expected values'
+
+  if bfd is not None:
+    bfd_state = 3 if bfd else 2
+    bfd_s_txt = 'Up' if bfd else 'Down'
+    if 'bfdState' not in found:
+      raise Exception(f'We are not running BFD with neighbor {n_addr} ({n_id})')
+    if found.bfdState != bfd_state:
+      raise Exception(f'The neighbor {n_addr} ({n_id}) is in BFD state {found.bfdState}' +\
+                      f' (expected {bfd_state} - {bfd_s_txt})')
+
+  return result
+
 """
 BGP prefix checks, starting with 'get a BGP prefix from JSON results'
 """

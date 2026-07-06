@@ -100,7 +100,9 @@ def show_bgp_neighbor_details(ngb: list, n_id: str, af: str = 'ipv4', **kwargs: 
 def valid_bgp_neighbor_details(
       ngb: list,
       n_id: str,
-      af: str = 'ipv4',**kwargs: typing.Any) -> str:
+      af: str = 'ipv4',
+      bfd: typing.Optional[bool] = None,
+      **kwargs: typing.Any) -> str:
   _result = global_vars.get_result_dict('_result')
 
   n_addr = _common.get_bgp_neighbor_id(ngb,n_id,af)
@@ -111,6 +113,14 @@ def valid_bgp_neighbor_details(
       raise Exception(f'Neighbor data structure does not contain attribute {k}')
     if data[k] != v:
       raise Exception(f'{k} expected value {v} actual {data[k]}')
+
+  if bfd is not None:
+    if 'peerBfdInfo' not in data:
+      raise Exception(f'We are not running BFD with neighbor {n_addr} ({n_id})')
+    else:
+      expected = 'Up' if bfd else 'Down'
+      if data.peerBfdInfo.status != expected:
+        raise Exception(f'BGP BFD expected value {expected} actual {data.peerBfdInfo.status}')
 
   return f'All specified BGP neighbor parameters have the expected values'
 
