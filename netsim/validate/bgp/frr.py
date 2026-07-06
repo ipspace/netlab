@@ -41,7 +41,7 @@ def show_bgp_neighbor(
     return f"bgp vrf {vrf} summary json"
 
   if activate not in af_lookup:
-    raise Exception(f'Unsupport address family {activate}')
+    raise Exception(f'Unsupported address family {activate}')
 
   return f"bgp vrf {vrf} {af_kw[activate]} json"
 
