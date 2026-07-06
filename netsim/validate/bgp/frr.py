@@ -29,21 +29,27 @@ af_kw: typing.Final[dict] = {
   'vpnv6': 'ipv6 vpn summary'
 }
 
-def show_bgp_neighbor(ngb: list, n_id: str, af: str='ipv4', activate: str = '', **kwargs: typing.Any) -> str:
+def show_bgp_neighbor(
+      ngb: list,
+      n_id: str,
+      af: str='ipv4', *, 
+      vrf: str = 'default',
+      activate: str = '', **kwargs: typing.Any) -> str:
   global af_lookup
 
   if not activate:
-    return "bgp summary json"
+    return f"bgp vrf {vrf} summary json"
 
   if activate not in af_lookup:
     raise Exception(f'Unsupport address family {activate}')
 
-  return f"bgp {af_kw[activate]} json"
+  return f"bgp vrf {vrf} {af_kw[activate]} json"
 
 def valid_bgp_neighbor(
       ngb: list,
       n_id: str,
-      af: str = 'ipv4',
+      af: str = 'ipv4', *, 
+      vrf: str = 'default',
       state: str = 'Established',
       activate: str = '',
       intf: str = '') -> str:
@@ -77,8 +83,13 @@ def valid_bgp_neighbor(
     else:
       raise Exception(result)
 
-  if data[n_addr].state not in state:
-    raise Exception(f'The neighbor {n_addr} ({n_id}) {act_err} is in state {data[n_addr].state} (expected {state})')  
+  p_state = data[n_addr].state
+  if p_state not in state:
+    result = f'The neighbor {n_addr} ({n_id}) {act_err} is in state {p_state}'
+    if state == 'missing' and p_state != 'Established':
+      return result
+    else:
+      raise Exception(f'{result} (expected {state})')  
 
   return f'Neighbor {n_addr} ({n_id}) is in state {data[n_addr].state}'
 
