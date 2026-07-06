@@ -89,6 +89,10 @@ fi
 #
 sysctl -w net.ipv4.conf.all.arp_announce=2
 
+{% for x_dp in config|default([]) %}
+{%   include x_dp|replace('.','/') + '/frr.initial.j2' ignore missing %}
+{% endfor %}
+
 #
 # Create loopbacks, stub and lag/bond devices
 #
@@ -107,7 +111,7 @@ fi
 
 # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
 #
-{% for i in interfaces if i.type in ['lan','p2p','stub','lag','bond'] %}
+{% for i in interfaces if i.type in ['lan','p2p','stub','lag','bond','tunnel'] %}
 ip link set {{ i.ifname }} down
 {%   if i.ipv6 is not defined %}
 sysctl -qw net.ipv6.conf.{{ i.ifname }}.disable_ipv6=1
