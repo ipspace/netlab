@@ -78,54 +78,35 @@ def valid_bgp_neighbor(
 
   return f'Neighbor {n_addr} ({n_id}) is in state {data[n_addr].peerState}'
 
-def show_bgp_neighbor_details(ngb: list, n_id: str, af: str='ipv4', *, activate: str = '', **kwargs: typing.Any) -> str:
+def show_bgp_neighbor_details(ngb: list, n_id: str, af: str='ipv4', **kwargs: typing.Any) -> str:
   n_addr = _common.get_bgp_neighbor_id(ngb,n_id,af)
-  global af_lookup
-  if not activate:
-    return f'bgp neighbors {n_addr} | json'
-
-  if activate not in af_lookup:
-    raise Exception(f'Unsupported address family {activate}')
-
-  return f'bgp {af_lookup[activate]} neighbors {n_addr} | json'
+  return f'bgp neighbors {n_addr} | json'
 
 def valid_bgp_neighbor_details(
       ngb: list,
       n_id: str,
       af: str = 'ipv4',
-      state: str = 'Established',
-      vrf: str = 'default',
-      activate: str = '',
-      intf: str = '',
-      bfd: bool = False) -> str:
+      bfd: typing.Optional[bool] = None,
+      **kwargs: typing.Any) -> str:
+
+  vrf = 'default'
   _result = global_vars.get_result_dict('_result')
   n_addr = _common.get_bgp_neighbor_id(ngb,n_id,af)
 
   data = check_vrf_data(_result,vrf,'peerList','BGP peers')
 
-  act_err = f' in address family {activate}' if activate else ''
   found = next(item for item in data if item.peerAddress == n_addr)
-
   if not found:
-    result = f'The router has no BGP neighbor with {af} address {n_addr} ({n_id}){act_err}'
-    if state == 'missing':
-      return result
-    else:
-      raise Exception(result)
+    raise Exception(f'The router has no BGP neighbor with {af} address {n_addr} ({n_id})')
 
-  if not state == found.state:
-    result = f'The neighbor {n_addr} ({n_id}){act_err} is in state {found.state}'
-    if state == 'missing' and data[0].state != 'Established':
-      return result
-    else:
-      raise Exception(f'{result} (expected {state})')
+  result = f'All specified BGP neighbor parameters have the expected values'
 
-  if not bfd:
-    return result
-
-  result = f'The neighbor {n_addr} ({n_id}){act_err} is in BFD state {found.bfdState}'
-  if not found.bfdState == 3:
-      raise Exception(f'{result} (expected 3 - Up)')
+  if bfd is not None:
+    bfd_state = 3 if bfd else 2
+    bfd_s_txt = 'Up' if bfd else 'Down'
+    if found.bfdState != bfd_state:
+      raise Exception(f'The neighbor {n_addr} ({n_id}) is in BFD state {found.bfdState}' +\
+                      f' (expected {bfd_state} - {bfd_s_txt})')
 
   return result
 

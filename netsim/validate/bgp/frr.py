@@ -90,7 +90,7 @@ def valid_bgp_neighbor_details(
       ngb: list,
       n_id: str,
       af: str = 'ipv4',
-      bfd: bool = False,
+      bfd: typing.Optional[bool] = None,
       **kwargs: typing.Any) -> str:
   _result = global_vars.get_result_dict('_result')
 
@@ -103,12 +103,13 @@ def valid_bgp_neighbor_details(
     if data[k] != v:
       raise Exception(f'{k} expected value {v} actual {data[k]}')
 
-  if bfd:
-    if data.peerBfdInfo:
-      if data.peerBfdInfo.status != 'Up':
-        raise Exception(f'BGP {k} expected value UP actual {data.peerBfdInfo.status}')
-    else:
+  if bfd is not None:
+    if not data.peerBfdInfo:
       raise Exception(f'No BFD information for BGP peer {n_id}')
+    else:
+      expected = 'Up' if bfd else 'Down'
+      if data.peerBfdInfo.status != expected:
+        raise Exception(f'BGP BFD expected value {expected} actual {data.peerBfdInfo.status}')
 
   return f'All specified BGP neighbor parameters have the expected values'
 
