@@ -104,8 +104,8 @@ def valid_bgp_neighbor_details(
       raise Exception(f'{k} expected value {v} actual {data[k]}')
 
   if bfd is not None:
-    if not data.peerBfdInfo:
-      raise Exception(f'No BFD information for BGP peer {n_id}')
+    if 'peerBfdInfo' not in data:
+      raise Exception(f'We are not running BFD with neighbor {n_addr} ({n_id})')
     else:
       expected = 'Up' if bfd else 'Down'
       if data.peerBfdInfo.status != expected:

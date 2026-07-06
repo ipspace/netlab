@@ -95,7 +95,7 @@ def valid_bgp_neighbor_details(
 
   data = check_vrf_data(_result,vrf,'peerList','BGP peers')
 
-  found = next(item for item in data if item.peerAddress == n_addr)
+  found = next((item for item in data if item.peerAddress == n_addr),None)
   if not found:
     raise Exception(f'The router has no BGP neighbor with {af} address {n_addr} ({n_id})')
 
@@ -104,6 +104,8 @@ def valid_bgp_neighbor_details(
   if bfd is not None:
     bfd_state = 3 if bfd else 2
     bfd_s_txt = 'Up' if bfd else 'Down'
+    if 'bfdState' not in found:
+      raise Exception(f'We are not running BFD with neighbor {n_addr} ({n_id})')
     if found.bfdState != bfd_state:
       raise Exception(f'The neighbor {n_addr} ({n_id}) is in BFD state {found.bfdState}' +\
                       f' (expected {bfd_state} - {bfd_s_txt})')
