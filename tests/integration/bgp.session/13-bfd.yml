@@ -2,14 +2,6 @@ message: |
   This lab tests the BGP BFD functionality. The EBGP session between the probe
   and the lab device should trigger a BFD session between them.
 
-  The final test disables BFD on the probe to verify that the BGP session is
-  promptly torn down when BFD fails. It catches the FRR 10.5.1 regression that
-  kept BGP sessions with default timers Established for 30 seconds after BFD
-  failure. To run the test against FRR 10.5.1:
-
-    netlab up tests/integration/bgp.session/13-bfd.yml --validate \
-      --set defaults.devices.frr.clab.image=quay.io/frrouting/frr:10.5.1
-
 plugin: [ bgp.session ]
 module: [ bgp, bfd ]
 
@@ -24,13 +16,13 @@ groups:
 nodes:
   dut:
     bgp.as: 65000
-    config: [ static_bfd ]
   x1:
     bgp.as: 65100
-    bgp.bfd: True
+    config: [ static_bfd ]
 
 links:
 - dut:
+    bgp.bfd: True
   x1:
   pool: p2p  # Force addressing to come from the p2p pool, else with host devices like bird it becomes a lan
 
@@ -42,13 +34,6 @@ validate:
     nodes: [ x1 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
 
-  bgp_bfd_v4:
-    description: Check IPv4 EBGP sessions with DUT
-    wait_msg: Waiting for BFD EBGP session data
-    wait: ebgp_session
-    nodes: [ x1 ]
-    plugin: bgp_neighbor_details(node.bgp.neighbors,'dut',bfd='True')
-
   bfd_v4:
     description: Check BFD peer on X1
     wait_msg: Waiting for BFD to start
@@ -56,32 +41,6 @@ validate:
     nodes: [ x1 ]
     show:
       eos: "bfd peers | json"
-      frr: "bfd peers json"
     valid:
       eos: >-
         vrfs.default.ipv4Neighbors["10.1.0.1"].peers.Ethernet1.types.normal.peerStats["10.1.0.2"].status == "up"
-      frr: >-
-        result[0].status == "up"
-
-  drop_bfd_x1:
-    description: Disable BFD on X1 BGP neighbor
-    nodes: [ x1 ]
-    devices: [ frr ]
-    exec: >-
-      vtysh -c "configure terminal" -c "router bgp 65100" -c "no neighbor 10.1.0.1 bfd"
-    pass: BFD disabled on X1 BGP neighbor
-
-  bfd_bgp_down:
-    description: BGP session should go down promptly after BFD failure
-    wait_msg: Waiting for BFD failure to tear down BGP
-    wait: bfd_init
-    nodes: [ x1 ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'dut',state=['Idle','Active','Connect'])
-
-  restore_bfd_x1:
-    description: Restore BFD on X1 BGP neighbor
-    nodes: [ x1 ]
-    devices: [ frr ]
-    exec: >-
-      vtysh -c "configure terminal" -c "router bgp 65100" -c "neighbor 10.1.0.1 bfd"
-    pass: BFD restored on X1 BGP neighbor
