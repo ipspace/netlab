@@ -6,7 +6,6 @@ from netsim.augment import devices
 from netsim.augment import links as _links
 from netsim.data import get_box
 from netsim.utils import log
-from netsim.utils import routing as _routing
 
 from ... import tunnel as _tunnel
 from .. import _p2p
@@ -107,12 +106,6 @@ def wireguard_intf_defaults(ndata: Box, intf: Box, topology: Box) -> bool:
   # Auto-derive the transport AF from the selected source interface, preferring IPv4 for dual-stack tunnels.
   if 'tunnel.af' not in intf:
     intf.tunnel.af = 'ipv4' if 'ipv4' in intf.tunnel._source else 'ipv6'
-
-  # WireGuard netdevs are ARPHRD_NONE and never get a kernel-assigned IPv6 link-local
-  # address. OSPFv3 needs one on overlay IPv6 tunnels, so derive a deterministic address
-  # for the initial config script.
-  if 'ipv6' in intf:
-    intf._ipv6_link_local = _routing.get_ipv6_link_local(intf.ipv6)
 
   # Default the peer's allowed IPs (the inner/overlay prefixes carried by the
   # tunnel) to a default route per active address family. Use the node's global
