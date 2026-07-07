@@ -8,16 +8,6 @@ if ! command -v wg >/dev/null; then
   exit 1
 fi
 #
-{% for intf in netlab_interfaces if intf.tunnel.mode|default('') in ['wireguard'] %}
-if [ ! -e /sys/class/net/{{ intf.ifname }} ]; then
-  ip link add {{ intf.ifname }} type wireguard
-fi
-{{ linux_intf_sysctl(intf,role) }}
-{%   if intf._ipv6_link_local is defined %}
-ip -6 addr add {{ intf._ipv6_link_local }} dev {{ intf.ifname }} scope link
-{%   endif %}
-{% endfor %}
-#
 setup_wg_vrf_underlay() {
   local vrf_table="$1"
   local rule_pref="$2"
@@ -40,56 +30,37 @@ setup_wg_vrf_underlay() {
   fi
 }
 #
-create_wg() {
-  local ifname="$1"
-  local private_key="$2"
-  local listen_port="$3"
-  local peer_key="$4"
-  local peer_endpoint="$5"
-  local peer_allowed="$6"
-  local keepalive="$7"
-  local mtu="$8"
-  local tunnel_af="${9:-ipv4}"
-  local vrf_table="${10:-}"
-  local rule_pref="${11:-}"
-  local wg_fwmark=""
-
-  if [ -n "${vrf_table}" ] && [ -n "${rule_pref}" ]; then
-    setup_wg_vrf_underlay "${vrf_table}" "${rule_pref}" "${tunnel_af}"
-    wg_fwmark="fwmark ${rule_pref}"
-  fi
-
-  wg set "${ifname}" \
-    private-key <(printf '%s\n' "${private_key}") \
-    listen-port "${listen_port}" \
-    ${wg_fwmark} \
-    peer "${peer_key}" \
-    allowed-ips "${peer_allowed}" \
-    endpoint "${peer_endpoint}" \
-    persistent-keepalive "${keepalive}"
-
-  ip link set dev "${ifname}" mtu "${mtu}" up
-}
-#
 {% for intf in netlab_interfaces if intf.tunnel.mode|default('') in ['wireguard'] %}
+if [ ! -e /sys/class/net/{{ intf.ifname }} ]; then
+  ip link add {{ intf.ifname }} type wireguard
+fi
+{{ linux_intf_sysctl(intf,role,activate=False) }}
+{%   if intf._ipv6_link_local is defined %}
+ip -6 addr add {{ intf._ipv6_link_local }} dev {{ intf.ifname }} scope link
+{%   endif %}
 {%   set af = intf.tunnel.af %}
 {%   set dst = intf.tunnel._destination %}
 {%   set peer_endpoint = ('[' ~ dst[af] ~ ']:' ~ dst.listen_port) if af == 'ipv6' else (dst[af] ~ ':' ~ dst.listen_port) %}
 {%   set vrf_name = intf.tunnel.vrf|default('') %}
 {%   set vrf_table = vrfs[vrf_name].vrfidx if vrf_name and vrf_name in vrfs else '' %}
 {%   set rule_pref = 10000 + intf.ifindex if vrf_name and vrf_table else '' %}
-create_wg \
-  {{ intf.ifname }} \
-  {{ intf.tunnel.private_key }} \
-  {{ intf.tunnel.listen_port }} \
-  {{ dst.public_key }} \
-  {{ peer_endpoint }} \
-  {{ intf.tunnel.allowed_ips }} \
-  {{ intf.tunnel.persistent_keepalive }} \
-  {{ intf.mtu }} \
-  {{ intf.tunnel.af }}{% if vrf_name and vrf_table %} \
-  {{ vrf_table }} \
-  {{ rule_pref }}{% endif %}
 
+#
+# Setup VRF underlay if needed
+#
+{%   if vrf_name and vrf_table %}
+setup_wg_vrf_underlay {{ vrf_table }} {{ rule_pref }} {{ intf.tunnel.af }}
+{%   endif %}
+
+wg set {{ intf.ifname }} \
+  private-key <(printf '%s\n' '{{ intf.tunnel.private_key }}') \
+  listen-port {{ intf.tunnel.listen_port }} \
+{%   if vrf_name and vrf_table %}  fwmark {{ rule_pref }} \
+{%   endif %}  peer {{ dst.public_key }} \
+  allowed-ips {{ intf.tunnel.allowed_ips }} \
+  endpoint {{ peer_endpoint }} \
+  persistent-keepalive {{ intf.tunnel.persistent_keepalive }}
+
+ip link set dev {{ intf.ifname }} up
 {% endfor %}
 exit 0
