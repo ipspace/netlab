@@ -242,6 +242,40 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
 
   return yaml_data
 
+def merge_topology(topology: Box, addition: Box) -> None:
+  """
+  Merge a secondary topology file into the base topology.
+
+  Dictionary values are merged recursively, lists are extended, plain-string
+  message values are concatenated, and other values are replaced by the overlay
+  topology.
+  """
+  for k in list(addition.keys()):
+    if k == 'input':
+      continue
+
+    if isinstance(addition[k], Box):
+      if isinstance(topology.get(k), Box):
+        topology[k] = topology[k] + addition[k]
+      else:
+        topology[k] = addition[k]
+    elif isinstance(addition[k], list):
+      if isinstance(topology.get(k), list):
+        topology[k].extend(addition[k])
+      else:
+        topology[k] = addition[k]
+    elif k == 'message' and isinstance(addition[k], str) and isinstance(topology.get(k), str):
+      topology[k] = topology[k].rstrip('\n') + '\n' + addition[k].lstrip('\n')
+    else:
+      topology[k] = addition[k]
+
+def normalize_topology_path(fname: str, relative_topo_name: typing.Optional[bool] = False) -> str:
+  if not relative_topo_name and fname.find('package:') != 0:
+    fname = str(_files.absolute_path(fname))
+    fname = versioning.get_versioned_topology(fname)
+
+  return fname
+
 def include_defaults(topo: Box, fname: str) -> None:
   defaults = read_yaml(fname)
   if defaults:
@@ -343,20 +377,30 @@ def include_environment_defaults(topology: Box) -> None:
 # * Merge all defaults with the topology
 #
 def load(
-      fname: str,
-      user_defaults: typing.Optional[list] = None, 
+      fname: typing.Union[str, list],
+      user_defaults: typing.Optional[list] = None,
       system_defaults: typing.Optional[list] = None,
       relative_topo_name: typing.Optional[bool] = False) -> Box:
 
-  if not relative_topo_name and fname.find('package:') != 0:
-    fname = str(_files.absolute_path(fname))
-    fname = versioning.get_versioned_topology(fname)
+  fnames = fname if isinstance(fname, list) else [ fname ]
+  if not fnames:
+    log.fatal('No topology files specified', module='topology', header=True)
 
-  topology = read_yaml(fname)
+  base_fname = normalize_topology_path(fnames[0],relative_topo_name)
+  topology = read_yaml(base_fname)
   if topology is None:
     log.fatal('Cannot read topology file: %s' % sys.exc_info()[0]) # pragma: no cover -- sanity check, getting here would be hard
 
-  topology.input = [ fname ]
+  topology.input = [ base_fname ]
+  for extra_fname in fnames[1:]:
+    extra_path = normalize_topology_path(extra_fname,relative_topo_name)
+    addition = read_yaml(extra_path)
+    if addition is None:
+      log.fatal(f'Cannot read topology file: {extra_path}', module='topology', header=True)
+    merge_topology(topology,addition)
+    topology.input.append(extra_path)
+
+  fname = base_fname
   if 'includes' in topology:                                # includes topology element SHOULD NOT BE USED
     if log.RAISE_ON_ERROR:                                  # ... and if we're under test harness
       raise log.IncorrectValue                              # ... raise a hard error

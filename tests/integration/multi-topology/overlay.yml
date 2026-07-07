@@ -1,0 +1,43 @@
+---
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
+message: |
+  Test multi-topology merge with GRE tunnels. The overlay adds a GRE tunnel
+  and OSPF running over it. The probe should receive an OSPF route advertised
+  from the remote device (DUT_R1) and be able to ping its loopback.
+
+plugin: [ tunnel.gre ]
+
+groups:
+  probes:
+    module: [ ospf ]
+  ce:
+    module: [ ospf, vrf ]
+
+module: [ ospf, routing ]
+
+links:
+- group: gre
+  tunnel.mode: gre
+  tunnel.vrf: transport
+  members: [ dut_r1-dut_r2 ]
+
+validate:
+  adj:
+    description: Check OSPF adjacencies
+    wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPF adjacency process to complete
+    nodes: [ r3 ]
+    plugin: ospf_neighbor(nodes.dut_r2.ospf.router_id)
+  pfx:
+    description: Check for DUT_R1 loopback prefix being propagated to R3
+    wait: ospfv2_spf_long
+    wait_msg: Waiting for SPF to do its magic
+    nodes: [ r3 ]
+    plugin: ospf_prefix(nodes.dut_r1.loopback.ipv4)
+  ping:
+    description: Check end-to-end connectivity
+    wait: ping
+    wait_msg: Still waiting for SPF...
+    nodes: [ r3 ]
+    plugin: ping(nodes.dut_r1.loopback.ipv4)

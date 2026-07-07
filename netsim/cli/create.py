@@ -56,9 +56,9 @@ def create_topology_parse(
                   help=argparse.SUPPRESS)
 
   parser.add_argument(
-    dest='topology', action='store', nargs='?',
-    default='topology.yml',
-    help='Topology file or URL (default: topology.yml)')
+    dest='topology', action='store', nargs='*',
+    default=None,
+    help='Topology file(s) or URL (default: topology.yml)')
 
   if cmd == 'create':
     parser.add_argument('-o','--output',dest='output', action='append',help='Output format(s): format:option=filename')
@@ -154,14 +154,18 @@ def run(cli_args: typing.List[str],
   if args.output and args.devices:
     error_and_exit('--output and --devices flags are mutually exclusive')
 
-  if '://' in args.topology:
-    args.topology = http_fetch_content(args.topology,args)
+  if not args.topology:
+    args.topology = [ 'topology.yml' ]
 
-  tpath = Path(args.topology)
-  if not tpath.exists():
-    log.fatal(f'Topology file {args.topology} does not exist',module='create')
-  if not tpath.is_file():
-    log.fatal(f'The specified lab topology ({args.topology}) is not a file',module='create')
+  if len(args.topology) == 1 and '://' in args.topology[0]:
+    args.topology = [ http_fetch_content(args.topology[0],args) ]
+
+  for tfile in args.topology:
+    tpath = Path(tfile)
+    if not tpath.exists():
+      log.fatal(f'Topology file {tfile} does not exist',module='create')
+    if not tpath.is_file():
+      log.fatal(f'The specified lab topology ({tfile}) is not a file',module='create')
 
   topology = load_topology(args)
   augment.main.transform(topology)

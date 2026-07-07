@@ -23,7 +23,7 @@ def read_topology_parse(args: typing.List[str]) -> argparse.Namespace:
     prog="netlab read",
     description='Read network topology, add default settings, and dump the results')
 
-  parser.add_argument(dest='topology', action='store', help='Topology file')
+  parser.add_argument(dest='topology', action='store', nargs='+', help='Topology file(s)')
   parser.add_argument(
     '-o','--output',
     dest='output',

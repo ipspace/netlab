@@ -104,8 +104,8 @@ def parser_data_source(
   t_flags = ['--topology'] if t_used else ['-t', '--topology']
   parser.add_argument(
     *t_flags,                                     # Add '--topology' and optional '-t' flag
-    dest='topology', action='store',
-    help='Topology file or URL')
+    dest='topology', action='store', nargs='*',
+    help='Topology file(s) or URL')
 
 def parser_subcommands(parser: argparse.ArgumentParser, sc_dict: dict) -> None:
   global NETLAB_COMMAND
@@ -325,8 +325,8 @@ def load_data_source(args: argparse.Namespace, ghosts: bool = True) -> Box:
     #
     if args.instance or os.path.isfile(args.snapshot):
       return load_snapshot(args)
-    
-    args.topology = 'topology.yml'                # no instance/valid snapshot, try default topology
+
+    args.topology = [ 'topology.yml' ]              # no instance/valid snapshot, try default topology
   else:                                           # topology file was specified, so we must use it
     if args.instance:                             # ... but not together with instance
       error_and_exit('Cannot specify --topology together with --instance or --snapshot')
@@ -335,17 +335,18 @@ def load_data_source(args: argparse.Namespace, ghosts: bool = True) -> Box:
   # load snapshot and have to try to load default topology file. In both
   # cases, the args.topology argument will be set.
   #
-  if os.path.isfile(args.topology):
+  missing_topologies = [ tfile for tfile in args.topology if not os.path.isfile(tfile) ]
+  if not missing_topologies:
     if not args.quiet:
-      log.info(f'Using lab topology file {args.topology}')
-    topology = create.run([ args.topology, '-o', 'none' ])
+      log.info(f'Using lab topology file(s) {" ".join(args.topology)}')
+    topology = create.run(args.topology + [ '-o', 'none' ])
     log.exit_on_error()
     if not topology:
-      error_and_exit(f'Could not transform the topology file {args.topology}')
+      error_and_exit(f'Could not transform the topology file(s) {" ".join(args.topology)}')
     return augment.nodes.ghost_buster(topology)
 
   error_and_exit(
-    f'Could not get the data from {args.snapshot} or lab topology {args.topology}',
+    f'Could not get the data from {args.snapshot} or lab topology {" ".join(args.topology)}',
     more_hints='Start the lab or specify an alternate topology file with the --topology flag')
 
 def check_modified_source(
