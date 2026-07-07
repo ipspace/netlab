@@ -39,13 +39,18 @@ def show_bgp_neighbor(
       activate: str = '', **kwargs: typing.Any) -> str:
   global af_lookup
   if not activate:
-    bgp_cmd = 'bgp summary'
+    return f'bgp summary vrf {vrf} | json'
   elif activate not in af_lookup:
     raise Exception(f'Unsupported address family {activate}')
-  else:
-    bgp_cmd = f'bgp {af_lookup[activate]} summary'
 
-  return f'{bgp_cmd} vrf {vrf} | json'
+  bgp_cmd = f'bgp {af_lookup[activate]} summary'
+  if vrf != 'default':
+    if 'unicast' in bgp_cmd:
+      bgp_cmd += f' vrf {vrf}'
+    else:
+      raise Exception(f'Cannot check {activate} BGP AF in VRF {vrf}')
+
+  return f'{bgp_cmd} | json'
 
 def valid_bgp_neighbor(
       ngb: list,

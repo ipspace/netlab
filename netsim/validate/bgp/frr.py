@@ -43,7 +43,12 @@ def show_bgp_neighbor(
   if activate not in af_lookup:
     raise Exception(f'Unsupported address family {activate}')
 
-  return f"bgp vrf {vrf} {af_kw[activate]} json"
+  if activate not in ['ipv4','ipv6']:
+    if vrf != 'default':
+      raise Exception(f'Cannot check {activate} BGP AF in VRF {vrf}')
+    return f"bgp {af_kw[activate]} json"
+  else:
+    return f"bgp vrf {vrf} {af_kw[activate]} json"
 
 def valid_bgp_neighbor(
       ngb: list,
@@ -72,7 +77,7 @@ def valid_bgp_neighbor(
   if 'peers' in _result:
     data = _result.peers
   elif struct_name not in _result:
-    raise Exception(f'There are no BGP peers in address family {activate}')
+    _common.report_state(f'There are no BGP peers in address family {activate}',state=='missing')
   else:
     data = _result[struct_name].peers
 
