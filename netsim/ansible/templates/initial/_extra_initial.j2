@@ -1,0 +1,58 @@
+{#
+    While most network devices can use interfaces as soon as they're mentioned,
+    some devices have to explicitely create or even configure them before using
+    them in device configurations. Notable examples: VyOS and BIRD.
+
+    However, even some traditional network devices refuse to create interfaces
+    without having underlying data objects. For example, in many cases you have
+    to create VLANs before you can mention an SVI/VLAN interface.
+
+    Traditionally, we moved parts of module-specific device configuration (for
+    example, VLAN definition) into 'initial' directory and include it from there.
+    This set of macros allows you to have the module-specific parts of the
+    initial device configuration in the module directory
+
+    IMPORTANT: This file must be imported WITH CONTEXT to get access to the node
+    module, config, and other variables.
+#}
+{% 
+   macro extra_initial() %}
+{{   extra_module_initial() }}
+{{   extra_plugin_initial() }}
+{% endmacro +%}
+{#
+    When including module initial configurations, we have to consider the device
+    type (for example, CSR has a device-specific VLAN configuration) and the
+    network OS (most Cisco IOS or Junos devices use the same VLAN
+    configuration).
+
+    Please note that we're using a list in the "include" directive, which means
+    that at most one template will be included.
+#}
+{% 
+   macro extra_module_initial() %}
+{%   for m in module|default([]) %}
+{%     include [ 
+         m + '/' + netlab_device_type + '.initial.j2',
+         m + '/' + ansible_network_os + '.initial.j2' ]
+         ignore missing %}
+{%   endfor %}
+{% endmacro +%}
+{#
+    When including plugin initial configurations, we have to consider device
+    type and network OS (as above), but also the possibility that a plugin
+    resides in a subdirectory of the 'extra' directory (for example, tunnel.gre
+    plugin is in tunnel/gre directory), which forces us to try the directory
+    name with dot replaced by slash.
+#}
+{% 
+   macro extra_plugin_initial() %}
+{%   for c in config|default([]) %}
+{%     include [ 
+         c + '/' + netlab_device_type + '.initial.j2',
+         c.replace('.','/') + '/' + netlab_device_type + '.initial.j2',
+         c + '/' + ansible_network_os + '.initial.j2',
+         c.replace('.','/') + '/' + ansible_network_os + '.initial.j2' ]
+         ignore missing %}
+{%    endfor %}
+{% endmacro +%}

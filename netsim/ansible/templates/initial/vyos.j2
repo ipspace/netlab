@@ -1,3 +1,4 @@
+{% from '_extra_initial.j2' import extra_initial with context %}
 {#
 It seems VyOS has some problems in handling hostnames with only one letter in it.
 #}
@@ -7,25 +8,11 @@ set system host-name '{{ inventory_hostname | replace("_","-") }}'
 set system host-name 'vyos-{{ inventory_hostname | replace("_","-") }}'
 {% endif %}
 
-{% if vrfs is defined %}
-{% include 'vyos.vrf.j2' %}
-{% endif %}
-{% if vlans is defined %}
-{% include 'vyos.vlan.j2' %}
-{% endif %}
 {#
-    Include interface-related parts of plugin configuration
+    Include interface-related parts of module/plugin configuration, including
+    VLANs, VRFs, and tunnels
 #}
-{% for x_dp in config|default([]) %}
-{#
-    With the restructuring of plugin directories, we have to try
-    plugin name with '.' and '/'. Fortunately, Jinja2 provides a
-    nifty mechanism to do that.
-#}
-{%  set dp_initial = x_dp + '/vyos.initial.j2' %}
-{%  set dp_alt = x_dp.replace('.','/') + '/vyos.initial.j2' %}
-{%  include [ dp_initial, dp_alt ] ignore missing %}
-{% endfor %}
+{{ extra_initial() }}
 
 {% if loopback.ipv4 is defined %}
 set interfaces dummy dum0 address {{ loopback.ipv4 }}
