@@ -3,6 +3,7 @@
 #
 from box import Box
 
+from ..augment import devices as a_devices
 from ..utils import log
 from . import _Quirks
 from .bird import bird_vlan_evpn_rt, bird_vrf_rt
@@ -10,9 +11,9 @@ from .bird import bird_vlan_evpn_rt, bird_vrf_rt
 _VALID_CP = ("bird", "frr")
 
 
-def vpp_control_plane(node: Box, defaults: Box) -> str:
+def control_plane(node: Box, defaults: Box) -> str:
   vpp_defaults = defaults.devices.vpp
-  return node.get("vpp_control_plane", vpp_defaults.get("vpp_control_plane", "bird"))
+  return node.get("control_plane", vpp_defaults.get("control_plane", "bird"))
 
 
 def _daemon_module(key: str) -> str:
@@ -42,9 +43,26 @@ def _merge_cp_daemon_config(node: Box, topology: Box, cp: str) -> None:
 
 
 def _merge_cp_group_vars(node: Box, topology: Box, cp: str) -> None:
-  cp_gvars = topology.defaults.devices.get(cp, {}).get("clab", {}).get("group_vars")
-  if cp_gvars:
-    node.clab.group_vars = cp_gvars + node.clab.group_vars
+  cp_dev = topology.defaults.devices.get(cp, {})
+  cp_clab_gvars = cp_dev.get("clab", {}).get("group_vars")
+  cp_gvars = cp_dev.get("group_vars", {})
+  vpp_clab_gvars = node.clab.get("group_vars", {})
+
+  if cp_clab_gvars:
+    node.clab.group_vars = cp_clab_gvars + vpp_clab_gvars
+
+  for gvars in (cp_clab_gvars, cp_gvars):
+    if not gvars:
+      continue
+    for k, v in gvars.items():
+      if k not in node and k not in vpp_clab_gvars:
+        node[k] = v
+
+
+def _merge_cp_config_templates(node: Box, topology: Box, cp: str) -> None:
+  cp_templates = topology.defaults.devices.get(cp, {}).get("clab", {}).get("node", {}).get("config_templates")
+  if cp_templates:
+    node.clab.config_templates = cp_templates + node.clab.get("config_templates", {})
 
 
 def _bird_rt_transforms(node: Box) -> None:
@@ -58,24 +76,45 @@ def _configure_bird_cp(node: Box, topology: Box) -> None:
   _merge_cp_group_vars(node, topology, "bird")
 
 
+def _register_frr_cp_scripts(node: Box, topology: Box) -> None:
+  """
+  Bind FRR control-plane module scripts for startup-time deployment.
+
+  netlab initial must not docker-exec these before FRR starts in the dataplane netns.
+  """
+  features = a_devices.get_device_features(node, topology.defaults)
+  mod_list: list[str] = ["normalize"] if features.initial.get("normalize", False) else []
+  mod_list += ["initial"] + node.get("module", []) + node.get("config", [])
+  cp_modules = _active_cp_modules(node, "frr") - {"frr", "routing", "initial"}
+  if not cp_modules:
+    return
+
+  if not node.get("_daemon_config"):
+    node._daemon_config = {}
+
+  for idx, m in enumerate(mod_list, start=1):
+    if m not in cp_modules:
+      continue
+    node._daemon_config[m.replace(".", "@")] = f"/etc/config/{idx:02d}-{m}.sh"
+
+
 def _configure_frr_cp(node: Box, topology: Box) -> None:
   _merge_cp_group_vars(node, topology, "frr")
+  _merge_cp_config_templates(node, topology, "frr")
+  _register_frr_cp_scripts(node, topology)
 
 
 def configure_control_plane(node: Box, topology: Box) -> None:
-  if node.device != "vpp":
-    return
-
-  cp = vpp_control_plane(node, topology.defaults)
+  cp = control_plane(node, topology.defaults)
   if cp not in _VALID_CP:
     log.error(
-      f"vpp_control_plane on node {node.name} must be one of {','.join(_VALID_CP)}",
+      f"control_plane on node {node.name} must be one of {','.join(_VALID_CP)}",
       category=log.IncorrectValue,
       module="vpp",
     )
     return
 
-  node.vpp_control_plane = cp
+  node.control_plane = cp
 
   if cp == "bird":
     node._daemon_parent = "bird"
