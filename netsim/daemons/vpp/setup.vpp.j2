@@ -2,8 +2,6 @@
 # bound to /etc/vpp/config/setup.vpp
 #
 
-set ip neighbor-config ip4 age 900
-set ip neighbor-config ip6 age 900
 lcp default netns dataplane
 lcp lcp-sync on
 # lcp lcp-sync-unnumbered on  # not in VPP 26.02-release
@@ -12,6 +10,10 @@ lcp param del-dynamic-on-link-down on
 lcp lcp-auto-subint off
 
 exec /etc/vpp/config/clab-interfaces.vpp
+
+{% for af_name in ['ipv4','ipv6'] if af_name in af %}
+set ip neighbor-config {{ af_name|replace('ipv','ip') }} age 900
+{% endfor %}
 
 {% for l in netlab_interfaces %}
 {%   set is_loopback = l.type|default('') == 'loopback' %}
@@ -24,48 +26,48 @@ create loopback interface instance {{ lb_instance }}
 {%   endif %}
 {%   set has_ipv4 = 'ipv4' in l and l.ipv4 is not false %}
 {%   set has_ipv6 = 'ipv6' in l and l.ipv6 is not false %}
-{% if l.mtu is defined %}
+{%   if l.mtu is defined %}
 set interface mtu {{ l.mtu }} {{ vpp_if }}
-{% endif %}
+{%   endif %}
 {%   if has_ipv4 or has_ipv6 %}
 lcp create {{ vpp_if }} host-if {{ l.ifname }}
 {%   endif %}
 set interface state {{ vpp_if }} {{ 'down' if l.shutdown|default(False) else 'up' }}
-{% if l.ipv4 is defined and l.ipv4 is string %}
+{%   if l.ipv4 is defined and l.ipv4 is string %}
 set interface ip address {{ vpp_if }} {{ l.ipv4 }}
-{% elif l._parent_intf is defined %}
+{%   elif l._parent_intf is defined %}
 set interface unnumbered {{ vpp_if }} use {{ l._parent_intf }}
-{% endif %}
-{% if 'ipv6' in l and l.ipv6 is string and l.ipv6|ansible.utils.ipv6 %}
+{%   endif %}
+{%   if 'ipv6' in l and l.ipv6 is string and l.ipv6|ansible.utils.ipv6 %}
 set interface ip address {{ vpp_if }} {{ l.ipv6 }}
-{%   if not is_loopback %}
-{%     if role == 'router' %}
-{%       if l.ra.disable|default(false) is true %}
+{%     if not is_loopback %}
+{%       if role == 'router' %}
+{%         if l.ra.disable|default(false) is true %}
 ip6 nd {{ vpp_if }} ra-suppress
-{%       else %}
+{%         else %}
 ip6 nd {{ vpp_if }} ra-interval 5
-{%         if 'ra' in l and l.ipv6 is string %}
-{%           set nd_prefix = l.ipv6|ansible.utils.ipaddr(0) %}
-{%           set nd_no_autoconfig = 'no-autoconfig' if l.ra.slaac|default(true) is false else '' %}
-{%           set nd_off_link = 'off-link' if l.ra.onlink|default(true) is false else '' %}
-{%           if nd_no_autoconfig or nd_off_link %}
+{%           if 'ra' in l and l.ipv6 is string %}
+{%             set nd_prefix = l.ipv6|ansible.utils.ipaddr(0) %}
+{%             set nd_no_autoconfig = 'no-autoconfig' if l.ra.slaac|default(true) is false else '' %}
+{%             set nd_off_link = 'off-link' if l.ra.onlink|default(true) is false else '' %}
+{%             if nd_no_autoconfig or nd_off_link %}
 ip6 nd {{ vpp_if }} prefix {{ nd_prefix }} infinite {{ nd_no_autoconfig }} {{ nd_off_link }}
-{%           else %}
+{%             else %}
 ip6 nd {{ vpp_if }} prefix {{ nd_prefix }} default
+{%             endif %}
+{%           endif %}
+{%           if l.ra.dhcp|default(false) == 'all' %}
+ip6 nd {{ vpp_if }} ra-managed-config-flag
+{%           endif %}
+{%           if l.ra.dhcp|default(false) == 'other' %}
+ip6 nd {{ vpp_if }} ra-other-config-flag
 {%           endif %}
 {%         endif %}
-{%         if l.ra.dhcp|default(false) == 'all' %}
-ip6 nd {{ vpp_if }} ra-managed-config-flag
-{%         endif %}
-{%         if l.ra.dhcp|default(false) == 'other' %}
-ip6 nd {{ vpp_if }} ra-other-config-flag
-{%         endif %}
-{%       endif %}
-{%     elif role == 'host' %}
+{%       elif role == 'host' %}
 ip6 nd address autoconfig {{ vpp_if }} default-route
+{%       endif %}
 {%     endif %}
 {%   endif %}
-{% endif %}
 {% endfor %}
 
 {% for m in module|default([]) %}
