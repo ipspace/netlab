@@ -3,12 +3,14 @@ message: |
 
 defaults.sources.extra: [ ../../integration/wait_times.yml ]
 
-module: [ bgp, vrf ]
 groups:
   probes:
     members: [ r1, r2, r3, vr1, vr2, vr3 ]
     module: [ bgp ]
     device: frr
+  duts:
+    module: [ bgp, vrf, vlan, vxlan, evpn ]
+    members: [ dut_eos, dut_frr ]
 
 vrfs:
   tenant:
@@ -17,6 +19,9 @@ vrfs:
       prefix.ipv4: 172.16.2.0/24
     - interfaces: [ dut_eos, dut_frr, vr2, vr3 ]
       prefix.ipv6: 2001:db8:0:2::/64
+
+evpn.session: [ ebgp ]
+bgp.community: [ standard, extended ]
 
 # Node device type for DUT devices set via default groups
 #
@@ -94,6 +99,18 @@ validate:
     wait: ebgp_session
     plugin: bgp_neighbor(node.bgp.neighbors,'r2',af='ipv6',activate='ipv4',state='missing')
 
+  # Check non-IP AFs
+  #
+  evpn_eos:
+    nodes: [ dut_eos ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut_frr',af='ipv4',activate='evpn')
+  evpn_frr:
+    nodes: [ dut_frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut_eos',af='ipv4',activate='evpn')
+  act_vpnv4:
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'r1',af='ipv4',activate='vpnv4',state='missing')
+
   # Check matching explicit states
   #
   state_ipv4:
@@ -125,4 +142,8 @@ validate:
   fail_act_ipv4:
     nodes: [ dut_eos, dut_frr ]
     plugin: bgp_neighbor(node.bgp.neighbors,'r2',af='ipv6',activate='ipv4')
+    _expect_fail: True
+  fail_act_vpnv4:
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'r1',af='ipv4',activate='vpnv4')
     _expect_fail: True
