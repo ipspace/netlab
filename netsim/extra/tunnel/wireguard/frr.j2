@@ -38,10 +38,6 @@ fi
 {%   if intf._ipv6_link_local is defined %}
 ip -6 addr add {{ intf._ipv6_link_local }} dev {{ intf.ifname }} scope link
 {%   endif %}
-{%   set af = intf.tunnel.af %}
-{%   set dst = intf.tunnel._destination %}
-{%   set peer_ip = ('[' ~ dst.ipv6 ~ ']') if af == 'ipv6' else dst.ipv4 %}
-{%   set peer_endpoint = peer_ip ~ ':' ~ dst.listen_port %}
 
 #
 # Setup VRF underlay if needed
@@ -49,9 +45,12 @@ ip -6 addr add {{ intf._ipv6_link_local }} dev {{ intf.ifname }} scope link
 {%   set vrf_name = intf.tunnel.vrf|default('') %}
 {%   if vrf_name %}
 {%     set rule_pref = 10000 + intf.ifindex %}
-setup_wg_vrf_underlay {{ vrfs[vrf_name].vrfidx }} {{ rule_pref }} {{ af }}
+setup_wg_vrf_underlay {{ vrfs[vrf_name].vrfidx }} {{ rule_pref }} {{ intf.tunnel.af }}
 {%   endif %}
 
+{%   set dst = intf.tunnel._destination %}
+{%   set peer_ip = ('[' ~ dst.ipv6 ~ ']') if intf.tunnel.af == 'ipv6' else dst.ipv4 %}
+{%   set peer_endpoint = peer_ip ~ ':' ~ dst.listen_port %}
 wg set {{ intf.ifname }} \
   private-key <(printf '%s\n' '{{ intf.tunnel.private_key }}') \
   listen-port {{ intf.tunnel.listen_port }} \
