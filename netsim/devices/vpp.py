@@ -4,11 +4,9 @@
 from box import Box
 
 from ..augment import devices as a_devices
-from ..utils import log
 from . import _Quirks
 from .bird import bird_vlan_evpn_rt, bird_vrf_rt
 
-_VALID_CP = ("bird", "frr")
 _VPP_OWNED_GVARS = frozenset({"netlab_start_daemon", "netlab_dp_module"})
 
 
@@ -61,9 +59,6 @@ def _merge_cp_group_vars(node: Box, topology: Box, cp: str) -> None:
       if k not in node and k not in vpp_clab_gvars:
         node[k] = v
 
-  for k in _VPP_OWNED_GVARS:
-    node.pop(k, None)
-
 
 def _merge_cp_config_templates(node: Box, topology: Box, cp: str) -> None:
   cp_templates = topology.defaults.devices.get(cp, {}).get("clab", {}).get("node", {}).get("config_templates")
@@ -112,14 +107,6 @@ def _configure_frr_cp(node: Box, topology: Box) -> None:
 
 def configure_control_plane(node: Box, topology: Box) -> None:
   cp = control_plane(node, topology.defaults)
-  if cp not in _VALID_CP:
-    log.error(
-      f"control_plane on node {node.name} must be one of {','.join(_VALID_CP)}",
-      category=log.IncorrectValue,
-      module="vpp",
-    )
-    return
-
   node.control_plane = cp
 
   if cp == "bird":
