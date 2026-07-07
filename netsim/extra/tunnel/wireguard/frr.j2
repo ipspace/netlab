@@ -7,6 +7,15 @@ if ! command -v wg >/dev/null; then
   exit 1
 fi
 #
+{% for intf in netlab_interfaces if intf.tunnel.mode|default('') in ['wireguard'] %}
+if [ ! -e /sys/class/net/{{ intf.ifname }} ]; then
+  if [ ! -e /sys/devices/virtual/net/{{ intf.ifname }} ]; then
+    ip link add {{ intf.ifname }} type wireguard
+  fi
+fi
+{{ linux_intf_sysctl(intf,role) }}
+{% endfor %}
+#
 setup_wg_vrf_underlay() {
   local vrf_table="$1"
   local rule_pref="$2"

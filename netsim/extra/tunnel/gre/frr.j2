@@ -1,1 +1,14 @@
-# GRE tunnel interfaces are created during initial FRR device configuration
+{% from "initial/linux/intf-sysctl.j2" import linux_intf_sysctl with context %}
+#!/bin/bash
+#
+set -e
+#
+{% for intf in netlab_interfaces if intf.tunnel.mode|default('') in ['gre'] %}
+{%   set af = intf.tunnel.af|default('ipv4') %}
+{%   set gre_mode = 'ip6gre' if af == 'ipv6' else 'gre' %}
+ip tunnel add {{ intf.ifname }} mode {{ gre_mode }} \
+  local {{ intf.tunnel._source[af] }} remote {{ intf.tunnel._destination[af] }} \
+  dev {{ intf.tunnel._source.ifname }} ttl 255
+{{ linux_intf_sysctl(intf,role) }}
+{% endfor %}
+exit 0
