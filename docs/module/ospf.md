@@ -55,7 +55,7 @@ The following table describes the per-platform support of individual router-leve
 | ------------------------ |:-:|:-:|:-:|:-:|:-:|
 | Arista EOS               | ✅| ✅| ✅| ✅| ✅|
 | Aruba AOS-CX             | ✅| ✅| ✅| ✅| ✅|
-| BIRD                     | ✅| ✅| ✅| ✅| ❌ | 
+| BIRD                     | ✅| ✅| ✅| ✅| ✅|
 | Cisco ASAv               | ✅| ✅| ❌ | ❌ | ✅|
 | Cisco IOSv/IOSvL2        | ✅| ✅| ✅| ✅| ✅|
 | Cisco IOS XE[^18v]       | ✅| ✅| ✅| ✅| ✅|
