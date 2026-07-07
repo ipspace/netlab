@@ -62,8 +62,12 @@ validate:
     nodes: [ xp ]
     plugin: ospf6_prefix(nodes.xgr.loopback.ipv6)
   gr_resume:
-    description: Resume OSPFv3 on XGR
+    description: Reset OSPFv3 on XGR for repeatable GR tests
     nodes: [ xgr ]
     devices: [ frr ]
-    exec: kill -CONT $(pidof ospf6d) || true
-    pass: OSPFv3 daemon resumed on XGR
+    exec: >-
+      rm -f /var/lib/frr/ospf6d.json;
+      pkill -9 ospf6d;
+      /usr/lib/frr/ospf6d -d -F datacenter -A ::1;
+      vtysh -f /etc/config/02-ospf.sh
+    pass: OSPFv3 daemon reset on XGR
