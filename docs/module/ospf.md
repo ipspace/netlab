@@ -114,6 +114,7 @@ The following devices support OSPF graceful restart:
 
 | Operating system | OSPFv2 | OSPFv3 |
 | ---------------- | :--: | :--: |
+| BIRD             |  ✅  |  ✅  |
 | Fortinet FortiOS |  ✅  |  ✅  |
 | FRR              |  ✅  |  ✅  |
 
