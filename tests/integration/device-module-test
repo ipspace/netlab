@@ -255,21 +255,6 @@ def print_ok(step: str) -> None:
   _strings.print_colored_text(f"{step}(ok)",color="bright_green")
   print(" ",end="",flush=True)
 
-def collect_tests(path: str, limit: str) -> list:
-  if os.path.isdir(path):
-    underlay = os.path.join(path,'underlay.yml')
-    overlay = os.path.join(path,'overlay.yml')
-    if os.path.isfile(underlay) and os.path.isfile(overlay):
-      return [ path ]
-
-  return sorted(_files.get_globbed_files(path,limit))
-
-def topology_create_args(test: str) -> str:
-  if os.path.isdir(test):
-    return f"{test}/underlay.yml {test}/overlay.yml"
-
-  return test
-
 def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
   test_path = os.path.abspath(test)
   os.makedirs(args.workdir,exist_ok=True)
@@ -284,7 +269,7 @@ def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
   c_time = time.strftime('%H:%M:%S',time.localtime())
   print(f"{c_time} {test}:",end=" ",flush=True)
 #  os.environ['NETLAB_NETLAB_CREATE_OUTPUT_YAML_OUTPUT'] = 'netlab.snapshot.yml'
-  if execute(f"netlab create {topology_create_args(test_path)}",args,test=test,log="create",err="create").returncode == 0:
+  if execute(f"netlab create {test_path}",args,test=test,log="create",err="create").returncode == 0:
     warnings = extract_warning(test,args,step='create')
     if warnings:
       print_fail("create",fail_status='WARNING',fail_color="bright_yellow")
@@ -408,7 +393,7 @@ def main() -> None:
       print(f"Test search path: {path}/{args.limit}")
 
     try:
-      test_list = collect_tests(path,args.limit)
+      test_list = sorted(_files.get_globbed_files(path,args.limit))
     except Exception as ex:
       log.fatal(f'Cannot find tests in {path}: {ex}')
 
