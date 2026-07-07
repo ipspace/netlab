@@ -254,16 +254,10 @@ def merge_topology(topology: Box, addition: Box) -> None:
     if k == 'input':
       continue
 
-    if isinstance(addition[k], Box):
-      if isinstance(topology.get(k), Box):
-        topology[k] = topology[k] + addition[k]
-      else:
-        topology[k] = addition[k]
-    elif isinstance(addition[k], list):
-      if isinstance(topology.get(k), list):
-        topology[k].extend(addition[k])
-      else:
-        topology[k] = addition[k]
+    if isinstance(addition[k], Box) and isinstance(topology.get(k), Box):
+      topology[k] = topology[k] + addition[k]
+    elif isinstance(addition[k], list) and isinstance(topology.get(k), list):
+      topology[k].extend(addition[k])
     elif k == 'message' and isinstance(addition[k], str) and isinstance(topology.get(k), str):
       topology[k] = topology[k].rstrip('\n') + '\n' + addition[k].lstrip('\n')
     else:
