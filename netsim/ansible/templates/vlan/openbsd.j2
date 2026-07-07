@@ -1,28 +1,28 @@
-#!/bin/bash
+{#
+  This script configures OpenBSD VLANs
+#}
+#!/bin/sh
 #
 set -e # Exit immediately when any command fails
 set -x # Track commands for troubleshooting
 #
-{# Create VLAN subinterfaces. No need to set IP addresses, FRR can handle that #}
-{% if 0 %}
-{% for i in interfaces if i.type == 'vlan_member' %}
-  ifconfig {{ i.ifname }} parent {{ i.parent_ifname }} vnetid {{ i.vlan.access_id }}
-{% endfor %}
-{% endif %}
 
+{% from "initial/openbsd-ifconfig.j2" import ifconfig %}
 {% for ifdata in interfaces if ifdata.vlan is defined %}
 
 {% if ifdata.type == 'vlan_member' %}
-ifconfig {{ ifdata.ifname }} parent {{ ifdata.parent_ifname }} vnetid {{ ifdata.vlan.access_id }}
+ifconfig {{ ifdata.ifname }} parent {{ ifdata.parent_ifname }} vnetid {{ ifdata.vlan.access_id }} up
 {% endif %}
 {% if ifdata.vlan.access is defined %}
-ifconfig bridge{{ vlans[ifdata.vlan.access].id }} add {{ ifdata.ifname }}
+ifconfig bridge{{ vlans[ifdata.vlan.access].id }} add {{ ifdata.ifname }} up
 {% endif %}
 {% if ifdata.vlan.native is defined %}
-ifconfig bridge{{ vlans[ifdata.vlan.native].id }} add {{ ifdata.ifname }}
+ifconfig bridge{{ vlans[ifdata.vlan.native].id }} add {{ ifdata.ifname }} up
 {% endif %}
 
+{{ ifconfig(ifdata) }}
 {% endfor %}
+
 # stuff
 # ifconfig bridge0 add vlanX add vio1
 # or

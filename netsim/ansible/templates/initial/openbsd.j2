@@ -6,7 +6,7 @@
 set -e
 set -x
 
-hostname {{ inventory_hostname.replace("_","-") }}
+hostname {{ inventory_hostname | replace("_","-") }}
 {% include 'linux/hosts.j2' +%}
 
 {% if role == 'router' %}
@@ -18,35 +18,7 @@ sysctl net.inet6.ip6.forwarding=1
 echo -n > /etc/rad.conf
 {% endif %}
 
-{% macro ifconfig(intf,alias='') %}
-{%   if not alias %}
-ifconfig {{ intf.ifname }} -inet
-ifconfig {{ intf.ifname }} -inet6
-{%   endif %}
-{% if intf.ipv4 is defined and intf.ipv4 is string %}
-ifconfig {{ intf.ifname }} inet {{ intf.ipv4 }} {{ alias }}
-{% endif %}
-{% if intf.ipv6 is defined %}
-{%   set is_host = role == 'host' %}
-{%   if role == 'router' %}
-echo interface {{ intf.ifname }} >> /etc/rad.conf
-{%   endif %}
-{%   if intf.ipv6 is string %}
-ifconfig {{ intf.ifname }} inet6 {{ intf.ipv6 }}{% if is_host %} autoconf{% endif +%}
-{%   else %}
-ifconfig {{ intf.ifname }} inet6 eui64{% if is_host %} autoconf{% endif +%}
-{%   endif %}
-{% endif %}
-{% if intf.mtu is defined %}
-ifconfig {{ intf.ifname }} mtu {{ intf.mtu }}
-{% endif %}
-{% if intf.name is defined %}
-ifconfig {{ intf.ifname }} description "{{ intf.name }}"
-{% endif %}
-{% if intf.shutdown|default(False) %}
-ifconfig {{ intf.ifname }} down
-{% endif %}
-{% endmacro %}
+{% from "initial/openbsd-ifconfig.j2" import ifconfig %}
 #
 # Interface configuration
 #
@@ -54,7 +26,14 @@ ifconfig {{ intf.ifname }} down
 {{   ifconfig(loopback,alias='alias') }}
 {% endif %}
 {% for intf in interfaces %}
-{{   ifconfig(intf) }}
+{# 
+   OpenBSD does not like configuring IPs on devices like 
+   VLANs that need parent inteface first, skip and come back
+   to assigning those in the VLAN module
+#}
+{%   if not intf.vlan is defined %}
+{{      ifconfig(intf) }}
+{%   endif %}
 {% endfor %}
 
 {% if role == 'router' %}

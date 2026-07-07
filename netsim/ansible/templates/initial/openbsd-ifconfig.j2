@@ -1,0 +1,29 @@
+{% macro ifconfig(intf,alias='') %}
+{%   if not alias %}
+ifconfig {{ intf.ifname }} -inet
+ifconfig {{ intf.ifname }} -inet6
+{%   endif %}
+{% if intf.ipv4 is defined and intf.ipv4 is string %}
+ifconfig {{ intf.ifname }} inet {{ intf.ipv4 }} {{ alias }}
+{% endif %}
+{% if intf.ipv6 is defined %}
+{%   set is_host = role == 'host' %}
+{%   if role == 'router' %}
+echo interface {{ intf.ifname }} >> /etc/rad.conf
+{%   endif %}
+{%   if intf.ipv6 is string %}
+ifconfig {{ intf.ifname }} inet6 {{ intf.ipv6 }}{% if is_host %} autoconf{% endif +%}
+{%   else %}
+ifconfig {{ intf.ifname }} inet6 eui64{% if is_host %} autoconf{% endif +%}
+{%   endif %}
+{% endif %}
+{% if intf.mtu is defined %}
+ifconfig {{ intf.ifname }} mtu {{ intf.mtu }}
+{% endif %}
+{% if intf.name is defined %}
+ifconfig {{ intf.ifname }} description "{{ intf.name }}"
+{% endif %}
+{% if intf.shutdown|default(False) %}
+ifconfig {{ intf.ifname }} down
+{% endif %}
+{% endmacro %}
