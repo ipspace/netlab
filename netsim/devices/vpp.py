@@ -9,6 +9,7 @@ from . import _Quirks
 from .bird import bird_vlan_evpn_rt, bird_vrf_rt
 
 _VALID_CP = ("bird", "frr")
+_VPP_OWNED_GVARS = frozenset({"netlab_start_daemon", "netlab_dp_module"})
 
 
 def control_plane(node: Box, defaults: Box) -> str:
@@ -46,17 +47,22 @@ def _merge_cp_group_vars(node: Box, topology: Box, cp: str) -> None:
   cp_dev = topology.defaults.devices.get(cp, {})
   cp_clab_gvars = cp_dev.get("clab", {}).get("group_vars")
   cp_gvars = cp_dev.get("group_vars", {})
-  vpp_clab_gvars = node.clab.get("group_vars", {})
+  vpp_clab_gvars = topology.defaults.devices.vpp.get("clab", {}).get("group_vars", {})
 
   if cp_clab_gvars:
-    node.clab.group_vars = cp_clab_gvars + vpp_clab_gvars
+    node.clab.group_vars = cp_clab_gvars + vpp_clab_gvars + node.clab.get("group_vars", {})
 
   for gvars in (cp_clab_gvars, cp_gvars):
     if not gvars:
       continue
     for k, v in gvars.items():
+      if k in _VPP_OWNED_GVARS:
+        continue
       if k not in node and k not in vpp_clab_gvars:
         node[k] = v
+
+  for k in _VPP_OWNED_GVARS:
+    node.pop(k, None)
 
 
 def _merge_cp_config_templates(node: Box, topology: Box, cp: str) -> None:
