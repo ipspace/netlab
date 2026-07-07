@@ -79,8 +79,10 @@ def fix_git_repo_url(url: str) -> str:
 Fetch topology from the specified URL, store it in 'downloaded.yml' file in
 current directory, warn if the directory is not empty
 """
-def http_fetch_content(url: str, args: typing.Union[argparse.Namespace,Box]) -> str:
-  fname = 'downloaded.yml'
+def http_fetch_content(
+      url: str,
+      args: typing.Union[argparse.Namespace,Box],
+      fname: str = 'downloaded.yml') -> str:
   url = fix_git_repo_url(url)
   try:
     c = requests.get(url)
@@ -157,8 +159,10 @@ def run(cli_args: typing.List[str],
   if not args.topology:
     args.topology = [ 'topology.yml' ]
 
-  if len(args.topology) == 1 and '://' in args.topology[0]:
-    args.topology = [ http_fetch_content(args.topology[0],args) ]
+  url_indexes = [ idx for idx,tfile in enumerate(args.topology) if '://' in tfile ]
+  for n,idx in enumerate(url_indexes):
+    fname = 'downloaded.yml' if len(url_indexes) == 1 else f'downloaded-{n + 1}.yml'
+    args.topology[idx] = http_fetch_content(args.topology[idx],args,fname=fname)
 
   for tfile in args.topology:
     tpath = Path(tfile)
