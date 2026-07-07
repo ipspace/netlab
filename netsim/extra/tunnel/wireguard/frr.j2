@@ -42,22 +42,21 @@ ip -6 addr add {{ intf._ipv6_link_local }} dev {{ intf.ifname }} scope link
 {%   set dst = intf.tunnel._destination %}
 {%   set peer_ip = ('[' ~ dst.ipv6 ~ ']') if af == 'ipv6' else dst.ipv4 %}
 {%   set peer_endpoint = peer_ip ~ ':' ~ dst.listen_port %}
-{%   set vrf_name = intf.tunnel.vrf|default('') %}
-{%   set vrf_table = vrfs[vrf_name].vrfidx if vrf_name else '' %}
-{%   set rule_pref = 10000 + intf.ifindex if vrf_name else '' %}
 
 #
 # Setup VRF underlay if needed
 #
+{%   set vrf_name = intf.tunnel.vrf|default('') %}
 {%   if vrf_name %}
-setup_wg_vrf_underlay {{ vrf_table }} {{ rule_pref }} {{ intf.tunnel.af }}
+{%     set rule_pref = 10000 + intf.ifindex %}
+setup_wg_vrf_underlay {{ vrfs[vrf_name].vrfidx }} {{ rule_pref }} {{ af }}
 {%   endif %}
 
 wg set {{ intf.ifname }} \
   private-key <(printf '%s\n' '{{ intf.tunnel.private_key }}') \
   listen-port {{ intf.tunnel.listen_port }} \
-{%   if rule_pref %}  fwmark {{ rule_pref }} \
-{%   endif %}  peer {{ dst.public_key }} \
+{%   if vrf_name %}  fwmark {{ rule_pref }} \{% endif %}
+  peer {{ dst.public_key }} \
   allowed-ips {{ intf.tunnel.allowed_ips }} \
   endpoint {{ peer_endpoint }} \
   persistent-keepalive {{ intf.tunnel.persistent_keepalive }}
