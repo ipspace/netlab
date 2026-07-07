@@ -1,4 +1,5 @@
 {% from "initial/linux/create-bond.j2" import create_bond_dev %}
+{% from "initial/linux/intf-sysctl.j2" import linux_intf_sysctl with context %}
 #!/bin/bash
 #
 set -e
@@ -105,21 +106,12 @@ if [ ! -e /sys/class/net/{{ i.ifname }} ]; then
 fi
 {% endfor %}
 
-# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+# Set Linux interface sysctl parameters: Disable IPv6 (for IPv4-only interfaces)
+# or SLAAC (if the device is a router)
 #
 {% for i in interfaces if i.type in ['lan','p2p','stub','lag','bond'] %}
 ip link set {{ i.ifname }} down
-{%   if i.ipv6 is not defined %}
-sysctl -qw net.ipv6.conf.{{ i.ifname }}.disable_ipv6=1
-{%   else %}
-{%     set ra_flag = '0' if role == 'router' else '1' %}
-sysctl -qw net.ipv6.conf.{{ i.ifname }}.autoconf={{ ra_flag }}
-sysctl -qw net.ipv6.conf.{{ i.ifname }}.accept_ra={{ ra_flag }}
-{%   endif %}
-{%   if i.mtu is defined %}
-ip link set dev {{ i.ifname }} mtu {{ i.mtu }}
-{%   endif %}
-ip link set {{ i.ifname }} {{ "down" if i.shutdown|default(False) else "up" }}
+{{ linux_intf_sysctl(i,role|default('router')) }}
 {% endfor %}
 
 #

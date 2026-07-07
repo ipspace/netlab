@@ -1,0 +1,26 @@
+{#
+    Some Linux interface sysctl parameters have to be set based on
+    whether a device uses IPv6 (IPv6 is enabled by default on Linux)
+    and whether it's a router (so it should not listen to RAs).
+
+    The same macro also sets the interface MTU
+#}
+{% macro linux_intf_sysctl(intf,role='router',activate=True) %}
+# Linux interface parameters for {{ intf.ifname }}
+#
+{%   if intf.ipv6 is not defined %}
+sysctl -qw net/ipv6/conf/{{ intf.ifname }}/disable_ipv6=1
+{%   else %}
+sysctl -qw net/ipv6/conf/{{ intf.ifname }}/keep_addr_on_down=1
+{%     set ra_flag = '0' if role == 'router' else '1' %}
+sysctl -qw net/ipv6/conf/{{ intf.ifname }}/autoconf={{ ra_flag }}
+sysctl -qw net/ipv6/conf/{{ intf.ifname }}/accept_ra={{ ra_flag }}
+sysctl -w net/ipv6/conf/{{ intf.ifname }}/addr_gen_mode=3
+{%   endif %}
+{%   if intf.mtu is defined %}
+ip link set dev {{ intf.ifname }} mtu {{ intf.mtu }}
+{%   endif %}
+{%   if activate %}
+ip link set {{ intf.ifname }} {{ "down" if intf.shutdown|default(False) else "up" }}
+{%   endif %}
+{% endmacro %}

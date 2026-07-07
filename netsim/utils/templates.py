@@ -185,6 +185,8 @@ def config_template_paths(
       provider_path: typing.Optional[str] = None) -> list:
   if fname in node.get('config',[]):                    # Are we dealing with extra-config template?
     path_prefix = topology.defaults.paths.custom.dirs
+    if topology.defaults.paths.custom.extra_dirs:       # Extra search directories are needed to include config macros
+      path_prefix.extend(topology.defaults.paths.custom.extra_dirs)
     path_suffix = [ fname ]
   else:
     path_suffix = [ node.device ]
