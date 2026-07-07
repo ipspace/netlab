@@ -1,0 +1,23 @@
+#!/bin/bash
+#
+# Start the VPP control-plane daemon in the dataplane namespace, then run VPP
+#
+set -e
+
+NETNS=dataplane
+VPP_CONTROL_PLANE={{ vpp_control_plane|default('bird') }}
+
+case "$VPP_CONTROL_PLANE" in
+  bird)
+    ip netns exec "$NETNS" /usr/sbin/bird -d -c /etc/bird/bird.conf
+    ;;
+  frr)
+    ip netns exec "$NETNS" /usr/lib/frr/frrinit.sh start
+    ;;
+  *)
+    echo "Unknown vpp_control_plane: $VPP_CONTROL_PLANE" >&2
+    exit 1
+    ;;
+esac
+
+exec /usr/bin/vpp -c /etc/vpp/startup.conf
