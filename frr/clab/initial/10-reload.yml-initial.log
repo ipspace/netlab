@@ -3,19 +3,19 @@ Checking virtualization provider installation
 OK: clab installed and working correctly
 Starting clab nodes
 provider clab: executing flock -E 42 /tmp/netlab.lock sudo -E containerlab deploy --reconfigure -t clab.yml
-17:04:14 INFO Containerlab started version=0.75.0
-17:04:14 INFO Parsing & checking topology file=clab.yml
-17:04:14 INFO Removing directory path=/work/netlab_cicd/clab-ml-17
-17:04:14 INFO Creating docker network name=nl_mgmt_17 IPv4 subnet=192.168.17.0/24 IPv6 subnet="" MTU=0
-17:04:14 INFO Creating lab directory path=/work/netlab_cicd/clab-ml-17
-17:04:14 INFO Creating container name=x1
-17:04:14 INFO Creating container name=dut
-17:04:14 INFO Created link: dut:eth1 ▪┄┄▪ x1:eth1
-17:04:15 INFO Executed command node=x1 command="sleep 1" stdout=""
-17:04:15 INFO Executed command node=dut command="sleep 1" stdout=""
-17:04:15 INFO Adding host entries path=/etc/hosts
-17:04:15 INFO Adding SSH config for nodes path=/etc/ssh/ssh_config.d/clab-ml-17.conf
-17:04:16 INFO containerlab version
+10:30:30 INFO Containerlab started version=0.75.0
+10:30:30 INFO Parsing & checking topology file=clab.yml
+10:30:30 INFO Removing directory path=/work/netlab_cicd/clab-ml-17
+10:30:30 INFO Creating docker network name=nl_mgmt_17 IPv4 subnet=192.168.17.0/24 IPv6 subnet="" MTU=0
+10:30:30 INFO Creating lab directory path=/work/netlab_cicd/clab-ml-17
+10:30:30 INFO Creating container name=x1
+10:30:30 INFO Creating container name=dut
+10:30:30 INFO Created link: dut:eth1 ▪┄┄▪ x1:eth1
+10:30:31 INFO Executed command node=x1 command="sleep 1" stdout=""
+10:30:31 INFO Executed command node=dut command="sleep 1" stdout=""
+10:30:31 INFO Adding host entries path=/etc/hosts
+10:30:31 INFO Adding SSH config for nodes path=/etc/ssh/ssh_config.d/clab-ml-17.conf
+10:30:31 INFO containerlab version
   🎉=
   │ A newer containerlab version (0.77.0) is available!
   │ Release notes: https://containerlab.dev/rn/0.77/
@@ -64,7 +64,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "initial configuration for dut\n=========================================\n#!/bin/bash\n#\nset -e\nset -x\n#\n# Create bash profile script\n#\ncat <<'SCRIPT' >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)# \"\necho\necho \"Use vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)\n#\n# FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands\n#\nsysctl -w net.ipv4.ip_forward=1\nsysctl -w net.ipv6.conf.all.forwarding=0\n#\n# Try to create the management VRF if netlab_mgmt_vrf is set. The VRF module has to be loaded\n# and the container has to have eth0 device\n#\nif grep vrf /proc/modules && ip link show dev eth0; then\n  #\n  # Get the current next hop for the default route\n  #\n  def_nh=$(ip route list default|awk '{ print $3 }')\n  #\n  # Create the management VRF and add eth0 to it\n  #\n  if [ ! -e /sys/devices/virtual/net/mgmt ]; then\n    ip link add mgmt type vrf table 42\n  fi\n  ip link set mgmt up\n  sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1\n  ip link set eth0 master mgmt\n  #\n  # Reinstall the default route if we had it before\n  #\n  if [[ -n \"$def_nh\" ]]; then\n    ip route add 0.0.0.0/0 vrf mgmt via $def_nh\n  fi\nfi\n#\n# Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)\n#\n\n# Set system defaults\n#\n# Send ARP requests from a sane source IP address\n#\nsysctl -w net.ipv4.conf.all.arp_announce=2\n\n#\n# Create loopbacks, stub and lag/bond devices\n#\nif [ ! -e /sys/class/net/lo ]; then\n  if [ ! -e /sys/devices/virtual/net/lo ]; then\n    ip link add lo type dummy\n    ip link set dev lo up\n  fi\nfi\n\n# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)\n#\nip link set eth1 down\nsysctl -qw net.ipv6.conf.eth1.disable_ipv6=1\nip link set dev eth1 mtu 1500\nip link set eth1 up\n\n#\n# Add vtysh.conf file\necho \"service integrated-vtysh-config\" >/etc/frr/vtysh.conf\n\n!\nexit 0\n"
+    "msg": "initial configuration for dut\n=========================================\n#!/bin/bash\n#\nset -e\nset -x\n#\n# Create bash profile script\n#\ncat <<'SCRIPT' >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)# \"\necho\necho \"Use vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)\n#\n# FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands\n#\nsysctl -w net.ipv4.ip_forward=1\nsysctl -w net.ipv6.conf.all.forwarding=0\n#\n# Try to create the management VRF if netlab_mgmt_vrf is set. The VRF module has to be loaded\n# and the container has to have eth0 device\n#\nif grep vrf /proc/modules && ip link show dev eth0; then\n  #\n  # Get the current next hop for the default route\n  #\n  def_nh=$(ip route list default|awk '{ print $3 }')\n  #\n  # Create the management VRF and add eth0 to it\n  #\n  if [ ! -e /sys/devices/virtual/net/mgmt ]; then\n    ip link add mgmt type vrf table 42\n  fi\n  ip link set mgmt up\n  sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1\n  ip link set eth0 master mgmt\n  #\n  # Reinstall the default route if we had it before\n  #\n  if [[ -n \"$def_nh\" ]]; then\n    ip route add 0.0.0.0/0 vrf mgmt via $def_nh\n  fi\nfi\n#\n# Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)\n#\n\n# Set system defaults\n#\n# Send ARP requests from a sane source IP address\n#\nsysctl -w net.ipv4.conf.all.arp_announce=2\n\n#\n# Create loopbacks, stub and lag/bond devices\n#\nif [ ! -e /sys/class/net/lo ]; then\n  if [ ! -e /sys/devices/virtual/net/lo ]; then\n    ip link add lo type dummy\n    ip link set dev lo up\n  fi\nfi\n\n# Set Linux interface sysctl parameters: Disable IPv6 (for IPv4-only interfaces)\n# or SLAAC (if the device is a router)\n#\nip link set eth1 down\n# Linux interface parameters for eth1\n#\nsysctl -qw net/ipv6/conf/eth1/disable_ipv6=1\nip link set dev eth1 mtu 1500\nip link set eth1 up\n\n\n#\n# Add vtysh.conf file\necho \"service integrated-vtysh-config\" >/etc/frr/vtysh.conf\n\n\n!\nexit 0\n"
 }
 
 TASK [Deploy initial configuration] ********************************************
