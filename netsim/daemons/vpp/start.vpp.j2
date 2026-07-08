@@ -8,19 +8,19 @@ set -e
 NETNS=dataplane
 VPP_CONTROL_PLANE={{ control_plane|default('bird') }}
 
-configure_unnumbered_peers() {
-{% for l in interfaces if l._unnumbered_peer is defined %}
-  until ip -n "$NETNS" link show {{ l.ifname }} >/dev/null 2>&1; do sleep 0.1; done
-  ip -n "$NETNS" addr flush dev {{ l.ifname }} scope global 2>/dev/null || true
-  ip -n "$NETNS" addr add {{ l._parent_ipv4 }} peer {{ l._unnumbered_peer }} dev {{ l.ifname }}
-{% endfor %}
-}
-
 /usr/bin/vpp -c /etc/vpp/startup.conf &
 VPP_PID=$!
 until [ -S /run/vpp/cli.sock ]; do sleep 0.1; done
 vppctl show version >/dev/null
-configure_unnumbered_peers
+
+#
+# Attach Linux peer addresses for IPv4 unnumbered LCP interfaces
+#
+{% for l in interfaces if l._unnumbered_peer is defined %}
+until ip -n "$NETNS" link show {{ l.ifname }} >/dev/null 2>&1; do sleep 0.1; done
+ip -n "$NETNS" addr flush dev {{ l.ifname }} scope global 2>/dev/null || true
+ip -n "$NETNS" addr add {{ l._parent_ipv4 }} peer {{ l._unnumbered_peer }} dev {{ l.ifname }}
+{% endfor %}
 
 case "$VPP_CONTROL_PLANE" in
   bird)
