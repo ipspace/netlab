@@ -1,24 +1,35 @@
 #!/bin/bash
 #
-# Start the VPP control-plane daemon in the dataplane namespace, then run VPP
+# Start VPP, attach Linux peer addresses for IPv4 unnumbered LCP interfaces,
+# then start the selected control-plane daemon in the dataplane namespace.
 #
 set -e
 
 NETNS=dataplane
 VPP_CONTROL_PLANE={{ control_plane|default('bird') }}
 
+configure_unnumbered_peers() {
+{% for l in interfaces if l._unnumbered_peer is defined %}
+  until ip -n "$NETNS" link show {{ l.ifname }} >/dev/null 2>&1; do sleep 0.1; done
+  ip -n "$NETNS" addr flush dev {{ l.ifname }} scope global 2>/dev/null || true
+  ip -n "$NETNS" addr add {{ l._parent_ipv4 }} peer {{ l._unnumbered_peer }} dev {{ l.ifname }}
+{% endfor %}
+}
+
+/usr/bin/vpp -c /etc/vpp/startup.conf &
+VPP_PID=$!
+until [ -S /run/vpp/cli.sock ]; do sleep 0.1; done
+vppctl show version >/dev/null
+configure_unnumbered_peers
+
 case "$VPP_CONTROL_PLANE" in
   bird)
     mkdir -p /run/bird
-    # BIRD 2.x: -d runs in foreground (debug); omit it so bird daemonizes and VPP can start
+    # BIRD 2.x: omit -d so bird daemonizes; VPP stays foreground via wait
     ip netns exec "$NETNS" /usr/sbin/bird -c /etc/bird/bird.conf
-    exec /usr/bin/vpp -c /etc/vpp/startup.conf
+    wait $VPP_PID
     ;;
   frr)
-    /usr/bin/vpp -c /etc/vpp/startup.conf &
-    VPP_PID=$!
-    until [ -S /run/vpp/cli.sock ]; do sleep 0.1; done
-    vppctl show version >/dev/null
     ip netns exec "$NETNS" bash -c '
       mkdir -p /run/frr /var/run/frr /var/log/frr
       chown -R frr:frrvty /run/frr /var/run/frr /var/log/frr 2>/dev/null \

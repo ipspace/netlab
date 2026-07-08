@@ -4,7 +4,8 @@
 from box import Box
 
 from ..augment import devices as a_devices
-from . import _Quirks
+from ..utils import log
+from . import _Quirks, report_quirk
 from .bird import bird_vlan_evpn_rt, bird_vrf_rt
 
 _VPP_OWNED_GVARS = frozenset({"netlab_start_daemon", "netlab_dp_module"})
@@ -110,6 +111,15 @@ def configure_control_plane(node: Box, topology: Box) -> None:
   node.control_plane = cp
 
   if cp == "bird":
+    if "isis" in node.get("module", []):
+      report_quirk(
+        f"IS-IS is not supported on VPP node {node.name} with bird control plane",
+        more_hints=["Use control_plane: frr to enable IS-IS"],
+        quirk="bird_isis",
+        category=log.IncorrectValue,
+        node=node,
+      )
+      return
     node._daemon_parent = "bird"
     _configure_bird_cp(node, topology)
   else:
@@ -120,3 +130,4 @@ class VPP(_Quirks):
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
     configure_control_plane(node, topology)
+
