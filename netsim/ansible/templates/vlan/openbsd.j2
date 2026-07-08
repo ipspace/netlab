@@ -13,7 +13,9 @@ set -x # Track commands for troubleshooting
 {% if ifdata.type == 'vlan_member' %}
 ifconfig {{ ifdata.ifname }} parent {{ ifdata.parent_ifname }} vnetid {{ ifdata.vlan.access_id }} 
 {% endif %}
+{% if not ifdata.vrf is defined %}
 {{ ifconfig(ifdata,role) }}
+{% endif %}
 {% if ifdata.vlan.access is defined %}
 ifconfig bridge{{ vlans[ifdata.vlan.access].id }} add {{ ifdata.ifname }} up
 {% endif %}
@@ -29,7 +31,10 @@ ifconfig bridge{{ vdata.id }} add {{ ifdata.ifname }} up
 {% endif %}
 {% endfor %}
 
-# stuff
-# ifconfig bridge0 add vlanX add vio1
-# or
-# ifconfig veb0 add vlanX add vio1
+{% if role == 'router' %}
+#
+# (re-)start RA daemon
+#
+pkill -q rad || true
+rad
+{% endif %}
