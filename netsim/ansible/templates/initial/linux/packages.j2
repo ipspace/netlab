@@ -1,24 +1,31 @@
 {% set _packages = netlab_linux_packages|default({}) %}
 {% for pkg,cmd in _packages.items() %}
 {%   if loop.first %}
-APT_INSTALL=
+PKG_INSTALL=
 {%   endif %}
 #
 if which {{ cmd }}; then
   echo "Package {{ pkg }} already installed"
 else
-  APT_INSTALL="$APT_INSTALL {{ pkg }}"
+  PKG_INSTALL="$PKG_INSTALL {{ pkg }}"
 fi
 {%  if loop.last %}
 #
-# APT_INSTALL always starts with a blank, so we can't just check if it's empty
+# PKG_INSTALL always starts with a blank, so we can't just check if it's empty
 # The following hack turns a string that contains only whitespaces into
 # an empty string and removes leading whitespaces
 #
-APT_INSTALL=`echo $APT_INSTALL`
-if [ -n "$APT_INSTALL" ]; then
-  echo "Installing packages $APT_INSTALL"
-  apt-get update -qq && apt-get install -qq $APT_INSTALL
+PKG_INSTALL=`echo $PKG_INSTALL`
+if [ -n "$PKG_INSTALL" ]; then
+  echo "Installing packages $PKG_INSTALL"
+  if command -v apk >/dev/null; then
+    apk add --no-cache $PKG_INSTALL
+  elif command -v apt-get >/dev/null; then
+    apt-get update -qq && apt-get install -qq $PKG_INSTALL
+  else
+    echo "Cannot install packages (no supported package manager found)" >&2
+    exit 1
+  fi
 fi
 {%  endif %}
 {% endfor %}
