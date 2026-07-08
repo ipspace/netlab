@@ -6,14 +6,14 @@
 {% for af in ['ipv4','ipv6'] if af in ospf.af and ospf.default is defined and ospf.default.always|default(false) %}
 {%   set ver = 'v2' if af == 'ipv4' else 'v3' %}
 protocol static ospf_default_{{ proto_suffix }}_{{ ver }} {
-{%   if vrf_name %}
   {{ af }} {
+{%   if vrf_name %}
     table vrf_{{ vrf_name }}_{{ af }};
     import filter vrf_{{ vrf_name }}_tag;
-  };
-{%   else %}
-  {{ af }};
 {%   endif %}
+    # Low preference so any real default (BGP/OSPF/static) is preferred in the FIB
+    preference 1;
+  };
   route {{ ospf_default_pfx(af) }} unreachable;
 }
 {% endfor %}
