@@ -52,7 +52,7 @@ def get_attribute_namespaces(
   while iterate_list:                                       # Repeat until we run out of ideas
     cnt = cnt + 1
     if cnt > 100:                                           # Always nice to detect an infinite loop ;)
-      log.fatal('Internal error: Never-ending get_attribute_namespace loop, got {attr_list} / {iterate_list}')
+      log.fatal(f'Internal error: Never-ending get_attribute_namespace loop, got {attr_list} / {iterate_list}')
 
     ns = iterate_list.pop(0)                                # Get the next namespace from the list
     if not ns in attributes and cnt > 1:                    # Not present in the attributes and it's not the primary namespace?

@@ -62,7 +62,7 @@ def routing_af(
       features: typing.Optional[Box] = None) -> None: # And finally, the device features
 
   if n_name is None:
-    n_name = 'node {node.name}'
+    n_name = f'node {node.name}'
   if 'af' in node[proto] and node[proto].af is None:
     node[proto].pop('af',None)
 

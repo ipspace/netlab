@@ -77,7 +77,7 @@ def get_libvirt_mgmt_template() -> str:
   search_path = _files.get_search_path("libvirt",LIBVIRT_MANAGEMENT_TEMPLATE_PATH)
   xml_file = _files.find_file(LIBVIRT_MANAGEMENT_TEMPLATE_NAME,search_path)
   if not xml_file:
-    log.fatal('Internal error: cannot find {LIBVIRT_MANAGEMENT_TEMPLATE_NAME}')
+    log.fatal(f'Internal error: cannot find {LIBVIRT_MANAGEMENT_TEMPLATE_NAME}')
 
   return xml_file
 
@@ -462,8 +462,8 @@ class Libvirt(_Provider):
         return stat_box
 
       return stat_box
-    except:
-      log.error('Cannot execute "vagrant status --machine-readable": {ex}',category=log.FatalError,module='libvirt')
+    except Exception as ex:
+      log.error(f'Cannot execute "vagrant status --machine-readable": {ex}',category=log.FatalError,module='libvirt')
       return get_empty_box()
 
   def get_node_name(self, node: str, topology: Box) -> str:

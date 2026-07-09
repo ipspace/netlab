@@ -306,7 +306,7 @@ def run(cli_args: typing.List[str]) -> None:
       continue
     script_path = f'{install_path}/{script}.sh'
     if not os.path.exists(script_path):
-      log.fatal("Installation script {script} does not exist")
+      log.fatal(f'Installation script {script} does not exist')
 
     log.section_header('Install',setup.scripts[script].description)
     script_confirm(script,setup,args)
@@ -317,12 +317,12 @@ def run(cli_args: typing.List[str]) -> None:
     try:
       if not external_commands.run_command(['bash',script_path],ignore_errors=True):
         print()
-        log.fatal(f"Installation script {script}.sh failed, exiting")
+        log.fatal(f'Installation script {script}.sh failed, exiting')
       else:
         script_completed(script,setup,args)
 
     except KeyboardInterrupt:
       print()
       log.fatal('User aborted the installation request')
-    except Exception:
-      log.fatal('Python exception: {ex}')
+    except Exception as ex:
+      log.fatal(f'Python exception: {ex}')

@@ -77,12 +77,12 @@ def copy_merge_attributes(attr: Box) -> None:
         continue
       if not source_ns in attr:                                       # Unknown source namespace? Ignore the request
         log.error(
-          'Incorrect source attribute namespace {source_ns} specified for {ns} attribute {attr_name}',
+          f'Incorrect source attribute namespace {source_ns} specified for {ns} attribute {attr_name}',
           log.IncorrectValue,'attributes')
         continue
       if not isinstance(attr[source_ns],Box):                         # Source NS not a box. Weird, skip it
         log.error(
-          'Source attribute namespace {source_ns} specified for {ns} attribute {attr_name} is not a dictionary',
+          f'Source attribute namespace {source_ns} specified for {ns} attribute {attr_name} is not a dictionary',
           log.IncorrectValue,'attributes')
         continue
       if 'copy' in attr[ns][attr_name]:                               # Request seems legit, now either...
