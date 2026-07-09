@@ -293,7 +293,7 @@ def get_unique_ifindex(
     ifindex = ifindex + 1
 
   log.error(                                      # Ouch, ran out of values :(
-    'Cannot get a unique interface index between {start} and {stop} for node {node.name}',
+    f'Cannot get a unique interface index between {start} and {stop} for node {node.name}',
     category=log.IncorrectValue,
     module='links')
   return start + len(node.interfaces) + 1         # Return something just to keep going (we'll fail anyway)
@@ -1212,7 +1212,7 @@ def process_link_ra(link: Box, nodes: Box, defaults: Box) -> None:
       if 'ra' in intf and 'ipv6' not in intf:               # ... and check that RA is only used with IPv6
         log.warning(
           text='Applying RA attributes to an interface without an IPv6 address makes no sense',
-          more_data='Node {intf.node} link {link._linkname}',
+          more_data=f'Node {intf.node} link {link._linkname}',
           module='links',
           flag='ra_no_ipv6')
       continue                                              # No further checks on routers (yet)
@@ -1222,7 +1222,7 @@ def process_link_ra(link: Box, nodes: Box, defaults: Box) -> None:
     if 'ra' in intf:                                        # Anyhow, RA attribute on anything not a router makes no sense
       log.warning(                                          # ... be that a host or a bridge
         text='Applying RA attributes to a device that is not a router makes no sense',
-        more_data='Node {intf.node} link {link._linkname}',
+        more_data=f'Node {intf.node} link {link._linkname}',
         module='links',
         flag='ra_not_router')
 
@@ -1252,7 +1252,7 @@ def process_link_ra(link: Box, nodes: Box, defaults: Box) -> None:
           f'We did not implement configurable IPv6 RA parameters for {n_data.device} yet',
           category=log.IncorrectAttr,
           module='links',
-          more_data='Node {intf.node}, link {link._linkname}')
+          more_data=f'Node {intf.node}, link {link._linkname}')
       continue                                              # Makes no sense to go any further with this interface
     if 'ra' in intf or link_ra:
       intf.ra = link_ra + intf.ra                           # Merge link attributes with interface attributes

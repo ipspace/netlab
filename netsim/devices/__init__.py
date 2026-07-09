@@ -103,8 +103,8 @@ def get_ansible_collection(cname: str) -> typing.Optional[dict]:
         if ack not in ANSIBLE_COLLECTIONS:    # ... and keep the first one found
           ANSIBLE_COLLECTIONS[ack] = acv
 
-  except Exception:
-    log.fatal('Cannot parse the ansible-galaxy JSON printout: {ex}')
+  except Exception as ex:
+    log.fatal(f'Cannot parse the ansible-galaxy JSON printout: {ex}')
 
   return ANSIBLE_COLLECTIONS.get(cname,None)
 

@@ -128,7 +128,7 @@ def expand_multiaccess_links(topology: Box) -> None:
     link_data = { k:v for k,v in link.items() if k in ok_phy_attr }
     br_intf = get_box({'node': b_name })                    # Create the interface for the bridge node
     br_node = topology.nodes[b_name]                        # Get the node data
-    int_vlan_id = get_next_internal_vlan(int_vlan_id,'multi-access link {link._linkname}')
+    int_vlan_id = get_next_internal_vlan(int_vlan_id,f'multi-access link {link._linkname}')
     vname = f'br_vlan_{int_vlan_id}'                        # Create the internal VLAN
 
     br_node.vlans[vname] = { k:v for k,v in link.items() if k not in del_linkattr }
