@@ -19,6 +19,25 @@ def check_indirect_static_routes(node: Box) -> None:
         quirk='indirect_nexthop',
         more_data=f'Static route data: {sr_entry}')
 
+def check_tagged_vlan_1(node: Box) -> None:
+  '''
+  Check whether the user is trying to use tagged VLAN 1
+  '''
+  if 'vlan' not in node.get('module',[]):                   # No VLAN module, we good
+    return
+  for intf in node.get('interfaces',[]):                    # Inspect all interfaces
+    if 'vlan.trunk_id' not in intf:                         # Not a VLAN trunk, no worries
+      continue
+    if 1 not in intf.get('vlan.trunk_id',[]):               # Is VLAN 1 in the trunk?
+      continue
+    if intf.get('vlan.access_id',None) == 1:                # OK, maybe it's the native VLAN in the trunk (which is OK)
+      continue
+    report_quirk(
+      f'Tagged VLAN 1 cannot be used (node {node.name}, interface {intf.name})',
+      node=node,
+      quirk='tagged_vlan_1')
+    return
+
 def requires_plugin(node: Box, plugin: str, topology: Box) -> None:
   if plugin not in topology.get('plugin',[]):
     log.error(
