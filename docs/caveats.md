@@ -554,14 +554,14 @@ See [](generic-linux-devices)
 * Runs with the *CHR* image.
 * LLDP on Mikrotik CHR RouterOS is enabled on all the interfaces.
 * The CHR free license offers full features with a 1Mbps upload limit per interface, upgradeable to an unrestricted 60-day trial by registering a free MikroTik account and using the `/system license renew` command.
-* The last RouterOS 7 release we recommend at this point is release **7.18.2**. Later releases changed the BGP configuration model, which is not yet supported by _netlab_ configuration templates. Functionality not using BGP (for example, OSPF) may work just fine with newer RouterOS releases (using "may" because we did not run the tests).
+* The RouterOS7 BGP configuration templates use the newer BGP configuration model. Use a recent software release (we tested them with release 7.21.4).
 
 Other caveats you might encounter:
 
 * MPLS dataplane seems to have issues when using *virtio* networking, while the LDP and VPNv4 control plane work fine. With *e1000* everything works fine.
-* There's not an easy way to control the BGP community propagation.
 * Route Reflection of inactive routes does not work.
-* There are still problems with VRFs and IPv6.
+* OSPFv3 does not work within VRFs
+* BGP VPNv6 address family does not work; RouterOS7 does not recognize the next hops.
 
 (caveats-srlinux)=
 ## Nokia SR Linux
