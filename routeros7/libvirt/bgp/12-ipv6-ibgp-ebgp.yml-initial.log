@@ -17,29 +17,8 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 
-TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
-
-TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [dut]
-
-TASK [Find configuration template for normalize] *******************************
-ok: [dut]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-
-TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [dut]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
-
-TASK [Deploy normalize configuration] ******************************************
-skipping: [dut]
-
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -59,9 +38,9 @@ ok: [dut] => {
 }
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
 
-TASK [load initial from /work/netlab_cicd/other_vm/node_files/dut/initial] *****
+TASK [load initial from /work/netlab_cicd/node_files/dut/initial] **************
 ok: [dut]
 
 TASK [Run commands on CHR] *****************************************************
@@ -73,8 +52,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=bgp)
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -94,9 +73,9 @@ ok: [dut] => {
 }
 
 TASK [Deploy ospf configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
 
-TASK [load ospf from /work/netlab_cicd/other_vm/node_files/dut/ospf] ***********
+TASK [load ospf from /work/netlab_cicd/node_files/dut/ospf] ********************
 ok: [dut]
 
 TASK [Run commands on CHR] *****************************************************
@@ -116,13 +95,13 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "bgp configuration for dut\n=========================================\n\n/routing/bgp/template add name=main as=65000 output.network=bgp-networks\n\n/routing/bgp/template set main router-id=10.0.0.1\n\n\n/routing/bgp/connection add template=main name=2001_db8_1__2 remote.address=2001:db8:1::2 remote.as=65000 comment=\"x1\" local.role=ebgp\n\n/routing/bgp/connection set [/routing/bgp/connection find name=2001_db8_1__2] local.role=ibgp local.address=loopback\n\n\n\n\n/routing/bgp/connection set [/routing/bgp/connection find name=2001_db8_1__2] nexthop-choice=force-self\n\n\n/routing/bgp/connection add template=main name=2001_db8_3_1__3 remote.address=2001:db8:3:1::3 remote.as=65100 comment=\"x2\" local.role=ebgp\n\n\n/routing/bgp/connection set [/routing/bgp/connection find name=2001_db8_3_1__3] nexthop-choice=force-self\n\n\n# BGP Network now is controlled by simple ACL\n/ipv6/firewall/address-list/ add list=bgp-networks address=2001:db8:1::1/128\n\n\n\n"
+    "msg": "bgp configuration for dut\n=========================================\n\n/routing/bgp/template add name=main as=65000 output.network=bgp-networks\n/routing/bgp/instance add name=main as=65000\n\n/routing/bgp/instance set [/routing/bgp/instance find name=main] router-id=10.0.0.1\n\n\n/routing/filter/rule add chain=filter_rr_self_ebgp rule=\"if ( bgp-input-remote-addr == 2001:db8:3:1::3 ) { set gw 10.0.0.1;}\"\n/routing/filter/rule add chain=filter_rr_self_ebgp rule=\"return;\"\n\n/routing/filter/rule/add chain=rm_extended_communities rule=\"delete bgp-ext-communities rt; delete bgp-ext-communities soo; delete bgp-ext-communities other;\"\n/routing/filter/rule/add chain=rm_extended_communities rule=\"return;\"\n/routing/filter/rule/add chain=rm_large_communities rule=\"delete bgp-lrg-communities all;\"\n/routing/filter/rule/add chain=rm_large_communities rule=\"return;\"\n/routing/filter/rule/add chain=rm_standard_communities rule=\"delete bgp-std-communities other; delete bgp-ext-communities wk;\"\n/routing/filter/rule/add chain=rm_standard_communities rule=\"jump rm_large_communities;\"\n/routing/filter/rule/add chain=rm_standard_communities rule=\"return;\"\n\n\n/routing/bgp/connection add template=main instance=main name=2001_db8_1__2 remote.address=2001:db8:1::2 remote.as=65000 comment=\"x1\" local.role=ebgp\n/routing/bgp/connection set [/routing/bgp/connection find name=2001_db8_1__2] afi=ipv6\n\n/routing/filter/rule add chain=filter_2001_db8_1__2 rule=\"accept;\"\n\n/routing/bgp/connection set [/routing/bgp/connection find name=2001_db8_1__2] output.filter-chain=filter_2001_db8_1__2\n/routing/bgp/connection set [/routing/bgp/connection find name=2001_db8_1__2] local.role=ibgp local.address=loopback\n/routing/filter/rule add chain=filter_2001_db8_1__2 rule=\"jump filter_rr_self_ebgp;\" place-before=0\n\n/routing/filter/rule/add chain=filter_2001_db8_1__2 rule=\"jump rm_large_communities;\" place-before=0\n\n/routing/bgp/connection add template=main instance=main name=2001_db8_3_1__3 remote.address=2001:db8:3:1::3 remote.as=65100 comment=\"x2\" local.role=ebgp\n/routing/bgp/connection set [/routing/bgp/connection find name=2001_db8_3_1__3] afi=ipv6\n\n/routing/filter/rule add chain=filter_2001_db8_3_1__3 rule=\"accept;\"\n\n/routing/bgp/connection set [/routing/bgp/connection find name=2001_db8_3_1__3] output.filter-chain=filter_2001_db8_3_1__3\n\n/routing/filter/rule/add chain=filter_2001_db8_3_1__3 rule=\"jump rm_large_communities;\" place-before=0\n/routing/filter/rule/add chain=filter_2001_db8_3_1__3 rule=\"jump rm_extended_communities;\" place-before=0\n\n\n\n# BGP Network now is controlled by simple ACL\n/ipv6/firewall/address-list add list=bgp-networks address=2001:db8:1::1/128\n\n\n\n"
 }
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
 
-TASK [load bgp from /work/netlab_cicd/other_vm/node_files/dut/bgp] *************
+TASK [load bgp from /work/netlab_cicd/node_files/dut/bgp] **********************
 ok: [dut]
 
 TASK [Run commands on CHR] *****************************************************
@@ -132,7 +111,7 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=30   changed=3    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+dut                        : ok=26   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================
