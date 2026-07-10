@@ -12,6 +12,7 @@ import subprocess
 import sys
 import time
 import typing
+import json
 
 from box import Box
 
@@ -255,6 +256,44 @@ def print_ok(step: str) -> None:
   _strings.print_colored_text(f"{step}(ok)",color="bright_green")
   print(" ",end="",flush=True)
 
+def check_no_running_labs() -> None:
+  status = subprocess.run(
+    ['netlab','status','--all','--format','json'],
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+    text=True)
+
+  try:
+    status_data = json.loads(status.stdout or '{}')
+  except json.JSONDecodeError:
+    print(status.stdout)
+    log.fatal("Cannot parse netlab status --all JSON output")
+
+  if status.returncode == 1 and status_data.get('warning') == 'No netlab-managed labs':
+      return  # No running labs detected.. continue testing
+
+  if status.returncode != 0:
+    if status.stdout:
+      print(status.stdout)
+    if status.stderr:
+      print(status.stderr)
+    log.fatal("Cannot check running netlab labs")
+
+
+  print("Running netlab lab instance(s) detected:")
+  print("Active lab instance(s)\n")
+  print(f"{'id':<12} {'directory':<50} {'status':<10} providers")
+  print(f"{'-' * 12} {'-' * 50} {'-' * 10} {'-' * 20}")
+
+  for lab_id, lab_data in status_data.items():
+    directory = lab_data.get('dir','')
+    lab_status = lab_data.get('status','')
+    providers = ', '.join(lab_data.get('providers',[]))
+
+  print(f"{lab_id:<12} {directory:<50} {lab_status:<10} {providers}\n")
+
+  log.fatal("Refusing to launch integration test while another netlab lab is running")
+
 def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
   test_path = os.path.abspath(test)
   os.makedirs(args.workdir,exist_ok=True)
@@ -410,6 +449,8 @@ def main() -> None:
 
       log_result(test,None)                       # Clean up the results from previous test runs
       try:
+        if "up" in args.steps:
+          check_no_running_labs()
         run_test(test,args,first_test)
         first_test = False
       except KeyboardInterrupt:
