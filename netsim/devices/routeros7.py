@@ -4,7 +4,7 @@
 from box import Box
 
 from ..utils import log
-from . import _Quirks, report_quirk
+from . import _common, _Quirks, report_quirk
 
 
 def check_vpnv6_af(node: Box, topology: Box) -> None:
@@ -23,3 +23,4 @@ class RouterOS7(_Quirks):
   def device_quirks(self, node: Box, topology: Box) -> None:
     if node.get('mpls.vpn',False):
       check_vpnv6_af(node,topology)
+    _common.check_tagged_vlan_1(node)
