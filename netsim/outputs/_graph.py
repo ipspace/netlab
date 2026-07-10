@@ -367,7 +367,7 @@ def parse_topology_params(settings: Box, format: typing.Optional[list]) -> None:
       settings.topology[kw] = True
     else:
       log.error(
-        'Invalid topology graph formatting parameter {kw}',
+        f'Invalid topology graph formatting parameter {kw}',
         category=log.IncorrectValue,
         module='graph',
         skip_header=True)
@@ -390,7 +390,7 @@ def parse_bgp_params(settings: Box, format: typing.Optional[list]) -> None:
       settings.bgp.af[kw] = True
     else:
       log.error(
-        'Invalid BGP graph formatting parameter {kw}',
+        f'Invalid BGP graph formatting parameter {kw}',
         category=log.IncorrectValue,
         module='graph',
         skip_header=True)

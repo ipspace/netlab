@@ -1,0 +1,149 @@
+message: |
+  Check the 'bgp_neighbor' validation plugin
+
+defaults.sources.extra: [ ../../integration/wait_times.yml ]
+
+groups:
+  probes:
+    members: [ r1, r2, r3, vr1, vr2, vr3 ]
+    module: [ bgp ]
+    device: frr
+  duts:
+    module: [ bgp, vrf, vlan, vxlan, evpn ]
+    members: [ dut_eos, dut_frr ]
+
+vrfs:
+  tenant:
+    links:
+    - interfaces: [ dut_eos, dut_frr, vr1, vr3 ]
+      prefix.ipv4: 172.16.2.0/24
+    - interfaces: [ dut_eos, dut_frr, vr2, vr3 ]
+      prefix.ipv6: 2001:db8:0:2::/64
+
+evpn.session: [ ebgp ]
+bgp.community: [ standard, extended ]
+
+# Node device type for DUT devices set via default groups
+#
+nodes:
+  dut_eos.bgp.as: 65001
+  dut_frr.bgp.as: 65002
+  r1.bgp.as: 65101
+  r2.bgp.as: 65102
+  r3:
+    bgp.as: 65103
+    skip_config: [ bgp ]
+  vr1.bgp.as: 65201
+  vr2.bgp.as: 65202
+  vr3:
+    bgp.as: 65203
+    skip_config: [ bgp ]
+
+links:
+- interfaces: [ dut_eos, dut_frr, r1, r3 ]
+  prefix.ipv4: 172.16.1.0/24
+- interfaces: [ dut_eos, dut_frr, r2, r3 ]
+  prefix.ipv6: 2001:db8:0:1::/64
+
+validate:
+  # Check BGP sessions that are expected to be up (global + VRF)
+  #
+  bgp_ipv4:
+    nodes: [ dut_eos, dut_frr ]
+    wait: ebgp_session
+    plugin: bgp_neighbor(node.bgp.neighbors,'r1')
+  bgp_ipv6:
+    nodes: [ dut_eos, dut_frr ]
+    wait: ebgp_session
+    plugin: bgp_neighbor(node.bgp.neighbors,'r2',af='ipv6')
+  vrf_bgp_ipv4:
+    nodes: [ dut_eos, dut_frr ]
+    wait: ebgp_session
+    plugin: bgp_neighbor(node.vrfs.tenant.bgp.neighbors,'vr1',vrf='tenant')
+  vrf_bgp_ipv6:
+    nodes: [ dut_eos, dut_frr ]
+    wait: ebgp_session
+    plugin: bgp_neighbor(node.vrfs.tenant.bgp.neighbors,'vr2',af='ipv6',vrf='tenant')
+
+  # Check the activation of BGP address families
+  #
+  act_ipv4:
+    nodes: [ dut_eos, dut_frr ]
+    wait: ebgp_session
+    plugin: bgp_neighbor(node.bgp.neighbors,'r1',activate='ipv4')
+  act_ipv6:
+    nodes: [ dut_eos, dut_frr ]
+    wait: ebgp_session
+    plugin: bgp_neighbor(node.bgp.neighbors,'r2',af='ipv6',activate='ipv6')
+  vrf_act_ipv4:
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor(node.vrfs.tenant.bgp.neighbors,'vr1',activate='ipv4',vrf='tenant')
+  vrf_act_ipv6:
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor(node.vrfs.tenant.bgp.neighbors,'vr2',af='ipv6',activate='ipv6',vrf='tenant')
+
+  # Check that 'state=missing' matches BGP session that is not established or missing AFs
+  #
+  miss_ipv4:
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'r3',af='ipv4',state='missing')
+  miss_ipv6:
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'r3',af='ipv6',state='missing')
+  miss_act_ipv4:
+    nodes: [ dut_eos, dut_frr ]
+    wait: ebgp_session
+    plugin: bgp_neighbor(node.bgp.neighbors,'r1',activate='ipv6',state='missing')
+  miss_act_ipv6:
+    nodes: [ dut_eos, dut_frr ]
+    wait: ebgp_session
+    plugin: bgp_neighbor(node.bgp.neighbors,'r2',af='ipv6',activate='ipv4',state='missing')
+
+  # Check non-IP AFs
+  #
+  evpn_eos:
+    nodes: [ dut_eos ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut_frr',af='ipv4',activate='evpn')
+  evpn_frr:
+    nodes: [ dut_frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut_eos',af='ipv4',activate='evpn')
+  act_vpnv4:
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'r1',af='ipv4',activate='vpnv4',state='missing')
+
+  # Check matching explicit states
+  #
+  state_ipv4:
+    nodes: [ dut_eos, dut_frr ]
+    wait: 3
+    plugin: bgp_neighbor(node.bgp.neighbors,'r3',af='ipv4',state=['Idle','Active'])
+  state_ipv6:
+    nodes: [ dut_eos, dut_frr ]
+    wait: 3
+    plugin: bgp_neighbor(node.bgp.neighbors,'r3',af='ipv6',state=['Idle','Active'])
+
+  # Check that bgp_neighbor with no extra parameters fails as expected on missing BGP session
+  #
+  fail_ipv4:
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'r3',af='ipv4')
+    _expect_fail: True
+  fail_ipv6:
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'r3',af='ipv6')
+    _expect_fail: True
+
+  # Check missing BGP AFs
+  #
+  fail_act_ipv6:
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'r1',activate='ipv6')
+    _expect_fail: True
+  fail_act_ipv4:
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'r2',af='ipv6',activate='ipv4')
+    _expect_fail: True
+  fail_act_vpnv4:
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'r1',af='ipv4',activate='vpnv4')
+    _expect_fail: True

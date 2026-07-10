@@ -1,4 +1,5 @@
 {% from "initial/linux/create-bond.j2" import create_bond_dev %}
+{% from "initial/linux/intf-sysctl.j2" import linux_intf_sysctl %}
 #!/bin/bash
 #
 set -e
@@ -49,7 +50,9 @@ else
   echo deb https://deb.frrouting.org/frr $(lsb_release -s -c) $FRRVER > /etc/apt/sources.list.d/frr.list
   apt-get update -qq && apt-get install -qq frr frr-pythontools bridge-utils ethtool
 fi
-{% elif netlab_mgmt_vrf|default(True) %}
+{% else %}
+{%   include 'linux/packages.j2' %}
+{%   if netlab_mgmt_vrf|default(True) %}
 # Try to create the management VRF if netlab_mgmt_vrf is set. The VRF module has to be loaded
 # and the container has to have eth0 device
 #
@@ -74,6 +77,7 @@ if grep vrf /proc/modules && ip link show dev eth0; then
     ip route add 0.0.0.0/0 vrf mgmt via $def_nh
   fi
 fi
+{%   endif %}
 {% endif %}
 #
 # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
@@ -105,27 +109,19 @@ if [ ! -e /sys/class/net/{{ i.ifname }} ]; then
 fi
 {% endfor %}
 
-# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+# Set Linux interface sysctl parameters: Disable IPv6 (for IPv4-only interfaces)
+# or SLAAC (if the device is a router)
 #
 {% for i in interfaces if i.type in ['lan','p2p','stub','lag','bond'] %}
 ip link set {{ i.ifname }} down
-{%   if i.ipv6 is not defined %}
-sysctl -qw net.ipv6.conf.{{ i.ifname }}.disable_ipv6=1
-{%   else %}
-{%     set ra_flag = '0' if role == 'router' else '1' %}
-sysctl -qw net.ipv6.conf.{{ i.ifname }}.autoconf={{ ra_flag }}
-sysctl -qw net.ipv6.conf.{{ i.ifname }}.accept_ra={{ ra_flag }}
-{%   endif %}
-{%   if i.mtu is defined %}
-ip link set dev {{ i.ifname }} mtu {{ i.mtu }}
-{%   endif %}
-ip link set {{ i.ifname }} {{ "down" if i.shutdown|default(False) else "up" }}
+{{ linux_intf_sysctl(i,role) }}
 {% endfor %}
 
 #
 # Add vtysh.conf file
 echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
 
+{% set frr_log_path = frr.logfile|default('/var/log/frr/frr.log') %}
 {% if not netlab_initial_reload|default(False) %}
 #
 # Ensure FRR's log directory exists before enabling file logging
@@ -143,7 +139,8 @@ hostname {{ inventory_hostname }}
   package), which permit /var/log/frr/* but deny /tmp; on FRR 10.4 that rejection
   is fatal and aborts initial configuration.
 #}
-log file /var/log/frr/frr.log
+{% set frr_log_level = 'debugging' if frr.debug|default([]) else 'informational' %}
+log file {{ frr_log_path }} {{ frr_log_level }}
 {% from '_debug_commands.j2' import enable_debugging %}
 {{ enable_debugging(frr.debug,prefix='debug') }}
 !
@@ -224,5 +221,14 @@ do write
 CONFIG
 vtysh -f /tmp/config
 {% endif %}{# not netlab_initial_reload #}
+
+{% if clab is defined and frr.debug|default([]) %}
+#
+# Redirect FRR's log to the container's stdout so 'docker logs' works
+# Note that this may trigger SELinux denials on the host.
+#
+DOCKER_LOGS_STDOUT="/proc/1/fd/1"
+tail -n 0 -F {{ frr_log_path }} >${DOCKER_LOGS_STDOUT} 2>&1 &
+{% endif %}
 !
 exit 0

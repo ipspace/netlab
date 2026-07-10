@@ -1,18 +1,18 @@
 (dev-config-deploy)=
 # Deploying Device Configurations
 
-*netlab* Ansible playbooks deploy configurations through device-specific task lists and templates. Linux-based containers (including daemons such as Bird or dnsmasq, and routers such as FRRouting or VyOS) can also be configured using shell scripts.
+*netlab* Ansible playbooks deploy configurations through device-specific task lists and templates. Linux-based containers (including daemons such as BIRD or dnsmasq, and routers such as FRRouting or VyOS) can also be configured using shell scripts.
 
 When adding a new device type, you'll have to create either:
 
 * A generic _deploy configuration_ task list and a bunch of configuration templates
 * A module-specific task list for an individual module, plus the associated initial configuration templates (which could be empty)
 * Linux scripts that can be mapped into container files and executed within the container network namespace on the _netlab_ host or within the container itself
-* Daemon configuration files for container-based daemons (for example, Bird).
+* Daemon configuration files for container-based daemons (for example, BIRD).
 
 You can also mix and match the approaches. For example, several devices have a generic *deploy configuration* task list, but use a separate list of tasks for the initial configuration.
 
-You could also use Linux scripts for some configuration modules, Daemon configuration files for other tasks, and an Ansible task list + template for the rest of the tasks (or custom templates). For example, Bird daemon uses configuration files to configure BGP and OSPF, shell scripts (inherited from the Linux device) to configure interfaces, VLANs, and link aggregation groups, and an Ansible task list (also inherited from the Linux device) to deploy custom configuration templates.
+You could also use Linux scripts for some configuration modules, Daemon configuration files for other tasks, and an Ansible task list + template for the rest of the tasks (or custom templates). For example, BIRD daemon uses configuration files to configure BGP and OSPF, shell scripts (inherited from the Linux device) to configure interfaces, VLANs, and link aggregation groups, and an Ansible task list (also inherited from the Linux device) to deploy custom configuration templates.
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -197,9 +197,9 @@ Unfortunately, the Nexus 9300v linecards become active almost a minute after com
 (dev-config-daemon)=
 ## Daemon Configuration Files
 
-You can use Jinja2 templates to create *daemon configuration files* mapped into daemon containers. These files are present in the container file system when the container starts and can be used to configure the daemon (e.g., Bird or dnsmasq) running in the container.
+You can use Jinja2 templates to create *daemon configuration files* mapped into daemon containers. These files are present in the container file system when the container starts and can be used to configure the daemon (e.g., BIRD or dnsmasq) running in the container.
 
-The daemon configuration files are specified in the **daemon_config** device parameter. These are the configuration files used by the Bird daemon:
+The daemon configuration files are specified in the **daemon_config** device parameter. These are the configuration files used by the BIRD daemon:
 
 ```
 daemon_config:

@@ -21,6 +21,61 @@ from . import addressing, devices
 VIRTUAL_INTERFACE_TYPES: typing.Final[typing.List[str]] = [
   'loopback', 'tunnel', 'lag', 'svi' ]
 
+# Utility functions
+#
+# - get_link_by_index: returns a link given its linkindex
+# - get_linkname: returns a link name given its linkindex
+# - get_next_linkindex: returns a unique linkindex for a new link
+# - set_linkindex: Assign unique linkindex to every link
+# - set_linknames: Assign names to all links without them
+
+def get_link_by_index(topology: Box, idx: int) -> typing.Optional[Box]:
+  '''
+  Find a link from its linkindex
+  '''
+  for link in topology.links:
+    if link.linkindex == idx:
+      return link
+  return None
+
+def get_linkname(topology: Box, linkindex: int) -> str:
+  '''
+  Get the name of a link referenced in an interface.
+
+  Always returns string ('unknown' when the link cannot be found)
+  '''
+  link = get_link_by_index(topology,linkindex)
+  return link._linkname if link is not None else 'unknown'
+
+def get_next_linkindex(topology: Box) -> int:
+  '''
+  Get a new linkindex -- either the last linkindex + 1 or default value
+  '''
+  if not topology.links:
+    topology.links = []
+    return topology.defaults.get('link_index',1)
+
+  return topology.links[-1].linkindex + 1
+
+def set_linkindex(topology: Box) -> None:
+  '''
+  set_linkindex -- set link index for each link
+  '''
+  linkindex = topology.defaults.get('link_index',1)
+  for link in topology.links:
+    link.linkindex = linkindex
+    linkindex = linkindex + 1
+
+def set_linknames(topology: Box) -> None:
+  '''
+  set_linknames -- set link name if not defined
+  '''
+  for cnt,link in enumerate(topology.links):
+    if link.get('group'):
+      link._linkname = f'links[{link.group}]'
+    elif not '_linkname' in link:
+      link._linkname = f'links[{cnt+1}]'
+
 '''
 We cannot definitely say whether a node name is valid before the component
 expansion is complete. We can, however, do basic sanity checks.
@@ -238,7 +293,7 @@ def get_unique_ifindex(
     ifindex = ifindex + 1
 
   log.error(                                      # Ouch, ran out of values :(
-    'Cannot get a unique interface index between {start} and {stop} for node {node.name}',
+    f'Cannot get a unique interface index between {start} and {stop} for node {node.name}',
     category=log.IncorrectValue,
     module='links')
   return start + len(node.interfaces) + 1         # Return something just to keep going (we'll fail anyway)
@@ -1157,7 +1212,7 @@ def process_link_ra(link: Box, nodes: Box, defaults: Box) -> None:
       if 'ra' in intf and 'ipv6' not in intf:               # ... and check that RA is only used with IPv6
         log.warning(
           text='Applying RA attributes to an interface without an IPv6 address makes no sense',
-          more_data='Node {intf.node} link {link._linkname}',
+          more_data=f'Node {intf.node} link {link._linkname}',
           module='links',
           flag='ra_no_ipv6')
       continue                                              # No further checks on routers (yet)
@@ -1167,7 +1222,7 @@ def process_link_ra(link: Box, nodes: Box, defaults: Box) -> None:
     if 'ra' in intf:                                        # Anyhow, RA attribute on anything not a router makes no sense
       log.warning(                                          # ... be that a host or a bridge
         text='Applying RA attributes to a device that is not a router makes no sense',
-        more_data='Node {intf.node} link {link._linkname}',
+        more_data=f'Node {intf.node} link {link._linkname}',
         module='links',
         flag='ra_not_router')
 
@@ -1197,7 +1252,7 @@ def process_link_ra(link: Box, nodes: Box, defaults: Box) -> None:
           f'We did not implement configurable IPv6 RA parameters for {n_data.device} yet',
           category=log.IncorrectAttr,
           module='links',
-          more_data='Node {intf.node}, link {link._linkname}')
+          more_data=f'Node {intf.node}, link {link._linkname}')
       continue                                              # Makes no sense to go any further with this interface
     if 'ra' in intf or link_ra:
       intf.ra = link_ra + intf.ra                           # Merge link attributes with interface attributes
@@ -1224,45 +1279,6 @@ def set_node_af(nodes: Box) -> None:
         if af in l:
           n.af[af] = True
           continue
-
-'''
-Link index utility functions:
-
-* get_next_linkindex: get last linkindex+1 or default value
-* get_link_by_index: given a link index, return the link
-'''
-
-def get_next_linkindex(topology: Box) -> int:
-  if not topology.links:
-    topology.links = []
-    return topology.defaults.get('link_index',1)
-
-  return topology.links[-1].linkindex + 1
-
-def get_link_by_index(topology: Box, idx: int) -> typing.Optional[Box]:
-  for link in topology.links:
-    if link.linkindex == idx:
-      return link
-  return None
-
-'''
-set_linknames -- set link name if not defined
-'''
-def set_linknames(topology: Box) -> None:
-  for cnt,link in enumerate(topology.links):
-    if link.get('group'):
-      link._linkname = f'links[{link.group}]'
-    elif not '_linkname' in link:
-      link._linkname = f'links[{cnt+1}]'
-
-'''
-set_linkindex -- set link index for each link
-'''
-def set_linkindex(topology: Box) -> None:
-  linkindex = topology.defaults.get('link_index',1)
-  for link in topology.links:
-    link.linkindex = linkindex
-    linkindex = linkindex + 1
 
 '''
 check_duplicate_address: Check whether any two nodes on the link got duplicate IP

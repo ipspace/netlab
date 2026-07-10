@@ -7,29 +7,45 @@ from . import _Quirks
 from ._common import check_daemon_dataplane_config
 
 
+def bird_transform_rt(rt: str) -> str:
+  '''
+  Transform standard RT notation A:B into BIRD RT notation (rt,A,B)
+
+  Split the original route target into its components, rejoin them
+  separated by commas and add (rt,) around them
+  '''
+  return '(rt,'+','.join(rt.split(':'))+')'
+
 def bird_vrf_rt(node: Box) -> None:
   '''
-  Convert standard route targets into (rt,a,b) format used by Bird configuration
+  Convert standard VRF route targets into (rt,a,b) format used by Bird configuration
   '''
   for vdata in node.get('vrfs',{}).values():                # Iterate over all VRFs
     for kw in ('import','export'):                          # Process import and export RTs
       if kw not in vdata:                                   # Not relevant? Cool ;)
         continue
 
-      # The magic of the following line explained for people who don't want to study it ;)
-      #
-      # - Iterate over all route targets in the import/export list
-      # - Split the original route target (asn:rt or ip:rt) into its components
-      # - Rejoin the RT components separated by commas (OK, I could have used replace, but this
-      #   is way cooler :-P )
-      # - Add (rt,) around the RT components
-      #
-      vdata[f'_bird_{kw}'] = [ '(rt,'+','.join(rt.split(':'))+')' for rt in vdata[kw]]
+      vdata[f'_bird_{kw}'] = [ bird_transform_rt(rt) for rt in vdata[kw]]
+
+def bird_vlan_evpn_rt(node: Box) -> None:
+  '''
+  Convert standard MAC VRF EVPN route targets into (rt,a,b) format used by Bird configuration
+
+  Note: the IP-VRF EVPN RTs are transformed by bird_vrf_rt function
+  '''
+  for vdata in node.get('vlans',{}).values():               # Iterate over all VLANs
+    if 'evpn' not in vdata:                                 # Skip non-EVPN VLANs
+      continue
+    for kw in ('import','export'):                          # Process import and export RTs
+      if kw not in vdata.evpn:                              # Not relevant? Cool ;)
+        continue
+
+      vdata.evpn[f'_bird_{kw}'] = [ bird_transform_rt(rt) for rt in vdata.evpn[kw]]
 
 class Bird(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
-#    check_indirect_static_routes(node)
     check_daemon_dataplane_config(node,topology)
     bird_vrf_rt(node)
+    bird_vlan_evpn_rt(node)

@@ -209,6 +209,7 @@ of the 'nexthop' data structure.
 def resolve_node_nexthop(sr_data: Box, node: Box, topology: Box) -> Box:
   nh = data.get_empty_box()
   nh_vrf = sr_data.nexthop.vrf if 'vrf' in sr_data.nexthop else sr_data.get('vrf',None)
+  nh_link = sr_data.nexthop.get('link',None)
 
   node_found = False
   for intf in node.interfaces:
@@ -221,13 +222,15 @@ def resolve_node_nexthop(sr_data: Box, node: Box, topology: Box) -> Box:
       node_found = True
       if intf.get('vrf',None) != nh_vrf:
         continue
+      if nh_link and nh_link != intf.get('name',None):
+        continue
 
       ngb_addr = extract_af_info(ngb,keep_prefix=False)
       nh_data = create_nexthop_data(sr_data,ngb_addr,intf)
 
       if nh_data:
         data.append_to_list(nh,'nhlist',nh_data)
-  
+
   if nh:
     extract_nh_from_list(nh)
   else:

@@ -407,7 +407,7 @@ def localas_ibgp_nhs_fixup(node: Box,topology: Box) -> None:
 
   if node.get('bgp.rr',None):
     log.warning(
-      text='{node.name} has a local-as IBGP session and SHOULD NOT be a route reflector',
+      text=f'{node.name} has a local-as IBGP session and SHOULD NOT be a route reflector',
       module='bgp',
       flag='localas_ibgp_rr')
 

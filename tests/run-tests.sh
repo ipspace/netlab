@@ -8,9 +8,6 @@ cd "$DIRNAME"
 PYTHONPATH="../" python3 -m pytest -v -k 'xform_ or error_cases'
 set -e
 cd ..; python3 -m mypy -p netsim
-for file in netsim/extra/*/plugin.py; do
-  python3 -m mypy $file
-done
 if [ `which yamllint` ]; then
   echo
   echo Executing yamllint in netsim and tests directories

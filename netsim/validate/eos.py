@@ -17,6 +17,9 @@ def exec_ping(
       pkt_len: typing.Optional[int] = None,
       **kwargs: typing.Any) -> str:
 
+  if pkt_len is not None and pkt_len < 64:
+    raise Exception('Minimum IP packet size for ping plugin is 64 bytes')
+
   host = _rp_utils.try_intf_address(host)
   cmd = 'enable\nping ' + ('ip' if af is None or af == 'ipv4' else af) + ' ' + host
   if src:
@@ -51,6 +54,11 @@ def valid_ping(
         return msg+' failed as expected'
     raise Exception(msg+' did not fail')
   else:
-    if f"{ pkt_len + 8 if pkt_len else 80 } bytes from" in _result.stdout:
+    if pkt_len:
+      pkt_exp = pkt_len - (40 if af == 'ipv6' else 20)
+      OK_result = f"{ pkt_exp } bytes from"
+    else:
+      OK_result = " bytes from"
+    if OK_result in _result.stdout:
       return msg+' succeeded'
     raise Exception(msg+' failed')

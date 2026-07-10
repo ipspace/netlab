@@ -16,18 +16,19 @@ from ..utils import read as _read
 from ..utils import sort as _sort
 from . import config
 
-'''
-merge_plugin_defaults: Merge plugin defaults with topology defaults
 
-We cannot simply overwrite the topology defaults with plugin defaults as the
-defaults might have been changed by the user, so we're using a dirty trick:
-
-* Topology defaults are augmented with plugin defaults (which means the global
-  defaults take precedence)
-* Whatever is really important should be in the 'important' dictionary and will
-  take precedence over anything else
-'''
 def merge_plugin_defaults(defaults: typing.Optional[Box], topology: Box) -> None:
+  '''
+  merge_plugin_defaults: Merge plugin defaults with topology defaults
+
+  We cannot simply overwrite the topology defaults with plugin defaults as the
+  defaults might have been changed by the user, so we're using a dirty trick:
+
+  * Topology defaults are augmented with plugin defaults (which means the global
+    defaults take precedence)
+  * Whatever is really important should be in the 'important' dictionary and will
+    take precedence over anything else
+  '''
   if not defaults:
     return
   
@@ -41,7 +42,39 @@ def merge_plugin_defaults(defaults: typing.Optional[Box], topology: Box) -> None
   if important_stuff is not None:
     topology.defaults = topology.defaults + important_stuff
 
+def load_plugin_defaults(dir_path: str, topology: Box) -> None:
+  '''
+  Given the path to plugin directory, read the plugin defaults
+  '''
+  defaults_file = dir_path + '/defaults.yml'
+  if os.path.exists(defaults_file):
+    merge_plugin_defaults(_read.read_yaml(defaults_file),topology)
+
+def handle_plugin_redirects(p_module: object, p_name: str, topology: Box) -> typing.Optional[object]:
+  '''
+  Check whether a plugin redirects to another plugin. If it does,
+  return the new plugin (and check it exists), otherwise return
+  None (for no redirection)
+  '''
+  redirect = getattr(p_module,'_redirect',None)
+  if not isinstance(redirect,str):
+    return None
+
+  log.warning(
+    text=f'Plugin {p_name} has been replaced by {redirect}. Please update your lab topology',
+    module='plugins',
+    flag='redirect')
+
+  topology.plugin = [ redirect if p == p_name else p for p in topology.plugin ]
+  return load_plugin(redirect,topology)
+
 def load_plugin_from_path(path: str, plugin: str, topology: Box) -> typing.Optional[object]:
+  '''
+  Try to load plugin from the specified path. It could be either a
+  .py file, plugin.py within the 'plugin' subdirectory, or __init__.py
+  within the same subdirectory. Subdirectory-based plugins can have
+  system defaults which are also loaded.
+  '''
   module_path = path+'/'+plugin
   if not os.path.exists(module_path):
     if os.path.exists(module_path+'.py'):
@@ -88,34 +121,66 @@ def load_plugin_from_path(path: str, plugin: str, topology: Box) -> typing.Optio
     print(f"Failed to load plugin {module_name} from {module_path}\nError reported by module loader: {str(sys.exc_info()[1])}")
     log.fatal('Aborting the transformation process','plugin')
 
-  redirect = getattr(pymodule,'_redirect',None)
-  if isinstance(redirect,str):
-    topology.plugin = [ redirect if p == plugin else p for p in topology.plugin ]
-    return load_plugin_from_path(path,redirect,topology)
+  r_module = handle_plugin_redirects(pymodule,plugin,topology)
+  if r_module:
+    return r_module
 
   if config_name:
     setattr(pymodule,'config_name',config_name)
     setattr(pymodule,'_config_name',config_name)
 
   if plugin_is_dir:
-    defaults_file = dir_path + '/defaults.yml'
-    if os.path.exists(defaults_file):
-      merge_plugin_defaults(_read.read_yaml(defaults_file),topology)
+    load_plugin_defaults(dir_path,topology)
 
   if log.VERBOSE:
     print(f"loaded plugin {module_name}")
   return pymodule
 
-'''
-Load plugin: try to load the plugin from any of the search path directories
-'''
+def load_plugin_module(pname: str, topology: Box) -> typing.Optional[object]:
+  '''
+  Try loading a netsim.extra module as a plugin.
+  
+  Report loading errors (apart from "no module" which means the user used an
+  incorrect plugin name) and handle the usual plugin processing (redirects,
+  config_name, defaults)
+  '''
+  try:
+    pymodule = importlib.import_module(f'netsim.extra.{pname}')
+  except ModuleNotFoundError:
+    return None
+  except Exception as ex:
+    log.error(
+      f"Failed to load netsim.extra.{pname} module",
+      more_data=f"Error reported by module loader: {str(ex)}",
+      category=log.FatalError,
+      module='plugin')
+    log.exit_on_error()
+
+  r_module = handle_plugin_redirects(pymodule,pname,topology)
+  if r_module:
+    return r_module
+
+  setattr(pymodule,'config_name',pname)
+  setattr(pymodule,'_config_name',pname)
+  mod_file = pymodule.__file__
+  if mod_file:
+    load_plugin_defaults(os.path.dirname(mod_file),topology)
+
+  if log.VERBOSE:
+    print(f"loaded module netsim.extra.{pname} as plugin")
+  return pymodule
+
 def load_plugin(pname: str,topology: Box) -> typing.Optional[object]:
+  '''
+  Load plugin: try to load the plugin from any of the search path directories.
+  Failing that, try to load a netsim.extra module
+  '''
   for path in topology.defaults.paths.plugin:
     plugin = load_plugin_from_path(path,pname,topology)     # Try to load plugin from the current search path directory
     if plugin:                                              # Got it, get out of the loop
       return plugin
 
-  return None
+  return load_plugin_module(pname,topology)
 
 '''
 Sort plugins based on their _requires and _execute_after attributes

@@ -1,31 +1,16 @@
 (topo-plugins)=
 # netlab Plugins
 
-*netlab* supports dynamically loadable plugins allowing you to implement custom data model transformations or other functionality without adding nerd knobs to the core topology transformation. You might want to [write your own plugins](dev/plugins.md) or use plugins shipped with _netlab_:
+*netlab* supports dynamically loadable plugins, allowing you to implement custom data model transformations or other functionality without adding nerd knobs to the core topology transformation. You can [use plugins shipped with _netlab_](topo-plugins-builtin) or [write your own plugins](dev/plugins.md):
 
 ```eval_rst
-.. toctree::
-   :maxdepth: 1
-
-   plugins/bgp.domain.md
-   plugins/bgp.session.md
-   plugins/bgp.policy.md
-   plugins/bonding.md
-   plugins/ebgp.multihop.md
-   plugins/bgp.originate.md
-   plugins/check.config.md
-   plugins/fabric.md
-   plugins/files.md
-   plugins/kind.md
-   plugins/mlag.vtep.md
-   plugins/multilab.md
-   plugins/multiserver.md
-   plugins/node.clone.md
-   plugins/ospf.areas.md
-   plugins/vrrp.version.md
-   plugins/firewall.zonebased.md
-   plugins/evpn.multihoming.md
+.. contents:: Table of Contents
+   :depth: 2
+   :local:
+   :backlinks: none
 ```
+
+## Using Plugins
 
 Plugins needed by a topology file are listed in the **plugin** top-level element, for example:
 
@@ -59,6 +44,59 @@ links:
 ```
 
 Plugins providing support for additional networking features usually rely on Jinja2 templates to configure those features, limiting their use to a subset of supported platforms. Please check the plugin documentation for more details.
+
+(topo-plugins-builtin)=
+## _netlab_ Built-In Plugins
+
+These plugins are included with _netlab_ and can be used in all lab topologies:
+
+```eval_rst
+.. toctree::
+   :caption: Routing Protocol Plugins
+   :titlesonly: 
+
+   plugins/bgp.domain.md
+   plugins/bgp.session.md
+   plugins/bgp.policy.md
+   plugins/ebgp.multihop.md
+   plugins/bgp.originate.md
+   plugins/ospf.areas.md
+   plugins/vrrp.version.md
+```
+
+```eval_rst
+.. toctree::
+   :caption: Data Plane and Multihoming Plugins
+   :titlesonly: 
+
+   plugins/bonding.md
+   plugins/firewall.zonebased.md
+   plugins/mlag.vtep.md
+   plugins/evpn.multihoming.md
+   plugins/tunnel.gre.md
+   plugins/tunnel.wireguard.md
+```
+
+```eval_rst
+.. toctree::
+   :caption: Topology- and Lab Scaling Plugins
+   :titlesonly: 
+
+   plugins/fabric.md
+   plugins/multilab.md
+   plugins/multiserver.md
+   plugins/node.clone.md
+```
+
+```eval_rst
+.. toctree::
+   :caption: Other Plugins
+   :titlesonly: 
+
+   plugins/check.config.md
+   plugins/files.md
+   plugins/kind.md
+```
 
 ## More Information
 

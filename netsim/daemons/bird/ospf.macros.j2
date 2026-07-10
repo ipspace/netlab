@@ -1,5 +1,37 @@
+{% macro ospf_default_pfx(af) -%}
+{{ '0.0.0.0/0' if af == 'ipv4' else '::/0' }}
+{%- endmacro %}
+
+{% macro ospf_default_static(ospf,proto_suffix,vrf_name) %}
+{% for af in ['ipv4','ipv6'] if af in ospf.af and ospf.default is defined and ospf.default.always|default(false) %}
+{%   set ver = 'v2' if af == 'ipv4' else 'v3' %}
+protocol static ospf_default_{{ proto_suffix }}_{{ ver }} {
+  {{ af }} {
+{%   if vrf_name %}
+    table vrf_{{ vrf_name }}_{{ af }};
+    import filter vrf_{{ vrf_name }}_tag;
+{%   endif %}
+    # Low preference so any real default (BGP/OSPF/static) is preferred in the FIB
+    preference 1;
+  };
+  route {{ ospf_default_pfx(af) }} unreachable;
+}
+{% endfor %}
+{% endmacro %}
+
+{% macro ospf_default_export(odata,af) %}
+{%   set dfd = odata.default %}
+{%   set mtype = dfd.type|default('e2') %}
+{%   set mcost = dfd.cost|default(20) %}
+      if net = {{ ospf_default_pfx(af) }} && source != RTS_DEVICE then {
+        ospf_metric{{ mtype.replace('e', '') }} = {{ mcost }};
+        accept;
+      }
+{% endmacro %}
+
 {% macro ospf_config(ospf,proto_suffix,vrf_name,ospf_interfaces,vrf_data) %}
 {% set KW_NETWORK_TYPE = { 'broadcast': 'bcast', 'point-to-point': 'ptp','point-to-multipoint': 'ptmp', 'non-broadcast': 'nbma' } %}
+{{ ospf_default_static(ospf,proto_suffix,vrf_name) }}
 {% for af in ['ipv4','ipv6'] if af in ospf.af %}
 {%   set import_list = ospf.import|default(['bgp','connected','static'] if vrf_name else []) %}
 {%   set ver = 'v2' if af == 'ipv4' else 'v3' %}
@@ -10,24 +42,29 @@ protocol ospf {{ ver }} ospf_{{ proto_suffix }}_{{ ver }} {
   router id {{ ospf.router_id }};
 {%     endif %}
 {%   endif %}
-{%   if import_list or vrf_name %}
+{%   if import_list or vrf_name or ospf.default is defined %}
   {{ af }} {
 {%     if vrf_name %}
     table vrf_{{ vrf_name }}_{{ af }};
     import filter vrf_{{ vrf_name }}_tag;
 {%     endif %}
-{%     if import_list %}
+{%     if import_list or ospf.default is defined %}
     export filter {
+{%       if ospf.default is defined %}
+{{         ospf_default_export(ospf,af) }}
+{%       endif %}
 {%       if vrf_name and vrf_data.import|default([]) %}
       if netlab_vrf_rt ~ [ {{ vrf_data._bird_import|join(',') }} ] then {
         ospf_metric2 = 20;
         accept;
       }
 {%       endif %}
+{%       if import_list %}
       if source ~ [ {% for p in import_list %}{{ netlab_import_map[p] }}{% if not loop.last %},{% endif %}{% endfor %} ] then {
         ospf_metric2 = 20;
         accept;
       }
+{%       endif %}
       reject;
    };
 {%     endif %}

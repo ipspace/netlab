@@ -260,6 +260,18 @@ def execute_validation_test(
         wait_time += 15                           # ... and it will happen after 15 seconds
       time.sleep(1)
 
+  if v_entry.get('_expect_fail',False):           # Do we expect the test to fail (used for plugin validation)
+    if ret_value is True:
+      report.log_failure('The test did not fail as expected',topology)
+      report.increase_fail_count(v_entry)
+      return False
+    elif ret_value is False:
+      report.p_test_pass(v_entry,topology)
+      report.increase_pass_count(v_entry)
+      return True
+    else:
+      return ret_value
+
   if ret_value:                                   # If we got to 'True'
     report.log_info(
       f'Test succeeded in { round(time.time() - start_time,1) } seconds',

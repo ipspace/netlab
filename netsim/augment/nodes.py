@@ -557,10 +557,10 @@ def cleanup_non_ansible_config(n: Box) -> None:
       else:
         n[kw].pop(k,None)                                     # Config template not used, remove it
 
-'''
-Check uniqueness of interface names
-'''
 def check_unique_ifnames(n: Box) -> None:
+  '''
+  Check uniqueness of interface names
+  '''
   ifnames: dict = {}
   for intf in n.interfaces:
     if 'ifname' not in intf:
@@ -573,6 +573,22 @@ def check_unique_ifnames(n: Box) -> None:
         module='nodes')
     else:
       ifnames[intf.ifname] = intf
+
+def get_node_interface(
+      ndata: Box,
+      ifindex: typing.Optional[int] = None,
+      ifname: typing.Optional[str] = None
+    ) -> typing.Optional[Box]:
+  '''
+  Get the node interface with the specified ifindex
+  '''
+  for intf in ndata.interfaces:
+    if ifindex is not None and intf.ifindex == ifindex:
+      return intf
+    if ifname is not None and intf.ifname == ifname:
+      return intf
+
+  return None
 
 '''
 Cleanup node MTU values:

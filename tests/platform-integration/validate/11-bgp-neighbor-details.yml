@@ -1,0 +1,120 @@
+message: |
+  Check the 'bgp_neighbor_details' validation plugin. The VRF part of the test
+  is not implemented yet as the bgp_neighbor_details plugin is not yet VRF-aware
+
+defaults.sources.extra: [ ../../integration/wait_times.yml ]
+plugin: [ bgp.session ]
+
+module: [ bgp, bfd, vrf ]
+groups:
+  probes:
+    members: [ r1, r2, r3, r4, vr1, vr2, vr3 ]
+    module: [ bgp ]
+    device: frr
+  probes_bfd:
+    members: [ r1, r2, vr1, vr2 ]
+    module: [ bgp, bfd ]
+
+vrfs:
+  tenant:
+    links:
+    - interfaces: [ dut_eos, dut_frr, vr1, vr3 ]
+      prefix.ipv4: 172.16.2.0/24
+    - interfaces: [ dut_eos, dut_frr, vr2, vr3 ]
+      prefix.ipv6: 2001:db8:0:2::/64
+
+# Node device type for DUT devices set via default groups
+#
+nodes:
+  dut_eos.bgp.as: 65001
+  dut_frr.bgp.as: 65002
+  r1.bgp.as: 65101
+  r2.bgp.as: 65102
+  r3.bgp.as: 65103
+  r4.bgp.as: 65104
+
+  vr1.bgp.as: 65201
+  vr2.bgp.as: 65202
+  vr3:
+    module: [ bgp ]               # VR3 is not running BFD
+    bgp.as: 65203
+
+links:
+- dut_eos.bgp.bfd: True
+  dut_frr.bgp.bfd: True
+  r1.bgp.bfd: True
+  r2:
+  r3:
+  prefix:
+    ipv4: 172.16.1.0/24
+    ipv6: 2001:db8:0:1::/64
+- interfaces: [ dut_eos, dut_frr, r4 ]        # No BFD on this link
+
+validate:
+  # Check BGP sessions that are expected to be up (global + VRF)
+  #
+  bgp_r1_ipv4:
+    nodes: [ dut_eos, dut_frr ]
+    wait: ebgp_session
+    plugin: bgp_neighbor(node.bgp.neighbors,'r1')
+  bgp_r1_ipv6:
+    nodes: [ dut_eos, dut_frr ]
+    wait: ebgp_session
+    plugin: bgp_neighbor(node.bgp.neighbors,'r1',af='ipv6')
+  bgp_r2_ipv4:
+    nodes: [ dut_eos, dut_frr ]
+    wait: ebgp_session
+    plugin: bgp_neighbor(node.bgp.neighbors,'r2')
+  bgp_r2_ipv6:
+    nodes: [ dut_eos, dut_frr ]
+    wait: ebgp_session
+    plugin: bgp_neighbor(node.bgp.neighbors,'r2',af='ipv6')
+  bgp_r3_ipv4:
+    nodes: [ dut_eos, dut_frr ]
+    wait: ebgp_session
+    plugin: bgp_neighbor(node.bgp.neighbors,'r3')
+  bgp_r3_ipv6:
+    nodes: [ dut_eos, dut_frr ]
+    wait: ebgp_session
+    plugin: bgp_neighbor(node.bgp.neighbors,'r3',af='ipv6')
+  bgp_r4_ipv4:
+    nodes: [ dut_eos, dut_frr ]
+    wait: ebgp_session
+    plugin: bgp_neighbor(node.bgp.neighbors,'r4')
+
+  det_r1_none:
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor_details(node.bgp.neighbors,'r1',af='ipv4')
+  det_r2_none:
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor_details(node.bgp.neighbors,'r2',af='ipv6')
+
+  # Check BFD detection
+  bfd_r1:
+    description: BFD is enabled on R1
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor_details(node.bgp.neighbors,'r1',af='ipv4',bfd=True)
+  bfd_r2:
+    description: BFD for BGP is not configured on R2
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor_details(node.bgp.neighbors,'r2',af='ipv6',bfd=False)
+  bfd_r3:
+    description: R3 does not run BFD
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor_details(node.bgp.neighbors,'r3',af='ipv4',bfd=False)
+
+  fail_bfd_r1:
+    description: R1 is running BFD
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor_details(node.bgp.neighbors,'r1',af='ipv4',bfd=False)
+    _expect_fail: True
+  fail_bfd_r2:
+    description: R2 is not running BFD
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor_details(node.bgp.neighbors,'r2',af='ipv6',bfd=True)
+    _expect_fail: True
+  fail_bfd_r4:
+    description: BFD for BGP is not used with R4
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor_details(node.bgp.neighbors,'r4',af='ipv4',bfd=False)
+    _expect_fail: True

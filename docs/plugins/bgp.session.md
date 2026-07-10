@@ -63,6 +63,7 @@ The plugin implements generic BGP session features for the following platforms:
 | ------------------- | :--: | :--: | :--: | :--: | :--: |
 | Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  | ✅  |
 | Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |   ❌  |  ❌  |
+| BIRD                |  ✅  |  ✅  |  ✅  |  ✅  |  ❌  |
 | Cisco IOSv/IOSvL2   |  ✅  |  ✅  |  ✅  |  ✅  |  ❌  |
 | Cisco IOS XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |  ❌  |
 | Cisco IOS XR[^XR]   |  ✅  |  ✅  |   ❌  |  ✅  |  ❌  |
@@ -88,12 +89,6 @@ The plugin implements generic BGP session features for the following platforms:
 * Arista EOS supports TCP-AO only when running as a virtual machine
 * _netlab_ always configures HMAC-SHA1-96 as the cryptographic algorithm on IOS XE
 
-BGP session features are also available on these daemons:
-
-| Operating system    | default<br>originate | BGP<br>timers |  BFD | Passive<br>peer |
-| ------------------- | :--: | :--: | :--: | :--: |
-| BIRD                |  ✅  |  ✅  |   ✅  |  ✅  |
-
 (bgp-session-security)=
 BGP session security features are available on these platforms:
 
@@ -101,6 +96,7 @@ BGP session security features are available on these platforms:
 | ------------------- | :------: | :-: | :-:  |
 | Arista EOS          |    ✅    | ✅  |  ✅ |
 | Aruba AOS-CX        |    ✅    | ✅  |  ❌  |
+| BIRD                |    ✅    | ✅   | ❌   |
 | Cisco IOSv/IOSvL2   |    ✅    | ✅  |  ❌  |
 | Cisco IOS XE[^18v]  |    ✅    | ✅  |  ✅ |
 | Cisco IOS XR[^XR]   |    ✅    | ✅  |  ✅ |
@@ -115,12 +111,6 @@ BGP session security features are available on these platforms:
 | Nokia SR OS         |    ✅    | ❌  |  ✅  |
 | OpenBSD             |    ✅    | ✅  |  ❌  |
 
-BGP session security features are also available on these daemons:
-
-| Operating system    | password | GTSM | TCP-AO |
-| ------------------- | :------: | :-: | :-: |
-| BIRD                |    ✅    | ✅   | ❌   |
-
 (bgp-session-as-path)=
 The plugin implements AS-path-mangling nerd knobs for the following platforms:
 
@@ -128,7 +118,7 @@ The plugin implements AS-path-mangling nerd knobs for the following platforms:
 | ------------------- | :--: | :--: | :--: | :--: | :--: |
 | Arista EOS          |  ✅  |  ✅  |  ✅  |   ❌  |  ✅  |
 | Aruba AOS-CX        |  ✅  |  ❌   |  ✅  |   ❌  |   ❌  |
-| Bird                |   ❌  |   ❌  |   ✅  |  ✅  |  ✅  |
+| BIRD                |   ❌  |   ❌  |   ✅  |  ✅  |  ✅  |
 | Cisco IOSv/IOSvL2   |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco IOS XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco IOS XR[^XR]   |  ✅  |  ✅  |  ✅  |   ❌  |  ✅  |

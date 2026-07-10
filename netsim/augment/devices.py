@@ -66,7 +66,7 @@ def get_device_features(node: Box, defaults: Box) -> Box:
     return n_features
 
   if not isinstance(features,Box):
-    log.fatal('Device features for device type {node.device} should be a dictionary')
+    log.fatal(f'Device features for device type {node.device} should be a dictionary')
     return data.get_empty_box()
 
   return features + n_features

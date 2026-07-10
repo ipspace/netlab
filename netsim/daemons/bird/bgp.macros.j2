@@ -81,7 +81,7 @@ function {{ func_name }}( bool originate_default; bool rem_private_as ) {
  #}
 {% macro bgp_session(n,bgp_data,vrf_name,vrf_data,bgp_interfaces) %}
 {%   for af in [ 'ipv4','ipv6' ] if af in n and n[af] is string %}
-protocol bgp bgp_{{ ('vrf_' + vrf_name + '_') if vrf_name else '' }}{{ n.name }}_{{ af }} {
+protocol bgp bgp_{{ ('vrf_' + vrf_name + '_') if vrf_name else '' }}{{ n.name }}_{{ n.type }}_{{ af }} {
 {%     if vrf_name %}
   vrf "{{ vrf_name }}";
 {%       if 'router_id' in vrf_data.bgp %}
@@ -161,6 +161,17 @@ protocol bgp bgp_{{ ('vrf_' + vrf_name + '_') if vrf_name else '' }}{{ n.name }}
   };
 {%       endif %}
 {%     endfor %}
+{%     if n.evpn|default('') == af %}
+  evpn {
+    table evpntab;
+    import all;
+    export all;
+{%     if 'ebgp' in n.type %}
+    gateway recursive;
+    next hop keep;
+{%     endif %}
+  };
+{%     endif %}
 }
 {%   endfor %}
 {% endmacro -%}

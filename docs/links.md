@@ -85,6 +85,7 @@ A dictionary describing an individual link contains *node names* and *additional
 
 [^NAI]: We did not implement this attribute on a few rarely-used or no longer supported devices. Check the *interfaces* test in the [initial configuration feature coverage report](https://tests.netlab.tools/_html/coverage.initial).
 
+(link-attributes-intf)=
 You can use most link attributes on individual node attachments (dictionary under *node name* key). You can also use these node attachment attributes:
 
 * **ifindex** -- optional per-node interface index used to generate the interface/port name ([more details](links-ifname)).

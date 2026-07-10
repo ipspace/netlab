@@ -182,9 +182,17 @@ def config_template_paths(
       node: Box,
       fname: str,
       topology: Box,
-      provider_path: typing.Optional[str] = None) -> list:
+      provider_path: typing.Optional[str] = None,
+      jinja_extra_include: bool = False) -> list:
   if fname in node.get('config',[]):                    # Are we dealing with extra-config template?
-    path_prefix = topology.defaults.paths.custom.dirs
+    path_prefix = list(topology.defaults.paths.custom.dirs)
+
+    # Extra search directories are needed to include config macros. However, we
+    # should not add these same directors when finding files; they should only
+    # affect Jinja2 include directives
+    #
+    if topology.defaults.paths.custom.extra_dirs and jinja_extra_include:
+      path_prefix += list(topology.defaults.paths.custom.extra_dirs)
     path_suffix = [ fname ]
   else:
     path_suffix = [ node.device ]
@@ -215,6 +223,7 @@ def template_lookup_name(f_name: str, cfg_name: str, node: Box, topology: Box) -
 
   node._template_vars.config_module = cfg_name
   node._template_vars.custom_config = cfg_name
+  node._template_vars.custom_slash_config = cfg_name.replace('.','/')
   try:
     return _strings.eval_format(f_name,node._template_vars)
   except Exception as ex:
@@ -324,7 +333,8 @@ def render_config_template(
                     node=node,
                     fname=template_id,
                     topology=topology,
-                    provider_path=provider_path)
+                    provider_path=provider_path,
+                    jinja_extra_include=True)
     node_dict['netlab_config_mode'] = config_mode
     write_template(
       in_folder=os.path.dirname(template_path),

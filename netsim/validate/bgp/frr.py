@@ -29,21 +29,32 @@ af_kw: typing.Final[dict] = {
   'vpnv6': 'ipv6 vpn summary'
 }
 
-def show_bgp_neighbor(ngb: list, n_id: str, af: str='ipv4', activate: str = '', **kwargs: typing.Any) -> str:
+def show_bgp_neighbor(
+      ngb: list,
+      n_id: str,
+      af: str='ipv4', *, 
+      vrf: str = 'default',
+      activate: str = '', **kwargs: typing.Any) -> str:
   global af_lookup
 
   if not activate:
-    return "bgp summary json"
+    return f"bgp vrf {vrf} summary json"
 
   if activate not in af_lookup:
-    raise Exception(f'Unsupport address family {activate}')
+    raise Exception(f'Unsupported address family {activate}')
 
-  return f"bgp {af_kw[activate]} json"
+  if activate not in ['ipv4','ipv6']:
+    if vrf != 'default':
+      raise Exception(f'Cannot check {activate} BGP AF in VRF {vrf}')
+    return f"bgp {af_kw[activate]} json"
+  else:
+    return f"bgp vrf {vrf} {af_kw[activate]} json"
 
 def valid_bgp_neighbor(
       ngb: list,
       n_id: str,
-      af: str = 'ipv4',
+      af: str = 'ipv4', *, 
+      vrf: str = 'default',
       state: str = 'Established',
       activate: str = '',
       intf: str = '') -> str:
@@ -66,7 +77,7 @@ def valid_bgp_neighbor(
   if 'peers' in _result:
     data = _result.peers
   elif struct_name not in _result:
-    raise Exception(f'There are no BGP peers in address family {activate}')
+    _common.report_state(f'There are no BGP peers in address family {activate}',state=='missing')
   else:
     data = _result[struct_name].peers
 
@@ -77,8 +88,13 @@ def valid_bgp_neighbor(
     else:
       raise Exception(result)
 
-  if data[n_addr].state not in state:
-    raise Exception(f'The neighbor {n_addr} ({n_id}) {act_err} is in state {data[n_addr].state} (expected {state})')  
+  p_state = data[n_addr].state
+  if p_state not in state:
+    result = f'The neighbor {n_addr} ({n_id}) {act_err} is in state {p_state}'
+    if state == 'missing' and p_state != 'Established':
+      return result
+    else:
+      raise Exception(f'{result} (expected {state})')  
 
   return f'Neighbor {n_addr} ({n_id}) is in state {data[n_addr].state}'
 
@@ -89,7 +105,9 @@ def show_bgp_neighbor_details(ngb: list, n_id: str, af: str = 'ipv4', **kwargs: 
 def valid_bgp_neighbor_details(
       ngb: list,
       n_id: str,
-      af: str = 'ipv4',**kwargs: typing.Any) -> str:
+      af: str = 'ipv4',
+      bfd: typing.Optional[bool] = None,
+      **kwargs: typing.Any) -> str:
   _result = global_vars.get_result_dict('_result')
 
   n_addr = _common.get_bgp_neighbor_id(ngb,n_id,af)
@@ -100,6 +118,14 @@ def valid_bgp_neighbor_details(
       raise Exception(f'Neighbor data structure does not contain attribute {k}')
     if data[k] != v:
       raise Exception(f'{k} expected value {v} actual {data[k]}')
+
+  if bfd is not None:
+    if 'peerBfdInfo' not in data:
+      raise Exception(f'We are not running BFD with neighbor {n_addr} ({n_id})')
+    else:
+      expected = 'Up' if bfd else 'Down'
+      if data.peerBfdInfo.status != expected:
+        raise Exception(f'BGP BFD expected value {expected} actual {data.peerBfdInfo.status}')
 
   return f'All specified BGP neighbor parameters have the expected values'
 

@@ -111,7 +111,7 @@ def include_nodes(n_name: str, c_data: Box, topology: Box) -> None:
       topology.nodes[node_name].name = node_name            # Fix the name of the newly-generated node
       if len(topology.nodes) > MAX_NODE_ID:
         log.fatal(
-          'Exceeded maximum node limit while adding node {node_name}',
+          f'Exceeded maximum node limit while adding node {node_name}',
           module='components',
           header=True)
 
