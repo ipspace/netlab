@@ -1,14 +1,14 @@
 {#
-  Mikrotik is VPNv4 only, for now
-  NOTE: For now, this code assumes a BGP peer for the AFI ip is already present.
-  So it only adds the AFI vpnv4
+    Add VPNv4 and VPNv6 AFs to IPv4 BGP neighbors if they are present
+    in neighbor data. Adding AFs to a BGP neighbor would be much better,
+    but I can't figure it out...
 #}
-{% set af = 'ipv4' %}
-{% set vpnaf = 'vpnv4' %}
-{% if mpls.vpn[af] is defined %}
-
-{%   for n in bgp.neighbors if n[vpnaf] is defined %}
-/routing/bgp/connection set [find remote.address={{ n[vpnaf] }}] afi=ip,vpnv4
+{% for n in bgp.neighbors if 'ipv4' in n %}
+{%   set extra_afi = ['ip'] %}
+{%   for vpn_af in ['vpnv4','vpnv6'] if vpn_af in n %}
+{%     set _ = extra_afi.append(vpn_af) %}
 {%   endfor %}
-
-{% endif %}
+{%   if extra_afi %}
+/routing/bgp/connection set [find remote.address={{ n.ipv4 }}] afi={{ extra_afi|join(',') }}
+{%   endif %}
+{% endfor %}
