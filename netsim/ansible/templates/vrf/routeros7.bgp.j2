@@ -1,15 +1,29 @@
 {% import "templates/bgp/routeros7.macro.j2" as bgpcfg %}
-
-{% for vname,vdata in vrfs.items() %}
+{% set _vrfs = vrfs|default({}) %}
 {#
-    First of all, need to add the vrf to the default instance (for VPNv4)
+    If we have to leak routes between VRFs, we must do that through global VPN BGP AFs, so
+    we have to start the BGP instance first... but only if it hasn't been started in the
+    BGP module already
 #}
+{% if 'bgp' not in module %}
+{%   for vdata in _vrfs.values() if vdata._leaked_routes|default(False) %}
+{%     if loop.first %}
+/routing/bgp/instance add name=main as={{ bgp.as }}
+{%     endif %}
+{%   endfor %}
+{% endif %}
+{% for vname,vdata in _vrfs|dictsort %}
+{#
+    First of all, need to add the vrf to the default instance (for VPNv4), but only if
+    we leak routes between VRFs or if we have the global BGP instance
+#}
+{%   if 'bgp' in module or vdata._leaked_routes|default(False) %}
 /routing/bgp/vpn add label-allocation-policy=per-vrf vrf={{ vname }} route-distinguisher={{ vdata.rd }} import.route-targets={{ vdata.import|join(',') }} export.route-targets={{ vdata.export|join(',') }} instance=main export.redistribute=bgp,connected,ospf,static,vpn
-
+{%   endif %}
 {#
     Create BGP template/instance
 #}
-/routing/bgp/template add name=vrf_{{ vname }} as={{ bgp.as }} output.network=bgp-networks-{{ vname }} vrf={{ vname }} routing-table={{ vname }} output.redistribute=bgp,connected,ospf,static,vpn
+/routing/bgp/template add name=vrf_{{ vname }} as={{ bgp.as }} output.network=bgp-networks-{{ vname }} vrf={{ vname }} routing-table={{ vname }} output.redistribute=bgp,bgp-mpls-vpn,connected,ospf,static,vpn
 
 {% if 'ospf' in vdata %}
 /routing/bgp/template set vrf_{{ vname }} output.redistribute=([get vrf_{{ vname }} output.redistribute],"ospf")
