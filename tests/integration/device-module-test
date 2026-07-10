@@ -279,20 +279,21 @@ def check_no_running_labs() -> None:
       print(status.stderr)
     log.fatal("Cannot check running netlab labs")
 
+  default_lab = status_data.get('default')
+  if not default_lab:
+    return  # No default lab detected.. continue testing
+
+  directory = default_lab.get('dir','')
+  lab_status = default_lab.get('status','')
+  providers = ', '.join(default_lab.get('providers',[]))
 
   print("Running netlab lab instance(s) detected:")
   print("Active lab instance(s)\n")
   print(f"{'id':<12} {'directory':<50} {'status':<10} providers")
   print(f"{'-' * 12} {'-' * 50} {'-' * 10} {'-' * 20}")
+  print(f"{'default':<12} {directory:<50} {lab_status:<10} {providers}\n")
 
-  for lab_id, lab_data in status_data.items():
-    directory = lab_data.get('dir','')
-    lab_status = lab_data.get('status','')
-    providers = ', '.join(lab_data.get('providers',[]))
-
-  print(f"{lab_id:<12} {directory:<50} {lab_status:<10} {providers}\n")
-
-  log.fatal("Refusing to launch integration test while another netlab lab is running")
+  log.fatal("Refusing to launch integration test while another 'default' netlab lab is running")
 
 def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
   test_path = os.path.abspath(test)
