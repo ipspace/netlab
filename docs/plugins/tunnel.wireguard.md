@@ -23,8 +23,6 @@ The plugin includes Jinja2 templates for the following platforms:
 * Add `plugin: [ tunnel.wireguard ]` to the lab topology.
 * Create a [point-to-point link](topo-links) between two nodes and set **tunnel.mode** to **wireguard**.
 
-[^ATT]: **tunnel.mode** attribute on a link automatically sets link **type** to **tunnel**.
-
 ## Specifying Tunnel Parameters
 
 WireGuard tunnels are configured as [links](topo-links) with **tunnel.mode** attribute set to **wireguard**.
