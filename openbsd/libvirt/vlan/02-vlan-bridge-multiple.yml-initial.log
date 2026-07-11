@@ -1,0 +1,136 @@
+Creating Device configuration snippets
+[CREATED] h1: initial,routing
+[CREATED] h2: initial,routing
+[CREATED] h3: initial,routing
+[CREATED] h4: initial,routing
+[CREATED] dut: initial,vlan
+Config Deploying device configurations
+ [INFO] Executing initial configuration for node h1 (namespace clab-
+          ml-17-h1)
+ [INFO] Executing initial configuration for node h2 (namespace clab-
+          ml-17-h2)
+ [INFO] Executing initial configuration for node h3 (namespace clab-
+          ml-17-h3)
+ [INFO] Executing initial configuration for node h4 (namespace clab-
+          ml-17-h4)
+ [INFO] Executing routing configuration for node h1 (namespace clab-
+          ml-17-h1)
+ [INFO] Executing routing configuration for node h4 (namespace clab-
+          ml-17-h4)
+ [INFO] Executing routing configuration for node h3 (namespace clab-
+          ml-17-h3)
+ [INFO] Executing routing configuration for node h2 (namespace clab-
+          ml-17-h2)
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "initial configuration for dut\n=========================================\n#!/bin/sh\n#\nset -e\nset -x\n\nhostname dut\n#\n# Build hosts file\n#\n#\ncat <<'SCRIPT' >/tmp/hosts\n#\n# Created by netlab initial\n#\n10.0.0.5 dut\n172.31.1.1 h1 eth1.h1\n172.31.1.2 h2 eth1.h2\n172.31.1.3 h3 eth1.h3\n172.31.1.4 h4 eth1.h4\nSCRIPT\ngrep \"Created by netlab\" /etc/hosts || uniq /tmp/hosts >>/etc/hosts\n\n#\n# Enable forwarding\n#\nsysctl net.inet.ip.forwarding=1\nsysctl net.inet6.ip6.forwarding=1\necho -n > /etc/rad.conf\n\n#\n# Interface configuration\n#\nifconfig lo0 inet 10.0.0.5/32 alias\nifconfig lo0 up\n\n\n#\n# (re-)start RA daemon\n#\npkill -q rad || true\nrad\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/openbsd.yml for dut
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [Execute /tmp/config.sh to deploy initial config from /work/netlab_cicd/node_files/dut/initial] ***
+changed: [dut]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=routing)
+
+TASK [Figure out whether to deploy the module vlan on current device] **********
+ok: [dut]
+
+TASK [Find configuration template for vlan] ************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "vlan configuration for dut\n=========================================\n#!/bin/sh\n#\nset -e # Exit immediately when any command fails\nset -x # Track commands for troubleshooting\n#\n\nifconfig vio1 -inet\nifconfig vio1 -inet6\nifconfig vio1 mtu 1500\nifconfig vio1 description \"[Access VLAN red] dut -> h1\"\nifconfig vio1 up\n\nifconfig bridge700 add vio1 up\nifconfig vio2 -inet\nifconfig vio2 -inet6\nifconfig vio2 mtu 1500\nifconfig vio2 description \"[Access VLAN red] dut -> h2\"\nifconfig vio2 up\n\nifconfig bridge700 add vio2 up\nifconfig vio3 -inet\nifconfig vio3 -inet6\nifconfig vio3 mtu 1500\nifconfig vio3 description \"[Access VLAN blue] dut -> h3\"\nifconfig vio3 up\n\nifconfig bridge701 add vio3 up\nifconfig vio4 -inet\nifconfig vio4 -inet6\nifconfig vio4 mtu 1500\nifconfig vio4 description \"[Access VLAN blue] dut -> h4\"\nifconfig vio4 up\n\nifconfig bridge701 add vio4 up\nifconfig vether700 -inet\nifconfig vether700 -inet6\nifconfig vether700 description \"VLAN red (700) -> [h1,h2]\"\nifconfig vether700 up\n\nifconfig bridge700 add vether700 up\nifconfig vether701 -inet\nifconfig vether701 -inet6\nifconfig vether701 description \"VLAN blue (701) -> [h3,h4]\"\nifconfig vether701 up\n\nifconfig bridge701 add vether701 up\n\n#\n# (re-)start RA daemon\n#\npkill -q rad || true\nrad\n"
+}
+
+TASK [Deploy vlan configuration] ***********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/openbsd.yml for dut
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [Execute /tmp/config.sh to deploy vlan config from /work/netlab_cicd/node_files/dut/vlan] ***
+changed: [dut]
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [dut]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut                        : ok=20   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+
+Results of configuration script deployments
+================================================================================
+h1               Script:  initial,routing
+h2               Script:  initial,routing
+h3               Script:  initial,routing
+h4               Script:  initial,routing
+
+
+The device under test is a simple bridge without an IP address in the red
+or blue VLAN. Both VLANs are using the same IP prefix to identify potential
+inter-VLAN leaking.
+
+* h1 and h2 should be able to ping each other
+* h3 and h4 should be able to ping each other
+* h1 should not be able to reach h3
+
