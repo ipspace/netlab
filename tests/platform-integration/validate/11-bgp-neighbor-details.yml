@@ -8,20 +8,20 @@ plugin: [ bgp.session ]
 module: [ bgp, bfd, vrf ]
 groups:
   probes:
-    members: [ r1, r2, r3, r4, vr1, vr2, vr3 ]
+    members: [ r1, r2, r3, r4, vr1 ]
     module: [ bgp ]
     device: frr
   probes_bfd:
-    members: [ r1, r2, vr1, vr2 ]
+    members: [ r1, r2, vr1 ]
     module: [ bgp, bfd ]
 
 vrfs:
   tenant:
     links:
-    - interfaces: [ dut_eos, dut_frr, vr1, vr3 ]
+    - dut_eos.bgp.bfd: True
+      dut_frr.bgp.bfd: True
+      vr1.bgp.bfd: True
       prefix.ipv4: 172.16.2.0/24
-    - interfaces: [ dut_eos, dut_frr, vr2, vr3 ]
-      prefix.ipv6: 2001:db8:0:2::/64
 
 # Node device type for DUT devices set via default groups
 #
@@ -34,10 +34,6 @@ nodes:
   r4.bgp.as: 65104
 
   vr1.bgp.as: 65201
-  vr2.bgp.as: 65202
-  vr3:
-    module: [ bgp ]               # VR3 is not running BFD
-    bgp.as: 65203
 
 links:
 - dut_eos.bgp.bfd: True
@@ -51,7 +47,7 @@ links:
 - interfaces: [ dut_eos, dut_frr, r4 ]        # No BFD on this link
 
 validate:
-  # Check BGP sessions that are expected to be up (global + VRF)
+  # Check global BGP sessions that are expected to be up
   #
   bgp_r1_ipv4:
     nodes: [ dut_eos, dut_frr ]
@@ -89,6 +85,13 @@ validate:
     nodes: [ dut_eos, dut_frr ]
     plugin: bgp_neighbor_details(node.bgp.neighbors,'r2',af='ipv6')
 
+  # Check global VRF sessions that are expected to be up
+  #
+  vrf_vr1_ipv4:
+    nodes: [ dut_eos, dut_frr ]
+    wait: ebgp_session
+    plugin: bgp_neighbor(node.vrfs.tenant.bgp.neighbors,'vr1',vrf='tenant')
+
   # Check BFD detection
   bfd_r1:
     description: BFD is enabled on R1
@@ -118,3 +121,10 @@ validate:
     nodes: [ dut_eos, dut_frr ]
     plugin: bgp_neighbor_details(node.bgp.neighbors,'r4',af='ipv4',bfd=False)
     _expect_fail: True
+
+  # Check VRF-aware BFD validation
+  # Check BFD detection
+  bfd_vr1:
+    description: BFD is enabled on VR1
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor_details(node.vrfs.tenant.bgp.neighbors,'vr1',af='ipv4',vrf='tenant',bfd=True)

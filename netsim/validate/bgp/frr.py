@@ -98,9 +98,14 @@ def valid_bgp_neighbor(
 
   return f'Neighbor {n_addr} ({n_id}) is in state {data[n_addr].state}'
 
-def show_bgp_neighbor_details(ngb: list, n_id: str, af: str = 'ipv4', **kwargs: typing.Any) -> str:
+def show_bgp_neighbor_details(
+      ngb: list,
+      n_id: str,
+      af: str = 'ipv4',
+      vrf: str = 'default',
+      **kwargs: typing.Any) -> str:
   n_addr = _common.get_bgp_neighbor_id(ngb,n_id,af)
-  return f'bgp neighbor {n_addr} json'
+  return f'bgp vrf {vrf} neighbor {n_addr} json'
 
 BGP_DETAILS_KW_MAP = {
   'keepalive_interval': 'bgpTimerKeepAliveIntervalMsecs',
@@ -116,6 +121,7 @@ def valid_bgp_neighbor_details(
       ngb: list,
       n_id: str,
       af: str = 'ipv4',
+      vrf: str = 'default',
       bfd: typing.Optional[bool] = None,
       **kwargs: typing.Any) -> str:
   _result = global_vars.get_result_dict('_result')
