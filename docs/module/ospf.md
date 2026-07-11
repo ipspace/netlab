@@ -102,6 +102,7 @@ The following devices support BFD with OSPF:
 | Dell OS10                |  ✅  |  ❌   |
 | Junos[^Junos]            |  ✅  |  ❌   |
 | Mikrotik RouterOS 6      |  ✅  |  ❌   |
+| Mikrotik RouterOS 7      |  ✅  |  ❌   |
 | Nokia SR Linux           |  ✅  |  ❌   |
 | Nokia SR OS[^SROS]       |  ✅  |  ✅  |
 | VyOS                     |  ✅  |  ❌   |

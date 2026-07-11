@@ -18,7 +18,7 @@ BFD is supported on these platforms:
 | Dell OS10             | ✅  | ✅  |  ❌  |
 | Junos[^Junos]         | ✅[❗](caveats-junos) | ✅  | ✅  |
 | Mikrotik RouterOS 6   |  ❌  | ✅  | ✅  |
-| Mikrotik RouterOS 7   |  ❌  |  ❌  |  ❌  |
+| Mikrotik RouterOS 7   | ✅  | ✅  |  ❌  |
 | Nokia SR Linux        | ✅  | ✅  | ✅  |
 | Nokia SR OS[^SROS]    | ✅  | ✅  | ✅  |
 | VyOS                  | ✅[❗](caveats-vyos) | ✅  | ✅  |
