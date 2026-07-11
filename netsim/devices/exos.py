@@ -1,7 +1,7 @@
 from box import Box
 
 from ..utils import log
-from . import _Quirks, need_ansible_collection, report_quirk
+from . import _common, _Quirks, need_ansible_collection, report_quirk
 
 EXOS_VLAN_1_NAME = 'Default'
 
@@ -63,6 +63,7 @@ class EXOS(_Quirks):
   def device_quirks(cls, node: Box, topology: Box) -> None:
     if 'vlan' in node.get('module',[]):
       default_vlan_1(node)
+      _common.check_tagged_vlan_1(node)
     if 'gateway' in node.get('module',[]):
       check_vrrp_address_families(node)
 
