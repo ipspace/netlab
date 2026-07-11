@@ -16,7 +16,10 @@ You can run the following tests:
 * `03-cost.yml` -- Tests OSPFv3 interface costs
 * `04-passive.yml` -- Tests passive and stub OSPFv3 interfaces
 * `05-unnumbered.yml` -- Tests OSPFv3 on IPv6 LLA interfaces.
-* `41-gr.yml` -- Tests OSPFv3 graceful restart helper route retention
+* `41-gr.yml` -- Tests OSPFv3 graceful restart helper route retention. The FRR
+  restarting probe calls `graceful-restart prepare` once, then kills `ospf6d`;
+  `gr_resume` clears `/var/lib/frr/ospf6d.json` and restarts the daemon so
+  validate can be rerun.
 
 Each test includes a validation suite that can be run with the `netlab validate` command.
 
