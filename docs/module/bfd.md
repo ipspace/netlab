@@ -21,7 +21,15 @@ BFD is supported on these platforms:
 | Mikrotik RouterOS 7   | ✅  | ✅  |  ❌  |  ❌  |
 | Nokia SR Linux        | ✅  | ✅  | ✅  | ✅ |
 | Nokia SR OS[^SROS]    | ✅  | ✅  | ✅  |  ❌  |
-| VyOS                  | ✅[❗](caveats-vyos) | ✅  | ✅  | ✅ |
+| VyOS                  | ✅[❗](caveats-vyos) | ✅  | ✅  |  ❌  |
+
+```{tip}
+See the integration test results for more details:
+
+* [OSPFv2 test results](https://release.netlab.tools/_html/coverage.ospfv2)
+* [OSPFv3 test results](https://release.netlab.tools/_html/coverage.ospfv3)
+* [BGP sessions test results](https://release.netlab.tools/_html/coverage.bgp.session)
+```
 
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
