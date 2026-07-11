@@ -326,7 +326,7 @@ The following interface parameters are configured on supported network operating
 | Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  | ✅  |
 | Nokia SR Linux        | ✅  |  ❌  | ✅  | ✅  |
 | Nokia SR OS[^SROS]    | ✅  |  ❌  | ✅  | ✅  |
-| OpenBSD               |  ❌  |  ❌  | ✅  |  ❌  |
+| OpenBSD               | ✅  |  ❌  | ✅  |  ❌  |
 | Sonic                 | ✅  | ✅  | ✅  | ✅  |
 | VyOS                  | ✅  |  ❌  | ✅  | ✅  |
 
@@ -481,6 +481,7 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | Mikrotik RouterOS 7   | ✅ | ✅ |  ❌ | ✅ |  ❌ |  ❌ |
 | Nokia SR Linux        | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
 | Nokia SR OS[^SROS]    | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| OpenBSD               | ✅ | ❌ | ❌ | ❌  | ❌ |
 | VyOS                  | ✅ | ✅ | ✅ | ✅ |  ❌ |  ❌ |
 
 (platform-services-support)=

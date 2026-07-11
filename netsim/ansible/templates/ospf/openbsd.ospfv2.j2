@@ -1,5 +1,10 @@
 {% macro config(ospf_vrf,ospf_data,intf_data) %}
+{% if ospf_vrf %}
+cat <<'OSPFD_CONF' >/etc/ospfd-r{{ospf_vrf}}.conf
+rdomain {{ospf_vrf}}
+{% else %}
 cat <<'OSPFD_CONF' >/etc/ospfd.conf
+{% endif %}
 {% if ospf_data.router_id is defined %}
 router-id {{ ospf_data.router_id }}
 {% endif %}
@@ -52,7 +57,12 @@ area {{ a }} {
 {% endfor %} 
 OSPFD_CONF
 
+{% if ospf_vrf %}
+chmod 640 /etc/ospfd-r{{ospf_vrf}}.conf
+route -T {{ospf_vrf}} exec ospfd -f /etc/ospfd-r{{ospf_vrf}}.conf
+{% else %}
 chmod 640 /etc/ospfd.conf
 rcctl enable ospfd
 rcctl restart ospfd
+{% endif %}
 {% endmacro %}
