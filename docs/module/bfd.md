@@ -1,27 +1,35 @@
 # Bidirectional Forwarding Detection (BFD) Configuration Module
 
-This configuration module configures the basic BFD ([RFC5880](https://datatracker.ietf.org/doc/html/rfc5880)) parameters. To configure fast failover with BFD, use the routing protocol [configuration modules](../module-reference.md). At the moment, you can use BFD with [IS-IS](isis.md) and [OSPF](ospf.md).
+This configuration module configures the basic BFD ([RFC5880](https://datatracker.ietf.org/doc/html/rfc5880)) parameters. To configure fast failover with BFD, use the routing protocol [configuration modules](../module-reference.md). You can use BFD with [IS-IS](isis.md), [OSPF](ospf.md), and BGP (through the **[bgp.session](plugin-bgp-session)** plugin).
 
 (bfd-platform)=
 BFD is supported on these platforms:
 
-| Operating system      | Configurable<br>timers | OSPF | IS-IS |
-| --------------------- | :-: | :-: | :-: |
-| Arista EOS            | ✅  | ✅  | ✅  |
-| Aruba AOS-CX          | ✅  | ✅  |  ❌  |
-| BIRD                  | ✅  | ❌  |  ❌  |
-| Cisco IOS             | ✅  | ✅  | ✅  |
-| Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  |
-| Cisco Nexus OS        | ✅  | ✅  | ✅  |
-| Cumulus Linux         | ✅[❗](caveats-frr) | ✅  |  ❌  |
-| FRR                   | ✅[❗](caveats-frr) | ✅  |  ❌  |
-| Dell OS10             | ✅  | ✅  |  ❌  |
-| Junos[^Junos]         | ✅[❗](caveats-junos) | ✅  | ✅  |
-| Mikrotik RouterOS 6   |  ❌  | ✅  | ✅  |
-| Mikrotik RouterOS 7   | ✅  | ✅  |  ❌  |
-| Nokia SR Linux        | ✅  | ✅  | ✅  |
-| Nokia SR OS[^SROS]    | ✅  | ✅  | ✅  |
-| VyOS                  | ✅[❗](caveats-vyos) | ✅  | ✅  |
+| Operating system      | Configurable<br>timers | OSPF | IS-IS | BGP |
+| --------------------- | :-: | :-: | :-: | :-: |
+| Arista EOS            | ✅  | ✅  | ✅  | ✅ |
+| Aruba AOS-CX          | ✅  | ✅  |  ❌  | ✅ |
+| BIRD                  | ✅  |  ❌  |  ❌  | ✅  |
+| Cisco IOS             | ✅  | ✅  | ✅  | ✅ |
+| Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  | ✅ |
+| Cisco Nexus OS        | ✅  | ✅  | ✅  |  ❌  |
+| Cumulus Linux         | ✅[❗](caveats-frr) | ✅  |  ❌  | ✅ |
+| FRR                   | ✅[❗](caveats-frr) | ✅  |  ❌  | ✅ |
+| Dell OS10             | ✅  | ✅  |  ❌  |  ❌  |
+| Junos[^Junos]         | ✅[❗](caveats-junos) | ✅  | ✅  | ✅ |
+| Mikrotik RouterOS 6   |  ❌  | ✅  | ✅  |  ❌  |
+| Mikrotik RouterOS 7   | ✅  | ✅  |  ❌  |  ❌  |
+| Nokia SR Linux        | ✅  | ✅  | ✅  | ✅ |
+| Nokia SR OS[^SROS]    | ✅  | ✅  | ✅  |  ❌  |
+| VyOS                  | ✅[❗](caveats-vyos) | ✅  | ✅  |  ❌  |
+
+```{tip}
+See the integration test results for more details:
+
+* [OSPFv2 test results](https://release.netlab.tools/_html/coverage.ospfv2)
+* [OSPFv3 test results](https://release.netlab.tools/_html/coverage.ospfv3)
+* [BGP sessions test results](https://release.netlab.tools/_html/coverage.bgp.session)
+```
 
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
