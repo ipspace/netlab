@@ -478,7 +478,7 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | vJunos-switch         | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
 | vJunos-router         | ❌  | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
 | Mikrotik RouterOS 6   | ✅ | ✅ |  ❌ | ✅ |  ❌ |  ❌ |
-| Mikrotik RouterOS 7   | ✅ | ✅ |  ❌ | ✅ |  ❌ |  ❌ |
+| Mikrotik RouterOS 7   | ✅ | ✅ | ✅ | ✅ |  ❌ |  ❌ |
 | Nokia SR Linux        | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
 | Nokia SR OS[^SROS]    | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | OpenBSD               | ✅ | ❌ | ❌ | ❌  | ❌ |
