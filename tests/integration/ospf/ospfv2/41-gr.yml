@@ -3,6 +3,11 @@ message: |
   This lab tests OSPF graceful restart helper behavior. The device under test
   should retain the FRR probe loopback route during a planned OSPF restart.
 
+  FRR's `graceful-restart prepare` is one-shot: it floods Grace LSAs and writes
+  restart state to /var/lib/frr/ospfd.json. The probe then kills ospfd to
+  simulate a planned restart. gr_resume clears that state and restarts ospfd so
+  a subsequent `netlab validate` run can call prepare again.
+
 defaults.sources.extra: [ ../../wait_times.yml, ../../warnings.yml ]
 module: [ ospf ]
 
@@ -50,7 +55,7 @@ validate:
     nodes: [ xgr ]
     devices: [ frr ]
     exec: >-
-      vtysh -c "graceful-restart prepare ip ospf" && kill -STOP $(pidof ospfd)
+      vtysh -c "graceful-restart prepare ip ospf" && pkill -9 ospfd
   wait_gr:
     description: Wait a long while to ensure SPF has been run
     wait: ospfv2_spf_long
@@ -59,8 +64,11 @@ validate:
     nodes: [ xp ]
     plugin: ospf_prefix(nodes.xgr.loopback.ipv4)
   gr_resume:
-    description: Resume OSPF on XGR
+    description: Reset OSPF on XGR for repeatable GR tests
     nodes: [ xgr ]
     devices: [ frr ]
-    exec: kill -CONT $(pidof ospfd) || true
-    pass: OSPF daemon resumed on XGR
+    exec: >-
+      rm -f /var/lib/frr/ospfd.json;
+      /usr/lib/frr/ospfd -d -F datacenter -A 127.0.0.1;
+      vtysh -f /etc/config/02-ospf.sh
+    pass: OSPF daemon reset on XGR

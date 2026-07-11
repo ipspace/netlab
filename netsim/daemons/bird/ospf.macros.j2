@@ -29,6 +29,19 @@ protocol static ospf_default_{{ proto_suffix }}_{{ ver }} {
       }
 {% endmacro %}
 
+{% macro ospf_gr_config(odata) %}
+{% if odata.gr is defined %}
+{%   if odata.gr.restart is defined %}
+  graceful restart on;
+{%     if odata.gr.restart.grace_period is defined %}
+  graceful restart time {{ odata.gr.restart.grace_period }};
+{%     endif %}
+{%   elif odata.gr.helper is defined %}
+  graceful restart aware;
+{%   endif %}
+{% endif %}
+{% endmacro %}
+
 {% macro ospf_config(ospf,proto_suffix,vrf_name,ospf_interfaces,vrf_data) %}
 {% set KW_NETWORK_TYPE = { 'broadcast': 'bcast', 'point-to-point': 'ptp','point-to-multipoint': 'ptmp', 'non-broadcast': 'nbma' } %}
 {{ ospf_default_static(ospf,proto_suffix,vrf_name) }}
@@ -42,6 +55,7 @@ protocol ospf {{ ver }} ospf_{{ proto_suffix }}_{{ ver }} {
   router id {{ ospf.router_id }};
 {%     endif %}
 {%   endif %}
+{{   ospf_gr_config(ospf) }}
 {%   if import_list or vrf_name or ospf.default is defined %}
   {{ af }} {
 {%     if vrf_name %}
