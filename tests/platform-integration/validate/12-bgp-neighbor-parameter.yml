@@ -1,0 +1,64 @@
+message: |
+  Check the 'bgp_neighbor_details' validation plugin. The VRF part of the test
+  is not implemented yet as the bgp_neighbor_details plugin is not yet VRF-aware
+
+defaults.sources.extra: [ ../../integration/wait_times.yml ]
+plugin: [ bgp.session ]
+
+addressing.lan.ipv6: 2001:db8::/48
+
+module: [ bgp ]
+groups:
+  probes:
+    members: [ r1, vr1 ]
+    module: [ bgp ]
+    device: frr
+
+# Node device type for DUT devices set via default groups
+#
+nodes:
+  dut_eos.bgp.as: 65001
+  dut_frr.bgp.as: 65002
+  r1.bgp.as: 65101
+  vr1.bgp.as: 65201
+
+links:
+- dut_eos:
+  dut_frr:
+  r1:
+  bgp.timers:
+    keepalive: 7
+    hold: 24
+- dut_eos:
+  dut_frr:
+  vr1:
+  bgp.timers:
+    keepalive: 7
+    hold: 24
+
+validate:
+  # Check BGP sessions that are expected to be up (global + VRF)
+  #
+  bgp_r1_ipv4:
+    nodes: [ dut_eos, dut_frr ]
+    wait: ebgp_session
+    plugin: bgp_neighbor(node.bgp.neighbors,'r1')
+  bgp_r1_ipv6:
+    nodes: [ dut_eos, dut_frr ]
+    wait: ebgp_session
+    plugin: bgp_neighbor(node.bgp.neighbors,'r1',af='ipv6')
+
+  # Check hello timer lookup
+  timers_r1_v4:
+    description: Are BGP timers set as expected?
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor_details(node.bgp.neighbors,'r1',af='ipv4',keepalive_interval=7,hold_timer=24)
+  timers_r1_v6:
+    description: Are BGP timers set as expected?
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor_details(node.bgp.neighbors,'r1',af='ipv6',keepalive_interval=7,hold_timer=24)
+  timers_fail:
+    description: Check incorrect timer values
+    nodes: [ dut_eos, dut_frr ]
+    plugin: bgp_neighbor_details(node.bgp.neighbors,'r1',af='ipv6',keepalive_interval=6,hold_timer=24)
+    _expect_fail: True

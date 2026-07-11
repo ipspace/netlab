@@ -102,6 +102,16 @@ def show_bgp_neighbor_details(ngb: list, n_id: str, af: str = 'ipv4', **kwargs: 
   n_addr = _common.get_bgp_neighbor_id(ngb,n_id,af)
   return f'bgp neighbor {n_addr} json'
 
+BGP_DETAILS_KW_MAP = {
+  'keepalive_interval': 'bgpTimerKeepAliveIntervalMsecs',
+  'hold_timer': 'bgpTimerHoldTimeMsecs',
+}
+
+BGP_DETAILS_KW_UNITS = {
+  'keepalive_interval': 1000,
+  'hold_timer': 1000,
+}
+
 def valid_bgp_neighbor_details(
       ngb: list,
       n_id: str,
@@ -114,6 +124,9 @@ def valid_bgp_neighbor_details(
   data = _result[n_addr]
 
   for k,v in kwargs.items():
+    v *= BGP_DETAILS_KW_UNITS.get(k,1)                      # If needed, multiply the desired value by unit conversion factor
+    k = BGP_DETAILS_KW_MAP.get(k,k)                         # Try to do a lookup through KW table, otherwise leave the keyword intact
+
     if not k in data:
       raise Exception(f'Neighbor data structure does not contain attribute {k}')
     if data[k] != v:
