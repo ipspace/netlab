@@ -37,7 +37,7 @@ def build_afi_lists(node: Box) -> None:
         continue
       ngb._afi_list[t_af] = []
       if 'activate' not in ngb or ngb.activate.get(t_af,False):
-        ngb._afi_list[t_af].append(t_af)                      # Append default AF if needed
+        ngb._afi_list[t_af].append(t_af.replace('v4',''))     # Append default AF (ip or ipv6) if needed
       for bgp_af in ['vpnv4','vpnv6','evpn']:                 # Then append service AFs
         if bgp_af in ngb and (ngb[bgp_af] == ngb[t_af] or ngb[bgp_af] == t_af):
           ngb._afi_list[t_af].append(bgp_af)
