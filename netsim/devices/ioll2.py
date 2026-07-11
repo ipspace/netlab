@@ -32,4 +32,4 @@ class IOSL2(_IOSXE):
     if 'ospf' in mods and 'bfd' in mods:
       check_ospfv3_bfd(node)
     if 'lag' in mods:
-      lag_remove_virtual(node,topology)  
+      lag_remove_virtual(node,topology)
