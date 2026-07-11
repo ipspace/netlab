@@ -1,10 +1,13 @@
-{% if bfd is defined %}
-{%   set bfd_ifs = interfaces | selectattr('bgp.bfd','defined') | map(attribute='ifname') | list %}
+{% set bfd_iflist = [] %}
+{% for intf in interfaces if intf.ospf.bfd|default(False) or intf.bgp.bfd|default(False) %}
+{%   set _ = bfd_iflist.append(intf.ifname) %}
+{% endfor %}
+{% if bfd_iflist %}
 protocol bfd {
-    interface "{{ '","'.join(bfd_ifs) }}" {
-      min rx interval {{ bfd.min_rx|default(500) }}ms;
-      min tx interval {{ bfd.min_tx|default(500) }}ms;
-      multiplier {{ bfd.multiplier|default(3) }};
-    };
+  interface "{{ '","'.join(bfd_iflist) }}" {
+    min rx interval {{ bfd.min_rx|default(500) }}ms;
+    min tx interval {{ bfd.min_tx|default(500) }}ms;
+    multiplier {{ bfd.multiplier|default(3) }};
+  };
 }
 {% endif %}
