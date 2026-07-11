@@ -11,6 +11,7 @@ from ..data import get_box, global_vars
 from ..data.types import must_be_list
 from ..data.validate import validate_attributes
 from ..utils import log
+from ..utils import routing as utils_routing
 from . import _dataplane, _Module, _routing, get_effective_module_attribute, remove_module
 
 #
@@ -606,3 +607,9 @@ class VRF(_Module):
     if node.get('bgp.as',None) and not node.get('bgp.router_id',None):
       _routing.router_id(node,'bgp',topology.pools)
       _routing.process_imports(node,'bgp',topology,global_vars.get_const('vrf_igp_protocols',['connected']))
+
+    # If we created VRF BGP data, then we have to ensure the 'neighbors' list is present
+    #
+    for (bgp_data,_,_) in utils_routing.rp_data(node,'bgp',['vrf']):
+      if 'neighbors' not in bgp_data:
+        bgp_data.neighbors = []
