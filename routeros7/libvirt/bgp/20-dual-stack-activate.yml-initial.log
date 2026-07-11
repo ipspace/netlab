@@ -1,0 +1,129 @@
+Creating Device configuration snippets
+[CREATED] dut: initial,ospf,bgp
+[CREATED] x1: initial,ospf,bgp,bgp-xact
+[CREATED] x2: initial,bgp,bgp-xact
+Config Deploying device configurations
+ [INFO] Executing initial configuration for node x1
+ [INFO] Executing initial configuration for node x2
+ [INFO] Executing ospf configuration for node x1
+ [INFO] Executing bgp configuration for node x1
+ [INFO] Executing bgp-xact configuration for node x1
+ [INFO] Executing bgp configuration for node x2
+ [INFO] Executing bgp-xact configuration for node x2
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "initial configuration for dut\n=========================================\n\n/system/identity set name=\"dut\"\n\n/interface/bridge add name=loopback protocol-mode=none\n\n\n/ip/address add interface=loopback address=10.0.0.1/32\n/ipv6/address add interface=loopback address=2001:db8:1:1::1/64\n\n\n\n\n/interface/ethernet set comment=\"dut -> x1\" ether2\n\n/interface/ethernet set mtu=1500 ether2\n/ip/address add interface=ether2 address=10.1.0.1/30\n/ip/address set [find where interface=ether2] comment=\"dut -> x1\"\n/ipv6/address add interface=ether2 address=2001:db8:3::1/64\n/ipv6/nd add interface=ether2 advertise-dns=no ra-interval=3s-30s\n\n\n/interface/ethernet set comment=\"dut -> x2 [external]\" ether3\n\n/interface/ethernet set mtu=1500 ether3\n/ip/address add interface=ether3 address=10.1.0.5/30\n/ip/address set [find where interface=ether3] comment=\"dut -> x2 [external]\"\n/ipv6/address add interface=ether3 address=2001:db8:3:1::1/64\n/ipv6/nd add interface=ether3 advertise-dns=no ra-interval=3s-30s\n\n\n/ip/neighbor/discovery-settings set discover-interface-list=all\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+
+TASK [load initial from /work/netlab_cicd/node_files/dut/initial] **************
+ok: [dut]
+
+TASK [Run commands on CHR] *****************************************************
+changed: [dut]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=bgp)
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "ospf configuration for dut\n=========================================\n\n\n\n/routing/ospf/instance add name=default4 version=2 router-id=10.0.0.1 vrf=main\n\n/routing/ospf/area add instance=default4 name=\"main_2_0.0.0.0\" area-id=0.0.0.0\n\n\n\n\n\n\n\n\n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default4] interface=loopback \n\n\n\n\n\n\n\n\n\n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default4] interface=ether2 type=ptp\n\n\n\n\n\n/routing/ospf/instance add name=default6 version=3 router-id=10.0.0.1 vrf=main\n\n/routing/ospf/area add instance=default6 name=\"main_3_0.0.0.0\" area-id=0.0.0.0\n\n\n\n\n\n\n\n\n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default6] interface=loopback \n\n\n\n\n\n\n\n\n\n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default6] interface=ether2 type=ptp\n\n\n"
+}
+
+TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+
+TASK [load ospf from /work/netlab_cicd/node_files/dut/ospf] ********************
+ok: [dut]
+
+TASK [Run commands on CHR] *****************************************************
+changed: [dut]
+
+TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [dut]
+
+TASK [Find configuration template for bgp] *************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "bgp configuration for dut\n=========================================\n\n/routing/bgp/template add name=main as=65000 output.network=bgp-networks\n/routing/bgp/instance add name=main as=65000\n\n/routing/bgp/instance set [/routing/bgp/instance find name=main] router-id=10.0.0.1\n\n\n/routing/filter/rule add chain=filter_rr_self_ebgp rule=\"if ( bgp-input-remote-addr == 10.1.0.6 ) { set gw 10.0.0.1;}\"\n/routing/filter/rule add chain=filter_rr_self_ebgp rule=\"if ( bgp-input-remote-addr == 2001:db8:3:1::3 ) { set gw 10.0.0.1;}\"\n/routing/filter/rule add chain=filter_rr_self_ebgp rule=\"return;\"\n\n/routing/filter/rule/add chain=rm_extended_communities rule=\"delete bgp-ext-communities rt; delete bgp-ext-communities soo; delete bgp-ext-communities other;\"\n/routing/filter/rule/add chain=rm_extended_communities rule=\"return;\"\n/routing/filter/rule/add chain=rm_large_communities rule=\"delete bgp-lrg-communities all;\"\n/routing/filter/rule/add chain=rm_large_communities rule=\"return;\"\n/routing/filter/rule/add chain=rm_standard_communities rule=\"delete bgp-std-communities other; delete bgp-ext-communities wk;\"\n/routing/filter/rule/add chain=rm_standard_communities rule=\"jump rm_large_communities;\"\n/routing/filter/rule/add chain=rm_standard_communities rule=\"return;\"\n\n\n/routing/bgp/connection add template=main instance=main name=10_0_0_2 remote.address=10.0.0.2 remote.as=65000 comment=\"x1\" local.role=ebgp\n/routing/bgp/connection set [/routing/bgp/connection find name=10_0_0_2] disabled=yes }}\n/routing/filter/rule add chain=filter_10_0_0_2 rule=\"accept;\"\n/routing/bgp/connection set [/routing/bgp/connection find name=10_0_0_2] output.filter-chain=filter_10_0_0_2\n/routing/bgp/connection set [/routing/bgp/connection find name=10_0_0_2] local.role=ibgp local.address=loopback\n/routing/filter/rule add chain=filter_10_0_0_2 rule=\"jump filter_rr_self_ebgp;\" place-before=0\n\n/routing/filter/rule/add chain=filter_10_0_0_2 rule=\"jump rm_large_communities;\" place-before=0\n\n/routing/bgp/connection add template=main instance=main name=2001_db8_1_2__1 remote.address=2001:db8:1:2::1 remote.as=65000 comment=\"x1\" local.role=ebgp\n/routing/bgp/connection set [/routing/bgp/connection find name=2001_db8_1_2__1] afi=ipv6\n/routing/filter/rule add chain=filter_2001_db8_1_2__1 rule=\"accept;\"\n/routing/bgp/connection set [/routing/bgp/connection find name=2001_db8_1_2__1] output.filter-chain=filter_2001_db8_1_2__1\n/routing/bgp/connection set [/routing/bgp/connection find name=2001_db8_1_2__1] local.role=ibgp local.address=loopback\n/routing/filter/rule add chain=filter_2001_db8_1_2__1 rule=\"jump filter_rr_self_ebgp;\" place-before=0\n\n/routing/filter/rule/add chain=filter_2001_db8_1_2__1 rule=\"jump rm_large_communities;\" place-before=0\n\n/routing/bgp/connection add template=main instance=main name=10_1_0_6 remote.address=10.1.0.6 remote.as=65100 comment=\"x2\" local.role=ebgp\n/routing/bgp/connection set [/routing/bgp/connection find name=10_1_0_6] afi=ip\n/routing/filter/rule add chain=filter_10_1_0_6 rule=\"accept;\"\n/routing/bgp/connection set [/routing/bgp/connection find name=10_1_0_6] output.filter-chain=filter_10_1_0_6\n\n/routing/filter/rule/add chain=filter_10_1_0_6 rule=\"jump rm_large_communities;\" place-before=0\n/routing/filter/rule/add chain=filter_10_1_0_6 rule=\"jump rm_extended_communities;\" place-before=0\n\n/routing/bgp/connection add template=main instance=main name=2001_db8_3_1__3 remote.address=2001:db8:3:1::3 remote.as=65100 comment=\"x2\" local.role=ebgp\n/routing/bgp/connection set [/routing/bgp/connection find name=2001_db8_3_1__3] disabled=yes }}\n/routing/filter/rule add chain=filter_2001_db8_3_1__3 rule=\"accept;\"\n/routing/bgp/connection set [/routing/bgp/connection find name=2001_db8_3_1__3] output.filter-chain=filter_2001_db8_3_1__3\n\n/routing/filter/rule/add chain=filter_2001_db8_3_1__3 rule=\"jump rm_large_communities;\" place-before=0\n/routing/filter/rule/add chain=filter_2001_db8_3_1__3 rule=\"jump rm_extended_communities;\" place-before=0\n\n\n\n# BGP Network now is controlled by simple ACL\n/ip/firewall/address-list add list=bgp-networks address=10.0.0.1/32\n\n\n# BGP Network now is controlled by simple ACL\n/ipv6/firewall/address-list add list=bgp-networks address=2001:db8:1:1::/64\n\n\n\n"
+}
+
+TASK [Deploy bgp configuration] ************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+
+TASK [load bgp from /work/netlab_cicd/node_files/dut/bgp] **********************
+ok: [dut]
+
+TASK [Run commands on CHR] *****************************************************
+changed: [dut]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut                        : ok=26   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+
+Results of configuration script deployments
+================================================================================
+x1               Script:  initial,ospf,bgp,bgp-xact
+x2               Script:  initial,bgp,bgp-xact
+
+
+Use this topology to test the selective activation of IPv4 and IPv6 address
+families on IPv4 and IPv6 IBGP and EBGP sessions.
+
+The 'session should not be established' error could be triggered by overly
+generous activation of address families on the tested device.
+
