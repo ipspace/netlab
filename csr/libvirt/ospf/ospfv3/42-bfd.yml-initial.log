@@ -1,0 +1,121 @@
+Creating Device configuration snippets
+[CREATED] dut: initial,ospf,bfd
+[CREATED] bb: initial,ospf,bfd
+[CREATED] r1: initial,ospf,bfd
+Config Deploying device configurations
+ [INFO] Executing initial configuration for node bb
+ [INFO] Executing initial configuration for node r1
+ [INFO] Executing ospf configuration for node r1
+ [INFO] Executing ospf configuration for node bb
+ [INFO] Executing bfd configuration for node r1
+ [INFO] Executing bfd configuration for node bb
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "initial configuration for dut\n=========================================\nhostname dut\n!\nno ip domain lookup\nlogging buffered 256000\n\n!\nlldp run\n!\nip host bb 2001:db8:1:2::1 2001:db8:3::2\nip host r1 2001:db8:1:3::1 2001:db8:3:1::3\n!\nip routing\n!\nipv6 unicast-routing\n!\n!\ninterface Loopback0\n ipv6 address 2001:DB8:1:1::1/64\n!\ninterface GigabitEthernet1\n no lldp transmit\n no lldp receive\n!\ninterface GigabitEthernet2\n description dut -> bb\n ipv6 nd ra interval 5\n ipv6 address 2001:DB8:3::1/64\n no shutdown\n!\ninterface GigabitEthernet3\n description dut -> r1\n ipv6 nd ra interval 5\n ipv6 address 2001:DB8:3:1::1/64\n no shutdown\n!\ninterface GigabitEthernet4\n description dut -> stub [stub]\n ipv6 nd ra interval 5\n ipv6 address 2001:DB8:2::1/64\n no shutdown\n!\n!\nline vty 0 4\n exec-timeout 0 0 \n!\nno banner exec\nno banner login\nno banner incoming\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+
+TASK [ios_config: deploying initial from /work/netlab_cicd/node_files/dut/initial] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=bfd)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
+
+TASK [Figure out whether to deploy the module bfd on current device] ***********
+ok: [dut]
+
+TASK [Find configuration template for bfd] *************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for bfd] *********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "bfd configuration for dut\n=========================================\ninterface GigabitEthernet2\n bfd interval 500 min_rx 500 multiplier 3\n!\ninterface GigabitEthernet3\n bfd interval 500 min_rx 500 multiplier 3\n!\ninterface GigabitEthernet4\n bfd interval 500 min_rx 500 multiplier 3\n!\n"
+}
+
+TASK [Deploy bfd configuration] ************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+
+TASK [ios_config: deploying bfd from /work/netlab_cicd/node_files/dut/bfd] *****
+changed: [dut]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "ospf configuration for dut\n=========================================\nrouter ospfv3 1\n router-id 10.0.0.1\n address-family ipv6 unicast\n  passive-interface GigabitEthernet4\n!\ninterface Loopback0\n! \n ospfv3 1 ipv6 area 0.0.0.0\n!\ninterface GigabitEthernet2\n! dut -> bb\n ospfv3 1 ipv6 area 0.0.0.0\n ospfv3 network point-to-point\n ospfv3 bfd\n!\ninterface GigabitEthernet3\n! dut -> r1\n ospfv3 1 ipv6 area 0.0.0.1\n ospfv3 network broadcast\n ospfv3 cost 42\n ospfv3 bfd\n!\ninterface GigabitEthernet4\n! dut -> stub\n ospfv3 1 ipv6 area 0.0.0.0\n ospfv3 bfd\n!\n\n"
+}
+
+TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+
+TASK [ios_config: deploying ospf from /work/netlab_cicd/node_files/dut/ospf] ***
+changed: [dut]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut                        : ok=23   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+
+Results of configuration script deployments
+================================================================================
+bb               Script:  initial,ospf,bfd
+r1               Script:  initial,ospf,bfd
+
+
+This topology tests the OSPFv3 with BFD
+
+* Multiple OSPF areas on ABR
+* BFD enabled on all interfaces
+
