@@ -4,7 +4,7 @@
 from box import Box, BoxList
 
 from ..utils import routing as _rp_utils
-from . import _Quirks, need_ansible_collection, report_quirk
+from . import _common, _Quirks, need_ansible_collection, report_quirk
 
 
 def check_vlan_ospf(node: Box, iflist: BoxList, vname: str) -> None:
@@ -132,6 +132,9 @@ class OS10(_Quirks):
     if 'gateway' in mods:
       if 'anycast' in node.get('gateway',{}):
         check_anycast_gateways(node)
+
+    if 'vlan' in mods:
+      _common.check_tagged_vlan_1(node)
 
   def check_config_sw(self, node: Box, topology: Box) -> None:
     need_ansible_collection(node,'dellemc.os10')
