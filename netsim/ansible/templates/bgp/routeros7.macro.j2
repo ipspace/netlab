@@ -1,13 +1,23 @@
 {#
    BGP neighbor definition
 #}
-{% macro neighbor(n,ip,bgp,instance) %}
+{% macro neighbor(n,af,bgp,instance) %}
+{%   set ip = n[af] %}
 {%   set neigh_id = ip|replace('.', '_')|replace(':', '_') %}
 /routing/bgp/connection add template={{ instance }} instance=main name={{ neigh_id }} remote.address={{ ip }} remote.as={{ n.as }} comment="{{ n.name }}" local.role=ebgp
-/routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] afi={{ 'ipv6' if ':' in ip else 'ip' }}
-
+{#
+      If the neighbor has _afi_list, it probably uses non-default AFs, so use the AFI list to activate them.
+      However, if the AFI list is empty, then we're dealing with a bogus BGP session. Disable it to
+      emulate the "no AF on BGP session" condition.
+#}
+{%   if n._afi_list[af] is defined %}
+{%     if n._afi_list[af] %}
+/routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] afi={{ n._afi_list[af]|join(',') }}
+{%     else %}
+/routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] disabled=yes }}
+{%     endif %}
+{%   endif %}
 /routing/filter/rule add chain=filter_{{neigh_id}} rule="accept;"
-
 /routing/bgp/connection set [/routing/bgp/connection find name={{ neigh_id }}] output.filter-chain=filter_{{neigh_id}}
 {%   if n.type == 'ibgp' %}
 {%     if bgp.rr|default('') and not n.rr|default('') %}
