@@ -89,6 +89,20 @@ There are several reasons a device might not be ready when the virtualization pr
 _netlab_ uses internal (Python) code to check the reachability of SSH servers. If you want to check the SSH servers from an Ansible playbook, set the **‌defaults.netlab.initial.ready.ssh** [topology default](topo-defaults) to **‌ansible** (preferably using a [user defaults file](defaults-user-file)).
 ```
 
+_netlab_ uses pretty conservative wait times that should work on most platforms. If, however, you're using a slow server or have to deal with an obnoxiously slow device[^JNS], increase the wait time using the **netlab_check_delay** and **netlab_check_retries** variables. These variables can be set on individual nodes (in a lab topology) or for a device type (in a lab topology or in [system defaults](topo-defaults))[^SD], for example:
+
+```
+defaults.devices.vptx.clab.group_vars.netlab_check_retries: 200
+
+nodes:
+  core_sw:
+    netlab_check_retries: 250
+```
+
+[^JNS]: Junos devices using networked storage might be a prime example
+
+[^SD]: Use **netlab defaults devices._device_** command to find out where exactly the waiting parameters are set in the device definition.
+
 ## Initial Device Configurations
 
 Initial device configurations are created from inventory data and templates in the `netsim/ansible/templates/initial` directory[^USER_INIT]. A device-specific configuration template is selected using the `network_device_type` or the `ansible_network_os` value (making IOSv and CSR 1000v templates identical). See [](../dev/config/deploy.md) for more details.
