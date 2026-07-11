@@ -180,6 +180,20 @@ def check_mtu(node: Box, clab_type: str) -> None:
       quirk='mtu_too_large',
       category=log.IncorrectValue)
 
+def check_bgpvpn_rt(node: Box) -> None:
+  if not node.get('mpls.vpn',False) or 'vrfs' not in node:
+    return
+  for vname,vdata in node.vrfs.items():
+    for dir in ['import', 'export']:
+      rt_list = vdata.get(dir,[])
+      if len(rt_list) <= 1:
+        continue
+      report_quirk(
+        text=f'netlab configures a single BGP L3VPN Route Target per VRF (node {node.name}, vrf {vname})',
+        node=node,
+        quirk='l3vpn_rt',
+        category=log.IncorrectValue)
+
 class SRLINUX(_Quirks):
 
   @classmethod
@@ -223,6 +237,9 @@ class SRLINUX(_Quirks):
          more_hints=['Set node clab.type to a different device model (see https://containerlab.dev/manual/kinds/srl/)'],
          node=node,
          category=log.IncorrectValue)
+
+    if 'mpls' in mods:
+      check_bgpvpn_rt(node)
 
     if 'routing' in mods and node.get('routing.prefix',None):
       check_prefix_deny(node)
