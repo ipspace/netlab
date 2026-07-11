@@ -92,7 +92,7 @@ _netlab_ uses internal (Python) code to check the reachability of SSH servers. I
 _netlab_ uses pretty conservative wait times that should work on most platforms. If, however, you're using a slow server or have to deal with an obnoxiously slow device[^JNS], increase the wait time using the **netlab_check_delay** and **netlab_check_retries** variables. These variables can be set on individual nodes (in a lab topology) or for a device type (in a lab topology or in [system defaults](topo-defaults))[^SD], for example:
 
 ```
-defaults.devices.vptx.clab.group_vars.netlab_check_retries=200
+defaults.devices.vptx.clab.group_vars.netlab_check_retries: 200
 
 nodes:
   core_sw:
