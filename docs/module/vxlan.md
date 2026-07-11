@@ -37,6 +37,7 @@ The following table describes the per-platform support of individual VXLAN featu
 | Cumulus 5.x (NVUE) | ✅  | ✅  |  ❌  |
 | Dell OS10          | ✅  | ✅  |  ❌  |
 | FRR                | ✅  | ✅  | ✅  |
+| Mikrotik RouterOS 7 | ✅  | ✅  |  ❌ |
 | Nokia SR Linux     | ✅ [❗](caveats-srlinux)  |  ❌  |  ❌  |
 | Nokia SR OS[^SROS] | ✅  |  ❌  |  ❌  |
 | vJunos-switch      | ✅  | ✅  |  ❌ |

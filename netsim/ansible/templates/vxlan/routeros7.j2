@@ -1,0 +1,12 @@
+{% if vxlan.vlans is defined %}
+{%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
+{%    set learning="no" if vxlan.flooding|default("") == "evpn" else "yes" %}
+{%    set v= vlans[vname] %}
+/interface/vxlan add bridge=switch bridge-pvid={{ v.id }} local-address={{ vxlan.vtep }} name=vxlan-{{ v.vni }} vni={{ v.vni }} learning={{ learning }}
+{%     if v.vtep_list is defined %}
+{%       for remote_vtep in v.vtep_list %}
+/interface/vxlan/vtep add interface=vxlan-{{ v.vni }} remote-ip={{ remote_vtep }}
+{%       endfor %}
+{%     endif %}
+{%   endfor %}
+{% endif %}
