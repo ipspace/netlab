@@ -2,8 +2,8 @@ message:
   This lab tests the BGP timers functionality. The EBGP session between the
   probe and the lab device should use the BGP timers dictated by the lab device.
 
-plugin: [ bgp.session ]
-module: [ bgp ]
+plugin: [ bgp.session, test.vrf_check ]
+module: [ bgp, vrf ]
 
 defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
 
@@ -11,7 +11,8 @@ groups:
   probes:
     device: frr
     provider: clab
-    members: [ x1 ]
+    members: [ x1, v1 ]
+    module: [ bgp ]
     box: quay.io/frrouting/frr:10.4.1
 
 addressing:
@@ -20,11 +21,16 @@ addressing:
   lan:
     ipv6: 2001:db8:4::/48
 
+vrfs:
+  tenant:
+
 nodes:
   dut:
     bgp.as: 65000
   x1:
     bgp.as: 65100
+  v1:
+    bgp.as: 65101
 
 links:
 - dut:
@@ -36,6 +42,16 @@ links:
       keepalive: 60
       hold: 180
       min_hold: 3
+- dut:
+    bgp.timers:
+      keepalive: 17
+      hold: 51
+  v1:
+    bgp.timers:
+      keepalive: 60
+      hold: 180
+      min_hold: 3
+  vrf: tenant
 
 validate:
   wait_bgp:
@@ -43,23 +59,23 @@ validate:
     wait: 3
 
   r_clear_bgp:
-    description: Clear BGP session on X1
+    description: Clear BGP session on X1 and V1
     devices: [ frr ]
-    nodes: [ x1 ]
+    nodes: [ x1, v1 ]
     exec: 'vtysh -c "clear bgp *"'
 
   session_v4:
     description: Check IPv4 EBGP sessions with DUT
     wait_msg: Waiting for EBGP session establishment
     wait: ebgp_session
-    nodes: [ x1 ]
+    nodes: [ x1, v1 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
 
   session_v6:
     description: Check IPv6 EBGP sessions with DUT
     wait_msg: Waiting for EBGP session establishment
     wait: ebgp_session
-    nodes: [ x1 ]
+    nodes: [ x1, v1 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
 
   timers_v4:
@@ -73,7 +89,7 @@ validate:
 
   timers_v6:
     description: Check the IPv6 EBGP session timers
-    nodes: [ x1 ]
+    nodes: [ x1, v1 ]
     plugin: |-
       bgp_neighbor_details(
         node.bgp.neighbors,'dut',af='ipv6',
