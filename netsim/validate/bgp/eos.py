@@ -92,6 +92,13 @@ def show_bgp_neighbor_details(ngb: list, n_id: str, af: str='ipv4', **kwargs: ty
   n_addr = _common.get_bgp_neighbor_id(ngb,n_id,af)
   return f'bgp neighbors {n_addr} | json'
 
+BGP_DETAILS_KW_MAP = {
+  'keepalive_interval': 'keepaliveTime',
+  'hold_timer': 'holdTime',
+}
+
+BGP_DETAILS_KW_UNITS: dict = {}
+
 def valid_bgp_neighbor_details(
       ngb: list,
       n_id: str,
@@ -108,6 +115,16 @@ def valid_bgp_neighbor_details(
   found = next((item for item in data if item.peerAddress == n_addr),None)
   if not found:
     raise Exception(f'The router has no BGP neighbor with {af} address {n_addr} ({n_id})')
+
+  for k,v in kwargs.items():
+    if k in BGP_DETAILS_KW_UNITS:
+      v *= BGP_DETAILS_KW_UNITS[k]                          # If needed, multiply the desired value by unit conversion factor
+    k = BGP_DETAILS_KW_MAP.get(k,k)                         # Try to do a lookup through KW table, otherwise leave the keyword intact
+
+    if not k in found:
+      raise Exception(f'Neighbor data structure does not contain attribute {k}')
+    if found[k] != v:
+      raise Exception(f'{k} expected value {v} actual {found[k]}')
 
   result = f'All specified BGP neighbor parameters have the expected values'
 
