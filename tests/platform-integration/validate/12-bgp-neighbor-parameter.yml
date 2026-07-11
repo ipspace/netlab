@@ -7,7 +7,11 @@ plugin: [ bgp.session ]
 
 addressing.lan.ipv6: 2001:db8::/48
 
-module: [ bgp ]
+module: [ bgp, vrf ]
+
+vrfs:
+  tenant:
+
 groups:
   probes:
     members: [ r1, vr1 ]
@@ -35,6 +39,7 @@ links:
   bgp.timers:
     keepalive: 7
     hold: 24
+  vrf: tenant
 
 validate:
   # Check BGP sessions that are expected to be up (global + VRF)
@@ -47,6 +52,14 @@ validate:
     nodes: [ dut_eos, dut_frr ]
     wait: ebgp_session
     plugin: bgp_neighbor(node.bgp.neighbors,'r1',af='ipv6')
+  bgp_vr1_ipv4:
+    nodes: [ dut_eos, dut_frr ]
+    wait: ebgp_session
+    plugin: bgp_neighbor(node.vrfs.tenant.bgp.neighbors,'vr1',vrf='tenant')
+  bgp_vr1_ipv6:
+    nodes: [ dut_eos, dut_frr ]
+    wait: ebgp_session
+    plugin: bgp_neighbor(node.vrfs.tenant.bgp.neighbors,'vr1',vrf='tenant',af='ipv6')
 
   # Check hello timer lookup
   timers_r1_v4:
@@ -62,3 +75,19 @@ validate:
     nodes: [ dut_eos, dut_frr ]
     plugin: bgp_neighbor_details(node.bgp.neighbors,'r1',af='ipv6',keepalive_interval=6,hold_timer=24)
     _expect_fail: True
+
+  # Check VRF details check
+  vrf_timers_v4:
+    description: Are BGP timers set as expected?
+    nodes: [ dut_eos, dut_frr ]
+    plugin: >-
+      bgp_neighbor_details(
+        node.vrfs.tenant.bgp.neighbors,'vr1',af='ipv4',vrf='tenant',
+        keepalive_interval=7,hold_timer=24)
+  vrf_timers_v6:
+    description: Are BGP timers set as expected?
+    nodes: [ dut_eos, dut_frr ]
+    plugin: >-
+      bgp_neighbor_details(
+        node.vrfs.tenant.bgp.neighbors,'vr1',af='ipv6',vrf='tenant',
+        keepalive_interval=7,hold_timer=24)
