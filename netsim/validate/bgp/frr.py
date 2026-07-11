@@ -124,7 +124,8 @@ def valid_bgp_neighbor_details(
   data = _result[n_addr]
 
   for k,v in kwargs.items():
-    v *= BGP_DETAILS_KW_UNITS.get(k,1)                      # If needed, multiply the desired value by unit conversion factor
+    if k in BGP_DETAILS_KW_UNITS:
+      v *= BGP_DETAILS_KW_UNITS[k]                          # If needed, multiply the desired value by unit conversion factor
     k = BGP_DETAILS_KW_MAP.get(k,k)                         # Try to do a lookup through KW table, otherwise leave the keyword intact
 
     if not k in data:
