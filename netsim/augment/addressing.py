@@ -113,6 +113,8 @@ def setup_pools(addr_pools: typing.Optional[Box] = None, defaults: typing.Option
     clean_pfx = normalize_prefix(addrs[pool])
     if 'ipv4' in clean_pfx and not 'prefix' in clean_pfx:
       clean_pfx.prefix = 32 if 'loopback' in pool else 24
+    if 'ipv6' in clean_pfx and not 'prefix6' in clean_pfx:
+      clean_pfx.prefix6 = 128 if 'loopback' in pool else 64
     addrs[pool] = clean_pfx
 
   return addrs
