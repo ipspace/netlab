@@ -1,6 +1,24 @@
 Release Notes
 =============
 
+**Release 26.07 (2026-07-12)**
+
+The highlights of release 26.07 include:
+
+* The [**multiserver** plugin](plugin-multiserver) distributes containerlab devices across multiple servers.
+* The [**GRE tunnel** plugin](plugin-tunnel-gre) supports GRE tunnels on Cisco IOS, FRR, VyOS, and Junos (vSRX and vJunos-router).
+* The [**WireGuard tunnel** plugin](plugin-tunnel-wireguard) supports WireGuard tunnels on FRR.
+* The [**bgp.session** plugin](plugin-bgp-session) and the [OSPF module](module-ospf) support graceful restart on Arista EOS, BIRD, FortiOS, and FRR
+* The [**bgp.policy** plugin](plugin-bgp-policy) supports the **bgp.role** attribute on FRR and BIRD.
+
+We also had to make a few breaking changes:
+
+* The VirtualBox provider has been removed.
+* BIRD v3 is now the [default BIRD version](build-bird).
+* Mikrotik RouterOS 7 BGP templates use the new(er) BGP configuration syntax.
+
+[More details](release-26.07) and [breaking changes](release-26.07-breaking)
+
 **Release 26.06 (2026-06-07)**
 
 * Nokia SR Linux supports [SR-MPLS](module-sr-mpls) over IPv6 and [MPLS/VPN](mpls-l3vpn-supported-platforms) services.
@@ -151,6 +169,7 @@ For older releases, check the [release notes archive](release-archive.md).
    :caption: Individual release notes
    :maxdepth: 1
 
+   release/26.07.md
    release/26.06.md
    release/26.05.md
    release/26.04.md
