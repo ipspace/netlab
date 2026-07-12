@@ -1,0 +1,20 @@
+{#
+  This will setup VXLAN tunnels on OpenBSD
+#}
+#!/bin/sh
+
+set -e # Exit immediately when any command fails
+set -x # Track commands for troubleshooting
+
+{% if vxlan.vlans is defined %}
+{%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
+{%    set v = vlans[vname] %}
+{%     if v.vtep_list is defined %}
+{%       for remote_vtep in v.vtep_list %}
+ifconfig vxlan{{ v.vni }}{{ loop.index }} vnetid {{ v.vni }} tunnel {{ vxlan.vtep }} {{ remote_vtep }}
+ifconfig veb{{vlans[vname].id}} add vxlan{{ v.vni }}{{ loop.index }}
+ifconfig vxlan{{ v.vni}}{{ loop.index }} up
+{%       endfor %}
+{%     endif %}
+{%   endfor %}
+{% endif %}
