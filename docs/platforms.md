@@ -481,7 +481,7 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | Mikrotik RouterOS 7   | ✅ | ✅ | ✅ | ✅ |  ❌ |  ❌ |
 | Nokia SR Linux        | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
 | Nokia SR OS[^SROS]    | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| OpenBSD               | ✅ | ❌ | ❌ | ❌  | ❌ |
+| OpenBSD               | ✅ | ❌ | ✅ | ❌  | ❌ |
 | VyOS                  | ✅ | ✅ | ✅ | ✅ |  ❌ |  ❌ |
 
 (platform-services-support)=
