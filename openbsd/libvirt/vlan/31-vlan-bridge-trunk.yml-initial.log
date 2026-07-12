@@ -27,14 +27,14 @@ Config Deploying device configurations
  [INFO] Executing initial configuration for node s2
  [INFO] Executing routing configuration for node h2 (namespace clab-
           ml-17-h2)
- [INFO] Executing routing configuration for node h4 (namespace clab-
-          ml-17-h4)
- [INFO] Executing routing configuration for node h6 (namespace clab-
-          ml-17-h6)
  [INFO] Executing routing configuration for node h1 (namespace clab-
           ml-17-h1)
  [INFO] Executing routing configuration for node h3 (namespace clab-
           ml-17-h3)
+ [INFO] Executing routing configuration for node h4 (namespace clab-
+          ml-17-h4)
+ [INFO] Executing routing configuration for node h6 (namespace clab-
+          ml-17-h6)
  [INFO] Executing routing configuration for node h5 (namespace clab-
           ml-17-h5)
  [INFO] Executing vlan configuration for node s2
@@ -64,7 +64,7 @@ ok: [dut_s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut_s1] => {
-    "msg": "initial configuration for dut_s1\n=========================================\n#!/bin/sh\n#\nset -e\nset -x\n\nhostname dut-s1\n#\n# Build hosts file\n#\n#\ncat <<'SCRIPT' >/tmp/hosts\n#\n# Created by netlab initial\n#\n10.0.0.7 dut-s1 dut_s1\n172.31.1.1 h1 eth1.h1\n172.31.1.2 h2 eth1.h2\n172.31.1.3 h3 eth1.h3\n172.31.1.4 h4 eth1.h4\n172.31.1.5 h5 eth1.h5\n172.31.1.6 h6 eth1.h6\n10.0.0.8 s2\nSCRIPT\ngrep \"Created by netlab\" /etc/hosts || uniq /tmp/hosts >>/etc/hosts\n\n#\n# Enable forwarding\n#\nsysctl net.inet.ip.forwarding=1\nsysctl net.inet6.ip6.forwarding=1\necho -n > /etc/rad.conf\n\n#\n# Interface configuration\n#\nifconfig lo0 inet 10.0.0.7/32 alias\nifconfig lo0 up\n\nifconfig vio1 -inet\nifconfig vio1 -inet6\nifconfig vio1 mtu 1500\nifconfig vio1 description \"dut_s1 -> s2\"\nifconfig vio1 up\n\n\n#\n# (re-)start RA daemon\n#\npkill -q rad || true\nrad\n"
+    "msg": "initial configuration for dut_s1\n=========================================\n#!/bin/sh\n\nset -e # Exit immediately when any command fails\nset -x # Track commands for troubleshooting\n\nhostname dut-s1\n#\n# Build hosts file\n#\n#\ncat <<'SCRIPT' >/tmp/hosts\n#\n# Created by netlab initial\n#\n10.0.0.7 dut-s1 dut_s1\n172.31.1.1 h1 eth1.h1\n172.31.1.2 h2 eth1.h2\n172.31.1.3 h3 eth1.h3\n172.31.1.4 h4 eth1.h4\n172.31.1.5 h5 eth1.h5\n172.31.1.6 h6 eth1.h6\n10.0.0.8 s2\nSCRIPT\ngrep \"Created by netlab\" /etc/hosts || uniq /tmp/hosts >>/etc/hosts\n\n#\n# Enable forwarding\n#\nsysctl net.inet.ip.forwarding=1\nsysctl net.inet6.ip6.forwarding=1\necho -n > /etc/rad.conf\n\n#\n# Interface configuration\n#\nifconfig lo0 inet 10.0.0.7/32 alias\nifconfig lo0 up\n\nifconfig vio1 -inet\nifconfig vio1 -inet6\nifconfig vio1 mtu 1500\nifconfig vio1 description \"dut_s1 -> s2\"\nifconfig vio1 up\n\n\n#\n# (re-)start RA daemon\n#\npkill -q rad || true\nrad\n"
 }
 
 TASK [Deploy initial configuration] ********************************************
@@ -99,7 +99,7 @@ ok: [dut_s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut_s1] => {
-    "msg": "vlan configuration for dut_s1\n=========================================\n#!/bin/sh\n#\nset -e # Exit immediately when any command fails\nset -x # Track commands for troubleshooting\n#\n\nifconfig vio2 -inet\nifconfig vio2 -inet6\nifconfig vio2 mtu 1500\nifconfig vio2 description \"[Access VLAN red] dut_s1 -> h1\"\nifconfig vio2 up\n\nifconfig bridge700 add vio2 up\nifconfig vio3 -inet\nifconfig vio3 -inet6\nifconfig vio3 mtu 1500\nifconfig vio3 description \"[Access VLAN blue] dut_s1 -> h3\"\nifconfig vio3 up\n\nifconfig bridge701 add vio3 up\nifconfig vio4 -inet\nifconfig vio4 -inet6\nifconfig vio4 mtu 1500\nifconfig vio4 description \"[Access VLAN untagged] dut_s1 -> h5\"\nifconfig vio4 up\n\nifconfig bridge1 add vio4 up\nifconfig vlan7011 parent vio1 vnetid 701\nifconfig vlan7011 -inet\nifconfig vlan7011 -inet6\nifconfig vlan7011 description \"[SubIf VLAN blue] dut_s1 -> s2\"\nifconfig vlan7011 up\n\nifconfig bridge701 add vlan7011 up\nifconfig vlan7001 parent vio1 vnetid 700\nifconfig vlan7001 -inet\nifconfig vlan7001 -inet6\nifconfig vlan7001 description \"[SubIf VLAN red] dut_s1 -> s2\"\nifconfig vlan7001 up\n\nifconfig bridge700 add vlan7001 up\nifconfig vether700 -inet\nifconfig vether700 -inet6\nifconfig vether700 description \"VLAN red (700) -> [h1,h2,s2]\"\nifconfig vether700 up\n\nifconfig bridge700 add vether700 up\nifconfig vether701 -inet\nifconfig vether701 -inet6\nifconfig vether701 description \"VLAN blue (701) -> [h3,h4,s2]\"\nifconfig vether701 up\n\nifconfig bridge701 add vether701 up\nifconfig vether1 -inet\nifconfig vether1 -inet6\nifconfig vether1 description \"VLAN untagged (1) -> [h5,h6,s2]\"\nifconfig vether1 up\n\nifconfig bridge1 add vether1 up\n\n#\n# (re-)start RA daemon\n#\npkill -q rad || true\nrad\n"
+    "msg": "vlan configuration for dut_s1\n=========================================\n#!/bin/sh\n\nset -e # Exit immediately when any command fails\nset -x # Track commands for troubleshooting\n\nifconfig vio2 -inet\nifconfig vio2 -inet6\nifconfig vio2 mtu 1500\nifconfig vio2 description \"[Access VLAN red] dut_s1 -> h1\"\nifconfig vio2 up\n\nifconfig veb700 add vio2 up\nifconfig vio3 -inet\nifconfig vio3 -inet6\nifconfig vio3 mtu 1500\nifconfig vio3 description \"[Access VLAN blue] dut_s1 -> h3\"\nifconfig vio3 up\n\nifconfig veb701 add vio3 up\nifconfig vio4 -inet\nifconfig vio4 -inet6\nifconfig vio4 mtu 1500\nifconfig vio4 description \"[Access VLAN untagged] dut_s1 -> h5\"\nifconfig vio4 up\n\nifconfig veb1 add vio4 up\nifconfig vlan7011 parent vio1 vnetid 701\nifconfig vlan7011 -inet\nifconfig vlan7011 -inet6\nifconfig vlan7011 description \"[SubIf VLAN blue] dut_s1 -> s2\"\nifconfig vlan7011 up\n\nifconfig veb701 add vlan7011 up\nifconfig vlan7001 parent vio1 vnetid 700\nifconfig vlan7001 -inet\nifconfig vlan7001 -inet6\nifconfig vlan7001 description \"[SubIf VLAN red] dut_s1 -> s2\"\nifconfig vlan7001 up\n\nifconfig veb700 add vlan7001 up\nifconfig vport700 -inet\nifconfig vport700 -inet6\nifconfig vport700 description \"VLAN red (700) -> [h1,h2,s2]\"\nifconfig vport700 up\n\nifconfig veb700 add vport700 up\nifconfig vport701 -inet\nifconfig vport701 -inet6\nifconfig vport701 description \"VLAN blue (701) -> [h3,h4,s2]\"\nifconfig vport701 up\n\nifconfig veb701 add vport701 up\nifconfig vport1 -inet\nifconfig vport1 -inet6\nifconfig vport1 description \"VLAN untagged (1) -> [h5,h6,s2]\"\nifconfig vport1 up\n\nifconfig veb1 add vport1 up\n\n#\n# (re-)start RA daemon\n#\npkill -q rad || true\nrad\n"
 }
 
 TASK [Deploy vlan configuration] ***********************************************
