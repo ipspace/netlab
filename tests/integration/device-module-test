@@ -22,6 +22,7 @@ from netsim.utils import files as _files
 from netsim.utils import log
 from netsim.utils import read as _read
 from netsim.utils import strings as _strings
+from netsim.utils import status as _status
 
 
 def test_parse(args: typing.List[str], topology: Box) -> argparse.Namespace:
@@ -255,6 +256,31 @@ def print_ok(step: str) -> None:
   _strings.print_colored_text(f"{step}(ok)",color="bright_green")
   print(" ",end="",flush=True)
 
+def check_test_lab_instance(topology: Box) -> None:
+  lab_id = _status.get_lab_id(topology)
+  lab_states = _status.read_status(topology)
+
+  if lab_id not in lab_states:
+    return
+
+  lab_state = lab_states[lab_id]
+  directory = lab_state.get('dir','unknown')
+  lab_status = lab_state.get('status','unknown')
+
+  log.error(
+    text=f"Netlab instance '{lab_id}' is already active",
+    category=log.FatalError,
+    module='',
+    more_data=[
+      f"Directory: {directory}",
+      f"Status: {lab_status}",
+    ],
+    more_hints=(
+      f"Stop the integration-test instance with "
+      f"'netlab status -i {lab_id} --cleanup'"
+    ))
+  log.exit_on_error()
+
 def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
   test_path = os.path.abspath(test)
   os.makedirs(args.workdir,exist_ok=True)
@@ -410,6 +436,8 @@ def main() -> None:
 
       log_result(test,None)                       # Clean up the results from previous test runs
       try:
+        if first_test and "up" in args.steps:
+          check_test_lab_instance(topology)
         run_test(test,args,first_test)
         first_test = False
       except KeyboardInterrupt:
