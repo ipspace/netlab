@@ -40,6 +40,7 @@ The following table describes the per-platform support of individual VXLAN featu
 | Mikrotik RouterOS 7 | ✅  | ✅  |  ❌ |
 | Nokia SR Linux     | ✅ [❗](caveats-srlinux)  |  ❌  |  ❌  |
 | Nokia SR OS[^SROS] | ✅  |  ❌  |  ❌  |
+| OpenBSD            | ✅  | ✅  | ✅  |
 | vJunos-switch      | ✅  | ✅  |  ❌ |
 | vJunos-router      | ✅  | ✅  |  ❌ |
 | VyOS               | ✅  | ✅  | ✅  |
