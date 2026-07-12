@@ -1,10 +1,51 @@
- [INFO] Creating configuration snippets
+Creating Device configuration snippets
 [CREATED] h1: initial,routing
 [CREATED] h2: initial,routing
 [CREATED] h3: initial,routing
 [CREATED] h4: initial,routing
 [CREATED] dut: normalize,initial,lag,vlan
 [CREATED] xs: initial,lag,vlan
+Config Normalizing device configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Normalize device configurations] *****************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "normalize configuration for dut\n=========================================\n!\ninterface Ethernet1\n shutdown\n mac-address caf0.0005.0001\n!\ninterface Ethernet2\n shutdown\n mac-address caf0.0005.0002\n!\ninterface Ethernet3\n shutdown\n!\ninterface Ethernet4\n shutdown\n"
+}
+
+TASK [Deploy normalize configuration] ******************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for dut
+
+TASK [eos_config: deploying normalize from /work/netlab_cicd/node_files/dut/normalize] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut]
+
+PLAY RECAP *********************************************************************
+dut                        : ok=8    changed=1    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+
+Config Deploying device configurations
  [INFO] Executing initial configuration for node h1 (namespace clab-
           ml-17-h1)
  [INFO] Executing initial configuration for node h2 (namespace clab-
@@ -21,7 +62,6 @@
           ml-17-h3)
  [INFO] Executing routing configuration for node h2 (namespace clab-
           ml-17-h2)
-
  [INFO] Starting Ansible playbook to deploy the rest of the
           configurations
 [WARNING]: Found variable using reserved name: hosts
@@ -31,53 +71,6 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [xs]
 ok: [dut]
-
-TASK [Generic readiness tests] *************************************************
-skipping: [dut]
-skipping: [xs]
-
-TASK [Find device readiness script] ********************************************
-ok: [xs]
-ok: [dut]
-
-TASK [Wait for device to become ready] *****************************************
-skipping: [dut]
-skipping: [xs]
-
-TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, xs
-
-TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [xs]
-ok: [dut]
-
-TASK [Find configuration template for normalize] *******************************
-ok: [xs]
-ok: [dut]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-skipping: [xs]
-
-TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [xs]
-ok: [dut]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [xs]
-ok: [dut] => {
-    "msg": "normalize configuration for dut\n=========================================\n!\ninterface Ethernet1\n shutdown\n!\ninterface Ethernet2\n shutdown\n!\ninterface Ethernet3\n shutdown\n!\ninterface Ethernet4\n shutdown\n"
-}
-
-TASK [Deploy normalize configuration] ******************************************
-skipping: [xs]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for dut
-
-TASK [eos_config: deploying normalize from /work/netlab_cicd/node_files/dut/normalize] ***
-[WARNING]: To ensure idempotency and correct diff the input configuration lines
-should be similar to how they appear if present in the running configuration on
-device including the indentation
-changed: [dut]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, xs
@@ -100,7 +93,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [xs] => {
-    "msg": "initial configuration for xs\n=========================================\n#!/bin/bash\n#\nset -e\nset -x\n#\n# Create bash profile script\n#\ncat <<SCRIPT >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)# \"\necho\necho \"Use vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)\n#\n# FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands\n#\nsysctl -w net.ipv4.ip_forward=1\nsysctl -w net.ipv6.conf.all.forwarding=0\n#\ncat <<SCRIPT >.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)$ \"\nexport PATH=$PATH:/usr/sbin\necho \necho \"Use sudo vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# Build hosts file\n#\n#\ncat <<SCRIPT >/tmp/hosts\n#\n# Created by netlab initial\n#\n10.0.0.5 dut\n172.16.0.5 Vlan1000.dut\n172.16.1.5 Vlan1001.dut\n172.16.0.1 h1 eth1.h1\n172.16.0.2 h2 eth1.h2\n172.16.1.3 h3 eth1.h3\n172.16.1.4 h4 eth1.h4\n10.0.0.6 xs\n172.16.0.6 vlan1000.xs\n172.16.1.6 vlan1001.xs\nSCRIPT\ngrep \"Created by netlab\" /etc/hosts || uniq /tmp/hosts >>/etc/hosts\n#\n# Configure system defaults on Ubuntu\n#\nhostnamectl set-hostname xs\nAPT_INSTALL=\n#\nif which gpg; then\n  echo \"Package gnupg already installed\"\nelse\n  APT_INSTALL=\"$APT_INSTALL gnupg\"\nfi\n#\nif which curl; then\n  echo \"Package curl already installed\"\nelse\n  APT_INSTALL=\"$APT_INSTALL curl\"\nfi\n#\nif which bridge; then\n  echo \"Package iproute2 already installed\"\nelse\n  APT_INSTALL=\"$APT_INSTALL iproute2\"\nfi\n#\n# APT_INSTALL always starts with a blank, so we can't just check if it's empty\n# The following hack turns a string that contains only whitespaces into\n# an empty string and removes leading whitespaces\n#\nAPT_INSTALL=`echo $APT_INSTALL`\nif [ -n \"$APT_INSTALL\" ]; then\n  echo \"Installing packages $APT_INSTALL\"\n  apt-get update -qq && apt-get install -qq $APT_INSTALL\nfi\n#\n# Install FRR on a Ubuntu VM if needed\n#\nif which /usr/lib/frr/frrinit.sh; then\n  echo \"FRR already installed, skipping installation\"\nelse\n  curl -s https://deb.frrouting.org/frr/keys.asc >/etc/apt/trusted.gpg.d/frr.asc\n  FRRVER=\"frr-stable\"\n  echo deb https://deb.frrouting.org/frr $(lsb_release -s -c) $FRRVER > /etc/apt/sources.list.d/frr.list\n  apt-get update -qq && apt-get install -qq frr frr-pythontools bridge-utils ethtool\nfi\n#\n# Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)\n#\n#\n# Enable FRR daemons\n#\n\n/usr/lib/frr/frrinit.sh restart\n\n# Set system defaults\n#\n# Send ARP requests from a sane source IP address\n#\nsysctl -w net.ipv4.conf.all.arp_announce=2\n\n#\n# Create loopbacks, stub and lag/bond devices\n#\nif [ ! -e /sys/class/net/lo ]; then\n  if [ ! -e /sys/devices/virtual/net/lo ]; then\n    ip link add lo type dummy\n    ip link set dev lo up\n  fi\nfi\nif [ ! -e /sys/class/net/bond1 ]; then\n  if [ ! -e /sys/devices/virtual/net/bond1 ]; then\n#\n# Make sure 'bonding' module is loaded\n#\nif [ ! -e /sys/module/bonding ]; then\nmodprobe bonding miimon=100 mode=802.3ad lacp_rate=fast\nfi\nif [ ! -e /sys/class/net/bond1 ]; then\nip link add dev bond1 type bond mode 802.3ad lacp_rate slow\nfi\n\n    ip link set dev bond1 up\n  fi\nfi\n\n# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)\n#\nip link set bond1 down\nsysctl -qw net.ipv6.conf.bond1.disable_ipv6=1\nip link set dev bond1 mtu 1500\nip link set bond1 up\nip link set eth1 down\nsysctl -qw net.ipv6.conf.eth1.disable_ipv6=1\nip link set dev eth1 mtu 1500\nip link set eth1 up\nip link set eth2 down\nsysctl -qw net.ipv6.conf.eth2.disable_ipv6=1\nip link set dev eth2 mtu 1500\nip link set eth2 up\nip link set eth3 down\nsysctl -qw net.ipv6.conf.eth3.disable_ipv6=1\nip link set dev eth3 mtu 1500\nip link set eth3 up\nip link set eth4 down\nsysctl -qw net.ipv6.conf.eth4.disable_ipv6=1\nip link set dev eth4 mtu 1500\nip link set eth4 up\n\n#\n# Add vtysh.conf file\necho \"service integrated-vtysh-config\" >/etc/frr/vtysh.conf\n\n#\n# Rest of initial configuration done through VTYSH\n#\ncat >/tmp/config <<CONFIG\nhostname xs\n!\nlog file /tmp/logging\n\n!\nip forwarding\nfrr defaults datacenter\n!\ninterface lo\n no shutdown\n ip address 10.0.0.6/32\n!\ninterface bond1\n no shutdown\n description xs -> dut\n ! no ip address\n!\ninterface eth1\n no shutdown\n description xs -> dut\n ! no ip address\n!\ninterface eth2\n no shutdown\n description xs -> dut\n ! no ip address\n!\ninterface eth3\n no shutdown\n description [Access VLAN v1] xs -> h2\n ! no ip address\n!\ninterface eth4\n no shutdown\n description [Access VLAN v2] xs -> h4\n ! no ip address\n!\ninterface bond1.1000\n no shutdown\n description [SubIf VLAN v1] xs -> dut\n ! no ip address\n!\ninterface bond1.1001\n no shutdown\n description [SubIf VLAN v2] xs -> dut\n ! no ip address\n!\ninterface vlan1000\n no shutdown\n description VLAN v1 (1000) -> [h1,dut,h2]\n ip address 172.16.0.6/24\n!\ninterface vlan1001\n no shutdown\n description VLAN v2 (1001) -> [h3,dut,h4]\n ip address 172.16.1.6/24\n!\ndo write\nCONFIG\nvtysh -f /tmp/config\n!\nexit 0\n"
+    "msg": "initial configuration for xs\n=========================================\n#!/bin/bash\n#\nset -e\nset -x\n#\n# Create bash profile script\n#\ncat <<'SCRIPT' >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)# \"\necho\necho \"Use vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)\n#\n# FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands\n#\nsysctl -w net.ipv4.ip_forward=1\nsysctl -w net.ipv6.conf.all.forwarding=0\n#\ncat <<SCRIPT >.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)$ \"\nexport PATH=$PATH:/usr/sbin\necho \necho \"Use sudo vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# Build hosts file\n#\n#\ncat <<'SCRIPT' >/tmp/hosts\n#\n# Created by netlab initial\n#\n10.0.0.5 dut\n172.16.0.5 Vlan1000.dut\n172.16.1.5 Vlan1001.dut\n172.16.0.1 h1 eth1.h1\n172.16.0.2 h2 eth1.h2\n172.16.1.3 h3 eth1.h3\n172.16.1.4 h4 eth1.h4\n10.0.0.6 xs\n172.16.0.6 vlan1000.xs\n172.16.1.6 vlan1001.xs\nSCRIPT\ngrep \"Created by netlab\" /etc/hosts || uniq /tmp/hosts >>/etc/hosts\n#\n# Configure system defaults on Ubuntu\n#\nhostnamectl set-hostname xs\nAPT_INSTALL=\n#\nif which gpg; then\n  echo \"Package gnupg already installed\"\nelse\n  APT_INSTALL=\"$APT_INSTALL gnupg\"\nfi\n#\nif which curl; then\n  echo \"Package curl already installed\"\nelse\n  APT_INSTALL=\"$APT_INSTALL curl\"\nfi\n#\nif which bridge; then\n  echo \"Package iproute2 already installed\"\nelse\n  APT_INSTALL=\"$APT_INSTALL iproute2\"\nfi\n#\n# APT_INSTALL always starts with a blank, so we can't just check if it's empty\n# The following hack turns a string that contains only whitespaces into\n# an empty string and removes leading whitespaces\n#\nAPT_INSTALL=`echo $APT_INSTALL`\nif [ -n \"$APT_INSTALL\" ]; then\n  echo \"Installing packages $APT_INSTALL\"\n  apt-get update -qq && apt-get install -qq $APT_INSTALL\nfi\n#\n# Install FRR on a Ubuntu VM if needed\n#\nif which /usr/lib/frr/frrinit.sh; then\n  echo \"FRR already installed, skipping installation\"\nelse\n  curl -s https://deb.frrouting.org/frr/keys.asc >/etc/apt/trusted.gpg.d/frr.asc\n  FRRVER=\"frr-stable\"\n  echo deb https://deb.frrouting.org/frr $(lsb_release -s -c) $FRRVER > /etc/apt/sources.list.d/frr.list\n  apt-get update -qq && apt-get install -qq frr frr-pythontools bridge-utils ethtool\nfi\n#\n# Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)\n#\n#\n# Enable FRR daemons\n#\n\n/usr/lib/frr/frrinit.sh restart\n\n# Set system defaults\n#\n# Send ARP requests from a sane source IP address\n#\nsysctl -w net.ipv4.conf.all.arp_announce=2\n\n#\n# Create loopbacks, stub and lag/bond devices\n#\nif [ ! -e /sys/class/net/lo ]; then\n  if [ ! -e /sys/devices/virtual/net/lo ]; then\n    ip link add lo type dummy\n    ip link set dev lo up\n  fi\nfi\nif [ ! -e /sys/class/net/bond1 ]; then\n  if [ ! -e /sys/devices/virtual/net/bond1 ]; then\n#\n# Make sure 'bonding' module is loaded\n#\nif [ ! -e /sys/module/bonding ]; then\nmodprobe bonding miimon=100 mode=802.3ad lacp_rate=fast\nfi\nif [ ! -e /sys/class/net/bond1 ]; then\nip link add dev bond1 type bond mode 802.3ad lacp_rate slow\nfi\n\n    ip link set dev bond1 up\n  fi\nfi\n\n# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)\n#\nip link set bond1 down\nsysctl -qw net.ipv6.conf.bond1.disable_ipv6=1\nip link set dev bond1 mtu 1500\nip link set bond1 up\nip link set eth1 down\nsysctl -qw net.ipv6.conf.eth1.disable_ipv6=1\nip link set dev eth1 mtu 1500\nip link set eth1 up\nip link set eth2 down\nsysctl -qw net.ipv6.conf.eth2.disable_ipv6=1\nip link set dev eth2 mtu 1500\nip link set eth2 up\nip link set eth3 down\nsysctl -qw net.ipv6.conf.eth3.disable_ipv6=1\nip link set dev eth3 mtu 1500\nip link set eth3 up\nip link set eth4 down\nsysctl -qw net.ipv6.conf.eth4.disable_ipv6=1\nip link set dev eth4 mtu 1500\nip link set eth4 up\n\n#\n# Add vtysh.conf file\necho \"service integrated-vtysh-config\" >/etc/frr/vtysh.conf\n\n#\n# Rest of initial configuration done through VTYSH\n#\ncat >/tmp/config <<CONFIG\nhostname xs\n!\nlog file /tmp/logging\n\n!\nip forwarding\nfrr defaults datacenter\n!\ninterface lo\n no shutdown\n ip address 10.0.0.6/32\n!\ninterface bond1\n no shutdown\n description xs -> dut\n ! no ip address\n!\ninterface eth1\n no shutdown\n description xs -> dut\n ! no ip address\n!\ninterface eth2\n no shutdown\n description xs -> dut\n ! no ip address\n!\ninterface eth3\n no shutdown\n description [Access VLAN v1] xs -> h2\n ! no ip address\n!\ninterface eth4\n no shutdown\n description [Access VLAN v2] xs -> h4\n ! no ip address\n!\ninterface bond1.1000\n no shutdown\n description [SubIf VLAN v1] xs -> dut\n ! no ip address\n!\ninterface bond1.1001\n no shutdown\n description [SubIf VLAN v2] xs -> dut\n ! no ip address\n!\ninterface vlan1000\n no shutdown\n description VLAN v1 (1000) -> [h1,dut,h2]\n ip address 172.16.0.6/24\n!\ninterface vlan1001\n no shutdown\n description VLAN v2 (1001) -> [h3,dut,h4]\n ip address 172.16.1.6/24\n!\ndo write\nCONFIG\nvtysh -f /tmp/config\n!\nexit 0\n"
 }
 ok: [dut] => {
     "msg": "initial configuration for dut\n=========================================\nhostname dut\n!\nlogging monitor debugging\naaa authorization exec default local\n!\nlldp run\nip routing\nno ipv6 unicast-routing\n!\n!\nip host h1 172.16.0.1\nip host h2 172.16.0.2\nip host h3 172.16.1.3\nip host h4 172.16.1.4\nip host xs 10.0.0.6 172.16.0.6 172.16.1.6\n!\ninterface Management1\n no lldp transmit\n no lldp receive\n!\ninterface Loopback0\n ip address 10.0.0.5/32\n!\ninterface port-channel1\n no switchport\n description dut -> xs\n!\ninterface Ethernet1\n no switchport\n description dut -> xs\n mac-address caf0.0005.0001\n!\n no shutdown\n!\ninterface Ethernet2\n no switchport\n description dut -> xs\n mac-address caf0.0005.0002\n!\n no shutdown\n!\ninterface Ethernet3\n no switchport\n description [Access VLAN v1] dut -> h1\n!\n no shutdown\n!\ninterface Ethernet4\n no switchport\n description [Access VLAN v2] dut -> h3\n!\n no shutdown\n!\ninterface Vlan1000\n description VLAN v1 (1000) -> [h1,h2,xs]\n ip address 172.16.0.5/24\n!\ninterface Vlan1001\n description VLAN v2 (1001) -> [h3,h4,xs]\n ip address 172.16.1.5/24\n!\n"
@@ -111,6 +104,9 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for du
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for xs
 
 TASK [eos_config: deploying initial from /work/netlab_cicd/node_files/dut/initial] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
 changed: [dut]
 
 TASK [template] ****************************************************************
@@ -197,7 +193,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [xs] => {
-    "msg": "vlan configuration for xs\n=========================================\n#!/bin/bash\n#\nset -e # Exit immediately when any command fails\nset -x # Track commands for troubleshooting\n#\nif [ ! -e /sys/devices/virtual/net/bond1.1000 ]; then\n  ip link add link bond1 name bond1.1000 type vlan id 1000\n  ip link set dev bond1.1000 up\nfi\nif [ ! -e /sys/devices/virtual/net/bond1.1001 ]; then\n  ip link add link bond1 name bond1.1001 type vlan id 1001\n  ip link set dev bond1.1001 up\nfi\nif [ ! -e /sys/devices/virtual/net/vlan1000 ]; then\n  ip link add vlan1000 type bridge\n  ip link set dev vlan1000 address ca:f4:00:06:00:00\n\n  ip link set dev vlan1000 mtu 1500\n  ip addr flush dev vlan1000\n  ip addr add 172.16.0.6/24 dev vlan1000\nfi\nif [ ! -e /sys/devices/virtual/net/vlan1001 ]; then\n  ip link add vlan1001 type bridge\n  ip link set dev vlan1001 address ca:f4:00:06:00:01\n\n  ip link set dev vlan1001 mtu 1500\n  ip addr flush dev vlan1001\n  ip addr add 172.16.1.6/24 dev vlan1001\nfi\n\nip link set dev eth3 master vlan1000\nip link set dev eth4 master vlan1001\nip link set dev bond1.1000 master vlan1000\nip link set dev bond1.1001 master vlan1001\n\nip link set dev vlan1000 up\nip link set dev vlan1001 up\n"
+    "msg": "vlan configuration for xs\n=========================================\n#!/bin/bash\n#\nset -e # Exit immediately when any command fails\nset -x # Track commands for troubleshooting\n#\nif [ ! -e /sys/devices/virtual/net/bond1.1000 ]; then\n  ip link add link bond1 name bond1.1000 type vlan id 1000\n  ip link set dev bond1.1000 up\nfi\nif [ ! -e /sys/devices/virtual/net/bond1.1001 ]; then\n  ip link add link bond1 name bond1.1001 type vlan id 1001\n  ip link set dev bond1.1001 up\nfi\nif [ ! -e /sys/devices/virtual/net/vlan1000 ]; then\n  ip link add vlan1000 type bridge\n  ip link set dev vlan1000 address ca:f4:00:06:00:00\n\n  ip link set dev vlan1000 mtu 1500\n  ip addr flush dev vlan1000\n  sysctl -w net.ipv6.conf.vlan1000.disable_ipv6=1\nfi\nif [ ! -e /sys/devices/virtual/net/vlan1001 ]; then\n  ip link add vlan1001 type bridge\n  ip link set dev vlan1001 address ca:f4:00:06:00:01\n\n  ip link set dev vlan1001 mtu 1500\n  ip addr flush dev vlan1001\n  sysctl -w net.ipv6.conf.vlan1001.disable_ipv6=1\nfi\n\nip link set dev eth3 master vlan1000\nip link set dev eth4 master vlan1001\nip link set dev bond1.1000 master vlan1000\nip link set dev bond1.1001 master vlan1001\n\nip link set dev vlan1000 up\nip link set dev vlan1001 up\n"
 }
 ok: [dut] => {
     "msg": "vlan configuration for dut\n=========================================\nvlan 1000\n name v1\n!\nvlan 1001\n name v2\n!\n\n!\ninterface port-channel1\n switchport\n switchport mode trunk\n switchport trunk allowed vlan 1000,1001\n switchport trunk native vlan tag\n!\ninterface Ethernet3\n switchport\n switchport access vlan 1000\n!\ninterface Ethernet4\n switchport\n switchport access vlan 1001\n!\ninterface Vlan1000\n!\ninterface Vlan1001\n"
@@ -250,15 +246,15 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=33   changed=4    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
-xs                         : ok=36   changed=6    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
+dut                        : ok=25   changed=3    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+xs                         : ok=31   changed=6    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================
-h1                           OK: 2   
-h2                           OK: 2   
-h3                           OK: 2   
-h4                           OK: 2   
+h1               Script:  initial,routing
+h2               Script:  initial,routing
+h3               Script:  initial,routing
+h4               Script:  initial,routing
 
 
 The device under test is a layer-2 switch connected with a LAG VLAN trunk to

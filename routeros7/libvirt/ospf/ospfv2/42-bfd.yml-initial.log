@@ -1,0 +1,127 @@
+Creating Device configuration snippets
+[CREATED] dut: initial,ospf,bfd
+[CREATED] bb: initial,ospf,bfd
+[CREATED] r1: initial,ospf,bfd
+Config Deploying device configurations
+ [INFO] Executing initial configuration for node bb
+ [INFO] Executing initial configuration for node r1
+ [INFO] Executing ospf configuration for node bb
+ [INFO] Executing bfd configuration for node bb
+ [INFO] Executing ospf configuration for node r1
+ [INFO] Executing bfd configuration for node r1
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "initial configuration for dut\n=========================================\n\n/system/identity set name=\"dut\"\n\n/interface/bridge add name=loopback protocol-mode=none\n\n\n/ip/address add interface=loopback address=10.0.0.1/32\n\n\n\n\n/interface/ethernet set comment=\"dut -> bb\" ether2\n\n/ip/address add interface=ether2 address=10.1.0.1/30\n/ip/address set [find where interface=ether2] comment=\"dut -> bb\"\n\n\n/interface/ethernet set comment=\"dut -> r1\" ether3\n\n/ip/address add interface=ether3 address=10.1.0.5/30\n/ip/address set [find where interface=ether3] comment=\"dut -> r1\"\n\n\n/interface/ethernet set comment=\"dut -> stub [stub]\" ether4\n\n/ip/address add interface=ether4 address=172.16.0.1/24\n/ip/address set [find where interface=ether4] comment=\"dut -> stub [stub]\"\n\n\n/ip/neighbor/discovery-settings set discover-interface-list=all\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+
+TASK [load initial from /work/netlab_cicd/node_files/dut/initial] **************
+ok: [dut]
+
+TASK [Run commands on CHR] *****************************************************
+changed: [dut]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=bfd)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
+
+TASK [Figure out whether to deploy the module bfd on current device] ***********
+ok: [dut]
+
+TASK [Find configuration template for bfd] *************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for bfd] *********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "bfd configuration for dut\n=========================================\n/routing/bfd/configuration add interfaces=ether2 min-tx=500ms min-rx=500ms multiplier=3\n/routing/bfd/configuration add interfaces=ether3 min-tx=500ms min-rx=500ms multiplier=3\n/routing/bfd/configuration add interfaces=ether4 min-tx=500ms min-rx=500ms multiplier=3\n\n"
+}
+
+TASK [Deploy bfd configuration] ************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+
+TASK [load bfd from /work/netlab_cicd/node_files/dut/bfd] **********************
+ok: [dut]
+
+TASK [Run commands on CHR] *****************************************************
+changed: [dut]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "ospf configuration for dut\n=========================================\n\n\n/routing/ospf/instance add name=default4 version=2 router-id=10.0.0.1 vrf=main\n\n/routing/ospf/area add instance=default4 name=\"main_2_0.0.0.0\" area-id=0.0.0.0\n/routing/ospf/area add instance=default4 name=\"main_2_0.0.0.1\" area-id=0.0.0.1\n\n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default4] interface=loopback \n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default4] interface=ether2 type=ptp use-bfd=yes\n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.1 and instance=default4] interface=ether3 type=broadcast cost=42 use-bfd=yes\n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default4] interface=ether4 passive use-bfd=yes\n\n"
+}
+
+TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+
+TASK [load ospf from /work/netlab_cicd/node_files/dut/ospf] ********************
+ok: [dut]
+
+TASK [Run commands on CHR] *****************************************************
+changed: [dut]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut                        : ok=26   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+
+Results of configuration script deployments
+================================================================================
+bb               Script:  initial,ospf,bfd
+r1               Script:  initial,ospf,bfd
+
+
+This topology tests the OSPFv2 with BFD
+
+* Multiple OSPF areas on ABR
+* BFD enabled on all interfaces
+
