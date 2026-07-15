@@ -3,6 +3,14 @@
 
 /interface/bridge add name=loopback protocol-mode=none
 
+# Host entries
+{% for hname,hdata in hosts.items() if 'ipv4' in hdata and hname != inventory_hostname %}
+/ip/dns/static add name={{ hname }} address={{ hdata.ipv4[0] }}
+{% endfor %}
+{% for hname,hdata in hosts.items() if 'ipv6' in hdata and hname != inventory_hostname %}
+/ip/dns/static add name={{ hname }} address={{ hdata.ipv6[0] }}
+{% endfor %}
+
 {#
 # Add additional loopbacks
 #}
@@ -24,8 +32,6 @@
 {% if vrfs is defined %}
 {% include 'routeros7.vrf.j2' %}
 {% endif %}
-
-{% include 'routeros7.hosts.j2' %}
 
 {% for l in interfaces|default([]) %}
 {%   set intf_type = 'vlan' if l.type == 'svi' else 'ethernet' %}
