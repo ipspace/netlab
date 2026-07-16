@@ -1,0 +1,34 @@
+{% for intf in netlab_interfaces if intf.tunnel.mode|default('') in ['gre'] %}
+!
+interface {{ intf.ifname }}
+  tunnel mode {{ intf.tunnel.mode }}
+{%   if intf.tunnel.vrf is defined %}
+  tunnel vrf {{ intf.tunnel.vrf }}
+{%   endif %}
+  tunnel source {{ intf.tunnel._source[intf.tunnel.af] }}
+  tunnel destination {{ intf.tunnel._destination[intf.tunnel.af] }}
+  tunnel path-mtu-discovery
+  tunnel ttl 255
+{% endfor %}
+
+{% if ospf|default(False) %}
+{%   set ospf_pid = ospf.process|default(1) %}
+{%   if ospf.af.ipv4 is defined %}
+{%     if ospf_vrf %}
+router ospf {{ ospf_pid }} vrf {{ ospf_vrf }}
+  tunnel routes
+{%     else %}
+router ospf {{ ospf_pid }}
+  tunnel routes
+{%     endif %}
+{%   endif %}
+{%   if ospf.af.ipv6 is defined %}
+{%     if ospf_vrf %}
+ipv6 router ospf {{ ospf_pid }} vrf {{ ospf_vrf }}
+  tunnel routes
+{%     else %}
+ipv6 router ospf {{ ospf_pid }}
+  tunnel routes
+{%     endif %}
+{%   endif %}
+{% endif %}
