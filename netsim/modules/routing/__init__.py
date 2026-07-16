@@ -13,7 +13,7 @@ from ...augment import devices
 from ...data import global_vars
 from ...utils import log
 from .. import _Module
-from . import aspath, clist, policy, prefix, static
+from . import aspath, clist, policy, prefix, static, acl
 from .normalize import (
   check_routing_object,
   import_routing_object,
@@ -41,7 +41,11 @@ import_dispatch: typing.Dict[str,dict] = {
     'check'  : check_routing_object },
   'static': {
     'start'  : static.include_global_static_routes
-  }
+  },
+  'acl': {
+    'import' : import_routing_object,
+    'check'  : check_routing_object 
+    }
 }
 
 """
@@ -65,6 +69,11 @@ normalize_dispatch: typing.Dict[str,dict] = {
       'object'   : 'BGP community filter',
       'list_attr': 'value',
       'callback' : aspath.normalize_aspath_entry },
+  'acl':
+    { 'namespace': 'routing.acl',
+      'object'   : 'acl',
+      'list_attr': 'value',
+      'callback' : acl.normalize_acl_entry }         
 }
 
 """
@@ -119,6 +128,9 @@ transform_dispatch: typing.Dict[str,dict] = {
     'import' : static.import_static_routes,
     'check'  : static.check_static_routes,
     'cleanup': static.cleanup_static_routes
+  },
+  'acl': {
+    'import': acl.expand_acl
   }
 }
 
