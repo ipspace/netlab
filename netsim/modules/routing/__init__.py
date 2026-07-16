@@ -1,5 +1,5 @@
 #
-# Generic routing module: 
+# Generic routing module:
 #
 # * Routing policies (route maps)
 # * Routing filters (prefixes, communities, as-paths)
@@ -13,7 +13,7 @@ from ...augment import devices
 from ...data import global_vars
 from ...utils import log
 from .. import _Module
-from . import aspath, clist, policy, prefix, static, acl
+from . import acl, aspath, clist, policy, prefix, static
 from .normalize import (
   check_routing_object,
   import_routing_object,
@@ -44,7 +44,7 @@ import_dispatch: typing.Dict[str,dict] = {
   },
   'acl': {
     'import' : import_routing_object,
-    'check'  : check_routing_object 
+    'check'  : check_routing_object
     }
 }
 
@@ -73,7 +73,7 @@ normalize_dispatch: typing.Dict[str,dict] = {
     { 'namespace': 'routing.acl',
       'object'   : 'acl',
       'list_attr': 'value',
-      'callback' : acl.normalize_acl_entry }         
+      'callback' : acl.normalize_acl_entry }
 }
 
 """
