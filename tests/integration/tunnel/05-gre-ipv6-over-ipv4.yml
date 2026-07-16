@@ -1,0 +1,80 @@
+---
+message: |
+  Test GRE tunnel can encapsulate IPv6 in IPv4 underlay.
+  The two tested devices have a GRE tunnel and run OSPF over it.
+  The probe (R3) should receive an OSPF route advertised from the
+  remote device (DUT_R1) and be able to ping its loopback.
+
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
+addressing:
+  loopback:
+    ipv4: false
+    ipv6: 2001:dc:a::/48
+    prefix6: 128
+  core:
+    ipv4: 172.22.0.0/16
+  p2p:
+    ipv6: true
+  end:
+    ipv6: true
+    ipv4: false
+      #ipv6: 2001:db8:f::/64
+
+plugin: [ tunnel.gre ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ core, r3 ]
+  ce:
+    members: [ dut_r1, dut_r2 ]
+    routing.static:
+    - pool: core
+      nexthop.node: core
+
+module: [ ospf, routing ]
+
+nodes:
+  dut_r1:
+  dut_r2:
+  core:
+    module: []
+  r3:
+
+links:
+- group: core
+  ospf: False
+  role: core
+  pool: core
+  members: [ dut_r1-core, dut_r2-core ]
+- group: site
+  pool: end
+  members: [ dut_r2-r3 ]
+- group: gre
+  tunnel.mode: gre
+  tunnel.af: ipv4
+  tunnel.source.link.role: core
+  pool: end
+  members: [ dut_r1-dut_r2 ]
+
+validate:
+  adj_v3:
+    description: Check OSPFv3 adjacencies
+    wait: ospfv3_adj_p2p
+    wait_msg: Waiting for OSPFv3 adjacency process to complete
+    nodes: [ r3 ]
+    plugin: ospf6_neighbor(nodes.dut_r2.ospf.router_id)
+  pfx_v3:
+    description: Check for DUT_R1 loopback prefix via OSPFv3 being propagated to R3
+    wait: ospfv3_spf_long
+    wait_msg: Waiting for SPF to do its magic
+    nodes: [ r3 ]
+    plugin: ospf6_prefix(nodes.dut_r1.loopback.ipv6)
+  ping6:
+    description: Check end-to-end connectivity GRE 6 over 4
+    wait: ping
+    wait_msg: Still waiting for SPF...
+    nodes: [ r3 ]
+    plugin: ping(nodes.dut_r1.loopback.ipv6)
