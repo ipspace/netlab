@@ -107,6 +107,20 @@ def esi_identifier_format(node: Box, topology: Box) -> None:
       esi = intf.evpn._esi.id.replace(":", "")
       intf.evpn._esi._eos_id = ':'.join(esi[i:i+4] for i in range(0, len(esi), 4))
 
+def check_ipv6_gre(node: Box, topology: Box) -> None:
+  for intf in node.interfaces:
+    if intf.type != 'tunnel':                  # Skip non tunnel interfaces
+      continue
+
+    if intf.tunnel.af == 'ipv4':               # IPv4 GRE transit works fine
+      continue
+
+    report_quirk(
+      text=f'GRE6 / IPv6 transport GRE does not work on Arista cEOS ({node.name})',
+      node=node,
+      category=log.IncorrectType)
+    return
+
 class EOS(_Quirks):
 
   @classmethod
@@ -126,3 +140,5 @@ class EOS(_Quirks):
       configure_ceos_attributes(node,topology)
     if 'evpn.multihoming' in topology.get('plugin',[]):
       esi_identifier_format(node,topology)
+    if 'config' in node:
+      check_ipv6_gre(node,topology)
