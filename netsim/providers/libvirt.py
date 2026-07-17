@@ -285,18 +285,25 @@ class Libvirt(_Provider):
           l.libvirt.public = 'bridge'                            # ... default mode is bridge (MACVTAP)
 
       """
-      The libvirt links could be modeled as P2P links (using UDP tunnels) or
-      LAN links using a Linux bridge. It's better to use the UDP tunnels, but
-      we must us the Linux bridge if:
+      The libvirt links could be modeled as P2P links (using UDP tunnels) or LAN
+      links using a Linux bridge. It's better to use the UDP tunnels, but we
+      must us the Linux bridge if:
 
       * The link type is 'lan' or 'stub' (set/used elsewhere, also includes
         hosts connected to links)
       * The libvirt.provider attribute is set (multi-provider links or external
         connectivity)
-      * The system defaults say P2P links should be modeled as bridges
-        (used for traffic capture)
+      * The system defaults say P2P links should be modeled as bridges (used for
+        traffic capture)
       * The link or any of the interfaces has the 'tc' parameter
+
+      However, we should never set the link type for virtual links. Currently,
+      that would be tunnel and loopback links; cross-provider LAG member links
+      don't work (and are thus blocked) and VLAN/SVI links are created later.
       """
+      if l.get('type','') in ['tunnel','loopback']:
+        continue
+
       must_be_lan = l.get('libvirt.provider',None) and 'vlan' not in l.type
       must_be_lan = must_be_lan or (p2p_bridge and l.get('type','p2p') == 'p2p')
       must_be_lan = must_be_lan or 'tc' in l or [ intf for intf in l.interfaces if 'tc' in intf ]
