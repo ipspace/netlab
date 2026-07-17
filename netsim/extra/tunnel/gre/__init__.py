@@ -27,7 +27,7 @@ def post_transform(topology: Box) -> None:
 
   # Use shared P2P tunnel function to check feature support
   #
-  node_iflist = _p2p.feature_check(topology,t_mode='gre',t_desc='GRE tunnels')
+  node_iflist = _p2p.feature_check(topology,t_mode='gre',t_desc='GRE tunnels',t_af=True,t_default_af='ipv4')
   _p2p.tunnel_source(topology,node_iflist,default_af='ipv4',t_name='GRE')
 
   if log.get_error_count():                                 # Has someone reported an error?
