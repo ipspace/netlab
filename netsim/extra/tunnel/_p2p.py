@@ -19,7 +19,13 @@ def init(topology: Box) -> None:
   '''
   log.fatal("You cannot use the 'tunnel._p2p' plugin. Use a plugin for the tunnel mode you're interested in")
 
-def feature_check(topology: Box, t_mode: str, t_desc: str) -> dict:
+def feature_check(
+      topology: Box,
+      t_mode: str,                      # Tunnel mode, used primarily for error messages
+      t_desc: str,                      # Tunnel mode description, used primarily for error messages
+      t_af: bool = False,               # Do we need to check transport AF?
+      t_default_af: str = '',           # Default transport AF
+      ) -> dict:
   '''
   Check whether the devices using tunnels support them. Returns a dictionary
   of nodes using the specified tunnel technology
@@ -34,14 +40,34 @@ def feature_check(topology: Box, t_mode: str, t_desc: str) -> dict:
     if not _tunnel.check_feature(ndata,topology,f_name=t_mode,f_desc=t_desc):
       continue                                              # Device does not support tunnel features, move on
 
-    VRF_OK = True
+    check_OK = True
+    if t_af:                                                # Do we have to check the transport AF support?
+      for u_af in ['ipv4','ipv6']:                          # Check IPv4 and IPv6
+        for intf in t_iflist:
+          t_af = intf.get('tunnel.af',t_default_af)         # Try to get the tunnel transport AF
+          if t_af != u_af:                                  # Not the one we're interested in? Move on
+            continue
+          if not _tunnel.check_feature(                     # Check the AF feature
+                    ndata,
+                    topology,
+                    f_name=t_mode,
+                    f_desc=f'{t_desc} over {u_af}',
+                    f_value=t_af):
+            check_OK = False                                # Mark the failure if needed
+          break                                             # And get out of the interface loop
+
     for intf in t_iflist:                                   # Next check: VRF features
       if not 'tunnel.vrf' in intf:                          # Tunnel does not use transport VRF? Cool, move on
         continue
-      VRF_OK = _tunnel.check_feature(ndata,topology,f_name=t_mode,f_desc=f'VRF {t_desc}',f_value='vrf')
-      break
+      if not _tunnel.check_feature(                         # Check the VRF feature
+                ndata,
+                topology,
+                f_name=t_mode,
+                f_desc=f'VRF {t_desc}',f_value='vrf'):
+        check_OK = False                                    # Missing? Mark the failure
+      break                                                 # And get out of the interface loop
 
-    if not VRF_OK:                                          # If VRF check failed, move to next node
+    if not check_OK:                                        # If any advanced check failed, move to next node
       continue
 
     node_iflist[node] = t_iflist
