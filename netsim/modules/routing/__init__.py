@@ -169,5 +169,6 @@ class Routing(_Module):
   def node_post_transform(self, node: Box, topology: Box) -> None:
     global transform_dispatch
 
+    acl.resolve_interface_acl_references(node,topology)
     for o_name in transform_dispatch.keys():
       process_routing_data(node,o_name,topology,transform_dispatch)
