@@ -296,7 +296,13 @@ class Libvirt(_Provider):
       * The system defaults say P2P links should be modeled as bridges
         (used for traffic capture)
       * The link or any of the interfaces has the 'tc' parameter
+
+      However, we should never set the link type for virtual links (currently,
+      tunnel links)
       """
+      if l.get('type','') in ['tunnel']:
+        continue
+
       must_be_lan = l.get('libvirt.provider',None) and 'vlan' not in l.type
       must_be_lan = must_be_lan or (p2p_bridge and l.get('type','p2p') == 'p2p')
       must_be_lan = must_be_lan or 'tc' in l or [ intf for intf in l.interfaces if 'tc' in intf ]

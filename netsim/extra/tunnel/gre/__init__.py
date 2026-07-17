@@ -8,9 +8,9 @@ from .. import _p2p
 
 _config_name = 'tunnel.gre'
 
-def pre_link_transform(topology: Box) -> None:
+def pre_transform(topology: Box) -> None:
   '''
-  pre_link_transform hook: set tunnel link type, check whether GRE tunnels are P2P
+  pre_transform hook: set tunnel link type, check whether GRE tunnels are P2P
   '''
   _tunnel.set_tunnel_type(topology)
   for link in _tunnel.links(topology,'gre'):

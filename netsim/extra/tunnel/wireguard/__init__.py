@@ -129,9 +129,9 @@ def wireguard_intf_defaults(ndata: Box, intf: Box, topology: Box) -> bool:
   intf.tunnel._source.listen_port = intf.tunnel.listen_port
   return True
 
-def pre_link_transform(topology: Box) -> None:
+def pre_transform(topology: Box) -> None:
   '''
-  pre_link_transform hook: set tunnel link type, check whether WireGuard tunnels are P2P
+  pre_transform hook: set tunnel link type, check whether WireGuard tunnels are P2P
   '''
   _tunnel.set_tunnel_type(topology)
   for link in _tunnel.links(topology,'wireguard'):
