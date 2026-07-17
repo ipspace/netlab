@@ -44,15 +44,15 @@ def feature_check(
     if t_af:                                                # Do we have to check the transport AF support?
       for u_af in ['ipv4','ipv6']:                          # Check IPv4 and IPv6
         for intf in t_iflist:
-          t_af = intf.get('tunnel.af',t_default_af)         # Try to get the tunnel transport AF
-          if t_af != u_af:                                  # Not the one we're interested in? Move on
+          tpt_af = intf.get('tunnel.af',t_default_af)       # Try to get the tunnel transport AF
+          if tpt_af != u_af:                                # Not the one we're interested in? Move on
             continue
           if not _tunnel.check_feature(                     # Check the AF feature
                     ndata,
                     topology,
                     f_name=t_mode,
                     f_desc=f'{t_desc} over {u_af}',
-                    f_value=t_af):
+                    f_value=u_af):
             check_OK = False                                # Mark the failure if needed
           break                                             # And get out of the interface loop
 
