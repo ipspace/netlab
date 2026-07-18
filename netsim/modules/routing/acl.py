@@ -8,11 +8,11 @@ from box import Box
 
 from netsim.utils import log
 
+from ...data import get_box
 from .normalize import (
   import_routing_object,
   normalize_routing_entry,
 )
-
 
 """
 expand_acl_address_entry:
@@ -81,13 +81,26 @@ def normalize_acl_entry(p_entry: typing.Any, p_idx: int) -> typing.Any:
 
 
 def expand_acl(p_name: str, o_name: str, node: Box, topology: Box) -> typing.Optional[list]:
-
   acl_list = node.routing[o_name][p_name].value
+  expansion: list = []
+
   for idx, entry in enumerate(list(acl_list)):
     for addr_key in ("src", "dst"):
       if addr_key in entry:
         entry[addr_key] = expand_acl_address_entry(entry[addr_key], topology)
+
+# Synthesize comments
+
+    if 'description' in entry:
+        description_seq   = entry.get('sequence')
+        entry.sequence = description_seq + 1               # the real entry moves one past it
+        description_entry = get_box({ 'sequence': description_seq, 'description': entry.pop('description') })
+        expansion.append(description_entry)
+
     acl_list[idx] = entry
+
+  acl_list.extend(expansion)
+  acl_list.sort(key=lambda e: e.get('sequence', 10))
   return None
 
 
