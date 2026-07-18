@@ -3,12 +3,12 @@
 #
 {% macro sr_add(sr_entry) %}
 {%   for sr_af in ['ipv4','ipv6'] if sr_af in sr_entry %}
-{%   set cmd_rt = 'routing-table=' + sr_entry.vrf  if 'vrf' in sr_entry else '' %}
-{%   set cmd_gw = sr_entry.nexthop[sr_af] + '@' + sr_entry.vrf if 'vrf' in sr_entry else '' %}
+{%   set cmd_rt = sr_entry.vrf  if 'vrf' in sr_entry else 'main' %}
+{%   set cmd_gw = (sr_entry.nexthop.vrf or 'main') if 'vrf' in sr_entry.nexthop else cmd_rt  %}
 {%     if sr_af == 'ipv6' %}
-/ipv6/route add dst-address={{ sr_entry[sr_af] }} gateway={{ cmd_gw }} {{ cmd_rt }}
+/ipv6/route add dst-address={{ sr_entry[sr_af] }} gateway={{ sr_entry.nexthop[sr_af] }}@{{ cmd_gw }} routing-table={{ cmd_rt }}
 {%     else %}
-/ip/route add dst-address={{ sr_entry[sr_af] }} gateway={{ cmd_gw }} {{ cmd_rt }}
+/ip/route add dst-address={{ sr_entry[sr_af] }} gateway={{ sr_entry.nexthop[sr_af] }}@{{ cmd_gw }} routing-table={{ cmd_rt }}
 {%     endif %}
 {%   endfor %}
 {% endmacro %}
