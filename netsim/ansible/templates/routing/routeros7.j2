@@ -1,0 +1,41 @@
+#
+# Static routes
+#
+{% macro sr_add(sr_entry) %}
+{%   for sr_af in ['ipv4','ipv6'] if sr_af in sr_entry %}
+{%   set cmd_rt = 'routing-table=' + sr_entry.vrf  if 'vrf' in sr_entry else '' %}
+{%   set cmd_gw = sr_entry.nexthop[sr_af] + '@' + sr_entry.vrf if 'vrf' in sr_entry else '' %}
+{%     if sr_af == 'ipv6' %}
+/ipv6/route add dst-address={{ sr_entry[sr_af] }} gateway={{ cmd_gw }} {{ cmd_rt }}
+{%     else %}
+/ip/route add dst-address={{ sr_entry[sr_af] }} gateway={{ cmd_gw }} {{ cmd_rt }}
+{%     endif %}
+{%   endfor %}
+{% endmacro %}
+
+{% macro sr_discard(sr_entry) %}
+{%   for sr_af in ['ipv4','ipv6'] if sr_af in sr_entry %}
+{%     if sr_af == 'ipv6' %}
+/ipv6/route delete dst-address={{ sr_entry[sr_af] }}
+/ipv6/route add blackhole dst-address={{ sr_entry[sr_af] }}
+{%     else %}
+/ip/route delete dst-address={{ sr_entry[sr_af] }}
+/ip/route add blackhole dst-address={{ sr_entry[sr_af] }}
+{%     endif %}
+{%   endfor %}
+{% endmacro %}
+#
+{% set sr_list = routing.static|default([]) %}
+#
+{% for sr_entry in sr_list if 'intf' in sr_entry.nexthop %}
+{%   if loop.first %}
+#echo Adding direct static routes
+{%   endif %}
+{{ sr_add(sr_entry) -}}
+{% endfor %}
+{% for sr_entry in sr_list if 'discard' in sr_entry.nexthop %}
+{%   if loop.first %}
+# echo Adding discard static routes
+{%   endif %}
+{{ sr_discard(sr_entry) -}}
+{% endfor %}
