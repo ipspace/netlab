@@ -104,7 +104,7 @@ class validation_context:
     protocol: int
     established: bool
 
-def validate_acl_address_entry ( p_entry: Box, ctx: validation_context ):
+def validate_acl_address_entry ( p_entry: Box, ctx: validation_context ) -> None:
 
   UDP = 17
   TCP = 6
