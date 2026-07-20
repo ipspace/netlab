@@ -1,0 +1,61 @@
+#
+# Static routes
+#
+{% macro sr_add(sr_entry) %}
+{%   for sr_af in ['ipv4','ipv6'] if sr_af in sr_entry %}
+{%   set cmd_rt = sr_entry.vrf  if 'vrf' in sr_entry else 'main' %}
+{%   set cmd_gw = (sr_entry.nexthop.vrf or 'main') if 'vrf' in sr_entry.nexthop else cmd_rt  %}
+{%     if sr_af == 'ipv6' %}
+/ipv6/route add dst-address={{ sr_entry[sr_af] }} gateway={{ sr_entry.nexthop[sr_af] }}@{{ cmd_gw }} routing-table={{ cmd_rt }} scope=10
+{%     else %}
+/ip/route add dst-address={{ sr_entry[sr_af] }} gateway={{ sr_entry.nexthop[sr_af] }}@{{ cmd_gw }} routing-table={{ cmd_rt }} scope=10
+{%     endif %}
+{%   endfor %}
+{% endmacro %}
+
+{% macro sr_indirect_add(sr_entry) %}
+{%   for sr_af in ['ipv4','ipv6'] if sr_af in sr_entry %}
+{%   set cmd_rt = sr_entry.vrf  if 'vrf' in sr_entry else 'main' %}
+{%   set cmd_gw = (sr_entry.nexthop.vrf or 'main') if 'vrf' in sr_entry.nexthop else cmd_rt  %}
+{%     if sr_af == 'ipv6' %}
+/ipv6/route add dst-address={{ sr_entry[sr_af] }} gateway={{ sr_entry.nexthop[sr_af] }}@{{ cmd_gw }} routing-table={{ cmd_rt }} target-scope=41
+{%     else %}
+/ip/route add dst-address={{ sr_entry[sr_af] }} gateway={{ sr_entry.nexthop[sr_af] }}@{{ cmd_gw }} routing-table={{ cmd_rt }} target-scope=41
+{%     endif %}
+{%   endfor %}
+{% endmacro %}
+
+{% macro sr_discard(sr_entry) %}
+{%   for sr_af in ['ipv4','ipv6'] if sr_af in sr_entry %}
+{%   set cmd_rt = sr_entry.vrf  if 'vrf' in sr_entry else 'main' %}
+{%     if sr_af == 'ipv6' %}
+/ipv6/route delete dst-address={{ sr_entry[sr_af] }} routing-table={{ cmd_rt }}
+/ipv6/route add blackhole dst-address={{ sr_entry[sr_af] }} routing-table={{ cmd_rt }}
+{%     else %}
+/ip/route delete dst-address={{ sr_entry[sr_af] }} routing-table={{ cmd_rt }}
+/ip/route add blackhole dst-address={{ sr_entry[sr_af] }} routing-table={{ cmd_rt }}
+{%     endif %}
+{%   endfor %}
+{% endmacro %}
+#
+{% set sr_list = routing.static|default([]) %}
+#
+{% for sr_entry in sr_list if 'intf' in sr_entry.nexthop %}
+{%   if loop.first %}
+# Adding direct static routes
+{%   endif %}
+{{ sr_add(sr_entry) -}}
+{% endfor %}
+{% for sr_entry in sr_list if 'intf' not in sr_entry.nexthop and 'discard' not in sr_entry.nexthop %}
+{%   if loop.first %}
+# Adding indirect static routes
+# Target Scope is set to 41, which is higher than all other routing protocols static=10, ospf/rip=20, isis=30, bgp=40
+{%   endif %}
+{{ sr_indirect_add(sr_entry) -}}
+{% endfor %}
+{% for sr_entry in sr_list if 'discard' in sr_entry.nexthop %}
+{%   if loop.first %}
+# echo Adding discard static routes
+{%   endif %}
+{{ sr_discard(sr_entry) -}}
+{% endfor %}
