@@ -12,6 +12,7 @@
 {%- endif -%}
 {%- endmacro %}
 
+{%if routing.acl is defined %}
 {% for name, acl in routing.acl.items() %}
 !
 ip access-list extended {{ name }}_{{ acl.af }}
@@ -24,4 +25,15 @@ ip access-list extended {{ name }}_{{ acl.af }}
   {{ e.sequence}} {{ e.action}} {{e.protocol}} {{r_acl_addr(e.src, acl.af)}} {{ r_acl_port(e.src)}} {{ r_acl_addr(e.dst, acl.af) }} {{ r_acl_port(e.dst)}} {{est}} {{log}}
 {% endif %}
 {% endfor %}
+{% endfor %}
+{% endif %}
+!
+{% for intf in interfaces %}
+interface {{ intf.ifname }}
+{%if intf.routing.acl.in is defined %}
+ ip access-group {{ intf.routing.acl.in }}_ipv4 in
+{% endif %}
+{%if intf.routing.acl.out is defined %}
+ ip access-group {{ intf.routing.acl.out }}_ipv4 out
+{% endif %}
 {% endfor %}
