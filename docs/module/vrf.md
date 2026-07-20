@@ -63,7 +63,7 @@ These platforms support routing protocols in VRFs:
 | FRR [❗](caveats-frr) | ✅  | ✅  | ✅  | ✅ | ✅ | ✅ |
 | Junos[^Junos]         | ✅  | ✅  | ✅  | ❌  | ❌  | ❌  |
 | Mikrotik RouterOS 6   | ✅  [❗](caveats-routeros6) |  ❌  | ✅  | ❌  | ❌  | ❌  |
-| Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  | ❌  | ❌  | ❌  |
+| Mikrotik RouterOS 7   | ✅  | ✅  | ✅  | ❌  | ❌  | ❌  |
 | Nokia SR Linux        | ✅  | ✅  | ✅  | ❌  | ❌  | ✅ |
 | Nokia SR OS[^SROS]    | ✅  | ✅  | ✅  | ❌  | ❌  | ✅ |
 | VyOS                  | ✅  | ✅  | ✅  | ❌  | ❌  | ❌  |
