@@ -3,6 +3,7 @@
 #
 
 import typing
+from dataclasses import dataclass
 
 from box import Box
 
@@ -80,14 +81,99 @@ def normalize_acl_entry(p_entry: typing.Any, p_idx: int) -> typing.Any:
   return p_entry
 
 
+def resolve_protocol(p_protocol: typing.Union[str, int]) -> int:
+  protocol_number = {
+      'icmp': 1, 'ip': 4, 'igmp': 2, 'tcp': 6, 'egp': 8,
+      'udp': 17, 'gre': 47, 'esp': 50, 'ahp': 51,
+      'eigrp': 88, 'ospf': 89, 'pim': 103,
+  }
+
+  if isinstance(p_protocol, int):
+    return p_protocol
+
+  if isinstance(p_protocol, str):
+    if p_protocol not in protocol_number:
+      return 0;
+    return protocol_number[p_protocol]
+
+@dataclass
+class validation_context:
+    p_name: str
+    idx: int
+    af_ipv4: bool
+    protocol: int
+    established: bool
+
+def validate_acl_address_entry ( p_entry: Box, ctx: validation_context ):
+
+  UDP = 17
+  TCP = 6
+  af = "ipv4" if ctx.af_ipv4 else "ipv6"
+  port_keys = ("port", "port_range")
+
+  if ctx.established and ctx.protocol != TCP:
+    log.error(
+      f"ACL {ctx.p_name} entry {ctx.idx} established keyword "
+       f"is only valid with TCP protocol",
+       category=log.IncorrectAttr,
+    )
+
+# By this time we should have a valid ipv4 address acl_address, either
+# by user input or synthesized from prefix / pool or node/interface
+# node/role tuples. Valdiation has been run for all those objects
+# so hopefully the adress is valid.
+
+  for direction in ("src", "dst"):
+    entry = p_entry[direction]
+    if af not in entry and "any" not in entry:
+      log.error(
+        f"ACL {ctx.p_name} entry {ctx.idx} requires a valid "
+        f"{af}/any address in {direction} address",
+        category=log.IncorrectAttr,
+      )
+
+    if any(k in entry for k in port_keys) and ctx.protocol not in (TCP, UDP):
+      log.error(
+        f"ACL {ctx.p_name} entry {ctx.idx} cannot use a port or "
+         f"port range in {direction} address with this protocol. Use UDP/TCP",
+         category=log.IncorrectAttr,
+      )
+
+    if "port_range" in entry and entry.port_range.min > entry.port_range.max:
+      log.error(
+        f"ACL {ctx.p_name} entry {ctx.idx} has an invalid "
+        f"{direction} port range: min greater than max",
+        category=log.IncorrectAttr,
+      )
+
+    # get rid of port_op if we do not need it
+    if not any(k in entry for k in port_keys):
+      entry.pop("port_op", None)
+
+  if any(k in p_entry.src for k in port_keys) and any(k in p_entry.dst for k in port_keys):
+       log.error(
+          f"ACL {ctx.p_name} entry {ctx.idx} cannot specify a port "
+          f"or port range in both source and destination address",
+          category=log.IncorrectAttr,
+       )
+
+
 def expand_acl(p_name: str, o_name: str, node: Box, topology: Box) -> typing.Optional[list]:
-  acl_list = node.routing[o_name][p_name].value
+
+  ctx = validation_context(p_name = p_name, idx=0, af_ipv4=True, protocol=0, established= False)
+  acl_def = node.routing[o_name][p_name]
+  acl_list = acl_def.value
+  ctx.af_ipv4 = acl_def.af == "ipv4"
   expansion: list = []
 
   for idx, entry in enumerate(list(acl_list)):
+    ctx.protocol = resolve_protocol(entry.protocol)
+    ctx.established = entry.get('established', False)
+    ctx.idx = idx;
     for addr_key in ("src", "dst"):
       if addr_key in entry:
         entry[addr_key] = expand_acl_address_entry(entry[addr_key], topology)
+    validate_acl_address_entry (entry, ctx)
 
 # Synthesize comments
 
