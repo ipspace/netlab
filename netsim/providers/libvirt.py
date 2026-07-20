@@ -416,6 +416,10 @@ class Libvirt(_Provider):
     create_vagrant_network(topology)
     create_vagrant_batches(topology)
 
+  def pre_stop_lab(self, topology: Box) -> None:
+    log.print_verbose('pre-stop hook for libvirt')
+    os.environ["VAGRANT_DEFAULT_PROVIDER"] = "libvirt"              # Force Vagrant to use libvirt as the provider
+
   def post_start_lab(self, topology: Box) -> None:
     log.print_verbose('libvirt lab has started, fixing Linux bridges')
     mgmt_bridge = get_linux_bridge_name(topology.addressing.mgmt._network or LIBVIRT_MANAGEMENT_NETWORK_NAME)
