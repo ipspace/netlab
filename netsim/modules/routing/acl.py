@@ -9,11 +9,9 @@ from box import Box
 
 from netsim.utils import log
 
+from ...augment import devices
 from ...data import get_box
-from ...augment import  devices
-from .normalize import (
-  import_routing_object
-)
+from .normalize import import_routing_object
 
 """
 expand_acl_address_entry:
@@ -73,13 +71,20 @@ def expand_acl_address_entry(p_entry: Box, topology: Box) -> Box:
   return p_entry
 
 
-# Entry points below
-
 def resolve_protocol(p_protocol: typing.Union[str, int]) -> int:
   protocol_number = {
-      'icmp': 1, 'ip': 4, 'igmp': 2, 'tcp': 6, 'egp': 8,
-      'udp': 17, 'gre': 47, 'esp': 50, 'ahp': 51,
-      'eigrp': 88, 'ospf': 89, 'pim': 103,
+    "icmp": 1,
+    "ip": 4,
+    "igmp": 2,
+    "tcp": 6,
+    "egp": 8,
+    "udp": 17,
+    "gre": 47,
+    "esp": 50,
+    "ahp": 51,
+    "eigrp": 88,
+    "ospf": 89,
+    "pim": 103,
   }
 
   if isinstance(p_protocol, int):
@@ -87,18 +92,20 @@ def resolve_protocol(p_protocol: typing.Union[str, int]) -> int:
 
   if isinstance(p_protocol, str):
     if p_protocol not in protocol_number:
-      return 0;
+      return 0
     return protocol_number[p_protocol]
+
 
 @dataclass
 class validation_context:
-    p_name: str
-    idx: int
-    af_ipv4: bool
-    protocol: int
-    established: bool
+  p_name: str
+  idx: int
+  af_ipv4: bool
+  protocol: int
+  established: bool
 
-def validate_acl_address_entry ( p_entry: Box, ctx: validation_context ) -> None:
+
+def validate_acl_address_entry(p_entry: Box, ctx: validation_context) -> None:
 
   UDP = 17
   TCP = 6
@@ -107,36 +114,33 @@ def validate_acl_address_entry ( p_entry: Box, ctx: validation_context ) -> None
 
   if ctx.established and ctx.protocol != TCP:
     log.error(
-      f"ACL {ctx.p_name} entry {ctx.idx} established keyword "
-       f"is only valid with TCP protocol",
-       category=log.IncorrectAttr,
+      f"ACL {ctx.p_name} entry {ctx.idx} established keyword is only valid with TCP protocol",
+      category=log.IncorrectAttr,
     )
 
-# By this time we should have a valid ipv4 address acl_address, either
-# by user input or synthesized from prefix / pool or node/interface
-# node/role tuples. Valdiation has been run for all those objects
-# so hopefully the adress is valid.
+  # By this time we should have a valid ipv4 address acl_address, either
+  # by user input or synthesized from prefix / pool or node/interface
+  # node/role tuples. Valdiation has been run for all those objects
+  # so hopefully the adress is valid.
 
   for direction in ("src", "dst"):
     entry = p_entry[direction]
     if af not in entry and "any" not in entry:
       log.error(
-        f"ACL {ctx.p_name} entry {ctx.idx} requires a valid "
-        f"{af}/any address in {direction} address",
+        f"ACL {ctx.p_name} entry {ctx.idx} requires a valid {af}/any address in {direction} address",
         category=log.IncorrectAttr,
       )
 
     if any(k in entry for k in port_keys) and ctx.protocol not in (TCP, UDP):
       log.error(
         f"ACL {ctx.p_name} entry {ctx.idx} cannot use a port or "
-         f"port range in {direction} address with this protocol. Use UDP/TCP",
-         category=log.IncorrectAttr,
+        f"port range in {direction} address with this protocol. Use UDP/TCP",
+        category=log.IncorrectAttr,
       )
 
     if "port_range" in entry and entry.port_range.min >= entry.port_range.max:
       log.error(
-        f"ACL {ctx.p_name} entry {ctx.idx} has an invalid "
-        f"{direction} port range: min greater or equal to max",
+        f"ACL {ctx.p_name} entry {ctx.idx} has an invalid {direction} port range: min greater or equal to max",
         category=log.IncorrectAttr,
       )
 
@@ -145,51 +149,55 @@ def validate_acl_address_entry ( p_entry: Box, ctx: validation_context ) -> None
       entry.pop("port_op", None)
 
   if any(k in p_entry.src for k in port_keys) and any(k in p_entry.dst for k in port_keys):
-       log.error(
-          f"ACL {ctx.p_name} entry {ctx.idx} cannot specify a port "
-          f"or port range in both source and destination address",
-          category=log.IncorrectAttr,
-       )
+    log.error(
+      f"ACL {ctx.p_name} entry {ctx.idx} cannot specify a port or port range in both source and destination address",
+      category=log.IncorrectAttr,
+    )
+
 
 def expand_acl_description(entry: Box, expansion: list) -> None:
-  if 'description' not in entry:
+  if "description" not in entry:
     return
 
-  description_seq = entry.get('sequence')
-  entry.sequence = description_seq + 1               # the real entry moves one past it
-  description_entry = get_box({ 'sequence': description_seq, 'description': entry.pop('description') })
+  description_seq = entry.get("sequence")
+  entry.sequence = description_seq + 1  # the real entry moves one past it
+  description_entry = get_box({"sequence": description_seq, "description": entry.pop("description")})
   expansion.append(description_entry)
 
+
 def expand_acl_portop(entry: Box, node: Box, topology: Box, expansion: list) -> None:
-  if devices.get_device_attribute(node, 'features.routing.acl.not_in', topology.defaults):
-      return None
+  if devices.get_device_attribute(node, "features.routing.acl.not_in", topology.defaults):
+    return None
 
   for addr_key in ("src", "dst"):
-      addr_entry = entry.get(addr_key)
-      if not addr_entry:
-        continue
-      port_range = addr_entry.get('port_range')
-      if not port_range or addr_entry.get('port_op') != 'not_in':
-          continue
+    addr_entry = entry.get(addr_key)
+    if not addr_entry:
+      continue
+    port_range = addr_entry.get("port_range")
+    if not port_range or addr_entry.get("port_op") != "not_in":
+      continue
 
-      port_min = port_range.min
-      port_max = port_range.max
+    port_min = port_range.min
+    port_max = port_range.max
 
-      upper_entry = get_box(entry.to_dict())
-      upper_entry.sequence = entry.sequence + 1
+    upper_entry = get_box(entry.to_dict())
+    upper_entry.sequence = entry.sequence + 1
 
-      entry[addr_key].port = port_min
-      entry[addr_key].port_op = "lt"
-      entry[addr_key].pop('port_range', None)
-      upper_entry[addr_key].port = port_max
-      upper_entry[addr_key].port_op ="gt"
-      upper_entry[addr_key].pop('port_range', None)
-      expansion.append(upper_entry)
+    entry[addr_key].port = port_min
+    entry[addr_key].port_op = "lt"
+    entry[addr_key].pop("port_range", None)
+    upper_entry[addr_key].port = port_max
+    upper_entry[addr_key].port_op = "gt"
+    upper_entry[addr_key].pop("port_range", None)
+    expansion.append(upper_entry)
   return None
 
-def expand_acl(p_name: str, o_name: str, node: Box, topology: Box) -> typing.Optional[list]:
 
-  ctx = validation_context(p_name = p_name, idx=0, af_ipv4=True, protocol=0, established= False)
+# Entry points below
+
+
+def expand_acl(p_name: str, o_name: str, node: Box, topology: Box) -> typing.Optional[list]:
+  ctx = validation_context(p_name=p_name, idx=0, af_ipv4=True, protocol=0, established=False)
   acl_def = node.routing[o_name][p_name]
   acl_list = acl_def.value
   ctx.af_ipv4 = acl_def.af == "ipv4"
@@ -197,19 +205,19 @@ def expand_acl(p_name: str, o_name: str, node: Box, topology: Box) -> typing.Opt
 
   for idx, entry in enumerate(list(acl_list)):
     ctx.protocol = resolve_protocol(entry.protocol)
-    ctx.established = entry.get('established', False)
-    ctx.idx = idx;
+    ctx.established = entry.get("established", False)
+    ctx.idx = idx
     for addr_key in ("src", "dst"):
       if addr_key in entry:
         entry[addr_key] = expand_acl_address_entry(entry[addr_key], topology)
-    validate_acl_address_entry (entry, ctx)
-# Synthesize new acl entries, when needed
+    validate_acl_address_entry(entry, ctx)
+    # Synthesize new acl entries, when needed
     expand_acl_description(entry, expansion)
     expand_acl_portop(entry, node, topology, expansion)
     acl_list[idx] = entry
 
   acl_list.extend(expansion)
-  acl_list.sort(key=lambda e: e.get('sequence', 10))
+  acl_list.sort(key=lambda e: e.get("sequence", 10))
   return None
 
 
@@ -219,43 +227,45 @@ at node level. This needs to be called early in
 post-transform, before ACLs are processed at node
 level.
 """
+
+
 def resolve_interface_acl_references(node: Box, topology: Box) -> None:
-    routing = topology.get("routing")
-    if routing is None:
-        return
+  routing = topology.get("routing")
+  if routing is None:
+    return
 
-    global_acls = routing.get("acl", {})
-    node_acls = node.get("routing", {}).get("acl", {})
+  global_acls = routing.get("acl", {})
+  node_acls = node.get("routing", {}).get("acl", {})
 
-    for intf in node.get("interfaces", []):
-        intf_acl = intf.get("routing", {}).get("acl", {})
+  for intf in node.get("interfaces", []):
+    intf_acl = intf.get("routing", {}).get("acl", {})
 
-        for direction in ("in", "out"):
-            direction_acl = intf_acl.get(direction, {})
+    for direction in ("in", "out"):
+      direction_acl = intf_acl.get(direction, {})
 
-            for af in ("ipv4", "ipv6"):
-                acl_id = direction_acl.get(af)
-                if not acl_id:
-                    continue
+      for af in ("ipv4", "ipv6"):
+        acl_id = direction_acl.get(af)
+        if not acl_id:
+          continue
 
-                acl = global_acls.get(acl_id)
-                if acl is None:
-                    log.error(
-                        f"Interface '{intf.ifname}' on '{node.name}' "
-                        f"references non-existent ACL '{acl_id}' "
-                        f"in 'routing.acl.{direction}.{af}'",
-                        category=log.IncorrectAttr,
-                    )
-                    continue
+        acl = global_acls.get(acl_id)
+        if acl is None:
+          log.error(
+            f"Interface '{intf.ifname}' on '{node.name}' "
+            f"references non-existent ACL '{acl_id}' "
+            f"in 'routing.acl.{direction}.{af}'",
+            category=log.IncorrectAttr,
+          )
+          continue
 
-                if acl.get("af") != af:
-                    log.error(
-                        f"Interface '{intf.ifname}' on '{node.name}' "
-                        f"references {acl.get('af')} ACL '{acl_id}' "
-                        f"as {af} in 'routing.acl.{direction}.{af}'",
-                        category=log.IncorrectAttr,
-                    )
-                    continue
+        if acl.get("af") != af:
+          log.error(
+            f"Interface '{intf.ifname}' on '{node.name}' "
+            f"references {acl.get('af')} ACL '{acl_id}' "
+            f"as {af} in 'routing.acl.{direction}.{af}'",
+            category=log.IncorrectAttr,
+          )
+          continue
 
-                if acl_id not in node_acls:
-                    import_routing_object(acl_id, "acl", node, topology)
+        if acl_id not in node_acls:
+          import_routing_object(acl_id, "acl", node, topology)
