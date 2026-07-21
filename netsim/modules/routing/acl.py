@@ -10,9 +10,9 @@ from box import Box
 from netsim.utils import log
 
 from ...data import get_box
+from ...augment import  devices
 from .normalize import (
-  import_routing_object,
-  normalize_routing_entry,
+  import_routing_object
 )
 
 """
@@ -74,12 +74,6 @@ def expand_acl_address_entry(p_entry: Box, topology: Box) -> Box:
 
 
 # Entry points below
-
-
-def normalize_acl_entry(p_entry: typing.Any, p_idx: int) -> typing.Any:
-  normalize_routing_entry(p_entry, p_idx)
-  return p_entry
-
 
 def resolve_protocol(p_protocol: typing.Union[str, int]) -> int:
   protocol_number = {
@@ -157,6 +151,41 @@ def validate_acl_address_entry ( p_entry: Box, ctx: validation_context ) -> None
           category=log.IncorrectAttr,
        )
 
+def expand_acl_description(entry: Box, expansion: list) -> None:
+  if 'description' not in entry:
+    return
+
+  description_seq = entry.get('sequence')
+  entry.sequence = description_seq + 1               # the real entry moves one past it
+  description_entry = get_box({ 'sequence': description_seq, 'description': entry.pop('description') })
+  expansion.append(description_entry)
+
+def expand_acl_portop(entry: Box, node: Box, topology: Box, expansion: list) -> None:
+  if devices.get_device_attribute(node, 'features.routing.acl.not_in', topology.defaults):
+      return None
+
+  for addr_key in ("src", "dst"):
+      addr_entry = entry.get(addr_key)
+      if not addr_entry:
+        continue
+      port_range = addr_entry.get('port_range')
+      if not port_range or addr_entry.get('port_op') != 'not_in':
+          continue
+
+      port_min = port_range.min
+      port_max = port_range.max
+
+      upper_entry = get_box(entry.to_dict())
+      upper_entry.sequence = entry.sequence + 1
+
+      entry[addr_key].port = port_min
+      entry[addr_key].port_op = "lt"
+      entry[addr_key].pop('port_range', None)
+      upper_entry[addr_key].port = port_max
+      upper_entry[addr_key].port_op ="gt"
+      upper_entry[addr_key].pop('port_range', None)
+      expansion.append(upper_entry)
+  return None
 
 def expand_acl(p_name: str, o_name: str, node: Box, topology: Box) -> typing.Optional[list]:
 
@@ -174,15 +203,9 @@ def expand_acl(p_name: str, o_name: str, node: Box, topology: Box) -> typing.Opt
       if addr_key in entry:
         entry[addr_key] = expand_acl_address_entry(entry[addr_key], topology)
     validate_acl_address_entry (entry, ctx)
-
-# Synthesize comments
-
-    if 'description' in entry:
-        description_seq   = entry.get('sequence')
-        entry.sequence = description_seq + 1               # the real entry moves one past it
-        description_entry = get_box({ 'sequence': description_seq, 'description': entry.pop('description') })
-        expansion.append(description_entry)
-
+# Synthesize new acl entries, when needed
+    expand_acl_description(entry, expansion)
+    expand_acl_portop(entry, node, topology, expansion)
     acl_list[idx] = entry
 
   acl_list.extend(expansion)
