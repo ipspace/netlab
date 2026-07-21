@@ -197,24 +197,42 @@ post-transform, before ACLs are processed at node
 level.
 """
 def resolve_interface_acl_references(node: Box, topology: Box) -> None:
-  routing = topology.get("routing")
-  if routing is None:
-    return
-  global_acls = routing.get("acl", {})
+    routing = topology.get("routing")
+    if routing is None:
+        return
 
-  node_acls = node.get("routing", {}).get("acl", {})
+    global_acls = routing.get("acl", {})
+    node_acls = node.get("routing", {}).get("acl", {})
 
-  for intf in node.get("interfaces", []):
-    intf_acl = intf.get("routing", {}).get("acl", {})
-    for direction in ["in", "out"]:
-      acl_id = intf_acl.get(direction)
-      if not acl_id:
-        continue
-      if acl_id not in global_acls:
-        log.error(
-          f"Interface '{intf.ifname}' on '{node.name}' "
-          f"references non-existent ACL '{acl_id}' in 'routing.acl.{direction}'",
-          category=log.IncorrectAttr,
-        )
-      if acl_id not in node_acls:
-        import_routing_object(acl_id, "acl", node, topology)
+    for intf in node.get("interfaces", []):
+        intf_acl = intf.get("routing", {}).get("acl", {})
+
+        for direction in ("in", "out"):
+            direction_acl = intf_acl.get(direction, {})
+
+            for af in ("ipv4", "ipv6"):
+                acl_id = direction_acl.get(af)
+                if not acl_id:
+                    continue
+
+                acl = global_acls.get(acl_id)
+                if acl is None:
+                    log.error(
+                        f"Interface '{intf.ifname}' on '{node.name}' "
+                        f"references non-existent ACL '{acl_id}' "
+                        f"in 'routing.acl.{direction}.{af}'",
+                        category=log.IncorrectAttr,
+                    )
+                    continue
+
+                if acl.get("af") != af:
+                    log.error(
+                        f"Interface '{intf.ifname}' on '{node.name}' "
+                        f"references {acl.get('af')} ACL '{acl_id}' "
+                        f"as {af} in 'routing.acl.{direction}.{af}'",
+                        category=log.IncorrectAttr,
+                    )
+                    continue
+
+                if acl_id not in node_acls:
+                    import_routing_object(acl_id, "acl", node, topology)
