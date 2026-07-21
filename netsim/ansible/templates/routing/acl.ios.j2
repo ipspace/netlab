@@ -15,7 +15,8 @@
 {%if routing.acl is defined %}
 {% for name, acl in routing.acl.items() %}
 !
-ip access-list extended {{ name }}_{{ acl.af }}
+{% set cmd = "ipv6" if acl.af == "ipv6" else "ip" %}
+{{cmd}} access-list extended {{ name }}_{{ acl.af }}
 {% for e in acl.value %}
 {% set est = "established" if e.established is defined else "" %}
 {% set log = "log" if e.log is defined else "" %}
@@ -30,10 +31,16 @@ ip access-list extended {{ name }}_{{ acl.af }}
 !
 {% for intf in interfaces %}
 interface {{ intf.ifname }}
-{%if intf.routing.acl.in is defined %}
- ip access-group {{ intf.routing.acl.in }}_ipv4 in
+{%if intf.routing.acl.in.ipv4 is defined %}
+  ip access-group {{ intf.routing.acl.in.ipv4 }}_ipv4 in
 {% endif %}
-{%if intf.routing.acl.out is defined %}
- ip access-group {{ intf.routing.acl.out }}_ipv4 out
+{%if intf.routing.acl.out.ipv4 is defined %}
+  ip access-group {{ intf.routing.acl.out.ipv4 }}_ipv4 out
+{% endif %}
+{%if intf.routing.acl.in.ipv6 is defined %}
+  ipv6 traffic-filter  {{ intf.routing.acl.in.ipv6 }}_ipv6 in
+{% endif %}
+{%if intf.routing.acl.out.ipv6 is defined %}
+  ipv6 traffic-filter  {{ intf.routing.acl.out.ipv6 }}_ipv6 out
 {% endif %}
 {% endfor %}
