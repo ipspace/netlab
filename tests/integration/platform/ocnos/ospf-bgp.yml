@@ -1,0 +1,32 @@
+---
+message: |
+  Minimal OcNOS smoke test: two OcNOS nodes running OSPFv2 and iBGP over
+  a single point-to-point link. Verifies the device definition, initial/ospf/bgp
+  templates, and the Ansible network_cli + ipinfusion.ocnos connection/deploy model
+  end to end against a real OcNOS container (vrnetlab/ipinfusion_ocnos).
+
+  Live-verified (2026-07-17): OSPF adjacency reaches Full and the BGP session
+  reaches Established after 'netlab initial'.
+
+provider: clab
+defaults.device: ocnos
+module: [ ospf, bgp ]
+bgp.as: 65000
+
+nodes:
+  r1:
+  r2:
+
+links:
+- r1:
+  r2:
+
+# No 'validate:' block: netlab's generic module test suites (tests/integration/ospf,
+# tests/integration/bgp) validate a device-under-test via plugin checks run from
+# attached FRR/Linux probe nodes (ospf_neighbor(), bgp_neighbor()), which only need
+# SSH to the PROBE, not to the DUT -- so they work unmodified against OcNOS. A
+# validate: block that runs 'show ...' directly against an OcNOS node would need
+# netlab's native (non-interactive-SSH) show-command path, which does not work here:
+# OcNOS's cmlsh restricted shell has no non-interactive exec mode (see device
+# support.caveats in netsim/devices/ocnos.yml). Confirmed live with an ansible ad-hoc
+# ipinfusion.ocnos.ocnos_command call instead -- see the OcNOS device PR notes.

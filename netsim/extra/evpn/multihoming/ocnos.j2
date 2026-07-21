@@ -1,0 +1,24 @@
+{#
+  OcNOS evpn.multihoming plugin template. ESI-LAG only (features.evpn.multihoming.lag);
+  physical/static-lag `esi <9-octet>` form (features.evpn.multihoming.interface) not modeled.
+  OKF-verified sequence (wiki/okf/.../vxlan/04-vxlan-multi-homing-configuration/ +
+  20-vxlan-commands/): `evpn vxlan multihoming enable` globally, then per dynamic-LAG (po<N>)
+  `evpn multi-homed system-mac <mac>` — OcNOS reuses the LACP System ID as the ESI value for
+  a dynamic aggregate. intf.lag.lacp_system_id is already netlab's colon-hex MAC form (netaddr
+  mac_unix_expanded), which OcNOS accepts directly as the "XX:XX:XX:XX:XX:XX" system-mac option.
+  NOT modeled: `hardware-profile filter vxlan-mh enable` — the OKF doc says to run this
+  BEFORE `evpn vxlan multihoming enable` on real hardware, but it's rejected live on the
+  vrnetlab virtual image ("Invalid input detected" — parser-proven, config: `hardware-profile
+  filter vxlan-mh enable`): a real DUNE-ASIC hardware-profile knob the virtual switch fabric
+  doesn't implement, same needs-hardware category as the EVPN-IRB/MPLS L3 dataplane.
+  The control-plane (ES / ESI / Type-1 / Type-4) does not depend on it.
+#}
+{% for intf in interfaces if intf.type == 'lag' and intf.evpn._esi is defined %}
+{% if loop.first %}
+evpn vxlan multihoming enable
+!
+{% endif %}
+interface {{ intf.ifname }}
+ evpn multi-homed system-mac {{ intf.lag.lacp_system_id }}
+!
+{% endfor %}

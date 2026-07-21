@@ -1,0 +1,22 @@
+{#
+  OcNOS STP template. Protocol selection (ieee/rstp/mstp) happens in
+  initial/ocnos.j2 (the Customer Bridge is created there). This renders per-port
+  options: edgeport for netlab port_type edge (parser-probed: spanning-tree
+  autoedge|bpdu-filter|bpdu-guard|edgeport ...).
+#}
+{# Bridge (CIST) priority for the customer bridge -- OcNOS: `bridge <id> priority <0-61440>`,
+   steps of 4096. netlab sets node.stp.priority; the customer bridge is id 1 (initial/ocnos.j2). #}
+{% if stp.priority is defined %}
+bridge 1 priority {{ stp.priority }}
+!
+{% endif %}
+{% for l in netlab_interfaces if l.stp.port_type|default('') == 'edge' %}
+interface {{ l.ifname }}
+ spanning-tree edgeport
+!
+{% endfor %}
+{% for l in netlab_interfaces if l.stp.enable is defined and not l.stp.enable %}
+interface {{ l.ifname }}
+ spanning-tree disable
+!
+{% endfor %}

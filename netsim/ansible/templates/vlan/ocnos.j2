@@ -1,0 +1,36 @@
+{#
+  OcNOS VLAN (Customer Bridge) — switchport config for physical access/trunk ports.
+  Bridge + VLAN database + SVIs are created in initial/ocnos.j2. Here we make each
+  VLAN-bearing physical interface a switchport on bridge 1 and set its access/trunk membership.
+  netlab model: interface l.vlan {access(name), access_id, trunk(names), trunk_id[]}.
+  OcNOS Customer-Bridge port syntax (OKF: netlab-verified-config.md). No strip tags near "!".
+#}
+{# vxlan-mapped access VLANs: the port becomes an NVO access-if (untagged) instead of
+   a customer-bridge switchport — mixing both trips "Invalid bridge mode" on commit #}
+{% for l in netlab_interfaces | default([]) if l.type | default('') != 'lag' and l.vlan.access is defined and (vlans[l.vlan.access].vni is defined or vlans[l.vlan.access].evpn.evi is defined) %}
+{# ...but the untagged access-if DEPENDS on enable-switchport — bare switchport only #}
+interface {{ l.ifname }}
+ switchport
+!
+{% endfor %}
+{# LAG aggregates already got `switchport` in initial/ocnos.j2 -- BEFORE lag module added
+   channel-group members (OcNOS rejects setting L2/L3 mode on an aggregator with members) #}
+{% for l in netlab_interfaces | default([]) if l.vlan is defined and (l.vlan.access is defined or l.vlan.trunk is defined)
+      and not (l.vlan.access is defined and (vlans[l.vlan.access].vni is defined or vlans[l.vlan.access].evpn.evi is defined)) %}
+interface {{ l.ifname }}
+ switchport
+ bridge-group 1
+{% if l.vlan.access is defined %}
+ switchport mode access
+ switchport access vlan {{ l.vlan.access_id }}
+{% elif l.vlan.trunk is defined %}
+ switchport mode trunk
+{% for tid in l.vlan.trunk_id | default([]) %}
+ switchport trunk allowed vlan add {{ tid }}
+{% endfor %}
+{% if l.vlan.native is defined %}
+ switchport trunk native vlan {{ l.vlan.access_id }}
+{% endif %}
+{% endif %}
+!
+{% endfor %}

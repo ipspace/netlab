@@ -1,0 +1,144 @@
+---
+description: IP Infusion OcNOS
+support:
+  level: best-effort
+  caveats:
+  - OcNOS CLI (cmlsh) has no non-interactive exec mode; use the ipinfusion.ocnos
+    Ansible collection (network_cli) for config push/fetch, not raw SSH commands.
+  - An OSPF (v2 or v3) network-membership change on an already-running process can make
+    OcNOS's commit return a non-empty informational notice that the ocnos_config Ansible
+    module treats as a failed task, which aborts the modules queued after ospf in the same
+    netlab initial run. If a deploy stalls after an OSPF topology change, re-run
+    'netlab initial' once; the second pass re-sends the unchanged OSPF config and lets the
+    remaining modules deploy. See docs/caveats.md for details.
+interface_name: eth{ifindex}
+mtu: 1500                 # device default MTU (maintainer convention): declares OcNOS defaults to 1500 so
+                          # netlab resolves a consistent per-link MTU across mixed-device links (OcNOS ifs default 1500)
+ifindex_offset: 1
+mgmt_if: eth0
+loopback_interface_name: '{"lo" if not ifindex else "loopback" + str(ifindex)}'
+tunnel_interface_name: Tunnel{ifindex}
+lag_interface_name: '{"sa" if lag.get("lacp","") == "off" else "po"}{lag.ifindex}'
+role: router
+# Validation data source: OcNOS cmlsh has no non-interactive SSH exec, so `netlab validate`
+# fetches show output through the ipinfusion.ocnos Ansible module (the 'ansible' action).
+netlab_validate:
+  ansible_module: ipinfusion.ocnos.ocnos_command
+group_vars:
+  ansible_network_os: ipinfusion.ocnos.ocnos
+  ansible_connection: network_cli
+  netlab_device_type: ocnos
+  netlab_ready: [ ansible ]
+  netlab_check_retries: 60      # OcNOS vrnetlab boots ~9 min; default 20x5=100s is far too
+  netlab_check_delay: 12        # short, so config-deploy SSH-times-out. 60x12 = 720s wait.
+  collections:
+  - ipinfusion.ocnos
+features:
+  initial:
+    ipv4:
+      unnumbered: false
+    ipv6:
+      lla: true
+    roles: [ router ]
+    system_mtu: true
+    collect: true
+  bfd: true
+  tunnel:
+    gre: true
+  dhcp:
+    client:
+      ipv4: true
+    relay: true
+  gateway:
+    protocol: [ vrrp ]
+    vrrp:
+      version: true
+  lag:
+    passive: true
+  routing:
+    static:
+      vrf: true
+    prefix: true
+    aspath: true
+    community:
+      standard: true
+    policy:
+      match:
+        prefix: true
+        aspath: true
+        community:
+          standard: true
+      set:
+        locpref: true
+        med: true
+        prepend: true
+        weight: true
+        community:
+          standard: true
+  ospf:
+    default: true
+    password: true
+    digest: true
+    priority: true
+    timers: true
+    areas:
+      external_range: OcNOS does not model NSSA type-7 ranges
+      external_filter: OcNOS does not model NSSA type-7 range suppression
+  stp:
+    supported_protocols: [ stp, rstp, mstp ]
+    enable_per_port: true
+  ripv2:
+    ipv4: true
+  isis:
+    circuit_type: true
+    import: [ connected, bgp, ospf ]
+  mpls:
+    ldp: true
+    vpn: true
+  sr:
+    af: [ ipv4 ]
+    protocol: [ isis ]
+  srv6:
+    isis: true
+  vxlan: true
+  evpn:
+    transport: [ vxlan, mpls ]
+    irb: true
+    multihoming:
+      lag: true
+      interface: false
+      esi_auto: true
+      modes: [ all-active ]
+  vrf:
+    ospfv2: true
+    bgp: true
+    isis: true
+  vlan:
+    model: l3-switch
+    svi_interface_name: "vlan1.{vlan}"
+    subif_name: "{ifname}.{subif_index}"
+    native_routed: true
+  bgp:
+    activate_af: true
+    ipv6_lla: false
+    local_as: true
+    password: true
+    timers: true
+    multihop: true
+    import: [ connected, static, isis, ospf, vrf ]
+    community:
+      standard: [ standard ]
+      extended: [ standard, extended ]
+clab:
+  image: vrnetlab/ipinfusion_ocnos:7.0.0-262
+  mtu: 1500
+  node:
+    kind: ipinfusion_ocnos
+  group_vars:
+    ansible_user: ocnos
+    ansible_ssh_pass: ocnos
+    netlab_console_connection: ssh
+    netlab_show_command: [ show ]
+external:
+  image: none
+graphite.icon: router

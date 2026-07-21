@@ -1,0 +1,77 @@
+{#
+  OcNOS DHCP template (relay + client; VRF/L3VPN relay).
+  OcNOS 7.0 relay is parser-probed as GROUP/GLOBAL based (the per-interface
+  `ip dhcp relay address` form in older OKF prose is NOT in this parser):
+    - global `ip dhcp relay address <server>` registers the relay server
+    - the CLIENT-facing interface needs bare `ip dhcp relay` (the <cr> option;
+      OKF system-management relay-agent example) — gi-addr/server-select/uplink are extras.
+  Client: interface `ip address dhcp` (OKF-verified form).
+#}
+{# VRF-scoped relay (DHCP relay over L3VPN): a client-facing relay interface
+   that's also a VRF member renders inside `ip vrf <vrf>` instead of the global form --
+   OKF: pe1-dhcp-relay-agent.md (`ip vrf X / ip dhcp relay address <srv> / ip dhcp relay
+   uplink l3vpn`). No interface-level uplink search is needed here: BGP VPNv4
+   reachability across the L3VPN core replaces the directly-connected "uplink" concept
+   the global form relies on. #}
+{% set vrf_seen = [] %}
+{% for l in netlab_interfaces if l.dhcp.relay.ipv4 is defined and l.vrf is defined %}
+{%   if l.vrf not in vrf_seen %}
+{{     vrf_seen.append(l.vrf) or "" }}
+ip vrf {{ l.vrf }}
+{%     for s in l.dhcp.relay.ipv4|unique %}
+ ip dhcp relay address {{ s }}
+{%     endfor %}
+ ip dhcp relay uplink l3vpn
+!
+{%   endif %}
+interface {{ l.ifname }}
+ ip dhcp relay
+!
+{% endfor %}
+{% set relay_targets = [] %}
+{% for l in netlab_interfaces if l.dhcp.relay.ipv4 is defined and l.vrf is not defined %}
+{%   for s in l.dhcp.relay.ipv4 %}{{ relay_targets.append(s) or "" }}{% endfor %}
+{% endfor %}
+{% if relay_targets %}
+{%   for s in relay_targets|unique %}
+ip dhcp relay address {{ s }}
+{%   endfor %}
+{% endif %}
+{% for l in netlab_interfaces if l.dhcp.relay.ipv4 is defined and l.vrf is not defined %}
+interface {{ l.ifname }}
+ ip dhcp relay
+!
+{% endfor %}
+{# the SERVER-facing interface needs `ip dhcp relay uplink` (live-verified: without it
+   the relay silently drops client DISCOVERs — counters stay 0). Mark every L3
+   interface whose subnet contains a relay target (directly-connected server); for a
+   ROUTED server none matches, so fall back to marking all non-client L3 interfaces. #}
+{% if relay_targets %}
+{%   set ns = namespace(found=false) %}
+{%   for l in netlab_interfaces if l.ipv4 is defined and l.ipv4 is string and l.dhcp.relay.ipv4 is not defined and l.type != 'loopback' %}
+{%     set lpfx = l.ipv4 | ansible.utils.ipaddr('prefix') %}
+{%     set lnet = l.ipv4 | ansible.utils.ipaddr('network') %}
+{%     set hits = [] %}
+{%     for s in relay_targets if (s ~ '/' ~ lpfx) | ansible.utils.ipaddr('network') == lnet %}
+{{       hits.append(1) or "" -}}
+{%     endfor %}
+{%     if hits %}
+{%       set ns.found = true %}
+interface {{ l.ifname }}
+ ip dhcp relay uplink
+!
+{%     endif %}
+{%   endfor %}
+{%   if not ns.found %}
+{%     for l in netlab_interfaces if l.ipv4 is defined and l.ipv4 is string and l.dhcp.relay.ipv4 is not defined and l.type != 'loopback' %}
+interface {{ l.ifname }}
+ ip dhcp relay uplink
+!
+{%     endfor %}
+{%   endif %}
+{% endif %}
+{% for l in netlab_interfaces if l.dhcp.client.ipv4|default(false) %}
+interface {{ l.ifname }}
+ ip address dhcp
+!
+{% endfor %}

@@ -1,0 +1,24 @@
+{#
+  OcNOS Segment Routing (MPLS) template.
+  OKF-verified: `segment-routing global block <start> <end>` + `segment-routing mpls`
+  under router isis; loopback `prefix-sid index <n>`.
+#}
+{% if 'isis' in sr.protocol|default([]) %}
+router isis {{ isis.instance | default('1') }}
+{# OcNOS refuses segment-routing without TE on the level ("%% MPLS TE is not enabled
+   on this level") — OKF SR examples enable traffic-eng first #}
+{% if loopback.ipv4 is defined and loopback.ipv4 is string %}
+ mpls traffic-eng router-id {{ loopback.ipv4 | ansible.utils.ipaddr('address') }}
+{% endif %}
+ mpls traffic-eng {{ isis.type | default('level-2') }}
+{% if sr.srgb.start is defined %}
+ isis segment-routing global block {{ sr.srgb.start }} {{ sr.srgb.start + sr.srgb.size|default(4000) - 1 }}
+{% endif %}
+ segment-routing mpls
+!
+{% endif %}
+{% if sr.node_sid.ipv4 is defined and loopback.ipv4 is defined %}
+interface {{ loopback.ifname | default('lo') }}
+ prefix-sid index {{ sr.node_sid.ipv4 }}
+!
+{% endif %}

@@ -1,0 +1,123 @@
+{#
+  OcNOS OSPFv2 config template
+  netlab data model: node.ospf {process, router_id, af.ipv4}, per-interface l.ospf
+  {area, passive, network_type}, node.loopback.ospf. OcNOS uses network-statement style
+  (verified vs demos/bisbee/20-target-ocnos.cfg): `network <ip/len> area <area>`,
+  `passive-interface <if> enable`, and interface-level `ip ospf network <type>`.
+
+  OSPFv3 is a DIFFERENT config family: no network-statement style -- it's
+  per-interface enable, like IS-IS's `ip router isis`. OKF shows `router ipv6 ospf
+  [<tag>]` / `router-id X.X.X.X`, then `interface X / ipv6 router ospf area <area>`
+  (layer-3/.../r1-124.md), but LIVE TESTING found the explicit tag is a trap: the
+  interface command always auto-appends `instance-id 0` (`show running-config` proves
+  it, regardless of what's typed), and that instance-id is NOT the same identifier as
+  the router-level tag -- `router ipv6 ospf 1` + `... area 0.0.0.0 instance-id 0` are
+  two DISCONNECTED contexts ("show ipv6 ospf" reports "Number of areas... 0" forever,
+  "show ipv6 ospf instance" says "No such process"). The router line MUST be bare
+  (`router ipv6 ospf`, no tag -> internally "(*null*)", which IS what instance-id 0
+  correlates to) for the interface's area to actually attach to the process.
+  Also live-verified: on a P2P link the two neighbors stall at 2-Way/DROther forever
+  (no DR/BDR election completes cleanly) unless `ipv6 ospf network point-to-point` is
+  set too -- same fix OSPFv2 already applies via l.ospf.network_type, reused here.
+
+  OPERATIONAL LANDMINE (do NOT try to self-heal this in the template -- three attempts
+  tried and reverted, see wt/ocnos-leftovers history): any OSPF (v2 or v3)
+  network-membership CHANGE makes "commit" reply with an informational notice --
+  `Use "clear ip ospf process" command to take effect` / `%% Use clear ipv6 ospf
+  process command to take effect` -- and the `ocnos_config` ansible module treats ANY
+  non-empty commit response as fatal, aborting the whole ansible play for that host
+  (every module queued AFTER ospf -- isis, bgp, vrf -- silently never gets deployed).
+  Embedding `do clear ip/ipv6 ospf process` inside the same commit does NOT reliably
+  fix it: "!" is a COMMENT on OcNOS not a mode-exit (so `do clear` can fire while still
+  nested in "interface X", itself an error), and even with an explicit `exit` first,
+  `do clear` targets the RUNNING config while ocnos_config only calls the real `commit`
+  once at the very end -- so on a brand-new process `do clear` fails "OSPFv3 Routing
+  Process not enabled". Adding a manual mid-template `commit` just relocates the SAME
+  fatal-shaped notice earlier, netting nothing. The reliable fix is OPERATIONAL, not
+  templated: run `netlab initial` a SECOND time whenever OSPF v4 or v6 gets a NEW
+  network/area assignment for the first time on a node. Attempt 1 applies + commits
+  the ospf config (verified via running-config even though ansible reports the task
+  "failed") but skips isis/bgp/vrf for that host; attempt 2 re-sends the now-identical
+  ospf config (no new network-membership change -> no notice -> no failure) and lets
+  every subsequent module deploy normally. This is a one-time cost per fresh OSPF
+  network change, not a per-topology-boot cost.
+#}
+{% if ospf.af.ipv4 is defined %}
+router ospf {{ ospf.process | default(1) }}
+{% if ospf.router_id is defined %}
+ ospf router-id {{ ospf.router_id }}
+{% endif %}
+{% if ospf.bfd|default(False) %}
+ bfd all-interfaces
+{% endif %}
+{% if ospf.default is defined and ospf.default %}
+ default-information originate{{ ' always' if ospf.default.always is defined and ospf.default.always else '' }}
+{% endif %}
+{% if loopback.ospf is defined and loopback.ipv4 is defined and loopback.ipv4 is string %}
+ network {{ loopback.ipv4 }} area {{ loopback.ospf.area }}
+{% endif %}
+{% for l in netlab_interfaces if l.ospf is defined and l.ipv4 is defined and l.ipv4 is string and '/' in l.ipv4 and l.ifname != loopback.ifname|default('lo') %}
+ network {{ l.ipv4 }} area {{ l.ospf.area }}
+{% endfor %}
+{% if loopback.ospf is defined %}
+ passive-interface {{ loopback.ifname | default('lo') }} enable
+{% endif %}
+{% for l in netlab_interfaces if l.ospf is defined and l.ospf.passive | default(false) %}
+ passive-interface {{ l.ifname }} enable
+{% endfor %}
+!
+{% endif %}
+{% if ospf.af.ipv6 is defined %}
+router ipv6 ospf
+{% if ospf.router_id is defined %}
+ router-id {{ ospf.router_id }}
+{% endif %}
+!
+{% endif %}
+{% if loopback.ospf is defined and loopback.ipv6 is defined and loopback.ipv6 is string %}
+interface {{ loopback.ifname | default('lo') }}
+ ipv6 router ospf area {{ loopback.ospf.area }}
+!
+{% endif %}
+{% for l in netlab_interfaces if l.ospf is defined and l.ipv6 is defined and l.ipv6 is string and l.ifname != loopback.ifname|default('lo') %}
+interface {{ l.ifname }}
+ ipv6 router ospf area {{ l.ospf.area }}
+{% if l.ospf.network_type is defined %}
+ ipv6 ospf network {{ l.ospf.network_type }}
+{% endif %}
+!
+{% endfor %}
+{#- per-interface OSPFv2 attributes (network type, cost, timers, auth). Gated on the
+    interface actually having an IPv4 address so an IPv6-only (OSPFv3) topology does not
+    emit dead `ip ospf ...` lines for interfaces with no OSPFv2 process. -#}
+{% for l in netlab_interfaces if l.ospf is defined and l.ipv4 is defined and l.ipv4 is string
+      and (l.ospf.network_type is defined
+      or l.ospf.cost is defined or l.ospf.timers is defined or l.ospf.priority is defined
+      or l.ospf.password is defined) %}
+interface {{ l.ifname }}
+{% if l.ospf.network_type is defined %}
+ ip ospf network {{ l.ospf.network_type }}
+{% endif %}
+{% if l.ospf.cost is defined %}
+ ip ospf cost {{ l.ospf.cost }}
+{% endif %}
+{% if l.ospf.timers.hello is defined %}
+ ip ospf hello-interval {{ l.ospf.timers.hello }}
+{% endif %}
+{% if l.ospf.timers.dead is defined %}
+ ip ospf dead-interval {{ l.ospf.timers.dead }}
+{% endif %}
+{% if l.ospf.priority is defined %}
+ ip ospf priority {{ l.ospf.priority }}
+{% endif %}
+{% if l.ospf.password is defined %}
+{% if l.ospf.digest is defined %}
+ ip ospf message-digest-key {{ l.ospf.digest.id|default(1) }} md5 {{ l.ospf.password }}
+ ip ospf authentication message-digest
+{% else %}
+ ip ospf authentication-key {{ l.ospf.password }}
+ ip ospf authentication
+{% endif %}
+{% endif %}
+!
+{% endfor %}

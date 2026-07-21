@@ -1,0 +1,15 @@
+{#
+  OcNOS BFD template.
+  OKF-verified syntax: per-interface `bfd interval <3-999> minrx <3-999> multiplier
+  <3-50>` (note `minrx`, not IOS's `min_rx`; max 999ms). Protocol enablement is
+  rendered by the protocol templates: `bfd all-interfaces` under router ospf/isis,
+  `neighbor <ip> fall-over bfd` under router bgp.
+#}
+{% for l in netlab_interfaces|default([]) if (bfd|default(False) or l.bfd|default(False)) and l.type != 'loopback' %}
+{%   if not (l.bfd is defined and not l.bfd) %}
+{%     set link_bfd = l.bfd|default({}) %}
+interface {{ l.ifname }}
+ bfd interval {{ [link_bfd.min_tx|default(bfd.min_tx)|default(500), 999]|min }} minrx {{ [link_bfd.min_rx|default(bfd.min_rx)|default(500), 999]|min }} multiplier {{ link_bfd.multiplier|default(bfd.multiplier)|default(3) }}
+!
+{%   endif %}
+{% endfor %}

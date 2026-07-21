@@ -1,0 +1,84 @@
+{#
+  OcNOS per-VRF routing template
+  VRF creation + interface membership happen in initial/ocnos.j2 (VRF before IP). This
+  handles per-VRF routing protocols. netlab model: vrfs[name].ospf {vrfidx, router_id, area,
+  interfaces[]}; vrfs[name].bgp. OcNOS: `router ospf <id> vrf <name>`.
+  No whitespace-strip tags near "!" (OcNOS comment marker).
+#}
+{% if vrfs is defined %}
+{% for vname, vdata in vrfs.items() if vdata.ospf is defined %}
+{# OcNOS per-VRF OSPF: VRF name is a positional arg, no `vrf` keyword #}
+router ospf {{ vdata.vrfidx }} {{ vname }}
+{% if vdata.ospf.router_id is defined %}
+ ospf router-id {{ vdata.ospf.router_id }}
+{% endif %}
+{% for l in vdata.ospf.interfaces | default([]) if l.ipv4 is defined and l.ipv4 is string and '/' in l.ipv4 %}
+ network {{ l.ipv4 }} area {{ l.ospf.area | default(vdata.ospf.area) }}
+{% endfor %}
+!
+{% endfor %}
+{% for vname, vdata in vrfs.items() if vdata.ospf is defined %}
+{% for l in vdata.ospf.interfaces | default([]) if l.ospf is defined and l.ospf.network_type is defined %}
+interface {{ l.ifname }}
+ ip ospf network {{ l.ospf.network_type }}
+!
+{% endfor %}
+{% endfor %}
+{% for vname, vdata in vrfs.items() if vdata.isis is defined %}
+{# per-VRF IS-IS: VRF name positional like per-VRF OSPF. netlab emits a
+   full vdata.isis (instance/net/type/interfaces) when features.vrf.isis is set. #}
+router isis {{ vdata.isis.instance | default(vname) }} {{ vname }}
+ is-type {{ vdata.isis.type | default('level-2') }}
+ net {{ vdata.isis.net }}
+ metric-style wide
+!
+{% for l in vdata.isis.interfaces | default([]) %}
+interface {{ l.ifname }}
+ ip router isis {{ vdata.isis.instance | default(vname) }}
+{% if l.isis.network_type is defined %}
+ isis network {{ l.isis.network_type }}
+{% endif %}
+!
+{% endfor %}
+{% endfor %}
+{# PE side of MPLS/VPN: per-VRF BGP address-family redistributing the VRF routes.
+   This is also the intra-node v4/v6 ROUTE-LEAK mechanism (the
+   dual-stack version of the ocnos-mpls.yml vrf_leak test): each VRF's connected routes
+   land in ITS OWN per-VRF BGP table tagged with its RT export; a VRF that imports
+   another VRF's RT (vrfs.<name>.import) pulls those routes in locally -- no MPLS/LDP
+   transport needed since both VRFs live on the same node.
+   The v4 vrf_leak precedent (ocnos-mpls.yml) relies on mpls/ocnos.j2's `address-family
+   vpnv4` block for this to actually populate the per-VRF BGP tables and let RT import
+   work -- that block's `neighbor X activate` loop is keyed off `n.vpnv4`, an attribute
+   NO netlab core module ever sets, so it's always empty; the *bare* `address-family
+   vpnv4` (mode enabled, zero active neighbors) is what's doing the real work: it's a
+   LOCAL VPN-RIB scoping switch on OcNOS, not something that needs a real MPLS
+   transport or an actual BGP session to a remote PE. Reproducing the same bare-AF
+   pattern here for v6 (`address-family vpnv6`), so the v6 leak test doesn't need
+   mpls.vpn/LDP at all -- live-verified: WITHOUT this block, `show bgp ipv6 vrf red`
+   returns nothing, and the leaked prefix never reaches vrf blue's v6 RIB. #}
+{% if bgp.as is defined %}
+router bgp {{ bgp.as }}
+ address-family vpnv6
+ exit-address-family
+!
+{% for vname, vdata in vrfs.items() %}
+router bgp {{ bgp.as }}
+ address-family ipv4 vrf {{ vname }}
+ redistribute connected
+{% if vdata.ospf is defined %}
+ redistribute ospf {{ vdata.vrfidx }}
+{% endif %}
+ exit-address-family
+{# unconditional: harmless no-op if the VRF has no v6 addressing to redistribute.
+   NOTE: no "redistribute ospf6/ospfv3 <id>" here yet -- per-VRF OSPFv3 isn't modeled
+   (see the per-VRF OSPF block above, v4-only so far); "redistribute ospf6 <id>" is
+   parser-rejected ("Invalid input") when there's no matching v6 process to redistribute
+   from. Add it alongside a per-VRF OSPFv3 template addition, not before. #}
+ address-family ipv6 vrf {{ vname }}
+ redistribute connected
+ exit-address-family
+!
+{% endfor %}
+{% endif %}
+{% endif %}

@@ -1,0 +1,42 @@
+{#
+  OcNOS first-hop gateway template (VRRP only).
+  OKF-verified block: `router vrrp <vrid> <ifname>` -> `virtual-ip A.B.C.D` +
+  `priority <N>` + `enable`. (v2-compatible via the vrrp.version plugin; authentication not modeled;
+  preempt is the OcNOS default.)
+#}
+{% for l in netlab_interfaces if l.gateway.protocol|default('') == 'vrrp' and l.gateway.ipv4 is defined %}
+router vrrp {{ l.gateway.vrrp.group|default(1) }} {{ l.ifname }}
+{#   NOTE: on a live instance, modifying params errors '%% You must disable this
+     session first' — the test runner deploys fresh (down/up) so no `disable` is
+     rendered (it fails on a brand-new instance: 'enable configuration not found').
+     Re-deploy-without-down convergence of param changes is a documented caveat. #}
+ virtual-ip {{ l.gateway.ipv4 | ansible.utils.ipaddr('address') }}
+{%   if l.gateway.vrrp.version|default(3) == 2 %}
+ v2-compatible
+{%   endif %}
+{%   if l.gateway.vrrp.priority is defined %}
+ priority {{ l.gateway.vrrp.priority }}
+{%   endif %}
+{%   if not l.gateway.vrrp.preempt|default(True) %}
+ preempt-mode false
+{%   endif %}
+ enable
+!
+{% endfor %}
+{% for l in netlab_interfaces if l.gateway.protocol|default('') == 'vrrp' and l.gateway.ipv6 is defined %}
+router ipv6 vrrp {{ l.gateway.vrrp.group|default(1) }} {{ l.ifname }}
+{#   IPv6 VRRP (VRRPv3) needs a link-local PRIMARY virtual address before the global one
+     -- OcNOS rejects the global alone (%% No Primary VRRP IP address exists). netlab
+     supplies the VRRP link-local as l.gateway.lla; list it first, then the global. There
+     is no `secondary` keyword (rejected) and no v2-compatible for v6. #}
+ virtual-ipv6 {{ l.gateway.vrrp.lla }}
+ virtual-ipv6 {{ l.gateway.ipv6 | ansible.utils.ipaddr('address') }}
+{%   if l.gateway.vrrp.priority is defined %}
+ priority {{ l.gateway.vrrp.priority }}
+{%   endif %}
+{%   if not l.gateway.vrrp.preempt|default(True) %}
+ preempt-mode false
+{%   endif %}
+ enable
+!
+{% endfor %}

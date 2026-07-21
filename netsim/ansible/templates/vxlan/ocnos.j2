@@ -1,0 +1,67 @@
+{#
+  OcNOS VXLAN template (EVPN-VXLAN, vlan-based service).
+  OKF-verified sequence: `nvo vxlan enable` + `nvo vxlan vtep-ip-global <lo>`;
+  per-VNI `nvo vxlan id <vnid> ingress-replication` (+ host-reachability evpn-bgp
+  <mac-vrf> when EVPN runs); access mapping `nvo vxlan access-if port-vlan <if>
+  <vlan>` + `map vnid <vnid>`. Mode-exit lines are fine: the deploy uses match:none.
+#}
+{# the VNI commit requires its mac-vrf to exist ("Missing reference attribute
+   vrf-name") and the vxlan module deploys BEFORE evpn — so the EVPN instances
+   (mac vrf + rd/RTs) are created here; evpn/ocnos.j2 only handles the BGP AF #}
+{% for vname, v in vlans.items() if v.evpn.evi is defined and v.vni is defined %}
+mac vrf {{ vname }}
+ rd {{ v.evpn.rd }}
+{% for irt in v.evpn.import|default([]) %}
+ route-target import {{ irt }}
+{% endfor %}
+{% for ert in v.evpn.export|default([]) %}
+ route-target export {{ ert }}
+{% endfor %}
+!
+{% endfor %}
+nvo vxlan enable
+{# EVPN symmetric-IRB: global IRB + anycast-gw-mac + per-VRF L3VNI #}
+{% set _irbvrfs = [] %}
+{% if vrfs is defined %}
+{% for _vn, _vd in vrfs.items() if _vd.evpn.transit_vni is defined %}{{ _irbvrfs.append(_vn) or "" }}{% endfor %}
+{% endif %}
+{% if _irbvrfs %}
+nvo vxlan irb
+evpn irb-forwarding anycast-gateway-mac 0000.5e00.0001
+!
+{% for _vn in _irbvrfs %}
+ip vrf {{ _vn }}
+ l3vni {{ vrfs[_vn].evpn.transit_vni }}
+!
+{% endfor %}
+{% for _l in netlab_interfaces|default([]) if _l.vlan.mode|default('') == 'irb' and _l.vrf is defined and vrfs is defined and vrfs[_l.vrf].evpn.transit_vni is defined %}
+interface {{ _l.ifname }}
+ evpn irb-if-forwarding anycast-gateway-mac
+{% if _l.ipv4 is defined and _l.ipv4 is string and '/' in _l.ipv4 %}
+ ip address {{ _l.ipv4 }}
+{% endif %}
+ exit
+!
+{% endfor %}
+{% endif %}
+{% if vxlan.vtep is defined %}
+nvo vxlan vtep-ip-global {{ vxlan.vtep }}
+{% endif %}
+{% for vname in vxlan.vlans|default([]) if vlans[vname].vni is defined %}
+{%   set vlan = vlans[vname] %}
+nvo vxlan id {{ vlan.vni }} ingress-replication
+{%   if vlan.evpn.evi is defined %}
+ vxlan host-reachability-protocol evpn-bgp {{ vname }}
+{%   endif %}
+ exit
+!
+{% endfor %}
+{% for l in netlab_interfaces|default([]) if l.vlan.access_id is defined and vlans[l.vlan.access].vni is defined %}
+{# untagged attachment (`access-if port`); the tagged port-vlan form requires the port
+   in hybrid/trunk bridge mode. These ports are deliberately NOT customer-bridge
+   switchports (see vlan/ocnos.j2) #}
+nvo vxlan access-if port {{ l.ifname }}
+ map vnid {{ vlans[l.vlan.access].vni }}
+ exit
+!
+{% endfor %}

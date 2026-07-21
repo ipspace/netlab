@@ -1,0 +1,52 @@
+{#
+  OcNOS IS-IS config template
+  netlab data model: node.isis {instance (process tag), type (level-1/2/..), net,
+  af.ipv4/ipv6}; per-interface l.isis {network_type, passive}; loopback.isis {passive}.
+  OcNOS syntax verified vs demos/bisbee/20-target-ocnos.cfg: `router isis <tag>` + `is-type`
+  + `net` + `metric-style wide`; interface `ip router isis <tag>` + `isis network <type>`.
+  No whitespace-strip tags near "!" (OcNOS comment marker).
+#}
+{% if isis.net is defined %}
+router isis {{ isis.instance | default('1') }}
+{% for s_proto in isis.import|default({}) %}
+ redistribute {{ s_proto }} level-2
+{% endfor %}
+{% if isis.bfd.ipv4|default(False) or isis.bfd.ipv6|default(False) or isis.bfd|default(False) is true %}
+ bfd all-interfaces
+{% endif %}
+ is-type {{ isis.type | default('level-2') }}
+ net {{ isis.net }}
+ metric-style wide
+ dynamic-hostname
+{% if isis.af.ipv6 is defined %}
+ address-family ipv6 unicast
+ exit-address-family
+{% endif %}
+!
+{% endif %}
+{#- loopback: advertised via `ip router isis`; no neighbors -> no adjacency (no passive
+    keyword needed; OcNOS has no interface-level `isis passive`). -#}
+{% if loopback.isis is defined %}
+interface {{ loopback.ifname | default('lo') }}
+ ip router isis {{ isis.instance | default('1') }}
+{% if loopback.ipv6 is defined and loopback.ipv6 is string %}
+ ipv6 router isis {{ isis.instance | default('1') }}
+{% endif %}
+!
+{% endif %}
+{% for l in netlab_interfaces if l.isis is defined and l.ifname != loopback.ifname|default('lo') %}
+interface {{ l.ifname }}
+ ip router isis {{ isis.instance | default('1') }}
+{% if l.ipv6 is defined and l.ipv6 is string %}
+ ipv6 router isis {{ isis.instance | default('1') }}
+{% endif %}
+{% if l.isis.network_type is defined %}
+ isis network {{ l.isis.network_type }}
+{% endif %}
+{% if l.isis.type is defined and l.isis.type != 'level-2' %}
+ isis circuit-type {{ l.isis.type }}
+{% endif %}
+{# Passive IS-IS interfaces are configured under `router isis` (passive-interface <if>),
+   not with an interface keyword; add when a passive-link topology needs it. #}
+!
+{% endfor %}
