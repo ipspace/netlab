@@ -12,7 +12,7 @@ from box import Box
 from ... import data
 from ...augment import devices as _devices
 from ...utils import log
-from . import devices, plugin, report, suzieq, utils
+from . import ansible, devices, plugin, report, suzieq, utils
 
 '''
 extend_first_wait_time: some devices need extra time to start working, even when
@@ -152,6 +152,11 @@ def execute_node_validation(
       if report_error:
         report.increase_fail_count(v_entry)
         return (True, False)                    # Return (processed, failed)
+  elif action == 'ansible':                     # Fetch DUT state via an Ansible module (e.g. OcNOS cmlsh)
+    result = ansible.get_result(v_entry,n_name,topology,args.verbose)
+    if '_error' in result:
+      report.increase_fail_count(v_entry)
+      return (True, False)
   elif action == 'suzieq':
     result = suzieq.get_result(v_entry,n_name,topology,args.verbose)
     OK = bool(result) != (v_entry.suzieq.get('expect','data') == 'empty')

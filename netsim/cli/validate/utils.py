@@ -83,7 +83,7 @@ find_test_action -- find something that can be executed on current node
 '''
 def find_test_action(v_entry: Box, node: Box) -> typing.Optional[str]:
   action_kw_found = False
-  for kw in ('show','exec','config','suzieq'):
+  for kw in ('show','exec','config','suzieq','ansible'):
     if kw not in v_entry:
       continue
 
