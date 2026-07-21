@@ -139,10 +139,10 @@ def validate_acl_address_entry ( p_entry: Box, ctx: validation_context ) -> None
          category=log.IncorrectAttr,
       )
 
-    if "port_range" in entry and entry.port_range.min > entry.port_range.max:
+    if "port_range" in entry and entry.port_range.min >= entry.port_range.max:
       log.error(
         f"ACL {ctx.p_name} entry {ctx.idx} has an invalid "
-        f"{direction} port range: min greater than max",
+        f"{direction} port range: min greater or equal to max",
         category=log.IncorrectAttr,
       )
 

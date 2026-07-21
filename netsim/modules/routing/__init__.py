@@ -73,7 +73,7 @@ normalize_dispatch: typing.Dict[str,dict] = {
     { 'namespace': 'routing.acl',
       'object'   : 'acl',
       'list_attr': 'value',
-      'callback' : acl.normalize_acl_entry }
+      'callback' : normalize_routing_entry }
 }
 
 """
