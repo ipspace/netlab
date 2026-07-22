@@ -74,16 +74,11 @@ def resolve_protocol(p_protocol: typing.Union[str, int]) -> int:
   protocol_number = {
     "icmp": 1,
     "ip": 4,
-    "igmp": 2,
     "tcp": 6,
-    "egp": 8,
     "udp": 17,
-    "gre": 47,
+    "ipv6": 41,
     "esp": 50,
     "ahp": 51,
-    "eigrp": 88,
-    "ospf": 89,
-    "pim": 103,
   }
 
   if isinstance(p_protocol, int):
