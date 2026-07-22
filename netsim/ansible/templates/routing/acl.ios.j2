@@ -1,9 +1,9 @@
 {% macro r_acl_addr(a, af) -%}
-{%- if a.any is defined and a.any -%}any
-{%- elif a.host is defined and a.host -%}host {{ (a.ipv4 if af == 'ipv4' else a.ipv6) | ipaddr('address') }}
-{%- elif af == 'ipv4' and a.ipv4 is defined -%}{{ a.ipv4 | ipaddr('network') }} {{ a.ipv4 | ipaddr('hostmask') }}
-{%- elif af == 'ipv6' and a.ipv6 is defined -%}{{ a.ipv6 }}
-{%- else -%}any{%- endif -%}
+{%- if a.any is defined and a.any %} any
+{%- elif a.host is defined and a.host %} host {{ (a.ipv4 if af == 'ipv4' else a.ipv6) | ipaddr('address') }}
+{%- elif af == 'ipv4' and a.ipv4 is defined %} {{ a.ipv4 | ipaddr('network') }} {{ a.ipv4 | ipaddr('hostmask') }}
+{%- elif af == 'ipv6' and a.ipv6 is defined %} {{ a.ipv6 }}
+{%- endif -%}
 {%- endmacro %}
 
 {% macro r_acl_port(p) -%}
@@ -12,35 +12,33 @@
 {%- endif -%}
 {%- endmacro %}
 
-{%if routing.acl is defined %}
-{% for name, acl in routing.acl.items() %}
+{% if routing.acl is defined %}
+{%  for name, acl in routing.acl.items() %}
 !
-{% set cmd = "ipv6" if acl.af == "ipv6" else "ip" %}
-{{cmd}} access-list extended {{ name }}_{{ acl.af }}
-{% for e in acl.value %}
-{% set est = "established" if e.established is defined else "" %}
-{% set log = "log" if e.log is defined else "" %}
-{% if e.description is defined %}
+{%    set cmd = "ipv6" if acl.af == "ipv6" else "ip" %}
+{%    set ext = " extended" if acl.af == "ipv4" else "" %}
+{{cmd}} access-list{{ext}} {{name}}_{{ acl.af }}
+{%    for e in acl.value %}
+{%      set est = " established" if e.established is defined else "" %}
+{%      set log = " log" if e.log is defined else "" %}
+{%      if e.description is defined %}
   {{e.sequence}} remark {{e.description}}
-{% else %}
-  {{ e.sequence}} {{ e.action}} {{e.protocol}} {{r_acl_addr(e.src, acl.af)}} {{ r_acl_port(e.src)}} {{ r_acl_addr(e.dst, acl.af) }} {{ r_acl_port(e.dst)}} {{est}} {{log}}
-{% endif %}
-{% endfor %}
-{% endfor %}
+{%      else %}
+  {{ e.sequence}} {{ e.action}} {{e.protocol}}{{r_acl_addr(e.src, acl.af)}}{{ r_acl_port(e.src)}}{{ r_acl_addr(e.dst, acl.af) }}{{ r_acl_port(e.dst)}}{{est}}{{log}}
+{%      endif %}
+{%    endfor %}
+{%  endfor %}
 {% endif %}
 !
 {% for intf in interfaces %}
 interface {{ intf.ifname }}
-{%if intf.routing.acl.in.ipv4 is defined %}
-  ip access-group {{ intf.routing.acl.in.ipv4 }}_ipv4 in
-{% endif %}
-{%if intf.routing.acl.out.ipv4 is defined %}
-  ip access-group {{ intf.routing.acl.out.ipv4 }}_ipv4 out
-{% endif %}
-{%if intf.routing.acl.in.ipv6 is defined %}
-  ipv6 traffic-filter  {{ intf.routing.acl.in.ipv6 }}_ipv6 in
-{% endif %}
-{%if intf.routing.acl.out.ipv6 is defined %}
-  ipv6 traffic-filter  {{ intf.routing.acl.out.ipv6 }}_ipv6 out
-{% endif %}
+{%   for direction in ("in", "out") %}
+{%     for af in ("ipv4", "ipv6") %}
+{%       if intf.routing.acl[direction][af] is defined %}
+{%         set acl_name = intf.routing.acl[direction][af] %}
+{%         set cmd = "ip access-group" if af == "ipv4" else "ipv6 traffic-filter" %}
+  {{ cmd }} {{ acl_name }}_{{ af }} {{ direction }}
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
 {% endfor %}
