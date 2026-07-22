@@ -9,7 +9,6 @@ from box import Box
 
 from netsim.utils import log
 
-from ...augment import devices
 from ...data import get_box
 from .normalize import import_routing_object
 
