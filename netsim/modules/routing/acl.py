@@ -166,8 +166,6 @@ def expand_acl_description(entry: Box, expansion: list) -> None:
 
 
 def expand_acl_portop(entry: Box, node: Box, topology: Box, expansion: list) -> None:
-  if devices.get_device_attribute(node, "features.routing.acl.not_in", topology.defaults):
-    return None
 
   for addr_key in ("src", "dst"):
     addr_entry = entry.get(addr_key)
