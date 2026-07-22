@@ -1,0 +1,80 @@
+{#
+  ArcOS IS-IS. Default-instance IS-IS only when a default IS-IS net exists (VRF-only ISIS has
+  none, see templates/vrf/arcos.j2 for the per-VRF form).
+#}
+{% set typ = isis.type|default("level-2") %}
+{% set caps = {"level-1":"LEVEL_1","level-2":"LEVEL_2","level-1-2":"LEVEL_1_2"} %}
+{% set do_l1 = typ in ["level-1","level-1-2"] %}
+{% set do_l2 = typ in ["level-2","level-1-2"] %}
+{% if isis.net is defined %}
+network-instance default protocol ISIS i1
+ global net {{ isis.net }}
+ global level-capability {{ caps[typ]|default("LEVEL_2") }}
+ global af IPV4 UNICAST enabled true
+{%   if isis.af.ipv6|default(false) %}
+ global af IPV6 UNICAST enabled true
+{%   endif %}
+{%   if do_l1 %}
+ level 1 enabled true
+{%   endif %}
+{%   if do_l2 %}
+ level 2 enabled true
+{%   endif %}
+ interface loopback0 enabled true
+ interface loopback0 passive true
+ interface loopback0 af IPV4 UNICAST enabled true
+{%   if isis.af.ipv6|default(false) %}
+ interface loopback0 af IPV6 UNICAST enabled true
+{%   endif %}
+{%   if do_l1 %}
+ interface loopback0 level 1 enabled true
+{%   endif %}
+{%   if do_l2 %}
+ interface loopback0 level 2 enabled true
+{%   endif %}
+{%   for l in interfaces|default([]) if l.vrf is not defined %}
+{%     if l.isis is defined %}
+ interface {{ l.ifname }} enabled true
+ interface {{ l.ifname }} af IPV4 UNICAST enabled true
+{%       if isis.af.ipv6|default(false) %}
+ interface {{ l.ifname }} af IPV6 UNICAST enabled true
+{%       endif %}
+{%       if l.isis.network_type|default("") == "point-to-point" %}
+ interface {{ l.ifname }} network-type POINT_TO_POINT
+{%       endif %}
+{%       if l.isis.passive|default(false) %}
+ interface {{ l.ifname }} passive true
+{%       endif %}
+{# per-interface circuit-type: l.isis.type overrides the node level-capability #}
+{%       set ityp = l.isis.type|default(typ) %}
+{%       if ityp in ["level-1","level-1-2"] %}
+ interface {{ l.ifname }} level 1 enabled true
+{%       endif %}
+{%       if ityp in ["level-2","level-1-2"] %}
+ interface {{ l.ifname }} level 2 enabled true
+{%       endif %}
+{%     endif %}
+{%   endfor %}
+
+{#- IS-IS import/redistribution (isis.import): OpenConfig table-connection STATIC ISIS IPV4.
+    A static route redistributed into IS-IS appears in both nodes' IS-IS LSDB reachability
+    (control plane; FIB install is container-limited, same as SR-MPLS). Two ArcOS
+    rules: (1) the ISIS instance must be COMMITTED before the table-connection references it ->
+    #COMMIT split; (2) ISIS dst rejects `default-import-policy` and the BARE table-connection
+    redistributes nothing (implicit reject) -> an explicit accept import-policy is required.
+    connected(DIRECTLY_CONNECTED) has no addressable src-instance (same gap as BGP import) ->
+    feature declares import: [ static ]. -#}
+{%   if isis.import.static is defined %}
+#COMMIT
+{%     set _pol = (isis.import.static.policy ~ "-ipv4") if (isis.import.static is mapping and isis.import.static.policy is defined) else "isis-redist-accept-ipv4" %}
+{%     if _pol == "isis-redist-accept-ipv4" %}
+routing-policy policy-definition isis-redist-accept-ipv4
+ statement s10
+  actions accept-route
+ exit
+!
+{%     endif %}
+network-instance default table-connection STATIC ISIS IPV4 src-dst-instance default i1 import-policy [ {{ _pol }} ]
+!
+{%   endif %}
+{% endif %}

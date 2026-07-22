@@ -1,0 +1,60 @@
+{#
+  ArcOS EVPN.
+   * default-NI BGP gets L2VPN_EVPN globally + per EVPN neighbor (one-liners OK).
+   * iBGP-over-loopback EVPN sessions REQUIRE `transport local-address <loopback>` or they stay
+     IDLE (same landmine documented in templates/bgp/arcos.j2).
+   * each EVPN VLAN's auto-created L2VLAN NI gets advertise-mac-routes + a MAC-VRF BGP instance
+     carrying RD/RT -- this block MUST be mode-descent (the flat one-liner form aborts:
+     "network-instance vlanN protocol BGP vlanN: element does not exist"). BGP instance name
+     matches the main bgp template's ("b1").
+#}
+network-instance default protocol BGP b1 global afi-safi L2VPN_EVPN
+{% for n in bgp.neighbors|default([]) if n.evpn|default(false) and n.ipv4 is defined %}
+network-instance default protocol BGP b1 neighbor {{ n.ipv4 }} afi-safi L2VPN_EVPN
+{%   if n._source_intf is defined and n._source_intf.ipv4 is defined %}
+network-instance default protocol BGP b1 neighbor {{ n.ipv4 }} transport local-address {{ n._source_intf.ipv4 | ansible.utils.ipaddr('address') }}
+{%   endif %}
+{% endfor %}
+{% for vname, vdata in vlans.items() if vdata.evpn is defined %}
+network-instance vlan{{ vdata.id }}
+ advertise-mac-routes true
+ protocol BGP vlan{{ vdata.id }}
+  global route-distinguisher {{ vdata.evpn.rd }}
+{%   for rt in vdata.evpn.import|default([]) if rt in vdata.evpn.export|default([]) %}
+  route-target {{ rt }} both
+{%   endfor %}
+{%   for rt in vdata.evpn.import|default([]) if rt not in vdata.evpn.export|default([]) %}
+  route-target {{ rt }} import
+{%   endfor %}
+{%   for rt in vdata.evpn.export|default([]) if rt not in vdata.evpn.import|default([]) %}
+  route-target {{ rt }} export
+{%   endfor %}
+ !
+!
+{% endfor %}
+{#
+  EVPN symmetric-IRB / L3VNI. netlab models this as `vrfs.<name>.evpn.transit_vni` (evpn.yml
+  module `vrf: {transit_vni: ...}`) -- an L3VNI shared by every VLAN/subnet bound to that VRF,
+  giving symmetric routing (both ingress AND egress PE route via the L3VNI) instead of the
+  per-VLAN distributed-anycast-gateway pattern above (which only proves intra-subnet bridging +
+  local routing, not real inter-subnet transport).
+
+  KNOWN NOT FUNCTIONAL on this image: this config renders and COMMITS cleanly (RD, VNI,
+  L3VPN_IPV4_UNICAST AF, VRF interface binding all accepted), but RIB inspection on the default
+  instance's L2VPN_EVPN table shows ONLY route-type 2 (MAC/IP)
+  and 3 (Inclusive Multicast) -- ZERO route-type 5 (IP Prefix) routes are ever originated from
+  the VRF, on either node. Without Type-5 origination there is nothing for the peer to import,
+  so the L3VPN_IPV4_UNICAST RIB stays empty and the inter-subnet datapath fails completely. This
+  is a deeper gap than the SR-MPLS/LDP "control-plane forms, FIB doesn't program" pattern -- here
+  the control plane itself never generates the route symmetric IRB depends on. Rendered here for
+  completeness (a future ArcOS release or deeper probing may unlock it) but NOT declared in
+  features.evpn -- only the L2VNI/distributed-anycast-gateway path (proven working) is declared.
+#}
+{% for vname, vdata in vrfs.items() if vdata.evpn is defined and vdata.evpn.transit_vni is defined %}
+network-instance {{ vname }} protocol BGP {{ vname }}
+#COMMIT
+network-instance {{ vname }} protocol BGP {{ vname }} global route-distinguisher {{ bgp.router_id }}:{{ vdata.evpn.transit_vni }}
+network-instance {{ vname }} protocol BGP {{ vname }} global afi-safi L3VPN_IPV4_UNICAST
+network-instance {{ vname }} vni {{ vdata.evpn.transit_vni }} local-tunnel-endpoint-id 0
+#COMMIT
+{% endfor %}

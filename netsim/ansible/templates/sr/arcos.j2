@@ -1,0 +1,25 @@
+{#
+  ArcOS Segment Routing (SR-MPLS via IS-IS). ALL FOUR pieces are required for the
+  SID to actually appear on the wire:
+   1. reserved-label-block as ONE LINE (mode-descent -> "incomplete path") and it MUST carry
+      protocol-name <isis-tag>: without it the SRGB never binds to ISIS and the prefix-SID
+      subTLV + SR_CAPABILITY are silently omitted from flooded LSPs (the LOCAL lsdb display
+      still shows them -- trust the receiver's copy, not the origin's).
+   2. global traffic-engineering ipv4-router-id -- required to trigger the router capabilities
+      TLV with SR capabilities.
+   3. global segment-routing enabled true.
+   4. per-loopback prefix-sid (sid-type INDEX + value).
+  The ISIS instance name must match templates/isis/arcos.j2's ("i1").
+#}
+{% if 'isis' in sr.protocol|default([]) %}
+network-instance default mpls global reserved-label-block ISIS-SRGB lower-bound {{ sr.srgb.start|default(16000) }} upper-bound {{ sr.srgb.start|default(16000) + sr.srgb.size|default(8000) - 1 }} usage ISIS_SRGB protocol-identifier ISIS protocol-name i1
+!
+network-instance default protocol ISIS i1 global traffic-engineering ipv4-router-id {{ loopback.ipv4|ipaddr('address') }}
+network-instance default protocol ISIS i1 global segment-routing enabled true
+!
+{%   if sr.node_sid.ipv4 is defined %}
+network-instance default protocol ISIS i1 interface loopback0 af IPV4 UNICAST prefix-sid SPF sid-type INDEX
+network-instance default protocol ISIS i1 interface loopback0 af IPV4 UNICAST prefix-sid SPF value {{ sr.node_sid.ipv4 }}
+!
+{%   endif %}
+{% endif %}

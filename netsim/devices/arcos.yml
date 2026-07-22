@@ -1,0 +1,202 @@
+---
+# Arrcus ArcOS device definition -- a containerlab (arrcus_arcos) network device.
+#
+# CONFIG DEPLOYMENT
+#
+# netlab's native "sh" config mode (netlab.tools/dev/config/deploy/#linux-configuration-scripts):
+# each module's configuration is rendered into /config/netlab/NN-<module>.sh with a
+# '#!/config/netlab/netlab-config.sh' shebang and deployed with `docker exec <node> <script>`. The
+# shebang hands the rendered config to the mapped wrapper
+# netsim/templates/provider/clab/arcos/netlab-config.j2, which loads it with confd_cli
+# (`config` / `load merge <file>` / `commit`). No Ansible is involved in deployment -- this is the
+# same mapped-script pattern Juniper cRPD uses (netsim/devices/crpd.yml +
+# netsim/templates/provider/clab/crpd/netlab-config.j2), only the CLI back end differs.
+#
+# ansible_connection: docker (clab.group_vars below) is used ONLY for the validation/collect path
+# (netlab_show_command + fetch-config over docker exec); the tested build has SSH/NETCONF/gNMI
+# disabled, so confd_cli over docker exec is the only reachable CLI. ArcOS also ships an official
+# `arrcus.arcos` network_cli collection (the project-recommended interactive model), but every
+# published version (2.0.13-2.0.18 checked) hangs on a `config terminal`/`arcos_cli` mode-switch
+# this build's confd_cli rejects, so it is not used here.
+#
+# No clab.interface.name override: the arrcus_arcos containerlab kind expects the container-side
+# veth names to match swpX, which is exactly this device's interface_name template.
+#
+# CONTAINER-IMAGE BOOTSTRAP: the tested image boots with SSH/NETCONF/gNMI disabled (its baked-in
+# startup config fails to load a built-in prefix-set), and ArcOS refuses to enable interfaces
+# until the factory-default admin-user password is changed. Both are handled with netlab's native
+# `netlab_start_exec` group_var (-> node.clab.exec == containerlab's post-start `exec:`, the same
+# idiom netsim/devices/dellos10.yml uses), which enables ssh-server (for interactive `netlab
+# connect`, not for config deploy), sets the admin-user password, and creates an AAA user.
+description: Arrcus ArcOS
+interface_name: swp{ifindex}
+ifindex_offset: 1
+mgmt_if: eth0
+loopback_interface_name: "loopback{ifindex}"
+lag_interface_name: "bond{lag.ifindex}"
+tunnel_interface_name: tunnel{ifindex}
+role: router
+support:
+  level: best-effort
+  caveats:
+  - >-
+    Configuration is deployed with netlab's native containerlab "sh" config mode: each module is
+    rendered into /config/netlab/NN-<module>.sh and executed via docker exec, loading config
+    through confd_cli (see provider/clab/arcos/netlab-config.j2). initial/ospf/bgp/isis/routing
+    commit cleanly and idempotently, OSPF reaches Full, BGP reaches Established. The official
+    arrcus.arcos network_cli collection (the platform's own interactive model) is not used here:
+    every published version (2.0.13-2.0.18) hangs a config-mode switch this build's confd_cli rejects.
+  - >-
+    The tested container image boots with SSH/NETCONF/gNMI disabled (its baked-in startup config
+    fails to load a built-in prefix-set); netlab_start_exec bootstraps ssh-server + an AAA user +
+    the mandatory admin-user password change before any config can be committed.
+  - >-
+    Genuinely unsupported, not just untested: EVPN symmetric IRB / L3VNI (route-type-5 is never
+    originated -- see templates/evpn/arcos.j2); VRF route-target leaking (no rd/RT/L3VPN model);
+    OSPFv2 area-interface authentication; routing-policy large/extended-community set-actions
+    (standard only); redistribution sources other than static (no addressable src-instance for
+    connected on this image); SR-MPLS/LDP label forwarding (the native container has no kernel
+    MPLS platform-labels -- control plane only). The bgp.session and other dotted plugins are not
+    yet supported.
+group_vars:
+  netlab_device_type: arcos
+  # Set unconditionally (harmless with ansible_connection: docker below -- it is only a
+  # descriptive/path-lookup variable): several netlab core playbooks reference
+  # ansible_network_os unconditionally regardless of which connection plugin is in use.
+  ansible_network_os: arrcus.arcos.arcos
+  netlab_check_retries: 60
+  netlab_check_delay: 10
+  # One-time management bootstrap copied into node.clab.exec (== containerlab's post-start
+  # `exec:` list) by netsim/providers/clab/utils.py::add_clab_exec -- no SSH, no custom deploy
+  # mechanism. Retries for ~5 minutes because ConfD takes ~90s to accept confd_cli connections on
+  # a cold boot. It MERGEs (not replaces) so the image's own startup config is never touched.
+  #
+  # NOTE: the generic clab.j2 provider template renders this list with a plain str() of the list,
+  # not a real YAML dumper, so it produces valid output only when the command contains no single
+  # quotes and no backslashes -- hence double quotes only and per-line `echo` (not a printf
+  # block). ArcOS also refuses to enable interfaces at all until the factory-default admin-user
+  # password is changed, so that change is part of this bootstrap.
+  netlab_start_exec:
+  - >-
+    bash -c "for i in $(seq 1 60); do { echo config; echo system ssh-server enable true;
+    echo system aaa authentication admin-user admin-password Arcos@1234;
+    echo system aaa authentication user arcadmin password Arcos@1234 role SYSTEM_ROLE_ADMIN;
+    echo commit; echo end; } | confd_cli -C -u admin 2>&1 |
+    grep -qE -e Commit.complete -e No.modifications && exit 0; sleep 5; done; exit 1"
+  # PREFERRED (currently blocked -- see support.caveats above); flip to this once a working
+  # arrcus.arcos version ships (ansible_network_os is already set above):
+  # ansible_connection: ansible.netcommon.network_cli
+  # netlab_console_connection: ssh   # netlab connect rejects the FQCN ansible_connection
+  # ansible_user: arcadmin
+  # ansible_ssh_pass: Arcos@1234
+  # netlab_ready: [ ssh ]
+#
+# Deliberately NOT declared (genuinely unsupported, not just untested -- see the per-template
+# comments for the reason): OSPFv2 area-interface authentication (confd advertises the leaf but
+# rejects every value form on commit); VRF route-target import/export leaking (no rd/RT/L3VPN
+# model on this image); EVPN symmetric IRB / L3VNI (config commits cleanly but the control plane
+# never originates a route-type-5 prefix -- see templates/evpn/arcos.j2); routing-policy
+# large/extended community set-actions (ArcOS only has an inline standard-community set action);
+# BGP/OSPF/ISIS redistribution sources other than static (no addressable src-instance for
+# connected on this image); SR-MPLS/LDP label FORWARDING (the native container has no kernel MPLS
+# platform-labels -- control plane only); the bgp.session dotted plugin and other dotted plugins.
+features:
+  initial:
+    ipv4:
+      unnumbered: false
+    ipv6:
+      lla: true
+    collect: true
+  bfd: true
+  ospf:
+    priority: true
+    timers: true
+    bfd: true
+  bgp:
+    activate_af: true
+    ipv6_lla: false
+    local_as: true
+    import: [ static ]
+    # bgp.session (per-neighbor password/gtsm/timers/passive/bfd) is a separate netlab plugin
+    # template and is not yet supported.
+  isis:
+    circuit_type: true
+    import: [ static ]
+  vrf:
+    ospfv2: true
+    ospfv3: true
+    bgp: true
+    isis: true
+  srv6:
+    isis: true
+  sr:
+    af: [ ipv4 ]
+    protocol: [ isis ]
+  mpls:
+    ldp: true
+  vxlan: true
+  evpn:
+    irb: true            # L2VNI / distributed-anycast-gateway form only -- see templates/evpn/arcos.j2
+    transport: [ vxlan ]
+  vlan:
+    model: l3-switch
+    svi_interface_name: "vlan{vlan}"
+    subif_name: "{ifname}.{subif_index}"
+    native_routed: true
+  lag:
+    passive: false        # ArcOS bonds are LACP-active; STATIC = balance-xor
+  gateway:
+    protocol: [ vrrp, anycast ]
+  dhcp:
+    relay: true
+    vrf: true
+  routing:
+    static: true
+    prefix: true
+    policy:
+      match:
+        prefix: true
+      set:
+        locpref: true
+        med: true
+        community: true   # standard communities only -- see templates/routing/arcos.j2
+# All netlab devices default to MTU 1500 (netlab.tools/links/#changing-mtu). ArcOS needs this
+# explicit device default so l.mtu resolves in a no-MTU topology and initial/arcos.j2 renders the
+# interface MTU leaf -- the ArcOS interface mtu leaf is programmed as (leaf - 26), so the
+# template sets leaf = l.mtu + 26 to make ArcOS advertise/use 1500 and converge OSPF against FRR
+# (whose veths are 1500) without any containerlab/core change.
+mtu: 1500
+
+clab:
+  # Users obtain their own ArcOS image (commercial NOS, same pattern as arubacx/dellos10/sros)
+  # and tag it as below, or override clab.image in their topology.
+  image: arcos:8.2.1A.P2
+  node:
+    kind: arrcus_arcos
+    # Map the confd_cli deploy wrapper into the container. netlab renders each module's config into
+    # /config/netlab/NN-<module>.sh with a '#!/config/netlab/netlab-config.sh' shebang and runs it
+    # with `docker exec`; the shebang hands the rendered config to this wrapper, which loads it via
+    # confd_cli. Same mapped-script deploy pattern as cRPD (netsim/devices/crpd.yml).
+    config_templates:
+      netlab-config: /config/netlab/netlab-config.sh:sh
+  features:
+    initial:
+      config_mode: [ sh ]                  # enable netlab's native container-script (sh) config deploy
+  group_vars:
+    # Native "sh" config mode: modules deploy through the mapped confd_cli wrapper above, not Ansible.
+    netlab_config_mode: sh
+    netlab_config_path: /config/netlab/
+    netlab_default_shebang: '#!/config/netlab/netlab-config.sh'
+    # ansible_connection: docker is used ONLY for the validation/collect path (netlab_show_command +
+    # fetch-config over docker exec); config deployment runs through the sh-mode wrapper above.
+    ansible_connection: docker
+    ansible_user: root
+    ansible_ssh_pass: Arcos@1234           # bootstrapped 'arcadmin' login, interactive use only
+    netlab_ready: [ ansible ]              # skip the SSH readiness wait -- deploy doesn't need it
+    # netlab connect/validate: run confd_cli over docker-exec (SSH/NETCONF/gNMI are disabled on
+    # this build); '| display json' yields parseable OpenConfig state. Same docker-exec path as deploy.
+    # yamllint disable-line rule:line-length
+    netlab_show_command: [ bash, -c, 'f=\$(mktemp); for i in \$(seq 1 60); do echo ''show $@ | display json'' | confd_cli -C -u admin > \$f 2>/dev/null; python3 -c ''import sys,json; json.load(open(sys.argv[1]))'' \$f 2>/dev/null && { cat \$f; rm -f \$f; exit 0; }; sleep 1; done; cat \$f; rm -f \$f' ]
+external:
+  image: none
+graphite.icon: router

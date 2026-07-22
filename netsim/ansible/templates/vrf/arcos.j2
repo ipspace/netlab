@@ -1,0 +1,88 @@
+{#- ArcOS per-VRF config: L3VRF network-instance + interface binding + per-VRF OSPFv2/v3/ISIS.
+  NOT declared (genuinely unsupported, not just untested): import/export route-target leaking
+  between VRFs -- no rd/RT/L3VPN model on this image.
+
+  A protocol *instance tag* ("p1", "i1") is a GLOBAL namespace
+  across every network-instance on this ArcOS build, NOT scoped per network-instance -- reusing
+  the default instance's tag for a VRF's protocol instance aborts the commit ("Protocol instance
+  'p1'/'i1' already configured under network-instance 'default'"). Tag every VRF protocol
+  instance with the VRF name so it can never collide with the default instance or another VRF's
+  instance of the same protocol. -#}
+{% if vrfs is defined %}
+{%   for vname, vdata in vrfs.items() %}
+network-instance {{ vname }} type L3VRF
+{%     for l in interfaces|default([]) %}
+{%       if l.vrf|default("") == vname %}
+network-instance {{ vname }} interface {{ l.ifname }}
+{%       endif %}
+{%     endfor %}
+{%     if vdata.ospf is defined %}
+network-instance {{ vname }} protocol OSPF p-{{ vname }}
+ global router-id {{ vdata.ospf.router_id }}
+ area {{ vdata.ospf.area | default("0.0.0.0") }}
+{%       for l in vdata.ospf.interfaces|default([]) if l.ipv4 is defined %}
+  interface {{ l.ifname }}
+{# same fix as templates/ospf/arcos.j2: only fall back to l.type == 'p2p' when
+   ospf.network_type wasn't explicitly set, so an explicit "broadcast" isn't overridden #}
+{%         set nt = l.ospf.network_type|default('point-to-point' if l.type|default('') == 'p2p' else '') %}
+{%         if nt == 'point-to-point' %}
+   network-type POINT_TO_POINT_NETWORK
+{%         endif %}
+{%       endfor %}
+{%     endif %}
+{#- per-VRF OSPFv3: SEPARATE `protocol OSPF3` instance inside the SAME L3VRF network-instance,
+    mirroring the default-instance dual-stack pattern in templates/ospf/arcos.j2 (area written
+    as a bare integer, not dotted-decimal). Gated on vdata.ospf.af.ipv6 (netlab vrf.ospf.af,
+    feature vrf.ospfv3) so v4-only VRF OSPF topologies are unaffected. -#}
+{%     if vdata.ospf is defined and vdata.ospf.af.ipv6|default(false) %}
+{%       set varea3 = '0' if (vdata.ospf.area|default('0.0.0.0')) == '0.0.0.0' else vdata.ospf.area %}
+network-instance {{ vname }} protocol OSPF3 p-{{ vname }}
+ global router-id {{ vdata.ospf.router_id }}
+ area {{ varea3 }}
+{%       for l in vdata.ospf.interfaces|default([]) if l.ipv6 is defined %}
+  interface {{ l.ifname }}
+{# same fix as templates/ospf/arcos.j2: only fall back to l.type == 'p2p' when
+   ospf.network_type wasn't explicitly set, so an explicit "broadcast" isn't overridden #}
+{%         set nt = l.ospf.network_type|default('point-to-point' if l.type|default('') == 'p2p' else '') %}
+{%         if nt == 'point-to-point' %}
+   network-type POINT_TO_POINT_NETWORK
+{%         endif %}
+{%       endfor %}
+{%     endif %}
+{#- per-VRF IS-IS: network-instance <vrf> protocol ISIS -- verified: instance/net/level +
+    interface bindings commit inside an L3VRF, adjacency forms in-VRF. -#}
+{%     if vdata.isis is defined %}
+{%       set vcaps = {"level-1":"LEVEL_1","level-2":"LEVEL_2","level-1-2":"LEVEL_1_2"} %}
+{%       set vtyp = vdata.isis.type|default("level-2") %}
+network-instance {{ vname }} protocol ISIS i-{{ vname }}
+ global net {{ vdata.isis.net }}
+ global level-capability {{ vcaps[vtyp]|default("LEVEL_2") }}
+ global af IPV4 UNICAST enabled true
+{%       set vdo_l1 = vtyp in ["level-1","level-1-2"] %}
+{%       set vdo_l2 = vtyp in ["level-2","level-1-2"] %}
+{%       if vdo_l1 %}
+ level 1 enabled true
+{%       endif %}
+{%       if vdo_l2 %}
+ level 2 enabled true
+{%       endif %}
+{%       for l in vdata.isis.interfaces|default([]) %}
+ interface {{ l.ifname }} enabled true
+ interface {{ l.ifname }} af IPV4 UNICAST enabled true
+{%         set vnt = l.isis.network_type|default('point-to-point' if l.type|default('') == 'p2p' else '') %}
+{%         if vnt == 'point-to-point' %}
+ interface {{ l.ifname }} network-type POINT_TO_POINT
+{%         endif %}
+{%         if vdo_l1 %}
+ interface {{ l.ifname }} level 1 enabled true
+{%         endif %}
+{%         if vdo_l2 %}
+ interface {{ l.ifname }} level 2 enabled true
+{%         endif %}
+{%         if l.isis.passive|default(false) %}
+ interface {{ l.ifname }} passive true
+{%         endif %}
+{%       endfor %}
+{%     endif %}
+{%   endfor %}
+{% endif %}

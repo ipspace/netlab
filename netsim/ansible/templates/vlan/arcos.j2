@@ -1,0 +1,41 @@
+{#-
+  ArcOS VLAN -- NATIVE model. The OpenConfig-ish form (network-instance L2VLAN +
+  routed-vlan addressing) commits and even shows in oper state, but NEVER programs the kernel
+  IP => dead datapath in the native container. The working model:
+    vlan <id> name <n>                      -- top-level VLAN
+    interface swpX ethernet switched-vlan interface-mode ACCESS|TRUNK ...
+    interface vlan<id> subinterface 0 ipv4  -- SVI (autostate false = up w/o members)
+  The two models CONFLICT ("illegal reference 'vlan <id> vlan-id'") -- never mix.
+-#}
+{% if vlans is defined %}
+{%   for vname, vdata in vlans.items() %}
+{# each named vlan needs its OWN commit (two in one transaction -> "illegal reference
+   'vlan N vlan-id'") and must be in running before trunk-vlans references it #}
+vlan {{ vdata.id }} name {{ vname }}
+#COMMIT
+{%   endfor %}
+{% endif %}
+{% for l in interfaces|default([]) %}
+{%   if l.vlan is defined and l.vlan.access is defined %}
+interface {{ l.ifname }} ethernet switched-vlan interface-mode ACCESS access-vlan {{ l.vlan.access_id }}
+{%   elif l.vlan is defined and l.vlan.trunk is defined %}
+interface {{ l.ifname }} ethernet switched-vlan interface-mode TRUNK
+{#- native VLAN on a trunk: a SEPARATE leaf alongside trunk-vlans. Live probe found it MUST be
+    excluded from trunk-vlans ("Native vlan N cannot be in trunk-vlans list" on commit) even
+    though netlab's own vlan.native/vlan.trunk model keeps the native vlan IN the trunk list --
+    so the trunk-vlans loop below filters it out. -#}
+{%     if l.vlan.native is defined %}
+interface {{ l.ifname }} ethernet switched-vlan native-vlan {{ vlans[l.vlan.native].id }}
+{%     endif %}
+interface {{ l.ifname }} ethernet switched-vlan trunk-vlans [ {% for vname in l.vlan.trunk if vname != l.vlan.native|default("") %}{{ vlans[vname].id }} {% endfor %}]
+{%   endif %}
+{% endfor %}
+{% for l in interfaces|default([]) %}
+{%   if l.type|default("") == "svi" %}
+interface {{ l.ifname }} enabled true
+interface {{ l.ifname }} autostate false
+{%     if l.ipv4 is defined and l.ipv4 %}
+interface {{ l.ifname }} subinterface 0 ipv4 address {{ l.ipv4 | ansible.netcommon.ipv4("address") }} prefix-length {{ l.ipv4 | ansible.netcommon.ipaddr("prefix") }}
+{%     endif %}
+{%   endif %}
+{% endfor %}

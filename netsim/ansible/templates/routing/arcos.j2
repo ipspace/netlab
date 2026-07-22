@@ -1,0 +1,77 @@
+{#
+  ArcOS generic-routing template (statics, prefix-sets, policies). OpenConfig-CLI:
+  defined-sets prefix-set, policy-definition/statement, protocol STATIC static-route/
+  next-hop-index. The routing-policy defined-sets prefix-set container is AF-agnostic (accepts
+  either family in the same 'prefix' leaf) -- so the same rendering loop covers ipv4 and ipv6.
+  STATIC route-install is likewise AF-agnostic.
+#}
+{% if routing.prefix|default({}) %}
+{%   for pf_af in ['ipv4', 'ipv6'] if pf_af in routing._prefix|default({}) %}
+{%     for p_name, p_value in routing._prefix[pf_af].items() %}
+routing-policy defined-sets prefix-set {{ p_name }}
+{%       for p_entry in p_value %}
+{%         set lo = p_entry.min|default(p_entry[pf_af]|ansible.utils.ipaddr('prefix')) %}
+{%         set hi = p_entry.max|default(128 if pf_af == 'ipv6' else 32) %}
+{%         if p_entry.min is defined or p_entry.max is defined %}
+ prefix {{ p_entry[pf_af] }} {{ lo }}..{{ hi }}
+{%         else %}
+ prefix {{ p_entry[pf_af] }} exact
+{%         endif %}
+{%       endfor %}
+ exit
+!
+{%     endfor %}
+{%   endfor %}
+{% endif %}
+{% if routing.policy|default({}) %}
+{%   for p_name, p_entries in routing.policy.items() %}
+routing-policy policy-definition {{ p_name }}-ipv4
+{%     for p_entry in p_entries %}
+ statement s{{ p_entry.sequence|default(loop.index * 10) }}
+{%       if p_entry.match.prefix is defined %}
+  conditions match-prefix-set prefix-set {{ p_entry.match.prefix }}
+{%       endif %}
+{%       if p_entry.set.locpref is defined %}
+  actions bgp-actions set-local-pref {{ p_entry.set.locpref }}
+{%       endif %}
+{%       if p_entry.set.med is defined %}
+  actions bgp-actions set-med {{ p_entry.set.med }}
+{%       endif %}
+{#  set-community: ArcOS has ONLY standard communities (inline communities leaf-list). No
+    set-large-community / set-ext-community action exists -> not declared in features. #}
+{%       if p_entry.set.community.standard is defined %}
+  actions bgp-actions set-community method INLINE
+  actions bgp-actions set-community options {{ 'ADD' if p_entry.set.community.append|default(false) else 'REPLACE' }}
+  actions bgp-actions set-community inline communities [ {{ p_entry.set.community.standard|join(' ') }} ]
+{%       endif %}
+{%       if p_entry.set.community.large is defined or p_entry.set.community.extended is defined %}
+! ArcOS UNSUPPORTED: routing-policy has no set-large-community/set-ext-community action (standard only).
+{%       endif %}
+  actions {{ 'accept-route' if p_entry.action|default('permit') == 'permit' else 'reject-route' }}
+  exit
+{%     endfor %}
+ exit
+!
+{%   endfor %}
+{% endif %}
+{% if routing.static|default([]) %}
+network-instance default protocol STATIC default
+{%   for sr_data in routing.static if 'vrf' not in sr_data and sr_data.ipv4 is defined and sr_data.nexthop.ipv4 is defined %}
+ static-route {{ sr_data.ipv4 }}
+  next-hop-index nh1
+   next-hop {{ sr_data.nexthop.ipv4 }}
+   exit
+  exit
+{%   endfor %}
+{#  IPv6 statics -- same STATIC default instance, same static-route/next-hop-index shape, just
+    keyed off sr_data.ipv6/nexthop.ipv6 instead of the v4 pair. #}
+{%   for sr_data in routing.static if 'vrf' not in sr_data and sr_data.ipv6 is defined and sr_data.nexthop.ipv6 is defined %}
+ static-route {{ sr_data.ipv6 }}
+  next-hop-index nh1
+   next-hop {{ sr_data.nexthop.ipv6 }}
+   exit
+  exit
+{%   endfor %}
+ exit
+!
+{% endif %}

@@ -1,7 +1,16 @@
 ---
-- name: save config
-  shell: echo 'show run' | confd_cli
+# Fetch the ArcOS running-config over ansible_connection: docker. The tested container build has
+# SSH/NETCONF/gNMI disabled, so confd_cli over docker exec is the only reachable CLI (config
+# DEPLOY uses netlab's native sh-mode wrapper -- see netsim/devices/arcos.yml; this collect path
+# stays on the docker connection, the same pattern netsim/devices/frr.yml + cRPD keep).
+- name: "confd_cli: show running-config"
+  # confd_cli has no "-c <command>" one-shot flag (-c is --cwd, not "run this command"), so the
+  # command is fed non-interactively over stdin instead.
+  shell: printf 'show running-config\n' | confd_cli -C -u admin
+  args:
+    executable: /bin/bash
   register: arcos_run_config
+  changed_when: false
 
 - set_fact:
     ansible_net_config: "{{ arcos_run_config.stdout }}"

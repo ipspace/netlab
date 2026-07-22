@@ -1,0 +1,61 @@
+{#
+  ArcOS BGP. eBGP session reaches ESTABLISHED; allow ~60-90s to converge (ArcOS's connect-retry
+  timer). Dual-stack peers get TWO separate BGP sessions (one keyed on the IPv4 transport
+  address, one on IPv6) rather than one session carrying both AFs.
+
+  iBGP-over-loopback: without an explicit `neighbor X transport local-address <loopback>`, an
+  iBGP session addressed at the peer's loopback stays IDLE forever -- ArcOS does not auto-source
+  from the interface with the best route to the peer.
+
+  The bgp.session plugin (per-neighbor password/gtsm/timers/passive/bfd) is a separate template
+  and is not yet supported.
+#}
+network-instance default protocol BGP b1
+ global as {{ bgp.as }}
+ global router-id {{ bgp.router_id }}
+ global afi-safi IPV4_UNICAST
+{% if bgp.ipv6|default(false) %}
+ global afi-safi IPV6_UNICAST
+{% endif %}
+{% for a in bgp.advertise|default([]) %}
+{%   if a.ipv4 is defined %}
+ global afi-safi IPV4_UNICAST network {{ a.ipv4 }}
+{%   endif %}
+{%   if a.ipv6 is defined %}
+ global afi-safi IPV6_UNICAST network {{ a.ipv6 }}
+{%   endif %}
+{% endfor %}
+{% for n in bgp.neighbors|default([]) %}
+{%   if n.ipv4 is defined %}
+ neighbor {{ n.ipv4 }} peer-as {{ n.as }}
+{%     if n.local_as is defined %}
+ neighbor {{ n.ipv4 }} ebgp-local-as local-as {{ n.local_as }}
+{%     endif %}
+{%     if n.type|default("") == "ibgp" and n._source_intf is defined and n._source_intf.ipv4 is defined %}
+ neighbor {{ n.ipv4 }} transport local-address {{ n._source_intf.ipv4 | ansible.utils.ipaddr('address') }}
+{%     endif %}
+ neighbor {{ n.ipv4 }} afi-safi IPV4_UNICAST
+{%   endif %}
+{%   if n.ipv6 is defined %}
+ neighbor {{ n.ipv6 }} peer-as {{ n.as }}
+{%     if n.local_as is defined %}
+ neighbor {{ n.ipv6 }} ebgp-local-as local-as {{ n.local_as }}
+{%     endif %}
+{%     if n.type|default("") == "ibgp" and n._source_intf is defined and n._source_intf.ipv6 is defined %}
+ neighbor {{ n.ipv6 }} transport local-address {{ n._source_intf.ipv6 | ansible.utils.ipaddr('address') }}
+{%     endif %}
+ neighbor {{ n.ipv6 }} afi-safi IPV6_UNICAST
+{%   endif %}
+{% endfor %}
+
+{#  Redistribution into BGP via OpenConfig table-connections (bgp.import):
+    STATIC->BGP with src-dst-instance <static-inst> <bgp-inst> + import-policy. Static protocol
+    instance is "default" (routing template), BGP instance is "b1". connected/ospf/isis import
+    are not exercised here -> feature declares import: [ static ] only. #}
+{% for proto, imp in bgp.import|default({})|dictsort %}
+{%   if proto == 'static' %}
+network-instance default table-connection STATIC BGP IPV4 src-dst-instance default b1{% if imp is mapping and imp.policy is defined %} import-policy [ {{ imp.policy }}-ipv4 ]{% else %} default-import-policy ACCEPT_ROUTE{% endif %}
+
+!
+{%   endif %}
+{% endfor %}

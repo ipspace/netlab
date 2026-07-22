@@ -1,0 +1,18 @@
+{#
+  ArcOS SRv6 template. SRv6 lives under `network-instance default srv6`
+  (encapsulation + locator) and binds to IS-IS via `protocol ISIS i1 global srv6
+  enabled true|locator <name>`. ArcOS derives an End SID from the locator prefix automatically.
+  netlab data: srv6.locator (per-node /48 from srv6.locator_pool), srv6.igp. Only isis is
+  declared -- bgp/vpn/ospf-over-SRv6 not exercised.
+#}
+{% if srv6.locator is defined %}
+{%   set locname = inventory_hostname ~ "-loc" %}
+network-instance default srv6 encapsulation source-address {{ loopback.ipv6|ansible.utils.ipaddr("address") }}
+network-instance default srv6 locator {{ locname }} prefix {{ srv6.locator }}
+{%   if "isis" in srv6.igp|default([]) %}
+network-instance default protocol ISIS i1 global af IPV6 UNICAST enabled true
+network-instance default protocol ISIS i1 interface loopback0 af IPV6 UNICAST enabled true
+network-instance default protocol ISIS i1 global srv6 enabled true
+network-instance default protocol ISIS i1 global srv6 locator {{ locname }}
+{%   endif %}
+{% endif %}

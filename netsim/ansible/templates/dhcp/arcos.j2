@@ -1,0 +1,23 @@
+{#
+  ArcOS DHCP relay-agent. Driven by the standard netlab dhcp interface model:
+  intf.dhcp.relay.ipv4 = list of server IPs, intf.dhcp.vrf = server-reach VRF.
+  Per-interface form: relay-agent dhcp interface <if> {enable|helper-address|server-vrf}.
+#}
+{% for l in interfaces|default([]) if l.dhcp is defined and l.dhcp.relay is defined %}
+{%   if l.dhcp.relay.ipv4|default([]) %}
+relay-agent dhcp interface {{ l.ifname }} enable true
+relay-agent dhcp interface {{ l.ifname }} helper-address [ {% for s in l.dhcp.relay.ipv4 %}{{ s }} {% endfor %}]
+{%     if l.dhcp.vrf is defined and l.dhcp.vrf %}
+relay-agent dhcp interface {{ l.ifname }} server-vrf {{ 'default' if l.dhcp.vrf == 'global' else l.dhcp.vrf }}
+{%     endif %}
+{%   endif %}
+{#- DHCPv6 relay: SAME per-interface shape, "relay-agent dhcpv6" instead of "relay-agent dhcp"
+    -- enable + helper-address + optional server-vrf, one-for-one with the v4 block above. -#}
+{%   if l.dhcp.relay.ipv6|default([]) %}
+relay-agent dhcpv6 interface {{ l.ifname }} enable true
+relay-agent dhcpv6 interface {{ l.ifname }} helper-address [ {% for s in l.dhcp.relay.ipv6 %}{{ s }} {% endfor %}]
+{%     if l.dhcp.vrf is defined and l.dhcp.vrf %}
+relay-agent dhcpv6 interface {{ l.ifname }} server-vrf {{ 'default' if l.dhcp.vrf == 'global' else l.dhcp.vrf }}
+{%     endif %}
+{%   endif %}
+{% endfor %}

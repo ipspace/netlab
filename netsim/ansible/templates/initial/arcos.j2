@@ -1,29 +1,74 @@
+{#
+  ArcOS initial configuration. confd_cli block-indent CLI (OpenConfig-modelled). Uses
+  `interfaces` (not `netlab_interfaces`) throughout, consistent with every other module
+  template, so the .lag/.vlan sub-attributes the LAG/VLAN exclusions below need are present.
+
+  MTU: the `interface <if> mtu <n>` config leaf is NOT a pass-through -- ArcOS always programs
+  the real kernel netdev (and, critically, the MTU value it advertises in OSPF's DBD packets)
+  as (configured-leaf - 26), confirmed on a real ArcOS node across three data points (leaf 1500
+  -> kernel/advertised 1474; leaf 2000 -> 1974; leaf 1526 -> exactly 1500) and matching the
+  platform's own default ("show interface swp1" reports the unset leaf's default as 9000 -> the
+  observed 8974 default veth/advertised MTU is that same -26 rule applied to the default). The
+  26 bytes are reserved headroom (constant across the tested range, not a percentage). So: to
+  make ArcOS advertise/use netlab's intended interface MTU (l.mtu, already resolved by
+  netsim/augment/links.py for every device), the leaf must be set to l.mtu + 26, not l.mtu --
+  setting the leaf to the bare intended value visibly "commits clean" but silently under-shoots
+  the real kernel/OSPF-advertised MTU by 26. This device-side compensation alone makes an
+  ArcOS<->FRR OSPF adjacency converge (both sides agree on 1500); no containerlab/core change is
+  required.
+#}
 system hostname {{ inventory_hostname }}
-!
 !
 interface loopback0
  enable true
  subinterface 0
-   {% if 'ipv4' in loopback %}
-   ipv4 address {{ loopback.ipv4 | ansible.netcommon.ipv4('address') }} prefix-length 32
-   {% endif %}
-   {% if 'ipv6' in loopback %}
-   ipv6 address {{ loopback.ipv6 | ansible.netcommon.ipv6('address') }} prefix-length 64
-   {% endif %}
+{% if loopback.ipv4 is defined %}
+   ipv4 address {{ loopback.ipv4 | ansible.netcommon.ipv4("address") }} prefix-length 32
+{% endif %}
+{% if loopback.ipv6 is defined %}
+   ipv6 address {{ loopback.ipv6 | ansible.netcommon.ipv6("address") }} prefix-length 128
+{% endif %}
 !
-!
-!
-{% for l in interfaces|default([]) %}
+{% for l in interfaces|default([]) if l.type|default('') == 'loopback' and l.ifname != 'loopback0' %}
 interface {{ l.ifname }}
  enable true
  subinterface 0
-   {% if 'ipv4' in l %}
-   ipv4 address {{ l.ipv4 | ansible.netcommon.ipv4('address') }} prefix-length {{ l.ipv4 | ansible.netcommon.ipaddr('prefix') }}
-   {% endif %}
-   {% if 'ipv6' in l %}
-   ipv6 address {{ l.ipv6 | ansible.netcommon.ipv6('address') }} prefix-length {{ l.ipv6 | ansible.netcommon.ipaddr('prefix') }}
-   {% endif %}
+{%   if l.ipv4 is defined and l.ipv4 is string %}
+   ipv4 address {{ l.ipv4 | ansible.utils.ipaddr('address') }} prefix-length {{ l.ipv4 | ansible.utils.ipaddr('prefix') }}
+{%   endif %}
 !
 {% endfor %}
-
-no lldp interface ma1
+{# LAG aggregates (bondN) are virtual but carry the L3 addressing #}
+{% for l in interfaces|default([]) if l.type|default('') == 'lag' %}
+interface {{ l.ifname }}
+ enable true
+{%   if l.mtu is defined %}
+ mtu {{ l.mtu + 26 }}
+{%   endif %}
+ subinterface 0
+{%   if l.ipv4 is defined and l.ipv4 is string %}
+   ipv4 address {{ l.ipv4 | ansible.utils.ipaddr('address') }} prefix-length {{ l.ipv4 | ansible.utils.ipaddr('prefix') }}
+{%   endif %}
+!
+{% endfor %}
+{# LAG members refuse their own L3 config ("Bond member Interface can't have it's own L3
+   configuration") -- templates/lag/arcos.j2 handles them (aggregate-id only). VLAN
+   access/trunk ports are pure L2 -- no subinterface/IP here, templates/vlan/arcos.j2 handles
+   them (switched-vlan mode + SVI addressing). #}
+{% for l in interfaces|default([]) if not l.virtual_interface|default(false) and l.lag._parentindex is not defined and l.type|default('') != 'lag' %}
+interface {{ l.ifname }}
+ enable true
+{%   if l.mtu is defined %}
+ mtu {{ l.mtu + 26 }}
+{%   endif %}
+{%   if not (l.vlan is defined and (l.vlan.access is defined or l.vlan.trunk is defined)) %}
+ subinterface 0
+{%     if l.ipv4 is defined and l.ipv4 %}
+   ipv4 address {{ l.ipv4 | ansible.netcommon.ipv4("address") }} prefix-length {{ l.ipv4 | ansible.netcommon.ipaddr("prefix") }}
+{%     endif %}
+{%     if l.ipv6 is defined and l.ipv6 %}
+   ipv6 address {{ l.ipv6 | ansible.netcommon.ipv6("address") }} prefix-length {{ l.ipv6 | ansible.netcommon.ipaddr("prefix") }}
+{%     endif %}
+{%   endif %}
+!
+{% endfor %}
