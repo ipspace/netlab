@@ -25,6 +25,12 @@
 /ipv6/address add interface=loopback address={{ loopback.ipv6 }}
 {% endif %}
 
+
+{% for l in interfaces if l.type == 'tunnel' and l.tunnel.mode == 'gre' %}
+{%   set t_type = 'gre6' if l.tunnel.af == 'ipv6' else 'gre' %}
+/interface/{{ t_type }} add name={{ l.ifname }} local-address={{ l.tunnel._source[l.tunnel.af] }} remote-address={{ l.tunnel._destination[l.tunnel.af] }}
+{% endfor %}
+
 {% if vlans is defined %}
 {% include 'routeros7.vlan.j2' %}
 {% endif %}
@@ -34,7 +40,13 @@
 {% endif %}
 
 {% for l in interfaces|default([]) %}
-{%   set intf_type = 'vlan' if l.type == 'svi' else 'ethernet' %}
+{%   if l.type == 'svi' %}
+{%     set intf_type = 'vlan' %}
+{%   elif l.type == 'tunnel' and l.tunnel.mode == 'gre' %}
+{%     set intf_type = 'gre6' if l.tunnel.af == 'ipv6' else 'gre' %}
+{%   else %}
+{%     set intf_type = 'ethernet' %}
+{%   endif %}
 
 {%   if l.name is defined %}
 /interface/{{ intf_type }} set comment="{{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}" {{ l.ifname }}

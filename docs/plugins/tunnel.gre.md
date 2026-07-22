@@ -13,6 +13,7 @@ The plugin includes Jinja2 templates for the following platforms:
 | FRR                 |✅|✅|✅|
 | Juniper vJunos-switch |✅|✅|✅|
 | Juniper vSRX        |✅|✅|✅|
+| Mikrotik RouterOS 7 |✅|✅|✅|
 | VyOS               |✅|✅|✅|
 
 [^18v]: Includes Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
