@@ -23,6 +23,7 @@ Each test has a name (dictionary key) and description (dictionary value) -- anot
 * **exec** (string or dictionary) -- any other valid network device command. The command will be executed with the `netlab connect` command.
 * **config** (string or dictionary) -- the configuration template that has to be deployed (using **[netlab config](netlab-config)**) on the specified nodes. Use this feature to trigger changes (for example, interface shutdown or BGP session shutdown) during the testing procedure.
 * **suzieq** (string or dictionary) -- the SuzieQ command to execute and the optional validation parameters ([more details](validate-suzieq)).
+* **ansible** (string or dictionary) -- a device show command fetched through the device Ansible module (`defaults.devices.<device>.netlab_validate.ansible_module`) instead of the standard SSH/`docker exec` validation transport. Use it for devices whose CLI cannot be driven with non-interactive SSH commands (for example, IP Infusion OcNOS). The result is parsed as JSON when the command emits JSON; otherwise the CLI text is available in the `stdout` variable.
 * **valid** (string or dictionary, optional) -- Python code that will be executed once the **show** or **exec** command has completed. The test succeeds if the Python code returns any value that evaluates to `True` when converted to a boolean[^TEX]. The Python code can use the results of the **show** command as variables; the **exec** command printout is available in the `stdout` variable.
 * **plugin** (valid Python function call as string, optional) -- a method of a custom [validation plugin](validate-plugin) that provides either a command to execute or validation results.
 * **wait** (integer, optional) -- Time to wait (when specified as the only action in the test) or retry (when used together with other actions). The first wait/retry timeout is measured from when the lab was started; subsequent times are measured from the previous test containing the **wait** parameter. The wait time could also be specified as an identifier; its value has to be defined in **defaults.const.validate** dictionary ([example](validate-retry)).
@@ -48,10 +49,10 @@ The **config** parameter can be a string (the template to deploy) or a dictionar
 
 **Notes:**
 
-* Every test entry should have **show**, **exec**, **config**, **suzieq** or **wait** parameter.
+* Every test entry should have **show**, **exec**, **config**, **suzieq**, **ansible** or **wait** parameter.
 * A test entry with just the **wait** parameter is valid and can be used to delay the test procedure.
 * Test entries with **show** parameter must have **valid** expression.
-* Test entries with **valid** expression must have **show**,  **exec**, or **suzieq** parameter.
+* Test entries with **valid** expression must have **show**,  **exec**, **suzieq**, or **ansible** parameter.
 
 ```{tip}
 A test entry with only **‌wait** and **‌stop_on_error** parameters is a *‌failure barrier*. It succeeds (without waiting) if all the prior test entries have passed and exits the validation process if at least one of the prior tests has failed.
