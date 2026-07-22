@@ -1,0 +1,71 @@
+# SONiC MPLS/SR/L3VPN spike
+# IS-IS+LDP+SR-MPLS core, iBGP VPNv4 between the two PEs (loopback sessions), VRF red
+# with stub interfaces on both ends, VRF blue on s2 importing red's route-target
+# (inter-VRF route leaking).
+#
+# UNLIKE ArcOS's native container (no kernel MPLS at all), docker-sonic-vs shares the
+# HOST kernel netns machinery for net.mpls -- the sysctls just don't exist until the
+# mpls_router/mpls_iptunnel modules are loaded ANYWHERE on the host:
+#   sudo modprobe mpls_router mpls_iptunnel
+# Once loaded, /proc/sys/net/mpls/* appears in every container's netns immediately
+# (even already-running ones) and mpls/frr.j2's `sysctl -w net.mpls.platform_labels`
+# succeeds -- so this gets a REAL kernel label FIB (`ip -M route`), not just a
+# control-plane proof. This is a one-time HOST prerequisite, not something the
+# topology YAML can express -- document it, don't assume it's already loaded.
+#
+# sr.srgb.start is a MODEL GAP for IS-IS SR-MPLS on FRR (checked against the exact
+# upstream template that renders this, not assumed): netsim/ansible/templates/sr/frr.j2
+# only emits `segment-routing global-block <start> <end>` inside the `if 'ospfv2' in
+# sr.protocol` branch -- the `if 'isis' in sr.protocol` branch never references
+# sr.srgb at all. A custom SRGB is silently a no-op here; FRR isisd always keeps its
+# compiled-in default (base 16000, range 8000) regardless of what the topology sets.
+# Confirmed live: `show isis database detail` -> "Global Block Base: 16000 Range: 8000"
+# even with sr.srgb.start set on the node. Netlab/FRR gap to report upstream, not
+# something to work around here -- so this topology does NOT set sr.srgb.
+#
+# (A first pass at this topology hit a VPNv4-export failure -- BGP requested a label
+# from zebra's dynamic pool but never got one, `show bgp labelpool summary` -> 0
+# LabelChunks. That LOOKED like an SRGB/zebra-label-pool collision, but wasn't:
+# `netlab initial` deploys s1 and s2 SEQUENTIALLY, not in parallel, and that pass's
+# ansible timeout cut off before s2 ever received its bgp/sr/mpls/vrf config at all.
+# A longer timeout for the full two-node sequential deploy resolved it with ZERO
+# topology changes and the default SRGB -- worth remembering when a multi-module SONiC
+# deploy looks like it "half worked": check whether every node actually finished.)
+#
+# This IS a REAL end-to-end MPLS L3VPN datapath: s2 (vrf red) pings s1's vrf-red stub
+# (172.16.0.1) across two real kernel-programmed MPLS labels (LDP transport + BGP VPN
+# label), 0% loss. VRF blue -> 172.16.0.1 correctly FAILS (100% loss) -- blue imports
+# red's RT so it has a forward route, but red does NOT import blue's RT, so s1 has no
+# return route to blue's prefix; one-way leak is by design (matches the existing
+# vrf_leak module), not a bug.
+#   sudo modprobe mpls_router mpls_iptunnel   # HOST prerequisite, once
+#   python validate/sonic.py --module mpls sr mpls_vpn
+provider: clab
+plugin: [ multilab ]
+defaults:
+  device: sonic_clab
+  multilab:
+    id: 52
+module: [ isis, bgp, mpls, sr, vrf ]
+bgp.as: 65000
+mpls.ldp: true
+mpls.vpn: true
+
+vrfs:
+  red:
+  blue:
+    import: [ red, blue ]
+
+nodes: [ s1, s2 ]
+
+links:
+- s1-s2
+- s1:
+  vrf: red
+  type: stub
+- s2:
+  vrf: red
+  type: stub
+- s2:
+  vrf: blue
+  type: stub

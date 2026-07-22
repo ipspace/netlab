@@ -1,0 +1,58 @@
+# SONiC bgp.domain plugin. The bgp.domain plugin splits a SINGLE AS into
+# ISOLATED iBGP "domains": it PRUNES every cross-domain iBGP session and requires each
+# domain to have its OWN route reflector (it does NOT hierarchically connect domains --
+# domains are independent iBGP islands that share one AS number). This models AS 65000
+# with two domains:
+#   red  = s1 (route reflector) + s2 + s3 (RR clients)
+#   blue = s4 (route reflector, alone)
+# netlab first builds the RR client mesh (clients peer to every RR in the AS over the
+# OSPF underlay), then the plugin prunes all cross-domain sessions, so:
+#   * s1 keeps iBGP ONLY to s2/s3 (red); the s1<->s4 (blue) session is pruned.
+#   * s4 (blue) ends up with NO iBGP neighbors -- its only peers were red, all pruned.
+#
+# DATAPATH: h2 is a real host behind s2 on 172.16.2.0/24. That link has `ospf: False`,
+# so the prefix is advertised into BGP ONLY (never into the OSPF underlay) -- reachability
+# of h2 is therefore a PURE bgp.domain fact:
+#   * s3 (red client) reaches h2 ONLY because s1 reflects s2's prefix -> proves RR
+#     client-to-client reflection AT THE DATAPATH.
+#   * s4 (blue) has no route to 172.16.2.0/24 at all -> ping fails -> proves cross-domain
+#     isolation AT THE DATAPATH.
+provider: clab
+plugin: [ multilab, bgp.domain ]
+defaults:
+  device: sonic_clab
+  multilab:
+    id: 52
+
+module: [ bgp, ospf ]
+bgp.as: 65000
+bgp.advertise_loopback: True
+
+nodes:
+  s1:
+    bgp.rr: True
+    bgp.domain: red
+  s2:
+    bgp.domain: red
+  s3:
+    bgp.domain: red
+  s4:
+    bgp.rr: True
+    bgp.domain: blue
+  h2:
+    device: linux
+
+links:
+# OSPF underlay (star on s1) — carries the loopbacks so the iBGP sessions come up.
+- s1:
+  s2:
+- s1:
+  s3:
+- s1:
+  s4:
+# Red customer prefix behind s2 — BGP-only (ospf:False keeps it out of the underlay),
+# so reaching h2 depends entirely on RR reflection.
+- s2:
+  h2:
+  ospf: False
+  prefix: 172.16.2.0/24

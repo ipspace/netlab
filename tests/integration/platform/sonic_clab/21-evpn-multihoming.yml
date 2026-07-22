@@ -1,0 +1,47 @@
+# SONiC EVPN Multihoming: ESI-LAG dual-homes h1 across s1+s2. No MLAG peer-link
+# needed — ES coordination is via BGP EVPN Type-1 (Ethernet A-D) / Type-4 (ES) routes, not an
+# MLAG protocol, so this works even though docker-sonic-vs has no mclagd.
+# PortChannel is teamd, not kernel bonding -- doesn't matter: `show interface PortChannel1`
+# reports "Interface Type bond" regardless, so zebra's EVPN-MH ES logic treats it exactly like a
+# real bond. h2 is single-homed off s2, so the datapath check (h1 -> h2) only succeeds if traffic
+# egressing EITHER leg of h1's dual-homed LAG reaches the shared L2VNI -- the actual point of
+# multihoming.
+provider: clab
+plugin: [ multilab, evpn.multihoming ]
+defaults:
+  device: sonic_clab
+  multilab:
+    id: 52
+
+module: [ lag, vlan, ospf, bgp, vxlan, evpn ]
+bgp.as: 65000
+
+vlans:
+  red:
+    mode: bridge
+    vni: 10043
+
+nodes:
+  s1:
+  s2:
+  h1:
+    device: linux
+    module: [ lag, vlan ]     # host must opt into lag explicitly (not auto-enabled for linux)
+    config: [ h1-fixaddr ]    # work around a netlab host-addressing gap, see h1-fixaddr/linux.j2
+  h2:
+    device: linux
+
+links:
+- s1-s2
+- lag:
+    members:
+    - s1:
+        evpn.es: es1
+      h1:
+    - s2:
+        evpn.es: es1
+      h1:
+  vlan.access: red
+- s2:
+    vlan.access: red
+  h2:

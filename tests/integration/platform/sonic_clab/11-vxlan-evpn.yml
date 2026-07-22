@@ -1,0 +1,37 @@
+# SONiC EVPN-VXLAN: OSPF underlay + iBGP EVPN over loopbacks, VLAN red
+# (pure L2, vni 10043) stretched between the two VTEPs. h1/h2 are linux hosts behind
+# untagged access ports; h1 ping h2 can ONLY succeed through the VXLAN tunnel across
+# the routed core — the definitive datapath proof.
+# docker-sonic-vs's orchagent can't program the dataplane, so the L2VNI is built on
+# the FRR/kernel path (traditional bridge + kernel vxlan netdev); zebra drives EVPN.
+provider: clab
+plugin: [ multilab ]
+defaults:
+  device: sonic_clab
+  multilab:
+    id: 52
+
+module: [ vlan, ospf, bgp, vxlan, evpn ]
+bgp.as: 65000
+
+vlans:
+  red:
+    mode: bridge
+    vni: 10043
+
+nodes:
+  s1:
+  s2:
+  h1:
+    device: linux
+  h2:
+    device: linux
+
+links:
+- s1-s2
+- s1:
+    vlan.access: red
+  h1:
+- s2:
+    vlan.access: red
+  h2:

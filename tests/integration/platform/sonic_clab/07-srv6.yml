@@ -1,0 +1,28 @@
+# SONiC SRv6 over IS-IS
+# Per-node locator from srv6.locator_pool; IS-IS advertises the SRv6 locator + auto
+# End/End.X SIDs. CONFIRMED: FRR's srv6/frr.j2 uses kernel seg6 (net.ipv6.seg6_enabled),
+# NOT the MPLS label FIB, so — unlike mpls/sr — this needs NO host modprobe
+# prerequisite and gets REAL kernel seg6local routes (`ip -6 route` shows
+# `encap seg6local action End`/`End.X`) straight out of the box. Cross-node proof: s1's
+# IS-IS LSDB carries s2's locator (and vice versa), not just a local SID.
+# Same open follow-up as OcNOS's srv6 result: SRv6-OAM ping to the End SID (uN) does
+# NOT get answered even though the kernel seg6local route is installed — proven
+# control+kernel-plane, datapath ping unresolved (not chased further here
+# follow-up, matches the OcNOS precedent exactly).
+#   python validate/sonic.py --module srv6
+provider: clab
+plugin: [ multilab ]
+defaults:
+  device: sonic_clab
+  multilab:
+    id: 52
+module: [ isis, srv6 ]
+srv6.bgp: false
+srv6.igp: [ isis ]
+addressing:
+  loopback:
+    ipv6: 2001:db8:a::/48
+  p2p:
+    ipv6: 2001:db8:1::/48
+nodes: [ s1, s2 ]
+links: [ s1-s2 ]

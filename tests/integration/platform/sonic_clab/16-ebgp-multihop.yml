@@ -1,0 +1,39 @@
+# SONiC ebgp.multihop plugin. eBGP session between the two LOOPBACKS
+# (multihop, up to 255 hops) across an AS boundary (s1 AS65001 <-> s2 AS65002),
+# with s1 presenting a local-as of 65101. netlab does NOT run an IGP across an
+# eBGP AS boundary, so loopback reachability is modeled with the routing.static
+# module (static route to the remote loopback via the connected transit subnet) --
+# the realistic multihop underlay. The connected link carries NO direct BGP session
+# (bgp: False) so the ONLY session is the multihop loopback-to-loopback one.
+# FRR-delegated (templates/ebgp.multihop/sonic.j2 = include frr.j2).
+provider: clab
+plugin: [ multilab, ebgp.multihop ]
+defaults:
+  device: sonic_clab
+  multilab:
+    id: 52
+
+module: [ bgp, ospf, routing ]
+bgp.advertise_loopback: True
+
+bgp.multihop.sessions:
+- s1:
+    local_as: 65101
+  s2:
+
+nodes:
+  s1:
+    bgp.as: 65001
+    routing.static:
+    - ipv4: 10.0.0.2/32
+      nexthop.ipv4: 10.1.0.2
+  s2:
+    bgp.as: 65002
+    routing.static:
+    - ipv4: 10.0.0.1/32
+      nexthop.ipv4: 10.1.0.1
+
+links:
+- s1:
+  s2:
+  bgp: False

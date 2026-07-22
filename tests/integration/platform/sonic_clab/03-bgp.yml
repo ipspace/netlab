@@ -1,0 +1,30 @@
+# 2-node SONiC (clab) eBGP smoke test.
+provider: clab
+plugin: [ multilab ]
+defaults:
+  device: sonic_clab
+  multilab:
+    id: 52
+module: [ bgp ]
+nodes:
+  s1:
+    bgp.as: 65001
+  s2:
+    bgp.as: 65002
+links:
+- s1:
+  s2:
+
+# native docker-exec validation (reuses FRR bgp validation plugin via sonic_clab alias)
+defaults.const.validate.ebgp_session: 60
+validate:
+  session_s1:
+    description: s1 sees s2 as an established eBGP neighbor (docker-exec validation)
+    wait_msg: Waiting for BGP session to establish
+    wait: ebgp_session
+    nodes: [ s1 ]
+    plugin: bgp_neighbor(node.bgp.neighbors, "s2")
+  session_s2:
+    description: s2 sees s1 as an established eBGP neighbor
+    nodes: [ s2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors, "s1")
