@@ -86,7 +86,9 @@ def resolve_protocol(p_protocol: typing.Union[str, int]) -> int:
 
   if isinstance(p_protocol, str):
     if p_protocol not in protocol_number:
-      return 0
+      log.fatal(
+        f"Unknown protocol {p_protocol}. Please update resolve_protocol() if data model changed",
+      )
     return protocol_number[p_protocol]
 
 
@@ -108,7 +110,7 @@ def validate_acl_address_entry(p_entry: Box, ctx: validation_context) -> None:
 
   if ctx.protocol < 0 or ctx.protocol > 255:
     log.error(
-      f"ACL {ctx.p_name} entry {ctx.idx} protcol number out of IANA range [0,255]",
+      f"ACL {ctx.p_name} entry {ctx.idx} protocol number out of IANA range [0,255]",
       category=log.IncorrectAttr,
     )
 
