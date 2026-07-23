@@ -106,6 +106,12 @@ def validate_acl_address_entry(p_entry: Box, ctx: validation_context) -> None:
   af = "ipv4" if ctx.af_ipv4 else "ipv6"
   port_keys = ("port", "port_range")
 
+  if ctx.protocol < 0 or ctx.protocol > 255:
+    log.error(
+      f"ACL {ctx.p_name} entry {ctx.idx} protcol number out of IANA range [0,255]",
+      category=log.IncorrectAttr,
+    )
+
   if ctx.established and ctx.protocol != TCP:
     log.error(
       f"ACL {ctx.p_name} entry {ctx.idx} established keyword is only valid with TCP protocol",
