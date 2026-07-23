@@ -239,7 +239,15 @@ $ netlab defaults devices.iosv.clab.group_vars.ansible_ssh_pass=Baggins
 (vrnetlab-internal-net)=
 ### Internal Container Networking
 
-The packaged container's architecture requires an internal network. The [*vrnetlab* fork](https://github.com/srl-labs/vrnetlab) supported by *containerlab* uses the IPv4 prefix 10.0.0.0/24 on that network, which clashes with the *netlab* loopback address pool. Fortunately, that fork also adds management VRF (and default route within the management VRF) to most device configurations, making the overlap between the *vrnetlab* internal subnet and the *netlab* loopback pool irrelevant. However, all VMs in *vrnetlab* containers will have the same IP and MAC address on the management interface, potentially confusing any network management system you might use with your lab.
+The packaged container's architecture requires an internal network. Traditionally, the [*vrnetlab* fork](https://github.com/srl-labs/vrnetlab) supported by *containerlab* used the IPv4 prefix 10.0.0.0/24 on that network and assigned IPv4 address 10.0.0.15 to the management interface, clashing with the *netlab* loopback address pool.
+
+Fortunately, that fork also adds management VRF (and default route within the management VRF) to most device configurations, making the overlap between the *vrnetlab* internal subnet and the *netlab* loopback pool irrelevant. However, all VMs running within *vrnetlab* containers will have the same IP and MAC address on the management interface, potentially confusing any network management system you might use with your lab.
+
+Recently, *vrnetlab* implemented **[Transparent Management](https://containerlab.dev/manual/vrnetlab/#management-interface)**, which configures the IPv4 address configured on the container management interface on the network device VM. This feature is controlled by the `CLAB_MGMT_PASSTHROUGH` container environment variable and is enabled for all _netlab_ devices for which _vrnetlab_ already implemented it by July 2026. If you want to enable this feature on other devices, set the **devices._device_.clab.node.env.CLAB_MGMT_PASSTHROUGH** [topology default parameter](topo-defaults) or **clab.env.CLAB_MGMT_PASSTHROUGH** node variable to **True**.
+
+```{warning}
+Setting this environment variable to True for a *‌vrnetlab* container that does not implement the Transparent Management might result in an unreachable management interface.
+```
 
 Finally, if you're still experiencing connectivity problems or initial configuration failures with _vrnetlab_-based containers after rebuilding them with the [latest vrnetlab version](https://github.com/srl-labs/vrnetlab), add the following parameters to the lab configuration file to change the _netlab_ loopback addressing pool:
 
