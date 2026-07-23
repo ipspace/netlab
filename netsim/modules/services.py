@@ -1,5 +1,5 @@
 #
-# DHCP module
+# Network services module
 #
 from box import Box
 
@@ -30,12 +30,14 @@ def resolve_servers(node: Box, svc_data: Box, topology: Box, mod_attr: Box, svc_
         continue
 
       srv_data = topology.nodes[srv_name]
-      if not srv_data.get(f'services.server.{kw}',None):
+      if not kw in srv_data.get(f'services.server',{}):
         svc_cache[srv_name][kw].err_clients = [ node.name ]
         continue
 
-      cp_intf = svc_cache[srv_name].get('cp_intf',_routing.get_remote_cp_endpoint(srv_data))
-      svc_cache[srv_name].cp_intf = cp_intf
+      cp_intf = svc_cache[srv_name].get('cp_intf',None)
+      if cp_intf is None:
+        cp_intf = _routing.get_remote_cp_endpoint(srv_data)
+        svc_cache[srv_name].cp_intf = cp_intf
 
       node_af = node.get('af',{})
       af_found = False
