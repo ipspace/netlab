@@ -516,7 +516,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Operating system      | OSPFv3 | IS-IS MT | EIGRP<br />IPv6 AF | BGP<br />IPv6 AF | SR-MPLS |
 | --------------------- |:--:|:--:|:--:|:--:|:--:|
 | Arista EOS            | ✅ | ✅ | ❌ | ✅ | ✅ |
-| Arrcus ArcOS          | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Arrcus ArcOS          | ✅ | ❌[❗](caveats-arcos) | ❌ | ✅ | ❌ |
 | Aruba AOS-CX          | ✅ | ❌ | ❌ | ✅ | ❌ |
 | BIRD                  | ✅ | ❌ | ❌ | ✅ | ❌ |
 | Cisco ASAv            | ❌ | ✅ | ❌ | ✅ | ❌ |

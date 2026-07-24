@@ -1,7 +1,17 @@
 {#
-  ArcOS initial configuration. confd_cli block-indent CLI (OpenConfig-modelled). Uses
-  `interfaces` (not `netlab_interfaces`) throughout, consistent with every other module
-  template, so the .lag/.vlan sub-attributes the LAG/VLAN exclusions below need are present.
+  ArcOS initial configuration. confd_cli block-indent CLI (OpenConfig-modelled).
+
+  ONE loop over `netlab_interfaces` (== the system loopback prepended to `interfaces`, see
+  netsim/outputs/common.py) configures every L3 interface -- system loopback, additional
+  loopbacks, LAG aggregates and routed physical ports -- so the IPv4 and IPv6 address config
+  always stay in sync (they are rendered side by side, from the same `l`, with the interface's
+  ACTUAL prefix length via ipaddr('prefix'); netlab hands loopbacks a /64 IPv6 and a /32 IPv4 by
+  default, but a topology may override either). Interfaces that are configured by another module
+  are skipped here: LAG members (templates/lag/arcos.j2, aggregate-id only -- ArcOS rejects
+  "Bond member Interface can't have it's own L3 configuration") and SVIs / tunnel / VXLAN virtual
+  interfaces. VLAN access/trunk ports are switched (no subinterface/IP -- templates/vlan/arcos.j2
+  puts them in switched-vlan mode) so they still get an `interface`/`enable`/`mtu` stanza but no
+  `subinterface 0` addressing.
 
   MTU: the `interface <if> mtu <n>` config leaf is NOT a pass-through -- ArcOS always programs
   the real kernel netdev (and, critically, the MTU value it advertises in OSPF's DBD packets)
@@ -15,59 +25,25 @@
   setting the leaf to the bare intended value visibly "commits clean" but silently under-shoots
   the real kernel/OSPF-advertised MTU by 26. This device-side compensation alone makes an
   ArcOS<->FRR OSPF adjacency converge (both sides agree on 1500); no containerlab/core change is
-  required.
+  required. Loopbacks carry no MTU (the leaf is skipped for them).
 #}
 system hostname {{ inventory_hostname }}
 !
-interface loopback0
- enable true
- subinterface 0
-{% if loopback.ipv4 is defined %}
-   ipv4 address {{ loopback.ipv4 | ansible.netcommon.ipv4("address") }} prefix-length 32
-{% endif %}
-{% if loopback.ipv6 is defined %}
-   ipv6 address {{ loopback.ipv6 | ansible.netcommon.ipv6("address") }} prefix-length 128
-{% endif %}
-!
-{% for l in interfaces|default([]) if l.type|default('') == 'loopback' and l.ifname != 'loopback0' %}
+{% for l in netlab_interfaces|default([])
+     if (l.type|default('') in ['loopback','lag'] or not l.virtual_interface|default(false))
+     and l.lag._parentindex is not defined %}
 interface {{ l.ifname }}
  enable true
- subinterface 0
-{%   if l.ipv4 is defined and l.ipv4 is string %}
-   ipv4 address {{ l.ipv4 | ansible.utils.ipaddr('address') }} prefix-length {{ l.ipv4 | ansible.utils.ipaddr('prefix') }}
-{%   endif %}
-!
-{% endfor %}
-{# LAG aggregates (bondN) are virtual but carry the L3 addressing #}
-{% for l in interfaces|default([]) if l.type|default('') == 'lag' %}
-interface {{ l.ifname }}
- enable true
-{%   if l.mtu is defined %}
- mtu {{ l.mtu + 26 }}
-{%   endif %}
- subinterface 0
-{%   if l.ipv4 is defined and l.ipv4 is string %}
-   ipv4 address {{ l.ipv4 | ansible.utils.ipaddr('address') }} prefix-length {{ l.ipv4 | ansible.utils.ipaddr('prefix') }}
-{%   endif %}
-!
-{% endfor %}
-{# LAG members refuse their own L3 config ("Bond member Interface can't have it's own L3
-   configuration") -- templates/lag/arcos.j2 handles them (aggregate-id only). VLAN
-   access/trunk ports are pure L2 -- no subinterface/IP here, templates/vlan/arcos.j2 handles
-   them (switched-vlan mode + SVI addressing). #}
-{% for l in interfaces|default([]) if not l.virtual_interface|default(false) and l.lag._parentindex is not defined and l.type|default('') != 'lag' %}
-interface {{ l.ifname }}
- enable true
-{%   if l.mtu is defined %}
+{%   if l.mtu is defined and l.type|default('') != 'loopback' %}
  mtu {{ l.mtu + 26 }}
 {%   endif %}
 {%   if not (l.vlan is defined and (l.vlan.access is defined or l.vlan.trunk is defined)) %}
  subinterface 0
-{%     if l.ipv4 is defined and l.ipv4 %}
-   ipv4 address {{ l.ipv4 | ansible.netcommon.ipv4("address") }} prefix-length {{ l.ipv4 | ansible.netcommon.ipaddr("prefix") }}
+{%     if l.ipv4 is defined and l.ipv4 is string %}
+   ipv4 address {{ l.ipv4 | ansible.utils.ipaddr('address') }} prefix-length {{ l.ipv4 | ansible.utils.ipaddr('prefix') }}
 {%     endif %}
-{%     if l.ipv6 is defined and l.ipv6 %}
-   ipv6 address {{ l.ipv6 | ansible.netcommon.ipv6("address") }} prefix-length {{ l.ipv6 | ansible.netcommon.ipaddr("prefix") }}
+{%     if l.ipv6 is defined and l.ipv6 is string %}
+   ipv6 address {{ l.ipv6 | ansible.utils.ipaddr('address') }} prefix-length {{ l.ipv6 | ansible.utils.ipaddr('prefix') }}
 {%     endif %}
 {%   endif %}
 !

@@ -2,12 +2,42 @@
   NOT declared (genuinely unsupported, not just untested): import/export route-target leaking
   between VRFs -- no rd/RT/L3VPN model on this image.
 
+  Kept CONSISTENT with the global-table templates (theme: global vs VRF parity): the per-VRF
+  OSPF renders the same per-interface parameters (network-type/metric/bfd/priority/timers) and
+  the same multi-area layout as templates/ospf/arcos.j2, and the per-VRF IS-IS carries the same
+  dual-AF handling (IPv4 and IPv6 unicast, each gated on vdata.isis.af.<af>) as
+  templates/isis/arcos.j2. The IPv6 IS-IS single-topology caveat there applies here too
+  (cross-vendor IPv6 IS-IS is unsupported).
+
   A protocol *instance tag* ("p1", "i1") is a GLOBAL namespace
   across every network-instance on this ArcOS build, NOT scoped per network-instance -- reusing
   the default instance's tag for a VRF's protocol instance aborts the commit ("Protocol instance
   'p1'/'i1' already configured under network-instance 'default'"). Tag every VRF protocol
   instance with the VRF name so it can never collide with the default instance or another VRF's
   instance of the same protocol. -#}
+{%- macro ospf_if_params(l, ospf) %}
+{# same fix as templates/ospf/arcos.j2: only fall back to l.type == 'p2p' when
+   ospf.network_type wasn't explicitly set, so an explicit "broadcast" isn't overridden #}
+{%   set nt = l.ospf.network_type|default('point-to-point' if l.type|default('') == 'p2p' else '') %}
+{%   if nt == 'point-to-point' %}
+   network-type POINT_TO_POINT_NETWORK
+{%   endif %}
+{%   if l.ospf.cost is defined %}
+   metric {{ l.ospf.cost }}
+{%   endif %}
+{%   if l.ospf.bfd|default(ospf.bfd|default(false)) %}
+   bfd enabled true
+{%   endif %}
+{%   if l.ospf.priority is defined %}
+   priority {{ l.ospf.priority }}
+{%   endif %}
+{%   if l.ospf.timers.hello is defined %}
+   timers hello-interval {{ l.ospf.timers.hello }}
+{%   endif %}
+{%   if l.ospf.timers.dead is defined %}
+   timers dead-interval {{ l.ospf.timers.dead }}
+{%   endif %}
+{%- endmacro %}
 {% if vrfs is defined %}
 {%   for vname, vdata in vrfs.items() %}
 network-instance {{ vname }} type L3VRF
@@ -17,16 +47,20 @@ network-instance {{ vname }} interface {{ l.ifname }}
 {%       endif %}
 {%     endfor %}
 {%     if vdata.ospf is defined %}
+{%       set _vdflt = vdata.ospf.area|default('0.0.0.0') %}
+{%       set _vareas = vdata.ospf.areas|default([{'area': _vdflt, '_area_int': 0}]) %}
 network-instance {{ vname }} protocol OSPF p-{{ vname }}
  global router-id {{ vdata.ospf.router_id }}
- area {{ vdata.ospf.area | default("0.0.0.0") }}
-{%       for l in vdata.ospf.interfaces|default([]) if l.ipv4 is defined %}
+{%       for a in _vareas %}
+{%         set _body %}
+{%           for l in vdata.ospf.interfaces|default([]) if l.ipv4 is defined and (l.ospf.area|default(_vdflt)) == a.area %}
   interface {{ l.ifname }}
-{# same fix as templates/ospf/arcos.j2: only fall back to l.type == 'p2p' when
-   ospf.network_type wasn't explicitly set, so an explicit "broadcast" isn't overridden #}
-{%         set nt = l.ospf.network_type|default('point-to-point' if l.type|default('') == 'p2p' else '') %}
-{%         if nt == 'point-to-point' %}
-   network-type POINT_TO_POINT_NETWORK
+{{ ospf_if_params(l, ospf) }}
+{%           endfor %}
+{%         endset %}
+{%         if _body.strip() %}
+ area {{ a.area }}
+{{ _body }}
 {%         endif %}
 {%       endfor %}
 {%     endif %}
@@ -35,29 +69,39 @@ network-instance {{ vname }} protocol OSPF p-{{ vname }}
     as a bare integer, not dotted-decimal). Gated on vdata.ospf.af.ipv6 (netlab vrf.ospf.af,
     feature vrf.ospfv3) so v4-only VRF OSPF topologies are unaffected. -#}
 {%     if vdata.ospf is defined and vdata.ospf.af.ipv6|default(false) %}
-{%       set varea3 = '0' if (vdata.ospf.area|default('0.0.0.0')) == '0.0.0.0' else vdata.ospf.area %}
+{%       set _vdflt = vdata.ospf.area|default('0.0.0.0') %}
+{%       set _vareas = vdata.ospf.areas|default([{'area': _vdflt, '_area_int': 0}]) %}
 network-instance {{ vname }} protocol OSPF3 p-{{ vname }}
  global router-id {{ vdata.ospf.router_id }}
- area {{ varea3 }}
-{%       for l in vdata.ospf.interfaces|default([]) if l.ipv6 is defined %}
+{%       for a in _vareas %}
+{%         set _body %}
+{%           for l in vdata.ospf.interfaces|default([]) if l.ipv6 is defined and (l.ospf.area|default(_vdflt)) == a.area %}
   interface {{ l.ifname }}
-{# same fix as templates/ospf/arcos.j2: only fall back to l.type == 'p2p' when
-   ospf.network_type wasn't explicitly set, so an explicit "broadcast" isn't overridden #}
-{%         set nt = l.ospf.network_type|default('point-to-point' if l.type|default('') == 'p2p' else '') %}
-{%         if nt == 'point-to-point' %}
-   network-type POINT_TO_POINT_NETWORK
+{{ ospf_if_params(l, ospf) }}
+{%           endfor %}
+{%         endset %}
+{%         if _body.strip() %}
+ area {{ a._area_int }}
+{{ _body }}
 {%         endif %}
 {%       endfor %}
 {%     endif %}
 {#- per-VRF IS-IS: network-instance <vrf> protocol ISIS -- verified: instance/net/level +
-    interface bindings commit inside an L3VRF, adjacency forms in-VRF. -#}
+    interface bindings commit inside an L3VRF, adjacency forms in-VRF. IPv4/IPv6 unicast each
+    gated on vdata.isis.af.<af> (same as templates/isis/arcos.j2, incl. the single-topology
+    IPv6 caveat). -#}
 {%     if vdata.isis is defined %}
 {%       set vcaps = {"level-1":"LEVEL_1","level-2":"LEVEL_2","level-1-2":"LEVEL_1_2"} %}
 {%       set vtyp = vdata.isis.type|default("level-2") %}
 network-instance {{ vname }} protocol ISIS i-{{ vname }}
  global net {{ vdata.isis.net }}
  global level-capability {{ vcaps[vtyp]|default("LEVEL_2") }}
+{%       if vdata.isis.af.ipv4|default(false) %}
  global af IPV4 UNICAST enabled true
+{%       endif %}
+{%       if vdata.isis.af.ipv6|default(false) %}
+ global af IPV6 UNICAST enabled true
+{%       endif %}
 {%       set vdo_l1 = vtyp in ["level-1","level-1-2"] %}
 {%       set vdo_l2 = vtyp in ["level-2","level-1-2"] %}
 {%       if vdo_l1 %}
@@ -68,7 +112,12 @@ network-instance {{ vname }} protocol ISIS i-{{ vname }}
 {%       endif %}
 {%       for l in vdata.isis.interfaces|default([]) %}
  interface {{ l.ifname }} enabled true
+{%         if vdata.isis.af.ipv4|default(false) %}
  interface {{ l.ifname }} af IPV4 UNICAST enabled true
+{%         endif %}
+{%         if vdata.isis.af.ipv6|default(false) %}
+ interface {{ l.ifname }} af IPV6 UNICAST enabled true
+{%         endif %}
 {%         set vnt = l.isis.network_type|default('point-to-point' if l.type|default('') == 'p2p' else '') %}
 {%         if vnt == 'point-to-point' %}
  interface {{ l.ifname }} network-type POINT_TO_POINT

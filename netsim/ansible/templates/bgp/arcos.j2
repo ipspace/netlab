@@ -49,13 +49,36 @@ network-instance default protocol BGP b1
 {% endfor %}
 
 {#  Redistribution into BGP via OpenConfig table-connections (bgp.import):
-    STATIC->BGP with src-dst-instance <static-inst> <bgp-inst> + import-policy. Static protocol
-    instance is "default" (routing template), BGP instance is "b1". connected/ospf/isis import
-    are not exercised here -> feature declares import: [ static ] only. #}
-{% for proto, imp in bgp.import|default({})|dictsort %}
-{%   if proto == 'static' %}
-network-instance default table-connection STATIC BGP IPV4 src-dst-instance default b1{% if imp is mapping and imp.policy is defined %} import-policy [ {{ imp.policy }}-ipv4 ]{% else %} default-import-policy ACCEPT_ROUTE{% endif %}
+    STATIC->BGP with src-dst-instance <static-inst> <bgp-inst> + import-policy, rendered for
+    EACH AF the BGP instance carries (IPV4 always; IPV6 when bgp.ipv6) so IPv4 and IPv6 statics
+    are both redistributed -- STATIC BGP IPV6 commits identically to IPV4 (verified). Static
+    protocol instance is "default" (routing template), BGP instance is "b1". The per-AF policy
+    name matches templates/routing/arcos.j2's per-AF policy-definitions (<policy>-ipv4 /
+    <policy>-ipv6). connected/ospf/isis import are not exercised here -> feature declares
+    import: [ static ] only.
 
+    Two ArcOS rules, identical to STATIC->ISIS in templates/isis/arcos.j2 (both verified live):
+    (1) the BGP instance "b1" must be COMMITTED before a table-connection can reference it --
+    ArcOS rejects the table-connection if b1 is created in the SAME transaction -- so a #COMMIT
+    marker (see provider/clab/arcos/netlab-config.j2) splits the transaction; (2) the BGP dst
+    rejects `default-import-policy` and a bare table-connection redistributes nothing (implicit
+    reject), so an explicit accept import-policy is required. The default accept policy is emitted
+    per AF; a custom bgp.import.static.policy references templates/routing/arcos.j2's per-AF
+    policy-definitions (<policy>-ipv4 / <policy>-ipv6). #}
+{% if bgp.import.static is defined %}
+{%   set imp = bgp.import.static %}
+#COMMIT
+{%   set _base = imp.policy if (imp is mapping and imp.policy is defined) else "bgp-redist-accept" %}
+{%   for _af in ['ipv4', 'ipv6'] if _af == 'ipv4' or bgp.ipv6|default(false) %}
+{%     set _pol = _base ~ "-" ~ _af %}
+{%     if _base == "bgp-redist-accept" %}
+routing-policy policy-definition {{ _pol }}
+ statement s10
+  actions accept-route
+ exit
 !
-{%   endif %}
-{% endfor %}
+{%     endif %}
+network-instance default table-connection STATIC BGP {{ _af|upper }} src-dst-instance default b1 import-policy [ {{ _pol }} ]
+!
+{%   endfor %}
+{% endif %}

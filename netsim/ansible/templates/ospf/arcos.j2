@@ -1,7 +1,20 @@
 {#
   ArcOS OSPFv2 + OSPFv3. Same area/area-interface shape for both AFs modulo two differences:
-  the protocol keyword (OSPF vs OSPF3), and the area ID is written as a plain integer ("area 0")
-  in OSPFv3, not dotted-decimal ("area 0.0.0.0") like OSPFv2 -- per the ArcOS CLI reference.
+  the protocol keyword (OSPF vs OSPF3), and the area ID is written as a plain integer ("area 0",
+  from ospf.areas[]._area_int) in OSPFv3, not dotted-decimal ("area 0.0.0.0") like OSPFv2.
+
+  MULTI-AREA: one `area <id>` block is emitted per area the node participates in (netlab
+  pre-computes ospf.areas), and every interface is filed under its own ospf.area (an ABR then
+  carries interfaces in several areas under the same OSPF instance -- ArcOS accepts multiple
+  area blocks per instance, verified). The system loopback goes into loopback.ospf.area. An area
+  block is emitted only when it actually has an interface (or the loopback) in this AF, so a
+  v4-only area does not produce an empty OSPFv3 area block (or vice-versa).
+
+  Known ArcOS limit (see docs/caveats.md): the ABR floods correct inter-area Type-3 summaries for
+  transit networks, but summarizes a /32 loopback host route with a /0 mask, so a loopback in a
+  NON-backbone area is not reachable from other areas. Adjacencies, intra-area routes and
+  inter-area transit prefixes are unaffected. Nothing to configure around it here -- it is an LSA
+  origination bug in this build.
 
   MTU interop note: an ArcOS<->FRR OSPF adjacency needs both sides to advertise the same MTU in
   their DBD exchange. ArcOS reprograms the real kernel netdev MTU (and the value OSPF advertises)
@@ -9,8 +22,11 @@
   the interface MTU leaf to `l.mtu + 26` to land exactly on netlab's intended value. With that
   device-side compensation the adjacency converges without any containerlab/core change.
 #}
-{% macro area_interfaces(af) %}
-{%   for l in interfaces|default([]) if l.ospf is defined and l[af] is defined %}
+{% set pid = ospf.process|default(1) %}
+{% set _dflt_area = ospf.area|default('0.0.0.0') %}
+{% set _areas = ospf.areas|default([{'area': _dflt_area, '_area_int': 0}]) %}
+{% macro area_interfaces(af, area_dotted) %}
+{%   for l in interfaces|default([]) if l.ospf is defined and l[af] is defined and (l.ospf.area|default(_dflt_area)) == area_dotted %}
   interface {{ l.ifname }}
 {# network-type selection (matches netlab's cross-vendor OSPF semantics):
    1) netlab's canonical ospf.network_type value is "point-to-point" (hyphen) -- see
@@ -41,25 +57,35 @@
 {%     endif %}
 {%   endfor %}
 {% endmacro %}
-{% set pid = ospf.process|default(1) %}
 {% if ospf.router_id is defined and ospf.af.ipv4|default(true) %}
 network-instance default protocol OSPF p{{ pid }}
  global router-id {{ ospf.router_id }}
  global log-adjacency-changes LOG_ADJ_ENABLE_DETAILED
- area {{ ospf.area | default("0.0.0.0") }}
-{%   if loopback.ipv4 is defined %}
+{%   for a in _areas %}
+{%     set _has_lb = loopback.ipv4 is defined and (loopback.ospf.area|default(_dflt_area)) == a.area %}
+{%     set _body %}{{ area_interfaces('ipv4', a.area) }}{% endset %}
+{%     if _has_lb or _body.strip() %}
+ area {{ a.area }}
+{%       if _has_lb %}
   interface loopback0
-{%   endif %}
-{{ area_interfaces('ipv4') }}
+{%       endif %}
+{{ _body }}
+{%     endif %}
+{%   endfor %}
 {% endif %}
 {% if ospf.router_id is defined and ospf.af.ipv6|default(false) %}
-{%   set area3 = '0' if (ospf.area|default('0.0.0.0')) == '0.0.0.0' else ospf.area %}
 network-instance default protocol OSPF3 p{{ pid }}
  global router-id {{ ospf.router_id }}
  global log-adjacency-changes LOG_ADJ_ENABLE_DETAILED
- area {{ area3 }}
-{%   if loopback.ipv6 is defined %}
+{%   for a in _areas %}
+{%     set _has_lb = loopback.ipv6 is defined and (loopback.ospf.area|default(_dflt_area)) == a.area %}
+{%     set _body %}{{ area_interfaces('ipv6', a.area) }}{% endset %}
+{%     if _has_lb or _body.strip() %}
+ area {{ a._area_int }}
+{%       if _has_lb %}
   interface loopback0
-{%   endif %}
-{{ area_interfaces('ipv6') }}
+{%       endif %}
+{{ _body }}
+{%     endif %}
+{%   endfor %}
 {% endif %}

@@ -1,6 +1,23 @@
 {#
   ArcOS IS-IS. Default-instance IS-IS only when a default IS-IS net exists (VRF-only ISIS has
   none, see templates/vrf/arcos.j2 for the per-VRF form).
+
+  ADDRESS FAMILIES: the IPV4 and IPV6 unicast AFs are enabled side by side (globally, on the
+  loopback and on every IS-IS interface), each gated on isis.af.<af> so an IPv4-only box never
+  emits IPv6 IS-IS config and -- crucially -- an IPv6-only box never emits IPv4 IS-IS config
+  (isis.af.ipv4 is false there).
+
+  IPv6 is SINGLE-TOPOLOGY, NOT multi-topology (RFC 5120). This ArcOS build has no multi-topology
+  knob (no such leaf in the OpenConfig IS-IS model; every `... global/level multi-topology`
+  form is rejected on commit). It advertises IPv6 prefixes in the standard IPv6 Reachability TLV
+  (TLV 236), verified in a peer's LSDB: `IPv6 Reachability: <pfx>` with NO `MT Router Info:
+  ipv6-unicast` and NO `MT IPv6 Reachability` TLV. netlab configures every OTHER IS-IS device
+  with multi-topology for IPv6 (ios `multi-topology`, iosxr `no single-topology`, frr `topology
+  ipv6-unicast`, eos/srlinux/sros `multi-topology`), so a peer running MT will NOT install
+  ArcOS's IPv6 routes (confirmed: an FRR neighbour formed the adjacency and installed ArcOS's
+  IPv4 loopback but showed no ArcOS IPv6 route). IPv6 IS-IS therefore interoperates only in an
+  all-ArcOS IS-IS domain; cross-vendor IPv6 IS-IS is unsupported. Documented in docs/caveats.md;
+  platforms.md "IS-IS MT" for ArcOS is therefore false (marked as unsupported there).
 #}
 {% set typ = isis.type|default("level-2") %}
 {% set caps = {"level-1":"LEVEL_1","level-2":"LEVEL_2","level-1-2":"LEVEL_1_2"} %}
@@ -10,7 +27,9 @@
 network-instance default protocol ISIS i1
  global net {{ isis.net }}
  global level-capability {{ caps[typ]|default("LEVEL_2") }}
+{%   if isis.af.ipv4|default(false) %}
  global af IPV4 UNICAST enabled true
+{%   endif %}
 {%   if isis.af.ipv6|default(false) %}
  global af IPV6 UNICAST enabled true
 {%   endif %}
@@ -22,7 +41,9 @@ network-instance default protocol ISIS i1
 {%   endif %}
  interface loopback0 enabled true
  interface loopback0 passive true
+{%   if isis.af.ipv4|default(false) %}
  interface loopback0 af IPV4 UNICAST enabled true
+{%   endif %}
 {%   if isis.af.ipv6|default(false) %}
  interface loopback0 af IPV6 UNICAST enabled true
 {%   endif %}
@@ -35,7 +56,9 @@ network-instance default protocol ISIS i1
 {%   for l in interfaces|default([]) if l.vrf is not defined %}
 {%     if l.isis is defined %}
  interface {{ l.ifname }} enabled true
+{%       if isis.af.ipv4|default(false) %}
  interface {{ l.ifname }} af IPV4 UNICAST enabled true
+{%       endif %}
 {%       if isis.af.ipv6|default(false) %}
  interface {{ l.ifname }} af IPV6 UNICAST enabled true
 {%       endif %}
@@ -56,25 +79,31 @@ network-instance default protocol ISIS i1
 {%     endif %}
 {%   endfor %}
 
-{#- IS-IS import/redistribution (isis.import): OpenConfig table-connection STATIC ISIS IPV4.
+{#- IS-IS import/redistribution (isis.import): OpenConfig table-connection STATIC ISIS <af>,
+    rendered for EACH address family the IS-IS instance carries (isis.af) so IPv4 and IPv6
+    statics are both redistributed -- STATIC ISIS IPV6 commits identically to IPV4 (verified).
     A static route redistributed into IS-IS appears in both nodes' IS-IS LSDB reachability
     (control plane; FIB install is container-limited, same as SR-MPLS). Two ArcOS
     rules: (1) the ISIS instance must be COMMITTED before the table-connection references it ->
     #COMMIT split; (2) ISIS dst rejects `default-import-policy` and the BARE table-connection
     redistributes nothing (implicit reject) -> an explicit accept import-policy is required.
-    connected(DIRECTLY_CONNECTED) has no addressable src-instance (same gap as BGP import) ->
-    feature declares import: [ static ]. -#}
+    The per-AF policy name matches templates/routing/arcos.j2's per-AF policy-definitions
+    (<policy>-ipv4 / <policy>-ipv6). connected(DIRECTLY_CONNECTED) has no addressable
+    src-instance (same gap as BGP import) -> feature declares import: [ static ]. -#}
 {%   if isis.import.static is defined %}
 #COMMIT
-{%     set _pol = (isis.import.static.policy ~ "-ipv4") if (isis.import.static is mapping and isis.import.static.policy is defined) else "isis-redist-accept-ipv4" %}
-{%     if _pol == "isis-redist-accept-ipv4" %}
-routing-policy policy-definition isis-redist-accept-ipv4
+{%     set _base = isis.import.static.policy if (isis.import.static is mapping and isis.import.static.policy is defined) else "isis-redist-accept" %}
+{%     for _af in ['ipv4','ipv6'] if isis.af[_af]|default(false) %}
+{%       set _pol = _base ~ "-" ~ _af %}
+{%       if _base == "isis-redist-accept" %}
+routing-policy policy-definition {{ _pol }}
  statement s10
   actions accept-route
  exit
 !
-{%     endif %}
-network-instance default table-connection STATIC ISIS IPV4 src-dst-instance default i1 import-policy [ {{ _pol }} ]
+{%       endif %}
+network-instance default table-connection STATIC ISIS {{ _af|upper }} src-dst-instance default i1 import-policy [ {{ _pol }} ]
 !
+{%     endfor %}
 {%   endif %}
 {% endif %}

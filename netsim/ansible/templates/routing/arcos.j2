@@ -3,7 +3,15 @@
   defined-sets prefix-set, policy-definition/statement, protocol STATIC static-route/
   next-hop-index. The routing-policy defined-sets prefix-set container is AF-agnostic (accepts
   either family in the same 'prefix' leaf) -- so the same rendering loop covers ipv4 and ipv6.
-  STATIC route-install is likewise AF-agnostic.
+  STATIC route-install is likewise AF-agnostic (one STATIC instance, IPv4 and IPv6 static-routes
+  rendered from one loop over both AFs).
+
+  POLICIES: netlab route policies apply to whichever AF references them, so each policy is
+  rendered once per AF as `<name>-ipv4` and `<name>-ipv6` (the bgp/isis import table-connections
+  are per-AF and pick the matching name). ArcOS routing-policy is otherwise AF-agnostic (a
+  prefix-set holds either family, bgp-actions are AF-independent), so the two variants differ
+  only in name; a policy that matches an IPv4-only prefix-set simply matches nothing in its
+  -ipv6 form (and vice-versa), which is correct.
 #}
 {% if routing.prefix|default({}) %}
 {%   for pf_af in ['ipv4', 'ipv6'] if pf_af in routing._prefix|default({}) %}
@@ -25,52 +33,47 @@ routing-policy defined-sets prefix-set {{ p_name }}
 {% endif %}
 {% if routing.policy|default({}) %}
 {%   for p_name, p_entries in routing.policy.items() %}
-routing-policy policy-definition {{ p_name }}-ipv4
-{%     for p_entry in p_entries %}
+{%     for af in ['ipv4', 'ipv6'] %}
+routing-policy policy-definition {{ p_name }}-{{ af }}
+{%       for p_entry in p_entries %}
  statement s{{ p_entry.sequence|default(loop.index * 10) }}
-{%       if p_entry.match.prefix is defined %}
+{%         if p_entry.match.prefix is defined %}
   conditions match-prefix-set prefix-set {{ p_entry.match.prefix }}
-{%       endif %}
-{%       if p_entry.set.locpref is defined %}
+{%         endif %}
+{%         if p_entry.set.locpref is defined %}
   actions bgp-actions set-local-pref {{ p_entry.set.locpref }}
-{%       endif %}
-{%       if p_entry.set.med is defined %}
+{%         endif %}
+{%         if p_entry.set.med is defined %}
   actions bgp-actions set-med {{ p_entry.set.med }}
-{%       endif %}
+{%         endif %}
 {#  set-community: ArcOS has ONLY standard communities (inline communities leaf-list). No
     set-large-community / set-ext-community action exists -> not declared in features. #}
-{%       if p_entry.set.community.standard is defined %}
+{%         if p_entry.set.community.standard is defined %}
   actions bgp-actions set-community method INLINE
   actions bgp-actions set-community options {{ 'ADD' if p_entry.set.community.append|default(false) else 'REPLACE' }}
   actions bgp-actions set-community inline communities [ {{ p_entry.set.community.standard|join(' ') }} ]
-{%       endif %}
-{%       if p_entry.set.community.large is defined or p_entry.set.community.extended is defined %}
+{%         endif %}
+{%         if p_entry.set.community.large is defined or p_entry.set.community.extended is defined %}
 ! ArcOS UNSUPPORTED: routing-policy has no set-large-community/set-ext-community action (standard only).
-{%       endif %}
+{%         endif %}
   actions {{ 'accept-route' if p_entry.action|default('permit') == 'permit' else 'reject-route' }}
   exit
-{%     endfor %}
+{%       endfor %}
  exit
 !
+{%     endfor %}
 {%   endfor %}
 {% endif %}
 {% if routing.static|default([]) %}
 network-instance default protocol STATIC default
-{%   for sr_data in routing.static if 'vrf' not in sr_data and sr_data.ipv4 is defined and sr_data.nexthop.ipv4 is defined %}
- static-route {{ sr_data.ipv4 }}
+{%   for af in ['ipv4', 'ipv6'] %}
+{%     for sr_data in routing.static if 'vrf' not in sr_data and sr_data[af] is defined and sr_data.nexthop[af] is defined %}
+ static-route {{ sr_data[af] }}
   next-hop-index nh1
-   next-hop {{ sr_data.nexthop.ipv4 }}
+   next-hop {{ sr_data.nexthop[af] }}
    exit
   exit
-{%   endfor %}
-{#  IPv6 statics -- same STATIC default instance, same static-route/next-hop-index shape, just
-    keyed off sr_data.ipv6/nexthop.ipv6 instead of the v4 pair. #}
-{%   for sr_data in routing.static if 'vrf' not in sr_data and sr_data.ipv6 is defined and sr_data.nexthop.ipv6 is defined %}
- static-route {{ sr_data.ipv6 }}
-  next-hop-index nh1
-   next-hop {{ sr_data.nexthop.ipv6 }}
-   exit
-  exit
+{%     endfor %}
 {%   endfor %}
  exit
 !
