@@ -1,12 +1,25 @@
 {#
-  ArcOS first-hop redundancy -- VRRP. Config path hangs off the interface PRIMARY
-  address: interface <if> subinterface 0 ipv4 address <primary> vrrp vrrp-group <vrid>
-  virtual-address <vip> | priority <p> | preempt ... | advertisement-interval ...
-  Anycast gateway is not declared -- untested on this image.
+  ArcOS first-hop redundancy -- VRRP. The config path hangs off the interface's OWN primary
+  address in the address family the VRRP group serves:
+  interface <if> subinterface 0 <af> address <primary> vrrp vrrp-group <vrid>
+    virtual-address <vip> | priority <p> | advertisement-interval <ms> | accept-mode <bool>
+  IPv4 and IPv6 expose the identical leaf set (verified on the device), so both are rendered from
+  one loop -- the interface may be IPv4-only, IPv6-only or dual-stack, and gateway.ipv4 /
+  gateway.ipv6 are independent.
+
+  gateway.vrrp.preempt is NOT rendered: this image has no preempt leaf under vrrp-group in either
+  address family ("preempt", "preempt enabled" and "preempt-mode" are all rejected with "element
+  does not exist"), and VRRP preemption is on by default. Anycast gateway is not declared --
+  untested on this image, and nothing here renders it.
 #}
-{% for l in interfaces|default([]) if l.gateway is defined and l.gateway.protocol|default('') == 'vrrp' and l.ipv4 is defined and l.ipv4 is string %}
-interface {{ l.ifname }} subinterface 0 ipv4 address {{ l.ipv4 | ansible.utils.ipaddr('address') }} vrrp vrrp-group {{ l.gateway.vrrp.group }} virtual-address {{ l.gateway.ipv4 | ansible.utils.ipaddr('address') }}
-{%   if l.gateway.vrrp.priority is defined %}
-interface {{ l.ifname }} subinterface 0 ipv4 address {{ l.ipv4 | ansible.utils.ipaddr('address') }} vrrp vrrp-group {{ l.gateway.vrrp.group }} priority {{ l.gateway.vrrp.priority }}
-{%   endif %}
+{% for l in interfaces|default([]) if l.gateway is defined and l.gateway.protocol|default('') == 'vrrp' %}
+{%   for af in ['ipv4','ipv6'] if l[af] is defined and l[af] is string and l.gateway[af] is defined %}
+{%     set _vrrp = 'interface ' ~ l.ifname ~ ' subinterface 0 ' ~ af ~ ' address '
+                   ~ (l[af] | ansible.utils.ipaddr('address')) ~ ' vrrp vrrp-group '
+                   ~ l.gateway.vrrp.group %}
+{{ _vrrp }} virtual-address {{ l.gateway[af] | ansible.utils.ipaddr('address') }}
+{%     if l.gateway.vrrp.priority is defined %}
+{{ _vrrp }} priority {{ l.gateway.vrrp.priority }}
+{%     endif %}
+{%   endfor %}
 {% endfor %}
