@@ -33,15 +33,21 @@
 system hostname {{ inventory_hostname.replace("_","-") }}
 !
 {% for l in netlab_interfaces|default([])
-     if (l.type|default('') in ['loopback','lag'] or not l.virtual_interface|default(false))
+     if (l.type|default('') in ['loopback','lag','vlan_member'] or not l.virtual_interface|default(false))
      and l.lag._parentindex is not defined %}
-interface {{ l.ifname }}
+{#  A routed VLAN subinterface (netlab type vlan_member, named <parent>.<vlan-id> by
+    devices/arcos.yml) is not a standalone ArcOS interface -- it is `subinterface <vlan-id>`
+    under the PARENT port, and ArcOS derives the 802.1Q tag from that subinterface index. Every
+    other L3 interface carries its addressing on the untagged `subinterface 0`. #}
+{%   set _ifname = l.parent_ifname|default(l.ifname) %}
+{%   set _subif  = l.vlan.access_id if l.type|default('') == 'vlan_member' else 0 %}
+interface {{ _ifname }}
  enable true
 {%   if l.mtu is defined and l.type|default('') != 'loopback' %}
  mtu {{ l.mtu + 26 }}
 {%   endif %}
 {%   if not (l.vlan is defined and (l.vlan.access is defined or l.vlan.trunk is defined)) %}
- subinterface 0
+ subinterface {{ _subif }}
 {%     if l.ipv4 is defined and l.ipv4 is string %}
    ipv4 address {{ l.ipv4 | ansible.utils.ipaddr('address') }} prefix-length {{ l.ipv4 | ansible.utils.ipaddr('prefix') }}
 {%     endif %}
