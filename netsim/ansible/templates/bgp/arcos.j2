@@ -3,65 +3,31 @@
   timer). Dual-stack peers get TWO separate BGP sessions (one keyed on the IPv4 transport
   address, one on IPv6) rather than one session carrying both AFs.
 
-  iBGP-over-loopback: without an explicit `neighbor X transport local-address <loopback>`, an
-  iBGP session addressed at the peer's loopback stays IDLE forever -- ArcOS does not auto-source
-  from the interface with the best route to the peer.
+  The AS/router-id/AF/network/neighbor rendering lives in templates/bgp/arcos.macro.j2 so the
+  per-VRF BGP instances in templates/vrf/arcos.j2 render exactly the same way (global/VRF parity).
 
   Because a dual-stack peer is two single-AF sessions, `n.activate` (bgp.activate, gated by
-  features.bgp.activate_af) is applied per SESSION: the IPv4-transport session carries the IPv4
-  AF and the IPv6-transport session carries the IPv6 AF, exactly as eos/frr key their
-  "neighbor <n[af]> activate" on the same-AF address. A session whose only AF is not
-  activated is not configured at all -- ArcOS has no way to bring up a neighbor with no address family.
+  features.bgp.activate_af) is applied per SESSION rather than per neighbor. That gating lives in
+  the neighbor macro, so the per-VRF instances honour it too -- see templates/bgp/arcos.macro.j2.
 
   The bgp.session plugin (per-neighbor password/gtsm/timers/passive/bfd) is a separate template
   and is not yet supported.
 #}
+{% import "templates/bgp/arcos.macro.j2" as bgpcfg %}
 network-instance default protocol BGP b1
  global as {{ bgp.as }}
  global router-id {{ bgp.router_id }}
- global afi-safi IPV4_UNICAST
-{% if bgp.ipv6|default(false) %}
- global afi-safi IPV6_UNICAST
-{% endif %}
-{% for a in bgp.advertise|default([]) %}
-{%   if a.ipv4 is defined %}
- global afi-safi IPV4_UNICAST network {{ a.ipv4 }}
-{%   endif %}
-{%   if a.ipv6 is defined %}
- global afi-safi IPV6_UNICAST network {{ a.ipv6 }}
-{%   endif %}
-{% endfor %}
-{% for n in bgp.neighbors|default([]) %}
-{%   if n.ipv4 is defined and n.activate.ipv4|default(false) %}
- neighbor {{ n.ipv4 }} peer-as {{ n.as }}
-{%     if n.local_as is defined %}
- neighbor {{ n.ipv4 }} ebgp-local-as local-as {{ n.local_as }}
-{%     endif %}
-{%     if n.type|default("") == "ibgp" and n._source_intf is defined and n._source_intf.ipv4 is defined %}
- neighbor {{ n.ipv4 }} transport local-address {{ n._source_intf.ipv4 | ansible.utils.ipaddr('address') }}
-{%     endif %}
- neighbor {{ n.ipv4 }} afi-safi IPV4_UNICAST
-{%   endif %}
-{%   if n.ipv6 is defined and n.activate.ipv6|default(false) %}
- neighbor {{ n.ipv6 }} peer-as {{ n.as }}
-{%     if n.local_as is defined %}
- neighbor {{ n.ipv6 }} ebgp-local-as local-as {{ n.local_as }}
-{%     endif %}
-{%     if n.type|default("") == "ibgp" and n._source_intf is defined and n._source_intf.ipv6 is defined %}
- neighbor {{ n.ipv6 }} transport local-address {{ n._source_intf.ipv6 | ansible.utils.ipaddr('address') }}
-{%     endif %}
- neighbor {{ n.ipv6 }} afi-safi IPV6_UNICAST
-{%   endif %}
-{% endfor %}
+{{ bgpcfg.afi_safi(bgp) -}}
+{{ bgpcfg.advertise(bgp.advertise|default([]),bgp) -}}
+{{ bgpcfg.neighbors(bgp.neighbors|default([]),bgp) -}}
 
 {#  Redistribution into BGP via OpenConfig table-connections (bgp.import):
     STATIC->BGP with src-dst-instance <static-inst> <bgp-inst> + import-policy, rendered for
-    EACH AF the BGP instance carries (IPV4 always; IPV6 when bgp.ipv6) so IPv4 and IPv6 statics
-    are both redistributed -- STATIC BGP IPV6 commits identically to IPV4 (verified). Static
-    protocol instance is "default" (routing template), BGP instance is "b1". The per-AF policy
-    name matches templates/routing/arcos.j2's per-AF policy-definitions (<policy>-ipv4 /
-    <policy>-ipv6). connected/ospf/isis import are not exercised here -> feature declares
-    import: [ static ] only.
+    EACH AF the BGP instance carries so IPv4 and IPv6 statics are both redistributed -- STATIC
+    BGP IPV6 commits identically to IPV4 (verified). Static protocol instance is "default"
+    (routing template), BGP instance is "b1". The per-AF policy name matches
+    templates/routing/arcos.j2's per-AF policy-definitions (<policy>-ipv4 / <policy>-ipv6).
+    connected/ospf/isis import are not exercised here -> feature declares import: [ static ] only.
 
     Two ArcOS rules, identical to STATIC->ISIS in templates/isis/arcos.j2 (both verified live):
     (1) the BGP instance "b1" must be COMMITTED before a table-connection can reference it --
@@ -75,7 +41,7 @@ network-instance default protocol BGP b1
 {%   set imp = bgp.import.static %}
 #COMMIT
 {%   set _base = imp.policy if (imp is mapping and imp.policy is defined) else "bgp-redist-accept" %}
-{%   for _af in ['ipv4', 'ipv6'] if _af == 'ipv4' or bgp.ipv6|default(false) %}
+{%   for _af in ['ipv4','ipv6'] if bgp[_af] is defined %}
 {%     set _pol = _base ~ "-" ~ _af %}
 {%     if _base == "bgp-redist-accept" %}
 routing-policy policy-definition {{ _pol }}
