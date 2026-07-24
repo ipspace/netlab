@@ -1,11 +1,11 @@
 Creating Device configuration snippets
 [CREATED] dut: initial,routing,ospf,tunnel.gre
-[CREATED] r2: initial,routing,ospf,tunnel.gre
-[CREATED] r3: initial,routing,ospf,tunnel.gre
+[CREATED] r2: initial,routing,ospf,tunnel.gre,mtu-ignore
+[CREATED] r3: initial,routing,mtu-ignore
 [CREATED] core: initial
 Checking Are lab devices ready to be configured?
  [INFO] Checking SSH server(s) on dut
-[SSH]     SSH server on node dut (device vjunos-router) is ready after 83.1 seconds
+[SSH]     SSH server on node dut (device vjunos-router) is ready after 146.2 seconds
  [INFO] Checking lab devices with an Ansible playbook
 [WARNING]: Found variable using reserved name: hosts
 
@@ -36,11 +36,11 @@ Config Deploying device configurations
  [INFO] Executing initial configuration for node r3
  [INFO] Executing initial configuration for node core
  [INFO] Executing routing configuration for node r2
- [INFO] Executing ospf configuration for node r2
- [INFO] Executing tunnel.gre configuration for node r2
  [INFO] Executing routing configuration for node r3
- [INFO] Executing ospf configuration for node r3
- [INFO] Executing tunnel.gre configuration for node r3
+ [INFO] Executing ospf configuration for node r2
+ [INFO] Executing mtu-ignore configuration for node r3
+ [INFO] Executing tunnel.gre configuration for node r2
+ [INFO] Executing mtu-ignore configuration for node r2
  [INFO] Starting Ansible playbook to deploy the rest of the
           configurations
 [WARNING]: Found variable using reserved name: hosts
@@ -67,7 +67,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "initial configuration for dut\n=========================================\nsystem {\n  host-name dut;\n  static-host-mapping {\n    r2 inet 10.0.0.2;\n    r3 inet 10.0.0.3;\n    core inet 10.0.0.4;\n  }\n}\n\ninterfaces {\n  ge-0/0/0 {\n    mtu 1514;\n  }\n  ge-0/0/1 {\n    mtu 1514;\n  }\n\n  lo0.0 {\n\n      family inet {\n        address 10.0.0.1/32;\n      }\n      family inet6 {\n        address 2001:db8::1/128;\n      }\n  }\n  ge-0/0/0.0 {\n    description \"dut -> core [core]\";\n\n      family inet {\n        address 172.22.0.2/24;\n      }\n  }\n  ge-0/0/1.0 {\n    description \"dut -> core [core6]\";\n\n      family inet6 {\n        address 2001:db8:42::2/64;\n      }\n  }\n  gr-0/0/10.0 {\n    description \"dut -> r2 [GRE tunnel]\";\n\n      family inet {\n        address 172.23.0.1/24;\n        mtu 1400;\n      }\n      family inet6 {\n        address 2001:db8:1::1/64;\n        mtu 1400;\n      }\n  }\n  gr-0/0/10.1 {\n    description \"dut -> r3 [GRE tunnel]\";\n\n      family inet {\n        address 172.23.1.1/24;\n        mtu 1400;\n      }\n      family inet6 {\n        address 2001:db8:1:1::1/64;\n        mtu 1400;\n      }\n  }\n}\nprotocols {\n  lldp {\n    interface fxp0 {\n      disable;\n    }\n    interface all;\n  }\n  router-advertisement {\n    interface ge-0/0/1.0;\n    interface gr-0/0/10.0;\n    interface gr-0/0/10.1;\n  }\n}\n"
+    "msg": "initial configuration for dut\n=========================================\nsystem {\n  host-name dut;\n  static-host-mapping {\n    r2 inet 10.0.0.2;\n    r3 inet 10.0.0.3;\n    core inet 10.0.0.4;\n  }\n}\n\ninterfaces {\n  ge-0/0/0 {\n    mtu 1514;\n  }\n  ge-0/0/1 {\n    mtu 1514;\n  }\n\n  lo0.0 {\n\n      family inet {\n        address 10.0.0.1/32;\n      }\n      family inet6 {\n        address 2001:db8::1/128;\n      }\n  }\n  ge-0/0/0.0 {\n    description \"dut -> core [core]\";\n\n      family inet {\n        address 172.22.0.2/24;\n      }\n  }\n  ge-0/0/1.0 {\n    description \"dut -> core [core6]\";\n\n      family inet6 {\n        address 2001:db8:42::2/64;\n      }\n  }\n  gr-0/0/10.0 {\n    description \"dut -> r2 [GRE tunnel]\";\n\n      family inet {\n        address 172.23.0.1/24;\n        mtu 1400;\n      }\n      family inet6 {\n        address 2001:db8:1::1/64;\n        mtu 1400;\n      }\n  }\n}\nprotocols {\n  lldp {\n    interface fxp0 {\n      disable;\n    }\n    interface all;\n  }\n  router-advertisement {\n    interface ge-0/0/1.0;\n    interface gr-0/0/10.0;\n  }\n}\n"
 }
 
 TASK [Deploy initial configuration] ********************************************
@@ -122,7 +122,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "ospf configuration for dut\n=========================================\nrouting-options {\n  router-id 10.0.0.1\n}\nprotocols {\n  delete: ospf;\n}\n\nprotocols {\n  ospf {\n    area 0.0.0.0 {\n      interface lo0.0 {\n      }\n    }\n    area 0.0.0.0 {\n      interface gr-0/0/10.0 {\n        interface-type p2p;\n        hello-interval 1;\n        dead-interval 3;\n      }\n    }\n    area 0.0.0.0 {\n      interface gr-0/0/10.1 {\n        interface-type p2p;\n        hello-interval 1;\n        dead-interval 3;\n      }\n    }\n  }\n}\n\nprotocols {\n  delete: ospf3;\n}\n\nprotocols {\n  ospf3 {\n    area 0.0.0.0 {\n      interface lo0.0 {\n      }\n    }\n    area 0.0.0.0 {\n      interface gr-0/0/10.0 {\n        interface-type p2p;\n        hello-interval 1;\n        dead-interval 3;\n      }\n    }\n    area 0.0.0.0 {\n      interface gr-0/0/10.1 {\n        interface-type p2p;\n        hello-interval 1;\n        dead-interval 3;\n      }\n    }\n  }\n}\n\n"
+    "msg": "ospf configuration for dut\n=========================================\nrouting-options {\n  router-id 10.0.0.1\n}\nprotocols {\n  delete: ospf;\n}\n\nprotocols {\n  ospf {\n    area 0.0.0.0 {\n      interface lo0.0 {\n      }\n    }\n    area 0.0.0.0 {\n      interface gr-0/0/10.0 {\n        interface-type p2p;\n        hello-interval 1;\n        dead-interval 3;\n      }\n    }\n  }\n}\n\nprotocols {\n  delete: ospf3;\n}\n\nprotocols {\n  ospf3 {\n    area 0.0.0.0 {\n      interface lo0.0 {\n      }\n    }\n    area 0.0.0.0 {\n      interface gr-0/0/10.0 {\n        interface-type p2p;\n        hello-interval 1;\n        dead-interval 3;\n      }\n    }\n  }\n}\n\n"
 }
 
 TASK [Deploy ospf configuration] ***********************************************
@@ -135,6 +135,7 @@ changed: [dut]
 PLAY [Deploy custom deployment templates] **************************************
 
 TASK [Run custom configuration deployment scripts] *****************************
+skipping: [dut] => (item=mtu-ignore) 
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=tunnel.gre)
 
 TASK [Find configuration template] *********************************************
@@ -172,8 +173,8 @@ dut                        : ok=29   changed=4    unreachable=0    failed=0    s
 
 Results of configuration script deployments
 ================================================================================
-r2               Script:  initial,routing,ospf,tunnel.gre
-r3               Script:  initial,routing,ospf,tunnel.gre
+r2               Script:  initial,routing,ospf,tunnel.gre,mtu-ignore
+r3               Script:  initial,routing,mtu-ignore
 core             Script:  initial
 
 
