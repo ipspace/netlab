@@ -38,8 +38,19 @@ interface {{ l.ifname }} {{ sw }} switched-vlan trunk-vlans [ {% for vname in l.
 {%   if l.type|default("") == "svi" %}
 interface {{ l.ifname }} enabled true
 interface {{ l.ifname }} autostate false
-{%     if l.ipv4 is defined and l.ipv4 %}
-interface {{ l.ifname }} subinterface 0 ipv4 address {{ l.ipv4 | ansible.netcommon.ipv4("address") }} prefix-length {{ l.ipv4 | ansible.netcommon.ipaddr("prefix") }}
+{#  An SVI needs the same treatment as any other L3 interface (templates/initial/arcos.j2):
+    IPv4 and IPv6 addresses rendered side by side from the same interface data, and the MTU
+    leaf set to l.mtu + 26 because ArcOS programs the real netdev (and the MTU OSPF advertises)
+    as (leaf - 26). Without the MTU leaf an SVI silently inherits the widest member port's MTU,
+    which stalls an OSPF adjacency over that VLAN in ExStart. #}
+{%     if l.mtu is defined %}
+interface {{ l.ifname }} mtu {{ l.mtu + 26 }}
+{%     endif %}
+{%     if l.ipv4 is defined and l.ipv4 is string %}
+interface {{ l.ifname }} subinterface 0 ipv4 address {{ l.ipv4 | ansible.utils.ipaddr('address') }} prefix-length {{ l.ipv4 | ansible.utils.ipaddr('prefix') }}
+{%     endif %}
+{%     if l.ipv6 is defined and l.ipv6 is string %}
+interface {{ l.ifname }} subinterface 0 ipv6 address {{ l.ipv6 | ansible.utils.ipaddr('address') }} prefix-length {{ l.ipv6 | ansible.utils.ipaddr('prefix') }}
 {%     endif %}
 {%   endif %}
 {% endfor %}
