@@ -24,7 +24,7 @@ The following table describes high-level per-platform support of generic routing
 
 | Operating system      | Routing<br>policies | Prefix<br>filters| AS-path<br>filters | BGP<br>communities | Static<br>routes| IPv4/IPv6<br>ACL|
 | ------------------ |:--:|:--:|:--:|:--:|:--:|:--:|
-| Arista EOS         | ✅ | ✅ | ✅ | ✅ | ✅ |❌  |
+| Arista EOS         | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Aruba AOS-CX       | ✅ | ✅ | ✅ | ✅ | ✅ |❌  |
 | BIRD               | ❌  | ❌  | ❌  | ❌  | ✅ |❌  |
 | Cisco IOS/IOS XE[^18v] | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
