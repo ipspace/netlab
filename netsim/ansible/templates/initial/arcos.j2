@@ -43,7 +43,12 @@ system hostname {{ inventory_hostname.replace("_","-") }}
 {%   set _subif  = l.vlan.access_id if l.type|default('') == 'vlan_member' else 0 %}
 interface {{ _ifname }}
  enable true
-{%   if l.mtu is defined and l.type|default('') != 'loopback' %}
+{#  MTU is a per-PORT property on ArcOS: there is no per-subinterface mtu leaf, and an `mtu`
+    written in subinterface context silently lands on the parent interface (verified). A routed
+    VLAN subinterface must therefore not render one -- it would overwrite the parent port's MTU,
+    and on a trunk carrying several routed VLANs the last one would win. The parent port gets
+    its own MTU from its own pass through this loop. #}
+{%   if l.mtu is defined and l.type|default('') not in ['loopback','vlan_member'] %}
  mtu {{ l.mtu + 26 }}
 {%   endif %}
 {%   if not (l.vlan is defined and (l.vlan.access is defined or l.vlan.trunk is defined)) %}
