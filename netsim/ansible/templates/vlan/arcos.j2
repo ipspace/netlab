@@ -16,18 +16,22 @@ vlan {{ vdata.id }} name {{ vname }}
 {%   endfor %}
 {% endif %}
 {% for l in interfaces|default([]) %}
+{#- the switched-vlan container hangs off `ethernet` on a physical port but off `aggregation`
+    on a LAG bond (the OpenConfig model ArcOS follows) -- addressing a bond through `ethernet`
+    is rejected with "syntax error: element does not exist" -#}
+{%   set sw = 'aggregation' if l.type|default('') == 'lag' else 'ethernet' %}
 {%   if l.vlan is defined and l.vlan.access is defined %}
-interface {{ l.ifname }} ethernet switched-vlan interface-mode ACCESS access-vlan {{ l.vlan.access_id }}
+interface {{ l.ifname }} {{ sw }} switched-vlan interface-mode ACCESS access-vlan {{ l.vlan.access_id }}
 {%   elif l.vlan is defined and l.vlan.trunk is defined %}
-interface {{ l.ifname }} ethernet switched-vlan interface-mode TRUNK
+interface {{ l.ifname }} {{ sw }} switched-vlan interface-mode TRUNK
 {# native VLAN on a trunk: a SEPARATE leaf alongside trunk-vlans. Live probe found it MUST be
     excluded from trunk-vlans ("Native vlan N cannot be in trunk-vlans list" on commit) even
     though netlab's own vlan.native/vlan.trunk model keeps the native vlan IN the trunk list --
     so the trunk-vlans loop below filters it out. #}
 {%     if l.vlan.native is defined %}
-interface {{ l.ifname }} ethernet switched-vlan native-vlan {{ vlans[l.vlan.native].id }}
+interface {{ l.ifname }} {{ sw }} switched-vlan native-vlan {{ vlans[l.vlan.native].id }}
 {%     endif %}
-interface {{ l.ifname }} ethernet switched-vlan trunk-vlans [ {% for vname in l.vlan.trunk if vname != l.vlan.native|default("") %}{{ vlans[vname].id }} {% endfor %}]
+interface {{ l.ifname }} {{ sw }} switched-vlan trunk-vlans [ {% for vname in l.vlan.trunk if vname != l.vlan.native|default("") %}{{ vlans[vname].id }} {% endfor %}]
 {%   endif %}
 {% endfor %}
 {% for l in interfaces|default([]) %}
