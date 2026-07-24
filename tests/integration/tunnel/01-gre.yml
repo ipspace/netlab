@@ -20,7 +20,7 @@ addressing:
     ipv4: 172.23.0.0/16
     ipv6: 2001:db8:1::/48
 
-plugin: [ tunnel.gre, adjust_test ]
+plugin: [ tunnel.gre, files, adjust_test ]
 
 groups:
   probes:
@@ -76,6 +76,12 @@ links:
   pool: tunnel
   members: [ dut-r3 ]
 
+files:
+  mtu-ignore.j2: |
+    {% for intf in interfaces if 'ospf' in intf and 'ipv6' in intf %}
+    interface {{ intf.ifname }}
+      ipv6 ospf6 mtu-ignore
+    {% endfor %}
 _adjust:
 - nodes: [ dut ]              # Check for fast OSPF timers support
   features: [ ospf.timers ]
@@ -95,6 +101,15 @@ _adjust:
   - validate.g6_pfx_v6
   - validate.g6_ping_v4
   - validate.g6_ping_v6
+- nodes: [ dut ]
+  devices: [ vjunos-router, vsrx ]
+  warning: >-
+    {device} specifies incorrect MTU in OSPFv3 DBD packets. Ignoring incoming MTU on FRR
+  replace:
+  - key: nodes.r2.config
+    value: [ mtu-ignore ]
+  - key: nodes.r3.config
+    value: [ mtu-ignore ]
 
 validate:
   g4_adj_v4:
