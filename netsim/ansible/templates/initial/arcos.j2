@@ -32,9 +32,14 @@
    whole initial commit aborts on any multi-DUT topology (dut_a, dut_spine, ...) #}
 system hostname {{ inventory_hostname.replace("_","-") }}
 !
+{#  Every interface this loop configures is remembered in _cfg.intf so the VRF-binding loop at
+    the end of this file can bind EXACTLY the interfaces this file creates -- see the comment
+    there. #}
+{% set _cfg = namespace(intf=[]) %}
 {% for l in netlab_interfaces|default([])
      if (l.type|default('') in ['loopback','lag','vlan_member'] or not l.virtual_interface|default(false))
      and l.lag._parentindex is not defined %}
+{%   set _cfg.intf = _cfg.intf + [ l.ifname ] %}
 {#  A routed VLAN subinterface (netlab type vlan_member, named <parent>.<vlan-id> by
     devices/arcos.yml) is not a standalone ArcOS interface -- it is `subinterface <vlan-id>`
     under the PARENT port, and ArcOS derives the 802.1Q tag from that subinterface index. Every
@@ -69,10 +74,15 @@ interface {{ _ifname }}
     instances and the interface bindings therefore have to be part of THIS transaction rather
     than of the later vrf module. templates/vrf/arcos.j2 still owns the routing protocols inside
     each VRF and re-binds the interfaces created by the modules in between (an SVI cannot be
-    bound before the VLAN template creates it). #}
+    bound before the VLAN template creates it).
+
+    ArcOS rejects a binding for an interface that does not exist yet ("Aborted: 'network-instance
+    customer interface vlan1000': Interface vlan1000"), which aborts the whole initial commit, so
+    only the interfaces configured by the loop above may be bound here -- hence _cfg.intf rather
+    than a second copy of that loop's filter. #}
 {% for vname in vrfs|default({}) %}
 network-instance {{ vname }} type L3VRF
 {% endfor %}
-{% for l in netlab_interfaces|default([]) if l.vrf is defined %}
+{% for l in netlab_interfaces|default([]) if l.vrf is defined and l.ifname in _cfg.intf %}
 network-instance {{ l.vrf }} interface {{ l.ifname }}
 {% endfor %}
