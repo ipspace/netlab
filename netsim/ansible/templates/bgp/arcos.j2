@@ -7,6 +7,12 @@
   iBGP session addressed at the peer's loopback stays IDLE forever -- ArcOS does not auto-source
   from the interface with the best route to the peer.
 
+  Because a dual-stack peer is two single-AF sessions, `n.activate` (bgp.activate, gated by
+  features.bgp.activate_af) is applied per SESSION: the IPv4-transport session carries the IPv4
+  AF and the IPv6-transport session carries the IPv6 AF, exactly as eos/frr key their
+  "neighbor <n[af]> activate" on the same-AF address. A session whose only AF is not
+  activated is not configured at all -- ArcOS has no way to bring up a neighbor with no address family.
+
   The bgp.session plugin (per-neighbor password/gtsm/timers/passive/bfd) is a separate template
   and is not yet supported.
 #}
@@ -26,7 +32,7 @@ network-instance default protocol BGP b1
 {%   endif %}
 {% endfor %}
 {% for n in bgp.neighbors|default([]) %}
-{%   if n.ipv4 is defined %}
+{%   if n.ipv4 is defined and n.activate.ipv4|default(false) %}
  neighbor {{ n.ipv4 }} peer-as {{ n.as }}
 {%     if n.local_as is defined %}
  neighbor {{ n.ipv4 }} ebgp-local-as local-as {{ n.local_as }}
@@ -36,7 +42,7 @@ network-instance default protocol BGP b1
 {%     endif %}
  neighbor {{ n.ipv4 }} afi-safi IPV4_UNICAST
 {%   endif %}
-{%   if n.ipv6 is defined %}
+{%   if n.ipv6 is defined and n.activate.ipv6|default(false) %}
  neighbor {{ n.ipv6 }} peer-as {{ n.as }}
 {%     if n.local_as is defined %}
  neighbor {{ n.ipv6 }} ebgp-local-as local-as {{ n.local_as }}
