@@ -1,6 +1,8 @@
-{#- ArcOS per-VRF config: L3VRF network-instance + interface binding + per-VRF OSPFv2/v3/ISIS.
+{% import "templates/bgp/arcos.macro.j2" as bgpcfg %}
+{#- ArcOS per-VRF config: L3VRF network-instance + interface binding + per-VRF OSPFv2/v3/BGP/ISIS.
   NOT declared (genuinely unsupported, not just untested): import/export route-target leaking
-  between VRFs -- no rd/RT/L3VPN model on this image.
+  between VRFs, and redistribution of connected subnets into a VRF BGP instance (the
+  DIRECTLY_CONNECTED source protocol has no addressable instance on this image).
 
   Kept CONSISTENT with the global-table templates (theme: global vs VRF parity): the per-VRF
   OSPF renders the same per-interface parameters (network-type/metric/bfd/priority/timers) and
@@ -90,6 +92,36 @@ network-instance {{ vname }} protocol OSPF3 p-{{ vname }}
 {{ _body }}
 {%         endif %}
 {%       endfor %}
+{%     endif %}
+{#- per-VRF BGP: a BGP protocol instance inside the L3VRF network-instance, rendered with the
+    same macros as the default-instance BGP in templates/bgp/arcos.j2 (global/VRF parity: same
+    router-id / address-family / network / neighbor handling, IPv4 and IPv6 alike).
+
+    ArcOS specifics, all verified on the device:
+    * the AS number is NOT part of the per-VRF model ("global as" does not exist inside an
+      L3VRF) -- the VRF instance inherits the AS from the default instance, which the netlab
+      data model guarantees is there (a VRF BGP neighbor implies the node runs the bgp module);
+    * "global afi-safi <AF>_UNICAST" must be present before a neighbor may activate that AF
+      ("BGP global AF must be configured first"), but instance, AFs and neighbors all commit in
+      a SINGLE transaction -- unlike the table-connections, this needs no #COMMIT split;
+    * the protocol instance tag is "{{ vname }}" to match templates/evpn/arcos.j2, which adds
+      the L3VNI route-distinguisher and the L3VPN AF to that same instance.
+
+    VRF route-target import/export leaking is NOT rendered: it needs L3VPN_IPV4_UNICAST on the
+    DEFAULT instance's BGP, which would change the capabilities of every global-table session,
+    and it is not a declared feature (see the caveats in netsim/devices/arcos.yml).
+
+    The VRF module sets vrfs.<name>.bgp on every VRF once it needs an AS number to build the
+    route distinguishers, so 'vdata.bgp is defined' is not enough to decide there is anything to
+    configure. Render the instance only when the node runs the BGP module (the default instance
+    it inherits the AS from has to exist) and the VRF has neighbors or networks. -#}
+{%     if 'bgp' in module and (vdata.bgp.neighbors|default([]) or vdata.bgp.advertise|default([])) %}
+network-instance {{ vname }} protocol BGP {{ vname }}
+ global router-id {{ vdata.bgp.router_id|default(bgp.router_id) }}
+ global route-distinguisher {{ vdata.rd }}
+{{ bgpcfg.afi_safi(vdata.af) -}}
+{{ bgpcfg.advertise(vdata.bgp.advertise|default([]),vdata.af) -}}
+{{ bgpcfg.neighbors(vdata.bgp.neighbors|default([]),vdata.af) -}}
 {%     endif %}
 {#- per-VRF IS-IS: network-instance <vrf> protocol ISIS -- verified: instance/net/level +
     interface bindings commit inside an L3VRF, adjacency forms in-VRF. IPv4/IPv6 unicast each
