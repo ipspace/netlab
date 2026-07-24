@@ -11,8 +11,8 @@ The plugin includes Jinja2 templates for the following platforms:
 |--------------|:-:|:-:|:-:|
 | Cisco IOS/XE[^18v] |✅|✅|✅|
 | FRR                 |✅|✅|✅|
-| Juniper vJunos-switch |✅|✅|✅|
-| Juniper vSRX        |✅|✅|✅|
+| Juniper vJunos-switch[❗](caveats-junos) |✅|❌|✅|
+| Juniper vSRX[❗](caveats-junos) |✅|❌|✅|
 | Mikrotik RouterOS 7 |✅|✅|✅|
 | VyOS               |✅|✅|✅|
 
