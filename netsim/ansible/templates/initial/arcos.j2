@@ -57,3 +57,17 @@ interface {{ _ifname }}
 {%   endif %}
 !
 {% endfor %}
+{#  An interface has to belong to its VRF by the time its addresses are committed: two VRFs may
+    legitimately use the SAME address on their loopbacks (tests/integration/vrf/04-multi-vrf-
+    loopback-ipv6), and while both loopbacks are still in the default network-instance ArcOS
+    rejects the second one with "IPv6 subnet overlaps with 'interface loopback2 ...'". The L3VRF
+    instances and the interface bindings therefore have to be part of THIS transaction rather
+    than of the later vrf module. templates/vrf/arcos.j2 still owns the routing protocols inside
+    each VRF and re-binds the interfaces created by the modules in between (an SVI cannot be
+    bound before the VLAN template creates it). #}
+{% for vname in vrfs|default({}) %}
+network-instance {{ vname }} type L3VRF
+{% endfor %}
+{% for l in netlab_interfaces|default([]) if l.vrf is defined %}
+network-instance {{ l.vrf }} interface {{ l.ifname }}
+{% endfor %}
