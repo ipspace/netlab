@@ -57,60 +57,61 @@
          is unconditional -- it rewrites the next hop of REFLECTED IBGP routes too (verified on
          the device), so it is netlab's 'all' flavour, the equivalent of "next-hop-self force".
          The default 'ebgp' flavour must not touch reflected routes and is rendered as an export
-         policy instead -- see the nhs_policy and export_policy macros below. #}
+         policy instead -- see the nhs_policy and export_policy macros below.
+         No integration test reaches this branch: every topology that sets next_hop_self to 'all'
+         (bgp/08-ibgp-localas, bgp/09-vrf-localas, bgp/40-confederation) is refused on arcos for an
+         unrelated reason. The force semantics were established by measuring the leaf directly. #}
 {%       if n.next_hop_self|default('') == 'all' %}
  neighbor {{ n[af] }} afi-safi {{ af|upper }}_UNICAST next-hop SELF
 {%       endif %}
-{{ export_policy(n,af,with_bgp_policy=False) -}}
+{{ export_policy(n,af) -}}
 {%     endfor %}
 {%   endfor %}
 {%- endmacro %}
 {#- RFC 4456 cluster-id: a global (per BGP instance) knob, emitted only on a route reflector
     that has an explicit rr_cluster_id. Without it ArcOS prepends the router-id to the
-    CLUSTER_LIST, which is netlab's own default. Lives in the shared macros so a VRF BGP
-    instance renders it exactly like the global one. -#}
+    CLUSTER_LIST, which is netlab's own default. Only templates/bgp/arcos.j2 calls this -- netlab
+    has no way to make a VRF BGP instance a route reflector, so templates/vrf/arcos.j2 does not. -#}
 {% macro cluster_id(bgp_data) -%}
 {%   if bgp_data.rr|default(False) and bgp_data.rr_cluster_id|default(False) %}
  global cluster-id {{ bgp_data.rr_cluster_id }}
 {%   endif %}
 {%- endmacro %}
 
-{#- Export-policy chain of a single session. The next-hop-self policy comes FIRST so it rewrites
-    the next hop before the policy that decides the route's fate: an ArcOS policy chain stops at
-    the first accept-route/reject-route action and, if no policy in the chain executes one, the
-    route is REJECTED (the chain default disposition is reject-route, and a BGP neighbor has no
-    default-export-policy knob to change that). The next-hop-self policy therefore carries no
-    disposition of its own and something has to follow it -- the bgp.policy export policy if the
-    session has one, otherwise the accept-everything policy nhs_policy renders alongside it.
+{#- Export-policy chain that carries next-hop-self. An ArcOS policy chain stops at the first
+    accept-route/reject-route action and, if no policy in the chain executes one, the route is
+    REJECTED -- the chain's default disposition is reject-route and a BGP neighbor has no
+    default-export-policy knob to change that. The next-hop-self policy carries no disposition of
+    its own (it must not stop the chain), so the accept-everything policy that nhs_policy renders
+    alongside it closes the chain.
 
-    Rendered from here so templates/bgp/arcos.j2 and extra/bgp/policy/arcos.j2 -- which both write
-    this leaf-list, the latter after the former, and confd replaces a leaf-list wholesale -- can
-    never disagree on its contents. The BGP module renders it with with_bgp_policy=False: it must
-    not reference a bgp.policy policy-definition, which belongs to the routing module and need not
-    be committed yet, so it closes the chain with the accept-everything policy and leaves the final
-    word to extra/bgp/policy/arcos.j2. -#}
-{% macro export_policy(n,af,with_bgp_policy=True) -%}
-{%   set _nhs = [ 'bgp-next-hop-self-' ~ af ] if n.next_hop_self|default('') == 'ebgp' else [] %}
-{%   set _use_pol = with_bgp_policy and n.policy.out is defined %}
-{%   set _out = [ n.policy.out ~ '-' ~ af ] if _use_pol
-                else ([ 'bgp-export-accept-' ~ af ] if _nhs else []) %}
-{%   if _nhs or _use_pol %}
- neighbor {{ n[af] }} afi-safi {{ af|upper }}_UNICAST apply-policy export-policy [ {{ (_nhs + _out)|join(' ') }} ]
+    This never collides with the export policy extra/bgp/policy/arcos.j2 writes into the same
+    leaf-list: bgp.policy attaches policies only to interface EBGP neighbors
+    (extra/bgp/policy/__init__.py -> intf_neighbors(select=['ebgp'])), while next_hop_self ==
+    'ebgp' is set only on IBGP loopback sessions (netsim/modules/bgp.py), so no session ever
+    carries both. -#}
+{% macro export_policy(n,af) -%}
+{%   if n.next_hop_self|default('') == 'ebgp' %}
+ neighbor {{ n[af] }} afi-safi {{ af|upper }}_UNICAST apply-policy export-policy [ bgp-next-hop-self-{{ af }} bgp-export-accept-{{ af }} ]
 {%   endif %}
 {%- endmacro %}
 {#- next-hop-self for netlab's default 'ebgp' flavour: rewrite the next hop of EBGP-learned routes
     only, leaving routes reflected to an RR client with the originator's next hop (RFC 4456). The
-    statement deliberately has NO accept-route action, so evaluation falls through to whatever
-    export policy follows it in the chain -- an accept-route here would stop the chain and shadow
-    a bgp.policy export policy. The trailing accept-everything policy supplies the disposition for
-    the sessions that have no bgp.policy export policy; see the export_policy macro.
+    statement has NO accept-route action -- an ArcOS policy chain stops at the first accept-route,
+    so accepting here would leave the trailing accept-everything policy unreachable and make the
+    pair fragile to reorder. The trailing policy is what supplies the disposition; see the
+    export_policy macro.
 
     Rendered once per address family, in the global routing-policy tree (routing-policy is not
     per-network-instance), so the global BGP instance owns it; netsim/modules/bgp.py never sets the
     'ebgp' flavour on a VRF neighbor. -#}
 {% macro nhs_policy(nb_list,af_flags) -%}
+{#- The selection mirrors the neighbors macro exactly, activate gate included, so an address
+    family that is present on a neighbor but not activated does not leave orphan
+    policy-definitions behind (visible in bgp/20-dual-stack-activate). -#}
 {%   for af in ['ipv4','ipv6'] if af_flags[af] is defined
-         and nb_list|selectattr('next_hop_self','defined')|selectattr('next_hop_self','eq','ebgp')|selectattr(af,'defined')|list %}
+         and nb_list|selectattr('next_hop_self','defined')|selectattr('next_hop_self','eq','ebgp')
+                    |selectattr(af,'defined')|map(attribute='activate.' ~ af,default=False)|select|list %}
 routing-policy policy-definition bgp-next-hop-self-{{ af }}
  statement s10
   conditions bgp-conditions route-type EXTERNAL
