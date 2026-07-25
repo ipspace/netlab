@@ -15,7 +15,7 @@ network-instance default protocol BGP b1 neighbor {{ n.ipv4 }} afi-safi L2VPN_EV
 network-instance default protocol BGP b1 neighbor {{ n.ipv4 }} transport local-address {{ n._source_intf.ipv4 | ansible.utils.ipaddr('address') }}
 {%   endif %}
 {% endfor %}
-{% for vname, vdata in vlans.items() if vdata.evpn is defined %}
+{% for vname, vdata in (vlans|default({})).items() if vdata.evpn is defined %}
 network-instance vlan{{ vdata.id }}
  advertise-mac-routes true
  protocol BGP vlan{{ vdata.id }}
@@ -54,7 +54,7 @@ network-instance vlan{{ vdata.id }}
     on this very instance (evpn is deployed after vrf, so it would otherwise silently overwrite it
     with a different RD). Both templates render the identical leaf, so whichever runs last the
     committed RD still matches the data model -- the same thing templates/vrf/eos.bgp.j2 does. -#}
-{% for vname, vdata in vrfs.items() if vdata.evpn is defined and vdata.evpn.transit_vni is defined %}
+{% for vname, vdata in (vrfs|default({})).items() if vdata.evpn is defined and vdata.evpn.transit_vni is defined %}
 network-instance {{ vname }} protocol BGP {{ vname }}
 #COMMIT
 network-instance {{ vname }} protocol BGP {{ vname }} global route-distinguisher {{ vdata.rd }}
