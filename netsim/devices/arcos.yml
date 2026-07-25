@@ -57,9 +57,14 @@ support:
     IS-IS works only in an all-ArcOS domain (IPv4 IS-IS, OSPFv3 and BGP IPv6 interoperate
     normally). See docs/caveats.md.
   - >-
+    VRF route-target import/export leaking is not implemented: the model exists (route-distinguisher
+    and rt-afi-safi L3VPN_IPV4_UNICAST route-target), but the route-target leaf needs
+    L3VPN_IPV4_UNICAST on the default-instance BGP, which changes every global-table session, so it
+    is neither rendered nor declared.
+  - >-
     Genuinely unsupported, not just untested: EVPN symmetric IRB / L3VNI (route-type-5 is never
-    originated -- see templates/evpn/arcos.j2); VRF route-target leaking;
-    OSPFv2 area-interface authentication; routing-policy large/extended-community set-actions
+    originated -- see templates/evpn/arcos.j2); OSPFv2 area-interface authentication;
+    routing-policy large/extended-community set-actions
     (standard only); redistribution sources other than static (no addressable src-instance for
     connected on this image); SR-MPLS/LDP label forwarding (the native container has no kernel
     MPLS platform-labels -- control plane only). The bgp.session and other dotted plugins are not
@@ -99,15 +104,18 @@ group_vars:
 #
 # Deliberately NOT declared (genuinely unsupported, not just untested -- see the per-template
 # comments for the reason): OSPFv2 area-interface authentication (confd advertises the leaf but
-# rejects every value form on commit); VRF route-target import/export leaking; EVPN symmetric
-# IRB / L3VNI (config commits cleanly but the control plane never originates a route-type-5
-# prefix -- see templates/evpn/arcos.j2); routing-policy
+# rejects every value form on commit); EVPN symmetric IRB / L3VNI (config commits cleanly but the
+# control plane never originates a route-type-5 prefix -- see templates/evpn/arcos.j2); routing-policy
 # large/extended community set-actions (ArcOS only has an inline standard-community set action);
 # anycast gateways (nothing renders them -- VRRP is the only FHRP the gateway template configures,
 # and it renders for both IPv4 and IPv6);
 # BGP/OSPF/ISIS redistribution sources other than static (no addressable src-instance for
 # connected on this image); SR-MPLS/LDP label FORWARDING (the native container has no kernel MPLS
 # platform-labels -- control plane only); the bgp.session dotted plugin and other dotted plugins.
+#
+# NOT implemented rather than unsupported: VRF route-target import/export leaking. The model is
+# there (see templates/vrf/arcos.j2), but enabling it means turning on L3VPN_IPV4_UNICAST in the
+# default instance, which changes every global-table session, and the leaking has never been tested.
 features:
   initial:
     ipv4:
