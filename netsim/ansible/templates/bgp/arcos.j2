@@ -25,6 +25,17 @@ network-instance default protocol BGP b1
  global router-id {{ bgp.router_id }}
 {{ bgpcfg.afi_safi(bgp) -}}
 {{ bgpcfg.advertise(bgp.advertise|default([]),bgp) -}}
+{#- bgp.import.connected in the global routing table: every connected subnet outside a VRF,
+    rendered as BGP network statements (see the connected() macro for why ArcOS cannot use a
+    DIRECTLY_CONNECTED table-connection). The node loopback is passed in with the interfaces
+    because netlab keeps it out of node.interfaces; advertise() may already have emitted it
+    (bgp.advertise_loopback), and the macro de-duplicates against bgp.advertise. -#}
+{% if bgp.import.connected is defined %}
+{{   bgpcfg.connected(
+       ([loopback] if loopback is defined else []) +
+         (interfaces|default([])|rejectattr('vrf','defined')|list),
+       bgp,bgp.import.connected,bgp.advertise|default([])) -}}
+{% endif %}
 {{ bgpcfg.neighbors(bgp.neighbors|default([]),bgp) -}}
 
 {#  Redistribution into BGP via OpenConfig table-connections (bgp.import):

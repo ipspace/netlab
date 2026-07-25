@@ -4,6 +4,11 @@
   between VRFs, and redistribution of connected subnets into a VRF BGP instance (the
   DIRECTLY_CONNECTED source protocol has no addressable instance on this image).
 
+  Redistribution of connected subnets into a VRF BGP instance IS supported, but not through a
+  table-connection: DIRECTLY_CONNECTED has no addressable source instance on this image, so the
+  connected() macro in templates/bgp/arcos.macro.j2 renders one BGP network statement per
+  connected prefix instead.
+
   Kept CONSISTENT with the global-table templates (theme: global vs VRF parity): the per-VRF
   OSPF renders the same per-interface parameters (network-type/metric/bfd/priority/timers) and
   the same multi-area layout as templates/ospf/arcos.j2, and the per-VRF IS-IS carries the same
@@ -121,6 +126,16 @@ network-instance {{ vname }} protocol BGP {{ vname }}
  global route-distinguisher {{ vdata.rd }}
 {{ bgpcfg.afi_safi(vdata.af|default({})) -}}
 {{ bgpcfg.advertise(vdata.bgp.advertise|default([]),vdata.af|default({})) -}}
+{#- bgp.import.connected inside the VRF: the connected subnets of the interfaces bound to this
+    VRF, rendered as BGP network statements by the same macro the default instance uses. netlab
+    generates this import automatically for every VRF (features.bgp.import carries 'connected'
+    and 'vrf'), which is what makes a CE-to-CE path across the PE work: without the PE-CE subnets
+    in VRF BGP a CE has no route back to the far CE's interface address. -#}
+{%       if vdata.bgp.import.connected is defined %}
+{{         bgpcfg.connected(
+             interfaces|default([])|selectattr('vrf','defined')|selectattr('vrf','eq',vname)|list,
+             vdata.af|default({}),vdata.bgp.import.connected,vdata.bgp.advertise|default([])) -}}
+{%       endif %}
 {{ bgpcfg.neighbors(vdata.bgp.neighbors|default([]),vdata.af|default({})) -}}
 {%     endif %}
 {#- per-VRF IS-IS: network-instance <vrf> protocol ISIS -- verified: instance/net/level +
