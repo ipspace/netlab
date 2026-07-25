@@ -47,6 +47,21 @@
  neighbor {{ n[af] }} transport local-address {{ n._source_intf[af] | ansible.utils.ipaddr('address') }}
 {%       endif %}
  neighbor {{ n[af] }} afi-safi {{ af|upper }}_UNICAST
+{#       Route reflection (bgp.rr): route-reflector-client is a per-neighbor knob that applies
+         to every AFI/SAFI configured on the session, so it is emitted once per session rather
+         than per address family. The matching cluster-id is global -- see the cluster_id macro. #}
+{%       if n.rr_client|default(False) %}
+ neighbor {{ n[af] }} route-reflector route-reflector-client true
+{%       endif %}
 {%     endfor %}
 {%   endfor %}
+{%- endmacro %}
+{#- RFC 4456 cluster-id: a global (per BGP instance) knob, emitted only on a route reflector
+    that has an explicit rr_cluster_id. Without it ArcOS prepends the router-id to the
+    CLUSTER_LIST, which is netlab's own default. Lives in the shared macros so a VRF BGP
+    instance renders it exactly like the global one. -#}
+{% macro cluster_id(bgp_data) -%}
+{%   if bgp_data.rr|default(False) and bgp_data.rr_cluster_id|default(False) %}
+ global cluster-id {{ bgp_data.rr_cluster_id }}
+{%   endif %}
 {%- endmacro %}
