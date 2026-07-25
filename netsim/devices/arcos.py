@@ -26,7 +26,7 @@ class ARCOS(_Quirks):
     #
     # Gated on the vxlan module as well: an EVPN node without it (a pure EVPN route reflector, or
     # an EVPN/MPLS PE) has no VTEP and no flooding mode, so there is nothing to conflict with.
-    if 'evpn' in mods and 'vxlan' in mods and node.get('vxlan', {}).get('flooding', 'static') != 'evpn':
+    if 'evpn' in mods and 'vxlan' in mods and node.get('vxlan.flooding', 'static') != 'evpn':
       report_quirk(
         text=f'ArcOS cannot combine EVPN with static VXLAN flooding (node {node.name})',
         more_hints=[
