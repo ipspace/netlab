@@ -62,6 +62,12 @@ support:
     L3VPN_IPV4_UNICAST on the default-instance BGP, which changes every global-table session, so it
     is neither rendered nor declared.
   - >-
+    VRRP interoperates on IPv6 only. ArcOS follows RFC 5798 and computes the IPv4 VRRPv3 checksum
+    over the IPv4 pseudo-header, with no knob to turn that off, while netlab configures every
+    other VRRP device to exclude it, so ArcOS and a non-ArcOS peer discard each other's IPv4
+    advertisements and both stay Master. A single ArcOS first-hop router still becomes Master and
+    forwards; IPv4 election against another vendor does not work. See docs/caveats.md.
+  - >-
     Genuinely unsupported, not just untested: EVPN symmetric IRB / L3VNI (route-type-5 is never
     originated -- see templates/evpn/arcos.j2); OSPFv2 area-interface authentication;
     routing-policy large/extended-community set-actions
@@ -179,7 +185,8 @@ features:
     passive: false        # ArcOS bonds are LACP-active; STATIC = balance-xor
   gateway:
     # Anycast gateway is NOT supported: templates/gateway/arcos.j2 renders VRRP only and the
-    # anycast form is untested on this image.
+    # anycast form is untested on this image. VRRP itself is declared for both address families,
+    # but only IPv6 interoperates with other netlab devices -- see the IPv4-checksum caveat above.
     protocol: [ vrrp ]
   dhcp:
     relay: true
