@@ -57,10 +57,15 @@ support:
     IS-IS works only in an all-ArcOS domain (IPv4 IS-IS, OSPFv3 and BGP IPv6 interoperate
     normally). See docs/caveats.md.
   - >-
-    VRF route-target import/export leaking is not implemented: the model exists (route-distinguisher
-    and rt-afi-safi L3VPN_IPV4_UNICAST route-target), but the route-target leaf needs
-    L3VPN_IPV4_UNICAST on the default-instance BGP, which changes every global-table session, so it
-    is neither rendered nor declared.
+    Inter-VRF route leaking with import/export route targets is not supported on the tested image
+    and is not rendered. The whole export half works (per-VRF RD, rt-afi-safi L3VPN_IPV4_UNICAST
+    route targets, a BGP_COMMON reserved-label-block and a per-VRF label-allocation-mode bring the
+    VRF to "l3vpn-ipv4-export-readiness: Export ready" and put correctly targeted VPN routes in the
+    per-VRF exported-rib), but a locally exported VPN route is never offered to the local import
+    machinery: the default instance's L3VPN loc-rib stays empty, every VRF reports
+    "paths-imported 0" while showing "Import ready" and the right import RT set, and no route
+    crosses between VRFs. Leaking on this image therefore needs a remote PE to reflect the VPN
+    routes back, which is not what a single-device leaking topology provides.
   - >-
     Genuinely unsupported, not just untested: EVPN symmetric IRB / L3VNI (route-type-5 is never
     originated -- see templates/evpn/arcos.j2); OSPFv2 area-interface authentication;
@@ -116,9 +121,13 @@ group_vars:
 # SR-MPLS/LDP label FORWARDING (the native container has no kernel MPLS
 # platform-labels -- control plane only); the bgp.session dotted plugin and other dotted plugins.
 #
-# NOT implemented rather than unsupported: VRF route-target import/export leaking. The model is
-# there (see templates/vrf/arcos.j2), but enabling it means turning on L3VPN_IPV4_UNICAST in the
-# default instance, which changes every global-table session, and the leaking has never been tested.
+# Inter-VRF route-target leaking: measured as unsupported on this image, not merely untested. The
+# export side can be brought all the way to "Export ready" (RD + rt-afi-safi L3VPN_IPV4_UNICAST
+# route targets + a BGP_COMMON reserved-label-block + label-allocation-mode PER_PREFIX), and the
+# VPN routes appear in the per-VRF exported-rib with the right route targets and labels, but a
+# locally exported VPN path is never presented to the local import machinery: the default
+# instance's L3VPN loc-rib stays empty and every VRF stays at "paths-imported 0". Nothing is
+# rendered for it -- see the caveat above and templates/vrf/arcos.j2.
 features:
   initial:
     ipv4:

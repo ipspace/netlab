@@ -1,8 +1,10 @@
 {% import "templates/bgp/arcos.macro.j2" as bgpcfg %}
 {#- ArcOS per-VRF config: L3VRF network-instance + interface binding + per-VRF OSPFv2/v3/BGP/ISIS.
-  NOT declared (genuinely unsupported, not just untested): import/export route-target leaking
-  between VRFs, and redistribution of connected subnets into a VRF BGP instance (the
-  DIRECTLY_CONNECTED source protocol has no addressable instance on this image).
+  NOT declared (measured as unsupported, not just untested): import/export route-target leaking
+  between VRFs -- the export half can be driven to "Export ready" and puts correctly targeted VPN
+  routes in the per-VRF exported-rib, but a locally exported VPN path never reaches the local
+  import machinery (default-instance L3VPN loc-rib stays empty, every VRF stays at
+  "paths-imported 0"), so nothing leaks on a single device. See netsim/devices/arcos.yml.
 
   Redistribution of connected subnets into a VRF BGP instance IS supported, but not through a
   table-connection: DIRECTLY_CONNECTED has no addressable source instance on this image, so the
@@ -112,9 +114,9 @@ network-instance {{ vname }} protocol OSPF3 p-{{ vname }}
     * the protocol instance tag is "{{ vname }}" to match templates/evpn/arcos.j2, which adds
       the L3VNI route-distinguisher and the L3VPN AF to that same instance.
 
-    VRF route-target import/export leaking is NOT rendered: it needs L3VPN_IPV4_UNICAST on the
-    DEFAULT instance's BGP, which would change the capabilities of every global-table session,
-    and it is not a declared feature (see the caveats in netsim/devices/arcos.yml).
+    VRF route-target import/export leaking is NOT rendered: local (single-device) leaking does
+    not work on this image, and it is not a declared feature (see the caveats in
+    netsim/devices/arcos.yml for the measurement).
 
     The VRF module sets vrfs.<name>.bgp on every VRF once it needs an AS number to build the
     route distinguishers, so 'vdata.bgp is defined' is not enough to decide there is anything to
