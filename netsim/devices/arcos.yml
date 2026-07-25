@@ -55,7 +55,11 @@ support:
     it advertises IPv6 in the standard IPv6 Reachability TLV. netlab configures every other IS-IS
     device with multi-topology, so an MT neighbour will not install ArcOS's IPv6 routes -- IPv6
     IS-IS works only in an all-ArcOS domain (IPv4 IS-IS, OSPFv3 and BGP IPv6 interoperate
-    normally). See docs/caveats.md.
+    normally). The IS-IS-to-BGP redistribution (features.bgp.import) inherits this: the IPv6
+    table-connection renders and commits exactly like the IPv4 one, but against a multi-topology
+    neighbour there is nothing to redistribute -- the neighbour's IPv6 prefix never reaches the
+    BGP table, while the IPv4 prefix does (verified: isis/30-vrf red_isis_bgp4 passes,
+    red_isis_bgp6 fails). See docs/caveats.md.
   - >-
     Inter-VRF route leaking with import/export route targets is not supported on the tested image
     and is not rendered. The whole export half works (per-VRF RD, rt-afi-safi L3VPN_IPV4_UNICAST
@@ -70,11 +74,12 @@ support:
     Genuinely unsupported, not just untested: EVPN symmetric IRB / L3VNI (route-type-5 is never
     originated -- see templates/evpn/arcos.j2); OSPFv2 area-interface authentication;
     routing-policy large/extended-community set-actions
-    (standard only); redistribution of OSPF/IS-IS/BGP routes into another protocol (only the
-    static and connected sources are implemented -- connected as BGP network statements, because
-    ArcOS has no addressable DIRECTLY_CONNECTED redistribution instance); SR-MPLS/LDP label
+    (standard only); redistribution INTO OSPF (no source at all) and into IS-IS (static only --
+    features.isis.import), which is what makes BGP-into-an-IGP unsupported; SR-MPLS/LDP label
     forwarding (the native container has no kernel MPLS platform-labels -- control plane only).
-    The bgp.session and other dotted plugins are not yet supported.
+    The bgp.session and other dotted plugins are not yet supported. Redistribution INTO BGP is
+    supported for all four declared sources -- connected, static, OSPF/OSPFv3 and IS-IS -- see
+    features.bgp.import and templates/bgp/arcos.macro.j2.
 group_vars:
   netlab_device_type: arcos
   # Set unconditionally (harmless with ansible_connection: docker below -- it is only a
@@ -115,9 +120,11 @@ group_vars:
 # large/extended community set-actions (ArcOS only has an inline standard-community set action);
 # anycast gateways (nothing renders them -- VRRP is the only FHRP the gateway template configures,
 # and it renders for both IPv4 and IPv6);
-# BGP/OSPF/ISIS redistribution sources other than static and connected (the OSPF, IS-IS and BGP
-# table-connection sources are untested; connected has no addressable src-instance at all and is
-# rendered as BGP network statements instead -- see templates/bgp/arcos.macro.j2);
+# redistribution INTO an IGP: OSPF accepts no import source at all, and IS-IS accepts only static
+# (features.isis.import) -- so BGP-into-OSPF and BGP-into-IS-IS are not supported, even though the
+# ArcOS "table-connection BGP OSPF IPV4 src-dst-instance <bgp> <ospf>" form does commit; it is
+# neither rendered nor verified. (Redistribution INTO BGP is a different matter and IS supported
+# for connected/static/OSPF/IS-IS -- see features.bgp.import and templates/bgp/arcos.macro.j2.)
 # SR-MPLS/LDP label FORWARDING (the native container has no kernel MPLS
 # platform-labels -- control plane only); the bgp.session dotted plugin and other dotted plugins.
 #
