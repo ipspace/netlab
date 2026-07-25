@@ -1,0 +1,18 @@
+#!/bin/sh
+#
+set -e
+#
+sysctl net.inet.gre.allow=1
+
+{% for intf in netlab_interfaces if intf.tunnel.mode|default('') in ['gre'] %}
+{%   set af = intf.tunnel.af|default('ipv4') %}
+ifconfig {{ intf.ifname }} tunnel {{ intf.tunnel._source[af] }} {{ intf.tunnel._destination[af] }}
+{%   if intf.ipv6 is defined %}
+{# ipv6 seems not to like specifying both ends so we leave it with the inet6 address configure in initial #}
+{%   endif %}
+{%   if intf.ipv4 is defined %}
+{# IPv4 requires specifying both endpoints #}
+ifconfig {{ intf.ifname }} {{ intf.ipv4|ansible.utils.ipaddr('address') }} {{ intf.neighbors[0].ipv4|ansible.utils.ipaddr('address') }}
+{%   endif %}
+ifconfig {{ intf.ifname }} tunnelttl 255 up
+{% endfor %}
