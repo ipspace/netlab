@@ -122,7 +122,12 @@ network-instance {{ vname }} protocol OSPF3 p-{{ vname }}
     route distinguishers, so 'vdata.bgp is defined' is not enough to decide there is anything to
     configure. Render the instance only when the node runs the BGP module (the default instance
     it inherits the AS from has to exist) and the VRF has neighbors or networks. -#}
-{%     if 'bgp' in module and (vdata.bgp.neighbors|default([]) or vdata.bgp.advertise|default([])) %}
+{#- Render the instance when the VRF has anything for it to carry: neighbors, networks to
+    advertise, or a route import (netlab auto-generates bgp.import for a VRF that runs an IGP, and
+    an EVPN L3VNI VRF can have an import and no neighbors at all -- evpn/22-ospf-ce-router). The
+    AF check keeps an address-less VRF from producing a BGP instance with no address family. -#}
+{%     if 'bgp' in module and (vdata.bgp.neighbors|default([]) or vdata.bgp.advertise|default([])
+             or (vdata.bgp.import|default({}) and vdata.af|default({}))) %}
 network-instance {{ vname }} protocol BGP {{ vname }}
  global router-id {{ vdata.bgp.router_id|default(bgp.router_id) }}
  global route-distinguisher {{ vdata.rd }}
