@@ -3,8 +3,10 @@
   separately (#COMMIT) before anything references it.
 
   The two flooding models are MUTUALLY EXCLUSIVE on ArcOS -- static VXLAN is gated by the global
-  `overlay static-vxlan` knob and, while it is on, the EVPN BGP control plane cannot be used
-  (ArcOS "Static VXLAN Configuration Guide") -- so exactly one of the two blocks below renders.
+  `overlay static-vxlan` knob, and while it is on the device refuses the EVPN configuration
+  templates/evpn/arcos.j2 emits ("'network-instance advertise-mac-routes' must not be true when
+  'overlay static-vxlan' is true"). Exactly one of the two blocks below therefore renders, and
+  netsim/devices/arcos.py refuses a topology that asks for both.
 
   * vxlan.flooding == evpn: the VNI lives on the auto-created per-VLAN L2VLAN network-instance
     (`network-instance vlan<id> vni <vni>`); BUM replication comes from the EVPN type-3 routes
@@ -32,9 +34,18 @@ network-instance vlan{{ vlans[vname].id }} vni {{ vlans[vname].vni }} local-tunn
 {%     set _ = bundles.update({ vteps: bundles.get(vteps,[]) + [ vname ] }) %}
 {%   endfor %}
 {%   for vteps, vnames in bundles.items() %}
-{%     set bundle = 'static-vxlan-' ~ loop.index %}
+{#-  Name the bundle after the lowest VNI it carries rather than the enumeration index, so the
+     same VTEP set always lands on the same network-instance no matter how vxlan.vlans is
+     ordered. -#}
+{%     set vni_list = [] %}
+{%     for vname in vnames %}{% set _ = vni_list.append(vlans[vname].vni) %}{% endfor %}
+{%     set bundle = 'static-vxlan-' ~ vni_list|min %}
 network-instance {{ bundle }} type L2VLAN_AWARE_BUNDLE
 network-instance {{ bundle }} local-tunnel-endpoint-id 0
+{#   A VLAN with no remote VTEP still needs its VNI-to-VLAN mapping, so the bundle is rendered
+     without a `static-vxlan remote-vteps` leaf. The vendor guide never shows that shape, but
+     ArcOS accepts it and vxlan/04-vxlan-irb-ospf (which has exactly one such VLAN) passes 7/7
+     with it -- deliberate, not an oversight. #}
 {%     if vteps %}
 network-instance {{ bundle }} static-vxlan remote-vteps [ {{ vteps }} ]
 {%     endif %}
