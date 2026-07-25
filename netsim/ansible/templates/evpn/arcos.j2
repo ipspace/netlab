@@ -50,10 +50,14 @@ network-instance vlan{{ vdata.id }}
   completeness (a future ArcOS release or deeper probing may unlock it) but NOT declared in
   features.evpn -- only the L2VNI/distributed-anycast-gateway path (proven working) is declared.
 #}
+{#- The route distinguisher is netlab's vrfs.<name>.rd, the same value templates/vrf/arcos.j2 writes
+    on this very instance (evpn is deployed after vrf, so it would otherwise silently overwrite it
+    with a different RD). Both templates render the identical leaf, so whichever runs last the
+    committed RD still matches the data model -- the same thing templates/vrf/eos.bgp.j2 does. -#}
 {% for vname, vdata in vrfs.items() if vdata.evpn is defined and vdata.evpn.transit_vni is defined %}
 network-instance {{ vname }} protocol BGP {{ vname }}
 #COMMIT
-network-instance {{ vname }} protocol BGP {{ vname }} global route-distinguisher {{ bgp.router_id }}:{{ vdata.evpn.transit_vni }}
+network-instance {{ vname }} protocol BGP {{ vname }} global route-distinguisher {{ vdata.rd }}
 network-instance {{ vname }} protocol BGP {{ vname }} global afi-safi L3VPN_IPV4_UNICAST
 network-instance {{ vname }} vni {{ vdata.evpn.transit_vni }} local-tunnel-endpoint-id 0
 #COMMIT
