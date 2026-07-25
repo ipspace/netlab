@@ -94,6 +94,19 @@ group_vars:
     echo system aaa authentication user arcadmin password Arcos@1234 role SYSTEM_ROLE_ADMIN;
     echo commit; echo end; } | confd_cli -C -u admin 2>&1 |
     grep -qE -e Commit.complete -e No.modifications && exit 0; sleep 5; done; exit 1"
+  # VRRP daemon bootstrap. The ArcOS process manager (spyder) starts vrrp.bin lazily -- the
+  # first VRRP config commit turns the daemon on -- but the daemon inherits spyder's file
+  # descriptor soft limit, and its LTTng-UST tracing library indexes an fd_set with it. Docker
+  # hands the container a 1048576 nofile limit, systemd caps spyder at 4096, and 4096 > the
+  # FD_SETSIZE of 1024 that fd_set can hold, so vrrp.bin aborts on startup ("bit out of range 0 -
+  # FD_SETSIZE on fd_set", signal 6) and spyder gives up after three retries -- the device commits
+  # the VRRP config, reports it in the running config, and never runs the protocol. containerlab
+  # 0.77 has no per-node ulimit knob, so the soft limit is lowered on the already-running spyder
+  # instead; only daemons spyder forks later (vrrp is the only lazily-started one) inherit it.
+  - >-
+    bash -c "for i in $(seq 1 60); do P=$(systemctl show spyder --property=MainPID --value);
+    if [ 0$P -gt 1 ]; then prlimit --pid $P --nofile=1024:1048576 && exit 0; fi;
+    sleep 5; done; exit 1"
   # PREFERRED (currently blocked -- see support.caveats above); flip to this once a working
   # arrcus.arcos version ships (ansible_network_os is already set above):
   # ansible_connection: ansible.netcommon.network_cli
