@@ -44,7 +44,9 @@ network-instance default protocol BGP b1
     BGP IPV6 commits identically to IPV4 (verified). Static protocol instance is "default"
     (routing template), BGP instance is "b1". The per-AF policy name matches
     templates/routing/arcos.j2's per-AF policy-definitions (<policy>-ipv4 / <policy>-ipv6).
-    connected/ospf/isis import are not exercised here -> feature declares import: [ static ] only.
+    The other declared sources are rendered differently: connected as BGP network statements
+    (ArcOS has no DIRECTLY_CONNECTED source instance) and ospf/isis as their own table-connections
+    -- both live in templates/bgp/arcos.macro.j2 and are shared with the per-VRF instances.
 
     Two ArcOS rules, identical to STATIC->ISIS in templates/isis/arcos.j2 (both verified live):
     (1) the BGP instance "b1" must be COMMITTED before a table-connection can reference it --
@@ -54,13 +56,27 @@ network-instance default protocol BGP b1
     reject), so an explicit accept import-policy is required. The default accept policy is emitted
     per AF; a custom bgp.import.static.policy references templates/routing/arcos.j2's per-AF
     policy-definitions (<policy>-ipv4 / <policy>-ipv6). #}
+{#- The IGP sources (bgp.import.ospf / bgp.import.isis) are rendered by the shared
+    redistribute_igp macro; the global OSPF/OSPFv3 instance tag is "p1" and the IS-IS instance tag
+    is "i1" (templates/ospf/arcos.j2, templates/isis/arcos.j2). Both this block and the static
+    block below live after the same #COMMIT marker because both reference the "b1" instance
+    created earlier in this file. -#}
+{% set _redist_pol = [] %}
+{% if bgp.import.static is defined or bgp.import.ospf is defined or bgp.import.isis is defined %}
+#COMMIT
+{% endif %}
+{% if bgp.import.ospf is defined or bgp.import.isis is defined %}
+{{   bgpcfg.redistribute_igp('default',bgp.import,bgp,'b1',
+       {'ospf': 'p1' if 'ospf' in module else none, 'isis': 'i1' if 'isis' in module else none},
+       _redist_pol) -}}
+{% endif %}
 {% if bgp.import.static is defined %}
 {%   set imp = bgp.import.static %}
-#COMMIT
 {%   set _base = imp.policy if (imp is mapping and imp.policy is defined) else "bgp-redist-accept" %}
 {%   for _af in ['ipv4','ipv6'] if bgp[_af] is defined %}
 {%     set _pol = _base ~ "-" ~ _af %}
-{%     if _base == "bgp-redist-accept" %}
+{%     if _base == "bgp-redist-accept" and _pol not in _redist_pol %}
+{%       set _ = _redist_pol.append(_pol) %}
 routing-policy policy-definition {{ _pol }}
  statement s10
   actions accept-route

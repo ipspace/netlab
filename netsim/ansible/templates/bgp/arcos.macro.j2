@@ -59,6 +59,48 @@
 {%     endfor %}
 {%   endfor %}
 {%- endmacro %}
+{#- IGP -> BGP redistribution (bgp.import.ospf / bgp.import.isis) rendered as OpenConfig
+    table-connections, for the default routing table and for a VRF BGP instance alike.
+
+    netlab AUTO-GENERATES these imports: netsim/modules/_routing.py::process_imports() adds
+    bgp.import.<proto> = { auto: True } for every protocol in defaults.const.vrf_igp_protocols
+    that a VRF runs, and that branch never consults the device feature list -- so a VRF running
+    OSPF or IS-IS next to BGP asks for the redistribution whether the user wrote it or not. It has
+    to be rendered, or those routes silently never reach the CE.
+
+    ArcOS specifics, all verified on the device:
+    * the source is keyed by PROTOCOL INSTANCE TAG, and OSPFv3 is a separate source identity
+      (OSPF3) from OSPFv2 (OSPF) -- hence the per-AF source protocol name;
+    * the same two rules as STATIC->BGP in templates/bgp/arcos.j2 and STATIC->ISIS in
+      templates/isis/arcos.j2 apply: the destination BGP instance must be COMMITTED before a
+      table-connection may reference it (the caller emits the #COMMIT split), and a bare
+      table-connection redistributes nothing (implicit reject), so an explicit accept
+      import-policy is required;
+    * a custom bgp.import.<proto>.policy references templates/routing/arcos.j2's per-AF
+      policy-definitions (<policy>-ipv4 / <policy>-ipv6), exactly like the static import.
+
+    `defined` accumulates the accept policies already emitted into this file, so the default
+    "bgp-redist-accept-<af>" definition is written once even when several VRFs redistribute. -#}
+{% macro redistribute_igp(ni,imports,af_flags,dst_inst,src_tags,defined=[]) -%}
+{%   for proto in ['ospf','isis'] if imports[proto] is defined and src_tags[proto] is defined %}
+{%     set imp = imports[proto] %}
+{%     set base = imp.policy if imp is mapping and imp.policy is defined else 'bgp-redist-accept' %}
+{%     for af in ['ipv4','ipv6'] if af_flags[af] is defined %}
+{%       set pol = base ~ '-' ~ af %}
+{%       set src = ('OSPF3' if af == 'ipv6' else 'OSPF') if proto == 'ospf' else 'ISIS' %}
+{%       if base == 'bgp-redist-accept' and pol not in defined %}
+{%         set _ = defined.append(pol) %}
+routing-policy policy-definition {{ pol }}
+ statement s10
+  actions accept-route
+ exit
+!
+{%       endif %}
+network-instance {{ ni }} table-connection {{ src }} BGP {{ af|upper }} src-dst-instance {{ src_tags[proto] }} {{ dst_inst }} import-policy [ {{ pol }} ]
+!
+{%     endfor %}
+{%   endfor %}
+{%- endmacro %}
 {#- A dual-stack peer gets TWO sessions (one keyed on the IPv4 transport address,
     one on IPv6), each carrying only its own AF -- ArcOS does not run both AFs
     over a single session. `n.activate` (bgp.activate, gated by features.bgp.activate_af)

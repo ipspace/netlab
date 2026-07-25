@@ -188,4 +188,30 @@ network-instance {{ vname }} protocol ISIS i-{{ vname }}
 {%       endfor %}
 {%     endif %}
 {%   endfor %}
+{#- IGP -> VRF BGP redistribution, in a SECOND pass over the VRFs.
+
+    It cannot go in the loop above: ArcOS rejects a table-connection that references a protocol
+    instance created in the same transaction ("SRC/DST instance does not exist"), so every VRF's
+    OSPF/OSPF3/ISIS/BGP instance has to be committed first. One #COMMIT marker (see
+    provider/clab/arcos/netlab-config.j2) splits the whole module render in two, and this pass
+    then renders the table-connections for every VRF with the shared macro the default routing
+    table uses. The per-VRF instance tags are the ones the loop above emitted: "p-<vrf>" for
+    OSPFv2/OSPFv3, "i-<vrf>" for IS-IS, "<vrf>" for BGP. -#}
+{%   set _vrf_redist = [] %}
+{%   for vname, vdata in vrfs.items() if 'bgp' in module %}
+{%     if vdata.bgp.import.ospf is defined and vdata.ospf is defined
+          or vdata.bgp.import.isis is defined and vdata.isis is defined %}
+{%       set _ = _vrf_redist.append((vname,vdata)) %}
+{%     endif %}
+{%   endfor %}
+{%   if _vrf_redist %}
+#COMMIT
+{%     set _vrf_pol = [] %}
+{%     for vname, vdata in _vrf_redist %}
+{{       bgpcfg.redistribute_igp(vname,vdata.bgp.import,vdata.af|default({}),vname,
+           {'ospf': 'p-' ~ vname if vdata.ospf is defined else none,
+            'isis': 'i-' ~ vname if vdata.isis is defined else none},
+           _vrf_pol) -}}
+{%     endfor %}
+{%   endif %}
 {% endif %}
