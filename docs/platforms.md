@@ -466,7 +466,7 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | Operating system      | [VLAN](module/vlan.md) | [VRF](module/vrf.md) | [VXLAN](module/vxlan.md) | [MPLS](module/mpls.md) | [SR-MPLS](module/sr-mpls.md) | [SRv6](module/srv6.md) |
 | --------------------- |:--:|:--:|:--:|:--:|:--:|:--:|
 | Arista EOS            | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
-| Arrcus ArcOS [❗](caveats-arcos) | ✅ | ✅ | ✅ | ✅[❗](caveats-arcos) | ✅[❗](caveats-arcos) | ✅[❗](caveats-arcos) |
+| Arrcus ArcOS [❗](caveats-arcos) | ✅ | ✅ | ✅[❗](caveats-arcos) | ✅[❗](caveats-arcos) | ✅[❗](caveats-arcos) | ✅[❗](caveats-arcos) |
 | Aruba AOS-CX          | ✅ | ✅ |  ✅[❗](caveats-aruba) | [❗](caveats-aruba) | ❌ | ❌ |
 | BIRD                  | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
 | Cisco 8000v (IOS XR)  | ✅ | ✅ |  ❌ | ✅ | ✅ | ✅ |

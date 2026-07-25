@@ -59,12 +59,18 @@ support:
   - >-
     Static VXLAN flooding (netlab's default vxlan.flooding) is configured with the ArcOS
     static-VXLAN model -- the global 'overlay static-vxlan' knob plus an L2VLAN_AWARE_BUNDLE
-    network-instance carrying the remote-VTEP list -- and every state the device reports is
-    correct (tunnel resolved, VNIs up and BRIDGED, RIB/FIB flood-and-learn true). The container
-    image never programs the head-end-replication FDB entry for a static remote VTEP, so the node
-    can answer traffic whose source it already learnt from an inbound VXLAN packet but cannot
-    initiate a flood. EVPN flooding is unaffected (the same image programs the flood entry and the
-    remote MACs from EVPN type-2/type-3 routes), so prefer vxlan.flooding: evpn. See docs/caveats.md.
+    network-instance carrying the remote-VTEP list -- and every state the device reports is correct
+    (tunnel resolved, VNIs up and BRIDGED, RIB/FIB flood-and-learn true, L2RIB inclusive-multicast
+    entry resolved). The container image never programs the head-end-replication entry into the
+    kernel FDB, so receive works (data-plane learning from inbound VXLAN packets is fine) but the
+    node can never initiate a BUM flood. EVPN flooding is unaffected. Note that moving a topology to
+    vxlan.flooding: evpn also means adding the evpn module (and bgp) -- netlab rejects that value on
+    a node that does not run EVPN. See docs/caveats.md.
+  - >-
+    EVPN cannot be combined with static VXLAN flooding: 'overlay static-vxlan' is a global
+    flood-and-learn mode and ArcOS rejects the EVPN configuration while it is on. netlab core
+    permits the combination, so netsim/devices/arcos.py refuses it during topology transformation
+    instead of letting the deployment fail halfway through with a raw vendor error.
   - >-
     VRF route-target import/export leaking is not implemented: the model exists (route-distinguisher
     and rt-afi-safi L3VPN_IPV4_UNICAST route-target), but the route-target leaf needs
