@@ -1,7 +1,14 @@
 {#
-  ArcOS BGP. eBGP session reaches ESTABLISHED; allow ~60-90s to converge (ArcOS's connect-retry
-  timer). Dual-stack peers get TWO separate BGP sessions (one keyed on the IPv4 transport
+  ArcOS BGP. Dual-stack peers get TWO separate BGP sessions (one keyed on the IPv4 transport
   address, one on IPv6) rather than one session carrying both AFs.
+
+  A session can take a further ~70 seconds to reach ESTABLISHED after this configuration is
+  committed. That is not a protocol timer -- the neighbor connect-retry is 10 seconds -- but the
+  ArcOS BGP daemon refusing every FSM transition ("failed to change to OPENSENT") until it logs
+  "BGP startup config has been read", which happens once, a few minutes after the container
+  starts. Past that point a brand-new neighbor establishes in under six seconds. Nothing is
+  rendered for it: the wait is declared to netlab as arcos.ebgp_session / arcos.ibgp_session in
+  tests/integration/wait_times.yml. See docs/caveats.md.
 
   The address-family, network and neighbor rendering lives in templates/bgp/arcos.macro.j2 so the
   per-VRF BGP instances in templates/vrf/arcos.j2 render exactly the same way (global/VRF parity).
