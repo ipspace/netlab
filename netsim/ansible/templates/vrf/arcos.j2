@@ -1,8 +1,15 @@
 {% import "templates/bgp/arcos.macro.j2" as bgpcfg %}
 {#- ArcOS per-VRF config: L3VRF network-instance + interface binding + per-VRF OSPFv2/v3/BGP/ISIS.
-  NOT declared (genuinely unsupported, not just untested): import/export route-target leaking
-  between VRFs, and redistribution of connected subnets into a VRF BGP instance (the
-  DIRECTLY_CONNECTED source protocol has no addressable instance on this image).
+  NOT declared (measured as unsupported, not just untested): import/export route-target leaking
+  between VRFs -- the export half can be driven to "Export ready" and puts correctly targeted VPN
+  routes in the per-VRF exported-rib, but a locally exported VPN path never reaches the local
+  import machinery (default-instance L3VPN loc-rib stays empty, every VRF stays at
+  "paths-imported 0"), so nothing leaks on a single device. See netsim/devices/arcos.yml.
+
+  Redistribution of connected subnets into a VRF BGP instance IS supported, but not through a
+  table-connection: DIRECTLY_CONNECTED has no addressable source instance on this image, so the
+  connected() macro in templates/bgp/arcos.macro.j2 renders one BGP network statement per
+  connected prefix instead.
 
   Kept CONSISTENT with the global-table templates (theme: global vs VRF parity): the per-VRF
   OSPF renders the same per-interface parameters (network-type/metric/bfd/priority/timers) and
@@ -107,20 +114,35 @@ network-instance {{ vname }} protocol OSPF3 p-{{ vname }}
     * the protocol instance tag is "{{ vname }}" to match templates/evpn/arcos.j2, which adds
       the L3VNI route-distinguisher and the L3VPN AF to that same instance.
 
-    VRF route-target import/export leaking is NOT rendered: it needs L3VPN_IPV4_UNICAST on the
-    DEFAULT instance's BGP, which would change the capabilities of every global-table session,
-    and it is not a declared feature (see the caveats in netsim/devices/arcos.yml).
+    VRF route-target import/export leaking is NOT rendered: local (single-device) leaking does
+    not work on this image, and it is not a declared feature (see the caveats in
+    netsim/devices/arcos.yml for the measurement).
 
     The VRF module sets vrfs.<name>.bgp on every VRF once it needs an AS number to build the
     route distinguishers, so 'vdata.bgp is defined' is not enough to decide there is anything to
     configure. Render the instance only when the node runs the BGP module (the default instance
     it inherits the AS from has to exist) and the VRF has neighbors or networks. -#}
-{%     if 'bgp' in module and (vdata.bgp.neighbors|default([]) or vdata.bgp.advertise|default([])) %}
+{#- Render the instance when the VRF has anything for it to carry: neighbors, networks to
+    advertise, or a route import (netlab auto-generates bgp.import for a VRF that runs an IGP, and
+    an EVPN L3VNI VRF can have an import and no neighbors at all -- evpn/22-ospf-ce-router). The
+    AF check keeps an address-less VRF from producing a BGP instance with no address family. -#}
+{%     if 'bgp' in module and (vdata.bgp.neighbors|default([]) or vdata.bgp.advertise|default([])
+             or (vdata.bgp.import|default({}) and vdata.af|default({}))) %}
 network-instance {{ vname }} protocol BGP {{ vname }}
  global router-id {{ vdata.bgp.router_id|default(bgp.router_id) }}
  global route-distinguisher {{ vdata.rd }}
 {{ bgpcfg.afi_safi(vdata.af|default({})) -}}
 {{ bgpcfg.advertise(vdata.bgp.advertise|default([]),vdata.af|default({})) -}}
+{#- bgp.import.connected inside the VRF: the connected subnets of the interfaces bound to this
+    VRF, rendered as BGP network statements by the same macro the default instance uses. netlab
+    generates this import automatically for every VRF (features.bgp.import carries 'connected'
+    and 'vrf'), which is what makes a CE-to-CE path across the PE work: without the PE-CE subnets
+    in VRF BGP a CE has no route back to the far CE's interface address. -#}
+{%       if vdata.bgp.import.connected is defined %}
+{{         bgpcfg.connected(
+             interfaces|default([])|selectattr('vrf','defined')|selectattr('vrf','eq',vname)|list,
+             vdata.af|default({}),vdata.bgp.import.connected,vdata.bgp.advertise|default([])) -}}
+{%       endif %}
 {{ bgpcfg.neighbors(vdata.bgp.neighbors|default([]),vdata.af|default({})) -}}
 {%     endif %}
 {#- per-VRF IS-IS: network-instance <vrf> protocol ISIS -- verified: instance/net/level +
@@ -171,4 +193,30 @@ network-instance {{ vname }} protocol ISIS i-{{ vname }}
 {%       endfor %}
 {%     endif %}
 {%   endfor %}
+{#- IGP -> VRF BGP redistribution, in a SECOND pass over the VRFs.
+
+    It cannot go in the loop above: ArcOS rejects a table-connection that references a protocol
+    instance created in the same transaction ("SRC/DST instance does not exist"), so every VRF's
+    OSPF/OSPF3/ISIS/BGP instance has to be committed first. One #COMMIT marker (see
+    provider/clab/arcos/netlab-config.j2) splits the whole module render in two, and this pass
+    then renders the table-connections for every VRF with the shared macro the default routing
+    table uses. The per-VRF instance tags are the ones the loop above emitted: "p-<vrf>" for
+    OSPFv2/OSPFv3, "i-<vrf>" for IS-IS, "<vrf>" for BGP. -#}
+{%   set _vrf_redist = [] %}
+{%   for vname, vdata in vrfs.items() if 'bgp' in module %}
+{%     if vdata.bgp.import.ospf is defined and vdata.ospf is defined
+          or vdata.bgp.import.isis is defined and vdata.isis is defined %}
+{%       set _ = _vrf_redist.append((vname,vdata)) %}
+{%     endif %}
+{%   endfor %}
+{%   if _vrf_redist %}
+#COMMIT
+{%     set _vrf_pol = [] %}
+{%     for vname, vdata in _vrf_redist %}
+{{       bgpcfg.redistribute_igp(vname,vdata.bgp.import,vdata.af|default({}),vname,
+           {'ospf': 'p-' ~ vname if vdata.ospf is defined else none,
+            'isis': 'i-' ~ vname if vdata.isis is defined else none},
+           _vrf_pol) -}}
+{%     endfor %}
+{%   endif %}
 {% endif %}

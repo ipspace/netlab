@@ -55,7 +55,11 @@ support:
     it advertises IPv6 in the standard IPv6 Reachability TLV. netlab configures every other IS-IS
     device with multi-topology, so an MT neighbour will not install ArcOS's IPv6 routes -- IPv6
     IS-IS works only in an all-ArcOS domain (IPv4 IS-IS, OSPFv3 and BGP IPv6 interoperate
-    normally). See docs/caveats.md.
+    normally). The IS-IS-to-BGP redistribution (features.bgp.import) inherits this: the IPv6
+    table-connection renders and commits exactly like the IPv4 one, but against a multi-topology
+    neighbour there is nothing to redistribute -- the neighbour's IPv6 prefix never reaches the
+    BGP table, while the IPv4 prefix does (verified: isis/30-vrf red_isis_bgp4 passes,
+    red_isis_bgp6 fails). See docs/caveats.md.
   - >-
     Static VXLAN flooding (netlab's default vxlan.flooding) is configured with the ArcOS
     static-VXLAN model -- the global 'overlay static-vxlan' knob plus an L2VLAN_AWARE_BUNDLE
@@ -72,10 +76,15 @@ support:
     permits the combination, so netsim/devices/arcos.py refuses it during topology transformation
     instead of letting the deployment fail halfway through with a raw vendor error.
   - >-
-    VRF route-target import/export leaking is not implemented: the model exists (route-distinguisher
-    and rt-afi-safi L3VPN_IPV4_UNICAST route-target), but the route-target leaf needs
-    L3VPN_IPV4_UNICAST on the default-instance BGP, which changes every global-table session, so it
-    is neither rendered nor declared.
+    Inter-VRF route leaking with import/export route targets is not supported on the tested image
+    and is not rendered. The whole export half works (per-VRF RD, rt-afi-safi L3VPN_IPV4_UNICAST
+    route targets, a BGP_COMMON reserved-label-block and a per-VRF label-allocation-mode bring the
+    VRF to "l3vpn-ipv4-export-readiness: Export ready" and put correctly targeted VPN routes in the
+    per-VRF exported-rib), but a locally exported VPN route is never offered to the local import
+    machinery: the default instance's L3VPN loc-rib stays empty, every VRF reports
+    "paths-imported 0" while showing "Import ready" and the right import RT set, and no route
+    crosses between VRFs. Leaking on this image therefore needs a remote PE to reflect the VPN
+    routes back, which is not what a single-device leaking topology provides.
   - >-
     VRRP interoperates on IPv6 only. ArcOS follows RFC 5798 and computes the IPv4 VRRPv3 checksum
     over the IPv4 pseudo-header, with no knob to turn that off, while netlab configures every
@@ -86,10 +95,12 @@ support:
     Genuinely unsupported, not just untested: EVPN symmetric IRB / L3VNI (route-type-5 is never
     originated -- see templates/evpn/arcos.j2); OSPFv2 area-interface authentication;
     routing-policy large/extended-community set-actions
-    (standard only); redistribution sources other than static (no addressable src-instance for
-    connected on this image); SR-MPLS/LDP label forwarding (the native container has no kernel
-    MPLS platform-labels -- control plane only). The bgp.session and other dotted plugins are not
-    yet supported.
+    (standard only); redistribution INTO OSPF (no source at all) and into IS-IS (static only --
+    features.isis.import), which is what makes BGP-into-an-IGP unsupported; SR-MPLS/LDP label
+    forwarding (the native container has no kernel MPLS platform-labels -- control plane only).
+    The bgp.session and other dotted plugins are not yet supported. Redistribution INTO BGP is
+    supported for all four declared sources -- connected, static, OSPF/OSPFv3 and IS-IS -- see
+    features.bgp.import and templates/bgp/arcos.macro.j2.
 group_vars:
   netlab_device_type: arcos
   # Set unconditionally (harmless with ansible_connection: docker below -- it is only a
@@ -153,13 +164,21 @@ group_vars:
 # large/extended community set-actions (ArcOS only has an inline standard-community set action);
 # anycast gateways (nothing renders them -- VRRP is the only FHRP the gateway template configures,
 # and it renders for both IPv4 and IPv6);
-# BGP/OSPF/ISIS redistribution sources other than static (no addressable src-instance for
-# connected on this image); SR-MPLS/LDP label FORWARDING (the native container has no kernel MPLS
+# redistribution INTO an IGP: OSPF accepts no import source at all, and IS-IS accepts only static
+# (features.isis.import) -- so BGP-into-OSPF and BGP-into-IS-IS are not supported, even though the
+# ArcOS "table-connection BGP OSPF IPV4 src-dst-instance <bgp> <ospf>" form does commit; it is
+# neither rendered nor verified. (Redistribution INTO BGP is a different matter and IS supported
+# for connected/static/OSPF/IS-IS -- see features.bgp.import and templates/bgp/arcos.macro.j2.)
+# SR-MPLS/LDP label FORWARDING (the native container has no kernel MPLS
 # platform-labels -- control plane only); the bgp.session dotted plugin and other dotted plugins.
 #
-# NOT implemented rather than unsupported: VRF route-target import/export leaking. The model is
-# there (see templates/vrf/arcos.j2), but enabling it means turning on L3VPN_IPV4_UNICAST in the
-# default instance, which changes every global-table session, and the leaking has never been tested.
+# Inter-VRF route-target leaking: measured as unsupported on this image, not merely untested. The
+# export side can be brought all the way to "Export ready" (RD + rt-afi-safi L3VPN_IPV4_UNICAST
+# route targets + a BGP_COMMON reserved-label-block + label-allocation-mode PER_PREFIX), and the
+# VPN routes appear in the per-VRF exported-rib with the right route targets and labels, but a
+# locally exported VPN path is never presented to the local import machinery: the default
+# instance's L3VPN loc-rib stays empty and every VRF stays at "paths-imported 0". Nothing is
+# rendered for it -- see the caveat above and templates/vrf/arcos.j2.
 features:
   initial:
     ipv4:
@@ -176,7 +195,12 @@ features:
     activate_af: true
     ipv6_lla: false
     local_as: true
-    import: [ static ]
+    # 'connected' is rendered as BGP network statements, not as a table-connection -- ArcOS has no
+    # usable DIRECTLY_CONNECTED redistribution source; 'ospf' and 'isis' are OpenConfig
+    # table-connections (OSPF/OSPF3/ISIS -> BGP) in the default instance and inside a VRF alike.
+    # See templates/bgp/arcos.macro.j2. Every source honours an import routing policy, so
+    # 'no_policy' is deliberately not declared. 'bgp' (BGP -> BGP) and 'ripv2' are not supported.
+    import: [ connected, ospf, isis, static, vrf ]
     # bgp.session (per-neighbor password/gtsm/timers/passive/bfd) is a separate netlab plugin
     # template and is not yet supported.
   isis:
