@@ -1,11 +1,56 @@
 {#
-  ArcOS VXLAN. VTEP = `overlay local-tunnel-endpoint 0 source-interface loopback0`;
-  per-VLAN VNI lives on the auto-created L2VLAN network-instance:
-  `network-instance vlan<id> vni <vni> local-tunnel-endpoint-id 0`. The LTEP is committed
-  separately (#COMMIT) before the VNIs reference it.
+  ArcOS VXLAN. VTEP = `overlay local-tunnel-endpoint 0 source-interface loopback0`, committed
+  separately (#COMMIT) before anything references it.
+
+  The two flooding models are MUTUALLY EXCLUSIVE on ArcOS -- static VXLAN is gated by the global
+  `overlay static-vxlan` knob, and while it is on the device refuses the EVPN configuration
+  templates/evpn/arcos.j2 emits ("'network-instance advertise-mac-routes' must not be true when
+  'overlay static-vxlan' is true"). Exactly one of the two blocks below therefore renders, and
+  netsim/devices/arcos.py refuses a topology that asks for both.
+
+  * vxlan.flooding == evpn: the VNI lives on the auto-created per-VLAN L2VLAN network-instance
+    (`network-instance vlan<id> vni <vni>`); BUM replication comes from the EVPN type-3 routes
+    templates/evpn/arcos.j2 sets up.
+  * vxlan.flooding == static (netlab's default): head-end replication towards a configured
+    remote-VTEP list. ArcOS does NOT keep that list on the per-VLAN L2VLAN instance -- it uses a
+    dedicated L2VLAN_AWARE_BUNDLE network-instance carrying `static-vxlan remote-vteps` plus the
+    VNI-to-VLAN mapping of every VLAN sharing that VTEP set. netlab tracks the remote VTEPs per
+    VLAN (vlans.<name>.vtep_list), so the VLANs are grouped by their VTEP list and one bundle is
+    rendered per distinct list -- the exact shape ArcOS documents for that case.
 #}
+{% if vxlan.flooding|default('static') != 'evpn' %}
+overlay static-vxlan true
+{% endif %}
 overlay local-tunnel-endpoint 0 source-interface {{ vxlan.vtep_interface|default('loopback0') }}
 #COMMIT
-{% for vname in vxlan.vlans|default([]) %}
+{% if vxlan.flooding|default('static') == 'evpn' %}
+{%   for vname in vxlan.vlans|default([]) %}
 network-instance vlan{{ vlans[vname].id }} vni {{ vlans[vname].vni }} local-tunnel-endpoint-id 0
-{% endfor %}
+{%   endfor %}
+{% else %}
+{%   set bundles = {} %}
+{%   for vname in vxlan.vlans|default([]) %}
+{%     set vteps = vlans[vname].vtep_list|default([])|join(' ') %}
+{%     set _ = bundles.update({ vteps: bundles.get(vteps,[]) + [ vname ] }) %}
+{%   endfor %}
+{%   for vteps, vnames in bundles.items() %}
+{#-  Name the bundle after the lowest VNI it carries rather than the enumeration index, so the
+     same VTEP set always lands on the same network-instance no matter how vxlan.vlans is
+     ordered. -#}
+{%     set vni_list = [] %}
+{%     for vname in vnames %}{% set _ = vni_list.append(vlans[vname].vni) %}{% endfor %}
+{%     set bundle = 'static-vxlan-' ~ vni_list|min %}
+network-instance {{ bundle }} type L2VLAN_AWARE_BUNDLE
+network-instance {{ bundle }} local-tunnel-endpoint-id 0
+{#   A VLAN with no remote VTEP still needs its VNI-to-VLAN mapping, so the bundle is rendered
+     without a `static-vxlan remote-vteps` leaf. The vendor guide never shows that shape, but
+     ArcOS accepts it and vxlan/04-vxlan-irb-ospf (which has exactly one such VLAN) passes 7/7
+     with it -- deliberate, not an oversight. #}
+{%     if vteps %}
+network-instance {{ bundle }} static-vxlan remote-vteps [ {{ vteps }} ]
+{%     endif %}
+{%     for vname in vnames %}
+network-instance {{ bundle }} vni {{ vlans[vname].vni }} vlan-id {{ vlans[vname].id }}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
