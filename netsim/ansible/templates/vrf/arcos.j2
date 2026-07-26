@@ -114,14 +114,15 @@ network-instance {{ vname }} protocol OSPF3 p-{{ vname }}
     * the protocol instance tag is "{{ vname }}" to match templates/evpn/arcos.j2, which adds
       the L3VNI route-distinguisher and the L3VPN AF to that same instance.
 
-    VRF route-target import/export leaking is NOT rendered: local (single-device) leaking does
-    not work on this image, and it is not a declared feature (see the caveats in
-    netsim/devices/arcos.yml for the measurement).
+    VRF route-target import/export leaking is NOT rendered: local RT/L3VPN leaking does not work
+    on this image, and the one local mechanism that does work (a static route with
+    next-network-instance-name) is /32-only and cannot carry netlab's prefix lists. Neither is a
+    declared feature -- see the caveats in netsim/devices/arcos.yml for both measurements.
 
     The VRF module sets vrfs.<name>.bgp on every VRF once it needs an AS number to build the
     route distinguishers, so 'vdata.bgp is defined' is not enough to decide there is anything to
-    configure. Render the instance only when the node runs the BGP module (the default instance
-    it inherits the AS from has to exist) and the VRF has neighbors or networks. -#}
+    configure -- the guard right below spells out what actually counts. The node also has to run
+    the BGP module, because a VRF instance inherits its AS from the default instance. -#}
 {#- Render the instance when the VRF has anything for it to carry: neighbors, networks to
     advertise, or a route import (netlab auto-generates bgp.import for a VRF that runs an IGP, and
     an EVPN L3VNI VRF can have an import and no neighbors at all -- evpn/22-ospf-ce-router). The

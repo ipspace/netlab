@@ -61,15 +61,24 @@ support:
     BGP table, while the IPv4 prefix does (verified: isis/30-vrf red_isis_bgp4 passes,
     red_isis_bgp6 fails). See docs/caveats.md.
   - >-
-    Inter-VRF route leaking with import/export route targets is not supported on the tested image
-    and is not rendered. The whole export half works (per-VRF RD, rt-afi-safi L3VPN_IPV4_UNICAST
-    route targets, a BGP_COMMON reserved-label-block and a per-VRF label-allocation-mode bring the
-    VRF to "l3vpn-ipv4-export-readiness: Export ready" and put correctly targeted VPN routes in the
+    Inter-VRF route leaking is not rendered. The RT/L3VPN form -- the one netlab's
+    vrfs.<name>.import/export model maps onto -- does not work on the tested image: the export
+    half works completely (per-VRF RD, rt-afi-safi L3VPN_IPV4_UNICAST route targets, a BGP_COMMON
+    reserved-label-block and a per-VRF label-allocation-mode bring the VRF to
+    "l3vpn-ipv4-export-readiness: Export ready" and put correctly targeted VPN routes in the
     per-VRF exported-rib), but a locally exported VPN route is never offered to the local import
     machinery: the default instance's L3VPN loc-rib stays empty, every VRF reports
     "paths-imported 0" while showing "Import ready" and the right import RT set, and no route
-    crosses between VRFs. Leaking on this image therefore needs a remote PE to reflect the VPN
-    routes back, which is not what a single-device leaking topology provides.
+    crosses between VRFs. RT-based leaking here would therefore need a remote PE to reflect the
+    VPN routes back, which a single-device leaking topology does not provide.
+  - >-
+    ArcOS does have a working LOCAL inter-VRF leak, it just cannot express netlab's model:
+    "static-route <pfx> next-hop-index N next-network-instance-name <vrf>" installs the route in
+    the configuring VRF resolved through the named VRF, and host-to-host traffic crosses (verified:
+    a /32 leak in both directions between two VRFs gives 3/3 ping between the attached hosts, while
+    a third VRF stays isolated). It accepts host routes only -- a prefix is rejected with "Expect
+    /32 v4 prefix when configuring static route with next-network-instance option" -- so it cannot
+    carry the prefix-based vrfs.<name>.import/export lists and nothing renders it.
   - >-
     Genuinely unsupported, not just untested: EVPN symmetric IRB / L3VNI (route-type-5 is never
     originated -- see templates/evpn/arcos.j2); OSPFv2 area-interface authentication;
@@ -128,13 +137,17 @@ group_vars:
 # SR-MPLS/LDP label FORWARDING (the native container has no kernel MPLS
 # platform-labels -- control plane only); the bgp.session dotted plugin and other dotted plugins.
 #
-# Inter-VRF route-target leaking: measured as unsupported on this image, not merely untested. The
-# export side can be brought all the way to "Export ready" (RD + rt-afi-safi L3VPN_IPV4_UNICAST
-# route targets + a BGP_COMMON reserved-label-block + label-allocation-mode PER_PREFIX), and the
-# VPN routes appear in the per-VRF exported-rib with the right route targets and labels, but a
-# locally exported VPN path is never presented to the local import machinery: the default
-# instance's L3VPN loc-rib stays empty and every VRF stays at "paths-imported 0". Nothing is
-# rendered for it -- see the caveat above and templates/vrf/arcos.j2.
+# Inter-VRF route leaking, RT/L3VPN form: measured as unsupported on this image, not merely
+# untested. The export side can be brought all the way to "Export ready" (RD + rt-afi-safi
+# L3VPN_IPV4_UNICAST route targets + a BGP_COMMON reserved-label-block + label-allocation-mode
+# PER_PREFIX), and the VPN routes appear in the per-VRF exported-rib with the right route targets
+# and labels, but a locally exported VPN path is never presented to the local import machinery: the
+# default instance's L3VPN loc-rib stays empty and every VRF stays at "paths-imported 0".
+# ArcOS's OTHER leaking mechanism -- "static-route <pfx> next-hop-index N
+# next-network-instance-name <vrf>" -- does work locally and does forward, but only for /32 host
+# routes ("Expect /32 v4 prefix when configuring static route with next-network-instance option"),
+# so it cannot express netlab's prefix-based import/export lists. Neither form is rendered -- see
+# the caveats above and templates/vrf/arcos.j2.
 features:
   initial:
     ipv4:
