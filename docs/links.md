@@ -412,7 +412,7 @@ links:
   mtu: 1500
 ```
 
-[^TMTU]: Tunnel interfaces are excluded. Tunnel interface MTU is the responsibility of tunnel plugins (for example, WireGuard derives it from the underlay MTU minus encapsulation overhead).
+[^TMTU]: Excluding tunnel interfaces
 
 When the node **mtu** parameter is not specified, its default value is fetched from **defaults.interfaces.mtu** or **defaults.devices** setting.
 
