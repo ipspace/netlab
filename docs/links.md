@@ -398,7 +398,7 @@ links:
 
 ### Node MTU
 
-**mtu** parameter specified on a node is applied to all node interfaces without MTU set through a link or interface parameter. In the following example, r1 has **mtu** set to 1500 bytes on the inter-router link and to **8192** bytes on the stub link:
+**mtu** parameter specified on a node is applied to all[^TMTU] node interfaces without MTU set through a link or interface parameter. In the following example, r1 has **mtu** set to 1500 bytes on the inter-router link and to **8192** bytes on the stub link:
 
 ```
 nodes:
@@ -411,6 +411,8 @@ links:
   r2:
   mtu: 1500
 ```
+
+[^TMTU]: Tunnel interfaces are excluded. Tunnel interface MTU is the responsibility of tunnel plugins (for example, WireGuard derives it from the underlay MTU minus encapsulation overhead).
 
 When the node **mtu** parameter is not specified, its default value is fetched from **defaults.interfaces.mtu** or **defaults.devices** setting.
 

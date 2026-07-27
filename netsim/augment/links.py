@@ -416,6 +416,14 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
     if af in ifdata and not ifdata[af]:
       del ifdata[af]
 
+  # Handle interface/node/system MTU.
+  #
+  # Design assumption: tunnel interface MTU is the responsibility of tunnel
+  # plugins (they typically derive it from underlay MTU minus encapsulation
+  # overhead). Do not copy node/device default MTU onto tunnel interfaces, or
+  # plugins that only set MTU when it is absent will skip their derivation
+  # (see #3702). Explicit link/interface mtu on a tunnel is kept as-is.
+  #
   if node.get('mtu',None):                      # Is node-level MTU defined (node setting, lab default or device default)
     sys_mtu = devices.get_device_features(node,defaults).initial.get('system_mtu',False)
     if 'mtu' in ifdata:                         # Is MTU defined on the interface?
@@ -423,7 +431,8 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
         ifdata.pop('mtu',None)                  # .... remove interface MTU on devices that support system MTU
     else:                                       # Node MTU is defined, interface MTU is not
       if not sys_mtu:                           # .. does the device support system MTU?
-        ifdata.mtu = node.mtu                   # .... no, copy node MTU to interface MTU
+        if ifdata.get('type',None) != 'tunnel': # .... tunnels: plugin sets MTU
+          ifdata.mtu = node.mtu                 # .... no, copy node MTU to interface MTU
 
   if ifdata.get('type',None) == 'loopback':
     ifdata.pop('mtu',None)                      # Remove MTU from loopback interfaces
