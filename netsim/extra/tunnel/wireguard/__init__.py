@@ -11,7 +11,6 @@ from netsim.modules import _dataplane
 from netsim.utils import log
 
 _config_name = 'tunnel.wireguard'
-_WG_LISTEN_PORT_BASE = 51820   # First UDP listen port allocated to WireGuard tunnels
 
 def public_key_from_private(private_key: str) -> str:
   '''
@@ -102,7 +101,7 @@ def allocate_listen_ports(ndata: Box, topology: Box) -> None:
   Assign a unique UDP listen port to every WireGuard tunnel on the node.
 
   User-specified ports are kept. Unspecified ports get the next free value
-  starting at _WG_LISTEN_PORT_BASE. Duplicate user-specified ports on the same
+  starting at listen_port._start. Duplicate user-specified ports on the same
   node are reported as errors (Linux cannot bind multiple WireGuard sockets to
   the same UDP port).
   '''
@@ -123,8 +122,8 @@ def allocate_listen_ports(ndata: Box, topology: Box) -> None:
         module='tunnel.wireguard')
     _dataplane.extend_id_set(id_set,{port})
 
-  max_port = topology.defaults.attributes.link.tunnel.listen_port.max_value
-  _dataplane.set_id_counter(id_set,_WG_LISTEN_PORT_BASE,max_port)
+  listen_port = topology.defaults.attributes.link.tunnel.listen_port
+  _dataplane.set_id_counter(id_set,listen_port._start,listen_port.max_value)
   for intf in pending:
     intf.tunnel.listen_port = _dataplane.get_next_id(id_set)
 
