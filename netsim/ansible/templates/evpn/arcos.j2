@@ -54,11 +54,34 @@ network-instance vlan{{ vdata.id }}
     on this very instance (evpn is deployed after vrf, so it would otherwise silently overwrite it
     with a different RD). Both templates render the identical leaf, so whichever runs last the
     committed RD still matches the data model -- the same thing templates/vrf/eos.bgp.j2 does. -#}
+{#- The L3VNI route target must be written explicitly, per address family.
+
+    Left to itself ArcOS derives the IP-VRF route target as <AS>:<L3VNI> (65000:5042 for a transit
+    VNI of 5042), while netlab -- and every other netlab EVPN device, FRR included -- derives it as
+    <AS>:<vrf-id> from vrfs.<name>.import/export (65000:1). The two never match, so neither side
+    imports the other's type-5 and symmetric IRB does nothing. Measured on the container image: with
+    the auto-derived value the DUT showed "evpn-v4-import-route-targets 65000:5042" against FRR's
+    "Import RT 65000:1" and its customer VRF held only its own prefixes; writing the netlab value
+    made the peer's subnet appear in that VRF immediately.
+
+    The RT does NOT live where the MAC-VRF one does. For an L2VLAN instance it is
+    "protocol BGP <ni> route-target <rt> both" (above); an L3VRF has no such node -- it sits under
+    the unicast AFI in an rt-afi-safi L2VPN_EVPN container, and the direction keyword is mandatory.
+    It is per address family: setting it only under IPV4_UNICAST leaves the IPv6 type-5 routes
+    carrying the auto-derived value. -#}
 {% for vname, vdata in (vrfs|default({})).items() if vdata.evpn is defined and vdata.evpn.transit_vni is defined %}
 network-instance {{ vname }} protocol BGP {{ vname }}
 #COMMIT
 network-instance {{ vname }} protocol BGP {{ vname }} global route-distinguisher {{ vdata.rd }}
 network-instance {{ vname }} protocol BGP {{ vname }} global afi-safi L3VPN_IPV4_UNICAST
+{%   for af in ['ipv4','ipv6'] if vdata.af[af]|default(false) %}
+{%     for rt in vdata.export|default([]) %}
+network-instance {{ vname }} protocol BGP {{ vname }} global afi-safi {{ af|upper }}_UNICAST rt-afi-safi L2VPN_EVPN route-target {{ rt }} export
+{%     endfor %}
+{%     for rt in vdata.import|default([]) %}
+network-instance {{ vname }} protocol BGP {{ vname }} global afi-safi {{ af|upper }}_UNICAST rt-afi-safi L2VPN_EVPN route-target {{ rt }} import
+{%     endfor %}
+{%   endfor %}
 network-instance {{ vname }} vni {{ vdata.evpn.transit_vni }} local-tunnel-endpoint-id 0
 #COMMIT
 {% endfor %}
