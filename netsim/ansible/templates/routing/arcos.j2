@@ -57,12 +57,24 @@ routing-policy defined-sets prefix-set {{ p_name }}
     rejects a reference to a named list created in the same transaction (same trap as
     templates/vlan/arcos.j2). Emitted only when there is something to emit, so a topology with no
     communities renders exactly as before. -#}
-{% if routing.community|default({}) %}
+{% set _lsets = [] %}
+{% for p_name, p_entries in (routing.policy|default({})).items() %}
+{%   for p_entry in p_entries if p_entry.set.community.large is defined %}
+{%     set _ = _lsets.append((p_name,p_entry.sequence,p_entry.set.community.large)) %}
+{%   endfor %}
+{% endfor %}
+{% if routing.community|default({}) or _lsets %}
 {%   for c_name, c_data in (routing.community|default({})).items() %}
 {%     set _kind = 'large-community-set' if c_data.type == 'large' else 'community-set' %}
 {%     set _leaf = 'large-community-member' if c_data.type == 'large' else 'community-member' %}
 routing-policy defined-sets bgp-defined-sets {{ _kind }} {{ c_name }}
  {{ _leaf }} [ {{ _members(c_data) }} ]
+ exit
+!
+{%   endfor %}
+{%   for (p_name, p_seq, p_val) in _lsets %}
+routing-policy defined-sets bgp-defined-sets large-community-set SETLC_{{ p_name }}_{{ p_seq }}
+ large-community-member [ {{ p_val|join(' ') }} ]
  exit
 !
 {%   endfor %}
@@ -102,8 +114,14 @@ routing-policy policy-definition {{ p_name }}-{{ af }}
   actions bgp-actions set-community options {{ 'ADD' if p_entry.set.community.append|default(false) else 'REPLACE' }}
   actions bgp-actions set-community inline communities [ {{ p_entry.set.community.standard|join(' ') }} ]
 {%         endif %}
-{%         if p_entry.set.community.large is defined or p_entry.set.community.extended is defined %}
-! ArcOS UNSUPPORTED: routing-policy has no set-large-community/set-ext-community action (standard only).
+{#-  set.community.large: ArcOS has no INLINE form for large communities, so the values are
+     referenced through the SETLC_ set emitted above. (An earlier version of this template claimed
+     ArcOS has no set-large-community action at all and rendered a comment instead -- measured
+     wrong: 'method REFERENCE options ADD' adds the community, observed on a peer.) -#}
+{%         if p_entry.set.community.large is defined %}
+  actions bgp-actions set-large-community method REFERENCE
+  actions bgp-actions set-large-community options {{ 'ADD' if p_entry.set.community.append|default(false) else 'REPLACE' }}
+  actions bgp-actions set-large-community reference large-community-set-ref SETLC_{{ p_name }}_{{ p_entry.sequence }}
 {%         endif %}
 {#-  delete.community.list.<family>: removal is a REFERENCE to a community-set with options
      REMOVE, on the "-additional" leaf so that a statement which also SETS communities does not
