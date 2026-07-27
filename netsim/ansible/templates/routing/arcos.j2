@@ -13,6 +13,16 @@
   (ANY / ALL / INVERT), so a netlab list that mixes permit and deny entries has no faithful
   rendering; see _match_opts below and the arcos_community_list quirk in netsim/devices/arcos.py.
 
+  PREFIX SETS carry no per-entry action -- an ArcOS prefix-set is a flat list of members and the
+  accept/reject decision lives on the policy statement that references it. A netlab prefix list
+  has an action per entry, where a 'deny' entry means "this prefix does NOT match the list", so
+  the faithful rendering is to emit the PERMIT entries only; the deny entries are simply absent
+  and therefore do not match. A list with no permit entries at all matches nothing, so the set is
+  not emitted and the statement referencing it is skipped entirely (an empty prefix-set is not a
+  no-op -- it would leave the statement with no condition, i.e. matching everything). The one
+  ordering that cannot be expressed -- a deny entry shadowing a later permit entry it overlaps --
+  is refused by the prefix_list_shape quirk in netsim/devices/arcos.py.
+
   POLICIES: netlab route policies apply to whichever AF references them, so each policy is
   rendered once per AF as `<name>-ipv4` and `<name>-ipv6` (the bgp/isis import table-connections
   are per-AF and pick the matching name). ArcOS routing-policy is otherwise AF-agnostic (a
@@ -22,7 +32,11 @@
 #}
 {% if routing.prefix|default({}) %}
 {%   for pf_af in ['ipv4', 'ipv6'] if pf_af in routing._prefix|default({}) %}
-{%     for p_name, p_value in routing._prefix[pf_af].items() %}
+{%     for p_name, p_all in routing._prefix[pf_af].items() %}
+{#-      Permit entries only -- see the header. A deny entry is not a member, so it does not
+         match; a list with none left over is emitted at all. -#}
+{%       set p_value = p_all|rejectattr('action','eq','deny')|list %}
+{%       if p_value %}
 routing-policy defined-sets prefix-set {{ p_name }}
 {%       for p_entry in p_value %}
 {%         set lo = p_entry.min|default(p_entry[pf_af]|ansible.utils.ipaddr('prefix')) %}
@@ -35,6 +49,7 @@ routing-policy defined-sets prefix-set {{ p_name }}
 {%       endfor %}
  exit
 !
+{%       endif %}
 {%     endfor %}
 {%   endfor %}
 {% endif %}
@@ -85,6 +100,12 @@ routing-policy defined-sets bgp-defined-sets large-community-set SETLC_{{ p_name
 {%     for af in ['ipv4', 'ipv6'] %}
 routing-policy policy-definition {{ p_name }}-{{ af }}
 {%       for p_entry in p_entries %}
+{#-      A statement whose match.prefix names a list with no permit entries in THIS address family
+         can never match, so it is skipped rather than rendered without its condition -- an
+         unconditional statement would match every prefix and apply the opposite outcome. -#}
+{%         set _pfx = p_entry.match.prefix|default('') %}
+{%         set _pfx_empty = _pfx and not (routing._prefix[af][_pfx]|default([])|rejectattr('action','eq','deny')|list) %}
+{%         if not _pfx_empty %}
  statement s{{ p_entry.sequence|default(loop.index * 10) }}
 {%         if p_entry.match.prefix is defined %}
   conditions match-prefix-set prefix-set {{ p_entry.match.prefix }}
@@ -140,6 +161,7 @@ routing-policy policy-definition {{ p_name }}-{{ af }}
 {%         endif %}
   actions {{ 'accept-route' if p_entry.action|default('permit') == 'permit' else 'reject-route' }}
   exit
+{%         endif %}
 {%       endfor %}
  exit
 !

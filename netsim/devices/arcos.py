@@ -1,6 +1,8 @@
 #
 # Arrcus ArcOS quirks
 #
+import ipaddress
+
 from box import Box
 
 from ..utils import log
@@ -70,3 +72,39 @@ class ARCOS(_Quirks):
           node=node,
           quirk='community_list_shape',
           category=log.IncorrectValue)
+
+    # An ArcOS prefix-set is a flat member list: the accept/reject decision lives on the policy
+    # statement that references it, not on the individual members. A netlab prefix list carries an
+    # action per entry, and its semantics are first-match-wins, so a 'deny' entry means "this
+    # prefix does NOT match the list".
+    #
+    # templates/routing/arcos.j2 renders the PERMIT entries only, which is faithful as long as no
+    # deny entry shadows a permit entry that comes after it. When they overlap, order is the only
+    # thing separating them and a flat set cannot carry order: a prefix caught by the earlier deny
+    # would still match the later permit's member and be treated as matching the list. That is a
+    # route-map matching the wrong routes -- silent, and visible only as traffic taking the wrong
+    # path -- so refuse it rather than approximate it.
+    for pfx_name, pfx_list in node.get('routing.prefix', {}).items():
+      for (idx, deny) in enumerate(pfx_list):
+        if deny.get('action', 'permit') != 'deny':
+          continue
+        for later in pfx_list[idx + 1:]:
+          if later.get('action', 'permit') == 'deny':
+            continue
+          for af in ('ipv4', 'ipv6'):                       # Same family, and do the nets overlap?
+            if af not in deny or af not in later:
+              continue
+            if not ipaddress.ip_network(deny[af]).overlaps(ipaddress.ip_network(later[af])):
+              continue
+            report_quirk(
+              text=f'ArcOS cannot express prefix list {pfx_name} on node {node.name}: '
+                   f'the deny entry {deny[af]} shadows the later permit entry {later[af]}',
+              more_hints=[
+                'An ArcOS prefix-set is a flat member list with no per-entry action and no ordering, '
+                'so a deny entry can only be expressed by leaving the prefix out of the set -- which '
+                'does not work when a later permit entry covers it as well',
+                f'Reorder {pfx_name} so no deny entry overlaps a permit entry below it, or split it '
+                'into separate lists' ],
+              node=node,
+              quirk='prefix_list_shape',
+              category=log.IncorrectValue)
