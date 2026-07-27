@@ -1,0 +1,161 @@
+Creating Device configuration snippets
+[CREATED] dut: initial,routing,ospf,tunnel.wireguard
+[CREATED] r2: initial,routing,ospf,tunnel.wireguard
+[CREATED] core: initial
+Config Deploying device configurations
+ [INFO] Executing initial configuration for node r2
+ [INFO] Executing initial configuration for node core
+ [INFO] Executing routing configuration for node r2
+ [INFO] Executing ospf configuration for node r2
+ [INFO] Executing tunnel.wireguard configuration for node r2
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "initial configuration for dut\n=========================================\n\n/system/identity set name=\"dut\"\n\n/interface/bridge add name=loopback protocol-mode=none\n\n# Host entries\n/ip/dns/static add name=core address=10.0.0.3\n/ip/dns/static add name=r2 address=10.0.0.2\n/ip/dns/static add name=core address=2001:db8:1:3::1\n/ip/dns/static add name=r2 address=2001:db8:1:2::1\n\n/ip/address add interface=loopback address=10.0.0.1/32\n/ipv6/address add interface=loopback address=2001:db8:1:1::1/64\n\n\n# wireguard tunnel setup\n/interface/wireguard add name=tunnel0 listen-port=51820  private-key=\"dwdtCnMYpX08FsFyUbJmRd9ML4frwJkqsXf7pR25LCo=\"\n\n\n/interface/ethernet set comment=\"dut -> core [core]\" ether2\n/interface/ethernet set mtu=1560 ether2\n/ip/address add interface=ether2 address=172.22.0.1/24\n/ip/address set [find where interface=ether2] comment=\"dut -> core [core]\"\n/ipv6/address add interface=ether2 address=2001:db8:4::1/64\n/ipv6/nd add interface=ether2 advertise-dns=no ra-interval=3s-30s\n\n/interface/wireguard set comment=\"dut -> r2 [WireGuard tunnel]\" tunnel0\n/interface/wireguard set mtu=1500 tunnel0\n/ip/address add interface=tunnel0 address=10.1.0.1/30\n/ip/address set [find where interface=tunnel0] comment=\"dut -> r2 [WireGuard tunnel]\"\n/ipv6/address add interface=tunnel0 address=2001:db8:3::1/64\n/ipv6/nd add interface=tunnel0 advertise-dns=no ra-interval=3s-30s\n\n/ip/neighbor/discovery-settings set discover-interface-list=all\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+
+TASK [load initial from /work/netlab_cicd/node_files/dut/initial] **************
+ok: [dut]
+
+TASK [Run commands on CHR] *****************************************************
+changed: [dut]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for routing] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "routing configuration for dut\n=========================================\n#\n# Static routes\n#\n\n\n#\n#\n# Adding direct static routes\n/ip/route add dst-address=172.22.0.0/16 gateway=172.22.0.3@main routing-table=main scope=10\n/ipv6/route add dst-address=2001:db8:4::/48 gateway=2001:db8:4::3@main routing-table=main scope=10\n"
+}
+
+TASK [Deploy routing configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+
+TASK [load routing from /work/netlab_cicd/node_files/dut/routing] **************
+ok: [dut]
+
+TASK [Run commands on CHR] *****************************************************
+changed: [dut]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "ospf configuration for dut\n=========================================\n\n\n/routing/ospf/instance add name=default4 version=2 router-id=10.0.0.1 vrf=main\n\n/routing/ospf/area add instance=default4 name=\"main_2_0.0.0.0\" area-id=0.0.0.0\n\n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default4] interface=loopback \n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default4] interface=tunnel0 type=ptp\n\n\n/routing/ospf/instance add name=default6 version=3 router-id=10.0.0.1 vrf=main\n\n/routing/ospf/area add instance=default6 name=\"main_3_0.0.0.0\" area-id=0.0.0.0\n\n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default6] interface=loopback \n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default6] interface=tunnel0 type=ptp\n"
+}
+
+TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+
+TASK [load ospf from /work/netlab_cicd/node_files/dut/ospf] ********************
+ok: [dut]
+
+TASK [Run commands on CHR] *****************************************************
+changed: [dut]
+
+PLAY [Deploy custom deployment templates] **************************************
+
+TASK [Run custom configuration deployment scripts] *****************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=tunnel.wireguard)
+
+TASK [Find configuration template] *********************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Check is the configuration template is a file] ***************************
+ok: [dut -> localhost]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Process template /work/netlab_cicd/node_files/dut/tunnel.wireguard for dut] ***
+skipping: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
+
+TASK [Find custom configuration deployment script] *****************************
+ok: [dut]
+
+TASK [Run the configuration deployment script] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+
+TASK [load tunnel.wireguard from /work/netlab_cicd/node_files/dut/tunnel.wireguard] ***
+ok: [dut]
+
+TASK [Run commands on CHR] *****************************************************
+changed: [dut]
+
+PLAY RECAP *********************************************************************
+dut                        : ok=33   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+
+Results of configuration script deployments
+================================================================================
+r2               Script:  initial,routing,ospf,tunnel.wireguard
+core             Script:  initial
+
+
+Test dual-stack WireGuard tunnels. The tested device has a WireGuard
+tunnel carrying both IPv4 and IPv6 and runs OSPFv2 and OSPFv3 over it. The
+probe should receive the routes advertised from the tested device and be
+able to ping its loopback over both address families.
+
