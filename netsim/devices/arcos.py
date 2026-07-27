@@ -36,3 +36,37 @@ class ARCOS(_Quirks):
         node=node,
         quirk='evpn_static_flooding',
         category=log.IncorrectValue)
+
+    # An ArcOS community-set has no per-member action -- it carries a single match option for the
+    # whole set (ANY / ALL / INVERT). A netlab community list has an action per entry, so only two
+    # shapes have a faithful rendering (templates/routing/arcos.j2):
+    #
+    #   * every entry permits                     -> the members are the set,  match-set-options ANY
+    #   * deny entries plus a catch-all '.*' permit -> the denied members are the set, and the sense
+    #                                                is flipped with match-set-options INVERT
+    #
+    # Anything else -- a permit and a deny of different values in one list, or deny entries with no
+    # catch-all -- would have to be approximated, and an approximated route-map match is the kind of
+    # thing nobody notices until traffic goes the wrong way. Refuse it instead.
+    if node.get('routing.community', None):
+      for cl_name, cl_data in node.routing.community.items():
+        entries = cl_data.get('value', [])
+        deny = [e for e in entries if e.get('action', 'permit') == 'deny']
+        if not deny:                                            # All-permit list: ANY, always fine
+          continue
+        other = [e for e in entries if e.get('action', 'permit') != 'deny']
+        # The deny form is expressible only as "matches none of these", i.e. every non-deny entry
+        # has to be the catch-all that makes the rest of the list a pure negation.
+        if other and all(e.get('_value', '') == '.*' for e in other):
+          continue
+        report_quirk(
+          text=f'ArcOS cannot express BGP community list {cl_name} on node {node.name}',
+          more_hints=[
+            'An ArcOS community-set has one match option for the whole set (ANY/ALL/INVERT) and no '
+            'per-member action, so it can express "matches any of these" or "matches none of these" '
+            'and nothing in between',
+            f'Rewrite {cl_name} as a list of permit entries, or as deny entries followed by a '
+            'catch-all permit' ],
+          node=node,
+          quirk='community_list_shape',
+          category=log.IncorrectValue)
