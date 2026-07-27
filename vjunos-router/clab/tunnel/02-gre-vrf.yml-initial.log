@@ -1,11 +1,11 @@
 Creating Device configuration snippets
-[CREATED] dut_r1: initial,ospf,vrf,tunnel.gre
-[CREATED] dut_r2: initial,ospf,vrf,tunnel.gre
-[CREATED] r3: initial,ospf
+[CREATED] dut: initial,routing,ospf,vrf,tunnel.gre
+[CREATED] r2: initial,routing,ospf,vrf,tunnel.gre,mtu-ignore
+[CREATED] r3: initial,routing,vrf,mtu-ignore
+[CREATED] core: initial
 Checking Are lab devices ready to be configured?
- [INFO] Checking SSH server(s) on dut_r1,dut_r2
-[SSH]     SSH server on node dut_r2 (device vjunos-router) is ready after 85.6 seconds
-[SSH]     SSH server on node dut_r1 (device vjunos-router) is ready after 86.4 seconds
+ [INFO] Checking SSH server(s) on dut
+[SSH]     SSH server on node dut (device vjunos-router) is ready after 153.5 seconds
  [INFO] Checking lab devices with an Ansible playbook
 [WARNING]: Found variable using reserved name: hosts
 
@@ -14,31 +14,35 @@ PLAY [Wait for SSH servers] ****************************************************
 PLAY [Wait for device-specific conditions] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [dut_r1]
-ok: [dut_r2]
+ok: [dut]
 
 TASK [Find device readiness script] ********************************************
-ok: [dut_r1]
-ok: [dut_r2]
+ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/junos.yml for dut_r1, dut_r2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/junos.yml for dut
 
 TASK [set_fact] ****************************************************************
-ok: [dut_r1]
-ok: [dut_r2]
+ok: [dut]
 
 TASK [Wait for first interface (ge-0/0/0)] *************************************
-ok: [dut_r2]
-ok: [dut_r1]
+ok: [dut]
 
 PLAY RECAP *********************************************************************
-dut_r1                     : ok=5    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-dut_r2                     : ok=5    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+dut                        : ok=5    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 
 Config Deploying device configurations
+ [INFO] Executing initial configuration for node r2
  [INFO] Executing initial configuration for node r3
- [INFO] Executing ospf configuration for node r3
+ [INFO] Executing initial configuration for node core
+ [INFO] Executing routing configuration for node r2
+ [INFO] Executing routing configuration for node r3
+ [INFO] Executing ospf configuration for node r2
+ [INFO] Executing vrf configuration for node r3
+ [INFO] Executing vrf configuration for node r2
+ [INFO] Executing mtu-ignore configuration for node r3
+ [INFO] Executing tunnel.gre configuration for node r2
+ [INFO] Executing mtu-ignore configuration for node r2
  [INFO] Starting Ansible playbook to deploy the rest of the
           configurations
 [WARNING]: Found variable using reserved name: hosts
@@ -46,171 +50,161 @@ Config Deploying device configurations
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [dut_r1]
-ok: [dut_r2]
+ok: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut_r1, dut_r2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [dut_r2]
-ok: [dut_r1]
+ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
-ok: [dut_r1]
-ok: [dut_r2]
+ok: [dut]
 
 TASK [fail] ********************************************************************
-skipping: [dut_r1]
-skipping: [dut_r2]
+skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [dut_r1]
-ok: [dut_r2]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [dut_r1] => {
-    "msg": "initial configuration for dut_r1\n=========================================\nsystem {\n  host-name dut_r1;\n  static-host-mapping {\n    dutr2 inet 10.0.0.2;\n    r3 inet 10.0.0.3;\n  }\n}\n\n\n\npolicy-options {\n  community tg_65000_1 members target:65000:1;\n}\n\n\n\npolicy-options {\n  policy-statement vrf-transport-rt-export {\n    term 1 {\n      then {\n        community add tg_65000_1;\n        accept;\n      }\n    }\n  }\n\n\n  policy-statement vrf-transport-rt-import {\n    term 1 {\n      from community [ tg_65000_1 ];\n      then accept;\n    }\n    term default {\n      then reject;\n    }\n  }\n}\n\nrouting-instances {\n\n  transport {\n    instance-type vrf;\n    route-distinguisher 65000:1;\n\n    vrf-import vrf-transport-rt-import;\n    vrf-export vrf-transport-rt-export;\n\n    routing-options {\n      auto-export;\n    }\n\n    interface ge-0/0/0.0;\n\n  }\n\n}\ninterfaces {\n  ge-0/0/0 {\n    mtu 1514;\n  }\n\n  lo0.0 {\n\n      family inet {\n        address 10.0.0.1/32;\n      }\n  }\n  ge-0/0/0.0 {\n    description \"dut_r1 -> dut_r2\";\n\n      family inet {\n        address 10.1.0.1/30;\n      }\n  }\n  gr-0/0/10.0 {\n    description \"dut_r1 -> dut_r2 [GRE tunnel]\";\n\n      family inet {\n        address 10.1.0.9/30;\n        mtu 1500;\n      }\n  }\n}\nprotocols {\n  lldp {\n    interface fxp0 {\n      disable;\n    }\n    interface all;\n  }\n}\n"
-}
-ok: [dut_r2] => {
-    "msg": "initial configuration for dut_r2\n=========================================\nsystem {\n  host-name dut_r2;\n  static-host-mapping {\n    dutr1 inet 10.0.0.1;\n    r3 inet 10.0.0.3;\n  }\n}\n\n\n\npolicy-options {\n  community tg_65000_1 members target:65000:1;\n}\n\n\n\npolicy-options {\n  policy-statement vrf-transport-rt-export {\n    term 1 {\n      then {\n        community add tg_65000_1;\n        accept;\n      }\n    }\n  }\n\n\n  policy-statement vrf-transport-rt-import {\n    term 1 {\n      from community [ tg_65000_1 ];\n      then accept;\n    }\n    term default {\n      then reject;\n    }\n  }\n}\n\nrouting-instances {\n\n  transport {\n    instance-type vrf;\n    route-distinguisher 65000:1;\n\n    vrf-import vrf-transport-rt-import;\n    vrf-export vrf-transport-rt-export;\n\n    routing-options {\n      auto-export;\n    }\n\n    interface ge-0/0/0.0;\n\n  }\n\n}\ninterfaces {\n  ge-0/0/0 {\n    mtu 1514;\n  }\n  ge-0/0/1 {\n    mtu 1514;\n  }\n\n  lo0.0 {\n\n      family inet {\n        address 10.0.0.2/32;\n      }\n  }\n  ge-0/0/0.0 {\n    description \"dut_r2 -> dut_r1\";\n\n      family inet {\n        address 10.1.0.2/30;\n      }\n  }\n  ge-0/0/1.0 {\n    description \"dut_r2 -> r3\";\n\n      family inet {\n        address 10.1.0.5/30;\n      }\n  }\n  gr-0/0/10.0 {\n    description \"dut_r2 -> dut_r1 [GRE tunnel]\";\n\n      family inet {\n        address 10.1.0.10/30;\n        mtu 1500;\n      }\n  }\n}\nprotocols {\n  lldp {\n    interface fxp0 {\n      disable;\n    }\n    interface all;\n  }\n}\n"
+ok: [dut] => {
+    "msg": "initial configuration for dut\n=========================================\nsystem {\n  host-name dut;\n  static-host-mapping {\n    r2 inet 10.0.0.2;\n    r3 inet 10.0.0.3;\n    core inet 10.0.0.4;\n  }\n}\n\n\n\npolicy-options {\n  community tg_65000_1 members target:65000:1;\n}\n\n\n\npolicy-options {\n  policy-statement vrf-tenant-rt-export {\n    term 1 {\n      then {\n        community add tg_65000_1;\n        accept;\n      }\n    }\n  }\n\n\n  policy-statement vrf-tenant-rt-import {\n    term 1 {\n      from community [ tg_65000_1 ];\n      then accept;\n    }\n    term default {\n      then reject;\n    }\n  }\n}\n\nrouting-instances {\n\n  tenant {\n    instance-type vrf;\n    route-distinguisher 65000:1;\n\n    vrf-import vrf-tenant-rt-import;\n    vrf-export vrf-tenant-rt-export;\n\n    routing-options {\n      auto-export;\n    }\n\n    interface ge-0/0/0.0;\n    interface ge-0/0/1.0;\n\n  }\n\n}\ninterfaces {\n  ge-0/0/0 {\n    mtu 1514;\n  }\n  ge-0/0/1 {\n    mtu 1514;\n  }\n\n  lo0.0 {\n\n      family inet {\n        address 10.0.0.1/32;\n      }\n      family inet6 {\n        address 2001:db8::1/128;\n      }\n  }\n  ge-0/0/0.0 {\n    description \"dut -> core [core]\";\n\n      family inet {\n        address 172.22.0.2/24;\n      }\n  }\n  ge-0/0/1.0 {\n    description \"dut -> core [core6]\";\n\n      family inet6 {\n        address 2001:db8:42::2/64;\n      }\n  }\n  gr-0/0/10.0 {\n    description \"dut -> r2 [GRE tunnel]\";\n\n      family inet {\n        address 172.23.0.1/24;\n        mtu 1400;\n      }\n      family inet6 {\n        address 2001:db8:1::1/64;\n        mtu 1400;\n      }\n  }\n}\nprotocols {\n  lldp {\n    interface fxp0 {\n      disable;\n    }\n    interface all;\n  }\n  router-advertisement {\n    interface ge-0/0/1.0;\n    interface gr-0/0/10.0;\n  }\n}\n"
 }
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut_r1, dut_r2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
-TASK [junos_config: deploying initial from /work/netlab_cicd/node_files/dut_r1/initial] ***
-changed: [dut_r1]
-changed: [dut_r2]
+TASK [junos_config: deploying initial from /work/netlab_cicd/node_files/dut/initial] ***
+changed: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [dut_r1]
-ok: [dut_r2]
+ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut_r1, dut_r2 => (item=ospf)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut_r1, dut_r2 => (item=vrf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=vrf)
 
-TASK [Figure out whether to deploy the module ospf on current device] **********
-ok: [dut_r1]
-ok: [dut_r2]
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [dut]
 
-TASK [Find configuration template for ospf] ************************************
-ok: [dut_r1]
-ok: [dut_r2]
+TASK [Find configuration template for routing] *********************************
+ok: [dut]
 
 TASK [fail] ********************************************************************
-skipping: [dut_r1]
-skipping: [dut_r2]
+skipping: [dut]
 
-TASK [Find configuration deployment deploy_script for ospf] ********************
-ok: [dut_r1]
-ok: [dut_r2]
+TASK [Find configuration deployment deploy_script for routing] *****************
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [dut_r1] => {
-    "msg": "ospf configuration for dut_r1\n=========================================\nrouting-options {\n  router-id 10.0.0.1\n}\nprotocols {\n  delete: ospf;\n}\n\nprotocols {\n  ospf {\n    area 0.0.0.0 {\n      interface lo0.0 {\n      }\n    }\n    area 0.0.0.0 {\n      interface gr-0/0/10.0 {\n        interface-type p2p;\n      }\n    }\n  }\n}\n\n"
+ok: [dut] => {
+    "msg": "routing configuration for dut\n=========================================\nrouting-instances {\n  tenant {\n\n    routing-options {\n      static route 172.22.0.0/16 {\n        next-hop 172.22.0.1;\n      }\n    }\n\n  }\n}\nrouting-instances {\n  tenant {\n\n    routing-options {\n        rib tenant.inet6.0 static route 2001:db8:42::/48 {\n          next-hop 2001:db8:42::1;\n        }\n    }\n\n  }\n}\n\n"
 }
-ok: [dut_r2] => {
-    "msg": "ospf configuration for dut_r2\n=========================================\nrouting-options {\n  router-id 10.0.0.2\n}\nprotocols {\n  delete: ospf;\n}\n\nprotocols {\n  ospf {\n    area 0.0.0.0 {\n      interface lo0.0 {\n      }\n    }\n    area 0.0.0.0 {\n      interface ge-0/0/1.0 {\n        interface-type p2p;\n      }\n    }\n    area 0.0.0.0 {\n      interface gr-0/0/10.0 {\n        interface-type p2p;\n      }\n    }\n  }\n}\n\n"
+
+TASK [Deploy routing configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
+
+TASK [junos_config: deploying routing from /work/netlab_cicd/node_files/dut/routing] ***
+changed: [dut]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "ospf configuration for dut\n=========================================\nrouting-options {\n  router-id 10.0.0.1\n}\nprotocols {\n  delete: ospf;\n}\n\nprotocols {\n  ospf {\n    area 0.0.0.0 {\n      interface lo0.0 {\n      }\n    }\n    area 0.0.0.0 {\n      interface gr-0/0/10.0 {\n        interface-type p2p;\n        hello-interval 1;\n        dead-interval 3;\n      }\n    }\n  }\n}\n\nprotocols {\n  delete: ospf3;\n}\n\nprotocols {\n  ospf3 {\n    area 0.0.0.0 {\n      interface lo0.0 {\n      }\n    }\n    area 0.0.0.0 {\n      interface gr-0/0/10.0 {\n        interface-type p2p;\n        hello-interval 1;\n        dead-interval 3;\n      }\n    }\n  }\n}\n\n"
 }
 
 TASK [Deploy ospf configuration] ***********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut_r1, dut_r2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
-TASK [junos_config: deploying ospf from /work/netlab_cicd/node_files/dut_r1/ospf] ***
+TASK [junos_config: deploying ospf from /work/netlab_cicd/node_files/dut/ospf] ***
 [WARNING]:  statement not found
-changed: [dut_r1]
-changed: [dut_r2]
+changed: [dut]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
-ok: [dut_r1]
-ok: [dut_r2]
+ok: [dut]
 
 TASK [Find configuration template for vrf] *************************************
-ok: [dut_r1]
-ok: [dut_r2]
+ok: [dut]
 
 TASK [fail] ********************************************************************
-skipping: [dut_r1]
-skipping: [dut_r2]
+skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for vrf] *********************
-ok: [dut_r1]
-ok: [dut_r2]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [dut_r1] => {
-    "msg": "vrf configuration for dut_r1\n=========================================\n\n"
-}
-ok: [dut_r2] => {
-    "msg": "vrf configuration for dut_r2\n=========================================\n\n"
+ok: [dut] => {
+    "msg": "vrf configuration for dut\n=========================================\n\n"
 }
 
 TASK [Deploy vrf configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut_r1, dut_r2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
-TASK [junos_config: deploying vrf from /work/netlab_cicd/node_files/dut_r1/vrf] ***
-ok: [dut_r1]
-ok: [dut_r2]
+TASK [junos_config: deploying vrf from /work/netlab_cicd/node_files/dut/vrf] ***
+ok: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************
 
 TASK [Run custom configuration deployment scripts] *****************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for dut_r1, dut_r2 => (item=tunnel.gre)
+skipping: [dut] => (item=mtu-ignore) 
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=tunnel.gre)
 
 TASK [Find configuration template] *********************************************
-ok: [dut_r1]
-ok: [dut_r2]
+ok: [dut]
 
 TASK [fail] ********************************************************************
-skipping: [dut_r1]
-skipping: [dut_r2]
+skipping: [dut]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [dut_r1 -> localhost]
-ok: [dut_r2 -> localhost]
+ok: [dut -> localhost]
 
 TASK [fail] ********************************************************************
-skipping: [dut_r1]
-skipping: [dut_r2]
+skipping: [dut]
 
-TASK [Process template /work/netlab_cicd/node_files/dut_r1/tunnel.gre for dut_r1] ***
-skipping: [dut_r1]
-skipping: [dut_r2]
+TASK [Process template /work/netlab_cicd/node_files/dut/tunnel.gre for dut] ****
+skipping: [dut]
 
 TASK [debug] *******************************************************************
-skipping: [dut_r1]
-skipping: [dut_r2]
+skipping: [dut]
 
 TASK [debug] *******************************************************************
-skipping: [dut_r1]
-skipping: [dut_r2]
+skipping: [dut]
 
 TASK [Find custom configuration deployment script] *****************************
-ok: [dut_r2]
-ok: [dut_r1]
+ok: [dut]
 
 TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut_r1, dut_r2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
-TASK [junos_config: deploying tunnel.gre from /work/netlab_cicd/node_files/dut_r1/tunnel.gre] ***
-changed: [dut_r2]
-changed: [dut_r1]
+TASK [junos_config: deploying tunnel.gre from /work/netlab_cicd/node_files/dut/tunnel.gre] ***
+changed: [dut]
 
 PLAY RECAP *********************************************************************
-dut_r1                     : ok=29   changed=3    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-dut_r2                     : ok=29   changed=3    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut                        : ok=36   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================
-r3               Script:  initial,ospf
+r2               Script:  initial,routing,ospf,vrf,tunnel.gre,mtu-ignore
+r3               Script:  initial,routing,vrf,mtu-ignore
+core             Script:  initial
 
 
-Test the GRE tunnels. The two tested devices have a GRE tunnel in a
-transport VRF and run (global) OSPF over it. The probe should receive
-an OSPF route advertised from the remote device (DUT_R1) and be able
-to ping its loopback.
+Test the GRE tunnels. The tested devices has GRE tunnels over IPv4 and IPv6
+and runs OSPFv2 and OSPFv3 over them. The probes should receive OSPF routes
+advertised from the DUT and be able to ping its loopback.
 
