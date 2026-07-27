@@ -277,17 +277,25 @@ The **netlab_check_retries** parameter is set higher in system defaults for virt
 
 ## Advanced Topics
 
-### Container Runtime Support
+### Podman Support
 
-Containerlab supports [multiple container runtimes](https://containerlab.dev/cmd/deploy/#runtime) besides the default **docker**. The runtime to use can be configured globally or per node, for example:
+Containerlab supports [**docker** and **podman** containers](https://containerlab.dev/cmd/deploy/#runtime). You can specify the **podman** runtime with the **providers.clab.runtime** [topology default](topo-defaults), for example:
 
 ```
 provider: clab
 defaults.providers.clab.runtime: podman
-nodes:
-  s1:
-    clab.runtime: ignite
 ```
+
+```{warning}
+* The _containerlab_ podman support is experimental. Don't expect miracles.
+* Because *containerlab* runs as **root**, the *podman* containers it creates are not visible to regular users. To use the **podman** runtime, you MUST run **netlab** as **root**.
+```
+
+To use `podman` runtime with `clab` provider, use the **netlab install podman** command on Ubuntu/Debian to install _podman_ and _containerlab_. On other Linux distributions, ensure that:
+
+* You've enabled the _podman_ API
+* The _podman_ management socket is available
+* The _podman_ Docker compatibility package (usually `podman-docker`) is installed (the **docker** command must be available).
 
 (lab-clab-binds)=
 ### Using File Binds

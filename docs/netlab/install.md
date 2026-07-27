@@ -45,6 +45,7 @@ Ubuntu 26.04 introduced Hardware Enablement (`-hwe`) version of `qemu-system-x86
 * The *ansible* script uses **pip3** to install the latest version of Ansible, networking libraries (*netaddr, paramiko, netmiko*), text parsing libraries (*testfsm, ttp, ntc-templates*), and a few other utility libraries (*jmespath, yamllint, yq*)
 * The *graph* script installs GraphViz and D2 software needed to generate graphs from _netlab_ topologies
 * The *grpc* script installs gRPC Python libraries needed to configure Nokia SR Linux and Nokia SR OS.
+* The *podman* script installs *podman*, its Docker-compatible CLI, and *containerlab*.
 
 [^UT]: Tested on Ubuntu 22.04, 24.04, and 26.04
 
@@ -63,6 +64,7 @@ $ netlab install
 │ ansible      │ Ansible and prerequisite Python libraries         │
 │ grpc         │ GRPC libraries and Nokia GRPC Ansible collection  │
 │ graph        │ GraphViz and D2 software                          │
+│ podman       │ Podman and containerlab                           │
 └──────────────┴───────────────────────────────────────────────────┘
 ```
 
