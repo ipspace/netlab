@@ -412,7 +412,7 @@ links:
   mtu: 1500
 ```
 
-[^TMTU]: Excluding tunnel interfaces
+[^TMTU]: Excluding tunnel and loopback interfaces
 
 When the node **mtu** parameter is not specified, its default value is fetched from **defaults.interfaces.mtu** or **defaults.devices** setting.
 
