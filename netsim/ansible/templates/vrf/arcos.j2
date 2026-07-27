@@ -188,6 +188,17 @@ network-instance {{ vname }} protocol ISIS i-{{ vname }}
 {%         if vdo_l2 %}
  interface {{ l.ifname }} level 2 enabled true
 {%         endif %}
+{#-        Per-interface metric, same shape as templates/isis/arcos.j2 (global/VRF parity):
+           ArcOS keeps it on the interface's level container, so it is emitted per level. -#}
+{%         if l.isis.cost is defined or l.isis.metric is defined %}
+{%           set _metric = l.isis.metric|default(l.isis.cost) %}
+{%           if vdo_l1 %}
+ interface {{ l.ifname }} level 1 metric {{ _metric }}
+{%           endif %}
+{%           if vdo_l2 %}
+ interface {{ l.ifname }} level 2 metric {{ _metric }}
+{%           endif %}
+{%         endif %}
 {%         if l.isis.passive|default(false) %}
  interface {{ l.ifname }} passive true
 {%         endif %}

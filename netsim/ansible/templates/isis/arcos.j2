@@ -76,6 +76,22 @@ network-instance default protocol ISIS i1
 {%       if ityp in ["level-2","level-1-2"] %}
  interface {{ l.ifname }} level 2 enabled true
 {%       endif %}
+{#- Per-interface IS-IS metric. ArcOS hangs it off the interface's LEVEL container
+    ("interface <if> level <N> metric <cost>"), not off the interface itself, so it is
+    emitted once per level the interface participates in. Wide metrics need no knob: this
+    build originates Extended Reachability / Extended IP Reachability (TLV 22/135)
+    natively -- a metric of 80000 shows up verbatim in a peer's LSDB. Sourced from
+    l.isis.metric with l.isis.cost as the fallback, the same pair templates/isis/eos.j2
+    and templates/isis/frr.j2 read. -#}
+{%       if l.isis.cost is defined or l.isis.metric is defined %}
+{%         set _metric = l.isis.metric|default(l.isis.cost) %}
+{%         if ityp in ["level-1","level-1-2"] %}
+ interface {{ l.ifname }} level 1 metric {{ _metric }}
+{%         endif %}
+{%         if ityp in ["level-2","level-1-2"] %}
+ interface {{ l.ifname }} level 2 metric {{ _metric }}
+{%         endif %}
+{%       endif %}
 {%     endif %}
 {%   endfor %}
 
