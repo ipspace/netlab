@@ -161,6 +161,7 @@ When you don't have to change the code for other reasons:
 - All YAML must pass `yamllint`
 - Tests must pass before merging
 - No unused imports or variables (ruff enforces)
+- Commit subject lines must be ≤72 characters
 
 ## Documentation
 
