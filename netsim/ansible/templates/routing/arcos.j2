@@ -168,17 +168,57 @@ routing-policy policy-definition {{ p_name }}-{{ af }}
 {%     endfor %}
 {%   endfor %}
 {% endif %}
-{% if routing.static|default([]) %}
-network-instance default protocol STATIC default
-{%   for af in ['ipv4', 'ipv6'] %}
-{%     for sr_data in routing.static if 'vrf' not in sr_data and sr_data[af] is defined and sr_data.nexthop[af] is defined %}
+{#- STATIC routes, global table and VRFs, from one macro so the two render identically.
+
+    ArcOS scopes static routes by network-instance -- "network-instance <ni> protocol STATIC
+    <instance>" -- so a VRF static route is the same construct as a global one with a different
+    network-instance. Verified on the device: an IPv4 and an IPv6 static route committed under
+    "network-instance red protocol STATIC red" install into red's table only
+    ("10.99.99.0/24 via 172.18.0.1 dev swp1 proto static", nothing in any other VRF).
+
+    Only ONE STATIC instance may exist per network-instance -- a second one is rejected with
+    "Exceeded max STATIC instances" -- so the instance tag is simply the VRF name (and "default"
+    in the global table, unchanged). Unlike the OSPF/IS-IS instance tags, a STATIC tag may repeat
+    a tag used by another protocol: "protocol STATIC red" and "protocol BGP red" coexist in the
+    same VRF (verified), so no p-/i-style prefix is needed.
+
+    A discard (blackhole) route is "next-hop DROP": it installs as "blackhole <prefix> proto
+    static" (verified). DROP is the only accepted keyword -- DISCARD, discard, blackhole, REJECT
+    and Null0 are all rejected by the parser.
+
+    Inter-VRF static routes (nexthop.vrf) are NOT rendered and NOT declared: ArcOS expresses them
+    as "next-network-instance-name <vrf>", which takes host routes only -- a shorter IPv4 prefix
+    is rejected with "Expect /32 v4 prefix when configuring static route with next-network-instance
+    option" and IPv6 likewise needs a /128. netlab's static routes are prefix-based, so the
+    construct cannot carry them. See the caveats in netsim/devices/arcos.yml. -#}
+{% macro static_routes(sr_list,af) %}
+{%   for sr_data in sr_list if sr_data[af] is defined and (sr_data.nexthop[af] is defined or sr_data.nexthop.discard is defined) %}
  static-route {{ sr_data[af] }}
-  next-hop-index nh1
-   next-hop {{ sr_data.nexthop[af] }}
+  next-hop-index nh{{ sr_data.nexthop.idx|default(0) }}
+   next-hop {{ 'DROP' if sr_data.nexthop.discard is defined else sr_data.nexthop[af] }}
    exit
   exit
-{%     endfor %}
+{%   endfor %}
+{% endmacro %}
+{#- an entry with an inter-VRF next hop is skipped everywhere (see above) -#}
+{% set sr_all = routing.static|default([])|rejectattr('nexthop.vrf','defined')|list %}
+{% set sr_global = sr_all|rejectattr('vrf','defined')|list %}
+{% if sr_global %}
+network-instance default protocol STATIC default
+{%   for af in ['ipv4', 'ipv6'] %}
+{{     static_routes(sr_global,af) -}}
 {%   endfor %}
  exit
 !
 {% endif %}
+{% for vname in vrfs|default({}) %}
+{%   set sr_vrf = sr_all|selectattr('vrf','defined')|selectattr('vrf','eq',vname)|list %}
+{%   if sr_vrf %}
+network-instance {{ vname }} protocol STATIC {{ vname }}
+{%     for af in ['ipv4', 'ipv6'] %}
+{{       static_routes(sr_vrf,af) -}}
+{%     endfor %}
+ exit
+!
+{%   endif %}
+{% endfor %}
