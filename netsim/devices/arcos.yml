@@ -143,8 +143,24 @@ support:
     only default.policy, so declaring the feature would turn six clean refusals into six
     failures. See docs/caveats.md.
   - >-
-    Genuinely unsupported, not just untested: EVPN symmetric IRB / L3VNI (route-type-5 is never
-    originated -- see templates/evpn/arcos.j2); OSPFv2 area-interface authentication;
+    EVPN symmetric IRB / L3VNI: the L3VNI comes up and type-5 routes ARE originated -- the earlier
+    claim that "route-type-5 is never originated" is wrong on this image. Measured on
+    evpn/03-vxlan-symmetric-irb: "overlay vni-all <transit_vni>" reports vni-run-state UP,
+    vni-type ROUTED, and the default instance's L2VPN_EVPN loc-rib holds well-formed type-5 routes
+    for every connected subnet in the VRF (RD-qualified, with encap-type:VXLAN and a per-VTEP
+    router-mac). Import works too, once the route target is written explicitly (this device
+    auto-derives AS:L3VNI where netlab uses AS:vrf-id): the peer's subnet then appears in the VRF
+    and inter-subnet traffic to it starts flowing. What does NOT work is the egress half -- the
+    locally originated type-5 routes sit in the EVPN loc-rib with path-types
+    [ BEST_PATH EXPORTED_PATH ] and no rib-out entry, so they are never advertised to the EVPN
+    peer, and setting "rt-afi-safi L2VPN_EVPN evpn-route-options suppress-rt5-routes false"
+    (which commits) does not change that. Symmetric IRB is therefore still not declared, but the
+    gap is one step narrower and in a different place than recorded before.
+  - >-
+    Genuinely unsupported, not just untested: EVPN symmetric IRB / L3VNI -- but NOT for the reason
+    previously recorded here. Type-5 routes ARE originated on the tested image (see the caveat
+    above and templates/evpn/arcos.j2); what does not work is advertising them to the EVPN peer.
+    Also: OSPFv2 area-interface authentication;
     routing-policy EXTENDED-community operations of every kind -- matching, setting and
     deleting (the ext-community-set model exists but was never verified, so it is not declared;
     standard and LARGE communities are fully supported, see the routing-policy caveat above);
@@ -213,8 +229,9 @@ group_vars:
 #
 # Deliberately NOT declared (genuinely unsupported, not just untested -- see the per-template
 # comments for the reason): OSPFv2 area-interface authentication (confd advertises the leaf but
-# rejects every value form on commit); EVPN symmetric IRB / L3VNI (config commits cleanly but the
-# control plane never originates a route-type-5 prefix -- see templates/evpn/arcos.j2); routing-policy
+# rejects every value form on commit); EVPN symmetric IRB / L3VNI (the L3VNI comes up and type-5
+# routes ARE originated and can be imported -- what fails is advertising the local ones to the EVPN
+# peer, see the caveat above and templates/evpn/arcos.j2); routing-policy
 # EXTENDED-community operations of any kind -- matching, setting and deleting (ext-community-set
 # exists in the model but was never verified; standard and LARGE communities are fully supported,
 # see features.routing.policy and templates/routing/arcos.j2);
