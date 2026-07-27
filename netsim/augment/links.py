@@ -254,6 +254,8 @@ def validate(topology: Box) -> None:
 
     for intf in l_data.interfaces:
       n_data = topology.nodes[intf.node]
+      # Skip _default on interfaces: defaults are applied on the link and copied
+      # during link-to-interface merge. Applying them here would shadow link values (#3703).
       validate_attributes(
         data=intf,                                      # Validate interface data
         topology=topology,
@@ -263,7 +265,8 @@ def validate(topology: Box) -> None:
         modules=n_data.get('module',[]),                # ... against node modules
         extra_attributes=providers,                     # Allow provider-specific attributes in interfaces
         module_source=f'nodes.{intf.node}',
-        module='links')                                 # Function is called from 'links' module
+        module='links',                                 # Function is called from 'links' module
+        apply_defaults=False)
 
 """
 Get the link attributes that have to be propagated to interfaces: full set
