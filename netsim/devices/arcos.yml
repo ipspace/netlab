@@ -129,6 +129,19 @@ support:
     ext-community-set holding the same member, applied with "method REFERENCE") commits but puts NO
     extended community on the wire at all. A community advertising 0 bps is worse than none for
     unequal-cost load balancing, so neither form is rendered.
+
+    OSPF default-route origination is deliberately NOT declared, but the netlab message that
+    results ('cannot originate ospf default route') understates the platform. ArcOS has no
+    default-information originate under OSPF -- every form is rejected with 'element does not
+    exist', and the OSPF instance subtree is only area and global with no afi-safi container --
+    yet a table-connection STATIC -> OSPF/OSPF3 redistributes 0.0.0.0/0 and ::/0 like any other
+    prefix. Verified live in an FRR neighbour's RIB, in the global table AND in a VRF, IPv4 and
+    IPv6. What blocks netlab is the model mismatch: ospf.default.always has no equivalent
+    (origination is strictly conditional on a default being present in the RIB), and
+    ospf.default.cost / .type are accepted but stop redistribution outright (an import policy
+    with ospf-actions set-metric commits, then every external LSA disappears). netlab core gates
+    only default.policy, so declaring the feature would turn six clean refusals into six
+    failures. See docs/caveats.md.
   - >-
     Genuinely unsupported, not just untested: EVPN symmetric IRB / L3VNI (route-type-5 is never
     originated -- see templates/evpn/arcos.j2); OSPFv2 area-interface authentication;
