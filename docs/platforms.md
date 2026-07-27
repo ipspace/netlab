@@ -450,7 +450,7 @@ The layer-2 control plane [configuration modules](module-reference.md) are suppo
 | Operating system          | [Spanning<br>Tree Protocol](module/stp.md) | [Link Aggregation<br>Groups](module/lag.md) |
 | ------------------------- |:--:|:--:|
 | Arista EOS                | ✅ | ✅ |
-| Arrcus ArcOS [❗](caveats-arcos) | ❌  | ✅ |
+| Arrcus ArcOS [❗](caveats-arcos) | ✅[❗](caveats-arcos) | ✅ |
 | Aruba CX                  | ✅ | ✅ |
 | BIRD                      | ❌  | ✅ |
 | Cumulus Linux             | ✅ | ✅ |

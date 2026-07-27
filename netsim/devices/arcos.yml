@@ -166,6 +166,22 @@ support:
     standard and LARGE communities are fully supported, see the routing-policy caveat above);
     the BGP link-bandwidth extended community (bgp.bandwidth -- see the caveat above);
     redistribution INTO OSPF (no source at all) and into IS-IS (static only --
+    Spanning tree is Rapid PVST and nothing else. The "stp enabled-protocol" leaf's own value list
+    is { NONE | RAPID_PVST } and RAPID_PVST is the device default, so ArcOS runs spanning tree out
+    of the box but cannot speak 802.1D, plain RSTP or MSTP -- only stp.protocol: pvrst is declared.
+    Three further shapes of the ArcOS model do not match netlab's: there is no bridge-wide priority
+    (only "stp rapid-pvst vlan <id> bridge-priority", so a node-level stp.priority is repeated on
+    every VLAN), there is no per-port and no per-VLAN enable leaf (the only off switch is the global
+    "stp enabled-protocol NONE" -- hence features.stp.enable_per_port: False, and the per-VLAN form
+    is refused by the stp_vlan_disable quirk in netsim/devices/arcos.py because netlab core does not
+    gate it), and stp.port_type is undeclared because 'network' has no per-port equivalent (ArcOS
+    bridge assurance is the global "stp global bridge-assurance"). "stp global bpdu-guard" is also
+    left alone: it commits and shows in the running config, but the operational state never leaves
+    false. stp.port_priority IS rendered (as ArcOS's 8-bit port-priority, netlab's 4-bit value x16,
+    per VLAN per interface) but its effect on the root-port election has NOT been observed -- the
+    leaf is accepted and reflected in operational state, and the test that would demonstrate it
+    (stp/03-stp-port-priority) is unreachable because it needs 802.1D. It is rendered rather than
+    discarded because netlab does not feature-gate stp.port_priority.
     features.isis.import), which is what makes BGP-into-an-IGP unsupported; SR-MPLS/LDP label
     forwarding (the native container has no kernel MPLS platform-labels -- control plane only).
     The bgp.session and other dotted plugins are not yet supported. Redistribution INTO BGP is
@@ -309,6 +325,19 @@ features:
     native_routed: true
   lag:
     passive: false        # ArcOS bonds are LACP-active; STATIC = balance-xor
+  stp:
+    # ArcOS runs spanning tree by default and speaks exactly one flavour: the "stp
+    # enabled-protocol" leaf's own value list is { NONE | RAPID_PVST } with RAPID_PVST the
+    # default. There is no 802.1D, no plain RSTP and no MSTP, so only 'pvrst' is declared -- every
+    # other protocol becomes an explicit netlab error instead of a silent mis-render.
+    supported_protocols: [ pvrst ]
+    # The only off switch is the GLOBAL "stp enabled-protocol NONE": "stp interface <if>" has no
+    # 'enabled' leaf, so STP cannot be turned off on a single port.
+    enable_per_port: False
+    # 'port_type' is deliberately NOT declared. The flag is a bare boolean, so declaring it claims
+    # all four netlab values; edge/auto/normal map onto "stp interface <if> edge-port", but
+    # 'network' has no per-port equivalent -- ArcOS bridge assurance is a global knob
+    # ("stp global bridge-assurance"). Declaring it would silently mis-render port_type: network.
   gateway:
     # Anycast gateway is NOT supported: templates/gateway/arcos.j2 renders VRRP only and the
     # anycast form is untested on this image. VRRP itself is declared for both address families,

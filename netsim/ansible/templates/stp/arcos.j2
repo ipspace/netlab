@@ -1,0 +1,51 @@
+{#-
+  ArcOS spanning tree -- Rapid PVST only.
+
+  The "stp enabled-protocol" leaf's own value list is { NONE | RAPID_PVST } (read off the leaf, not
+  guessed from a "?" completion), and RAPID_PVST is the device default -- ArcOS runs spanning tree
+  out of the box. There is no 802.1D, no plain RSTP and no MSTP on this image, so
+  features.stp.supported_protocols declares 'pvrst' alone and netlab rejects every other protocol
+  before this template ever runs. That is why the enabled branch below hard-codes RAPID_PVST
+  instead of mapping stp.protocol: any other value is already an error.
+
+  Two shapes of the ArcOS model differ from netlab's and are converted here:
+
+  * there is NO global bridge priority -- "stp rapid-pvst vlan <id> bridge-priority" is the only
+    one there is -- so a node-level stp.priority is fanned out to every VLAN the node knows;
+  * "port-priority" is the 8-bit on-the-wire form (0..240) while netlab's stp.port_priority is the
+    4-bit field (0..15), hence the x16, and it lives per VLAN per interface rather than per
+    interface, so it is fanned out across the VLANs the port carries.
+
+  NOT rendered, deliberately:
+  * per-port enable/disable -- "stp interface <if>" has no 'enabled' leaf, the only off switch is
+    the global one below, and features.stp.enable_per_port: False makes netlab say so;
+  * per-VLAN enable/disable -- "stp rapid-pvst vlan <id>" has no 'enabled' leaf either. netlab core
+    does NOT gate vlans.<v>.stp.enable against any device feature, so that request would transform
+    and deploy and leave the device in a state the topology does not describe; the ArcOS quirk in
+    netsim/devices/arcos.py refuses it instead;
+  * stp.port_type -- edge/auto/normal would map onto "stp interface <if> edge-port", but 'network'
+    has no per-port equivalent (ArcOS bridge assurance is the global "stp global bridge-assurance"),
+    and features.stp.port_type is a bare boolean that cannot express the subset. Undeclared, so
+    netlab refuses it;
+  * bpdu-guard -- "stp global bpdu-guard true" commits and appears in the running config, but
+    "show stp global state bpdu-guard" still reads false. Config the device accepts and does not
+    act on is worse than no config at all.
+-#}
+{% if not stp.enable|default(True) %}
+stp enabled-protocol NONE
+{% else %}
+stp enabled-protocol RAPID_PVST
+{%   for vdata in (vlans|default({})).values() %}
+{#-  a per-VLAN priority wins over the node-level one; the node-level value has to be repeated on
+     every VLAN because ArcOS has no bridge-wide priority to put it on -#}
+{%     set priority = vdata.stp.priority|default(stp.priority|default(None)) %}
+{%     if priority is not none %}
+stp rapid-pvst vlan {{ vdata.id }} bridge-priority {{ priority }}
+{%     endif %}
+{%   endfor %}
+{%   for l in interfaces|default([]) if l.stp.port_priority is defined %}
+{%     for vlan_id in l.vlan.trunk_id|default([l.vlan.access_id] if l.vlan.access_id is defined else []) %}
+stp rapid-pvst vlan {{ vlan_id }} interface {{ l.ifname }} port-priority {{ l.stp.port_priority * 16 }}
+{%     endfor %}
+{%   endfor %}
+{% endif %}

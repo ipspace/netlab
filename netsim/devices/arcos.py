@@ -108,3 +108,31 @@ class ARCOS(_Quirks):
               node=node,
               quirk='prefix_list_shape',
               category=log.IncorrectValue)
+
+    # ArcOS can only turn spanning tree off for the WHOLE box: the off switch is the global
+    # "stp enabled-protocol NONE". "stp rapid-pvst vlan <id>" has no 'enabled' leaf, and neither
+    # does "stp interface <if>" -- there is nowhere to put a per-VLAN disable request.
+    #
+    # netlab core gates the per-interface form (intf.stp.enable) against features.stp.enable_per_port,
+    # which ArcOS declares False, so that one is already refused. It does NOT gate the per-VLAN form
+    # against anything, so vlans.<name>.stp.enable: False transforms, renders and deploys -- and
+    # templates/stp/arcos.j2 has nothing to render for it, leaving spanning tree RUNNING on a VLAN
+    # the topology says it should be off on. That is a wrong topology rather than an error, and on
+    # a node that also carries stp.priority the rendered config makes the device the root bridge of
+    # exactly the VLAN the user asked to exclude. Refuse the combination up front instead.
+    if 'stp' in mods:
+      no_stp_vlans = [
+          vname for vname, vdata in node.get('vlans', {}).items()
+            if vdata.get('stp.enable', True) is False ]
+      if no_stp_vlans:
+        report_quirk(
+          text=f'ArcOS cannot disable STP on individual VLANs (node {node.name}, '
+               f'VLAN(s) {",".join(no_stp_vlans)})',
+          more_hints=[
+            'ArcOS has no per-VLAN "enabled" leaf -- the only off switch is the global '
+            '"stp enabled-protocol NONE", which stops spanning tree on the whole device',
+            f'Use stp.enable: False on node {node.name} to stop STP everywhere, or remove the '
+            'per-VLAN stp.enable setting' ],
+          node=node,
+          quirk='stp_vlan_disable',
+          category=log.IncorrectValue)
