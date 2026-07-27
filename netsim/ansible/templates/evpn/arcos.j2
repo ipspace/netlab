@@ -50,16 +50,20 @@ network-instance vlan{{ vdata.id }}
   per-VLAN distributed-anycast-gateway pattern above (which only proves intra-subnet bridging +
   local routing, not real inter-subnet transport).
 
-  KNOWN NOT FUNCTIONAL on this image: this config renders and COMMITS cleanly (RD, VNI,
-  L3VPN_IPV4_UNICAST AF, VRF interface binding all accepted), but RIB inspection on the default
-  instance's L2VPN_EVPN table shows ONLY route-type 2 (MAC/IP)
-  and 3 (Inclusive Multicast) -- ZERO route-type 5 (IP Prefix) routes are ever originated from
-  the VRF, on either node. Without Type-5 origination there is nothing for the peer to import,
-  so the L3VPN_IPV4_UNICAST RIB stays empty and the inter-subnet datapath fails completely. This
-  is a deeper gap than the SR-MPLS/LDP "control-plane forms, FIB doesn't program" pattern -- here
-  the control plane itself never generates the route symmetric IRB depends on. Rendered here for
-  completeness (a future ArcOS release or deeper probing may unlock it) but NOT declared in
-  features.evpn -- only the L2VNI/distributed-anycast-gateway path (proven working) is declared.
+  PARTLY FUNCTIONAL on this image, and NOT for the reason recorded here before. Type-5 routes ARE
+  originated: with the VRF BGP instance carrying its connected subnets (bgp.import.connected ->
+  network statements, see templates/bgp/arcos.macro.j2) the default instance's L2VPN_EVPN table
+  holds one well-formed route-type 5 per subnet -- RD-qualified, with encap-type:VXLAN and a
+  per-VTEP router-mac -- and "show overlay vni-all <transit_vni>" reports vni-type ROUTED. The
+  earlier claim that ZERO type-5 routes are ever originated was measured before those network
+  statements existed, i.e. with nothing for the VRF to originate.
+
+  What does NOT work is advertising them: the local type-5 routes carry
+  path-types [ BEST_PATH EXPORTED_PATH ] and no rib-out entry, so the peer never receives them
+  (its EVPN table holds only its own). Setting rt-afi-safi L2VPN_EVPN evpn-route-options
+  suppress-rt5-routes false commits and changes nothing. The import direction is fine once the
+  route target below is explicit. Rendered here for completeness but symmetric IRB is still NOT
+  declared in features.evpn -- only the L2VNI/distributed-anycast-gateway path is.
 #}
 {#- The route distinguisher is netlab's vrfs.<name>.rd, the same value templates/vrf/arcos.j2 writes
     on this very instance (evpn is deployed after vrf, so it would otherwise silently overwrite it
