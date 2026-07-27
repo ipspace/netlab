@@ -113,8 +113,21 @@ network-instance {{ ni }} table-connection {{ src }} BGP {{ af|upper }} src-dst-
 {%   for n in nb_list %}
 {%     for af in ['ipv4','ipv6'] if af_flags[af] is defined and n[af] is defined and n.activate[af]|default(false) %}
  neighbor {{ n[af] }} peer-as {{ n.as }}
+{#       bgp.local_as: netlab's replace_global_as (default true) means the local AS REPLACES the
+         global one in the AS path rather than being prepended to it -- "no-prepend replace-as" on
+         FRR, and the identically named leaves here. Rendering only "local-as" left the global AS
+         in the path, so a peer whose own AS equals it dropped the update as an AS-path loop: in
+         evpn/12-vxlan-ibgp-ebgp the spine advertised its loopback to an FRR leaf that never
+         installed it ("0 accepted" with nothing inbound-filtered, because a loop is discarded
+         before policy), the leaf had no route to the spine loopback, and the EVPN session over
+         that loopback stayed Active forever. With both leaves set the leaf receives the prefix
+         with AS path "65100" and the session comes up. -#}
 {%       if n.local_as is defined %}
  neighbor {{ n[af] }} ebgp-local-as local-as {{ n.local_as }}
+{%         if n.replace_global_as|default(True) %}
+ neighbor {{ n[af] }} ebgp-local-as no-prepend true
+ neighbor {{ n[af] }} ebgp-local-as replace-as true
+{%         endif %}
 {%       endif %}
 {#-      iBGP-over-loopback: without an explicit transport local-address a session
          addressed at the peer loopback stays IDLE forever -- ArcOS does not
