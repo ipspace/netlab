@@ -1,0 +1,13 @@
+{% if services.dns.ipv4 is defined or services.dns.ipv6 is defined %}
+{#
+    Collect IPv6 and IPv4 DNS server addresses, use at most six of them
+#}
+{%   set dns_srv_list = (services.dns.ipv6|default([]) + services.dns.ipv4|default([]))[:6] %}
+ip domain lookup
+ip name-server {% if services.dns.transport_vrf is defined
+  %}vrf {{ services.dns.transport_vrf }} {% endif
+  %}{{ dns_srv_list|join(' ') }}
+{% endif %}
+{% if services.dns.domain|default(False) %}
+ip domain name {{ services.dns.domain }}
+{% endif %}

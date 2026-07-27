@@ -1,9 +1,25 @@
+{% set netlab_domain=services.dns.domain|default('lab.local') %}
 dhcp-authoritative
 enable-ra
-domain=lab.local
-ra-param=*,10
-except-interface=lo
+domain={{ netlab_domain }}
+log-facility=/var/log/dnsmasq
+log-dhcp
+{% if services.server.dns is defined %}
+domain-needed
+expand-hosts
+log-queries=extra
+local=/{{ netlab_domain }}/
+local=//
+{%   if services.server.dns.forwarder is defined %}
+{%     for r_ip in services.server.dns.forwarder.ipv4|default([]) + services.server.dns.forwarder.ipv6|default([]) %}
+server={{ r_ip }}
+{%     endfor %}
+{%   endif %}
+{% else %}
 port=0
+{% endif %}
+ra-param=*,10
+#except-interface=lo
 
 {% for pool in dhcp.pools|default([]) %}
 {%   set pool_idx = loop.index %}

@@ -1,0 +1,43 @@
+message: |
+  The test checks the DNS client configuration on DUT. The validate.ping
+  entry must specify the "ping" command for all supported devices; the
+  test performs the ping, checks for the presence of remote IP address
+  in the output (= name resolution works), and then checks for the DNS
+  query on the DNS server (= DNS client works).
+
+nodes:
+  dut:
+    module: [ services ]
+    services:
+      dns.server: dnssrv
+      server.dns: False
+  dnssrv:
+    device: dnsmasq
+    provider: clab
+    services.server.dns.forwarder.ipv4: 8.8.8.8
+  t1:
+    device: linux
+    provider: clab
+
+links: [ dut-dnssrv-t1 ]
+
+validate:
+  ping:
+    nodes: [ dut ]
+    exec:
+      iol: ping t1
+      ioll2: ping t1
+      iosv: ping t1
+      iosvl2: ping t1
+      csr: ping t1
+      cat8000v: ping t1
+      linux: ping -c 3 t1
+      frr: ping -c 3 t1
+    valid: >-
+      "172.16.0.3" in stdout
+  query:
+    nodes: [ dnssrv ]
+    devices: [ dnsmasq ]
+    exec: cat /var/log/dnsmasq
+    valid: >-
+      "from 172.16.0.1" in stdout
