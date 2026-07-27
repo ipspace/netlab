@@ -105,13 +105,22 @@ support:
     advertisements and both stay Master. A single ArcOS first-hop router still becomes Master and
     forwards; IPv4 election against another vendor does not work. See docs/caveats.md.
   - >-
-    A discard static route (features.routing.static.discard) aimed at a DIRECTLY-CONNECTED host
-    stops working once ArcOS resolves that host. The config is correct and installs -- "next-hop
-    DROP" commits in the global table and in a VRF, IPv4 and IPv6, and shows up as
-    "blackhole <prefix> proto static" -- but as soon as the target sends anything to the device
-    (ARPing its default gateway is enough), the connected-host ADJACENCY route replaces the
-    discard, the blackhole entry disappears from the FIB, and the destination is reachable again.
-    Discards for prefixes that are not directly connected blackhole normally. See docs/caveats.md.
+    A discard static route (features.routing.static.discard) aimed at a DIRECTLY-CONNECTED host is
+    displaced by the connected-host route whenever that host's neighbour entry is REACHABLE. The
+    config is correct and installs -- "next-hop DROP" commits in the global table and in a VRF,
+    IPv4 and IPv6, and shows up as "blackhole <prefix> proto static" -- and the RIB keeps the
+    discard as a candidate (origin STATIC, interface null0), but it reports best-protocol
+    ADJACENCY for the same /32 and the blackhole is withdrawn from the FIB. The correlation is
+    one-to-one, per target and per address family: on a settled lab the only discard still
+    installed was the one whose target had no neighbour entry. It is sticky -- shutting the
+    target's interface for 90s leaves the neighbour REACHABLE with no blackhole, and a hand-deleted
+    neighbour entry is reinstated immediately. Discards for prefixes that are not directly
+    connected blackhole normally. Consequence: tests/integration/routing/25-static-discard.yml
+    aims all four of its discards at hosts on connected LANs and cannot be made reliably green on
+    this platform by any wait value -- for ~3 minutes after the DUT starts the STATIC daemon has
+    installed nothing, then all four discards exist for some 16-21 seconds while the targets are
+    still STALE, then the targets go REACHABLE and the blackholes leave the FIB for good; five
+    fresh labs all reported 7/11. See docs/caveats.md.
   - >-
     Genuinely unsupported, not just untested: EVPN symmetric IRB / L3VNI (route-type-5 is never
     originated -- see templates/evpn/arcos.j2); OSPFv2 area-interface authentication;
