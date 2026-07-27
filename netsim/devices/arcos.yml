@@ -105,10 +105,36 @@ support:
     advertisements and both stay Master. A single ArcOS first-hop router still becomes Master and
     forwards; IPv4 election against another vendor does not work. See docs/caveats.md.
   - >-
+    Routing-policy BGP community operations cover standard and large communities, in both
+    directions: community lists are OpenConfig bgp-defined-sets (community-set /
+    large-community-set) whose members may be literals or regular expressions, matching is
+    "conditions bgp-conditions match-community-set / match-large-community-set", setting is
+    "set-community method INLINE" for standard and "set-large-community method REFERENCE" for
+    large (there is no inline form for large, so netlab materialises a set to point at), and
+    deletion is the same reference with "options REMOVE" on the "-additional" leaf. One shape does
+    NOT map: an ArcOS set has no per-member action, only a whole-set match option, so a netlab
+    community list that mixes permit and deny entries has no faithful rendering. All-permit lists
+    render as match-set-options ANY and "deny ... plus a catch-all permit" renders the denied
+    members with INVERT; any other mix is refused by the community_list_shape quirk in
+    netsim/devices/arcos.py rather than approximated.
+  - >-
+    The BGP link-bandwidth extended community (the bgp.policy plugin's bgp.bandwidth attribute) is
+    not supported and is not declared. There is no link-bandwidth leaf anywhere in the device
+    schema and no send-community knob under the BGP neighbor address family. ArcOS will emit an LB
+    extended community if one is hand-written as an ext-community-set member
+    ("bandwidth:<asn>:<value>"), and a peer decodes it as a link-bandwidth community -- but the
+    BANDWIDTH FIELD IS ALWAYS ZERO regardless of the value configured (tried 100 and 12500000;
+    the peer reported "LB:65000:0 (0 bps)" every time, while the ASN field did track the
+    configuration). A link-bandwidth community advertising 0 bps is worse than none at all for
+    unequal-cost load balancing, so nothing renders it.
+  - >-
     Genuinely unsupported, not just untested: EVPN symmetric IRB / L3VNI (route-type-5 is never
     originated -- see templates/evpn/arcos.j2); OSPFv2 area-interface authentication;
-    routing-policy large/extended-community set-actions
-    (standard only); redistribution INTO OSPF (no source at all) and into IS-IS (static only --
+    routing-policy EXTENDED-community operations of every kind -- matching, setting and
+    deleting (the ext-community-set model exists but was never verified, so it is not declared;
+    standard and LARGE communities are fully supported, see the routing-policy caveat above);
+    the BGP link-bandwidth extended community (bgp.bandwidth -- see the caveat above);
+    redistribution INTO OSPF (no source at all) and into IS-IS (static only --
     features.isis.import), which is what makes BGP-into-an-IGP unsupported; SR-MPLS/LDP label
     forwarding (the native container has no kernel MPLS platform-labels -- control plane only).
     The bgp.session and other dotted plugins are not yet supported. Redistribution INTO BGP is
