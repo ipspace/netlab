@@ -6,7 +6,7 @@
 ## Usage
 
 ```text
-usage: netlab test [-h] [-w WORKDIR] [-v] {clab,grpc,libvirt}
+usage: netlab test [-h] [-w WORKDIR] [-v] {clab,grpc,libvirt,podman}
 
 Test virtual lab installation
 
