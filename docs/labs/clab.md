@@ -8,6 +8,10 @@
 * Create [lab topology file](../topology-overview.md). Use `provider: clab` in lab topology to select the *containerlab* virtualization provider.
 * Start the lab with **[netlab up](../netlab/up.md)**
 
+```{warning}
+You have to be a member of the `clab_admins` group to start a _containerlab_ lab, and a member of the `docker` group to use Docker containers. If you used **netlab install containerlab**, these group memberships are configured automatically; use the **sudo usermod -aG _group_ _user_** command to add additional users to these groups.
+```
+
 ```eval_rst
 .. contents:: Table of Contents
    :depth: 2

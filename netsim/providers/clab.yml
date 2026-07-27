@@ -7,14 +7,17 @@ lab_prefix: "clab" # Containerlab default, set to "" to remove prefix
 node_config_special: [ binds, config_templates, image, kind, startup-config, srl-agents, runtime ]
 template: clab.j2
 version: "0.75.0"       # Triple-check the exact release tag containerlab is using when changing this :(
-# Preserve env to allow user to configure PATH
-start: sudo -E containerlab deploy --reconfigure -t clab.yml
-stop: sudo -E containerlab destroy --cleanup -t clab.yml
+start: containerlab deploy --reconfigure -t clab.yml
+stop: containerlab destroy --cleanup -t clab.yml
 act_probe: "docker ps"
 act_title: "Running containers"
 probe:
 - cmd: "containerlab version"
   err: "Containerlab is not installed"
+- cmd: [ bash, '-c', "groups | grep -w clab_admins"]
+  err: >-
+    You are not a member of the clab_admins group.
+    See https://netlab.tools/labs/clab/ for details
 - cmd: [ bash, '-c', "[[ `containerlab version|awk '/version/ {print $2}'` > '0.74.99' ]] && echo OK" ]
   err: "Containerlab version is too old, please upgrade to 0.75.0 or later with 'sudo containerlab version upgrade'"
 
