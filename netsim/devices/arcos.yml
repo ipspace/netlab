@@ -120,13 +120,15 @@ support:
   - >-
     The BGP link-bandwidth extended community (the bgp.policy plugin's bgp.bandwidth attribute) is
     not supported and is not declared. There is no link-bandwidth leaf anywhere in the device
-    schema and no send-community knob under the BGP neighbor address family. ArcOS will emit an LB
-    extended community if one is hand-written as an ext-community-set member
-    ("bandwidth:<asn>:<value>"), and a peer decodes it as a link-bandwidth community -- but the
-    BANDWIDTH FIELD IS ALWAYS ZERO regardless of the value configured (tried 100 and 12500000;
-    the peer reported "LB:65000:0 (0 bps)" every time, while the ASN field did track the
-    configuration). A link-bandwidth community advertising 0 bps is worse than none at all for
-    unequal-cost load balancing, so nothing renders it.
+    schema and no send-community knob under the BGP neighbor address family, and neither way of
+    hand-writing one is usable -- they fail differently. The INLINE form ("set-ext-community method
+    INLINE ... inline ext-communities [ bandwidth:<asn>:<value> ]") does reach the peer, which
+    decodes it as a link-bandwidth community, but the BANDWIDTH FIELD IS ALWAYS ZERO regardless of
+    the value configured (tried 100 and 12500000; the peer reported "LB:65000:0 (0 bps)" both
+    times, while the ASN field did track the configuration). The REFERENCE form (an
+    ext-community-set holding the same member, applied with "method REFERENCE") commits but puts NO
+    extended community on the wire at all. A community advertising 0 bps is worse than none for
+    unequal-cost load balancing, so neither form is rendered.
   - >-
     Genuinely unsupported, not just untested: EVPN symmetric IRB / L3VNI (route-type-5 is never
     originated -- see templates/evpn/arcos.j2); OSPFv2 area-interface authentication;
@@ -200,7 +202,9 @@ group_vars:
 # comments for the reason): OSPFv2 area-interface authentication (confd advertises the leaf but
 # rejects every value form on commit); EVPN symmetric IRB / L3VNI (config commits cleanly but the
 # control plane never originates a route-type-5 prefix -- see templates/evpn/arcos.j2); routing-policy
-# large/extended community set-actions (ArcOS only has an inline standard-community set action);
+# EXTENDED-community operations of any kind -- matching, setting and deleting (ext-community-set
+# exists in the model but was never verified; standard and LARGE communities are fully supported,
+# see features.routing.policy and templates/routing/arcos.j2);
 # anycast gateways (nothing renders them -- VRRP is the only FHRP the gateway template configures,
 # and it renders for both IPv4 and IPv6);
 # redistribution INTO an IGP: OSPF accepts no import source at all, and IS-IS accepts only static
