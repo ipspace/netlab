@@ -17,6 +17,7 @@ The plugin includes Jinja2 templates for the following platforms:
 | Operating system | WireGuard tunnels | Transport VRF |
 |------------------|:-:|:-:|
 | FRR              |✅|✅|
+| RouterOS 7       |✅|✅|
 
 ## Using the Plugin
 
