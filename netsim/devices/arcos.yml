@@ -260,13 +260,33 @@ features:
   routing:
     static: true
     prefix: true
+    # BGP community lists are ArcOS "routing-policy defined-sets bgp-defined-sets community-set /
+    # large-community-set". Members may be literals or regular expressions (verified: a member of
+    # "65101:4.*" matched a route carrying 65101:42 and left an untagged route alone), so both the
+    # standard and the expanded list types are declared. EXTENDED community lists exist in the
+    # model (ext-community-set) but are not exercised anywhere and are deliberately not declared.
+    community:
+      standard: [ standard, expanded ]
+      large: [ standard, expanded ]
     policy:
       match:
         prefix: true
+        # "conditions bgp-conditions match-community-set / match-large-community-set", each with
+        # match-set-options ANY. Both verified by effect on a peer, not just by commit.
+        community:
+          standard: true
+          large: true
       set:
         locpref: true
         med: true
         community: true   # standard communities only -- see templates/routing/arcos.j2
+      # ArcOS removes communities by referencing a community-set, not by listing values inline for
+      # large communities, so netlab is asked to turn every delete request into a community list
+      # ('clist'): netsim/modules/routing/clist.py then auto-generates the list and both the
+      # literal and the by-list forms end up on one rendering path. The per-family gate is
+      # features.routing.community above, so deleting extended communities is still refused.
+      delete:
+        community: clist
 # All netlab devices default to MTU 1500 (netlab.tools/links/#changing-mtu). ArcOS needs this
 # explicit device default so l.mtu resolves in a no-MTU topology and initial/arcos.j2 renders the
 # interface MTU leaf -- the ArcOS interface mtu leaf is programmed as (leaf - 26), so the
