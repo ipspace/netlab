@@ -289,6 +289,7 @@ defaults.providers.clab.runtime: podman
 ```{warning}
 * The _containerlab_ podman support is experimental. Don't expect miracles.
 * Because *containerlab* runs as **root**, the *podman* containers it creates are not visible to regular users. To use the **podman** runtime, you MUST run **netlab** as **root**.
+* We tested the basic *podman-with-containerlab* functionality on Ubuntu 26.04. We did not test advanced features like multi-provider labs.
 ```
 
 To use `podman` runtime with `clab` provider, use the **netlab install podman** command on Ubuntu/Debian to install _podman_ and _containerlab_. On other Linux distributions, ensure that:
