@@ -27,10 +27,7 @@ The **server** sub-attribute within the node-level attributes defines what happe
 * `services.server.dns` -- a dictionary that may contain **forwarder** addresses (`ipv4`/`ipv6` lists). The attribute can also be set to `True` (boolean) as a shorthand.
 * `services.server.syslog` -- a boolean flag indicating the node is a syslog server.
 
-## Transformation Process
-
-The services module transformation (implemented in `netsim/modules/services.py`, class `Services`, method `module_post_transform`) runs during the `post_node_transform` phase. For every node that has a `services` attribute, it performs these steps:
-
+The services module transformation (implemented in `netsim/modules/services.py`, class `Services`, method `module_post_transform`) runs during the `post_transform` phase. For every node that has a `services` attribute, it performs these steps:
 ### Server Resolution (`resolve_servers`)
 
 For each service key present on a node (e.g., `dns`):
