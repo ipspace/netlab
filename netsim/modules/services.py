@@ -101,7 +101,7 @@ def set_dns_fields(ndata: Box) -> None:
   dns_data = ndata.get('services.dns',{})
   if not dns_data:                                # No DNS services, nothing to do
     return
-  srv_list = dns_data.get('ipv4',[]) + dns_data.get('ipv6',[])
+  srv_list = dns_data.get('ipv6',[]) + dns_data.get('ipv4',[])
   if not srv_list:                                # No DNS servers defined
     return
   dns_data._server_list = srv_list                # Set combined IPv4/IPv6 server list field
