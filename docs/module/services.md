@@ -17,10 +17,11 @@ _netlab_ can configure DNS clients or servers on these platforms:
 
 | Operating system      | IPv4 DNS<br>client | IPv6 DNS<br>client | Transport<br>VRF | DNS server |
 | --------------------- | :-: | :-: | :-: | :-: |
+| Arista EOS            | ✅  | ✅  | ✅  |  ❌  |
 | Cisco IOS/IOS XE[^18v]| ✅  | ✅  | ✅  |  ❌  |
-| FRR (containers)      | ✅  | ✅  |  ❌  |  ❌  |
-| Linux (containers)    | ✅  | ✅  |  ❌  |  ❌  |
-| dnsmasq               | ✅  | ✅  |  ❌  | ✅  |
+| FRR (containers)      | ✅  | ✅  | ❌  |  ❌  |
+| Linux (containers)    | ✅  | ✅  | ❌  |  ❌  |
+| dnsmasq               | ✅  | ✅  | ❌  |  ✅  |
 
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOSv, Cisco IOSv L2 image, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
