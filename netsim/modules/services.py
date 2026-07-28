@@ -94,6 +94,20 @@ def check_vrf(ndata: Box,mod_attr: Box) -> None:
         category=log.MissingDependency,
         module='services')
 
+def set_dns_fields(ndata: Box) -> None:
+  """
+  Set extra fields to simplify DNS templates
+  """
+  dns_data = ndata.get('services.dns',{})
+  if not dns_data:                                # No DNS services, nothing to do
+    return
+  srv_list = dns_data.get('ipv4',[]) + dns_data.get('ipv6',[])
+  if not srv_list:                                # No DNS servers defined
+    return
+  dns_data._server_list = srv_list                # Set combined IPv4/IPv6 server list field
+  if 'services.server.dns' not in ndata:          # Are we also a DNS server?
+    dns_data._no_hosts = True                     # Nope, we can skip the "ip host" definitions
+
 def disable_shared_hosts(ndata: Box) -> None:
   """
   Containers running a DNS client should not use shared /etc/hosts file
@@ -126,8 +140,10 @@ class Services(_Module):
       svc_data = ndata.get('services',None)
       if not svc_data:
         continue
+
       svc_nodes.append(ndata)
       resolve_servers(ndata,svc_data,topology,mod_attr,svc_cache)
+      set_dns_fields(ndata)
       disable_shared_hosts(ndata)
       check_feature_support(ndata,svc_data,topology,mod_attr)
       check_vrf(ndata,mod_attr)
