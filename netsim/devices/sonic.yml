@@ -1,15 +1,66 @@
 ---
-description: Sonic VM
+# SONiC. The device runs FRR for its whole control plane, so it inherits the FRR device
+# (parent: frr) and then turns OFF what SONiC cannot do -- rather than re-enumerating the
+# FRR feature set, which is how the two drifted apart in the first place.
+#
+# Two deployments share this device:
+#  * libvirt -- the SONiC VM (support level: minimal, largely untested)
+#  * clab    -- docker-sonic-vs, a monolithic container (vtysh runs directly, no 'docker exec bgp')
+# Everything specific to the container lives in the clab: block below, and the templates the
+# container needs of its own are named <module>/sonic-clab.j2 (netlab looks up
+# "<module>/<device>-<provider>.j2" before "<module>/<device>.j2", see defaults/paths.yml).
+parent: frr
+description: SONiC
 support:
   level: minimal
+  caveats:
+  - >-
+    SONiC runs FRR, so this device inherits the FRR device and disables what SONiC does not
+    support rather than re-declaring the FRR feature set. Anything not disabled below is served
+    by the FRR templates.
+  - >-
+    Genuinely unsupported, not just untested (each live-probed): STP -- config-plane only, there
+    is no stpd daemon so there is no real port-blocking behaviour; DHCP relay/client --
+    docker-sonic-vs ships no dhcrelay/dhcp6relay binary at all; mlag.vtep (anycast VTEP) --
+    the config plane renders and the underlay comes up, but the active-active EVPN overlay is
+    platform-blocked (no mclagd), so the datapath is 100% loss.
+  - >-
+    Two routing-policy operations FRR supports are disabled here because they are not exercised
+    by any integration test on this platform and were therefore never verified:
+    policy.set.community.extended and policy.match.nexthop. They are disabled explicitly rather
+    than left to inheritance -- under a parent device, silence is a claim.
+  - >-
+    The libvirt (VM) deployment is far less tested than the container. VLAN, LAG, VXLAN and EVPN
+    are enabled only for clab, because their configuration is built with config_db/redis-cli
+    sequences that have only ever been exercised on docker-sonic-vs.
 interface_name: Ethernet{ifindex * 4}
 ifindex_offset: 0
 mgmt_if: eth0
 loopback_interface_name: Loopback{ifindex}
+lag_interface_name: "PortChannel{lag.ifindex}"
+tunnel_interface_name: tun{ifindex}
 group_vars:
-  ansible_network_os: frr
   ansible_python_interpreter: auto_silent
   netlab_device_type: sonic
+#
+# Turned OFF for every SONiC deployment (see support.caveats for the evidence).
+#
+features:
+  stp: false                  # config-plane only, no stpd daemon -- no port blocking to verify
+  dhcp: false                 # docker-sonic-vs ships no dhcrelay/dhcp6relay binary
+  routing:
+    policy:
+      match:
+        nexthop: false        # never exercised on this platform -> not claimed
+      set:
+        community:
+          extended: false     # never exercised on this platform -> not claimed
+  # Built with config_db/redis-cli sequences that only the container has been tested with;
+  # re-enabled under clab: below.
+  vlan: false
+  lag: false
+  vxlan: false
+  evpn: false
 libvirt:
   image: netlab/sonic
   mtu: 1500
@@ -19,27 +70,72 @@ libvirt:
     ansible_user: admin
     ansible_ssh_pass: YourPaSsWoRd
     netlab_show_command: [ sudo, vtysh, -c, 'show $@' ]
+clab:
+  # The generic templates/provider/clab/clab.j2 renders every clab.<key> below through its
+  # key-value passthrough loop, so this device needs no provider template of its own.
+  image: docker-sonic-vs:latest
+  mtu: 1500
+  node:
+    kind: sonic-vs
+    # Do NOT inherit FRR's bind-mounted /etc/frr/daemons and /etc/hosts config templates:
+    # docker-sonic-vs ships its own daemons file (initial/sonic-clab.j2 enables the daemons the
+    # configured modules need, in place) and mounting FRR's over it would undo that.
+    config_templates:
+  # SONiC runs FRR, so reuse FRR's kernel-module handling: an 'mpls'/'sr' lab auto-loads
+  # mpls_router + mpls_iptunnel, 'vxlan' loads the vxlan modules, 'vrf' the vrf module.
+  kmods:
+    initial: [ 'vrf?' ]
+  group_vars:
+    ansible_connection: docker
+    ansible_user: root
+    ansible_ssh_pass: YourPaSsWoRd        # bootstrapped 'admin' login, interactive use only
+    netlab_ready: [ ansible ]             # skip the SSH readiness wait (sshd isn't up yet)
+    netlab_show_command: [ vtysh, -c, 'show $@' ]
+    # Do NOT inherit FRR's deployment mechanism. FRR's clab group_vars select netlab's native
+    # "sh" config mode with a '#!/usr/bin/vtysh -f' shebang, which bypasses
+    # tasks/deploy-config/sonic-clab.yml entirely and feeds SONiC's bash 'config' script to
+    # vtysh. Measured: the node then fails initial configuration with
+    # "RuntimeError: Unable to connect to redis - Connection refused".
+    # SONiC deploys over the Ansible docker connection instead.
+    netlab_config_mode:
+    netlab_default_shebang:
+    netlab_mgmt_vrf: False
+    # docker-sonic-vs ships most FRR daemons disabled in /etc/frr/daemons; initial/sonic-clab.j2
+    # enables the ones the configured modules need. watchfrr, zebra and staticd are always
+    # started by FRR itself and are deliberately absent from this map.
+    netlab_frr_daemons:
+      bgp: [ bgpd ]
+      ospf: [ ospfd, ospf6d ]
+      isis: [ isisd ]
+      bfd: [ bfdd ]
+      ripv2: [ ripd ]
+      vrf: [ bgpd ]
+      gateway: [ vrrpd ]
+      mpls: [ ldpd ]
+  #
+  # Verified on docker-sonic-vs and therefore re-enabled for the container only.
+  #
+  features:
+    vlan:
+      model: l3-switch
+      svi_interface_name: "Vlan{vlan}"
+      subif_name: "{ifname}.{subif_index}"
+      native_routed: true
+    lag:
+      passive: true
+      mlag:
+        peer:
+          ip: 169.254.127.0/31  # static /31 peer-link (EOS pattern); SONiC has no MLAG keepalive
+                                # protocol to negotiate one over -- config-plane only (no mclagd)
+    vxlan: true
+    evpn:
+      transport: [ vxlan, mpls ]
+      irb: true
+      multihoming:
+        lag: true
+    initial:
+      collect: true             # ansible_connection: docker unblocks this (no sshd needed)
+      config_mode:              # clear FRR's [ sh ]: SONiC uses the Ansible deploy task
 external:
   image: none
-features:
-  initial:
-    ipv4:
-      unnumbered: true
-    ipv6:
-      lla: true
-    reload: false
-    collect: true
-  bgp:
-    activate_af: true
-    advertise: true
-    ipv6_lla: true
-    local_as: true
-    local_as_ibgp: true
-    vrf_local_as: true
-    community:
-      standard: [ standard, large ]
-      large: [ large ]
-      extended: [ extended ]
-      2octet: [ standard ]
-
 graphite.icon: router
