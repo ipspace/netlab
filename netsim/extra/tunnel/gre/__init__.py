@@ -8,9 +8,9 @@ from .. import _p2p
 
 _config_name = 'tunnel.gre'
 
-def pre_link_transform(topology: Box) -> None:
+def pre_transform(topology: Box) -> None:
   '''
-  pre_link_transform hook: set tunnel link type, check whether GRE tunnels are P2P
+  pre_transform hook: set tunnel link type, check whether GRE tunnels are P2P
   '''
   _tunnel.set_tunnel_type(topology)
   for link in _tunnel.links(topology,'gre'):
@@ -27,7 +27,7 @@ def post_transform(topology: Box) -> None:
 
   # Use shared P2P tunnel function to check feature support
   #
-  node_iflist = _p2p.feature_check(topology,t_mode='gre',t_desc='GRE tunnels')
+  node_iflist = _p2p.feature_check(topology,t_mode='gre',t_desc='GRE tunnels',t_af=True,t_default_af='ipv4')
   _p2p.tunnel_source(topology,node_iflist,default_af='ipv4',t_name='GRE')
 
   if log.get_error_count():                                 # Has someone reported an error?

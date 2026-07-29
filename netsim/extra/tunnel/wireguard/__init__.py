@@ -5,10 +5,10 @@ from box import Box
 from netsim.augment import devices
 from netsim.augment import links as _links
 from netsim.data import get_box
+from netsim.extra import tunnel as _tunnel
+from netsim.extra.tunnel import _p2p
+from netsim.modules import _dataplane
 from netsim.utils import log
-
-from ... import tunnel as _tunnel
-from .. import _p2p
 
 _config_name = 'tunnel.wireguard'
 
@@ -96,6 +96,37 @@ def add_linux_packages(node: Box, topology: Box) -> None:
   packages['wireguard-tools'] = 'wg'
   node.netlab_linux_packages = packages
 
+def allocate_listen_ports(ndata: Box, topology: Box) -> None:
+  '''
+  Assign a unique UDP listen port to every WireGuard tunnel on the node.
+
+  User-specified ports are kept. Unspecified ports get the next free value
+  starting at listen_port._start. Duplicate user-specified ports on the same
+  node are reported as errors (Linux cannot bind multiple WireGuard sockets to
+  the same UDP port).
+  '''
+  id_set = f'wg_listen_port_{ndata.name}'
+  _dataplane.create_id_set(id_set)
+
+  pending: list[Box] = []
+  for intf in _tunnel.interfaces(ndata,'wireguard'):
+    port = intf.tunnel.get('listen_port',None)
+    if port is None:
+      pending.append(intf)
+      continue
+    if _dataplane.is_id_used(id_set,port):
+      log.error(
+        f'Duplicate tunnel.listen_port {port} on node {ndata.name} interface {intf.ifname}',
+        more_data='Each WireGuard tunnel on a node needs a unique UDP listen port',
+        category=log.IncorrectValue,
+        module='tunnel.wireguard')
+    _dataplane.extend_id_set(id_set,{port})
+
+  listen_port = topology.defaults.attributes.link.tunnel.listen_port
+  _dataplane.set_id_counter(id_set,listen_port._start,listen_port.max_value)
+  for intf in pending:
+    intf.tunnel.listen_port = _dataplane.get_next_id(id_set)
+
 def wireguard_intf_defaults(ndata: Box, intf: Box, topology: Box) -> bool:
   '''
   Set WireGuard-specific interface defaults after tunnel._source is known
@@ -129,9 +160,9 @@ def wireguard_intf_defaults(ndata: Box, intf: Box, topology: Box) -> bool:
   intf.tunnel._source.listen_port = intf.tunnel.listen_port
   return True
 
-def pre_link_transform(topology: Box) -> None:
+def pre_transform(topology: Box) -> None:
   '''
-  pre_link_transform hook: set tunnel link type, check whether WireGuard tunnels are P2P
+  pre_transform hook: set tunnel link type, check whether WireGuard tunnels are P2P
   '''
   _tunnel.set_tunnel_type(topology)
   for link in _tunnel.links(topology,'wireguard'):
@@ -153,6 +184,7 @@ def post_transform(topology: Box) -> None:
 
   for node in node_iflist:
     ndata = topology.nodes[node]
+    allocate_listen_ports(ndata,topology)
     for intf in _tunnel.interfaces(ndata,'wireguard'):
       if 'wireguard-tools' not in ndata.netlab_linux_packages:
         add_linux_packages(ndata,topology)

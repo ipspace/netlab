@@ -52,12 +52,17 @@ class Containerlab(_Provider):
 
   def pre_start_lab(self, topology: Box) -> None:
     log.print_verbose('pre-start hook for Containerlab - create any bridges and load kernel modules')
+    labops.set_clab_runtime(topology)
+
     for brname in utils.list_bridges(topology):
       if labops.use_ovs_bridge(topology):
         labops.create_ovs_bridge(brname)
       else:
         labops.create_linux_bridge(brname)
     labops.load_kmods(topology)
+
+  def pre_stop_lab(self, topology: Box) -> None:
+    labops.set_clab_runtime(topology)
 
   def post_stop_lab(self, topology: Box) -> None:
     log.print_verbose('post-stop hook for Containerlab, cleaning up any bridges')

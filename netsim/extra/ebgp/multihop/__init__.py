@@ -62,7 +62,8 @@ def pre_link_transform(topology: Box) -> None:
         attr_list=['interface','link'],               # We're checking interface or link attributes
         modules=v_mods,                               # ... against BGP/VRF attributes
         module_source='topology',
-        module='ebgp.multihop')                       # Function is called from 'ebgp.multihop' plugin
+        module='ebgp.multihop',                       # Function is called from 'ebgp.multihop' plugin
+        apply_defaults=False)
 
       if not 'loopback' in node:
         log.error(

@@ -165,7 +165,7 @@ def check_feature(
   Checks whether the node supports the required tunnel feature
   """
   features = a_devices.get_device_features(ndata,topology.defaults)
-  df_value = features.tunnel.get(f_name,None)
+  df_value = features.get(f'tunnel.{f_name}',None)
   if df_value:
     if f_value is None:
       return True

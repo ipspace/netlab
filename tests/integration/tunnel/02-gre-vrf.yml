@@ -1,60 +1,198 @@
 ---
 message: |
-  Test the GRE tunnels. The two tested devices have a GRE tunnel in a
-  transport VRF and run (global) OSPF over it. The probe should receive
-  an OSPF route advertised from the remote device (DUT_R1) and be able
-  to ping its loopback.
+  Test the GRE tunnels. The tested device has GRE tunnels over IPv4 and IPv6
+  and runs OSPFv2 and OSPFv3 over them. The probes should receive OSPF routes
+  advertised from the DUT and be able to ping its loopback.
 
 defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+defaults.paths.prepend.plugin: [ "topology:../plugin" ]
+defaults.modules.warnings.no_nodes: False       # Do not complain about nobody using OSPF
 
-plugin: [ tunnel.gre ]
+addressing:
+  loopback:
+    ipv6: 2001:db8::/48
+    prefix6: 128
+  core:
+    ipv4: 172.22.0.0/16
+  core6:
+    ipv6: 2001:db8:42::/48
+  tunnel:
+    ipv4: 172.23.0.0/16
+    ipv6: 2001:db8:1::/48
+
+plugin: [ tunnel.gre, files, adjust_test ]
 
 groups:
   probes:
     device: frr
     provider: clab
-    members: [ r3 ]
-    module: [ ospf ]
-  ce:
-    members: [ dut_r1, dut_r2 ]
-    module: [ ospf, vrf ]
+    members: [ core, r2, r3 ]
+
+module: [ ospf, routing, vrf ]
 
 vrfs:
-  transport:
+  tenant:
+
+ospf.timers.hello: 1
+ospf.timers.dead: 3
 
 nodes:
-  dut_r1:
-  dut_r2:
+  dut:
+    routing.static:
+    - pool: core
+      nexthop.node: core
+      vrf: tenant
+    - pool: core6
+      nexthop.node: core
+      vrf: tenant
+  r2:
+    routing.static:
+    - pool: core
+      nexthop.node: core
+      vrf: tenant
   r3:
+    routing.static:
+    - pool: core6
+      nexthop.node: core
+      vrf: tenant
+  core:
+    module: []
 
 links:
 - group: core
   ospf: False
-  vrf: transport
-  members: [ dut_r1-dut_r2 ]
-- group: site
-  members: [ dut_r2-r3 ]
+  role: core
+  pool: core
+  members: [ dut-core, r2-core ]
+  vrf: tenant
+- group: core6
+  ospf: False
+  role: core6
+  pool: core6
+  members: [ dut-core, r3-core ]
+  vrf: tenant
 - group: gre
   tunnel.mode: gre
-  tunnel.vrf: transport
-  members: [ dut_r1-dut_r2 ]
+  tunnel.source.link.role: core
+  tunnel.vrf: tenant
+  mtu: 1400
+  pool: tunnel
+  members: [ dut-r2 ]
+- group: gre6
+  tunnel.mode: gre
+  tunnel.source.link.role: core6
+  tunnel.vrf: tenant
+  tunnel.af: ipv6
+  mtu: 1400
+  pool: tunnel
+  members: [ dut-r3 ]
+
+files:
+  mtu-ignore.j2: |
+    {% for intf in interfaces if 'ospf' in intf and 'ipv6' in intf %}
+    interface {{ intf.ifname }}
+      ipv6 ospf6 mtu-ignore
+    {% endfor %}
+_adjust:
+- nodes: [ dut ]              # Check for fast OSPF timers support
+  features: [ ospf.timers ]
+  remove:
+  - nodes:ospf.timers
+- nodes: [ dut ]              # Remove GRE tunnel over IPv6 if DUT does not support it
+  features:
+  - key: tunnel.gre
+    value: ipv6
+  warning: >-
+    {device} does not support GRE tunnels over IPv6
+  remove:                     # We have to remove the GRE-over-IPv6 tunnels and all related validation tests
+  - links[5]
+  - validate.g6_adj_v4
+  - validate.g6_adj_v6
+  - validate.g6_pfx_v4
+  - validate.g6_pfx_v6
+  - validate.g6_ping_v4
+  - validate.g6_ping_v6
+- nodes: [ dut ]
+  devices: [ vjunos-router, vsrx ]
+  warning: >-
+    {device} specifies incorrect MTU in OSPFv3 DBD packets. Ignoring incoming MTU on FRR
+  replace:
+  - key: nodes.r2.config
+    value: [ mtu-ignore ]
+  - key: nodes.r3.config
+    value: [ mtu-ignore ]
 
 validate:
-  adj:
-    description: Check OSPF adjacencies
+  g4_adj_v4:
+    description: Check OSPF adjacencies (GRE IPv4)
+    wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPF adjacency process to complete
+    nodes: [ r2 ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  g4_adj_v6:
+    description: Check OSPFv3 adjacencies (GRE IPv4)
+    wait: ospfv3_adj_p2p
+    wait_msg: Waiting for OSPFv3 adjacency process to complete
+    nodes: [ r2 ]
+    plugin: ospf6_neighbor(nodes.dut.ospf.router_id)
+  g4_pfx_v4:
+    description: Check DUT IPv4 loopback prefix propagation (GRE IPv4)
+    wait: ospfv2_spf
+    wait_msg: Waiting for SPF to do its magic
+    nodes: [ r2 ]
+    plugin: ospf_prefix(nodes.dut.loopback.ipv4)
+  g4_pfx_v6:
+    description: Check DUT IPv6 loopback prefix propagation (GRE IPv4)
+    wait: ospfv3_spf
+    wait_msg: Waiting for SPF to do its magic
+    nodes: [ r2 ]
+    plugin: ospf6_prefix(nodes.dut.loopback.ipv6)
+  g4_ping_v4:
+    description: Check end-to-end IPv4 connectivity (GRE IPv4)
+    wait: ping
+    wait_msg: Waiting for things to sort out, I guess
+    nodes: [ r2 ]
+    plugin: ping(nodes.dut.loopback.ipv4,src=node.loopback.ipv4)
+  g4_ping_v6:
+    description: Check end-to-end IPv6 connectivity (GRE IPv4)
+    wait: ping
+    wait_msg: Waiting for things to sort out, I guess
+    nodes: [ r2 ]
+    plugin: ping(nodes.dut.loopback.ipv6,src=node.loopback.ipv6,af='ipv6')
+
+  g6_adj_v4:
+    description: Check OSPF adjacencies (GRE IPv6)
     wait: ospfv2_adj_p2p
     wait_msg: Waiting for OSPF adjacency process to complete
     nodes: [ r3 ]
-    plugin: ospf_neighbor(nodes.dut_r2.ospf.router_id)
-  pfx:
-    description: Check for DUT_R1 loopback prefix being propagated to R3
-    wait: ospfv2_spf_long
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  g6_adj_v6:
+    description: Check OSPFv3 adjacencies (GRE IPv6)
+    wait: ospfv3_adj_p2p
+    wait_msg: Waiting for OSPFv3 adjacency process to complete
+    nodes: [ r3 ]
+    plugin: ospf6_neighbor(nodes.dut.ospf.router_id)
+  g6_pfx_v4:
+    description: Check DUT IPv4 loopback prefix propagation (GRE IPv6)
+    wait: ospfv2_spf
     wait_msg: Waiting for SPF to do its magic
     nodes: [ r3 ]
-    plugin: ospf_prefix(nodes.dut_r1.loopback.ipv4)
-  ping:
-    description: Check end-to-end connectivity
-    wait: ping
-    wait_msg: Still waiting for SPF...
+    plugin: ospf_prefix(nodes.dut.loopback.ipv4)
+  g6_pfx_v6:
+    description: Check DUT IPv6 loopback prefix propagation (GRE IPv6)
+    wait: ospfv3_spf
+    wait_msg: Waiting for SPF to do its magic
     nodes: [ r3 ]
-    plugin: ping(nodes.dut_r1.loopback.ipv4)
+    plugin: ospf6_prefix(nodes.dut.loopback.ipv6)
+  g6_ping_v4:
+    description: Check end-to-end IPv4 connectivity (GRE IPv6)
+    wait: ping
+    wait_msg: Waiting for things to sort out, I guess
+    nodes: [ r3 ]
+    plugin: ping(nodes.dut.loopback.ipv4,src=node.loopback.ipv4)
+  g6_ping_v6:
+    description: Check end-to-end IPv6 connectivity (GRE IPv6)
+    wait: ping
+    wait_msg: Waiting for things to sort out, I guess
+    nodes: [ r3 ]
+    plugin: ping(nodes.dut.loopback.ipv6,src=node.loopback.ipv6,af='ipv6')

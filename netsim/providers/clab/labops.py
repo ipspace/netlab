@@ -1,6 +1,7 @@
 #
 # Containerlab provider module
 #
+import os
 import pathlib
 
 from box import Box
@@ -146,3 +147,13 @@ def load_kmods(topology: Box) -> None:
           log.info(f'Cannot load optional Linux kernel module {load_mod}')
 
   log.exit_on_error()
+
+def set_clab_runtime(topology: Box) -> None:
+  runtime = topology.get('defaults.providers.clab.runtime',None)
+  if not runtime:
+    return
+
+  log.info(f'Setting containerlab runtime to {runtime}')
+  os.environ['CLAB_RUNTIME'] = str(runtime)
+  if runtime == 'podman' and os.geteuid() != 0:
+    log.fatal('You must run netlab as the root user when using podman')

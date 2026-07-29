@@ -1,3 +1,4 @@
+{% from '_extra_initial.j2' import extra_module_initial with context %}
 hostname {{ inventory_hostname }}
 !
 no ip domain lookup
@@ -7,13 +8,15 @@ logging buffered 256000
 !
 lldp run
 !
-{% for hname,hdata in hosts.items() if hname != inventory_hostname %}
-{%   set ipv6_addr = hdata.ipv6|default([]) if netlab_device_type not in ['iosvl2','ioll2'] else [] %}
-{%   set addr_list = hdata.ipv4|default([]) + ipv6_addr %}
-{%   if addr_list %}
+{% if services.dns._no_hosts is not defined %}
+{%   for hname,hdata in hosts.items() if hname != inventory_hostname %}
+{%     set ipv6_addr = hdata.ipv6|default([]) if netlab_device_type not in ['iosvl2','ioll2'] else [] %}
+{%     set addr_list = hdata.ipv4|default([]) + ipv6_addr %}
+{%     if addr_list %}
 ip host {{ hname }} {{ addr_list|join (' ') }}
-{%   endif %}
-{% endfor %}
+{%     endif %}
+{%   endfor %}
+{% endif %}
 !
 {% if af.ipv4|default(False) or role != 'host' %}
 ip routing
@@ -139,6 +142,10 @@ interface {{ l.ifname }}
 {%   endif %}
 !
 {% endfor %}
+!
+! Configure DHCP client - has to be done before routing protocol config, but after generic interface config
+!
+{{ extra_module_initial(['dhcp']) }}
 !
 line vty 0 4
  exec-timeout 0 0 

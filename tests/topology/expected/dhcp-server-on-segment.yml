@@ -55,6 +55,7 @@ links:
   type: lan
 module:
 - dhcp
+- services
 - routing
 name: input
 nodes:
@@ -63,6 +64,7 @@ nodes:
     _daemon_config:
       dhcp: /etc/dhcp.ignore
       dnsmasq: /etc/dnsmasq.conf
+      services: /etc/services.ignore
     _daemon_parent: linux
     _node_config:
       initial: :ns
@@ -76,9 +78,12 @@ nodes:
         target: /etc/dnsmasq.conf
       - source: node_files/dhs/dhcp
         target: /etc/dhcp.ignore
-      - mode: ro
-        source: node_files/-shared-hosts
+      - source: node_files/dhs/services
+        target: /etc/services.ignore
+      - source: node_files/dhs/hosts
         target: /etc/hosts
+      - source: node_files/dhs/resolv
+        target: /etc/resolv.conf
       config_templates:
       - mode: ns
         source: initial
@@ -90,9 +95,12 @@ nodes:
         target: /etc/dnsmasq.conf
       - source: dhcp
         target: /etc/dhcp.ignore
-      - mode: shared
-        source: hosts
+      - source: services
+        target: /etc/services.ignore
+      - source: hosts
         target: /etc/hosts
+      - source: resolv
+        target: /etc/resolv.conf
       kind: linux
     device: dnsmasq
     dhcp:
@@ -129,18 +137,25 @@ nodes:
       mac: ca:fe:00:02:00:00
     module:
     - dhcp
+    - services
     - routing
     mtu: 1500
     name: dhs
     netlab_ansible_skip_module:
     - dnsmasq
     - dhcp
+    - services
     - initial
     - routing
     provider: clab
     role: host
     routing:
       static: []
+    services:
+      dns:
+        domain: netlab.local
+      server:
+        dns: {}
   h1:
     af:
       ipv4: true
@@ -174,3 +189,6 @@ nodes:
     name: h1
     role: host
 provider: libvirt
+services:
+  dns:
+    domain: netlab.local

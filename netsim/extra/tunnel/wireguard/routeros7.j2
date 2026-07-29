@@ -1,0 +1,8 @@
+# wg peers
+{% for intf in netlab_interfaces if intf.tunnel.mode|default('') in ['wireguard'] %}
+{%   set dst = intf.tunnel._destination %}
+{%   set peer_ip = ('[' ~ dst.ipv6 ~ ']') if intf.tunnel.af == 'ipv6' else dst.ipv4 %}
+{%   set peer_endpoint = peer_ip ~ ':' ~ dst.listen_port %}
+/interface/wireguard/peers add interface={{ intf.ifname }} public-key="{{ dst.public_key }}" allowed-address={{ intf.tunnel.allowed_ips }} endpoint-address={{ peer_ip }} endpoint-port={{ dst.listen_port }} persistent-keepalive={{ intf.tunnel.persistent_keepalive }}
+
+{% endfor %}

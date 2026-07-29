@@ -24,7 +24,7 @@ from . import external_commands
 def test_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
   c_path  = _files.get_traversable_path('package:templates/tests')   # Directory containing test scenarios
   c_list  = _files.get_globbed_files(c_path,'*.yml')                  # Find all test scenarios
-  choices = [ Path(fn).stem for fn in c_list ]
+  choices = sorted([ Path(fn).stem for fn in c_list ])
 
   parser = argparse.ArgumentParser(
     prog='netlab test',
