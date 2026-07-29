@@ -32,13 +32,15 @@ The link/interface parameters supported by this plugin include:
 
 * **tunnel.private_key** (base64 string) -- this node's WireGuard private key (auto-generated when missing)
 * **tunnel.public_key** (base64 string) -- this node's WireGuard public key (derived or auto-generated when missing)
-* **tunnel.listen_port** (integer, 1-65535) -- UDP listen port (default: `51820`)
+* **tunnel.listen_port** (integer, 1-65535) -- UDP listen port. When omitted, the plugin allocates a unique port per tunnel on each node, starting at `51820`[^CPD]
 * **tunnel.allowed_ips** (prefix string) -- the peer's WireGuard [allowed IPs](plugin-tunnel-wireguard-allowed-ips) (default: a default route per active address family, so `0.0.0.0/0`, `::/0`, or both `0.0.0.0/0,::/0` for a dual-stack tunnel)
 * **tunnel.persistent_keepalive** (integer) -- keepalive interval in seconds (default: `25`)
 * **mtu** (integer) -- the WireGuard tunnel interface MTU (the standard link/interface `mtu` attribute). When not specified, it is derived from the underlay source interface MTU minus the WireGuard encapsulation overhead (60 bytes for an IPv4 underlay, 80 bytes for an IPv6 underlay), so it scales with jumbo-frame underlays. With a 1500-byte underlay this yields `1440` for IPv4 transport and `1420` for IPv6 transport.
 * **tunnel.af** (`ipv4` or `ipv6`) -- the transport address family. When not specified, it is inferred from the underlay source interface: `ipv4` when an IPv4 address is available, `ipv6` for an IPv6-only underlay.
 * **tunnel.vrf** (VRF name) -- the transport VRF (default: global routing table)
 * **tunnel.source** -- the [source interface](plugin-tunnel-wireguard-source) for the tunnel underlay
+
+[^CPD]: The starting UDP port can be changed in plugin defaults.
 
 (plugin-tunnel-wireguard-keys)=
 ## WireGuard Keys
@@ -53,7 +55,7 @@ Key generation uses the **wireguard-tools** commands (`wg genkey` and `wg pubkey
 
 The remote peer's **tunnel.public_key** and UDP endpoint do not have to be specified; they are taken from the peer device attached to the same tunnel.
 
-Specify **tunnel.private_key**, **tunnel.public_key**, and **tunnel.listen_port** only when you need stable keys across lab recreations or non-default UDP ports.
+Specify **tunnel.private_key**, **tunnel.public_key**, and **tunnel.listen_port** only when you need stable keys across lab recreations or a specific UDP port. When **tunnel.listen_port** is omitted, each tunnel on a node gets a unique port starting at `51820`[^CPD].
 
 (plugin-tunnel-wireguard-allowed-ips)=
 ## Allowed IPs
