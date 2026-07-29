@@ -20,6 +20,8 @@ The following implementation notes for configuration deployment, initial device 
    routing.md
    services.md
    srv6.md
+   tunnel.gre.md
+   tunnel.wireguard.md
    vlan.md
    vrf.md
 ```
