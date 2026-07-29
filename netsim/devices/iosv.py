@@ -81,7 +81,7 @@ def tunnel_mtu(node: Box) -> None:
   Cisco IOSv (but no other IOS flavor) does not want to configure MTU on tunnel interfaces
   """
   for intf in node.interfaces:
-    if intf.get('type','') == 'tunnel':
+    if intf.get('type','') == 'tunnel' and 'mtu' in intf:
       intf._use_ip_mtu = True
 
 def common_ios_quirks(node: Box, topology: Box) -> None:
