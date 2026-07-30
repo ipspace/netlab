@@ -1,8 +1,9 @@
 {#
-  Create VPP VLAN objects before interface addressing / L2 port membership.
-  Bridge-domains, trunk subinterfaces, and BVIs must exist first (same role as
-  initial/*.vlan.j2 on IOS and similar platforms). Access-port bridge assignment
-  lives in vlan/vpp.j2. BVI must be attached to its BD immediately after create.
+  Create VPP VLAN objects (bridge-domains, trunk subifs, BVIs). Access-port
+  bridge assignment lives in vlan/vpp.j2. Routed subif LCP peers are created
+  by lcp-auto-subint after netlab-start aligns parent TAP MACs with host-*.
+  BVI must be attached to its BD immediately after create; BVI still needs
+  an explicit lcp create.
 #}
 {% for vname,vdata in vlans|default({})|dictsort
      if vdata.mode|default('irb') != 'route' %}
@@ -33,7 +34,7 @@ ip6 nd {{ vpp_if }} prefix {{ nd_prefix }} default
 {%         endif %}
 {%       endif %}
 {%     endif %}
-lcp create {{ vpp_if }} host-if {{ ifdata.ifname }}
+{# LCP for VLAN subifs comes from lcp-auto-subint on the parent #}
 {%   endif %}
 {% endfor %}
 {% for ifdata in interfaces if ifdata.type|default('') == 'svi'

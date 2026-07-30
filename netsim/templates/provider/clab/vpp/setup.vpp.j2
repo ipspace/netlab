@@ -8,7 +8,11 @@ lcp lcp-sync on
 lcp lcp-sync-unnumbered off
 lcp param del-static-on-link-down on
 lcp param del-dynamic-on-link-down on
-lcp lcp-auto-subint off
+{#
+  Auto-create Linux VLAN devices on the parent LCP TAP when VPP subifs appear.
+  Parent TAP MAC must match host-interface MAC first (see netlab-start.sh).
+#}
+lcp lcp-auto-subint on
 
 exec /etc/vpp/config/clab-interfaces.vpp
 
@@ -17,8 +21,8 @@ set ip neighbor-config {{ af_name|replace('ipv','ip') }} age 900
 {% endfor %}
 
 {#
-  Skip SVIs / vlan_member (created in initial/vpp.vlan.j2). Keep loopbacks even
-  though they are virtual_interface — they still need a VPP loopback + address.
+  Skip SVIs / vlan_member (vlan-init.vpp via netlab-start.sh). Keep loopbacks
+  even though they are virtual_interface — they still need a VPP loopback + address.
 #}
 {% for l in netlab_interfaces
      if l.type|default('') == 'loopback'
@@ -78,12 +82,7 @@ ip6 nd address autoconfig {{ vpp_if }} default-route
 {%   endif %}
 {% endfor %}
 
-{% if vlans is defined %}
-{%   include 'initial/vpp.vlan.j2' %}
-{% endif %}
-
-{% for m in module|default([]) %}
-{%   if m in _daemon_config|default({}) and _daemon_config[m].endswith('.vpp') %}
-exec {{ _daemon_config[m] }}
-{%   endif %}
-{% endfor %}
+{#
+  VLAN and other module .vpp snippets run from netlab-start.sh after LCP TAP
+  MACs are copied from host-* interfaces (af_packet rejects secondary MACs).
+#}

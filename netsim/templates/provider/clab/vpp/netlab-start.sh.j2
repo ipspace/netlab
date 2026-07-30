@@ -29,6 +29,53 @@ timeout "$WAIT_TIMEOUT" sh -c "until ip -n \"$NETNS\" link show {{ l.ifname }} >
 {% endfor %}
 
 #
+# Align each LCP TAP MAC with its host-* / loopback phy MAC. initial/vpp.j2 pins
+# host-interface hw-addr to the container NIC MAC; TAP defaults to 02:fe:… and
+# VLAN subif LCP then tries to add that as a secondary MAC on af_packet (unsupported).
+#
+while read -r phy tap _rest; do
+  [ -n "$phy" ] && [ -n "$tap" ] || continue
+  case "$phy" in
+    host-*|loop*|bvi*) ;;
+    *) continue ;;
+  esac
+  phy_mac=$(vppctl show hardware-interfaces "$phy" 2>/dev/null \
+    | awk '/Ethernet address/{print $3; exit}')
+  [ -n "$phy_mac" ] || continue
+  vppctl set interface mac address "$tap" "$phy_mac" >/dev/null 2>&1 || true
+done < <(vppctl show lcp 2>/dev/null | awk '/^itf-pair:/{print $3,$4}')
+
+#
+# VLAN create + L2 membership after MAC alignment (see vlan-init.vpp / vlan.vpp).
+#
+{% if vlans is defined %}
+vppctl exec /etc/vpp/config/vlan-init.vpp
+{% endif %}
+{% if 'vlan' in module|default([]) %}
+vppctl exec /etc/vpp/config/vlan.vpp
+{% endif %}
+{% for m in module|default([])
+     if m != 'vlan'
+        and m in _daemon_config|default({})
+        and _daemon_config[m].endswith('.vpp') %}
+vppctl exec {{ _daemon_config[m] }}
+{% endfor %}
+
+{% for l in interfaces
+     if l.type|default('') in ['vlan_member', 'svi']
+        and ((l.ipv4 is defined and l.ipv4 is string)
+             or (l.ipv6 is defined and l.ipv6 is string)
+             or l.type|default('') == 'vlan_member') %}
+{%   if l.type|default('') == 'vlan_member' and l.vlan.mode|default('irb') == 'route' %}
+timeout "$WAIT_TIMEOUT" sh -c "until ip -n \"$NETNS\" link show {{ l.ifname }} >/dev/null 2>&1; do sleep 0.1; done" \
+  || { echo "LCP VLAN interface {{ l.ifname }} did not appear in $NETNS within ${WAIT_TIMEOUT}s" >&2; exit 1; }
+{%   elif l.type|default('') == 'svi' %}
+timeout "$WAIT_TIMEOUT" sh -c "until ip -n \"$NETNS\" link show {{ l.ifname }} >/dev/null 2>&1; do sleep 0.1; done" \
+  || { echo "LCP SVI {{ l.ifname }} did not appear in $NETNS within ${WAIT_TIMEOUT}s" >&2; exit 1; }
+{%   endif %}
+{% endfor %}
+
+#
 # Attach Linux peer addresses for IPv4 unnumbered LCP interfaces
 #
 {% for l in interfaces if l._unnumbered_peer is defined %}
