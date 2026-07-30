@@ -1,10 +1,17 @@
 {#
   VPP L2 bridging uses bridge-domains (router VLAN model). Linux bridges on LCP
   taps do not forward between host-interfaces; put access ports into VPP BDs.
-  IRB SVIs become BVIs in the VLAN bridge-domain.
+  Trunk vlan_member subifs need create + tag-rewrite pop-1. IRB SVIs become BVIs.
 #}
 {% for vname,vdata in vlans|default({})|dictsort %}
 create bridge-domain {{ vdata.id }}
+{% endfor %}
+{% for ifdata in interfaces if ifdata.type|default('') == 'vlan_member'
+     and ifdata.vlan.access_id is defined
+     and ifdata.parent_ifname is defined %}
+create sub-interfaces host-{{ ifdata.parent_ifname }} {{ ifdata.vlan.access_id }}
+set interface state host-{{ ifdata.ifname }} up
+set interface l2 tag-rewrite host-{{ ifdata.ifname }} pop 1
 {% endfor %}
 {% for ifdata in interfaces if ifdata.vlan is defined and ifdata.type|default('') != 'svi' %}
 {%   set vname = ifdata.vlan.access|default(ifdata.vlan.native) %}
