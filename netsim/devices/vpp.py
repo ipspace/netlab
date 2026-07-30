@@ -97,7 +97,12 @@ def _register_frr_cp_scripts(node: Box, topology: Box) -> None:
   for idx, m in enumerate(mod_list, start=1):
     if m not in cp_modules:
       continue
-    node._daemon_config[m.replace(".", "@")] = f"/etc/config/{idx:02d}-{m}.sh"
+    key = m.replace(".", "@")
+    # Keep VPP dataplane snippets (*.vpp) for setup.vpp exec; do not feed them to vtysh
+    existing = node._daemon_config.get(key)
+    if isinstance(existing, str) and existing.endswith(".vpp"):
+      continue
+    node._daemon_config[key] = f"/etc/config/{idx:02d}-{m}.sh"
 
 
 def _configure_frr_cp(node: Box, topology: Box) -> None:

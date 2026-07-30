@@ -16,7 +16,14 @@ exec /etc/vpp/config/clab-interfaces.vpp
 set ip neighbor-config {{ af_name|replace('ipv','ip') }} age 900
 {% endfor %}
 
-{% for l in netlab_interfaces %}
+{#
+  Skip Linux SVIs / other virtual interfaces: VPP L2 uses bridge-domains
+  (vlan/vpp.j2), not host-interface SVIs. Create an LCP peer for every other
+  non-loopback port so FRR/BIRD see the interface even without an IP address.
+#}
+{% for l in netlab_interfaces
+     if not l.virtual_interface|default(false)
+     and l.type|default('') not in ['svi', 'vlan_member'] %}
 {%   set is_loopback = l.type|default('') == 'loopback' %}
 {%   if is_loopback %}
 {%     set lb_instance = l.ifname[4:] %}
@@ -30,7 +37,7 @@ create loopback interface instance {{ lb_instance }}
 {%   if l.mtu is defined %}
 set interface mtu {{ l.mtu }} {{ vpp_if }}
 {%   endif %}
-{%   if has_ipv4 or has_ipv6 %}
+{%   if not is_loopback or has_ipv4 or has_ipv6 %}
 lcp create {{ vpp_if }} host-if {{ l.ifname }}
 {%   endif %}
 set interface state {{ vpp_if }} {{ 'down' if l.shutdown|default(False) else 'up' }}

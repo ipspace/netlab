@@ -16,11 +16,22 @@ timeout "$WAIT_TIMEOUT" sh -c 'until [ -S /run/vpp/cli.sock ]; do sleep 0.1; don
 vppctl show version >/dev/null
 
 #
+# The CLI socket appears before unix.startup-config (setup.vpp) finishes.
+# Wait for LCP peers so unnumbered addressing and FRR/BIRD see dataplane ifaces.
+#
+{% for l in interfaces
+     if not l.virtual_interface|default(false)
+     and l.type|default('') not in ['svi', 'vlan_member']
+     and (l.type|default('') != 'loopback'
+          or (('ipv4' in l and l.ipv4 is not false) or ('ipv6' in l and l.ipv6 is not false))) %}
+timeout "$WAIT_TIMEOUT" sh -c "until ip -n \"$NETNS\" link show {{ l.ifname }} >/dev/null 2>&1; do sleep 0.1; done" \
+  || { echo "LCP interface {{ l.ifname }} did not appear in $NETNS within ${WAIT_TIMEOUT}s" >&2; exit 1; }
+{% endfor %}
+
+#
 # Attach Linux peer addresses for IPv4 unnumbered LCP interfaces
 #
 {% for l in interfaces if l._unnumbered_peer is defined %}
-timeout "$WAIT_TIMEOUT" sh -c "until ip -n \"$NETNS\" link show {{ l.ifname }} >/dev/null 2>&1; do sleep 0.1; done" \
-  || { echo "Interface {{ l.ifname }} did not appear in $NETNS within ${WAIT_TIMEOUT}s" >&2; exit 1; }
 ip -n "$NETNS" addr flush dev {{ l.ifname }} scope global 2>/dev/null || true
 ip -n "$NETNS" addr add {{ l._parent_ipv4 }} peer {{ l._unnumbered_peer }} dev {{ l.ifname }}
 {% endfor %}
@@ -38,12 +49,22 @@ case "$VPP_CONTROL_PLANE" in
       chown -R frr:frrvty /run/frr /var/run/frr /var/log/frr 2>/dev/null \
         || chown -R frr:frr /run/frr /var/run/frr /var/log/frr
       /usr/lib/frr/frrinit.sh start
+      # Match ansible/tasks/deploy-config/frr.yml: bash shebang → shell,
+      # otherwise treat the file as vtysh configuration (e.g. OSPF/BGP).
       for script in /etc/config/[0-9][0-9]-*.sh; do
         case "$script" in
           /etc/config/01-initial.sh) continue ;;
         esac
         [ -f "$script" ] || continue
-        /usr/bin/vtysh -f "$script" || exit 1
+        shebang=$(head -n1 "$script")
+        case "$shebang" in
+          "#!/bin/bash"|"#!/bin/sh"|"#!/usr/bin/env bash"|"#!/usr/bin/env sh")
+            bash "$script" || exit 1
+            ;;
+          *)
+            /usr/bin/vtysh -f "$script" || exit 1
+            ;;
+        esac
       done
     '
     wait $VPP_PID
