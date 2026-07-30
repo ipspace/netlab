@@ -370,7 +370,7 @@ def get_device_ifname(node: Box, devtype: str, ifdata: Box, defaults: Box) -> ty
   interfaces names (primarily used for tunnels).
   """
   iff = devices.get_device_attribute(node,f'{devtype}_interface_name',defaults)
-  if not iff or isinstance(iff,str):                        # Missing interface name format, or a simple string
+  if iff is None or isinstance(iff,str):                    # Missing interface name format, or a simple string
     return iff                                              # Just return it
   if not isinstance(iff,Box):                               # Otherwise, it must be a box -- complain very loudly if needed
     log.fatal(f'defaults.devices.{node.device}.{devtype}_interface_name has invalid value (expected string or dict), aborting')
