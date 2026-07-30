@@ -2,22 +2,12 @@
   VPP L2 bridging uses bridge-domains (router VLAN model). Linux bridges on LCP
   taps do not forward between host-interfaces; put access ports into VPP BDs.
 #}
-{% if vlans is defined %}
-{%   for vname,vdata in vlans.items() %}
+{% for vname,vdata in vlans|default({})|dictsort %}
 create bridge-domain {{ vdata.id }}
-{%   endfor %}
-{% endif %}
-{% for ifdata in interfaces
-     if ifdata.vlan is defined
-     and ifdata.type|default('') != 'svi'
-     and ifdata.vlan.access is defined
-     and vlans[ifdata.vlan.access].mode|default('irb') != 'route' %}
-set interface l2 bridge host-{{ ifdata.ifname }} {{ vlans[ifdata.vlan.access].id }}
 {% endfor %}
-{% for ifdata in interfaces
-     if ifdata.vlan is defined
-     and ifdata.type|default('') != 'svi'
-     and ifdata.vlan.native is defined
-     and vlans[ifdata.vlan.native].mode|default('irb') != 'route' %}
-set interface l2 bridge host-{{ ifdata.ifname }} {{ vlans[ifdata.vlan.native].id }}
+{% for ifdata in interfaces if ifdata.vlan is defined and ifdata.type|default('') != 'svi' %}
+{%   set vname = ifdata.vlan.access|default(ifdata.vlan.native) %}
+{%   if vname is defined and vlans[vname].mode|default('irb') != 'route' %}
+set interface l2 bridge host-{{ ifdata.ifname }} {{ vlans[vname].id }}
+{%   endif %}
 {% endfor %}
