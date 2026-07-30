@@ -8,6 +8,7 @@ This configuration module implements generic routing features:
 * [BGP AS-path filters](generic-routing-aspath)
 * [BGP community filters](generic-routing-community)
 * [Static routes](generic-routing-static)
+* [Access control lists](generic-routing-acl)
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -21,31 +22,31 @@ This configuration module implements generic routing features:
 
 The following table describes high-level per-platform support of generic routing features:
 
-| Operating system      | Routing<br>policies | Prefix<br>filters| AS-path<br>filters | BGP<br>communities | Static<br>routes|
-| ------------------ |:--:|:--:|:--:|:--:|:--:|
-| Arista EOS         | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Aruba AOS-CX       | ✅ | ✅ | ✅ | ✅ | ✅ |
-| BIRD               | ❌  | ❌  | ❌  | ❌  | ✅ |
-| Cisco IOS/IOS XE[^18v] | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Cisco IOS XR[^XR]  | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Cisco Nexus OS     | ❌  | ❌  | ❌  | ❌  | ✅ |
-| Cumulus Linux      | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Cumulus NVUE 5.x   | ❌  | ❌  | ❌  | ❌  | ✅ |
-| Dell OS10          | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Fortinet FortiOS   | ❌  | ❌  | ❌  | ❌  | ✅ |
-| FRR                | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Linux              | ❌  | ❌  | ❌  | ❌  | ✅ |
-| Junos              | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Nokia SR Linux     |  ✅ | ✅ [❗](caveats-srlinux) | ❌  | ❌  | ✅ |
-| Nokia SR OS[^SROS] | ✅ | ❌  | ❌  | ❌  | ✅ |
-| OpenBSD            | ❌  | ❌  | ❌  | ❌  | ✅ |
-| VyOS               | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Operating system      | Routing<br>policies | Prefix<br>filters| AS-path<br>filters | BGP<br>communities | Static<br>routes| IPv4/IPv6<br>ACL|
+| ------------------ |:--:|:--:|:--:|:--:|:--:|:--:|
+| Arista EOS         | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Aruba AOS-CX       | ✅ | ✅ | ✅ | ✅ | ✅ |❌  |
+| BIRD               | ❌  | ❌  | ❌  | ❌  | ✅ |❌  |
+| Cisco IOS/IOS XE[^18v] | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Cisco IOS XR[^XR]  | ✅ | ✅ | ✅ | ✅ | ✅ |❌  |
+| Cisco Nexus OS     | ❌  | ❌  | ❌  | ❌  | ✅ |❌  |
+| Cumulus Linux      | ✅ | ✅ | ✅ | ✅ | ✅ |❌  |
+| Cumulus NVUE 5.x   | ❌  | ❌  | ❌  | ❌  | ✅ |❌  |
+| Dell OS10          | ✅ | ✅ | ✅ | ✅ | ✅ |❌  |
+| Fortinet FortiOS   | ❌  | ❌  | ❌  | ❌  | ✅ |❌  |
+| FRR                | ✅ | ✅ | ✅ | ✅ | ✅ |❌  |
+| Linux              | ❌  | ❌  | ❌  | ❌  | ✅ |❌  |
+| Junos              | ✅ | ✅ | ✅ | ✅ | ✅ |❌  |
+| Nokia SR Linux     |  ✅ | ✅ [❗](caveats-srlinux) | ❌  | ❌  | ✅ |❌  |
+| Nokia SR OS[^SROS] | ✅ | ❌  | ❌  | ❌  | ✅ |❌  |
+| OpenBSD            | ❌  | ❌  | ❌  | ❌  | ✅ |❌  |
+| VyOS               | ✅ | ✅ | ✅ | ✅ | ❌ |❌  |
 
 ```{tip}
 See [Routing Integration Tests Results](https://release.netlab.tools/_html/coverage.routing) for more details.
 ```
 
-[^18v]: Includes Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
+[^18v]: Includes Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image. ACLs are not supported on Cisco CSR 1000v, Cisco Catalyst 8000v
 
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
@@ -60,6 +61,8 @@ See [Routing Integration Tests Results](https://release.netlab.tools/_html/cover
 ```{include} routing-clist.txt
 ```
 ```{include} routing-static.txt
+```
+```{include} routing-acl.txt
 ```
 ```{include} routing-advanced.txt
 ```

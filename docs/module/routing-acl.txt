@@ -1,0 +1,166 @@
+(generic-routing-acl)=
+## Access Control Lists (ACL)
+
+Access control lists are sets of rules used by networking devices to inspect packet headers and determine which packets are permitted to enter/exit a network interface. They can be applied to interfaces in both directions, inbound or outbound.
+
+### Defining Access Control Lists
+
+ACLs are specified in the global- or node-level **routing.acl** dictionary (see [](routing-acl-global-node) for more details).
+
+The dictionary keys in the **routing.acl** dictionary are ACL names, and the dictionary values describe the address family the ACL matches and the list of ACL entries:
+
+* **af**: String. Address family of the ACL — **ipv4** or **ipv6** (default: **ipv4**)
+* **value**: A list of [ACL entries](#acl-entries)
+
+The following example defines an IPv4 ACL. Not all attributes supported are illustrated.
+
+```
+module: [ routing ]
+
+routing.acl:
+  h1_filter:
+  - action: permit
+    protocol: icmp
+    src.any: true
+    dst.any: true
+    description: test ACL
+  - action: permit
+    protocol: tcp
+    src.host: true
+    src.ipv4: 172.16.0.1
+    dst.host: true
+    dst.ipv4: 192.168.0.2
+    dst.port: 100
+
+```
+
+The following example defines an IPv6 ACL.
+
+```
+routing.acl:
+  h1_filter:
+    af: ipv6
+    value:
+    - action: permit
+      protocol: icmp
+      src.any: true
+      dst.any: true
+      description: test IPv6 ACL
+    - action: permit
+      protocol: tcp
+      src.host: true
+      src.ipv6: 2001:db8:2::1
+      dst.host: true
+      dst.ipv6: 2001:db8:5::2
+      dst.port: 100
+```
+
+### ACL Entries
+
+Each ACL entry can have these attributes:
+
+* **action**: **permit** or **deny** the matched packets (default: **permit**)
+* **sequence**: Statement sequence number (default: if unspecified, Netlab will generate a sequence starting with 10, with an increment of 10)
+* **protocol**: IP protocol to match — one of **ahp**, **esp**, **icmp**, **ip**, **ipv6**, **tcp**, **udp**, or a numeric protocol number. **Required**.
+* **established**: Match established TCP sessions (boolean)
+* **src**: Dictionary for source address/port match — see [](routing-acl-matching). **Required**.
+* **dst**: Dictionary for destination address/port match — see [](routing-acl-matching). **Required**.
+* **log**: Log matched packets (boolean).
+* **description**: Free-text description of the ACL entry
+
+(routing-acl-matching)=
+### Matching Addresses
+
+Both **src** and **dst** dictionaries use the following attributes to describe what an ACL entry matches on the source and destination side of a packet.
+
+* **any**: Match any address (boolean)
+* **host**: Match a single host (boolean)
+* **prefix**: Match a [named prefix](https://netlab.tools/prefix/#named-prefixes)
+* **pool**: Match a prefix from the specified [addressing pool](https://netlab.tools/addressing/#address-pools)
+* **ipv4**/**ipv6**: Match an explicit IPv4/IPv6 prefix or address. Mixed address family is not permitted.
+* **node**: used with "interface" or link role. Matches a node.
+* **role**: Used with node. Match a specific role on the node interface. If unambiguously matched, use the interface's prefix.
+* **interface** Used with node. Match an interface by name.
+
+Port matching (TCP/UDP only) is specified within the same **src**/**dst** dictionary:
+
+* **port_op**: Comparison operator — **eq** (default), **gt**, **lt**, **neq**, **in**, **not_in**
+* **port**: A single port number to match with **port_op**. Valid operators for port are: **eq**, **gt**, **lt**, **neq**
+* **port_range**: A dictionary with **min** and **max** specifying a range. Valid operators for **port_range** are  **in** and **not_in**
+
+Port-matching operations cannot be specified in both the source and destination dictionaries at the same time.
+**not_in** operator is not supported in hardware. Netlab will generate synthetic ACL entries. Example from a Cisco IOL-XE router:
+
+```
+  10 remark Allow dogs in
+  11 permit tcp 10.10.10.0 0.0.0.255  1.5.6.0 0.0.0.255  lt 5
+  12 permit tcp 10.10.10.0 0.0.0.255  1.5.6.0 0.0.0.255  gt 100
+```
+
+Notice the sequence numbers. If an ACL entry has a description, the description retains the original sequence number, while the actual entry gets a higher one.
+
+In the above example, **not_in** operator has been split into two entries, one guarding the lower range, one guarding the upper range. The lower-range match retained the original sequence number, while the upper-range entry got the next one.
+
+## Applying ACLs to Interfaces
+
+Once defined, an ACL is applied to an interface using the interface-level **routing.acl.in** and **routing.acl.out** attributes:
+
+* **routing.acl.in.ipv4** / **routing.acl.in.ipv6**: Name of the ACL applied to inbound IPv4/IPv6 traffic
+* **routing.acl.out.ipv4** / **routing.acl.out.ipv6**: Name of the ACL applied to outbound IPv4/IPv6 traffic
+
+Loopback interfaces are not supported.
+
+```
+module: [ routing ]
+
+routing.acl:
+  h1_est:
+  - protocol: tcp
+    established: true
+    src.any: true
+    dst.any: true
+    log: true
+  - action: deny
+    protocol: tcp
+    src.any: true
+    dst.any: true
+  - protocol: ip
+    src.any: true
+    dst.any: true
+
+
+nodes:
+  r1:
+
+links:
+- r1:
+    routing.acl.in.ipv4: h1_est
+  r2:
+```
+
+(routing-acl-global-node)=
+## Using Global- and Node-Level ACLs
+
+Like other routing objects (routing policies, prefix filters, AS-path filters, and BGP community filters), an ACL defined in the global **routing.acl** dictionary is not configured on a device unless it's referenced from that node — either by an interface **routing.acl.in**/**routing.acl.out** attribute or by mentioning the ACL name in the node-level **routing.acl** dictionary without a value:
+
+```
+module: [ routing ]
+
+routing.acl:
+  h1_est:
+  - protocol: tcp
+    established: true
+    src.any: true
+    dst.any: true
+    log: true
+  - action: deny
+    protocol: tcp
+    src.any: true
+    dst.any: true
+
+nodes:
+  r1:
+    h1_est:
+```
+
+Node-level ACL definitions are merged with global definitions the same way routing policies are (see [](routing-object-merge) for more details): a node can add, override, or extend a globally-defined ACL.
