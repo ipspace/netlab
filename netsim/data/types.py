@@ -53,7 +53,10 @@ def init_wrong_type() -> None:
   _attr_help_cache = None
 
 def wrong_type_text(x : typing.Any) -> str:
-  return "dictionary" if isinstance(x,dict) else str(type(x).__name__)
+  return \
+    "dictionary" if isinstance(x,dict) \
+    else "list" if isinstance(x,list) \
+    else str(type(x).__name__)
 
 def err_add_alt_types(ctx: dict) -> str:
   a_types = ctx.get('_alt_types',[])
