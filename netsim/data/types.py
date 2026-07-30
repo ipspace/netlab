@@ -774,7 +774,10 @@ def common_addr_parse(
 
   if isinstance(value,bool):                      # bool values are valid only on interfaces and subnets
     if use not in ('interface','subnet_prefix'):
-      return { '_value' : f'{exp_type} (boolean value is valid only on an interface)' }
+      return {
+        '_value' : exp_type,
+        '_hint_id': 'ip_bool_value',
+        '_hint': 'A boolean value is valid only on an interface or as a subnet prefix' }
     else:
       return { '_valid': True }
 
@@ -782,7 +785,10 @@ def common_addr_parse(
     if use == 'id' and af == 'IPv4':
       return check_int_value(value,xform_int)
     if use != 'interface':
-      return { '_value': f'{exp_type} (integer value is only valid as interface offset or a 32-bit ID)' }
+      return {
+        '_value' : exp_type,
+        '_hint_id': 'ip_int_value',
+        '_hint': 'An integer value is only valid as interface offset or a 32-bit ID' }
     return check_int_value(value,None)
 
   if not isinstance(value,str):
