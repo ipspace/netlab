@@ -9,6 +9,7 @@ The plugin includes Jinja2 templates for the following platforms:
 
 | Operating system    | GRE over<br>IPv4 | GRE over<br>IPv6 | Transport<br>VRF |
 |--------------|:-:|:-:|:-:|
+| Arista EOS          | ✅ | ❌ | ✅ |
 | Cisco IOS/XE[^18v] |✅|✅|✅|
 | FRR                 |✅|✅|✅|
 | Juniper vJunos-switch[❗](caveats-junos) |✅|❌|✅|
