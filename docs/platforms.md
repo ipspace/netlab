@@ -48,6 +48,7 @@
 | Nokia SR-SIM [❗](caveats-srsim)  | srsim   | full          |
 | OpenBSD [❗](caveats-openbsd)     | openbsd | best effort   |
 | Sonic [❗](caveats-sonic)         | sonic   | minimal       |
+| VPP (fd.io) [❗](caveats-vpp) | vpp | minimal |
 | VyOS 1.4 [❗](caveats-vyos)       | vyos    | full          |
 
 [^SROSBE]: With the launch of the Nokia SR SIM, we stopped running integration tests for the SR-OS VM, assuming the behavior of the two products would be nearly identical.
@@ -59,7 +60,6 @@
 | --------------- | ------------------ | ------------- |
 | BIRD Internet Routing Daemon [❗](caveats-bird) | bird               | full |
 | dnsmasq DHCP server [❗](caveats-dnsmasq) | dnsmasq | full |
-| VPP (fd.io) [❗](caveats-vpp) | vpp | minimal |
 | [Kubernetes in Docker](plugin-kind) | kind | best effort |
 
 You can also run network management software and even some network services products (for example, NetScaler) as [custom Linux containers](tutorial-linux-custom).
@@ -84,13 +84,13 @@ Most devices behave as routers (or layer-3 switches); the following devices can 
 |-----------------------|:--:|:--:| :--:|
 | Arista EOS            | ✅ | ✅ | ✅ |
 | BIRD                  | ✅ | ✅ | ❌  |
-| VPP                   | ✅ | ❌  | ✅ |
 | Cisco IOS/IOS XE[^18v]| ✅ | ✅ | ✅ |
 | dnsmasq               | ❌  | ✅ | ❌  |
 | FRRouting             | ✅ | ✅ | ✅ |
 | Generic Linux         | ❌  | ✅ | ✅ |
 | Kubernetes in Docker  | ❌  | ✅ | ❌  |
 | Open BSD              | ✅ | ✅ | ❌  |
+| VPP                   | ✅ | ❌  | ✅ |
 
 **Notes:**
 
@@ -234,11 +234,11 @@ _netlab_ uses Ansible playbooks and device-specific task lists to deploy device 
 |--------|----------|---------------------------------|
 | bird   | clab     | **bash** scripts or daemon configuration files[^BBS] |
 | dnsmasq | clab    | **bash** scripts or daemon configuration files[^DBS] |
-| vpp    | clab     | **bash** scripts, daemon configuration files, and VPP CLI configuration files[^VPPC] |
 | FRRouting    | clab     | **bash** or **vtysh** scripts[^FRRBV] |
 | Junos cRPD | clab | **bash** scripts[^cRBS] |
 | KinD   | clab     | **bash** scripts copied into and executed in containers |
 | linux  | clab     | host- or container-side **bash** scripts[^LBS] |
+| vpp    | clab     | **bash** scripts, node configuration files, and VPP CLI configuration files[^VPPC] |
 
 [^FRRBV]: Configurations starting with a *shebang* are assumed to be Linux scripts; all other configurations are assumed to be **vtysh** scripts and get a `#!/usr/bin/vtysh -f` shebang prepended to them.
 
@@ -248,7 +248,7 @@ _netlab_ uses Ansible playbooks and device-specific task lists to deploy device 
 
 [^DBS]: Initial device configurations, VLANs, static routes, and link aggregation are configured with **bash** scripts. All other features are configured with the dnsmasq configuration files.
 
-[^VPPC]: Initial device configuration is deployed with **bash** scripts executed within the container. VPP **startup.conf** is deployed as a daemon configuration file. The VPP startup configuration loads `/etc/vpp/config/setup.vpp`, a generated VPP CLI configuration file; the initial script creates `/etc/vpp/config/clab-interfaces.vpp`. The container waits for **netlab initial** to finish before starting VPP.
+[^VPPC]: Initial device configuration is deployed with **bash** scripts executed within the container. VPP **startup.conf** is deployed as a node configuration file. The VPP startup configuration loads `/etc/vpp/config/setup.vpp`, a generated VPP CLI configuration file; the initial script creates `/etc/vpp/config/clab-interfaces.vpp`. The container waits for **netlab initial** to finish before starting VPP.
 
 [^cRBS]: The configuration deployment uses a custom **bash** script that calls **cli** command to execute **load merge** followed by **commit**. The custom script is used as the *shebang* interpreter for the configuration snippets.
 

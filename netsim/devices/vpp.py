@@ -106,9 +106,25 @@ def _configure_frr_cp(node: Box, topology: Box) -> None:
   _register_frr_cp_scripts(node, topology)
 
 
+def _seed_daemon_config(node: Box) -> None:
+  """
+  Promote device node_config into _daemon_config for setup.vpp.j2 and CP merges.
+
+  Regular devices only auto-copy node_config → _node_config; VPP templates and
+  BIRD/FRR control-plane merging still expect _daemon_config.
+  """
+  if not node.get("_daemon_config"):
+    node._daemon_config = {}
+
+  for k, v in node.get("_node_config", {}).items():
+    if k not in node._daemon_config:
+      node._daemon_config[k] = v
+
+
 def configure_control_plane(node: Box, topology: Box) -> None:
   cp = control_plane(node, topology.defaults)
   node.control_plane = cp
+  _seed_daemon_config(node)
 
   if cp == "bird":
     if "isis" in node.get("module", []):
@@ -120,6 +136,8 @@ def configure_control_plane(node: Box, topology: Box) -> None:
         node=node,
       )
       return
+    # Enable template-search parent fallback without device.daemon (see templates.py)
+    node._daemon = True
     node._daemon_parent = "bird"
     _configure_bird_cp(node, topology)
   else:

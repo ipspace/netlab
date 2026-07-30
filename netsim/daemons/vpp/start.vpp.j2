@@ -7,17 +7,20 @@ set -e
 
 NETNS=dataplane
 VPP_CONTROL_PLANE={{ control_plane|default('bird') }}
+WAIT_TIMEOUT=30
 
 /usr/bin/vpp -c /etc/vpp/startup.conf &
 VPP_PID=$!
-until [ -S /run/vpp/cli.sock ]; do sleep 0.1; done
+timeout "$WAIT_TIMEOUT" sh -c 'until [ -S /run/vpp/cli.sock ]; do sleep 0.1; done' \
+  || { echo "VPP CLI socket did not appear within ${WAIT_TIMEOUT}s" >&2; exit 1; }
 vppctl show version >/dev/null
 
 #
 # Attach Linux peer addresses for IPv4 unnumbered LCP interfaces
 #
 {% for l in interfaces if l._unnumbered_peer is defined %}
-until ip -n "$NETNS" link show {{ l.ifname }} >/dev/null 2>&1; do sleep 0.1; done
+timeout "$WAIT_TIMEOUT" sh -c "until ip -n \"$NETNS\" link show {{ l.ifname }} >/dev/null 2>&1; do sleep 0.1; done" \
+  || { echo "Interface {{ l.ifname }} did not appear in $NETNS within ${WAIT_TIMEOUT}s" >&2; exit 1; }
 ip -n "$NETNS" addr flush dev {{ l.ifname }} scope global 2>/dev/null || true
 ip -n "$NETNS" addr add {{ l._parent_ipv4 }} peer {{ l._unnumbered_peer }} dev {{ l.ifname }}
 {% endfor %}
