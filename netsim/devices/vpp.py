@@ -112,12 +112,15 @@ def _seed_daemon_config(node: Box) -> None:
 
   Regular devices only auto-copy node_config → _node_config; VPP templates and
   BIRD/FRR control-plane merging still expect _daemon_config.
+
+  Entries with a mode suffix (path:sh) stay in _node_config for binds/exec and
+  must not become BIRD include paths.
   """
   if not node.get("_daemon_config"):
     node._daemon_config = {}
 
   for k, v in node.get("_node_config", {}).items():
-    if k not in node._daemon_config:
+    if k not in node._daemon_config and isinstance(v, str) and ':' not in v:
       node._daemon_config[k] = v
 
 
