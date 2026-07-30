@@ -35,7 +35,6 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | Arista cEOS            | ceos:4.31.2F                 |
 | Aruba CX               | vrnetlab/aruba_arubaos-cx:20240731173624 |
 | BIRD [❗](build-bird)  | netlab/bird:latest           |
-| VPP [❗](build-vpp)    | netlab/vpp:latest            |
 | Cisco 8000v            | cisco/cisco-8201-32fh:24.4.1 |
 | Cisco ASAv             | vrnetlab/cisco_asav:9-16-4-57 |
 | Cisco Catalyst 8000v   | vrnetlab/vr-c8000v:17.13.01a |
@@ -61,6 +60,7 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | Mikrotik RouterOS 7    | vrnetlab/vr-routeros:7.6     |
 | Nokia SR Linux         | ghcr.io/nokia/srlinux:24.10.1 |
 | Nokia SR OS            | vrnetlab/vr-sros:latest      |
+| VPP [❗](build-vpp)    | netlab/vpp:latest            |
 | VyOS                   | ghcr.io/sysoleg/vyos-container |
 
 * Cumulus VX, FRR, Linux, Nokia SR Linux, and VyOS images are automatically downloaded from public container registries.
