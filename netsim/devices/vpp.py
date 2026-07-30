@@ -16,10 +16,6 @@ def control_plane(node: Box, defaults: Box) -> str:
   return node.get("control_plane", vpp_defaults.get("control_plane", "bird"))
 
 
-def _daemon_module(key: str) -> str:
-  return key.replace("@", ".").split(".")[0]
-
-
 def _active_cp_modules(node: Box, cp: str) -> set[str]:
   active = {cp, "routing"}
   active.update(node.get("module", []))
@@ -27,17 +23,24 @@ def _active_cp_modules(node: Box, cp: str) -> set[str]:
 
 
 def _merge_cp_daemon_config(node: Box, topology: Box, cp: str) -> None:
+  """
+  Copy control-plane daemon_config entries that would survive cleanup_non_ansible_config.
+
+  Bird ships optional plugin maps (e.g. ospf@areas). Merging those after node
+  cleanup would force a config template lookup for plugins the lab does not use.
+  """
   cp_dev = topology.defaults.devices.get(cp)
   if not cp_dev or "daemon_config" not in cp_dev:
     return
 
-  active = _active_cp_modules(node, cp)
-  dc = node.get("_daemon_config")
-  if not dc:
+  if not node.get("_daemon_config"):
     node._daemon_config = {}
 
+  modules = set(node.get("module", []))
+  configs = set(node.get("config", []))
   for k, v in cp_dev.daemon_config.items():
-    if _daemon_module(k) not in active:
+    kn = k.replace("@", ".")
+    if kn != cp and kn not in modules and kn not in configs and kn != "initial":
       continue
     node._daemon_config[k] = v
 

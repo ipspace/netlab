@@ -1,17 +1,42 @@
 {#
   VPP L2 bridging uses bridge-domains (router VLAN model). Linux bridges on LCP
   taps do not forward between host-interfaces; put access ports into VPP BDs.
-  Trunk vlan_member subifs need create + tag-rewrite pop-1. IRB SVIs become BVIs.
+  Bridged trunk vlan_member subifs need create + tag-rewrite pop-1. Routed
+  subinterfaces get IP/RA + LCP (no L2 rewrite). IRB SVIs become BVIs.
 #}
-{% for vname,vdata in vlans|default({})|dictsort %}
+{% for vname,vdata in vlans|default({})|dictsort
+     if vdata.mode|default('irb') != 'route' %}
 create bridge-domain {{ vdata.id }}
 {% endfor %}
 {% for ifdata in interfaces if ifdata.type|default('') == 'vlan_member'
      and ifdata.vlan.access_id is defined
      and ifdata.parent_ifname is defined %}
+{%   set vpp_if = 'host-' ~ ifdata.ifname %}
 create sub-interfaces host-{{ ifdata.parent_ifname }} {{ ifdata.vlan.access_id }}
-set interface state host-{{ ifdata.ifname }} up
-set interface l2 tag-rewrite host-{{ ifdata.ifname }} pop 1
+{%   if ifdata.mtu is defined %}
+set interface mtu {{ ifdata.mtu }} {{ vpp_if }}
+{%   endif %}
+set interface state {{ vpp_if }} up
+{%   if ifdata.vlan.mode|default('irb') != 'route' %}
+set interface l2 tag-rewrite {{ vpp_if }} pop 1
+{%   else %}
+{%     if ifdata.ipv4 is defined and ifdata.ipv4 is string %}
+set interface ip address {{ vpp_if }} {{ ifdata.ipv4 }}
+{%     endif %}
+{%     if ifdata.ipv6 is defined and ifdata.ipv6 is string and ifdata.ipv6|ansible.utils.ipv6 %}
+set interface ip address {{ vpp_if }} {{ ifdata.ipv6 }}
+{%       if role == 'router' %}
+{%         if ifdata.ra.disable|default(false) is true %}
+ip6 nd {{ vpp_if }} ra-suppress
+{%         else %}
+ip6 nd {{ vpp_if }} ra-interval 5
+{%           set nd_prefix = ifdata.ipv6|ansible.utils.ipaddr(0) %}
+ip6 nd {{ vpp_if }} prefix {{ nd_prefix }} default
+{%         endif %}
+{%       endif %}
+{%     endif %}
+lcp create {{ vpp_if }} host-if {{ ifdata.ifname }}
+{%   endif %}
 {% endfor %}
 {% for ifdata in interfaces if ifdata.vlan is defined and ifdata.type|default('') != 'svi' %}
 {%   set vname = ifdata.vlan.access|default(ifdata.vlan.native) %}
@@ -25,6 +50,9 @@ set interface l2 bridge host-{{ ifdata.ifname }} {{ vlans[vname].id }}
 {%   set bd = vlans[ifdata.vlan.name].id %}
 bvi create instance {{ bd }}
 set interface l2 bridge bvi{{ bd }} {{ bd }} bvi
+{%   if ifdata.mtu is defined %}
+set interface mtu {{ ifdata.mtu }} bvi{{ bd }}
+{%   endif %}
 set interface state bvi{{ bd }} up
 {%   if ifdata.ipv4 is defined and ifdata.ipv4 is string %}
 set interface ip address bvi{{ bd }} {{ ifdata.ipv4 }}
