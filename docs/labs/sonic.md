@@ -36,9 +36,21 @@ netlab up -d sonic -p clab <topology.yml>
 a build artefact of the [sonic-buildimage](https://github.com/sonic-net/sonic-buildimage) project
 rather than on a public registry, so you either download a build or make one:
 
-* **Download a published build.** The SONiC project publishes `docker-sonic-vs.gz` from its Azure
-  build pipelines; [sonic.software](https://sonic.software/) indexes those builds and links to the
-  artefacts for each branch. Pick the `vs` platform, download `docker-sonic-vs.gz`, then:
+* **Download a published build.** The image is published as an artefact of the SONiC Azure build
+  pipelines. From <https://sonic-build.azurewebsites.net/ui/sonic/pipelines>:
+
+  * scroll to the bottom of the pipeline list, where the **vs** platform is listed;
+  * pick a branch (for example `202405`) and open **Build History**;
+  * choose the latest build whose *Result* is successful and open **Artifacts**;
+  * open the artifact, scroll to **target/docker-sonic-vs.gz**, and download it.
+
+  *containerlab* documents the same path for its
+  [`sonic-vs` kind](https://containerlab.dev/manual/kinds/sonic-vs/), which uses this image.
+  [sonic.software](https://sonic.software/) is an unofficial index that is sometimes offered as an
+  alternative, but it carries SONiC *installation* images (`sonic-vs.img`, used for the Vagrant box
+  above) rather than the container artefact.
+
+  Then load it:
 
   ```
   gunzip docker-sonic-vs.gz
