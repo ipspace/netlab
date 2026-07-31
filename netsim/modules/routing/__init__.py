@@ -72,7 +72,6 @@ normalize_dispatch: typing.Dict[str,dict] = {
   'acl':
     { 'namespace': 'routing.acl',
       'object'   : 'acl',
-      'list_attr': 'value',
       'callback' : normalize_routing_entry }
 }
 
@@ -130,7 +129,8 @@ transform_dispatch: typing.Dict[str,dict] = {
     'cleanup': static.cleanup_static_routes
   },
   'acl': {
-    'import': acl.expand_acl
+    'import': acl.expand_acl,
+    'cleanup': acl.create_af_acls
   }
 }
 
@@ -169,6 +169,6 @@ class Routing(_Module):
   def node_post_transform(self, node: Box, topology: Box) -> None:
     global transform_dispatch
 
-    acl.resolve_interface_acl_references(node,topology)
+    acl.interface_acl_references(node,topology)
     for o_name in transform_dispatch.keys():
       process_routing_data(node,o_name,topology,transform_dispatch)

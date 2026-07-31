@@ -1,0 +1,202 @@
+input:
+- topology/input/acl-simple.yml
+- package:topology-defaults.yml
+links:
+- _linkname: links[1]
+  bridge: input_1
+  interfaces:
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 172.16.0.1/24
+    node: n1
+    routing:
+      acl:
+        in: h1_filter
+  linkindex: 1
+  node_count: 1
+  prefix:
+    ipv4: 172.16.0.0/24
+  role: stub
+  type: stub
+module:
+- routing
+name: input
+nodes:
+  n1:
+    af:
+      ipv4: true
+    box: none
+    device: none
+    id: 1
+    interfaces:
+    - bridge: input_1
+      ifindex: 1
+      ifname: eth1
+      ipv4: 172.16.0.1/24
+      linkindex: 1
+      name: n1 -> stub
+      neighbors: []
+      role: stub
+      routing:
+        acl:
+          in:
+            ipv4: h1_filter
+      type: stub
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.101
+      mac: ca:fe:00:01:00:00
+    module:
+    - routing
+    name: n1
+    routing:
+      _acl:
+        ipv4:
+          h1_filter:
+          - description: test ACL
+            sequence: 100
+          - action: permit
+            dst:
+              any: true
+              ipv4: 0.0.0.0/0
+            protocol: icmp
+            sequence: 110
+            src:
+              any: true
+              ipv4: 0.0.0.0/0
+          - description: Named prefix -> host (not in port range)
+            sequence: 120
+          - action: permit
+            dst:
+              host: true
+              ipv4: 10.0.0.1
+              port: 80
+              port_op: lt
+            protocol: tcp
+            sequence: 130
+            src:
+              ipv4: 192.168.0.0/24
+          - action: permit
+            dst:
+              host: true
+              ipv4: 10.0.0.1
+              port: 443
+              port_op: gt
+            protocol: tcp
+            sequence: 131
+            src:
+              ipv4: 192.168.0.0/24
+          - description: Permit all UDP
+            sequence: 140
+          - action: permit
+            dst:
+              any: true
+              ipv4: 0.0.0.0/0
+            protocol: udp
+            sequence: 150
+            src:
+              any: true
+              ipv4: 0.0.0.0/0
+      acl:
+        h1_filter:
+        - action: permit
+          description: test ACL
+          dst:
+            ipv4:
+            - 0.0.0.0/0
+            ipv6:
+            - ::/0
+          protocol: icmp
+          sequence: 10
+          src:
+            ipv4:
+            - 0.0.0.0/0
+            ipv6:
+            - ::/0
+        - action: permit
+          description: Named prefix -> host (not in port range)
+          dst:
+            ipv4:
+            - 10.0.0.1
+            port_op: not_in
+            port_range:
+              max: 443
+              min: 80
+          protocol: tcp
+          sequence: 20
+          src:
+            ipv4:
+            - 192.168.0.0/24
+        - action: permit
+          description: Permit all UDP
+          dst:
+            ipv4:
+            - 0.0.0.0/0
+            ipv6:
+            - ::/0
+          protocol: udp
+          sequence: 30
+          src:
+            ipv4:
+            - 0.0.0.0/0
+            ipv6:
+            - ::/0
+prefix:
+  any:
+    ipv4: 0.0.0.0/0
+    ipv6: ::/0
+  s_pfx:
+    ipv4: 192.168.0.0/24
+provider: libvirt
+routing:
+  acl:
+    h1_filter:
+    - action: permit
+      description: test ACL
+      dst:
+        ipv4:
+        - 0.0.0.0/0
+        ipv6:
+        - ::/0
+      protocol: icmp
+      sequence: 10
+      src:
+        ipv4:
+        - 0.0.0.0/0
+        ipv6:
+        - ::/0
+    - action: permit
+      description: Named prefix -> host (not in port range)
+      dst:
+        ipv4:
+        - 10.0.0.1
+        port_op: not_in
+        port_range:
+          max: 443
+          min: 80
+      protocol: tcp
+      sequence: 20
+      src:
+        ipv4:
+        - 192.168.0.0/24
+    - action: permit
+      description: Permit all UDP
+      dst:
+        ipv4:
+        - 0.0.0.0/0
+        ipv6:
+        - ::/0
+      protocol: udp
+      sequence: 30
+      src:
+        ipv4:
+        - 0.0.0.0/0
+        ipv6:
+        - ::/0

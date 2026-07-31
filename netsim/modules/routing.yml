@@ -62,16 +62,8 @@ attributes:
       type: dict
       _keytype: id
       _subtype:
-        type: dict
-        _keys:
-          af:
-            type: str
-            valid_values: [ipv4, ipv6]
-            _default: ipv4
-          value:
-            type: list
-            make_list: True
-            _subtype: acl_entry
+        type: list
+        _subtype: acl_entry
 
   node:
     policy:
@@ -101,15 +93,17 @@ attributes:
   interface:
     acl:
       in:
-        ipv4:
-          type: id
-        ipv6:
-          type: id
+        type: dict
+        _keys:
+          ipv4: id
+          ipv6: id
+        _alt_types: [ id ]
       out:
-        ipv4:
-          type: id
-        ipv6:
-          type: id
+        type: dict
+        _keys:
+          ipv4: id
+          ipv6: id
+        _alt_types: [ id ]
 
   route_map:
     set: [ locpref, med, weight, prepend ]
@@ -276,41 +270,31 @@ _top:                               # Modification of global defaults
         _valid_with: [ nexthop, vrf ]
 
     acl_address:
-      any:
-        type: bool
-        valid_values: [True]
-      host:
-        type: bool
-        valid_values: [True]
-      prefix:
-        type: named_pfx
-        _invalid_with: [host]
-      pool:
-        type: addr_pool
-        _invalid_with: [host]
+      ipv4:
+        type: list
+        _subtype: { type: ipv4, use: prefix_or_host }
+      ipv6:
+        type: list
+        _subtype: { type: ipv6, use: prefix_or_host }
       node:
-        type: node_id
-        _invalid_with: [prefix, pool, ipv4, ipv6]
+        type: list
+        _subtype: node_id
+      pool:
+        type: list
+        _subtype: addr_pool
+      prefix:
+        type: list
+        _subtype: named_pfx
       interface:
-        type: str
-        _valid_with: [node, host]
+        type: list
+        _subtype: str
+        _valid_with: [node]
         _invalid_with: [role]
       role:
-        type: str
-        _valid_with: [node, host]
+        type: list
+        _subtype: str
+        _valid_with: [node]
         _invalid_with: [interface]
-      ipv4:
-        type: ipv4
-        use: prefix
-        _alt_types:
-        - { type: ipv4, use: address }
-        _invalid_with: [ipv6]
-      ipv6:
-        type: ipv6
-        use: prefix
-        _alt_types:
-        - { type: ipv6, use: address }
-        _invalid_with: ipv4
       port_op:
         type: str
         valid_values: [eq, gt, lt, neq, in, not_in]
@@ -354,9 +338,11 @@ _top:                               # Modification of global defaults
       src:
         type: acl_address
         _required: True
+        _default: { prefix: [ any ] }
       dst:
         type: acl_address
         _required: True
+        _default: { prefix: [ any ] }
       log:
         type: bool
         valid_values: [ True ]

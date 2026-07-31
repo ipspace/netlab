@@ -2,7 +2,7 @@ message: |
   The device under test is a simple router with in/out IPv6 ACLs
   on the interface facing h1
 
-defaults.sources.extra: [ ../warnings.yml ]
+defaults.sources.extra: [ ../warnings.yml, ../wait_times.yml ]
 
 module: [routing ]
 plugin: [files]
@@ -27,51 +27,37 @@ addressing:
 
 routing.acl:
   h1_filter:
-    af: ipv6
-    value:
-    - action: permit
-      protocol: icmp
-      src.any: true
-      dst.any: true
-      description: test IPv6 ACL
-    - action: permit
-      protocol: tcp
-      src.host: true
-      src.ipv6: 2001:db8:2::1
-      dst.host: true
-      dst.ipv6: 2001:db8:5::2
-      dst.port: 100
-    - action: deny
-      protocol: tcp
-      src.node: h1
-      src.role: probe
-      dst.pool: lan_h2
-      dst.port_range.min: 50
-      dst.port_range.max: 150
-      dst.port_op: in
-    - action: permit
-      protocol: tcp
-      src.node: h1
-      src.interface: eth1
-      dst.prefix: s_pfx
-      dst.port_range.min: 50
-      dst.port_range.max: 150
-      dst.port_op: not_in
+  - action: permit
+    protocol: icmp
+    description: test IPv6 ACL
+  - action: permit
+    protocol: tcp
+    src.ipv6: 2001:db8:2::1
+    dst.ipv6: 2001:db8:5::2
+    dst.port: 100
+  - action: deny
+    protocol: tcp
+    src.node: h1
+    src.role: probe
+    dst.pool: lan_h2
+    dst.port_range.min: 50
+    dst.port_range.max: 150
+    dst.port_op: in
+  - action: permit
+    protocol: tcp
+    src.node: h1
+    src.interface: eth1
+    dst.prefix: s_pfx
+    dst.port_range.min: 50
+    dst.port_range.max: 150
+    dst.port_op: not_in
   h1_est:
-    af: ipv6
-    value:
-    - protocol: tcp
-      established: true
-      src.any: true
-      dst.any: true
-      log: true
-    - action: deny
-      protocol: tcp
-      src.any: true
-      dst.any: true
-    - protocol: ipv6
-      src.any: true
-      dst.any: true
+  - protocol: tcp
+    established: true
+    log: true
+  - action: deny
+    protocol: tcp
+  - protocol: ipv6
 
 groups:
   hosts:
@@ -104,11 +90,18 @@ configlets:
     nohup nc -6 -l -k -p 100 >/dev/null 2>&1 &
   h2: |
     #!/bin/sh
-    for p in 30 100 150 151 ; do
-        nohup nc -6 -l -k -p $p >/dev/null 2>&1 &
+    for p in 30 100 150 151; do
+      nohup nc -6 -l -k -p $p >/dev/null 2>&1 &
     done
 
 validate:
+  ra:
+    description: Check RA-generated default route
+    wait: ra_send
+    wait_msg: Waiting for RA message to generate the default route
+    nodes: [ h1, h2 ]
+    plugin: default6()
+    stop_on_error: True
   ping_h2:
     description: "h1->h2 ICMPv6 echo must succeed."
     nodes: [ h1 ]
@@ -124,8 +117,7 @@ validate:
     devices: [ linux ]
     nodes: [ h1 ]
     exec: "nc -6 -s 2001:db8:2::1 -z -w2 h2 150 && echo OK || echo FAIL"
-    valid: "'OK' in stdout"
-    fail: "TCP h1-h2:150 failed, as expected"
+    valid: "'FAIL' in stdout"
   h2_tcp_151:
     description: "TCP h1->h2:151 must succeed"
     devices: [ linux ]
@@ -143,5 +135,4 @@ validate:
     devices: [ linux ]
     nodes: [ h2 ]
     exec: "nc -6 -s 2001:db8:5::2 -z -w2 h1 100 && echo OK || echo FAIL"
-    valid: "'OK' in stdout"
-    fail: "TCP h2-h1:100 failed, as expected"
+    valid: "'FAIL' in stdout"
