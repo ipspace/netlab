@@ -331,8 +331,8 @@ Netlab enables VRRPv3 by default on Dell OS10, overriding any platform defaults.
 (caveats-vpp)=
 ## VPP (Vector Packet Processor)
 
-* You must build the VPP container image with the **netlab clab build vpp** command. See [](build-vpp) for version options (pin the FD.io release with **defaults.devices.vpp.clab.sw_version**).
-* VPP is available only on the [containerlab](labs/clab.md) provider.
+* You must [build the VPP container image](build-vpp) with the **netlab clab build vpp** command.
+* VPP can use FRR or BIRD control plane. [More details](vpp-control-plane).
 
 (caveats-exos)=
 ## Extreme Networks EXOS

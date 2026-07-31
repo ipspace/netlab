@@ -147,6 +147,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Nokia SR-SIM        |  ❌  |  ✅  |
 | OpenBSD             |  [✅](build-openbsd)  |  [✅](clab-vrnetlab)  |
 | Sonic               |  [✅](build-sonic)  |  ❌  |
+| VPP                 |  ❌  |  ✅  |
 | VyOS                |  ✅  |  ✅[❗](caveats-vyos)  |
 
 **Note:**
@@ -213,6 +214,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Nokia SR OS[^SROS]    | ✅ | ✅ |
 | OpenBSD               | ✅ | ❌  |
 | Sonic                 | ✅ | ✅ |
+| VPP FD.io             | ✅ | ❌  | 
 | VyOS                  | ✅ | ✅ |
 
 **Note:** *netlab* can deploy daemon configurations, but cannot collect them. Use the **netlab initial -o** command to create daemon configuration files in a custom directory.
@@ -230,6 +232,9 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 (platform-config-mode)=
 _netlab_ uses Ansible playbooks and device-specific task lists to deploy device configuration snippets onto most devices, with these notable exceptions:
 
+:::{table}
+:class: table-wrap
+
 | Device | Provider | Configuration deployment method |
 |--------|----------|---------------------------------|
 | bird   | clab     | **bash** scripts or daemon configuration files[^BBS] |
@@ -239,6 +244,7 @@ _netlab_ uses Ansible playbooks and device-specific task lists to deploy device 
 | KinD   | clab     | **bash** scripts copied into and executed in containers |
 | linux  | clab     | host- or container-side **bash** scripts[^LBS] |
 | vpp    | clab     | **bash** scripts, node configuration files, and VPP CLI configuration files[^VPPC] |
+:::
 
 [^FRRBV]: Configurations starting with a *shebang* are assumed to be Linux scripts; all other configurations are assumed to be **vtysh** scripts and get a `#!/usr/bin/vtysh -f` shebang prepended to them.
 
