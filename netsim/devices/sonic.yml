@@ -150,10 +150,13 @@ clab:
       native_routed: true
     lag:
       passive: true
-      mlag:
-        peer:
-          ip: 169.254.127.0/31  # static /31 peer-link (EOS pattern); SONiC has no MLAG keepalive
-                                # protocol to negotiate one over -- config-plane only (no mclagd)
+      # MLAG does not work: docker-sonic-vs has no mclagd, so the pair never forms
+      # (lag/10-mlag: "X1 cannot establish a LAG with both switches in MLAG pair", then the
+      # datapath is lost). Declared False rather than described in the caveats -- a feature that
+      # does not work belongs turned off. Note this does not on its own make netlab refuse an
+      # MLAG topology: netsim/modules/lag.py gates the peer-link machinery on
+      # "lag.mlag OR evpn.multihoming.lag", and evpn.multihoming.lag is still declared below.
+      mlag: False
     vxlan: true
     evpn:
       transport: [ vxlan, mpls ]
