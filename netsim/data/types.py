@@ -447,8 +447,10 @@ def must_be_list(
       value: typing.Any,
       make_list: bool = False,                          # Make anything (not just scalars) into a list
       split_lines: bool = False,                        # Split lines in a string into list items
-      empty: bool = True) -> dict:                      # Is it OK to have an empty list?
-
+      empty: bool = True,                               # Is it OK to have an empty list?
+      min_length: typing.Optional[int] = None,          # Minimum...
+      max_length: typing.Optional[int] = None           # ... and maximum list length
+        ) -> dict:
   def transform_to_list(value: typing.Any) -> list:
     if isinstance(value,str) and split_lines:
       return value.rstrip().split("\n")
@@ -456,6 +458,11 @@ def must_be_list(
     return [ value ]
 
   if isinstance(value,list):                            # A list is what we want to have ;)
+    if min_length is not None and len(value) < min_length:    
+      return { '_value': f'a list with at least {min_length} elements'}
+    if max_length is not None and len(value) > max_length:
+      return { '_value': f'a list with at most {max_length} elements'}
+
     if not empty and not value:                         # Do we have an unacceptable empty list?
       return { '_value': 'a scalar or a non-empty list'}
 
@@ -466,6 +473,9 @@ def must_be_list(
   # is tied to the argument value passed to this function (it's a magic
   # transfer of hidden variables)
   #
+  if min_length is not None and min_length >= 2:
+    return { '_type': f'a list with at least {min_length} elements' }
+
   if isinstance(value,(str,int,float,bool)):
     return { '_valid': True, '_transform': transform_to_list }
 
