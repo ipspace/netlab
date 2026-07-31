@@ -184,7 +184,7 @@ def expand_af_acl(acl_list: list,acl_af: str, acl_name: str, node_name: str) -> 
 
     for s_port_op, s_port in src_port.items():
       for s_port_n in s_port if s_port_op == 'eq' else [ s_port ]:
-        acl_sp_item = acl_item + get_port_op('src',s_port_op,s_port_n)
+        acl_sp_item = acl_data + get_port_op('src',s_port_op,s_port_n)
         for d_port_op, d_port in dst_port.items():
           for d_port_n in d_port if d_port_op == 'eq' else [ d_port ]:
             acl_final = acl_sp_item + get_port_op('dst',d_port_op,d_port_n)
