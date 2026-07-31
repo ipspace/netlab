@@ -4,15 +4,15 @@
 # SONiC (containerlab, docker-sonic-vs) initial configuration.
 #
 # Adapted from the package 'sonic' (libvirt) device's initial/sonic.j2, with changes forced
-# by docker-sonic-vs's monolithic architecture (see sonic_clab.yml for why):
+# by docker-sonic-vs's monolithic architecture (see sonic.yml for why):
 #  * vtysh runs directly in this container -- no 'docker exec bgp' indirection.
 #  * most FRR daemons ship disabled (=no in /etc/frr/daemons) and must be enabled here.
 #  * config_db VLANs (`Vlan<id>`) and PortChannels (`PortChannel<N>`) must be created BEFORE any
 #    SVI/aggregate is addressed. Those live in the vlan/lag module-init hooks
-#    (vlan|lag/sonic_clab.initial.j2), pulled in below via extra_module_initial() at exactly this
+#    (vlan|lag/sonic.initial.j2), pulled in below via extra_module_initial() at exactly this
 #    ordering point -- the same mechanism VyOS uses for its VLAN bridge setup.
 # This script is deployed with 'command: bash /tmp/config.sh' over Ansible's docker connection
-# (tasks/deploy-config/sonic_clab.yml), i.e. it already executes *inside* the node container.
+# (tasks/deploy-config/sonic-clab.yml), i.e. it already executes *inside* the node container.
 #
 # CONNECTION MODEL: config deployment stays on ansible_connection: docker, not network_cli.
 # network_cli was evaluated and is not usable here: it requires a matching cliconf plugin, and
@@ -57,7 +57,7 @@ config interface ipv6 disable use-link-local-only {{ l.ifname }}
 config hostname {{ inventory_hostname.replace("_","-") }}
 #
 # Create config_db PortChannels (lag) and VLANs (vlan) before any aggregate/SVI is addressed
-# below. These live in the per-module init hooks lag/vlan/sonic_clab.initial.j2 and are pulled
+# below. These live in the per-module init hooks lag/vlan sonic.initial.j2 and are pulled
 # in here, at the correct ordering point, by netlab's extra_module_initial() macro.
 #
 {{ extra_module_initial(['lag','vlan']) }}
@@ -73,7 +73,7 @@ fi
      own template creates and addresses them directly, and the `config` CLI only accepts
      Ethernet/PortChannel/Vlan/Loopback names anyway. A VNI-backed SVI (EVPN symmetric-IRB) is
      the same story: its config_db `Vlan<id>` is intentionally never created above, and
-     vlan/vxlan sonic_clab.j2 build/address the real bridge netdev later (vxlan runs after vrf,
+     vlan/vxlan sonic-clab.j2 build/address the real bridge netdev later (vxlan runs after vrf,
      which runs after initial) -- addressing it here would hit "Vlan<id> does not exist". #}
 {%   set _vni_svi = l.type == 'svi' and l.vlan.name|default('') in vlans and vlans[l.vlan.name].vni is defined %}
 {%   if l.ipv4 is defined and (l.ipv4 is string or l._parent_ipv4 is defined) and l.type != 'tunnel' and not _vni_svi %}
