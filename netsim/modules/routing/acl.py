@@ -33,7 +33,9 @@ def expand_acl_address_entry(p_entry: Box, topology: Box) -> Box:
 
   for node_name in p_entry.get('node',[]):
     node_data = topology.nodes[node_name]
-    intf_list = node_data.get("interfaces", []) + node_data.get("loopback",[])
+    intf_list = node_data.get("interfaces", [])
+    if 'loopback' in node_data:
+      intf_list += [ node_data.loopback ]
 
     if "interface" in p_entry:
       ifname = p_entry.interface
@@ -95,7 +97,6 @@ def validate_acl_address_entry(p_entry: Box, ctx: validation_context) -> None:
 
   UDP = 17
   TCP = 6
-  port_keys = ("port", "port_range")
 
   if ctx.protocol < 0 or ctx.protocol > 255:
     log.error(
@@ -116,65 +117,20 @@ def validate_acl_address_entry(p_entry: Box, ctx: validation_context) -> None:
 
   for direction in ("src", "dst"):
     entry = p_entry[direction]
-    if any(k in entry for k in port_keys) and ctx.protocol not in (TCP, UDP):
+    if 'port' in entry and ctx.protocol not in (TCP, UDP):
       log.error(
         f"ACL {ctx.p_name} entry {ctx.idx} cannot use a port or "
         f"port range in {direction} address with this protocol. Use UDP/TCP",
         category=log.IncorrectAttr,
       )
-    if "port_range" in entry and entry.port_range.min >= entry.port_range.max:
-      log.error(
-        f"ACL {ctx.p_name} entry {ctx.idx} has an invalid {direction} port range: min greater or equal to max",
-        category=log.IncorrectAttr,
-      )
-
-    # get rid of port_op if we do not need it
-    if not any(k in entry for k in port_keys):
-      entry.pop("port_op", None)
-
-  if any(k in p_entry.src for k in port_keys) and any(k in p_entry.dst for k in port_keys):
-    log.error(
-      f"ACL {ctx.p_name} entry {ctx.idx} cannot specify a port or port range in both source and destination address",
-      category=log.IncorrectAttr,
-    )
-
-
-def expand_acl_description(entry: Box, expansion: list) -> None:
-  if "description" not in entry:
-    return
-
-  description_seq = entry.get("sequence")
-  entry.sequence = description_seq + 1  # the real entry moves one past it
-  description_entry = get_box({"sequence": description_seq, "description": entry.pop("description")})
-  expansion.append(description_entry)
-
-
-def expand_acl_portop(entry: Box) -> list:
-  expansion = []
-
-  for addr_key in ("src", "dst"):
-    addr_entry = entry.get(addr_key)
-    if not addr_entry:
-      continue
-    port_range = addr_entry.get("port_range")
-    if not port_range or addr_entry.get("port_op") != "not_in":
       continue
 
-    port_min = port_range.min
-    port_max = port_range.max
-
-    upper_entry = get_box(entry.to_dict())
-    upper_entry.sequence = entry.sequence + 1
-
-    entry[addr_key].port = port_min
-    entry[addr_key].port_op = "lt"
-    entry[addr_key].pop("port_range", None)
-    upper_entry[addr_key].port = port_max
-    upper_entry[addr_key].port_op = "gt"
-    upper_entry[addr_key].pop("port_range", None)
-    expansion.append(upper_entry)
-
-  return expansion
+    # Convert "not in" into a combination of "gt"/"lt"
+    if 'port.not_in' in entry:
+      port_list = sorted(entry.port.not_in)
+      entry.port.lt = port_list[0]
+      entry.port.gt = port_list[1]
+      entry.port.pop('not_in')
 
 
 def expand_acl(p_name: str, o_name: str, node: Box, topology: Box) -> typing.Optional[list]:
@@ -201,15 +157,47 @@ def expand_af_acl(acl_list: list,acl_af: str, acl_name: str, node_name: str) -> 
   """
   if not acl_list:                                          # Nothing to do 
     return acl_list
+
   acl_sequence = 100
   acl_result: list = []
+
+  def get_port_op(direction: str, port_op: str, port_value: typing.Union[int,list]) -> dict:
+    if port_op == 'none':
+      return {}
+
+    port_data: dict = {
+      'port_op' : port_op
+    }
+    if isinstance(port_value,list):
+      port_value = sorted(port_value)
+      port_data['port_range'] = { 'min': port_value[0], 'max': port_value[1] }
+    else:
+      port_data['port'] = port_value
+    return { direction: port_data }
+
+  def generate_acl_items(acl_data: Box, src_port: Box, dst_port: Box) -> None:
+    """
+    Add port information to ACL entry with SRC/DST addresses. Iterate over all
+    port qualifiers, and over all port values (but only for "eq" condition)
+    """
+    nonlocal acl_sequence, acl_result
+
+    for s_port_op, s_port in src_port.items():
+      for s_port_n in s_port if s_port_op == 'eq' else [ s_port ]:
+        acl_sp_item = acl_data + get_port_op('src',s_port_op,s_port_n)
+        for d_port_op, d_port in dst_port.items():
+          for d_port_n in d_port if d_port_op == 'eq' else [ d_port ]:
+            acl_final = acl_sp_item + get_port_op('dst',d_port_op,d_port_n)
+            acl_final.sequence = acl_sequence
+            acl_result.append(acl_final)
+            acl_sequence += 10
+
   for acl_idx,acl_entry in enumerate(acl_list,1):           # Iterate over all ACL entries
     src_list = acl_entry.src.get(acl_af,[])                 # Get source/destination AF-specific entries
     dst_list = acl_entry.dst.get(acl_af,[])
-    acl_rest = { k:v for k,v in acl_entry.items() if k not in ['src','dst'] }
-    src_data = { k:v for k,v in acl_entry.src.items() if k not in log.AF_LIST }
-    dst_data = { k:v for k,v in acl_entry.dst.items() if k not in log.AF_LIST }
-    acl_data = get_box(acl_rest) + { 'src': src_data } + {'dst': dst_data }
+    acl_data = get_box({ k:v for k,v in acl_entry.items() if k not in ['src','dst'] })
+    src_port = acl_entry.src.get('port',{'none': 0 })
+    dst_port = acl_entry.dst.get('port',{'none': 0 })
 
     if not src_list and not dst_list:                       # No usable AF entries? Move on...
       continue
@@ -233,13 +221,7 @@ def expand_af_acl(acl_list: list,acl_af: str, acl_name: str, node_name: str) -> 
           if acl_item[kw][acl_af].endswith('/0'):
             acl_item[kw].any = True
 
-        acl_item.sequence = acl_sequence
-        acl_result.append(acl_item)
-        extra_items = expand_acl_portop(acl_item)
-        if extra_items:
-          acl_result.extend(extra_items)
-
-        acl_sequence += 10
+        generate_acl_items(acl_item,src_port,dst_port)
 
   return acl_result
 
