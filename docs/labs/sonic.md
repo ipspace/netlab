@@ -21,20 +21,52 @@ During the box-building process, you might have to disable ZTP or clean up the i
 ```
 
 (labs-sonic-clab)=
-## Using the containerlab Provider (docker-sonic-vs)
+## Using the SoNIC containers
 
-Apart from the libvirt Vagrant box above, SONiC can run under **containerlab** using the community
-`docker-sonic-vs` image via the `sonic_clab` device (parent: `sonic`). No box build is needed --
-supply your own `docker-sonic-vs:latest` image (build it from the
-[sonic-buildimage](https://github.com/sonic-net/sonic-buildimage) `docker-sonic-vs` target, or pull a
-community build) and select the device:
+SONiC also runs under *containerlab* using the community `docker-sonic-vs` image. There is no box
+to build -- select the `clab` provider:
 
 ```
-netlab up -d sonic_clab -p clab <topology.yml>
+netlab up -d sonic -p clab <topology.yml>
 ```
 
-`docker-sonic-vs` is a single monolithic container running FRR (`vtysh`); netlab pushes configuration
-and runs validation over **docker exec** (the image starts no `sshd`). Native validation therefore
-works out of the box -- `netlab up -d sonic_clab <test> --validate` executes the FRR-based `show`
-commands over docker-exec. See the [`sonic_clab` caveats](caveats-sonic-clab) for image/connection
-details and the verified module set.
+### Getting the container image
+
+*netlab* does not ship or distribute `docker-sonic-vs`; you supply it yourself. It is published as
+a build artefact of the [sonic-buildimage](https://github.com/sonic-net/sonic-buildimage) project
+rather than on a public registry, so you either download a build or make one:
+
+* **Download a published build.** The SONiC project publishes `docker-sonic-vs.gz` from its Azure
+  build pipelines; [sonic.software](https://sonic.software/) indexes those builds and links to the
+  artefacts for each branch. Pick the `vs` platform, download `docker-sonic-vs.gz`, then:
+
+  ```
+  gunzip docker-sonic-vs.gz
+  docker load -i docker-sonic-vs
+  docker tag docker-sonic-vs:latest docker-sonic-vs:latest
+  ```
+
+* **Build it yourself** from `sonic-buildimage`:
+
+  ```
+  git clone --recurse-submodules https://github.com/sonic-net/sonic-buildimage.git
+  cd sonic-buildimage
+  make init
+  make configure PLATFORM=vs
+  make target/docker-sonic-vs.gz
+  docker load -i target/docker-sonic-vs.gz
+  ```
+
+The device definition expects the image to be tagged **`docker-sonic-vs:latest`**; override
+`clab.image` in your topology if yours is tagged differently. This submission was tested with
+`docker-sonic-vs:latest`.
+
+### How it works
+
+`docker-sonic-vs` is a single monolithic container running FRR (`vtysh`), unlike the VM above which
+runs FRR in a nested `bgp` container. *netlab* pushes configuration and runs validation over
+**docker exec** -- the image starts no `sshd`. The device inherits the `frr` device, so the FRR
+control-plane templates are used directly and only the container-specific parts
+(`<module>/sonic-clab.j2`) are SONiC's own.
+
+See the [SONiC caveats](caveats-sonic-clab) for what is and is not supported.
