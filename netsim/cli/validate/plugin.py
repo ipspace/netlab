@@ -82,7 +82,7 @@ def find_plugin_action(v_entry: Box, node: Box) -> typing.Optional[str]:
     return None
 
   func_name = v_entry.plugin.split('(')[0]
-  for kw in ('show','exec'):
+  for kw in ('show','exec','ansible'):
     if getattr(plugin,f'{kw}_{func_name}',None):
       return kw
 

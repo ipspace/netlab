@@ -52,10 +52,10 @@ validate_test_entry: Check if the test makes sense
 
 def validate_test_entry(v_entry: Box, topology: Box) -> bool:
   kw_set = set(v_entry.keys())
-  action_set = set(['show','exec','config','wait','plugin','suzieq'])
+  action_set = set(['show','exec','config','wait','plugin','suzieq','ansible'])
   if not kw_set & action_set:                           # Test should have at least one of show/exec/wait
     log.error(
-          f'Test {v_entry.name} should have wait, show, exec, config, plugin, or suzieq option',
+          f'Test {v_entry.name} should have wait, show, exec, config, plugin, suzieq, or ansible option',
           category=log.MissingValue,
           module='validation')
     return False
@@ -70,7 +70,7 @@ def validate_test_entry(v_entry: Box, topology: Box) -> bool:
   # Each validation test should have exactly one action, the only exception is 'exec' and 'show
   # which can be used together to deal with devices that cannot produce JSON printout
   #
-  x_kw = [ kw for kw in ('show','exec','config','plugin','suzieq') if kw in v_entry ]
+  x_kw = [ kw for kw in ('show','exec','config','plugin','suzieq','ansible') if kw in v_entry ]
   if len(x_kw) > 1:                                     # We have more than one action. Now take away show/exec
     r_kw = [ kw for kw in x_kw if kw not in ('show','exec') ]
     if r_kw:                                            # If there's something left, we have a problem
@@ -99,7 +99,7 @@ def validate_test_entry(v_entry: Box, topology: Box) -> bool:
   if 'valid' not in v_entry:                            # A test does not have 'valid' option, no further validation needed
     return True
 
-  if not kw_set & set(['show','exec','suzieq']):        # If we know how to get results to validate, we're OK
+  if not kw_set & set(['show','exec','suzieq','ansible']): # If we know how to get results to validate, we're OK
     log.error(
           f'Test {v_entry.name} has a "valid" option but no action that would generate data to check',
           hint='valid',

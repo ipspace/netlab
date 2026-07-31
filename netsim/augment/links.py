@@ -254,6 +254,8 @@ def validate(topology: Box) -> None:
 
     for intf in l_data.interfaces:
       n_data = topology.nodes[intf.node]
+      # Skip _default on interfaces: defaults are applied on the link and copied
+      # during link-to-interface merge. Applying them here would shadow link values (#3703).
       validate_attributes(
         data=intf,                                      # Validate interface data
         topology=topology,
@@ -263,7 +265,8 @@ def validate(topology: Box) -> None:
         modules=n_data.get('module',[]),                # ... against node modules
         extra_attributes=providers,                     # Allow provider-specific attributes in interfaces
         module_source=f'nodes.{intf.node}',
-        module='links')                                 # Function is called from 'links' module
+        module='links',                                 # Function is called from 'links' module
+        apply_defaults=False)
 
 """
 Get the link attributes that have to be propagated to interfaces: full set
@@ -361,6 +364,21 @@ def create_regular_interface(node: Box, ifdata: Box, defaults: Box) -> None:
     provider = devices.get_provider(node,defaults)
     ifdata[provider] = pdata
 
+def get_device_ifname(node: Box, devtype: str, ifdata: Box, defaults: Box) -> typing.Optional[str]:
+  """
+  Get the device-specific interface name format for the specified interface type. Handle mode-specific
+  interfaces names (primarily used for tunnels).
+  """
+  iff = devices.get_device_attribute(node,f'{devtype}_interface_name',defaults)
+  if iff is None or isinstance(iff,str):                    # Missing interface name format, or a simple string
+    return iff                                              # Just return it
+  if not isinstance(iff,Box):                               # Otherwise, it must be a box -- complain very loudly if needed
+    log.fatal(f'defaults.devices.{node.device}.{devtype}_interface_name has invalid value (expected string or dict), aborting')
+  if_mode = ifdata.get(f'{devtype}.mode',None)              # Try to get the iftype-specific mode (for example, tunnel.mode)
+  if not if_mode:                                           # Not set on this interface?
+    return iff.get('default',None)                          # ... return the "default" iftype-specific ifname
+  return iff.get(if_mode,iff.get('default',None))           # Otherwise try to get the correct interface name, with "default" as fallback
+
 def create_virtual_interface(node: Box, ifdata: Box, defaults: Box) -> None:
   devtype = ifdata.get('type','loopback')         # Get virtual interface type, default to loopback interface
   ifindex_offset = (
@@ -384,7 +402,7 @@ def create_virtual_interface(node: Box, ifdata: Box, defaults: Box) -> None:
   # ifindex. For example, loopback interfaces have ifindex starting with 10001, but
   # the interface names start with Loopback1
   #
-  ifname_format  = devices.get_device_attribute(node,f'{devtype}_interface_name',defaults)
+  ifname_format  = get_device_ifname(node,devtype,ifdata,defaults)
   if ifname_format:
     ifdata.ifname = strings.eval_format(ifname_format,ifdata + { 'ifindex': ifdata.ifindex - devtype_offset })
     return
@@ -413,14 +431,17 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
     if af in ifdata and not ifdata[af]:
       del ifdata[af]
 
-  if node.get('mtu',None):                      # Is node-level MTU defined (node setting, lab default or device default)
+  # Handle interface/node/system MTU.
+  #
+  if node.get('mtu',None):                      # Is node-level MTU defined (node setting,lab default or device default)
     sys_mtu = devices.get_device_features(node,defaults).initial.get('system_mtu',False)
     if 'mtu' in ifdata:                         # Is MTU defined on the interface?
       if sys_mtu and node.mtu == ifdata.mtu:    # .. is it equal to node MTU?
         ifdata.pop('mtu',None)                  # .... remove interface MTU on devices that support system MTU
     else:                                       # Node MTU is defined, interface MTU is not
       if not sys_mtu:                           # .. does the device support system MTU?
-        ifdata.mtu = node.mtu                   # .... no, copy node MTU to interface MTU
+        if ifdata.get('type',None) != 'tunnel': # .... tunnels: plugin sets MTU
+          ifdata.mtu = node.mtu                 # .... no, copy node MTU to interface MTU
 
   if ifdata.get('type',None) == 'loopback':
     ifdata.pop('mtu',None)                      # Remove MTU from loopback interfaces

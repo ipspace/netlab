@@ -56,6 +56,12 @@ nodes:
 * Arista EOS virtual machines and containers use [proprietary control-plane messages to indicate the loss of Ethernet line protocol](https://blog.ipspace.net/2025/03/arista-spooky-action-distance/). Set the **netlab_phy_control** node variable to *False* to disable this functionality.
 * Device configurations that contain `no lldp transmit` or `no lldp receive` configuration command trigger configuration reload failures due to an Arista EOS bug ([more details](https://github.com/ipspace/netlab/issues/2577)). These commands are thus automatically removed from collected device configurations.
 
+GRE tunnel caveats:
+
+* OSPFv2 routing process does not use routes reachable over tunnel interfaces unless the **tunnel routes** parameter is configured. _netlab_ enables OSPFv2 tunnel routes, as no other routing protocol has a similar limitation, and Arista EOS documentation claims it's enabled by default (which is not the case).
+* IS-IS does not work over GRE tunnels
+* Arista cEOS might forward multiple copies of the packets received over GRE tunnels
+
 (caveats-aruba)=
 ## Aruba AOS-CX
 
@@ -444,6 +450,7 @@ ansible_httpapi_port: 80
 * Junos configuration template configures BFD timers within routing protocol configuration, not on individual interfaces
 * Junos does not disable the default BGP address family on a BGP neighbor until another AF is configured.
 * IS-IS NSAP is configured on the loopback interface for the global IS-IS instance and with the protocol **net** parameter in VRF IS-IS instances.
+* OSPFv3 over a GRE tunnel signals interface MTU value of `0` on *DBD* packets. If you need to interoperate with other devices/vendors, you need to ignore the MTU mismatch on the peer device.
 
 Implementation limitations in import/export route filters (reported as errors that can be disabled with topology settings):
 

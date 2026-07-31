@@ -161,6 +161,7 @@ When you don't have to change the code for other reasons:
 - All YAML must pass `yamllint`
 - Tests must pass before merging
 - No unused imports or variables (ruff enforces)
+- Commit subject lines must be ≤72 characters
 
 ## Documentation
 
@@ -173,5 +174,5 @@ When you don't have to change the code for other reasons:
 * The documentation must describe all relevant **node** attributes, followed by all relevant **interface** attributes. When needed, add VLAN- or VRF attributes.
 * Do not explain the lab topology attributes; they have their own documentation.
 * Find the relevant tests in the `tests/integration` directory tree and mention them
-* Do not use `jinja2` syntax highlighter; it does not work.
+* Pygments Jinja2 lexer is called `jinja`, not `jinja2`.
 * Mention where the configuration templates should be stored, and how the platform name is calculated (based on `netlab_device_type` or `ansible_network_os` variable)

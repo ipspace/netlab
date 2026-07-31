@@ -10,7 +10,6 @@
 {% for hname,hdata in hosts.items() if 'ipv6' in hdata and hname != inventory_hostname %}
 /ip/dns/static add name={{ hname }} address={{ hdata.ipv6[0] }}
 {% endfor %}
-
 {#
 # Add additional loopbacks
 #}
@@ -25,23 +24,27 @@
 /ipv6/address add interface=loopback address={{ loopback.ipv6 }}
 {% endif %}
 
-{% if vlans is defined %}
-{% include 'routeros7.vlan.j2' %}
-{% endif %}
-
-{% if vrfs is defined %}
-{% include 'routeros7.vrf.j2' %}
-{% endif %}
-
+{# Setup the required base for GRE/VLAN/VRF/Wireguard #}
+{% from '_extra_initial.j2' import extra_initial with context %}
+{{ extra_initial() }}
+{#
+# Continue with normal initialization
+#}
 {% for l in interfaces|default([]) %}
-{%   set intf_type = 'vlan' if l.type == 'svi' else 'ethernet' %}
-
+{%   if l.type == 'svi' %}
+{%     set intf_type = 'vlan' %}
+{%   elif l.type == 'tunnel' and l.tunnel.mode == 'gre' %}
+{%     set intf_type = 'gre6' if l.tunnel.af == 'ipv6' else 'gre' %}
+{%   elif l.type == 'tunnel' and l.tunnel.mode == 'wireguard' %}
+{%     set intf_type = 'wireguard' %}
+{%   else %}
+{%     set intf_type = 'ethernet' %}
+{%   endif %}
 {%   if l.name is defined %}
 /interface/{{ intf_type }} set comment="{{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}" {{ l.ifname }}
 {%   elif l.type|default("") == "stub" %}
 /interface/{{ intf_type }} set comment="Stub interface" {{ l.ifname }}
 {%   endif %}
-
 {%   if l.mtu is defined %}
 /interface/{{ intf_type }} set mtu={{ l.mtu }} {{ l.ifname }}
 {%   endif %}
@@ -64,5 +67,4 @@
 {%   endif %}
 
 {% endfor %}
-
 /ip/neighbor/discovery-settings set discover-interface-list=all

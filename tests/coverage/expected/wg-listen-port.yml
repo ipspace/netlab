@@ -1,0 +1,189 @@
+input:
+- coverage/input/wg-listen-port.yml
+- package:topology-defaults.yml
+links:
+- _linkname: links[1]
+  interfaces:
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.1/30
+    node: dut
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.2/30
+    node: r2
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  type: p2p
+- _linkname: links[2]
+  bridge: input_2
+  interfaces:
+  - ifindex: 20000
+    ifname: wg0
+    ipv4: 10.1.0.5/30
+    node: dut
+    tunnel:
+      private_key: dwdtCnMYpX08FsFyUbJmRd9ML4frwJkqsXf7pR25LCo=
+      public_key: hSDwCYkwp1R0i33ctD73Wg2/Og0mOBr066SpjqqbTmo=
+  - ifindex: 20000
+    ifname: wg0
+    ipv4: 10.1.0.6/30
+    node: r2
+    tunnel:
+      private_key: XasIfmJKikt54X+Lg4AO5m87sSkmGLb9HC+LJ/+I4Os=
+      public_key: 3p7bfXt9wbTTW2HC7OQ1Nz+DQ8hbeGdNrfx+FG+IK08=
+  linkindex: 2
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.4/30
+  tunnel:
+    listen_port: 59000
+    mode: wireguard
+    persistent_keepalive: 25
+  type: tunnel
+message: 'Link-level WireGuard tunnel.listen_port is preserved on both peers
+
+  '
+name: input
+nodes:
+  dut:
+    af:
+      ipv4: true
+    box: debian/bookworm64
+    config:
+    - tunnel.wireguard
+    device: frr
+    id: 1
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      mtu: 1500
+      name: dut -> r2
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.2/30
+        node: r2
+      type: p2p
+    - ifindex: 20000
+      ifname: wg0
+      ipv4: 10.1.0.5/30
+      linkindex: 2
+      mtu: 1440
+      name: dut -> r2 [WireGuard tunnel]
+      neighbors:
+      - ifname: wg0
+        ipv4: 10.1.0.6/30
+        node: r2
+      tunnel:
+        _destination:
+          ifname: eth1
+          ipv4: 10.1.0.2
+          listen_port: 59000
+          mtu: 1500
+          public_key: 3p7bfXt9wbTTW2HC7OQ1Nz+DQ8hbeGdNrfx+FG+IK08=
+        _source:
+          ifname: eth1
+          ipv4: 10.1.0.1
+          listen_port: 59000
+          mtu: 1500
+          public_key: hSDwCYkwp1R0i33ctD73Wg2/Og0mOBr066SpjqqbTmo=
+        af: ipv4
+        allowed_ips: 0.0.0.0/0
+        listen_port: 59000
+        mode: wireguard
+        persistent_keepalive: 25
+        private_key: dwdtCnMYpX08FsFyUbJmRd9ML4frwJkqsXf7pR25LCo=
+        public_key: hSDwCYkwp1R0i33ctD73Wg2/Og0mOBr066SpjqqbTmo=
+      type: tunnel
+      virtual_interface: true
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.101
+      mac: ca:fe:00:01:00:00
+    mtu: 1500
+    name: dut
+    netlab_linux_packages:
+      wireguard-tools: wg
+    role: router
+  r2:
+    af:
+      ipv4: true
+    box: debian/bookworm64
+    config:
+    - tunnel.wireguard
+    device: frr
+    id: 2
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      mtu: 1500
+      name: r2 -> dut
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.1/30
+        node: dut
+      type: p2p
+    - ifindex: 20000
+      ifname: wg0
+      ipv4: 10.1.0.6/30
+      linkindex: 2
+      mtu: 1440
+      name: r2 -> dut [WireGuard tunnel]
+      neighbors:
+      - ifname: wg0
+        ipv4: 10.1.0.5/30
+        node: dut
+      tunnel:
+        _destination:
+          ifname: eth1
+          ipv4: 10.1.0.1
+          listen_port: 59000
+          mtu: 1500
+          public_key: hSDwCYkwp1R0i33ctD73Wg2/Og0mOBr066SpjqqbTmo=
+        _source:
+          ifname: eth1
+          ipv4: 10.1.0.2
+          listen_port: 59000
+          mtu: 1500
+          public_key: 3p7bfXt9wbTTW2HC7OQ1Nz+DQ8hbeGdNrfx+FG+IK08=
+        af: ipv4
+        allowed_ips: 0.0.0.0/0
+        listen_port: 59000
+        mode: wireguard
+        persistent_keepalive: 25
+        private_key: XasIfmJKikt54X+Lg4AO5m87sSkmGLb9HC+LJ/+I4Os=
+        public_key: 3p7bfXt9wbTTW2HC7OQ1Nz+DQ8hbeGdNrfx+FG+IK08=
+      type: tunnel
+      virtual_interface: true
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.102
+      mac: ca:fe:00:02:00:00
+    mtu: 1500
+    name: r2
+    netlab_linux_packages:
+      wireguard-tools: wg
+    role: router
+plugin:
+- tunnel.wireguard
+provider: libvirt

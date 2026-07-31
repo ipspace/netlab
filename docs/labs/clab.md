@@ -8,6 +8,10 @@
 * Create [lab topology file](../topology-overview.md). Use `provider: clab` in lab topology to select the *containerlab* virtualization provider.
 * Start the lab with **[netlab up](../netlab/up.md)**
 
+```{warning}
+You have to be a member of the `clab_admins` group to start a _containerlab_ lab, and a member of the `docker` group to use Docker containers. If you used **netlab install containerlab**, these group memberships are configured automatically; use the **sudo usermod -aG _group_ _user_** command to add additional users to these groups.
+```
+
 ```eval_rst
 .. contents:: Table of Contents
    :depth: 2
@@ -239,7 +243,15 @@ $ netlab defaults devices.iosv.clab.group_vars.ansible_ssh_pass=Baggins
 (vrnetlab-internal-net)=
 ### Internal Container Networking
 
-The packaged container's architecture requires an internal network. The [*vrnetlab* fork](https://github.com/srl-labs/vrnetlab) supported by *containerlab* uses the IPv4 prefix 10.0.0.0/24 on that network, which clashes with the *netlab* loopback address pool. Fortunately, that fork also adds management VRF (and default route within the management VRF) to most device configurations, making the overlap between the *vrnetlab* internal subnet and the *netlab* loopback pool irrelevant. However, all VMs in *vrnetlab* containers will have the same IP and MAC address on the management interface, potentially confusing any network management system you might use with your lab.
+The packaged container's architecture requires an internal network. Traditionally, the [*vrnetlab* fork](https://github.com/srl-labs/vrnetlab) supported by *containerlab* used the IPv4 prefix 10.0.0.0/24 on that network and assigned IPv4 address 10.0.0.15 to the management interface, clashing with the *netlab* loopback address pool.
+
+Fortunately, that fork also adds management VRF (and default route within the management VRF) to most device configurations, making the overlap between the *vrnetlab* internal subnet and the *netlab* loopback pool irrelevant. However, all VMs running within *vrnetlab* containers will have the same IP and MAC address on the management interface, potentially confusing any network management system you might use with your lab.
+
+Recently, *vrnetlab* implemented **[Transparent Management](https://containerlab.dev/manual/vrnetlab/#management-interface)**, which configures the IPv4 address configured on the container management interface on the network device VM. This feature is controlled by the `CLAB_MGMT_PASSTHROUGH` container environment variable and is enabled for all _netlab_ devices for which _vrnetlab_ already implemented it by July 2026. If you want to enable this feature on other devices, set the **devices._device_.clab.node.env.CLAB_MGMT_PASSTHROUGH** [topology default parameter](topo-defaults) or **clab.env.CLAB_MGMT_PASSTHROUGH** node variable to **True**.
+
+```{warning}
+Setting this environment variable to True for a *‌vrnetlab* container that does not implement the Transparent Management might result in an unreachable management interface.
+```
 
 Finally, if you're still experiencing connectivity problems or initial configuration failures with _vrnetlab_-based containers after rebuilding them with the [latest vrnetlab version](https://github.com/srl-labs/vrnetlab), add the following parameters to the lab configuration file to change the _netlab_ loopback addressing pool:
 
@@ -265,17 +277,26 @@ The **netlab_check_retries** parameter is set higher in system defaults for virt
 
 ## Advanced Topics
 
-### Container Runtime Support
+### Podman Support
 
-Containerlab supports [multiple container runtimes](https://containerlab.dev/cmd/deploy/#runtime) besides the default **docker**. The runtime to use can be configured globally or per node, for example:
+Containerlab supports [**docker** and **podman** containers](https://containerlab.dev/cmd/deploy/#runtime). You can specify the **podman** runtime with the **providers.clab.runtime** [topology default](topo-defaults), for example:
 
 ```
 provider: clab
 defaults.providers.clab.runtime: podman
-nodes:
-  s1:
-    clab.runtime: ignite
 ```
+
+```{warning}
+* The _containerlab_ podman support is experimental. Don't expect miracles.
+* Because *containerlab* runs as **root**, the *podman* containers it creates are not visible to regular users. To use the **podman** runtime, you MUST run **netlab** as **root**.
+* We tested the basic *podman-with-containerlab* functionality on Ubuntu 26.04. We did not test advanced features like multi-provider labs.
+```
+
+To use `podman` runtime with `clab` provider, use the **netlab install podman** command on Ubuntu/Debian to install _podman_ and _containerlab_. On other Linux distributions, ensure that:
+
+* You've enabled the _podman_ API
+* The _podman_ management socket is available
+* The _podman_ Docker compatibility package (usually `podman-docker`) is installed (the **docker** command must be available).
 
 (lab-clab-binds)=
 ### Using File Binds
