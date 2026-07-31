@@ -47,8 +47,7 @@
 | Nokia SR OS [❗](caveats-sros)    | sros    | best effort[^SROSBE]   |
 | Nokia SR-SIM [❗](caveats-srsim)  | srsim   | full          |
 | OpenBSD [❗](caveats-openbsd)     | openbsd | best effort   |
-| Sonic [❗](caveats-sonic)         | sonic   | minimal       |
-| Sonic (containerlab) [❗](caveats-sonic-clab) | sonic_clab | best effort |
+| Sonic (VM and containers) [❗](caveats-sonic) | sonic   | minimal       |
 | VyOS 1.4 [❗](caveats-vyos)       | vyos    | full          |
 
 [^SROSBE]: With the launch of the Nokia SR SIM, we stopped running integration tests for the SR-OS VM, assuming the behavior of the two products would be nearly identical.
