@@ -22,18 +22,37 @@ routing.acl:
     description: test ACL
   - action: permit
     protocol: tcp
+    src.node: h1
+    dst.node: h2
+    dst.port.eq: [ 25, 80, 443 ]
+    description: Allowed server ports
+  - action: permit
+    protocol: tcp
     src.prefix: s_pfx
     dst:
       ipv4: 10.0.0.1
-      port_op: not_in
-      port_range: { min: 80, max: 443 }
+      port.not_in: [ 1, 1024 ]
     description: Named prefix -> host (not in port range)
+  - action: deny
+    protocol: tcp
+    src.prefix: s_pfx
+    dst:
+      ipv4: 10.0.0.42
+      port.in: [ 1, 64 ]
+    description: Port.in test
   - action: permit
     protocol: udp
     description: Permit all UDP
 
 nodes:
   n1:
+  h1:
+  h2:
 
 links:
 - n1.routing.acl.in: h1_filter
+  h1:
+  prefix: s_pfx
+- n1:
+  h2:
+  pool: lan_h2

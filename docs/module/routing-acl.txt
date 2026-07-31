@@ -33,13 +33,13 @@ Each ACL entry can have these attributes:
 * **sequence**: Statement sequence number (default: if unspecified, Netlab will generate a sequence starting with 10, with an increment of 10)
 * **protocol**: IP protocol to match — one of **ahp**, **esp**, **icmp**, **ip**, **ipv6**, **tcp**, **udp**, or a numeric protocol number. **Required**.
 * **established**: Match established TCP sessions (boolean)
-* **src**: Dictionary for source address/port match — see [](routing-acl-matching). Default value: `prefix: any`
-* **dst**: Dictionary for destination address/port match — see [](routing-acl-matching). Default value: `prefix: any`
+* **src**: Dictionary for source address/port match — see [](routing-acl-matching-addr) and [](routing-acl-matching-port). Default value: `prefix: any`
+* **dst**: Dictionary for destination address/port match. Default value: `prefix: any`
 * **log**: Log matched packets (boolean).
 * **description**: Free-text description of the ACL entry
 
-(routing-acl-matching)=
-### Matching Addresses
+(routing-acl-matching-addr)=
+### Matching Source and Destination Addresses
 
 Both **src** and **dst** dictionaries use the following attributes to describe what an ACL entry matches on the source and destination side of a packet.
 
@@ -54,21 +54,25 @@ You can use either a single value or a list of values in all of the above parame
 
 You can also mix IPv4 and IPv6 addresses in an access list. _netlab_ always generates address-family-specific access lists for all address families used on the device.
 
-Port matching (TCP/UDP only) is specified within the same **src**/**dst** dictionary:
+(routing-acl-matching-port)=
+### Matching TCP/UDP Ports
 
-* **port_op**: Comparison operator — **eq** (default), **gt**, **lt**, **neq**, **in**, **not_in**
-* **port**: A single port number to match with **port_op**. Valid operators for port are: **eq**, **gt**, **lt**, **neq**
-* **port_range**: A dictionary with **min** and **max** specifying a range. Valid operators for **port_range** are  **in** and **not_in**
+Port matching parameters (TCP/UDP only) are specified within the **src.port**/**dst.port** dictionaries. These dictionaries can have one or more matching parameters:
 
-Port-matching operations cannot be specified in both the source and destination dictionaries simultaneously. **not_in** operator is not supported in hardware. Netlab will generate synthetic ACL entries. Example from a Cisco IOL-XE router:
+* **eq** (int or list): List of allowed ports (or a single allowed port)
+* **neq** (int): A port that is not allowed[^BUEQ]
+* **lt** (int): Ports lower than the specified value
+* **gt** (int): Ports greater than the specified value
+* **in** (list with two values): Ports within the specified range
+* **not_in** (list with two values): Ports outside of the specified range
 
-```text
-  10 remark Allow dogs in
-  11 permit tcp 10.10.10.0 0.0.0.255  1.5.6.0 0.0.0.255  lt 5
-  12 permit tcp 10.10.10.0 0.0.0.255  1.5.6.0 0.0.0.255  gt 100
+[^BUEQ]: It might be better to use a separate entry with opposite **permit** action and **port.eq** parameter if you want to match ports not being equal to a list of ports.
+
+```{note}
+* The **eq** parameter can be combined with any other parameter. You can also combine **lt** and **gt** parameters, others (**neq**, **in**, **not_in**) cannot be combined.
+* Multiple port parameters, or multiple ports specified in the **‌eq** parameter, are expanded into multiple ACL entries.
+* Most platforms do not support the *‌not in range* operation. The **‌not_in** parameter is thus rewritten as a combination of **‌lt** and **‌gt** parameters.
 ```
-
-In the above example, **not_in** operator has been split into two entries, one guarding the lower range, one guarding the upper range. The lower-range match retained the original sequence number, while the upper-range entry got the next one.
 
 ## Applying ACLs to Interfaces
 
