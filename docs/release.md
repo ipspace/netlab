@@ -169,6 +169,7 @@ For older releases, check the [release notes archive](release-archive.md).
    :caption: Individual release notes
    :maxdepth: 1
 
+   release/26.08.md
    release/26.07.md
    release/26.06.md
    release/26.05.md
