@@ -43,8 +43,10 @@ rather than on a public registry, so you either download a build or make one:
   ```
   gunzip docker-sonic-vs.gz
   docker load -i docker-sonic-vs
-  docker tag docker-sonic-vs:latest docker-sonic-vs:latest
   ```
+
+  Check the tag `docker load` restored with **docker images**; retag it to
+  `docker-sonic-vs:latest` if it differs.
 
 * **Build it yourself** from `sonic-buildimage`:
 
