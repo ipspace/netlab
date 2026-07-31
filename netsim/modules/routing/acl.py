@@ -22,7 +22,7 @@ def expand_acl_address_entry(p_entry: Box, topology: Box) -> Box:
 
   def add_acl_prefixes(p_entry: Box, data: Box) -> None:
     for af in log.AF_LIST:
-      if af in data:
+      if af in data and isinstance(data[af],str):
         append_to_list(p_entry,af,data[af])
 
   for p_name in p_entry.get('pool',[]):
@@ -51,7 +51,8 @@ def expand_acl_address_entry(p_entry: Box, topology: Box) -> Box:
           "acl")
         continue
 
-    add_acl_prefixes(p_entry,intf_list)
+    for intf in intf_list:
+      add_acl_prefixes(p_entry,intf)
 
   for kw in ('pool','prefix','node','interface','role'):
     p_entry.pop(kw,None)
