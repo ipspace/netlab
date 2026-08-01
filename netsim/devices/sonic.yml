@@ -13,33 +13,6 @@ parent: frr
 description: SONiC
 support:
   level: minimal
-  caveats:
-  - >-
-    SONiC runs FRR, so this device inherits the FRR device and disables what SONiC does not
-    support rather than re-declaring the FRR feature set. Anything not disabled below is served
-    by the FRR templates.
-  - >-
-    Genuinely unsupported, not just untested (each live-probed): STP -- config-plane only, there
-    is no stpd daemon so there is no real port-blocking behaviour; DHCP relay/client --
-    docker-sonic-vs ships no dhcrelay/dhcp6relay binary at all; mlag.vtep (anycast VTEP) --
-    the config plane renders and the underlay comes up, but the active-active EVPN overlay is
-    platform-blocked (no mclagd), so the datapath is 100% loss.
-  - >-
-    Two routing-policy operations FRR supports are disabled here because they are not exercised
-    by any integration test on this platform and were therefore never verified:
-    policy.set.community.extended and policy.match.nexthop. They are disabled explicitly rather
-    than left to inheritance -- under a parent device, silence is a claim.
-  - >-
-    This device has BOTH a libvirt and a clab deployment, where the previous sonic_clab device had
-    clab only. A topology that does not pin a provider can therefore select libvirt and fail with
-    "KVM is not installed or does not include kvm-ok utility" on a container-only host --
-    tests/integration/initial/08-ra does exactly that. Run SONiC topologies with "-p clab" (or set
-    the provider in the topology) unless the VM image is actually available. This is a property of
-    having two deployments, not a missing feature, so nothing is disabled for it.
-  - >-
-    The libvirt (VM) deployment is far less tested than the container. VLAN, LAG, VXLAN and EVPN
-    are enabled only for clab, because their configuration is built with config_db/redis-cli
-    sequences that have only ever been exercised on docker-sonic-vs.
 interface_name: Ethernet{ifindex * 4}
 ifindex_offset: 0
 mgmt_if: eth0
@@ -80,6 +53,8 @@ features:
     # initial/05-host reaches 3 of 5 checks then fails the IPv6 ping and the RA default-route
     # check. Only the router role is claimed.
     roles: [ router ]
+    ra: false                 # Missing RA features in the old FRR release used in SONiC
+    reload: false
   gateway:
     # FRR declares anycast; SONiC does not deliver it. gateway/01-anycast reaches 10 of 11 checks
     # and then fails ping_dup -- duplicate packets, i.e. both gateways answering, which is the
@@ -155,20 +130,20 @@ clab:
   # Verified on docker-sonic-vs and therefore re-enabled for the container only.
   #
   features:
-    vlan:
-      model: l3-switch
-      svi_interface_name: "Vlan{vlan}"
-      subif_name: "{ifname}.{subif_index}"
-      native_routed: true
-    lag:
-      passive: true
+    vlan: False
+#      model: l3-switch
+#      svi_interface_name: "Vlan{vlan}"
+#      subif_name: "{ifname}.{subif_index}"
+#      native_routed: true
+    lag: False
+#      passive: true
       # MLAG does not work: docker-sonic-vs has no mclagd, so the pair never forms
       # (lag/10-mlag: "X1 cannot establish a LAG with both switches in MLAG pair", then the
       # datapath is lost). Declared False rather than described in the caveats -- a feature that
       # does not work belongs turned off. Note this does not on its own make netlab refuse an
       # MLAG topology: netsim/modules/lag.py gates the peer-link machinery on
       # "lag.mlag OR evpn.multihoming.lag", and evpn.multihoming.lag is still declared below.
-      mlag: False
+#      mlag: False
     vxlan: false                # Use SONiC commands to configure it
     evpn:
       transport: [ vxlan, mpls ]
