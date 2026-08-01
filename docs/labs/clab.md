@@ -250,10 +250,11 @@ Fortunately, that fork also adds management VRF (and default route within the ma
 Recently, *vrnetlab* implemented **[Transparent Management](https://containerlab.dev/manual/vrnetlab/#management-interface)**, which configures the IPv4 address configured on the container management interface on the network device VM. This feature is controlled by the `CLAB_MGMT_PASSTHROUGH` container environment variable and is enabled for all _netlab_ devices for which _vrnetlab_ already implemented it by July 2026. If you want to enable this feature on other devices, set the **devices._device_.clab.node.env.CLAB_MGMT_PASSTHROUGH** [topology default parameter](topo-defaults) or **clab.env.CLAB_MGMT_PASSTHROUGH** node variable to **True**.
 
 ```{warning}
-Setting this environment variable to True for a *‌vrnetlab* container that does not implement the Transparent Management might result in an unreachable management interface.
+* Setting this environment variable to True for a *‌vrnetlab* container that does not implement the Transparent Management might result in an unreachable management interface.
+* If a *vrnetlab* node is unreachable after **netlab up**, Transparent Management passthrough may be the cause. Either rebuild the Docker image with an up-to-date version of *vrnetlab*, or disable this passthrough for the affected node by setting `clab.env.CLAB_MGMT_PASSTHROUGH: "false"`.
 ```
 
-Finally, if you're still experiencing connectivity problems or initial configuration failures with _vrnetlab_-based containers after rebuilding them with the [latest vrnetlab version](https://github.com/srl-labs/vrnetlab), add the following parameters to the lab configuration file to change the _netlab_ loopback addressing pool:
+The "management" VRF configured by most *vrnetlab* containers should eliminate the overlap between loopback and management IPv4 addresses. However, if you're still experiencing connectivity problems or initial configuration failures even after rebuilding the containers with the [latest vrnetlab version](https://github.com/srl-labs/vrnetlab), add the following parameters to the lab configuration file to change the _netlab_ loopback addressing pool:
 
 ```
 addressing:
