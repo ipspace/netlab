@@ -650,14 +650,23 @@ See also [](caveats-sros) caveats for further details.
 * _netlab_ RIPv2/RIPng template implements route redistribution, but only for static and connected prefixes
 * The device role on nodes with a loopback interface is automatically changed to **router** (contrary to most other network devices, OpenBSD does not allow you to reach non-connected IP addresses unless the IPv4/IPv6 forwarding is enabled).
 
-(caveats-sonic)=
-## Sonic
+(caveats-sonic-vm)=
+## SONiC Virtual Machine
 
-* Sonic implementation was tested with Azure sonic-vs VM image (release 2023-11) with FRR running in a container. Other Sonic distributions might use different approaches that would require significant modifications to the configuration deployment process.
-* BGP is the only routing protocol running on Azure Sonic. The choice is hardcoded in FRR compilation flags.
-* You cannot use IBGP as there's no IGP protocol to resolve IBGP next hops, unless you believe in running IBGP over EBGP.
-* The Azure Sonic VM image has to be started with a preconfigured BGP AS number (specified in **config_db.json**); otherwise, it does not start the FRR container. That BGP process is removed during the initial BGP configuration and replaced with the actual BGP AS number specified in the lab topology.
-* _netlab_ configures BGP on Sonic through vtysh, not through **config_db**.
+* SONiC implementation was tested with Azure `sonic-vs` VM image (release 2023-11) with FRR running in a container. Other SONiC distributions might use different approaches that would require significant modifications to the configuration deployment process.
+* BGP is the only routing protocol running on Azure SONiC. The choice is hardcoded in FRR compilation flags.
+* You cannot use IBGP, as there's no IGP protocol to resolve IBGP next hops, unless you believe in running IBGP over EBGP.
+* The Azure SONiC VM image has to be started with a preconfigured BGP AS number (specified in **config_db.json**); otherwise, it does not start the FRR container. That BGP process is removed during the initial BGP configuration and replaced with the actual BGP AS number specified in the lab topology.
+* _netlab_ configures BGP on SONiC through vtysh, not through **config_db**.
+
+(caveats-sonic-clab)=
+## SONiC Container
+
+The `sonic` device also runs under *containerlab* with the community `docker-sonic-vs` image; see [](build-sonic-container) for how to obtain it and how the two deployments differ.
+
+* Configuration is deployed with **docker exec** commands, not over an SSH session.
+* `docker-sonic-vs` ships `sshd` but does not start it.
+* `srv6` is control-plane and kernel-plane only: the locator and End/End.X SIDs are advertised in the IS-IS LSDB and installed as kernel `seg6local` routes, but the end-to-end SRv6 datapath does not resolve -- the same open item as FRR/IS-IS SRv6 on other platforms.
 
 (caveats-vyos)=
 ## VyOS

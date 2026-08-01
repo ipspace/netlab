@@ -47,7 +47,7 @@
 | Nokia SR OS [❗](caveats-sros)    | sros    | best effort[^SROSBE]   |
 | Nokia SR-SIM [❗](caveats-srsim)  | srsim   | full          |
 | OpenBSD [❗](caveats-openbsd)     | openbsd | best effort   |
-| Sonic [❗](caveats-sonic)         | sonic   | minimal       |
+| SONiC [❗](caveats-sonic-vm) | sonic   | minimal       |
 | VyOS 1.4 [❗](caveats-vyos)       | vyos    | full          |
 
 [^SROSBE]: With the launch of the Nokia SR SIM, we stopped running integration tests for the SR-OS VM, assuming the behavior of the two products would be nearly identical.
@@ -144,7 +144,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Nokia SR OS         |  ❌  |  ✅  |
 | Nokia SR-SIM        |  ❌  |  ✅  |
 | OpenBSD             |  [✅](build-openbsd)  |  [✅](clab-vrnetlab)  |
-| Sonic               |  [✅](build-sonic)  |  ❌  |
+| SONiC               | [✅](build-sonic-box) | [✅](build-sonic-container) |
 | VyOS                |  ✅  |  ✅[❗](caveats-vyos)  |
 
 **Note:**
@@ -211,6 +211,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Nokia SR OS[^SROS]    | ✅ | ✅ |
 | OpenBSD               | ✅ | ❌  |
 | Sonic                 | ✅ | ✅ |
+| Sonic (containerlab)  | ✅ | ✅ |
 | VyOS                  | ✅ | ✅ |
 
 **Note:** *netlab* can deploy daemon configurations, but cannot collect them. Use the **netlab initial -o** command to create daemon configuration files in a custom directory.
@@ -236,6 +237,7 @@ _netlab_ uses Ansible playbooks and device-specific task lists to deploy device 
 | Junos cRPD | clab | **bash** scripts[^cRBS] |
 | KinD   | clab     | **bash** scripts copied into and executed in containers |
 | linux  | clab     | host- or container-side **bash** scripts[^LBS] |
+| Sonic (containerlab) | clab | **bash** or **vtysh** scripts[^FRRBV] over **docker exec** |
 
 [^FRRBV]: Configurations starting with a *shebang* are assumed to be Linux scripts; all other configurations are assumed to be **vtysh** scripts and get a `#!/usr/bin/vtysh -f` shebang prepended to them.
 
@@ -297,6 +299,7 @@ The following system-wide features are configured on supported network operating
 | Nokia SR OS[^SROS]       | ✅  | ✅  | ✅  | ✅  | ✅  |
 | OpenBSD                  | ✅  | ✅  |  ❌  | ✅  | ✅  |
 | Sonic                    | ✅  | ✅  |  ❌  | ✅  | ✅  |
+| Sonic (containerlab)     | ✅  | ✅  |  ❌  | ✅  | ✅  |
 | VyOS                     | ✅  | ✅  | ✅  | ✅  | ✅  |
 
 [^HIF]: Some Linux-based devices can also use interface names in host names. See [/etc/hosts file on Linux](linux-hosts) for more details.
@@ -328,6 +331,7 @@ The following interface parameters are configured on supported network operating
 | Nokia SR OS[^SROS]    | ✅  |  ❌  | ✅  | ✅  |
 | OpenBSD               | ✅  |  ❌  | ✅  |  ❌  |
 | Sonic                 | ✅  | ✅  | ✅  | ✅  |
+| Sonic (containerlab)  | ✅  | ✅  | ✅  | ✅  |
 | VyOS                  | ✅  |  ❌  | ✅  | ✅  |
 
 (platform-initial-addresses)=
@@ -358,6 +362,7 @@ The following interface addresses are supported on various platforms; most daemo
 | Nokia SR OS[^SROS]    | ✅  | ✅  | ✅  |  ❌  |
 | OpenBSD               | ✅  | ✅  |  ❌  |  ❌  |
 | Sonic                 | ✅  | ✅  | ✅  |  ❌  |
+| Sonic (containerlab)  | ✅  | ✅  | ✅  |  ❌  |
 | VyOS                  | ✅  | ✅  | ✅  |  ❌  |
 
 ```{tip}
@@ -404,6 +409,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Nokia SR OS[^SROS]    | ✅   |  ✅   |   ❌  | ✅  | ✅  |
 | OpenBSD               | ✅   |   ❌   |   ❌  | ✅   | ✅   |
 | Sonic                 |  ❌   |   ❌   |   ❌  | ✅  |   ❌  |
+| Sonic (containerlab)  | ✅   |  ✅   |   ❌  | ✅  |  ✅  |
 | VyOS                  | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
 
 These devices support additional control-plane protocols or BGP address families:
@@ -431,6 +437,7 @@ These devices support additional control-plane protocols or BGP address families
 | Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  |  ❌  |
 | Nokia SR Linux        | ✅  | ✅  | ✅  | ✅  |
 | Nokia SR OS[^SROS]    | ✅  | ✅  | ✅  | ✅  |
+| Sonic (containerlab)  | ✅  | ✅  | ✅  | ✅  |
 | VyOS                  | ✅  | ✅  | ✅  |  ❌  |
 
 **Notes:**
@@ -450,6 +457,7 @@ The layer-2 control plane [configuration modules](module-reference.md) are suppo
 | dnsmasq                   | ❌  | ✅ |
 | FRR                       | ✅ | ✅ |
 | Linux                     | ❌  | ✅ |
+| Sonic (containerlab)      | ❌  | ✅ |
 
 (platform-dataplane-support)=
 The data plane [configuration modules](module-reference.md) are supported on these devices[^NSM]:
@@ -482,6 +490,7 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | Nokia SR Linux        | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
 | Nokia SR OS[^SROS]    | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | OpenBSD               | ✅ | ❌ | ✅ | ❌  | ❌ |
+| Sonic (containerlab)  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅[❗](caveats-sonic-clab) |
 | VyOS                  | ✅ | ✅ | ✅ | ✅ |  ❌ |  ❌ |
 
 (platform-services-support)=
@@ -525,6 +534,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Nokia SR OS[^SROS]    | ✅ | ✅ | ❌ | ✅ | ✅ |
 | OpenBSD               | ✅ | ❌ | ❌ | ✅ | ❌ |
 | Sonic                 |  ❌ | ❌ | ❌ | ✅ | ❌ |
+| Sonic (containerlab)  | ✅ | ✅ | ❌ | ✅ | ✅ |
 | VyOS                  | ✅ | ✅ | ❌ | ✅ | ❌ |
 
 (platform-unknown)=

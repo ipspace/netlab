@@ -1,15 +1,80 @@
 ---
-description: Sonic VM
+# SONiC. The device runs FRR for its whole control plane, so it inherits the FRR device
+# (parent: frr) and then turns OFF what SONiC cannot do -- rather than re-enumerating the
+# FRR feature set, which is how the two drifted apart in the first place.
+#
+# Two deployments share this device:
+#  * libvirt -- the SONiC VM (support level: minimal, largely untested)
+#  * clab    -- docker-sonic-vs, a monolithic container (vtysh runs directly, no 'docker exec bgp')
+# Everything specific to the container lives in the clab: block below, and the templates the
+# container needs of its own are named <module>/sonic-clab.j2 (netlab looks up
+# "<module>/<device>-<provider>.j2" before "<module>/<device>.j2", see defaults/paths.yml).
+parent: frr
+description: SONiC
 support:
   level: minimal
 interface_name: Ethernet{ifindex * 4}
 ifindex_offset: 0
 mgmt_if: eth0
 loopback_interface_name: Loopback{ifindex}
+lag_interface_name: "PortChannel{lag.ifindex}"
+tunnel_interface_name: tun{ifindex}
 group_vars:
-  ansible_network_os: frr
   ansible_python_interpreter: auto_silent
   netlab_device_type: sonic
+#
+# Turned OFF for every SONiC deployment (see support.caveats for the evidence).
+#
+features:
+  stp: false                  # config-plane only, no stpd daemon -- no port blocking to verify
+  services: false             # no DNS client
+  tunnel: false               # no tunnels
+  sr: false                   # no segment routing
+  mpls: false                 # no MPLS data plane
+  vrf: false                  # should be configured with SONiC commands (if available)
+  ripv2: false                # no RIPv2 support
+  srv6: false                 # no SRv6 data plane
+
+  bgp:
+    # RFC 9234 BGP roles. Inherited from FRR and NOT verified here: bgp.policy/70-bgp-roles gets
+    # 19 of its 22 checks, and the three that fail are all "The prefix ... should not be in the
+    # BGP table" -- i.e. the role-based leak prevention that is the entire point of the feature
+    # is not being enforced. The sessions come up and the roles are configured; the filtering
+    # they are supposed to drive does not happen. Disabled pending verification rather than
+    # claimed on the strength of the checks that do pass.
+    role: false
+    vrf_local_as: false       # Feature not supported by the old FRR release used in SONiC
+    password: false
+    timers: false
+
+  initial:
+    # FRR declares roles [ host, router, bridge ]. Neither extra role works here:
+    # initial/06-bridge fails to deploy at all (one failed task, node never configured), and
+    # initial/05-host reaches 3 of 5 checks then fails the IPv6 ping and the RA default-route
+    # check. Only the router role is claimed.
+    roles: [ router ]
+    ra: false                 # Missing RA features in the old FRR release used in SONiC
+    reload: false
+  gateway:
+    # FRR declares anycast; SONiC does not deliver it. gateway/01-anycast reaches 10 of 11 checks
+    # and then fails ping_dup -- duplicate packets, i.e. both gateways answering, which is the
+    # failure anycast exists to avoid. lag/11-mlag-anycast fails earlier still ("X1 cannot
+    # establish a LAG with both switches in MLAG pair"), the documented no-mclagd limitation.
+    protocol: [ vrrp ]
+  dhcp: false                 # docker-sonic-vs ships no dhcrelay/dhcp6relay binary
+  routing:
+    policy:
+      match:
+        nexthop: false        # never exercised on this platform -> not claimed
+      set:
+        community:
+          extended: false     # never exercised on this platform -> not claimed
+  # Built with config_db/redis-cli sequences that only the container has been tested with;
+  # re-enabled under clab: below.
+  vlan: false
+  lag: false
+  vxlan: false
+  evpn: false
 libvirt:
   image: netlab/sonic
   mtu: 1500
@@ -19,27 +84,83 @@ libvirt:
     ansible_user: admin
     ansible_ssh_pass: YourPaSsWoRd
     netlab_show_command: [ sudo, vtysh, -c, 'show $@' ]
+clab:
+  # The generic templates/provider/clab/clab.j2 renders every clab.<key> below through its
+  # key-value passthrough loop, so this device needs no provider template of its own.
+  image: docker-sonic-vs:latest
+  mtu: 1500
+  node:
+    kind: sonic-vs
+    # Do NOT inherit FRR's bind-mounted /etc/frr/daemons and /etc/hosts config templates:
+    # docker-sonic-vs ships its own daemons file (initial/sonic-clab.j2 enables the daemons the
+    # configured modules need, in place) and mounting FRR's over it would undo that.
+    config_templates:
+  # SONiC runs FRR, so reuse FRR's kernel-module handling: an 'mpls'/'sr' lab auto-loads
+  # mpls_router + mpls_iptunnel, 'vxlan' loads the vxlan modules, 'vrf' the vrf module.
+  kmods:
+    initial: [ 'vrf?' ]
+  group_vars:
+    ansible_connection: docker
+    ansible_user: root
+    ansible_ssh_pass: YourPaSsWoRd        # bootstrapped 'admin' login, interactive use only
+    netlab_ready: [ ansible ]             # skip the SSH readiness wait (sshd isn't up yet)
+    netlab_show_command: [ vtysh, -c, 'show $@' ]
+    # Inherit FRR's deployment mechanism -- netlab's native "sh" config mode
+    # (netlab_config_mode / netlab_default_shebang come from frr.yml). Each rendered snippet
+    # is bind-mounted into the container as /etc/config/NN-<module>.sh and run with
+    # "docker exec", so the shebang picks the interpreter: the SONiC-specific templates open
+    # with '#!/bin/bash' and drive SONiC's 'config' CLI, and everything inherited from FRR
+    # gets FRR's '#!/usr/bin/vtysh -f' default and goes to vtysh. No Ansible in the
+    # deployment path -- the failures are also far easier to read this way.
+    #
+    # This only works because initial/sonic-clab.j2 waits for config_db: 'config hostname' is
+    # retried until redis answers. Without that gate the script ran before the container had
+    # finished booting and died with
+    # "RuntimeError: Unable to connect to redis - Connection refused", which is what made the
+    # Ansible deploy task look necessary.
+    netlab_mgmt_vrf: False                # FRR sets it; SONiC has no management VRF
+    # docker-sonic-vs ships most FRR daemons disabled in /etc/frr/daemons; initial/sonic-clab.j2
+    # enables the ones the configured modules need. watchfrr, zebra and staticd are always
+    # started by FRR itself and are deliberately absent from this map.
+    netlab_frr_daemons:
+      bgp: [ bgpd ]
+      ospf: [ ospfd, ospf6d ]
+      isis: [ isisd ]
+      bfd: [ bfdd ]
+      ripv2: [ ripd ]
+      vrf: [ bgpd ]
+      gateway: [ vrrpd ]
+      mpls: [ ldpd ]
+  #
+  # Verified on docker-sonic-vs and therefore re-enabled for the container only.
+  #
+  features:
+    vlan: False
+#      model: l3-switch
+#      svi_interface_name: "Vlan{vlan}"
+#      subif_name: "{ifname}.{subif_index}"
+#      native_routed: true
+    lag: False
+#      passive: true
+      # MLAG does not work: docker-sonic-vs has no mclagd, so the pair never forms
+      # (lag/10-mlag: "X1 cannot establish a LAG with both switches in MLAG pair", then the
+      # datapath is lost). Declared False rather than described in the caveats -- a feature that
+      # does not work belongs turned off. Note this does not on its own make netlab refuse an
+      # MLAG topology: netsim/modules/lag.py gates the peer-link machinery on
+      # "lag.mlag OR evpn.multihoming.lag", and evpn.multihoming.lag is still declared below.
+#      mlag: False
+    vxlan: false                # Use SONiC commands to configure it
+    evpn:
+      transport: [ vxlan, mpls ]
+      irb: true
+      multihoming:
+        lag: true
+    initial:
+      collect: true             # ansible_connection: docker unblocks this (no sshd needed)
+    # Repeated from the global features above: FRR declares clab.features.services as a dict,
+    # and the provider block wins over the global value, so 'services: false' has to be
+    # restated here to survive the merge.
+    services: false             # no DNS client
 external:
   image: none
-features:
-  initial:
-    ipv4:
-      unnumbered: true
-    ipv6:
-      lla: true
-    reload: false
-    collect: true
-  bgp:
-    activate_af: true
-    advertise: true
-    ipv6_lla: true
-    local_as: true
-    local_as_ibgp: true
-    vrf_local_as: true
-    community:
-      standard: [ standard, large ]
-      large: [ large ]
-      extended: [ extended ]
-      2octet: [ standard ]
-
 graphite.icon: router

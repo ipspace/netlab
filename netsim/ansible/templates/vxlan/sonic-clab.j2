@@ -1,0 +1,96 @@
+#!/bin/bash
+{# REUSE NOTE (review: "reuse FRR scripting where possible"). This one CAN be delegated and should
+   be: vxlan/frr.j2 exposes create_vxlan_interface(vni, br_name, vrf, mtu), which builds exactly the
+   per-VNI bridge + kernel vxlan netdev this template builds by hand. Left as-is only because
+   switching to the macro changes the rendered dataplane and needs the EVPN-VXLAN datapath
+   re-verified on two VS nodes (VNI up, remote VTEP learned, host-to-host ping across the tunnel) --
+   a measured change, not a documentation one. Next step for this file. #}
+# SONiC EVPN-VXLAN L2VNI — FRR/kernel data-plane.
+#
+# docker-sonic-vs's orchagent/vxlanmgrd do NOT program the VXLAN dataplane (same class
+# of gap as routed-port IPs and VLAN members), so the config_db VXLAN_TUNNEL model gives
+# no datapath on the VS. Instead we build the L2VNI exactly the way FRR/Cumulus does on
+# plain Linux — a traditional per-VNI bridge holding the access port(s) + a kernel vxlan
+# netdev — and let FRR zebra drive EVPN off that kernel state (advertise-all-vni). This
+# is the same path proven live between two VS nodes (VNI up, remote VTEP learned, iBGP
+# l2vpn evpn Established, host-to-host ping across the tunnel).
+#
+# config_db is intentionally bypassed for VNI-backed VLANs: initial/sonic-clab.j2 skips
+# `config vlan add` for them and vlan/sonic-clab.j2 skips their member-add, so nothing competes
+# for the access ports here.
+#
+# EVPN symmetric-IRB: an `irb` VNI-backed vlan with a `vrf` gets its L2VNI
+# bridge NAMED "Vlan<id>" (capital, matching svi_interface_name) instead of the plain
+# bridge-mode "vlan<id>" -- vlan/sonic-clab.j2 pre-creates that exact netdev (empty) BEFORE
+# vrf deploys, so vrf's generic frr.data-plane.j2 (`ip link set Vlan<id> master <vrf>`,
+# matched by ifname against netlab's own SVI interface record) can enslave it; this
+# template (running AFTER vrf, vxlan.config_after includes vrf) then attaches the vxlan
+# device and addresses the bridge itself as the IRB gateway -- same "bridge IS the SVI"
+# pattern plain Linux/Cumulus symmetric-IRB uses. The L3VNI (VRF transit VNI) is a
+# separate vxlan netdev enslaved DIRECTLY into the vrf device (no bridge -- pure L3
+# transit, no learning/flooding needed); zebra's advertise-all-vni auto-binds it to the
+# vrf from that kernel state, same as the L2VNI auto-discovery.
+set -e
+set -x
+{% set _mtu = mtu|default(1500) %}
+{% if vxlan.vlans is defined %}
+{%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
+{%     set vlan = vlans[vname] %}
+{%     set irb = vlan.mode|default('') == 'irb' and vlan.vrf is defined %}
+{%     set br = ("Vlan" if irb else "vlan") + vlan.id|string %}
+# --- L2VNI {{ vlan.vni }} (VLAN {{ vname }}, bridge {{ br }}{{ ", IRB vrf " + vlan.vrf if irb else "" }}) ---
+if [ ! -e /sys/devices/virtual/net/{{ br }} ]; then
+  ip link add {{ br }} type bridge
+fi
+ip link set {{ br }} type bridge stp_state 0
+ip link set up dev {{ br }}
+if ! ip link show vxlan{{ vlan.vni }} >/dev/null 2>&1; then
+  ip link add vxlan{{ vlan.vni }} type vxlan id {{ vlan.vni }} dstport 4789 local {{ vxlan.vtep }} nolearning
+fi
+ip link set dev vxlan{{ vlan.vni }} master {{ br }}
+bridge link set dev vxlan{{ vlan.vni }} learning off
+ip link set mtu {{ vlan.mtu|default(_mtu) }} addrgenmode none dev vxlan{{ vlan.vni }}
+ip link set up dev vxlan{{ vlan.vni }}
+{%     for l in interfaces if l.vlan.access_id|default(0) == vlan.id %}
+# access port {{ l.ifname }} -> bridge {{ br }} (L2, no IP)
+ip addr flush dev {{ l.ifname }} 2>/dev/null || true
+ip link set dev {{ l.ifname }} master {{ br }}
+ip link set up dev {{ l.ifname }}
+{%     endfor %}
+{%     if irb %}
+{%       for i in interfaces if i.type|default('') == 'svi' and i.vlan.name|default('') == vname %}
+# IRB gateway: address the bridge itself (it IS the SVI) then enslave into vrf {{ vlan.vrf }}
+if ! ip addr show {{ br }} | grep -q " {{ i.ipv4 }} "; then
+  ip addr add {{ i.ipv4 }} dev {{ br }}
+fi
+ip link set {{ br }} master {{ vlan.vrf }}
+{%       endfor %}
+{%     endif %}
+{%   endfor %}
+{% endif %}
+{% for vrf_name in vxlan.l3vnis|default([]) %}
+{%   set l3vni = vrfs[vrf_name].evpn.transit_vni %}
+{%   set l3br = "l3vni" + l3vni|string %}
+# --- L3VNI {{ l3vni }} (VRF {{ vrf_name }} transit) -- vxlan10099 enslaved into a
+# dedicated bridge, and the BRIDGE ITSELF (no address, no vlan sub-interface -- unlike
+# the earlier broken attempt) enslaved into the vrf. Same two-level "bridge is the
+# vrf-facing device" shape that already works for the L2VNI IRB SVI (see above), just
+# unaddressed since an L3VNI has no gateway IP of its own -- this gives zebra a real
+# bridge-level "System MAC" for Router MAC derivation instead of raw vxlan-device
+# enslavement, which left the L3VNI State: Down (proven live, not assumed -- see the
+# vxlan.j2 git history for the two rejected attempts before this one).
+if [ ! -e /sys/devices/virtual/net/{{ l3br }} ]; then
+  ip link add {{ l3br }} type bridge
+fi
+ip link set {{ l3br }} type bridge stp_state 0
+ip link set up dev {{ l3br }}
+if ! ip link show vxlan{{ l3vni }} >/dev/null 2>&1; then
+  ip link add vxlan{{ l3vni }} type vxlan id {{ l3vni }} dstport 4789 local {{ vxlan.vtep }} nolearning
+fi
+ip link set dev vxlan{{ l3vni }} master {{ l3br }}
+bridge link set dev vxlan{{ l3vni }} learning off
+ip link set mtu {{ _mtu }} addrgenmode none dev vxlan{{ l3vni }}
+ip link set up dev vxlan{{ l3vni }}
+ip link set {{ l3br }} master {{ vrf_name }}
+{% endfor %}
+exit 0

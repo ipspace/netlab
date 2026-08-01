@@ -1,0 +1,33 @@
+#!/bin/bash
+# SONiC lag module: PortChannel members via the config CLI (teammgrd programs the kernel bond +
+# LACP via teamd, unlike vlanmgrd). The PortChannel itself is created in initial
+# (create-before-address ordering).
+set -e
+set -x
+{% for intf in netlab_interfaces if intf.type == 'lag' %}
+{% for ch in netlab_interfaces if ch.lag._parentindex|default(None) == intf.lag.ifindex %}
+if teamdctl {{ intf.ifname }} state 2>/dev/null | grep -q "{{ ch.ifname }}"; then
+  echo {{ ch.ifname }} already a member
+else
+  # member MTU must equal the PortChannel MTU or member-add refuses
+  PCMTU=$(cat /sys/class/net/{{ intf.ifname }}/mtu)
+  config interface mtu {{ ch.ifname }} "$PCMTU" || true
+  config portchannel member add {{ intf.ifname }} {{ ch.ifname }}
+fi
+{% endfor %}
+{% endfor %}
+#
+# Defensive sync: teammgrd programs the kernel bond + LACP reliably (unlike vlanmgrd), but
+# mirror any PORTCHANNEL_MEMBER row the config CLI loop above didn't manage to enslave.
+# Idempotent (already-enslaved ports fail the add silently); port must be link-down to join.
+#
+redis-cli --raw -n 4 keys "PORTCHANNEL_MEMBER|*" 2>/dev/null | while IFS= read -r k; do
+  pc=$(echo "$k" | cut -d'|' -f2); port=$(echo "$k" | cut -d'|' -f3)
+  [ -n "$port" ] || continue
+  if ! teamdctl "$pc" state 2>/dev/null | grep -q "^  $port"; then
+    ip link set "$port" down 2>/dev/null || true
+    teamdctl "$pc" port add "$port" 2>/dev/null || true
+    ip link set "$port" up 2>/dev/null || true
+  fi
+done
+exit 0
