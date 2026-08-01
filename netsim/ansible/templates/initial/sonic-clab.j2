@@ -1,0 +1,207 @@
+{% from '_extra_initial.j2' import extra_module_initial with context %}
+#!/bin/bash
+#
+# SONiC (containerlab, docker-sonic-vs) initial configuration.
+#
+# Adapted from the package 'sonic' (libvirt) device's initial/sonic.j2, with changes forced
+# by docker-sonic-vs's monolithic architecture (see sonic.yml for why):
+#  * vtysh runs directly in this container -- no 'docker exec bgp' indirection.
+#  * most FRR daemons ship disabled (=no in /etc/frr/daemons) and must be enabled here.
+#  * config_db VLANs (`Vlan<id>`) and PortChannels (`PortChannel<N>`) must be created BEFORE any
+#    SVI/aggregate is addressed. Those live in the vlan/lag module-init hooks
+#    (vlan|lag/sonic.initial.j2), pulled in below via extra_module_initial() at exactly this
+#    ordering point -- the same mechanism VyOS uses for its VLAN bridge setup.
+# This script is deployed with netlab's native "sh" config mode (inherited from the FRR parent
+# device): netlab bind-mounts it into the container as /etc/config/01-initial.sh and runs it with
+# 'docker exec', so it already executes *inside* the node container. No Ansible in the deployment
+# path. The 'config hostname' retry below is what makes that safe -- it blocks until config_db
+# answers, instead of assuming the container has finished booting.
+#
+# CONNECTION MODEL: what still goes through Ansible -- configuration collection, validation, and
+# the 'netlab config' custom-template reload -- stays on ansible_connection: docker, not
+# network_cli. network_cli was evaluated and is not usable here: it requires a cliconf plugin, and
+# the only SONiC cliconf shipped by Ansible (dellemc.enterprise_sonic) targets Dell's licensed
+# "Management Framework" CLI (sonic-cli/klish) on Dell PowerSwitch hardware -- docker-sonic-vs
+# has no such binary (verified: /etc/passwd has no admin user, no sonic-cli/klish anywhere in
+# the image; the only shell is bash, and 'config'/'show'/'vtysh' are plain CLI utilities, not a
+# paging network CLI a cliconf plugin can drive). This matches the rest of netlab: even the
+# in-tree 'frr' clab device and the libvirt 'sonic' device (which HAS a full sshd) push FRR
+# config as raw text over a generic command/shell task, never network_cli.
+#
+# We DO bootstrap sshd + an 'admin' user below (docker-sonic-vs ships /usr/sbin/sshd and host
+# keys, just never starts them, and has no login user) purely for operator SSH access parity
+# with the parent 'sonic' device (interactive login, 'netlab connect', ad-hoc troubleshooting) --
+# it is not part of the config-deployment path.
+set -e
+set -x
+{% include 'linux/bash_profile.j2' +%}
+{% include 'linux/hosts.j2' +%}
+#
+# Try to set hostname through Redis, wait for up to 30 seconds to succeed
+#
+timeout 30 bash -c '
+  while ! config hostname {{ inventory_hostname.replace("_","-") }}; do
+    echo "Waiting for redis to start"
+    sleep 1
+  done
+'
+#
+# Enable sshd + an 'admin' user (idempotent) -- interactive access only, see note above.
+#
+id admin >/dev/null 2>&1 || useradd -m -s /bin/bash -G sudo admin
+echo 'admin:{{ ansible_ssh_pass | default("YourPaSsWoRd") }}' | chpasswd
+if which sudo; then
+  echo 'admin ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/admin
+fi
+mkdir -p /run/sshd
+pgrep -x sshd >/dev/null || /usr/sbin/sshd
+#
+# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+#
+{% for l in interfaces if l.type in ['lan','p2p','stub'] %}
+{%   if l.ipv6 is not defined and l.vlan.access_id is not defined and l.vlan.trunk_id is not defined and l.lag._parentindex is not defined %}
+{#     skip L2 switchports -- access, trunk, and LAG member ports: once a port is a
+       VLAN/PortChannel member the command errors out ("Cannot configure the IPv6 link
+       local mode!"), breaking re-deploys #}
+config interface ipv6 disable use-link-local-only {{ l.ifname }}
+{%   endif %}
+{% endfor %}
+# Create config_db PortChannels (lag) and VLANs (vlan) before any aggregate/SVI is addressed
+# below. These live in the per-module init hooks lag/vlan sonic.initial.j2 and are pulled
+# in here, at the correct ordering point, by netlab's extra_module_initial() macro.
+#
+{{ extra_module_initial(['lag','vlan']) }}
+#
+# Configure interfaces
+#
+{% for l in netlab_interfaces %}
+{%   if l.type in ['loopback'] %}
+if ip link|grep {{ l.ifname }}; then
+  echo {{ l.ifname }} already exists
+else
+  config loopback add {{ l.ifname }}
+fi
+{%   endif %}
+{#   Tunnel interfaces (tunnel.gre plugin) don't exist as a kernel netdev yet -- the plugin's
+     own template creates and addresses them directly, and the `config` CLI only accepts
+     Ethernet/PortChannel/Vlan/Loopback names anyway. A VNI-backed SVI (EVPN symmetric-IRB) is
+     the same story: its config_db `Vlan<id>` is intentionally never created above, and
+     vlan/vxlan sonic-clab.j2 build/address the real bridge netdev later (vxlan runs after vrf,
+     which runs after initial) -- addressing it here would hit "Vlan<id> does not exist". #}
+{%   set _vni_svi = l.type == 'svi' and l.vlan.name|default('') in vlans and vlans[l.vlan.name].vni is defined %}
+{%   if l.ipv4 is defined and (l.ipv4 is string or l._parent_ipv4 is defined) and l.type != 'tunnel' and not _vni_svi %}
+{%     set addr = l.ipv4 if l.ipv4 is string else l._parent_ipv4 %}
+if show ip interface|grep {{ l.ifname }}|grep {{ addr }}; then
+  echo {{ addr }} already configured on {{ l.ifname }}
+else
+  config interface ip add {{ l.ifname }} {{ addr }}
+fi
+{%   endif %}
+{%   if l.ipv6 is defined %}
+{%     if not (l.virtual_interface|default(False)) %}
+config interface ipv6 enable use-link-local-only {{ l.ifname }}
+{%     endif %}
+{%     if l.ipv6 is string and l.ipv6|ansible.utils.ipv6 %}
+if show ipv6 interface|grep {{ l.ifname }}|grep {{ l.ipv6 }}; then
+  echo {{ l.ipv6 }} already configured on {{ l.ifname }}
+else
+  config interface ip add {{ l.ifname }} {{ l.ipv6 }}
+fi
+{%     endif %}
+{%   endif %}
+{#   Set the MTU on the kernel netdev, not through "config interface mtu": on the interfaces
+     containerlab injects for netlab links that command writes CONFIG_DB and never reaches the
+     netdev, exactly like the routed-port IPs below -- measured, the interface stayed at 9500
+     while CONFIG_DB claimed otherwise. The value is netlab MTU with no adjustment:
+     docker-sonic-vs programs it literally (1548 in -> 1548 on the netdev), so the +48 this
+     used to add left every interface 48 bytes above its peers and stalled OSPF in ExStart. #}
+{#   L2 switchports (LAG members and VLAN access/trunk ports) reject a direct MTU set once
+     they are members ("'interface_name' is in portchannel!" / "is in vlan"); the
+     PortChannel/port MTU propagates, so skip them #}
+{%   if l.mtu is defined and l.mtu >= 1500 and not (l.virtual_interface|default(False)) and l.lag._parentindex is not defined and l.vlan.access_id is not defined and l.vlan.trunk_id is not defined %}
+ip link set {{ l.ifname }} mtu {{ l.mtu }}
+{%   endif %}
+!
+{% endfor %}
+#
+# docker-sonic-vs's intfmgrd/orchagent do not program routed-port IPs from CONFIG_DB onto the
+# kernel netdev (loopbacks work; routed ports do not), so BGP/OSPF over links can't come up
+# without this. Bring the data ports admin-up and mirror the CONFIG_DB INTERFACE IPs onto the
+# kernel netdev. Idempotent.
+#
+for p in $(redis-cli -n 4 keys "PORT|Ethernet*" 2>/dev/null | sed 's/PORT|//'); do
+  config interface startup "$p" >/dev/null 2>&1 || true
+done
+redis-cli -n 4 keys "INTERFACE|Ethernet*|*" 2>/dev/null | while IFS= read -r k; do
+  ifc=$(echo "$k" | cut -d'|' -f2); addr=$(echo "$k" | cut -d'|' -f3)
+  [ -n "$addr" ] && ip addr add "$addr" dev "$ifc" 2>/dev/null || true
+done
+#
+# Enable the FRR daemons needed by the configured modules (docker-sonic-vs ships most of them
+# disabled) and restart FRR once, only if something actually changed.
+#
+{% set daemons_needed = [] %}
+{% for m in module|default([]) if netlab_frr_daemons[m] is defined %}
+{%   for frr_d in netlab_frr_daemons[m] %}
+{%     if daemons_needed.append(frr_d) %}{% endif %}
+{%   endfor %}
+{% endfor %}
+{% if daemons_needed %}
+if grep -qE '^({{ daemons_needed|unique|join('|') }})=no' /etc/frr/daemons; then
+{% for frr_d in daemons_needed|unique %}
+  sed -i 's/^{{ frr_d }}=no/{{ frr_d }}=yes/' /etc/frr/daemons
+{% endfor %}
+fi
+{% endif %}
+supervisorctl restart frr >/dev/null 2>&1 || service frr restart >/dev/null 2>&1 || true
+sleep 2
+#
+# And now let's configure the interfaces
+#
+{# REUSE NOTE (review: "reuse FRR scripting where possible"). The vtysh block below duplicates what
+   initial/frr.j2 renders for the same interfaces. It is not delegated because initial/frr.j2 is
+   itself a complete bash script -- shebang, set -e, bond creation, per-interface sysctls -- with
+   the vtysh configuration inline rather than in a macro, and much of that setup conflicts with the
+   config_db path this device uses. Delegating would mean factoring the vtysh portion of
+   initial/frr.j2 into a macro, i.e. a change to the FRR device, out of scope for this submission
+   and needing FRR re-verification. Worth doing separately. #}
+cat >/tmp/netlab-initial.frr <<CONFIG
+hostname {{ inventory_hostname }}
+!
+{% if 'ipv6' in af %}
+ipv6 forwarding
+{% endif %}
+!
+{% for l in netlab_interfaces %}
+interface {{ l.ifname }}
+ no shutdown
+{%   if l.name is defined %}
+ description {{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}
+{%   elif l.type|default("") == "stub" %}
+ description Stub interface
+{%   endif %}
+{#   Every other interface type is addressed by the config_db bash loop above (config CLI);
+     tunnel interfaces are excluded from that loop (the config CLI only accepts
+     Ethernet/PortChannel/Vlan/Loopback names) but DO exist as real kernel netdevs by now
+     (extra/tunnel/gre/frr.j2 already ran `ip tunnel add`, with no addressing of its own --
+     that's netlab's shared tunnel.gre plugin template, same as the vanilla frr device, which
+     also relies on this vtysh 'ip address' step). Address them here instead. #}
+{%   if l.type == 'tunnel' and l.ipv4 is defined and l.ipv4 is string %}
+ ip address {{ l.ipv4 }}
+{%   endif %}
+{%   if l.type != 'loopback' and 'ipv6' in l %}
+ ipv6 nd ra-interval 5
+ no ipv6 nd suppress-ra
+{%   endif %}
+{%   if l.type == 'tunnel' and l.ipv6 is defined and l.ipv6 is string and l.ipv6|ansible.utils.ipv6 %}
+ ipv6 address {{ l.ipv6 }}
+{%   endif %}
+{%   if l.bandwidth is defined %}
+ bandwidth {{ l.bandwidth  }}
+{%   endif %}
+!
+{% endfor %}
+do write
+CONFIG
+vtysh -f /tmp/netlab-initial.frr
+exit 0

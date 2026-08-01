@@ -75,7 +75,11 @@ You might want to copy the error messages generated during the test before
 proceeding. The cleanup process will start once you press RETURN.
 ==============================================================================
 ''')
-  input('Press RETURN to continue -> ')
+  try:
+    input('Press RETURN to continue -> ')
+  except KeyboardInterrupt:
+    print()
+    log.fatal('Aborted by user, the test directory was not cleaned up','test')
   log.section_header('Executing','netlab down --cleanup --force','bright_cyan')
   external_commands.run_command('netlab down --cleanup --force')
 

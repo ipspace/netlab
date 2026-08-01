@@ -1,0 +1,54 @@
+{% macro r_acl_addr(a, af) -%}
+{%- if a.any is defined and a.any %} any
+{%- elif a.host is defined and a.host %} host {{ (a.ipv4 if af == 'ipv4' else a.ipv6) | ipaddr('address') }}
+{%- elif af == 'ipv4' and a.ipv4 is defined %} {{ a.ipv4 | ipaddr('network') }} {{ a.ipv4 | ipaddr('hostmask') }}
+{%- elif af == 'ipv6' and a.ipv6 is defined %} {{ a.ipv6 }}
+{%- endif -%}
+{% endmacro %}
+
+{% macro r_acl_port(p) -%}
+{%- if p.port_range is defined %} range {{ p.port_range.min }} {{ p.port_range.max }}
+{%- elif p.port is defined %} {{ p.port_op | default('eq') }} {{ p.port }}
+{%- endif -%}
+{% endmacro %}
+
+{% if routing.acl is defined %}
+{%  for acl_af, acl_data in routing._acl.items() %}
+{%    for name, acl_list in acl_data.items() %}
+{%      set cmd = "ipv6" if acl_af == "ipv6" else "ip" %}
+{%      set seqcmd = "sequence " if acl_af == "ipv6" else "" %}
+{%      set ext = " extended" if acl_af == "ipv4" else "" %}
+{{cmd}} access-list{{ext}} {{name}}_{{ acl_af }}
+{%      for e in acl_list %}
+{%        set est = " established" if e.established is defined else "" %}
+{%        set log = " log" if e.log is defined else "" %}
+{%        set seq = "" if netlab_device_type in ['ios','iosvl2'] and acl.af == "ipv4" else e.sequence %}
+{%        if e.description is defined %}
+  {{seqcmd}}{{seq}} remark {{e.description}}
+{%        else %}
+{%          set est = " established" if e.established is defined else "" %}
+{%          set log = " log" if e.log is defined else "" %}
+  {{seqcmd}}{{e.sequence}} {{ e.action}} {{e.protocol}}{{
+      r_acl_addr(e.src, acl_af) }}{{
+      r_acl_port(e.src) }}{{
+      r_acl_addr(e.dst, acl_af) }}{{
+      r_acl_port(e.dst) }}{{ est }}{{ log }}
+{%        endif %}
+{%      endfor %}
+{%    endfor %}
+{%  endfor %}
+{% endif %}
+!
+{% for intf in interfaces %}
+interface {{ intf.ifname }}
+{%   for direction in ("in", "out") %}
+{%     for af in ("ipv4", "ipv6") %}
+{%       if intf.routing.acl[direction][af] is defined %}
+{%         set acl_name = intf.routing.acl[direction][af] %}
+{%         set cmd = "ip access-group" if af == "ipv4" else "ipv6 traffic-filter" %}
+  {{ cmd }} {{ acl_name }}_{{ af }} {{ direction }}
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+!
+{% endfor %}

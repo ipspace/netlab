@@ -1,0 +1,75 @@
+#!/bin/bash
+#
+# SONiC vlan module — switchport membership via the config CLI (access and trunk).
+# VLANs themselves (config_db `Vlan<id>`) are created by initial/sonic-clab.j2 BEFORE the
+# SVIs get addressed; this template adds port membership, THEN syncs it to the kernel itself
+# (see the sync block below) -- docker-sonic-vs's vlanmgrd races at boot and often never
+# mirrors VLAN_MEMBER rows written during the first deploy (a vlanmgrd restart also WIPES
+# bridge state without replaying CONFIG_DB), so relying on it alone silently leaves the L2
+# datapath down (confirmed live: config_db had the VLAN_MEMBER row, but Ethernet0 had no
+# `master Bridge` and cross-node ping failed). Idempotency for the config_db writes is checked
+# against config_db (VLAN_MEMBER rows); the kernel sync below is separately idempotent.
+set -e
+set -x
+{# access (untagged) members #}
+{% set vni_ids = (vlans|default({})).values()|selectattr('vni','defined')|map(attribute='id')|list %}
+{% for l in interfaces if l.vlan.access_id is defined and l.vlan.access_id not in vni_ids %}
+if [ "$(redis-cli -n 4 exists "VLAN_MEMBER|Vlan{{ l.vlan.access_id }}|{{ l.ifname }}")" = "1" ]; then
+  echo {{ l.ifname }} already a member of Vlan{{ l.vlan.access_id }}
+else
+  config vlan member add -u {{ l.vlan.access_id }} {{ l.ifname }}
+fi
+{% endfor %}
+{# trunk (tagged) members — skip the native id if this port also has an access/native vlan #}
+{% for l in interfaces if l.vlan.trunk_id is defined %}
+{%   for vid in l.vlan.trunk_id if vid != l.vlan.access_id|default(-1) %}
+if [ "$(redis-cli -n 4 exists "VLAN_MEMBER|Vlan{{ vid }}|{{ l.ifname }}")" = "1" ]; then
+  echo {{ l.ifname }} already a tagged member of Vlan{{ vid }}
+else
+  config vlan member add {{ vid }} {{ l.ifname }}
+fi
+{%   endfor %}
+{% endfor %}
+{# EVPN symmetric-IRB pre-create step: vlan module runs BEFORE vrf
+   (vrf.config_after includes vlan), and vrf's generic frr.data-plane.j2 enslaves any
+   `interfaces` entry with `.vrf` set (including our SVI, ifname Vlan<id>) into the vrf
+   device with `set -e` -- if that netdev doesn't exist yet, the enslave command fails
+   and aborts vrf's WHOLE deploy script (including the vrf's FRR/BGP config that
+   follows in the same script). vxlan module runs AFTER vrf (vxlan.config_after
+   includes vrf) and is what actually attaches the vxlan device + addresses this
+   bridge -- so pre-create it here, empty, just so it EXISTS in time. Capital "Vlan"
+   matches svi_interface_name so vrf's enslave-by-ifname logic finds it by name. #}
+{% for vname, v in vlans.items() if v.vni is defined and v.mode|default('') == 'irb' and v.vrf is defined %}
+if [ ! -e /sys/devices/virtual/net/Vlan{{ v.id }} ]; then
+  ip link add Vlan{{ v.id }} type bridge
+fi
+ip link set Vlan{{ v.id }} type bridge stp_state 0
+ip link set up dev Vlan{{ v.id }}
+{% endfor %}
+#
+# Sync CONFIG_DB VLAN/VLAN_MEMBER/VLAN_INTERFACE onto the kernel bridge deterministically --
+# vlanmgrd quirk, see the header comment. Idempotent (all commands are safe to re-run).
+#
+ip link show Bridge >/dev/null 2>&1 || { ip link add Bridge type bridge; ip link set Bridge type bridge vlan_filtering 1; }
+ip link set Bridge up 2>/dev/null || true
+for k in $(redis-cli -n 4 keys "VLAN|Vlan*" 2>/dev/null); do
+  vid=${k#VLAN|Vlan}
+  bridge vlan add vid "$vid" dev Bridge self 2>/dev/null || true
+  ip link show "Vlan$vid" >/dev/null 2>&1 || ip link add link Bridge name "Vlan$vid" type vlan id "$vid"
+  ip link set "Vlan$vid" up 2>/dev/null || true
+done
+redis-cli -n 4 keys "VLAN_MEMBER|*" 2>/dev/null | while IFS= read -r k; do
+  v=$(echo "$k" | cut -d'|' -f2); port=$(echo "$k" | cut -d'|' -f3); vid=${v#Vlan}
+  mode=$(redis-cli -n 4 hget "$k" tagging_mode 2>/dev/null)
+  ip link set "$port" master Bridge 2>/dev/null || true
+  if [ "$mode" = "tagged" ]; then
+    bridge vlan add vid "$vid" dev "$port" 2>/dev/null || true
+  else
+    bridge vlan add vid "$vid" dev "$port" pvid untagged 2>/dev/null || true
+  fi
+done
+redis-cli -n 4 keys "VLAN_INTERFACE|Vlan*|*" 2>/dev/null | while IFS= read -r k; do
+  svi=$(echo "$k" | cut -d'|' -f2); addr=$(echo "$k" | cut -d'|' -f3)
+  [ -n "$addr" ] && ip addr add "$addr" dev "$svi" 2>/dev/null || true
+done
+exit 0

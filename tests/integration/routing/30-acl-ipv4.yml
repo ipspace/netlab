@@ -1,0 +1,122 @@
+---
+message: |
+  The device under test is a simple router with in/out ACLs
+  on the interface facing h1
+
+defaults.sources.extra: [ ../warnings.yml ]
+
+module: [ routing ]
+plugin: [files]
+
+prefix:
+  s_pfx:
+    ipv4: 192.168.0.0/24
+
+addressing:
+  lan_h2:
+    ipv4: 192.168.0.0/16
+    prefix: 24
+    allocation: id_based
+
+routing.acl:
+  h1_filter:
+  - action: permit
+    protocol: icmp
+    src.prefix: any
+    dst.prefix: any
+    description: test ACL
+  - action: permit
+    protocol: tcp
+    src.ipv4: 172.16.0.1
+    dst.ipv4: 192.168.0.2
+    dst.port.eq: 100
+  - action: deny
+    protocol: tcp
+    src.node: h1
+    src.role: probe
+    dst.pool: lan_h2
+    dst.port.in: [ 50, 150 ]
+  - action: permit
+    protocol: tcp
+    src.node: h1
+    src.interface: eth1
+    dst.prefix: s_pfx
+    dst.port.not_in: [ 50, 150 ]
+  h1_est:
+  - protocol: tcp
+    established: true
+    src.prefix: any
+    dst.prefix: any
+    log: true
+  - action: deny
+    protocol: tcp
+  - protocol: ip
+
+groups:
+  hosts:
+    members: [h1, h2]
+    device: linux
+    provider: clab
+
+nodes:
+  h1:
+    config: h1
+  h2:
+    config: h2
+  dut:
+
+links:
+- h1:
+  dut:
+    routing.acl.in.ipv4: h1_filter
+    routing.acl.out.ipv4: h1_est
+  role: probe
+- h2:
+  dut:
+  pool: lan_h2
+
+configlets:
+  h1: |
+    #!/bin/sh
+    nohup nc  -l -k -p 100 >/dev/null 2>&1 &
+  h2: |
+    #!/bin/sh
+    for p in 30 100 150 151 ; do
+        nohup nc -l -k -p $p -e who >/dev/null 2>&1 &
+    done
+
+validate:
+  ping_h2:
+    description: "h1->h2 ICMP echo must succeed."
+    nodes: [ h1 ]
+    plugin: ping('h2')
+  h2_tcp_100:
+    description: "TCP h1-h2:100 must succeed"
+    devices: [ linux ]
+    nodes: [ h1 ]
+    exec: "nc -z -w2 h2 100 && echo OK || echo FAIL"
+    valid: "'OK' in stdout"
+  h2_tcp_150:
+    description: "TCP h1->h2:150 must fail"
+    devices: [ linux ]
+    nodes: [ h1 ]
+    exec: "nc -z -w2 h2 150 && echo OK || echo FAIL"
+    valid: "'FAIL' in stdout"
+  h2_tcp_151:
+    description: "TCP h1->h2:151 must succeed"
+    devices: [ linux ]
+    nodes: [ h1 ]
+    exec: "nc -z -w2 h2 151 && echo OK || echo FAIL"
+    valid: "'OK' in stdout"
+  h2_tcp_30:
+    description: "TCP h1->h2:30 must succeed"
+    devices: [ linux ]
+    nodes: [ h1 ]
+    exec: "nc -z -w2 h2 30 && echo OK || echo FAIL"
+    valid: "'OK' in stdout"
+  h1_tcp_100:
+    description: "TCP h2-h1:100 must fail"
+    devices: [ linux ]
+    nodes: [ h2 ]
+    exec: "nc -z -w2 h1 100 && echo OK || echo FAIL"
+    valid: "'FAIL' in stdout"

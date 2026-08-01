@@ -1,0 +1,15 @@
+#
+# SONiC vlan module init: create config_db VLANs (`Vlan<id>`) before any SVI is addressed in the
+# device initial template. VNI-backed VLANs are skipped -- the vxlan module builds those on the
+# FRR/kernel bridge path, so no config_db Vlan should compete for the access ports. Pulled into
+# initial config by extra_module_initial() -- the same per-module init-hook mechanism VyOS uses.
+#
+{% if vlans is defined %}
+{% for vname, v in vlans.items() if v.vni is not defined %}
+if show vlan brief 2>/dev/null | grep -qE "^\|\s+{{ v.id }} "; then
+  echo Vlan{{ v.id }} already exists
+else
+  config vlan add {{ v.id }}
+fi
+{% endfor %}
+{% endif %}
