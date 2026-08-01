@@ -105,15 +105,20 @@ clab:
     ansible_ssh_pass: YourPaSsWoRd        # bootstrapped 'admin' login, interactive use only
     netlab_ready: [ ansible ]             # skip the SSH readiness wait (sshd isn't up yet)
     netlab_show_command: [ vtysh, -c, 'show $@' ]
-    # Do NOT inherit FRR's deployment mechanism. FRR's clab group_vars select netlab's native
-    # "sh" config mode with a '#!/usr/bin/vtysh -f' shebang, which bypasses
-    # tasks/deploy-config/sonic-clab.yml entirely and feeds SONiC's bash 'config' script to
-    # vtysh. Measured: the node then fails initial configuration with
-    # "RuntimeError: Unable to connect to redis - Connection refused".
-    # SONiC deploys over the Ansible docker connection instead.
-#    netlab_config_mode:
-#    netlab_default_shebang:
-    netlab_mgmt_vrf: False
+    # Inherit FRR's deployment mechanism -- netlab's native "sh" config mode
+    # (netlab_config_mode / netlab_default_shebang come from frr.yml). Each rendered snippet
+    # is bind-mounted into the container as /etc/config/NN-<module>.sh and run with
+    # "docker exec", so the shebang picks the interpreter: the SONiC-specific templates open
+    # with '#!/bin/bash' and drive SONiC's 'config' CLI, and everything inherited from FRR
+    # gets FRR's '#!/usr/bin/vtysh -f' default and goes to vtysh. No Ansible in the
+    # deployment path -- the failures are also far easier to read this way.
+    #
+    # This only works because initial/sonic-clab.j2 waits for config_db: 'config hostname' is
+    # retried until redis answers. Without that gate the script ran before the container had
+    # finished booting and died with
+    # "RuntimeError: Unable to connect to redis - Connection refused", which is what made the
+    # Ansible deploy task look necessary.
+    netlab_mgmt_vrf: False                # FRR sets it; SONiC has no management VRF
     # docker-sonic-vs ships most FRR daemons disabled in /etc/frr/daemons; initial/sonic-clab.j2
     # enables the ones the configured modules need. watchfrr, zebra and staticd are always
     # started by FRR itself and are deliberately absent from this map.
@@ -152,8 +157,10 @@ clab:
         lag: true
     initial:
       collect: true             # ansible_connection: docker unblocks this (no sshd needed)
+    # Repeated from the global features above: FRR declares clab.features.services as a dict,
+    # and the provider block wins over the global value, so 'services: false' has to be
+    # restated here to survive the merge.
     services: false             # no DNS client
-#      config_mode:              # clear FRR's [ sh ]: SONiC uses the Ansible deploy task
 external:
   image: none
 graphite.icon: router

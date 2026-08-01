@@ -11,11 +11,15 @@
 #    SVI/aggregate is addressed. Those live in the vlan/lag module-init hooks
 #    (vlan|lag/sonic.initial.j2), pulled in below via extra_module_initial() at exactly this
 #    ordering point -- the same mechanism VyOS uses for its VLAN bridge setup.
-# This script is deployed with 'command: bash /tmp/config.sh' over Ansible's docker connection
-# (tasks/deploy-config/sonic-clab.yml), i.e. it already executes *inside* the node container.
+# This script is deployed with netlab's native "sh" config mode (inherited from the FRR parent
+# device): netlab bind-mounts it into the container as /etc/config/01-initial.sh and runs it with
+# 'docker exec', so it already executes *inside* the node container. No Ansible in the deployment
+# path. The 'config hostname' retry below is what makes that safe -- it blocks until config_db
+# answers, instead of assuming the container has finished booting.
 #
-# CONNECTION MODEL: config deployment stays on ansible_connection: docker, not network_cli.
-# network_cli was evaluated and is not usable here: it requires a matching cliconf plugin, and
+# CONNECTION MODEL: what still goes through Ansible -- configuration collection, validation, and
+# the 'netlab config' custom-template reload -- stays on ansible_connection: docker, not
+# network_cli. network_cli was evaluated and is not usable here: it requires a cliconf plugin, and
 # the only SONiC cliconf shipped by Ansible (dellemc.enterprise_sonic) targets Dell's licensed
 # "Management Framework" CLI (sonic-cli/klish) on Dell PowerSwitch hardware -- docker-sonic-vs
 # has no such binary (verified: /etc/passwd has no admin user, no sonic-cli/klish anywhere in

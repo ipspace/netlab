@@ -1,5 +1,15 @@
 # SONiC (containerlab, docker-sonic-vs) config deploy.
 #
+# NOT used by 'netlab up'/'netlab initial' -- those deploy through netlab's native "sh"
+# config mode inherited from FRR (see the clab: block in devices/sonic.yml). This task is
+# the Ansible fallback that 'netlab config' still needs: cli/config.py clears
+# netlab_config_mode before reloading a custom configuration template, which routes the
+# deployment back through the Ansible playbook.
+#
+# It cannot simply fall through to deploy-config/frr.yml: the lookup order puts the VM's
+# deploy-config/sonic.yml (which uses 'become' and 'docker exec bgp') ahead of it, and the
+# container has neither sudo nor a separate bgp container.
+#
 # Reached over Ansible's 'docker' connection plugin (ansible_connection: docker in
 # sonic.yml), so 'command'/'shell' here already execute *inside* the node container --
 # no docker exec wrapping needed.
