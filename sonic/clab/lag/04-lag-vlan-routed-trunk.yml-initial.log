@@ -1,0 +1,134 @@
+Creating Device configuration snippets
+[CREATED] h1: initial,routing
+[CREATED] h2: initial,routing
+[CREATED] dut: initial,lag,vlan,ospf
+[CREATED] xr: initial,lag,vlan,ospf
+Checking Are lab devices ready to be configured?
+ [INFO] Checking lab devices with an Ansible playbook
+[WARNING]: Could not match supplied host pattern, ignoring: netlab_ready_ssh
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Wait for SSH servers] ****************************************************
+skipping: no hosts matched
+
+PLAY [Wait for device-specific conditions] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Find device readiness script] ********************************************
+ok: [dut]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [dut]
+
+PLAY RECAP *********************************************************************
+dut                        : ok=2    changed=0    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+
+Config Deploying device configurations
+ [INFO] Executing initial configuration for node h1 (namespace clab-
+          ml-17-h1)
+ [INFO] Executing initial configuration for node h2 (namespace clab-
+          ml-17-h2)
+ [INFO] Executing initial configuration for node xr
+ [INFO] Executing routing configuration for node h1 (namespace clab-
+          ml-17-h1)
+ [INFO] Executing routing configuration for node h2 (namespace clab-
+          ml-17-h2)
+ [INFO] Executing lag configuration for node xr
+ [INFO] Executing vlan configuration for node xr
+ [INFO] Executing ospf configuration for node xr
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "initial configuration for dut\n=========================================\n#!/bin/bash\n#\n# SONiC (containerlab, docker-sonic-vs) initial configuration.\n#\n# Adapted from the package 'sonic' (libvirt) device's initial/sonic.j2, with changes forced\n# by docker-sonic-vs's monolithic architecture (see sonic.yml for why):\n#  * vtysh runs directly in this container -- no 'docker exec bgp' indirection.\n#  * most FRR daemons ship disabled (=no in /etc/frr/daemons) and must be enabled here.\n#  * config_db VLANs (`Vlan<id>`) and PortChannels (`PortChannel<N>`) must be created BEFORE any\n#    SVI/aggregate is addressed. Those live in the vlan/lag module-init hooks\n#    (vlan|lag/sonic.initial.j2), pulled in below via extra_module_initial() at exactly this\n#    ordering point -- the same mechanism VyOS uses for its VLAN bridge setup.\n# This script is deployed with 'command: bash /tmp/config.sh' over Ansible's docker connection\n# (tasks/deploy-config/sonic-clab.yml), i.e. it already executes *inside* the node container.\n#\n# CONNECTION MODEL: config deployment stays on ansible_connection: docker, not network_cli.\n# network_cli was evaluated and is not usable here: it requires a matching cliconf plugin, and\n# the only SONiC cliconf shipped by Ansible (dellemc.enterprise_sonic) targets Dell's licensed\n# \"Management Framework\" CLI (sonic-cli/klish) on Dell PowerSwitch hardware -- docker-sonic-vs\n# has no such binary (verified: /etc/passwd has no admin user, no sonic-cli/klish anywhere in\n# the image; the only shell is bash, and 'config'/'show'/'vtysh' are plain CLI utilities, not a\n# paging network CLI a cliconf plugin can drive). This matches the rest of netlab: even the\n# in-tree 'frr' clab device and the libvirt 'sonic' device (which HAS a full sshd) push FRR\n# config as raw text over a generic command/shell task, never network_cli.\n#\n# We DO bootstrap sshd + an 'admin' user below (docker-sonic-vs ships /usr/sbin/sshd and host\n# keys, just never starts them, and has no login user) purely for operator SSH access parity\n# with the parent 'sonic' device (interactive login, 'netlab connect', ad-hoc troubleshooting) --\n# it is not part of the config-deployment path.\nset -e\nset -x\n#\n# Create bash profile script\n#\ncat <<'SCRIPT' >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)# \"\necho \"Use vtysh to connect to FRR daemon\"\necho\nSCRIPT\n\n#\n# Build hosts file\n#\ncat <<'HOSTS' >/etc/hosts\n#\n# Created by netlab (containerlab Linux host)\n#\n127.0.0.1\tlocalhost\n::1\tlocalhost ip6-localhost ip6-loopback\nfe00::0\tip6-localnet\nff00::0\tip6-mcastprefix\nff02::1\tip6-allnodes\nff02::2\tip6-allrouters\nHOSTS\n#\ncat <<'SCRIPT' >/tmp/hosts\n#\n# Created by netlab initial\n#\n10.0.0.3 dut\n172.16.1.3 Ethernet8.dut\n10.1.0.1 PortChannel1.1.dut\n172.16.1.1 h1 eth1.h1\n172.16.2.2 h2 eth1.h2\n10.0.0.4 xr\n172.16.2.4 eth3.xr\n10.1.0.2 bond1.1000.xr\nSCRIPT\ngrep \"Created by netlab\" /etc/hosts || uniq /tmp/hosts >>/etc/hosts\n#\n# Try to set hostname through Redis, wait for up to 30 seconds to succeed\n#\ntimeout 30 bash -c '\n  while ! config hostname dut; do\n    echo \"Waiting for redis to start\"\n    sleep 1\n  done\n'\n#\n# Enable sshd + an 'admin' user (idempotent) -- interactive access only, see note above.\n#\nid admin >/dev/null 2>&1 || useradd -m -s /bin/bash -G sudo admin\necho 'admin:YourPaSsWoRd' | chpasswd\nif which sudo; then\n  echo 'admin ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/admin\nfi\nmkdir -p /run/sshd\npgrep -x sshd >/dev/null || /usr/sbin/sshd\n#\n# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)\n#\nconfig interface ipv6 disable use-link-local-only Ethernet8\n# Create config_db PortChannels (lag) and VLANs (vlan) before any aggregate/SVI is addressed\n# below. These live in the per-module init hooks lag/vlan sonic.initial.j2 and are pulled\n# in here, at the correct ordering point, by netlab's extra_module_initial() macro.\n#\n#\n# SONiC lag module init: create the config_db PortChannel(s) before the aggregate is addressed\n# in the device initial template (create-before-address ordering). Pulled into initial config by\n# extra_module_initial() -- the same per-module init-hook mechanism VyOS uses.\n#\nif ip link show PortChannel1 >/dev/null 2>&1; then\n  echo PortChannel1 already exists\nelse\n  config portchannel add PortChannel1\nfi\n#\n# SONiC vlan module init: create config_db VLANs (`Vlan<id>`) before any SVI is addressed in the\n# device initial template. VNI-backed VLANs are skipped -- the vxlan module builds those on the\n# FRR/kernel bridge path, so no config_db Vlan should compete for the access ports. Pulled into\n# initial config by extra_module_initial() -- the same per-module init-hook mechanism VyOS uses.\n#\nif show vlan brief 2>/dev/null | grep -qE \"^\\|\\s+1000 \"; then\n  echo Vlan1000 already exists\nelse\n  config vlan add 1000\nfi\n\n#\n# Configure interfaces\n#\nif ip link|grep Loopback0; then\n  echo Loopback0 already exists\nelse\n  config loopback add Loopback0\nfi\nif show ip interface|grep Loopback0|grep 10.0.0.3/32; then\n  echo 10.0.0.3/32 already configured on Loopback0\nelse\n  config interface ip add Loopback0 10.0.0.3/32\nfi\n!\n!\n!\n!\nif show ip interface|grep Ethernet8|grep 172.16.1.3/24; then\n  echo 172.16.1.3/24 already configured on Ethernet8\nelse\n  config interface ip add Ethernet8 172.16.1.3/24\nfi\nip link set Ethernet8 mtu 1500\n!\nif show ip interface|grep PortChannel1.1|grep 10.1.0.1/30; then\n  echo 10.1.0.1/30 already configured on PortChannel1.1\nelse\n  config interface ip add PortChannel1.1 10.1.0.1/30\nfi\n!\n#\n# docker-sonic-vs's intfmgrd/orchagent do not program routed-port IPs from CONFIG_DB onto the\n# kernel netdev (loopbacks work; routed ports do not), so BGP/OSPF over links can't come up\n# without this. Bring the data ports admin-up and mirror the CONFIG_DB INTERFACE IPs onto the\n# kernel netdev. Idempotent.\n#\nfor p in $(redis-cli -n 4 keys \"PORT|Ethernet*\" 2>/dev/null | sed 's/PORT|//'); do\n  config interface startup \"$p\" >/dev/null 2>&1 || true\ndone\nredis-cli -n 4 keys \"INTERFACE|Ethernet*|*\" 2>/dev/null | while IFS= read -r k; do\n  ifc=$(echo \"$k\" | cut -d'|' -f2); addr=$(echo \"$k\" | cut -d'|' -f3)\n  [ -n \"$addr\" ] && ip addr add \"$addr\" dev \"$ifc\" 2>/dev/null || true\ndone\n#\n# Enable the FRR daemons needed by the configured modules (docker-sonic-vs ships most of them\n# disabled) and restart FRR once, only if something actually changed.\n#\nif grep -qE '^(ospfd|ospf6d)=no' /etc/frr/daemons; then\n  sed -i 's/^ospfd=no/ospfd=yes/' /etc/frr/daemons\n  sed -i 's/^ospf6d=no/ospf6d=yes/' /etc/frr/daemons\nfi\nsupervisorctl restart frr >/dev/null 2>&1 || service frr restart >/dev/null 2>&1 || true\nsleep 2\n#\n# And now let's configure the interfaces\n#\ncat >/tmp/netlab-initial.frr <<CONFIG\nhostname dut\n!\n!\ninterface Loopback0\n no shutdown\n!\ninterface PortChannel1\n no shutdown\n description dut -> xr\n!\ninterface Ethernet0\n no shutdown\n description dut -> xr\n!\ninterface Ethernet4\n no shutdown\n description dut -> xr\n!\ninterface Ethernet8\n no shutdown\n description dut -> h1 [stub]\n!\ninterface PortChannel1.1\n no shutdown\n description dut -> xr\n!\ndo write\nCONFIG\nvtysh -f /tmp/netlab-initial.frr\nexit 0\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sonic-clab.yml for dut
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [run /tmp/config.sh to deploy initial config from /work/netlab_cicd/node_files/dut/initial] ***
+changed: [dut]
+
+TASK [run vtysh -f to deploy initial config from /work/netlab_cicd/node_files/dut/initial] ***
+skipping: [dut]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=lag)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
+
+TASK [Figure out whether to deploy the module lag on current device] ***********
+ok: [dut]
+
+TASK [Find configuration template for lag] *************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for lag] *********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "lag configuration for dut\n=========================================\n#!/bin/bash\n# SONiC lag module: PortChannel members via the config CLI (teammgrd programs the kernel bond +\n# LACP via teamd, unlike vlanmgrd). The PortChannel itself is created in initial\n# (create-before-address ordering).\nset -e\nset -x\nif teamdctl PortChannel1 state 2>/dev/null | grep -q \"Ethernet0\"; then\n  echo Ethernet0 already a member\nelse\n  # member MTU must equal the PortChannel MTU or member-add refuses\n  PCMTU=$(cat /sys/class/net/PortChannel1/mtu)\n  config interface mtu Ethernet0 \"$PCMTU\" || true\n  config portchannel member add PortChannel1 Ethernet0\nfi\nif teamdctl PortChannel1 state 2>/dev/null | grep -q \"Ethernet4\"; then\n  echo Ethernet4 already a member\nelse\n  # member MTU must equal the PortChannel MTU or member-add refuses\n  PCMTU=$(cat /sys/class/net/PortChannel1/mtu)\n  config interface mtu Ethernet4 \"$PCMTU\" || true\n  config portchannel member add PortChannel1 Ethernet4\nfi\n#\n# Defensive sync: teammgrd programs the kernel bond + LACP reliably (unlike vlanmgrd), but\n# mirror any PORTCHANNEL_MEMBER row the config CLI loop above didn't manage to enslave.\n# Idempotent (already-enslaved ports fail the add silently); port must be link-down to join.\n#\nredis-cli --raw -n 4 keys \"PORTCHANNEL_MEMBER|*\" 2>/dev/null | while IFS= read -r k; do\n  pc=$(echo \"$k\" | cut -d'|' -f2); port=$(echo \"$k\" | cut -d'|' -f3)\n  [ -n \"$port\" ] || continue\n  if ! teamdctl \"$pc\" state 2>/dev/null | grep -q \"^  $port\"; then\n    ip link set \"$port\" down 2>/dev/null || true\n    teamdctl \"$pc\" port add \"$port\" 2>/dev/null || true\n    ip link set \"$port\" up 2>/dev/null || true\n  fi\ndone\nexit 0\n"
+}
+
+TASK [Deploy lag configuration] ************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sonic-clab.yml for dut
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [run /tmp/config.sh to deploy lag config from /work/netlab_cicd/node_files/dut/lag] ***
+fatal: [dut]: FAILED! => {"changed": true, "cmd": ["bash", "/tmp/config.sh"], "delta": "0:00:00.030433", "end": "2026-08-01 10:24:56.626315", "msg": "non-zero return code", "rc": 1, "start": "2026-08-01 10:24:56.595882", "stderr": "+ teamdctl PortChannel1 state\n+ grep -q Ethernet0\n++ cat /sys/class/net/PortChannel1/mtu\ncat: /sys/class/net/PortChannel1/mtu: No such file or directory\n+ PCMTU=", "stderr_lines": ["+ teamdctl PortChannel1 state", "+ grep -q Ethernet0", "++ cat /sys/class/net/PortChannel1/mtu", "cat: /sys/class/net/PortChannel1/mtu: No such file or directory", "+ PCMTU="], "stdout": "", "stdout_lines": []}
+
+PLAY RECAP *********************************************************************
+dut                        : ok=22   changed=3    unreachable=0    failed=1    skipped=3    rescued=0    ignored=0   
+
+FatalError in initial: Configuration deployment failed
+Results of configuration script deployments
+================================================================================
+h1               Script:  initial,routing
+h2               Script:  initial,routing
+xr               Script:  initial,lag,vlan,ospf
+

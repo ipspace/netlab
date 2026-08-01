@@ -1,0 +1,130 @@
+Creating Device configuration snippets
+[CREATED] dut: initial,ospf
+[CREATED] x1: initial,ospf
+[CREATED] x2: initial,ospf
+Checking Are lab devices ready to be configured?
+ [INFO] Checking lab devices with an Ansible playbook
+[WARNING]: Could not match supplied host pattern, ignoring: netlab_ready_ssh
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Wait for SSH servers] ****************************************************
+skipping: no hosts matched
+
+PLAY [Wait for device-specific conditions] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Find device readiness script] ********************************************
+ok: [dut]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [dut]
+
+PLAY RECAP *********************************************************************
+dut                        : ok=2    changed=0    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+
+Config Deploying device configurations
+ [INFO] Executing initial configuration for node x1
+ [INFO] Executing initial configuration for node x2
+ [INFO] Executing ospf configuration for node x2
+ [INFO] Executing ospf configuration for node x1
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "initial configuration for dut\n=========================================\n#!/bin/bash\n#\n# SONiC (containerlab, docker-sonic-vs) initial configuration.\n#\n# Adapted from the package 'sonic' (libvirt) device's initial/sonic.j2, with changes forced\n# by docker-sonic-vs's monolithic architecture (see sonic.yml for why):\n#  * vtysh runs directly in this container -- no 'docker exec bgp' indirection.\n#  * most FRR daemons ship disabled (=no in /etc/frr/daemons) and must be enabled here.\n#  * config_db VLANs (`Vlan<id>`) and PortChannels (`PortChannel<N>`) must be created BEFORE any\n#    SVI/aggregate is addressed. Those live in the vlan/lag module-init hooks\n#    (vlan|lag/sonic.initial.j2), pulled in below via extra_module_initial() at exactly this\n#    ordering point -- the same mechanism VyOS uses for its VLAN bridge setup.\n# This script is deployed with 'command: bash /tmp/config.sh' over Ansible's docker connection\n# (tasks/deploy-config/sonic-clab.yml), i.e. it already executes *inside* the node container.\n#\n# CONNECTION MODEL: config deployment stays on ansible_connection: docker, not network_cli.\n# network_cli was evaluated and is not usable here: it requires a matching cliconf plugin, and\n# the only SONiC cliconf shipped by Ansible (dellemc.enterprise_sonic) targets Dell's licensed\n# \"Management Framework\" CLI (sonic-cli/klish) on Dell PowerSwitch hardware -- docker-sonic-vs\n# has no such binary (verified: /etc/passwd has no admin user, no sonic-cli/klish anywhere in\n# the image; the only shell is bash, and 'config'/'show'/'vtysh' are plain CLI utilities, not a\n# paging network CLI a cliconf plugin can drive). This matches the rest of netlab: even the\n# in-tree 'frr' clab device and the libvirt 'sonic' device (which HAS a full sshd) push FRR\n# config as raw text over a generic command/shell task, never network_cli.\n#\n# We DO bootstrap sshd + an 'admin' user below (docker-sonic-vs ships /usr/sbin/sshd and host\n# keys, just never starts them, and has no login user) purely for operator SSH access parity\n# with the parent 'sonic' device (interactive login, 'netlab connect', ad-hoc troubleshooting) --\n# it is not part of the config-deployment path.\nset -e\nset -x\n#\n# Create bash profile script\n#\ncat <<'SCRIPT' >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)# \"\necho \"Use vtysh to connect to FRR daemon\"\necho\nSCRIPT\n\n#\n# Build hosts file\n#\ncat <<'HOSTS' >/etc/hosts\n#\n# Created by netlab (containerlab Linux host)\n#\n127.0.0.1\tlocalhost\n::1\tlocalhost ip6-localhost ip6-loopback\nfe00::0\tip6-localnet\nff00::0\tip6-mcastprefix\nff02::1\tip6-allnodes\nff02::2\tip6-allrouters\nHOSTS\n#\ncat <<'SCRIPT' >/tmp/hosts\n#\n# Created by netlab initial\n#\n10.0.0.1 dut\n10.1.0.1 Ethernet0.dut\n10.42.1.1 Ethernet4.dut\n10.42.2.1 Ethernet8.dut\n10.0.0.2 x1\n10.1.0.2 eth1.x1\n10.1.0.5 eth2.x1\n10.0.0.3 x2\n10.42.1.2 eth1.x2\n10.1.0.6 eth2.x2\nSCRIPT\ngrep \"Created by netlab\" /etc/hosts || uniq /tmp/hosts >>/etc/hosts\n#\n# Try to set hostname through Redis, wait for up to 30 seconds to succeed\n#\ntimeout 30 bash -c '\n  while ! config hostname dut; do\n    echo \"Waiting for redis to start\"\n    sleep 1\n  done\n'\n#\n# Enable sshd + an 'admin' user (idempotent) -- interactive access only, see note above.\n#\nid admin >/dev/null 2>&1 || useradd -m -s /bin/bash -G sudo admin\necho 'admin:YourPaSsWoRd' | chpasswd\nif which sudo; then\n  echo 'admin ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/admin\nfi\nmkdir -p /run/sshd\npgrep -x sshd >/dev/null || /usr/sbin/sshd\n#\n# Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)\n#\nconfig interface ipv6 disable use-link-local-only Ethernet0\nconfig interface ipv6 disable use-link-local-only Ethernet4\nconfig interface ipv6 disable use-link-local-only Ethernet8\n# Create config_db PortChannels (lag) and VLANs (vlan) before any aggregate/SVI is addressed\n# below. These live in the per-module init hooks lag/vlan sonic.initial.j2 and are pulled\n# in here, at the correct ordering point, by netlab's extra_module_initial() macro.\n#\n\n#\n# Configure interfaces\n#\nif ip link|grep Loopback0; then\n  echo Loopback0 already exists\nelse\n  config loopback add Loopback0\nfi\nif show ip interface|grep Loopback0|grep 10.0.0.1/32; then\n  echo 10.0.0.1/32 already configured on Loopback0\nelse\n  config interface ip add Loopback0 10.0.0.1/32\nfi\n!\nif show ip interface|grep Ethernet0|grep 10.1.0.1/30; then\n  echo 10.1.0.1/30 already configured on Ethernet0\nelse\n  config interface ip add Ethernet0 10.1.0.1/30\nfi\nip link set Ethernet0 mtu 1500\n!\nif show ip interface|grep Ethernet4|grep 10.42.1.1/24; then\n  echo 10.42.1.1/24 already configured on Ethernet4\nelse\n  config interface ip add Ethernet4 10.42.1.1/24\nfi\nip link set Ethernet4 mtu 1500\n!\nif show ip interface|grep Ethernet8|grep 10.42.2.1/24; then\n  echo 10.42.2.1/24 already configured on Ethernet8\nelse\n  config interface ip add Ethernet8 10.42.2.1/24\nfi\nip link set Ethernet8 mtu 1500\n!\n#\n# docker-sonic-vs's intfmgrd/orchagent do not program routed-port IPs from CONFIG_DB onto the\n# kernel netdev (loopbacks work; routed ports do not), so BGP/OSPF over links can't come up\n# without this. Bring the data ports admin-up and mirror the CONFIG_DB INTERFACE IPs onto the\n# kernel netdev. Idempotent.\n#\nfor p in $(redis-cli -n 4 keys \"PORT|Ethernet*\" 2>/dev/null | sed 's/PORT|//'); do\n  config interface startup \"$p\" >/dev/null 2>&1 || true\ndone\nredis-cli -n 4 keys \"INTERFACE|Ethernet*|*\" 2>/dev/null | while IFS= read -r k; do\n  ifc=$(echo \"$k\" | cut -d'|' -f2); addr=$(echo \"$k\" | cut -d'|' -f3)\n  [ -n \"$addr\" ] && ip addr add \"$addr\" dev \"$ifc\" 2>/dev/null || true\ndone\n#\n# Enable the FRR daemons needed by the configured modules (docker-sonic-vs ships most of them\n# disabled) and restart FRR once, only if something actually changed.\n#\nif grep -qE '^(ospfd|ospf6d)=no' /etc/frr/daemons; then\n  sed -i 's/^ospfd=no/ospfd=yes/' /etc/frr/daemons\n  sed -i 's/^ospf6d=no/ospf6d=yes/' /etc/frr/daemons\nfi\nsupervisorctl restart frr >/dev/null 2>&1 || service frr restart >/dev/null 2>&1 || true\nsleep 2\n#\n# And now let's configure the interfaces\n#\ncat >/tmp/netlab-initial.frr <<CONFIG\nhostname dut\n!\n!\ninterface Loopback0\n no shutdown\n!\ninterface Ethernet0\n no shutdown\n description dut -> x1\n!\ninterface Ethernet4\n no shutdown\n description dut -> x2\n!\ninterface Ethernet8\n no shutdown\n description dut -> stub [stub]\n!\ndo write\nCONFIG\nvtysh -f /tmp/netlab-initial.frr\nexit 0\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sonic-clab.yml for dut
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [run /tmp/config.sh to deploy initial config from /work/netlab_cicd/node_files/dut/initial] ***
+changed: [dut]
+
+TASK [run vtysh -f to deploy initial config from /work/netlab_cicd/node_files/dut/initial] ***
+skipping: [dut]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "ospf configuration for dut\n=========================================\n!\n! OSPFv2 FRR configuration\n!\nrouter ospf\n ospf router-id 10.0.0.1\n timers throttle spf 10 50 500\n timers throttle lsa all 100\n timers lsa min-arrival 100\n\n\nexit\n!\ninterface Loopback0\n! \n ip ospf area 0.0.0.0\n!\ninterface Ethernet0\n! dut -> x1\n ip ospf area 0.0.0.0\n ip ospf network point-to-point\n ip ospf cost 10\n!\ninterface Ethernet4\n! dut -> x2\n ip ospf area 0.0.0.0\n ip ospf network point-to-point\n ip ospf cost 15\n ip ospf passive\n!\ninterface Ethernet8\n! dut -> stub\n ip ospf area 0.0.0.0\n ip ospf cost 25\n ip ospf passive\n!\n\n!\ndo write\n"
+}
+
+TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sonic-clab.yml for dut
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [run /tmp/config.sh to deploy ospf config from /work/netlab_cicd/node_files/dut/ospf] ***
+skipping: [dut]
+
+TASK [run vtysh -f to deploy ospf config from /work/netlab_cicd/node_files/dut/ospf] ***
+changed: [dut]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut                        : ok=20   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+
+Results of configuration script deployments
+================================================================================
+x1               Script:  initial,ospf
+x2               Script:  initial,ospf
+
+
+This lab tests whether the OSPF interfaces on device under test are correctly
+configured as passive interfaces.
+
