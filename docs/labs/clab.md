@@ -254,7 +254,7 @@ Setting this environment variable to True for a *‌vrnetlab* container that doe
 ```
 
 ```{note}
-If a *vrnetlab* node is unreachable after **netlab up**, Transparent Management passthrough may be the cause. Either rebuild the Docker image with an up-to-date version of *vrnetlab*, or disable this passthrough for the affected node by setting **clab.env.CLAB_MGMT_PASSTHROUGH** to **"false"**.
+If a *vrnetlab* node is unreachable after **netlab up**, Transparent Management passthrough may be the cause. Either rebuild the Docker image with an up-to-date version of *vrnetlab*, or disable this passthrough for the affected node by setting `clab.env.CLAB_MGMT_PASSTHROUGH: "false"`.
 ```
 
 Finally, if you're still experiencing connectivity problems or initial configuration failures with _vrnetlab_-based containers after rebuilding them with the [latest vrnetlab version](https://github.com/srl-labs/vrnetlab), add the following parameters to the lab configuration file to change the _netlab_ loopback addressing pool:
