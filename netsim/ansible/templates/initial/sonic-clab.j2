@@ -33,11 +33,22 @@ set -x
 {% include 'linux/bash_profile.j2' +%}
 {% include 'linux/hosts.j2' +%}
 #
+# Try to set hostname through Redis, wait for up to 30 seconds to succeed
+#
+timeout 30 bash -c '
+  while ! config hostname {{ inventory_hostname.replace("_","-") }}; do
+    echo "Waiting for redis to start"
+    sleep 1
+  done
+'
+#
 # Enable sshd + an 'admin' user (idempotent) -- interactive access only, see note above.
 #
 id admin >/dev/null 2>&1 || useradd -m -s /bin/bash -G sudo admin
 echo 'admin:{{ ansible_ssh_pass | default("YourPaSsWoRd") }}' | chpasswd
-echo 'admin ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/admin
+if which sudo; then
+  echo 'admin ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/admin
+fi
 mkdir -p /run/sshd
 pgrep -x sshd >/dev/null || /usr/sbin/sshd
 #
@@ -51,16 +62,14 @@ pgrep -x sshd >/dev/null || /usr/sbin/sshd
 config interface ipv6 disable use-link-local-only {{ l.ifname }}
 {%   endif %}
 {% endfor %}
-#
-# Configure interfaces
-#
-config hostname {{ inventory_hostname.replace("_","-") }}
-#
 # Create config_db PortChannels (lag) and VLANs (vlan) before any aggregate/SVI is addressed
 # below. These live in the per-module init hooks lag/vlan sonic.initial.j2 and are pulled
 # in here, at the correct ordering point, by netlab's extra_module_initial() macro.
 #
 {{ extra_module_initial(['lag','vlan']) }}
+#
+# Configure interfaces
+#
 {% for l in netlab_interfaces %}
 {%   if l.type in ['loopback'] %}
 if ip link|grep {{ l.ifname }}; then
@@ -138,20 +147,10 @@ if grep -qE '^({{ daemons_needed|unique|join('|') }})=no' /etc/frr/daemons; then
 {% for frr_d in daemons_needed|unique %}
   sed -i 's/^{{ frr_d }}=no/{{ frr_d }}=yes/' /etc/frr/daemons
 {% endfor %}
-  supervisorctl restart frr >/dev/null 2>&1 || service frr restart >/dev/null 2>&1 || true
-  sleep 12
 fi
 {% endif %}
-#
-# Rest of initial configuration done through VTYSH
-# Make sure it's ready
-#
-if vtysh -c 'show running' >/dev/null; then
-  echo vtysh is ready
-else
-  echo 'giving vtysh some more time :('
-  sleep 5
-fi
+supervisorctl restart frr >/dev/null 2>&1 || service frr restart >/dev/null 2>&1 || true
+sleep 2
 #
 # And now let's configure the interfaces
 #
