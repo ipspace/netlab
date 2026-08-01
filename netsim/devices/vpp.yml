@@ -1,0 +1,96 @@
+---
+description: VPP fd.io container
+parent: linux
+role: router
+interface_name: eth{ifindex}
+mgmt_if: eth0
+loopback_interface_name: loop{ifindex}
+control_plane: bird
+support:
+  level: minimal
+routing:
+  _rm_per_af: True
+group_vars:
+  ansible_network_os: frr
+  ansible_python_interpreter: auto_silent
+  netlab_device_type: vpp
+node_config:
+  vpp: /etc/vpp/startup.conf
+  mpls: /etc/vpp/config/mpls.vpp
+  vlan: /etc/vpp/config/vlan.vpp
+clab:
+  node.cmd: /etc/dataplane-wait.sh
+  node.config_templates:
+    dataplane-wait: /etc/dataplane-wait.sh:sh
+    setup@vpp: /etc/vpp/config/setup.vpp
+    vlan-init@vpp: /etc/vpp/config/vlan-init.vpp
+    netlab-start@sh: /usr/local/bin/netlab-start.sh:sh
+    hosts: /etc/hosts:shared
+  node_config:
+    initial: /etc/config/01-initial.sh:sh
+    # Override linux parent :ns — VLAN dataplane via vlan-init + vlan.vpp
+    vlan: /etc/vpp/config/vlan.vpp
+  group_vars:
+    ansible_connection: docker
+    ansible_user: root
+    docker_shell: bash -il
+    netlab_config_mode: sh
+    netlab_dp_module: [ initial ]
+    netlab_start_daemon: "/usr/local/bin/netlab-start.sh"
+  image: netlab/vpp:latest
+  # image: git.ipng.ch/ipng/vpp-containerlab:stable
+  build: True
+  # node:
+  #  kind: fdio_vpp
+  sw_version: # Marks versioning support, latest release is used by default
+  repo: release
+  mtu: 1500
+  features:
+    initial:
+      config_mode: [ sh ]
+      roles: [ router, bridge ]
+
+    # Features that work in Linux containers, but not on VPP
+    #
+    services: False
+libvirt:
+  image:
+virtualbox:
+  image:
+features:
+  initial:
+    ipv4:
+      unnumbered: peer
+    ipv6:
+      lla: true
+      use_ra: true
+    ra: true
+    reload: false
+    roles: [ router, bridge ]
+  vlan:
+    model: router
+    svi_interface_name: vlan{vlan}
+    subif_name: '{ifname}.{vlan.access_id}'
+  ospf:
+    # bird and frr
+    unnumbered: true
+    password: true
+    priority: true
+    timers: true
+    areas: true
+    import: [ bgp, connected, static, vrf, ripv2, isis ]   # bird: no ripv2/isis
+#    default: true                                          # frr only
+#    gr: [ ipv4, ipv6 ]                                     # frr only
+
+# Features inherited from Linux that do not work on VPP
+#
+  lag: False
+  routing: False
+  services: False
+external:
+  image: none
+graphite.icon: router
+
+attributes:
+  node:
+    control_plane: { type: str, valid_values: [ bird, frr ] }

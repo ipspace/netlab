@@ -60,10 +60,11 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | Mikrotik RouterOS 7    | vrnetlab/vr-routeros:7.6     |
 | Nokia SR Linux         | ghcr.io/nokia/srlinux:24.10.1 |
 | Nokia SR OS            | vrnetlab/vr-sros:latest      |
+| VPP [❗](build-vpp)    | netlab/vpp:latest            |
 | VyOS                   | ghcr.io/sysoleg/vyos-container |
 
-* Cumulus VX, FRR, Linux, Nokia SR Linux, and VyOS images are automatically downloaded from public container registries.
-* Build the BIRD, dnsmasq, and Netscaler images with the **netlab clab build** command. BIRD supports several build targets and configurable source releases — see [](build-bird) for details.
+* FRR, Linux, Nokia SR Linux, and VyOS images are automatically downloaded from public container registries.
+* Build the [BIRD](build-bird), dnsmasq, [VPP](build-vpp), and [Netscaler](build-netscaler) images with the **netlab clab build** command. BIRD and VPP FD.io build process supports configurable software releases.
 * The Arista cEOS image has to be [downloaded and installed manually](ceos.md).
 * Nokia SR OS and SR-SIM container images require a license; see also [vrnetlab instructions](https://containerlab.srlinux.dev/manual/vrnetlab/).
 * Follow Cisco's documentation to install the IOS XRd container, making sure the container image name matches the one _netlab_ uses (alternatively, [change the default image name](default-device-image) for the IOS XRd container).
@@ -434,7 +435,7 @@ server.
 
 ```{eval-rst}
 .. toctree::
-   :caption: Installing Container Images
+   :caption: Building and Installing Container Images
    :maxdepth: 1
    :hidden:
 
@@ -442,5 +443,6 @@ server.
    bird.md
    linux.md
    netscaler.md
+   vpp.md
 ..
 ```

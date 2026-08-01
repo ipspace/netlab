@@ -1,0 +1,16 @@
+{#
+  VPP interface VLAN parameters (access/trunk membership). Bridge-domains,
+  subinterfaces, and BVIs (including BVI-to-BD attach) are created in
+  initial/vpp.vlan.j2.
+#}
+{% for ifdata in interfaces if ifdata.type|default('') == 'vlan_member'
+     and ifdata.vlan.access_id is defined
+     and ifdata.vlan.mode|default('irb') != 'route' %}
+set interface l2 tag-rewrite host-{{ ifdata.ifname }} pop 1
+{% endfor %}
+{% for ifdata in interfaces if ifdata.vlan is defined and ifdata.type|default('') != 'svi' %}
+{%   set vname = ifdata.vlan.access|default(ifdata.vlan.native) %}
+{%   if vname is defined and vlans[vname].mode|default('irb') != 'route' %}
+set interface l2 bridge host-{{ ifdata.ifname }} {{ vlans[vname].id }}
+{%   endif %}
+{% endfor %}

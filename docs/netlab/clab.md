@@ -95,6 +95,8 @@ $ netlab clab build bird --version 2.17.4 --tag netlab/bird:latest
 
 To use a custom container image, specify it with the **image** node parameter or the **defaults.daemons._daemon_.clab.image** [default setting](topo-defaults).
 
+See [](build-bird) for the **--version** parameter and [](build-vpp) for pinning the FD.io release with **defaults.devices.vpp.clab.sw_version**.
+
 (netlab-clab-cleanup)=
 ## Docker Cleanup
 

@@ -334,6 +334,12 @@ Netlab enables VRRPv3 by default on Dell OS10, overriding any platform defaults.
 
 * You have to build the *dnsmasq* container image with the **netlab clab build dnsmasq** command.
 
+(caveats-vpp)=
+## VPP (Vector Packet Processor)
+
+* You must [build the VPP container image](build-vpp) with the **netlab clab build vpp** command.
+* VPP can use FRR or BIRD control plane. [More details](vpp-control-plane).
+
 (caveats-exos)=
 ## Extreme Networks EXOS
 
