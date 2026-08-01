@@ -54,6 +54,14 @@ group_vars:
 #
 features:
   stp: false                  # config-plane only, no stpd daemon -- no port blocking to verify
+  services: false             # no DNS client
+  tunnel: false               # no tunnels
+  sr: false                   # no segment routing
+  mpls: false                 # no MPLS data plane
+  vrf: false                  # should be configured with SONiC commands (if available)
+  ripv2: false                # no RIPv2 support
+  srv6: false                 # no SRv6 data plane
+
   bgp:
     # RFC 9234 BGP roles. Inherited from FRR and NOT verified here: bgp.policy/70-bgp-roles gets
     # 19 of its 22 checks, and the three that fail are all "The prefix ... should not be in the
@@ -62,6 +70,10 @@ features:
     # they are supposed to drive does not happen. Disabled pending verification rather than
     # claimed on the strength of the checks that do pass.
     role: false
+    vrf_local_as: false       # Feature not supported by the old FRR release used in SONiC
+    password: false
+    timers: false
+
   initial:
     # FRR declares roles [ host, router, bridge ]. Neither extra role works here:
     # initial/06-bridge fails to deploy at all (one failed task, node never configured), and
@@ -124,8 +136,8 @@ clab:
     # vtysh. Measured: the node then fails initial configuration with
     # "RuntimeError: Unable to connect to redis - Connection refused".
     # SONiC deploys over the Ansible docker connection instead.
-    netlab_config_mode:
-    netlab_default_shebang:
+#    netlab_config_mode:
+#    netlab_default_shebang:
     netlab_mgmt_vrf: False
     # docker-sonic-vs ships most FRR daemons disabled in /etc/frr/daemons; initial/sonic-clab.j2
     # enables the ones the configured modules need. watchfrr, zebra and staticd are always
@@ -157,7 +169,7 @@ clab:
       # MLAG topology: netsim/modules/lag.py gates the peer-link machinery on
       # "lag.mlag OR evpn.multihoming.lag", and evpn.multihoming.lag is still declared below.
       mlag: False
-    vxlan: true
+    vxlan: false                # Use SONiC commands to configure it
     evpn:
       transport: [ vxlan, mpls ]
       irb: true
@@ -165,7 +177,8 @@ clab:
         lag: true
     initial:
       collect: true             # ansible_connection: docker unblocks this (no sshd needed)
-      config_mode:              # clear FRR's [ sh ]: SONiC uses the Ansible deploy task
+    services: false             # no DNS client
+#      config_mode:              # clear FRR's [ sh ]: SONiC uses the Ansible deploy task
 external:
   image: none
 graphite.icon: router
