@@ -64,7 +64,10 @@ network-instance {{ vname }} type L3VRF
 network-instance {{ vname }} interface {{ l.ifname }}
 {%       endif %}
 {%     endfor %}
-{%     if vdata.ospf is defined %}
+{#- per-VRF OSPFv2, gated on vdata.ospf.af.ipv4 exactly like the OSPFv3 block below: netlab
+    only sets vrf.ospf.af.<family> for the families the VRF has, so without the gate an
+    IPv6-only VRF got an OSPFv2 instance with a router ID and no areas. -#}
+{%     if vdata.ospf is defined and vdata.ospf.af.ipv4|default(false) %}
 {%       set _vdflt = vdata.ospf.area|default('0.0.0.0') %}
 {%       set _vareas = vdata.ospf.areas|default([{'area': _vdflt, '_area_int': 0}]) %}
 network-instance {{ vname }} protocol OSPF p-{{ vname }}
