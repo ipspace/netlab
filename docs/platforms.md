@@ -113,7 +113,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Virtual network device | Vagrant<br />[Libvirt](labs/libvirt.md) | [Containerlab](labs/clab.md) |
 | ------------------ | :-: | :-: |
 | Arista vEOS        |  [✅](build-eos)  |  [✅](build-ceos)  |
-| Arrcus ArcOS       |  ❌  |  ✅  |
+| Arrcus ArcOS       |  ❌  |  [✅](build-arcos)  |
 | Aruba AOS-CX       |  [✅](build-arubacx)  |  ✅[❗](clab-vrnetlab)  |
 | Cisco 8000v        |  ❌  |  ✅   |
 | Cisco ASAv         |  [✅](build-asav)  |  ✅ [❗](clab-vrnetlab)  |

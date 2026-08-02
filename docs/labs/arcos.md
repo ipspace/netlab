@@ -1,3 +1,4 @@
+(build-arcos)=
 # Installing Arrcus ArcOS
 
 netlab runs **Arrcus ArcOS** as a [containerlab](clab.md)-provisioned device. ArcOS is a
