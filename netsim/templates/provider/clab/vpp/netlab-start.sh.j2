@@ -86,6 +86,10 @@ ip -n "$NETNS" addr add {{ l._parent_ipv4 }} peer {{ l._unnumbered_peer }} dev {
 case "$VPP_CONTROL_PLANE" in
   bird)
     mkdir -p /run/bird
+    # Control-plane initial hooks in the dataplane netns (e.g. IPv6 LLA on loopback)
+    ip netns exec "$NETNS" /bin/sh <<'CP_INITIAL'
+{% include 'initial/bird.cp.j2' %}
+CP_INITIAL
     # BIRD 2.x: omit -d so bird daemonizes; VPP stays foreground via wait
     ip netns exec "$NETNS" /usr/sbin/bird -c /etc/bird/bird.conf
     wait $VPP_PID
