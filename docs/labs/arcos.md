@@ -46,6 +46,11 @@ interactive model), but every published version hangs against this image; see th
 `srv6`, `vxlan`, and `evpn` (L2VNI). See `netsim/devices/arcos.yml` `features:` for the
 authoritative list; support level is **best-effort** (see [caveats](caveats-arcos)).
 
+VLANs use the native switched-VLAN model (`vlan <id>` plus `interface ... ethernet switched-vlan`),
+and SVIs are named `vlan<id>`. Routing-protocol instances inside a VRF are tagged with the VRF name,
+because a protocol instance tag is a single global namespace across every network instance on this
+build.
+
 ## Validation
 
 `netlab validate` reads ArcOS device state over the same docker-exec path used to deploy config
