@@ -51,10 +51,6 @@ once you know the branch and the build ID from the *Build History* page:
 https://sonic-build.azurewebsites.net/api/sonic/artifacts?branchName=202605&platform=vs&buildId=1166687&target=target%2Fdocker-sonic-vs.gz
 ```
 
-*containerlab* documents the same path for its
-[`sonic-vs` kind](https://containerlab.dev/manual/kinds/sonic-vs/), which uses this image. [sonic.software](https://SONiC.software/) is an unofficial index that is sometimes offered as an alternative, but it carries SONiC *installation* images (`sonic-vs.img`, used for the Vagrant box
-above) rather than the container artifact.
-
 After downloading the container, unpack and load it:
 
 ```
