@@ -36,13 +36,20 @@ a build artifact of the [sonic-buildimage](https://github.com/sonic-net/sonic-bu
 The SONiC container image is published as an artifact of the SONiC Azure build pipelines. From <https://sonic-build.azurewebsites.net/ui/sonic/pipelines>:
 
 * Scroll to the bottom of the pipeline list, where the **vs** platform is listed;
-* Pick a branch (for example `202405`) and open **Build History**;
-* Choose the latest build whose *Result* is successful and open **Artifacts**;
-* Open the artifact, scroll to **target/docker-sonic-vs.gz**, and download it.
+* Pick a branch -- the newest release branch (for example `202605`) or `master` -- and open **Build History**;
+* Choose the latest build whose *Result* is **succeeded** and open **Artifacts**. Builds that
+  were *canceled* are listed alongside the successful ones, and they have an **Artifacts** link
+  too;
+* Open the artifact (there is only one, `sonic-buildimage.vs`) and find **target/docker-sonic-vs.gz**
+  in the file list. Take care not to pick **target/docker-sonic-vs-asan.gz**, which sits next to
+  it -- that is an AddressSanitizer build.
 
-*containerlab* documents the same path for its
-[`sonic-vs` kind](https://containerlab.dev/manual/kinds/sonic-vs/), which uses this image. [sonic.software](https://SONiC.software/) is an unofficial index that is sometimes offered as an alternative, but it carries SONiC *installation* images (`sonic-vs.img`, used for the Vagrant box
-above) rather than the container artifact.
+The file list is long; if you would rather not scroll it, the download URL can be built by hand
+once you know the branch and the build ID from the *Build History* page:
+
+```
+https://sonic-build.azurewebsites.net/api/sonic/artifacts?branchName=202605&platform=vs&buildId=1166687&target=target%2Fdocker-sonic-vs.gz
+```
 
 After downloading the container, unpack and load it:
 
@@ -51,7 +58,22 @@ gunzip docker-sonic-vs.gz
 docker load -i docker-sonic-vs
 ```
 
-Check the tag `docker load` restored with **docker images**; retag it to `docker-sonic-vs:latest` if necessary.
+The archive carries the tag `docker-sonic-vs:latest`, which is what the device definition
+expects, so there is usually nothing to retag.
+
+```{warning}
+**docker load** replaces any existing `docker-sonic-vs:latest` image -- it prints
+`The image docker-sonic-vs:latest already exists, renaming the old one with ID ... to empty string`
+and leaves the previous image untagged. If you want to keep the image you already have, tag it
+first (for example `docker tag docker-sonic-vs:latest docker-sonic-vs:previous`) and select
+between them with `defaults.devices.sonic.clab.image`.
+```
+
+You can check which build you got with:
+
+```
+docker run --rm --entrypoint cat docker-sonic-vs:latest /etc/sonic/sonic_version.yml
+```
 
 ### Build a SONiC Container
 
