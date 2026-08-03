@@ -44,6 +44,12 @@ ip6 nd {{ vpp_if }} prefix {{ nd_prefix }} default
 bvi create instance {{ bd }}
 set interface l2 bridge bvi{{ bd }} {{ bd }} bvi
 set interface state bvi{{ bd }} up
+{#
+  LCP must exist before addresses are added — lcp-sync only mirrors
+  addresses configured after the itf-pair is created. BVI packet MTU cannot
+  be changed (driver limit); Linux TAP MTU is set in netlab-start.sh.
+#}
+lcp create bvi{{ bd }} host-if {{ ifdata.ifname }}
 {%   if ifdata.ipv4 is defined and ifdata.ipv4 is string %}
 set interface ip address bvi{{ bd }} {{ ifdata.ipv4 }}
 {%   endif %}
@@ -59,5 +65,4 @@ ip6 nd bvi{{ bd }} prefix {{ nd_prefix }} default
 {%       endif %}
 {%     endif %}
 {%   endif %}
-lcp create bvi{{ bd }} host-if {{ ifdata.ifname }}
 {% endfor %}

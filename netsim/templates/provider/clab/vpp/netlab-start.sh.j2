@@ -16,6 +16,14 @@ timeout "$WAIT_TIMEOUT" sh -c 'until [ -S /run/vpp/cli.sock ]; do sleep 0.1; don
 vppctl show version >/dev/null
 
 #
+# Remaining setup and the control-plane daemon run in the dataplane netns.
+# vppctl still works there (CLI socket is a filesystem path).
+#
+ip netns exec "$NETNS" env WAIT_TIMEOUT="$WAIT_TIMEOUT" VPP_CONTROL_PLANE="$VPP_CONTROL_PLANE" \
+  bash <<'NETNS_EOF'
+set -e
+
+#
 # The CLI socket appears before unix.startup-config (setup.vpp) finishes.
 # Wait for LCP peers so unnumbered addressing and FRR/BIRD see dataplane ifaces.
 #
@@ -24,8 +32,8 @@ vppctl show version >/dev/null
      and l.type|default('') not in ['svi', 'vlan_member']
      and (l.type|default('') != 'loopback'
           or (('ipv4' in l and l.ipv4 is not false) or ('ipv6' in l and l.ipv6 is not false))) %}
-timeout "$WAIT_TIMEOUT" sh -c "until ip -n \"$NETNS\" link show {{ l.ifname }} >/dev/null 2>&1; do sleep 0.1; done" \
-  || { echo "LCP interface {{ l.ifname }} did not appear in $NETNS within ${WAIT_TIMEOUT}s" >&2; exit 1; }
+timeout "$WAIT_TIMEOUT" sh -c "until ip link show {{ l.ifname }} >/dev/null 2>&1; do sleep 0.1; done" \
+  || { echo "LCP interface {{ l.ifname }} did not appear within ${WAIT_TIMEOUT}s" >&2; exit 1; }
 {% endfor %}
 
 #
@@ -67,11 +75,18 @@ vppctl exec {{ _daemon_config[m] }}
              or (l.ipv6 is defined and l.ipv6 is string)
              or l.type|default('') == 'vlan_member') %}
 {%   if l.type|default('') == 'vlan_member' and l.vlan.mode|default('irb') == 'route' %}
-timeout "$WAIT_TIMEOUT" sh -c "until ip -n \"$NETNS\" link show {{ l.ifname }} >/dev/null 2>&1; do sleep 0.1; done" \
-  || { echo "LCP VLAN interface {{ l.ifname }} did not appear in $NETNS within ${WAIT_TIMEOUT}s" >&2; exit 1; }
+timeout "$WAIT_TIMEOUT" sh -c "until ip link show {{ l.ifname }} >/dev/null 2>&1; do sleep 0.1; done" \
+  || { echo "LCP VLAN interface {{ l.ifname }} did not appear within ${WAIT_TIMEOUT}s" >&2; exit 1; }
 {%   elif l.type|default('') == 'svi' %}
-timeout "$WAIT_TIMEOUT" sh -c "until ip -n \"$NETNS\" link show {{ l.ifname }} >/dev/null 2>&1; do sleep 0.1; done" \
-  || { echo "LCP SVI {{ l.ifname }} did not appear in $NETNS within ${WAIT_TIMEOUT}s" >&2; exit 1; }
+timeout "$WAIT_TIMEOUT" sh -c "until ip link show {{ l.ifname }} >/dev/null 2>&1; do sleep 0.1; done" \
+  || { echo "LCP SVI {{ l.ifname }} did not appear within ${WAIT_TIMEOUT}s" >&2; exit 1; }
+{#
+  BVI packet MTU is fixed by the driver; set the Linux TAP MTU so BIRD/FRR
+  advertise the correct value in OSPF DBD packets.
+#}
+{%     if l.mtu is defined %}
+ip link set {{ l.ifname }} mtu {{ l.mtu }}
+{%     endif %}
 {%   endif %}
 {% endfor %}
 
@@ -79,49 +94,48 @@ timeout "$WAIT_TIMEOUT" sh -c "until ip -n \"$NETNS\" link show {{ l.ifname }} >
 # Attach Linux peer addresses for IPv4 unnumbered LCP interfaces
 #
 {% for l in interfaces if l._unnumbered_peer is defined %}
-ip -n "$NETNS" addr flush dev {{ l.ifname }} scope global 2>/dev/null || true
-ip -n "$NETNS" addr add {{ l._parent_ipv4 }} peer {{ l._unnumbered_peer }} dev {{ l.ifname }}
+ip addr flush dev {{ l.ifname }} scope global 2>/dev/null || true
+ip addr add {{ l._parent_ipv4 }} peer {{ l._unnumbered_peer }} dev {{ l.ifname }}
 {% endfor %}
 
 case "$VPP_CONTROL_PLANE" in
   bird)
     mkdir -p /run/bird
     # Control-plane initial hooks in the dataplane netns (e.g. IPv6 LLA on loopback)
-    ip netns exec "$NETNS" /bin/sh <<'CP_INITIAL'
+    /bin/sh <<'CP_INITIAL'
 {% include 'initial/bird.cp.j2' %}
 CP_INITIAL
-    # BIRD 2.x: omit -d so bird daemonizes; VPP stays foreground via wait
-    ip netns exec "$NETNS" /usr/sbin/bird -c /etc/bird/bird.conf
-    wait $VPP_PID
+    # BIRD 2.x: omit -d so bird daemonizes; outer shell waits on VPP
+    /usr/sbin/bird -c /etc/bird/bird.conf
     ;;
   frr)
-    ip netns exec "$NETNS" bash -c '
-      mkdir -p /run/frr /var/run/frr /var/log/frr
-      chown -R frr:frrvty /run/frr /var/run/frr /var/log/frr 2>/dev/null \
-        || chown -R frr:frr /run/frr /var/run/frr /var/log/frr
-      /usr/lib/frr/frrinit.sh start
-      # Match ansible/tasks/deploy-config/frr.yml: bash shebang → shell,
-      # otherwise treat the file as vtysh configuration (e.g. OSPF/BGP).
-      for script in /etc/config/[0-9][0-9]-*.sh; do
-        case "$script" in
-          /etc/config/01-initial.sh) continue ;;
-        esac
-        [ -f "$script" ] || continue
-        shebang=$(head -n1 "$script")
-        case "$shebang" in
-          "#!/bin/bash"|"#!/bin/sh"|"#!/usr/bin/env bash"|"#!/usr/bin/env sh")
-            bash "$script" || exit 1
-            ;;
-          *)
-            /usr/bin/vtysh -f "$script" || exit 1
-            ;;
-        esac
-      done
-    '
-    wait $VPP_PID
+    mkdir -p /run/frr /var/run/frr /var/log/frr
+    chown -R frr:frrvty /run/frr /var/run/frr /var/log/frr 2>/dev/null \
+      || chown -R frr:frr /run/frr /var/run/frr /var/log/frr
+    /usr/lib/frr/frrinit.sh start
+    # Match ansible/tasks/deploy-config/frr.yml: bash shebang → shell,
+    # otherwise treat the file as vtysh configuration (e.g. OSPF/BGP).
+    for script in /etc/config/[0-9][0-9]-*.sh; do
+      case "$script" in
+        /etc/config/01-initial.sh) continue ;;
+      esac
+      [ -f "$script" ] || continue
+      shebang=$(head -n1 "$script")
+      case "$shebang" in
+        "#!/bin/bash"|"#!/bin/sh"|"#!/usr/bin/env bash"|"#!/usr/bin/env sh")
+          bash "$script" || exit 1
+          ;;
+        *)
+          /usr/bin/vtysh -f "$script" || exit 1
+          ;;
+      esac
+    done
     ;;
   *)
     echo "Unknown control_plane: $VPP_CONTROL_PLANE" >&2
     exit 1
     ;;
 esac
+NETNS_EOF
+
+wait $VPP_PID
