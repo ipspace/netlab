@@ -53,7 +53,10 @@ def init_wrong_type() -> None:
   _attr_help_cache = None
 
 def wrong_type_text(x : typing.Any) -> str:
-  return "dictionary" if isinstance(x,dict) else str(type(x).__name__)
+  return \
+    "dictionary" if isinstance(x,dict) \
+    else "list" if isinstance(x,list) \
+    else str(type(x).__name__)
 
 def err_add_alt_types(ctx: dict) -> str:
   a_types = ctx.get('_alt_types',[])
@@ -444,8 +447,10 @@ def must_be_list(
       value: typing.Any,
       make_list: bool = False,                          # Make anything (not just scalars) into a list
       split_lines: bool = False,                        # Split lines in a string into list items
-      empty: bool = True) -> dict:                      # Is it OK to have an empty list?
-
+      empty: bool = True,                               # Is it OK to have an empty list?
+      min_length: typing.Optional[int] = None,          # Minimum...
+      max_length: typing.Optional[int] = None           # ... and maximum list length
+        ) -> dict:
   def transform_to_list(value: typing.Any) -> list:
     if isinstance(value,str) and split_lines:
       return value.rstrip().split("\n")
@@ -453,6 +458,11 @@ def must_be_list(
     return [ value ]
 
   if isinstance(value,list):                            # A list is what we want to have ;)
+    if min_length is not None and len(value) < min_length:    
+      return { '_value': f'a list with at least {min_length} elements'}
+    if max_length is not None and len(value) > max_length:
+      return { '_value': f'a list with at most {max_length} elements'}
+
     if not empty and not value:                         # Do we have an unacceptable empty list?
       return { '_value': 'a scalar or a non-empty list'}
 
@@ -463,6 +473,9 @@ def must_be_list(
   # is tied to the argument value passed to this function (it's a magic
   # transfer of hidden variables)
   #
+  if min_length is not None and min_length >= 2:
+    return { '_type': f'a list with at least {min_length} elements' }
+
   if isinstance(value,(str,int,float,bool)):
     return { '_valid': True, '_transform': transform_to_list }
 
@@ -704,6 +717,7 @@ Common IP address validation functionality. Both tests recognize these use cases
 * 'subnet_prefix' -- an IP prefix that can be used on a subnet, including bool (unnum/LLA).
   Host bits must be zero, and it cannot be in the multicast range.
 * 'prefix' -- any IP prefix, including multicast prefixes. Use case: prefix lists
+* 'prefix_or_host' -- any IP prefix or host (IP address without a prefix). Use case: ACLs
 
 Valid types per use case:
 
@@ -712,6 +726,7 @@ Use case      | str (w/) | str (no/) | bool | int |
 address       |          |    OK     |      |     |
 prefix        |    OK    |           |      |     |
 host_prefix   |    OK    |           |      |     |
+prefix_or_host|    OK    |    OK     |      |     |
 interface     |    OK    |    OK     |  OK  | OK  |
 subnet_prefix |    OK    |           |  OK  |     |
 id            |          |    OK     |      | OK  |
@@ -763,9 +778,19 @@ def common_addr_parse(
 
     return None
 
+  if use not in ['address','prefix','host_prefix','prefix_or_host','interface','subnet_prefix','id']:
+    return {'_value': f'INTERNAL ERROR: invalid use parameter: {use}'}
+
+  exp_type = f'{af} address or prefix' if use == 'prefix_or_host' \
+                else f'{af} prefix' if 'prefix' in use  \
+                else f'{af} address'
+
   if isinstance(value,bool):                      # bool values are valid only on interfaces and subnets
     if use not in ('interface','subnet_prefix'):
-      return { '_value' : f'an {af} address (boolean value is valid only on an interface)' }
+      return {
+        '_value' : exp_type,
+        '_hint_id': 'ip_bool_value',
+        '_hint': 'A boolean value is valid only on an interface or as a subnet prefix' }
     else:
       return { '_valid': True }
 
@@ -773,11 +798,14 @@ def common_addr_parse(
     if use == 'id' and af == 'IPv4':
       return check_int_value(value,xform_int)
     if use != 'interface':
-      return { '_value': f'an {af} address or prefix (integer value is only valid as interface offset or a 32-bit ID)' }
+      return {
+        '_value' : exp_type,
+        '_hint_id': 'ip_int_value',
+        '_hint': 'An integer value is only valid as interface offset or a 32-bit ID' }
     return check_int_value(value,None)
 
   if not isinstance(value,str):
-    return { '_type': f'{af} prefix' if 'prefix' in use else f'{af} address' }
+    return { '_type': exp_type }
 
   if named and xform_pfx is not None:             # Check whether we can use a named prefix
     topology = global_vars.get_topology()
@@ -789,7 +817,7 @@ def common_addr_parse(
         if 'ipv4' in pfxs[value]:
           return { '_valid': True, '_transform': xform_pfx }
 
-  if use in ['id','address'] or (use in ['interface'] and '/' not in value):
+  if use in ['id','address'] or (use in ['interface','prefix_or_host'] and '/' not in value):
     try:
       p_addr = addr_parse(value)
     except Exception as Ex:
@@ -802,7 +830,7 @@ def common_addr_parse(
     except Exception as Ex:
       return { '_value': f'{af} prefix ({Ex})' }
 
-  if use not in ['prefix','id']:
+  if use not in ['prefix','prefix_or_host','id']:
     r_hit = check_reserved_range(RESERVED_PREFIXES[af],p_addr)
     if r_hit:
       return {'_value': f'{af} {"prefix" if "prefix" in use else "address"}'+

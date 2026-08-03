@@ -1,5 +1,5 @@
 #
-# Generic routing module: 
+# Generic routing module:
 #
 # * Routing policies (route maps)
 # * Routing filters (prefixes, communities, as-paths)
@@ -13,7 +13,7 @@ from ...augment import devices
 from ...data import global_vars
 from ...utils import log
 from .. import _Module
-from . import aspath, clist, policy, prefix, static
+from . import acl, aspath, clist, policy, prefix, static
 from .normalize import (
   check_routing_object,
   import_routing_object,
@@ -41,7 +41,11 @@ import_dispatch: typing.Dict[str,dict] = {
     'check'  : check_routing_object },
   'static': {
     'start'  : static.include_global_static_routes
-  }
+  },
+  'acl': {
+    'import' : import_routing_object,
+    'check'  : check_routing_object
+    }
 }
 
 """
@@ -65,6 +69,10 @@ normalize_dispatch: typing.Dict[str,dict] = {
       'object'   : 'BGP community filter',
       'list_attr': 'value',
       'callback' : aspath.normalize_aspath_entry },
+  'acl':
+    { 'namespace': 'routing.acl',
+      'object'   : 'acl',
+      'callback' : normalize_routing_entry }
 }
 
 """
@@ -119,6 +127,10 @@ transform_dispatch: typing.Dict[str,dict] = {
     'import' : static.import_static_routes,
     'check'  : static.check_static_routes,
     'cleanup': static.cleanup_static_routes
+  },
+  'acl': {
+    'import': acl.expand_acl,
+    'cleanup': acl.create_af_acls
   }
 }
 
@@ -157,5 +169,6 @@ class Routing(_Module):
   def node_post_transform(self, node: Box, topology: Box) -> None:
     global transform_dispatch
 
+    acl.interface_acl_references(node,topology)
     for o_name in transform_dispatch.keys():
       process_routing_data(node,o_name,topology,transform_dispatch)

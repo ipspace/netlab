@@ -1,0 +1,143 @@
+{% set _clab = defaults.devices.vpp.clab %}
+{% set _sw_version = sw_version if sw_version is defined else _clab.get('sw_version',none) %}
+FROM debian:bookworm-slim
+ENV DEBIAN_FRONTEND=noninteractive
+
+LABEL maintainer="Netlab project <netlab.tools>"
+LABEL description="FD.io Vector Packet Processor (VPP){% if _sw_version %} ({{ _sw_version }}){% endif %}"
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+		apt-transport-https \
+		ca-certificates \
+		curl \
+		gnupg \
+		iproute2 \
+		procps \
+	&& rm -rf /var/lib/apt/lists/*
+
+ARG REPO
+ARG VPP_VERSION={{ _sw_version or '' }}
+
+WORKDIR /vpp
+
+RUN set -eux; \
+	export VPP_VERSION="{{ _sw_version or '' }}"; \
+	export REPO="{{ _clab.get('repo','release') }}"; \
+	bash <<'GETVPP'
+#!/bin/bash
+
+[ -z "$REPO_URL" ] && REPO_URL="https://packagecloud.io/install/repositories/fdio/${REPO:=release}"
+
+function get_vpp () {
+	ls *.deb 2>/dev/null && { die "remove existing *.deb files"; }
+
+	set -exuo pipefail
+	trap '' PIPE
+
+	curl -sS "${REPO_URL}"/script.deb.sh | bash || {
+		die "Packagecloud FD.io repo fetch failed."
+	}
+
+	artifacts=()
+	both_quotes='"'"'"
+	match="[^${both_quotes}]*"
+	qmatch="[${both_quotes}]\?"
+	sed_command="s#.*apt_source_path=${qmatch}\(${match}\)${qmatch}#\1#p"
+	apt_fdio_repo_file=$(curl -s "${REPO_URL}"/script.deb.sh | \
+						 sed -n ${sed_command}) || {
+							 die "Local fdio repo file path fetch failed."
+						 }
+
+	if [ ! -f ${apt_fdio_repo_file} ]; then
+		die "${apt_fdio_repo_file} not found, \
+			repository installation was not successful."
+	fi
+
+	packages=$(apt-cache -o Dir::Etc::SourceList=${apt_fdio_repo_file} \
+			   -o Dir::Etc::SourceParts=${apt_fdio_repo_file} dumpavail \
+			   | grep Package: | cut -d " " -f 2) || {
+				   die "Retrieval of available VPP packages failed."
+			   }
+	if [ -z "${VPP_VERSION-}" ]; then
+		allVersions=$(apt-cache -o Dir::Etc::SourceList=${apt_fdio_repo_file} \
+					  -o Dir::Etc::SourceParts=${apt_fdio_repo_file} \
+					  show vpp | grep Version: | cut -d " " -f 2) || {
+						  die "Retrieval of available VPP versions failed."
+					  }
+		if [ "${REPO}" != "master" ]; then
+			nonRcVersions=$(echo "$allVersions" | grep -v "\-rc[0-9]") || true
+			[ -n "${nonRcVersions}" ] && allVersions=$nonRcVersions
+		fi
+		VPP_VERSION=$(echo "$allVersions" | head -n1) || true
+	fi
+
+	set +x
+	echo "Finding packages with version: ${VPP_VERSION-}"
+	for package in ${packages}; do
+		pkg_info=$(apt-cache show -- ${package}) || {
+			die "apt-cache show on ${package} failed."
+		}
+		ver=$(echo ${pkg_info} | grep -o "Version: ${VPP_VERSION-}[^ ]*" | head -1) || true
+		if [ -n "${ver-}" ]; then
+			if [ "${package}" == "vom" ]; then
+				echo " x '${package}' skipped"
+			else
+				echo "+++'${package}' found"
+				ver=$(echo "$ver" | cut -d " " -f 2)
+				artifacts+=(${package[@]/%/=${ver-}})
+			fi
+		else
+			echo " - '${package}'"
+		fi
+	done
+	set -x
+
+	if [ "${INSTALL:-false}" = true ]; then
+		apt-get -y install "${artifacts[@]}" || {
+			die "Install VPP artifacts failed."
+		}
+	else
+		apt-get -y download "${artifacts[@]}" || {
+			die "Download VPP artifacts failed."
+		}
+	fi
+}
+
+function die () {
+	set -x
+	set +eu
+	echo "${1:-Unspecified run-time error occurred!}"
+	exit "${2:-1}"
+}
+
+get_vpp
+GETVPP
+
+RUN set -eux; \
+	sysctl_bin="$(command -v sysctl)"; \
+	mv "$sysctl_bin" "${sysctl_bin}.real"; \
+	printf '#!/bin/sh\nexit 0\n' > "$sysctl_bin"; \
+	chmod +x "$sysctl_bin"; \
+	apt-get update; \
+	apt-get install -y -V ./*.deb; \
+	mv "${sysctl_bin}.real" "$sysctl_bin"; \
+	dpkg-query -f '${Version}\n' -W vpp > /vpp/version; \
+	rm -rf vom*.deb vpp-dbg*.deb; \
+	rm -rf /var/lib/apt/lists/*;
+
+RUN set -eux; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
+		bird2 \
+		curl \
+		gnupg; \
+	curl -fsSL https://deb.frrouting.org/frr/keys.asc | gpg --dearmor -o /etc/apt/trusted.gpg.d/frr.gpg; \
+	echo "deb https://deb.frrouting.org/frr bookworm frr-stable" > /etc/apt/sources.list.d/frr.list; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends frr frr-pythontools; \
+	mkdir -p /etc/bird /run/bird /var/log/frr /var/run/frr; \
+	rm -rf /var/lib/apt/lists/*;
+
+RUN mkdir -p /var/log/vpp
+
+CMD ["/usr/bin/vpp", "-c", "/etc/vpp/startup.conf"]

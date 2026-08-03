@@ -1,0 +1,88 @@
+#
+# bound to /etc/vpp/config/setup.vpp
+#
+set logging class linux-cp rate-limit 1000 level warn syslog-level notice
+
+lcp default netns dataplane
+lcp lcp-sync on
+lcp lcp-sync-unnumbered off
+lcp param del-static-on-link-down on
+lcp param del-dynamic-on-link-down on
+{#
+  Auto-create Linux VLAN devices on the parent LCP TAP when VPP subifs appear.
+  Parent TAP MAC must match host-interface MAC first (see netlab-start.sh).
+#}
+lcp lcp-auto-subint on
+
+exec /etc/vpp/config/clab-interfaces.vpp
+
+{% for af_name in ['ipv4','ipv6'] if af_name in af %}
+set ip neighbor-config {{ af_name|replace('ipv','ip') }} age 900
+{% endfor %}
+
+{#
+  Skip SVIs / vlan_member (vlan-init.vpp via netlab-start.sh). Keep loopbacks
+  even though they are virtual_interface — they still need a VPP loopback + address.
+#}
+{% for l in netlab_interfaces
+     if l.type|default('') == 'loopback'
+     or (not l.virtual_interface|default(false)
+         and l.type|default('') not in ['svi', 'vlan_member']) %}
+{%   set is_loopback = l.type|default('') == 'loopback' %}
+{%   if is_loopback %}
+{%     set lb_instance = l.ifname[4:] %}
+create loopback interface instance {{ lb_instance }}
+{%     set vpp_if = l.ifname %}
+{%   else %}
+{%     set vpp_if = 'host-' ~ l.ifname %}
+{%   endif %}
+{%   set has_ipv4 = 'ipv4' in l and l.ipv4 is not false %}
+{%   set has_ipv6 = 'ipv6' in l and l.ipv6 is not false %}
+{%   if l.mtu is defined %}
+set interface mtu {{ l.mtu }} {{ vpp_if }}
+{%   endif %}
+{%   if not is_loopback or has_ipv4 or has_ipv6 %}
+lcp create {{ vpp_if }} host-if {{ l.ifname }}
+{%   endif %}
+set interface state {{ vpp_if }} {{ 'down' if l.shutdown|default(False) else 'up' }}
+{%   if l.ipv4 is defined and l.ipv4 is string %}
+set interface ip address {{ vpp_if }} {{ l.ipv4 }}
+{%   elif l._parent_intf is defined %}
+set interface unnumbered {{ vpp_if }} use {{ l._parent_intf }}
+{%   endif %}
+{%   if 'ipv6' in l and l.ipv6 is string and l.ipv6|ansible.utils.ipv6 %}
+set interface ip address {{ vpp_if }} {{ l.ipv6 }}
+{%     if not is_loopback %}
+{%       if role == 'router' %}
+{%         if l.ra.disable|default(false) is true %}
+ip6 nd {{ vpp_if }} ra-suppress
+{%         else %}
+ip6 nd {{ vpp_if }} ra-interval 5
+{%           if 'ra' in l and l.ipv6 is string %}
+{%             set nd_prefix = l.ipv6|ansible.utils.ipaddr(0) %}
+{%             set nd_no_autoconfig = 'no-autoconfig' if l.ra.slaac|default(true) is false else '' %}
+{%             set nd_off_link = 'off-link' if l.ra.onlink|default(true) is false else '' %}
+{%             if nd_no_autoconfig or nd_off_link %}
+ip6 nd {{ vpp_if }} prefix {{ nd_prefix }} infinite {{ nd_no_autoconfig }} {{ nd_off_link }}
+{%             else %}
+ip6 nd {{ vpp_if }} prefix {{ nd_prefix }} default
+{%             endif %}
+{%           endif %}
+{%           if l.ra.dhcp|default(false) == 'all' %}
+ip6 nd {{ vpp_if }} ra-managed-config-flag
+{%           endif %}
+{%           if l.ra.dhcp|default(false) == 'other' %}
+ip6 nd {{ vpp_if }} ra-other-config-flag
+{%           endif %}
+{%         endif %}
+{%       elif role == 'host' %}
+ip6 nd address autoconfig {{ vpp_if }} default-route
+{%       endif %}
+{%     endif %}
+{%   endif %}
+{% endfor %}
+
+{#
+  VLAN and other module .vpp snippets run from netlab-start.sh after LCP TAP
+  MACs are copied from host-* interfaces (af_packet rejects secondary MACs).
+#}

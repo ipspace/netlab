@@ -16,6 +16,7 @@ The following configuration modules are included in the **netlab** distribution:
    module/isis.md
    module/lag.md
    MPLS Configuration Module (LDP, BGP-LU, MPLS/VPN) <module/mpls.md>
+   module/services.md
    module/ospf.md
    module/ripv2.md
    module/sr-mpls.md

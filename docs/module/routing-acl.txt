@@ -1,0 +1,131 @@
+(generic-routing-acl)=
+## Access Control Lists (ACL)
+
+Access control lists are sets of rules used by networking devices to inspect packet headers and determine which packets are permitted to enter/exit a network interface. They can be applied to interfaces in both directions, inbound or outbound.
+
+### Defining Access Control Lists
+
+ACLs are specified in the global- or node-level **routing.acl** dictionary (see [](routing-acl-global-node) for more details).
+
+The dictionary keys in the **routing.acl** dictionary are ACL names, and the dictionary values are lists of ACL entries, for example:
+
+```yaml
+module: [ routing ]
+
+routing.acl:
+  h1_filter:
+  - action: permit
+    protocol: icmp
+    description: permit all ICMP
+  - action: permit
+    protocol: tcp
+    src.ipv4: 172.16.0.1
+    dst.ipv4: 192.168.0.2
+    dst.port: 80
+    description: permit HTTP access
+```
+
+### ACL Entries
+
+Each ACL entry can have these attributes:
+
+* **action**: **permit** or **deny** the matched packets (default: **permit**)
+* **sequence**: Statement sequence number (default: if unspecified, Netlab will generate a sequence starting with 10, with an increment of 10)
+* **protocol**: IP protocol to match — one of **ahp**, **esp**, **icmp**, **ip**, **ipv6**, **tcp**, **udp**, or a numeric protocol number. **Required**.
+* **established**: Match established TCP sessions (boolean)
+* **src**: Dictionary for source address/port match — see [](routing-acl-matching-addr) and [](routing-acl-matching-port). Default value: `prefix: any`
+* **dst**: Dictionary for destination address/port match. Default value: `prefix: any`
+* **log**: Log matched packets (boolean).
+* **description**: Free-text description of the ACL entry
+
+(routing-acl-matching-addr)=
+### Matching Source and Destination Addresses
+
+Both **src** and **dst** dictionaries use the following attributes to describe what an ACL entry matches on the source and destination side of a packet.
+
+* **prefix**: Match a (list of) [named prefixes](https://netlab.tools/prefix/#named-prefixes). Use `prefix: any` to match any source or destination address.
+* **pool**: Match a prefix from the (list of) specified [addressing pools](https://netlab.tools/addressing/#address-pools)
+* **ipv4**/**ipv6**: Match explicit IPv4/IPv6 prefixes or addresses.
+* **node**: Match all IP addresses of specified node(s).
+* **role**: Limit the node IP addresses to interfaces with the specified role.
+* **interface**: Limit the node IP addresses to specified interfaces.
+
+You can use either a single value or a list of values in all of the above parameters. When either the **src** or **dst** parameter results in multiple IP addresses, _netlab_ generates multiple ACL entries (a Cartesian product of source and destination IP addresses). The sequence numbers in the final ACL deployed on a device thus **do not** match the lab topology sequence numbers.
+
+You can also mix IPv4 and IPv6 addresses in an access list. _netlab_ always generates address-family-specific access lists for all address families used on the device.
+
+(routing-acl-matching-port)=
+### Matching TCP/UDP Ports
+
+Port matching parameters (TCP/UDP only) are specified within the **src.port**/**dst.port** dictionaries. These dictionaries can have one or more matching parameters:
+
+* **eq** (int or list): List of allowed ports (or a single allowed port)
+* **neq** (int): A port that is not allowed[^BUEQ]
+* **lt** (int): Ports lower than the specified value
+* **gt** (int): Ports greater than the specified value
+* **in** (list with two values): Ports within the specified range
+* **not_in** (list with two values): Ports outside of the specified range
+
+[^BUEQ]: It might be better to use a separate entry with opposite **permit** action and **port.eq** parameter if you want to match ports not being equal to a list of ports.
+
+```{note}
+* The **eq** parameter can be combined with any other parameter. You can also combine **lt** and **gt** parameters, others (**neq**, **in**, **not_in**) cannot be combined.
+* Multiple port parameters, or multiple ports specified in the **‌eq** parameter, are expanded into multiple ACL entries.
+* Most platforms do not support the *‌not in range* operation. The **‌not_in** parameter is thus rewritten as a combination of **‌lt** and **‌gt** parameters.
+```
+
+## Applying ACLs to Interfaces
+
+Once defined, an ACL is applied to an interface using the interface-level **routing.acl.in** and **routing.acl.out** attributes.
+
+**Note:** You cannot apply ACLs to loopback interfaces.
+
+Each attribute can specify an ACL name that is applied to all address families configured on the interface. Alternatively, the attributes could be dictionaries with **ipv4** and **ipv6** keys, limiting the ACLs to the specified address family.
+
+For example, the following lab topology applies "allow only established TCP sessions" to IPv4 traffic on R1's first interface and to all traffic on its second interface
+
+```yaml
+module: [ routing ]
+
+routing.acl:
+  tcp_est:
+  - protocol: tcp
+    established: true
+    log: true
+  - action: deny
+    protocol: tcp
+  - protocol: ip
+
+nodes:
+  r1:
+
+links:
+- r1.routing.acl.in.ipv4: tcp_est
+  r2:
+- r1.routing.acl.in: tcp_est
+  r3:
+```
+
+(routing-acl-global-node)=
+## Using Global- and Node-Level ACLs
+
+Like other routing objects (routing policies, prefix filters, AS-path filters, and BGP community filters), an ACL defined in the global **routing.acl** dictionary is not configured on a device unless it's referenced from that node — either by an interface **routing.acl.in**/**routing.acl.out** attribute or by mentioning the ACL name in the node-level **routing.acl** dictionary without a value:
+
+```yaml
+module: [ routing ]
+
+routing.acl:
+  tcp_est:
+  - protocol: tcp
+    established: true
+    log: true
+  - action: deny
+    protocol: tcp
+
+nodes:
+  r1:
+    routing.acl:
+      tcp_est:
+```
+
+Node-level ACL definitions are merged with global definitions the same way routing policies are (see [](routing-object-merge) for more details): a node can add, override, or extend a globally-defined ACL.

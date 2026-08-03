@@ -1,0 +1,141 @@
+#!/bin/bash
+#
+# Start VPP, attach Linux peer addresses for IPv4 unnumbered LCP interfaces,
+# then start the selected control-plane daemon in the dataplane namespace.
+#
+set -e
+
+NETNS=dataplane
+VPP_CONTROL_PLANE={{ control_plane|default('bird') }}
+WAIT_TIMEOUT=30
+
+/usr/bin/vpp -c /etc/vpp/startup.conf &
+VPP_PID=$!
+timeout "$WAIT_TIMEOUT" sh -c 'until [ -S /run/vpp/cli.sock ]; do sleep 0.1; done' \
+  || { echo "VPP CLI socket did not appear within ${WAIT_TIMEOUT}s" >&2; exit 1; }
+vppctl show version >/dev/null
+
+#
+# Remaining setup and the control-plane daemon run in the dataplane netns.
+# vppctl still works there (CLI socket is a filesystem path).
+#
+ip netns exec "$NETNS" env WAIT_TIMEOUT="$WAIT_TIMEOUT" VPP_CONTROL_PLANE="$VPP_CONTROL_PLANE" \
+  bash <<'NETNS_EOF'
+set -e
+
+#
+# The CLI socket appears before unix.startup-config (setup.vpp) finishes.
+# Wait for LCP peers so unnumbered addressing and FRR/BIRD see dataplane ifaces.
+#
+{% for l in interfaces
+     if not l.virtual_interface|default(false)
+     and l.type|default('') not in ['svi', 'vlan_member']
+     and (l.type|default('') != 'loopback'
+          or (('ipv4' in l and l.ipv4 is not false) or ('ipv6' in l and l.ipv6 is not false))) %}
+timeout "$WAIT_TIMEOUT" sh -c "until ip link show {{ l.ifname }} >/dev/null 2>&1; do sleep 0.1; done" \
+  || { echo "LCP interface {{ l.ifname }} did not appear within ${WAIT_TIMEOUT}s" >&2; exit 1; }
+{% endfor %}
+
+#
+# Align each LCP TAP MAC with its host-* / loopback phy MAC. initial/vpp.j2 pins
+# host-interface hw-addr to the container NIC MAC; TAP defaults to 02:fe:… and
+# VLAN subif LCP then tries to add that as a secondary MAC on af_packet (unsupported).
+#
+while read -r phy tap _rest; do
+  [ -n "$phy" ] && [ -n "$tap" ] || continue
+  case "$phy" in
+    host-*|loop*|bvi*) ;;
+    *) continue ;;
+  esac
+  phy_mac=$(vppctl show hardware-interfaces "$phy" 2>/dev/null \
+    | awk '/Ethernet address/{print $3; exit}')
+  [ -n "$phy_mac" ] || continue
+  vppctl set interface mac address "$tap" "$phy_mac" >/dev/null 2>&1 || true
+done < <(vppctl show lcp 2>/dev/null | awk '/^itf-pair:/{print $3,$4}')
+
+#
+# VLAN create + L2 membership after MAC alignment (see vlan-init.vpp / vlan.vpp).
+#
+{% if vlans is defined %}
+vppctl exec /etc/vpp/config/vlan-init.vpp
+{% endif %}
+{% if 'vlan' in module|default([]) %}
+vppctl exec /etc/vpp/config/vlan.vpp
+{% endif %}
+{% for m in module|default([])
+     if m != 'vlan'
+        and m in _daemon_config|default({})
+        and _daemon_config[m].endswith('.vpp') %}
+vppctl exec {{ _daemon_config[m] }}
+{% endfor %}
+
+{% for l in interfaces
+     if l.type|default('') in ['vlan_member', 'svi']
+        and ((l.ipv4 is defined and l.ipv4 is string)
+             or (l.ipv6 is defined and l.ipv6 is string)
+             or l.type|default('') == 'vlan_member') %}
+{%   if l.type|default('') == 'vlan_member' and l.vlan.mode|default('irb') == 'route' %}
+timeout "$WAIT_TIMEOUT" sh -c "until ip link show {{ l.ifname }} >/dev/null 2>&1; do sleep 0.1; done" \
+  || { echo "LCP VLAN interface {{ l.ifname }} did not appear within ${WAIT_TIMEOUT}s" >&2; exit 1; }
+{%   elif l.type|default('') == 'svi' %}
+timeout "$WAIT_TIMEOUT" sh -c "until ip link show {{ l.ifname }} >/dev/null 2>&1; do sleep 0.1; done" \
+  || { echo "LCP SVI {{ l.ifname }} did not appear within ${WAIT_TIMEOUT}s" >&2; exit 1; }
+{#
+  BVI packet MTU is fixed by the driver; set the Linux TAP MTU so BIRD/FRR
+  advertise the correct value in OSPF DBD packets.
+#}
+{%     if l.mtu is defined %}
+ip link set {{ l.ifname }} mtu {{ l.mtu }}
+{%     endif %}
+{%   endif %}
+{% endfor %}
+
+#
+# Attach Linux peer addresses for IPv4 unnumbered LCP interfaces
+#
+{% for l in interfaces if l._unnumbered_peer is defined %}
+ip addr flush dev {{ l.ifname }} scope global 2>/dev/null || true
+ip addr add {{ l._parent_ipv4 }} peer {{ l._unnumbered_peer }} dev {{ l.ifname }}
+{% endfor %}
+
+case "$VPP_CONTROL_PLANE" in
+  bird)
+    mkdir -p /run/bird
+    # Control-plane initial hooks in the dataplane netns (e.g. IPv6 LLA on loopback)
+    /bin/sh <<'CP_INITIAL'
+{% include 'initial/bird.cp.j2' %}
+CP_INITIAL
+    # BIRD 2.x: omit -d so bird daemonizes; outer shell waits on VPP
+    /usr/sbin/bird -c /etc/bird/bird.conf
+    ;;
+  frr)
+    mkdir -p /run/frr /var/run/frr /var/log/frr
+    chown -R frr:frrvty /run/frr /var/run/frr /var/log/frr 2>/dev/null \
+      || chown -R frr:frr /run/frr /var/run/frr /var/log/frr
+    /usr/lib/frr/frrinit.sh start
+    # Match ansible/tasks/deploy-config/frr.yml: bash shebang → shell,
+    # otherwise treat the file as vtysh configuration (e.g. OSPF/BGP).
+    for script in /etc/config/[0-9][0-9]-*.sh; do
+      case "$script" in
+        /etc/config/01-initial.sh) continue ;;
+      esac
+      [ -f "$script" ] || continue
+      shebang=$(head -n1 "$script")
+      case "$shebang" in
+        "#!/bin/bash"|"#!/bin/sh"|"#!/usr/bin/env bash"|"#!/usr/bin/env sh")
+          bash "$script" || exit 1
+          ;;
+        *)
+          /usr/bin/vtysh -f "$script" || exit 1
+          ;;
+      esac
+    done
+    ;;
+  *)
+    echo "Unknown control_plane: $VPP_CONTROL_PLANE" >&2
+    exit 1
+    ;;
+esac
+NETNS_EOF
+
+wait $VPP_PID

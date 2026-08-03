@@ -76,6 +76,14 @@ def use_paramiko(node: Box, topology: Box) -> None:
         category=Warning,
         more_hints=[ 'The installed version of ansible-pylibssh might not work with Cisco IOS devices' ])
 
+def tunnel_mtu(node: Box) -> None:
+  """
+  Cisco IOSv (but no other IOS flavor) does not want to configure MTU on tunnel interfaces
+  """
+  for intf in node.interfaces:
+    if intf.get('type','') == 'tunnel' and 'mtu' in intf:
+      intf._use_ip_mtu = True
+
 def common_ios_quirks(node: Box, topology: Box) -> None:
   mods = node.get('module',[])
   if 'ospf' in mods:
@@ -97,3 +105,4 @@ class IOS(_Quirks):
       vlan_1_subinterface(node,topology)
 
     common_ios_quirks(node,topology)
+    tunnel_mtu(node)

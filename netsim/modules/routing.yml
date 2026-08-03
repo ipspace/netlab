@@ -7,6 +7,7 @@ no_propagate:
   aspath:
   community:
   static:
+  acl:
 
 transform_after: [ vlan ]
 config_after: [ vlan ]
@@ -57,6 +58,12 @@ attributes:
         type: list
         make_list: True
         _subtype: static_entry
+    acl:
+      type: dict
+      _keytype: id
+      _subtype:
+        type: list
+        _subtype: acl_entry
 
   node:
     policy:
@@ -78,6 +85,25 @@ attributes:
     static:
       type: list
       _subtype: static_entry
+    acl:
+      merge: global
+      _subtype:
+        _alt_types: [NoneType]
+
+  interface:
+    acl:
+      in:
+        type: dict
+        _keys:
+          ipv4: id
+          ipv6: id
+        _alt_types: [ id ]
+      out:
+        type: dict
+        _keys:
+          ipv4: id
+          ipv6: id
+        _alt_types: [ id ]
 
   route_map:
     set: [ locpref, med, weight, prepend ]
@@ -243,6 +269,91 @@ _top:                               # Modification of global defaults
         type: id
         _valid_with: [ nexthop, vrf ]
 
+    acl_address:
+      ipv4:
+        type: list
+        _subtype: { type: ipv4, use: prefix_or_host }
+      ipv6:
+        type: list
+        _subtype: { type: ipv6, use: prefix_or_host }
+      node:
+        type: list
+        _subtype: node_id
+      pool:
+        type: list
+        _subtype: addr_pool
+      prefix:
+        type: list
+        _subtype: named_pfx
+      interface:
+        type: list
+        _subtype: str
+        _valid_with: [node]
+        _invalid_with: [role]
+      role:
+        type: list
+        _subtype: str
+        _valid_with: [node]
+        _invalid_with: [interface]
+      port:
+        eq: { type: list, _subtype: acl_port }
+        neq: acl_port
+        lt:
+          type: acl_port
+          _invalid_with: [ neq, in, not_in ]        # Full list of restrictions
+        gt:
+          type: acl_port
+          _invalid_with: [ neq, in, not_in ]        # Full list of restrictions
+        in:
+          type: list
+          _subtype: acl_port
+          min_length: 2
+          max_length: 2
+          _invalid_with: [ neq, not_in ]            # Minimized to what's not already restricted
+        not_in:
+          type: list
+          _subtype: acl_port
+          min_length: 2
+          max_length: 2
+          _invalid_with: [ neq ]                    # Minimized to what's not already restricted
+
+    acl_entry:
+      action:
+        type: str
+        valid_values: [permit, deny]
+        _default: permit
+      sequence:
+        type: int
+        min_value: 1
+        max_value: 2147483647
+        _default: 0
+      protocol:
+        type: str
+        valid_values: [ahp, esp, icmp, ip, ipv6, tcp, udp]
+        _alt_types: [int]
+        _required: True
+      established:
+        type: bool
+        valid_values: [ True ]
+      src:
+        type: acl_address
+        _required: True
+        _default: { prefix: [ any ] }
+      dst:
+        type: acl_address
+        _required: True
+        _default: { prefix: [ any ] }
+      log:
+        type: bool
+        valid_values: [ True ]
+      description:
+        type: str
+
+    acl_port:
+      type: int
+      min_value: 1
+      max_value: 65535
+
 features:
   policy:
     set: Route map SET attributes
@@ -252,3 +363,4 @@ features:
   prefix: Prefix lists
   aspath: AS-path access lists
   community: BGP community access lists
+  acl: Access Control lists

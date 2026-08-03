@@ -24,7 +24,7 @@ from . import external_commands
 def test_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
   c_path  = _files.get_traversable_path('package:templates/tests')   # Directory containing test scenarios
   c_list  = _files.get_globbed_files(c_path,'*.yml')                  # Find all test scenarios
-  choices = [ Path(fn).stem for fn in c_list ]
+  choices = sorted([ Path(fn).stem for fn in c_list ])
 
   parser = argparse.ArgumentParser(
     prog='netlab test',
@@ -75,7 +75,11 @@ You might want to copy the error messages generated during the test before
 proceeding. The cleanup process will start once you press RETURN.
 ==============================================================================
 ''')
-  input('Press RETURN to continue -> ')
+  try:
+    input('Press RETURN to continue -> ')
+  except KeyboardInterrupt:
+    print()
+    log.fatal('Aborted by user, the test directory was not cleaned up','test')
   log.section_header('Executing','netlab down --cleanup --force','bright_cyan')
   external_commands.run_command('netlab down --cleanup --force')
 

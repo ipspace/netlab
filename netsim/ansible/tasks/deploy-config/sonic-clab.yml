@@ -1,0 +1,32 @@
+# SONiC (containerlab, docker-sonic-vs) config deploy.
+#
+# NOT used by 'netlab up'/'netlab initial' -- those deploy through netlab's native "sh"
+# config mode inherited from FRR (see the clab: block in devices/sonic.yml). This task is
+# the Ansible fallback that 'netlab config' still needs: cli/config.py clears
+# netlab_config_mode before reloading a custom configuration template, which routes the
+# deployment back through the Ansible playbook.
+#
+# It cannot simply fall through to deploy-config/frr.yml: the lookup order puts the VM's
+# deploy-config/sonic.yml (which uses 'become' and 'docker exec bgp') ahead of it, and the
+# container has neither sudo nor a separate bgp container.
+#
+# Reached over Ansible's 'docker' connection plugin (ansible_connection: docker in
+# sonic.yml), so 'command'/'shell' here already execute *inside* the node container --
+# no docker exec wrapping needed.
+#
+# SONiC config is either a bash script of 'config' CLI commands (initial: starts with
+# #!/bin/bash) or an FRR vtysh config (routing modules), same convention as the package
+# 'frr'/'sonic' devices.
+- template:
+    src: "{{ config_template }}"
+    dest: /tmp/config.sh
+
+- set_fact: deployed_config={{ lookup('template',config_template) }}
+
+- name: "run /tmp/config.sh to deploy {{ netsim_action }} config from {{ config_template }}"
+  command: bash /tmp/config.sh
+  when: not ansible_check_mode and ("#!/bin/bash" in deployed_config or "#!/bin/sh" in deployed_config)
+
+- name: "run vtysh -f to deploy {{ netsim_action }} config from {{ config_template }}"
+  command: vtysh -f /tmp/config.sh
+  when: not ansible_check_mode and not ("#!/bin/bash" in deployed_config or "#!/bin/sh" in deployed_config)

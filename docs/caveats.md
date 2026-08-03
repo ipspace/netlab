@@ -56,6 +56,12 @@ nodes:
 * Arista EOS virtual machines and containers use [proprietary control-plane messages to indicate the loss of Ethernet line protocol](https://blog.ipspace.net/2025/03/arista-spooky-action-distance/). Set the **netlab_phy_control** node variable to *False* to disable this functionality.
 * Device configurations that contain `no lldp transmit` or `no lldp receive` configuration command trigger configuration reload failures due to an Arista EOS bug ([more details](https://github.com/ipspace/netlab/issues/2577)). These commands are thus automatically removed from collected device configurations.
 
+GRE tunnel caveats:
+
+* OSPFv2 routing process does not use routes reachable over tunnel interfaces unless the **tunnel routes** parameter is configured. _netlab_ enables OSPFv2 tunnel routes, as no other routing protocol has a similar limitation, and Arista EOS documentation claims it's enabled by default (which is not the case).
+* IS-IS does not work over GRE tunnels
+* Arista cEOS might forward multiple copies of the packets received over GRE tunnels
+
 (caveats-arcos)=
 ## Arrcus ArcOS
 
@@ -361,6 +367,12 @@ Netlab enables VRRPv3 by default on Dell OS10, overriding any platform defaults.
 
 * You have to build the *dnsmasq* container image with the **netlab clab build dnsmasq** command.
 
+(caveats-vpp)=
+## VPP (Vector Packet Processor)
+
+* You must [build the VPP container image](build-vpp) with the **netlab clab build vpp** command.
+* VPP can use FRR or BIRD control plane. [More details](vpp-control-plane).
+
 (caveats-exos)=
 ## Extreme Networks EXOS
 
@@ -477,6 +489,7 @@ ansible_httpapi_port: 80
 * Junos configuration template configures BFD timers within routing protocol configuration, not on individual interfaces
 * Junos does not disable the default BGP address family on a BGP neighbor until another AF is configured.
 * IS-IS NSAP is configured on the loopback interface for the global IS-IS instance and with the protocol **net** parameter in VRF IS-IS instances.
+* OSPFv3 over a GRE tunnel signals interface MTU value of `0` on *DBD* packets. If you need to interoperate with other devices/vendors, you need to ignore the MTU mismatch on the peer device.
 
 Implementation limitations in import/export route filters (reported as errors that can be disabled with topology settings):
 
@@ -676,14 +689,23 @@ See also [](caveats-sros) caveats for further details.
 * _netlab_ RIPv2/RIPng template implements route redistribution, but only for static and connected prefixes
 * The device role on nodes with a loopback interface is automatically changed to **router** (contrary to most other network devices, OpenBSD does not allow you to reach non-connected IP addresses unless the IPv4/IPv6 forwarding is enabled).
 
-(caveats-sonic)=
-## Sonic
+(caveats-sonic-vm)=
+## SONiC Virtual Machine
 
-* Sonic implementation was tested with Azure sonic-vs VM image (release 2023-11) with FRR running in a container. Other Sonic distributions might use different approaches that would require significant modifications to the configuration deployment process.
-* BGP is the only routing protocol running on Azure Sonic. The choice is hardcoded in FRR compilation flags.
-* You cannot use IBGP as there's no IGP protocol to resolve IBGP next hops, unless you believe in running IBGP over EBGP.
-* The Azure Sonic VM image has to be started with a preconfigured BGP AS number (specified in **config_db.json**); otherwise, it does not start the FRR container. That BGP process is removed during the initial BGP configuration and replaced with the actual BGP AS number specified in the lab topology.
-* _netlab_ configures BGP on Sonic through vtysh, not through **config_db**.
+* SONiC implementation was tested with Azure `sonic-vs` VM image (release 2023-11) with FRR running in a container. Other SONiC distributions might use different approaches that would require significant modifications to the configuration deployment process.
+* BGP is the only routing protocol running on Azure SONiC. The choice is hardcoded in FRR compilation flags.
+* You cannot use IBGP, as there's no IGP protocol to resolve IBGP next hops, unless you believe in running IBGP over EBGP.
+* The Azure SONiC VM image has to be started with a preconfigured BGP AS number (specified in **config_db.json**); otherwise, it does not start the FRR container. That BGP process is removed during the initial BGP configuration and replaced with the actual BGP AS number specified in the lab topology.
+* _netlab_ configures BGP on SONiC through vtysh, not through **config_db**.
+
+(caveats-sonic-clab)=
+## SONiC Container
+
+The `sonic` device also runs under *containerlab* with the community `docker-sonic-vs` image; see [](build-sonic-container) for how to obtain it and how the two deployments differ.
+
+* Configuration is deployed with **docker exec** commands, not over an SSH session.
+* `docker-sonic-vs` ships `sshd` but does not start it.
+* `srv6` is control-plane and kernel-plane only: the locator and End/End.X SIDs are advertised in the IS-IS LSDB and installed as kernel `seg6local` routes, but the end-to-end SRv6 datapath does not resolve -- the same open item as FRR/IS-IS SRv6 on other platforms.
 
 (caveats-vyos)=
 ## VyOS

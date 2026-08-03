@@ -1,0 +1,68 @@
+{#
+  Create VPP VLAN objects (bridge-domains, trunk subifs, BVIs). Access-port
+  bridge assignment lives in vlan/vpp.j2. Routed subif LCP peers are created
+  by lcp-auto-subint after netlab-start aligns parent TAP MACs with host-*.
+  BVI must be attached to its BD immediately after create; BVI still needs
+  an explicit lcp create.
+#}
+{% for vname,vdata in vlans|default({})|dictsort
+     if vdata.mode|default('irb') != 'route' %}
+create bridge-domain {{ vdata.id }}
+{% endfor %}
+{% for ifdata in interfaces if ifdata.type|default('') == 'vlan_member'
+     and ifdata.vlan.access_id is defined
+     and ifdata.parent_ifname is defined %}
+{%   set vpp_if = 'host-' ~ ifdata.ifname %}
+create sub-interfaces host-{{ ifdata.parent_ifname }} {{ ifdata.vlan.access_id }}
+{%   if ifdata.mtu is defined %}
+set interface mtu {{ ifdata.mtu }} {{ vpp_if }}
+{%   endif %}
+set interface state {{ vpp_if }} up
+{%   if ifdata.vlan.mode|default('irb') == 'route' %}
+{%     if ifdata.ipv4 is defined and ifdata.ipv4 is string %}
+set interface ip address {{ vpp_if }} {{ ifdata.ipv4 }}
+{%     endif %}
+{%     if ifdata.ipv6 is defined and ifdata.ipv6 is string and ifdata.ipv6|ansible.utils.ipv6 %}
+set interface ip address {{ vpp_if }} {{ ifdata.ipv6 }}
+{%       if role == 'router' %}
+{%         if ifdata.ra.disable|default(false) is true %}
+ip6 nd {{ vpp_if }} ra-suppress
+{%         else %}
+ip6 nd {{ vpp_if }} ra-interval 5
+{%           set nd_prefix = ifdata.ipv6|ansible.utils.ipaddr(0) %}
+ip6 nd {{ vpp_if }} prefix {{ nd_prefix }} default
+{%         endif %}
+{%       endif %}
+{%     endif %}
+{# LCP for VLAN subifs comes from lcp-auto-subint on the parent #}
+{%   endif %}
+{% endfor %}
+{% for ifdata in interfaces if ifdata.type|default('') == 'svi'
+     and ((ifdata.ipv4 is defined and ifdata.ipv4 is string)
+          or (ifdata.ipv6 is defined and ifdata.ipv6 is string)) %}
+{%   set bd = vlans[ifdata.vlan.name].id %}
+bvi create instance {{ bd }}
+set interface l2 bridge bvi{{ bd }} {{ bd }} bvi
+set interface state bvi{{ bd }} up
+{#
+  LCP must exist before addresses are added — lcp-sync only mirrors
+  addresses configured after the itf-pair is created. BVI packet MTU cannot
+  be changed (driver limit); Linux TAP MTU is set in netlab-start.sh.
+#}
+lcp create bvi{{ bd }} host-if {{ ifdata.ifname }}
+{%   if ifdata.ipv4 is defined and ifdata.ipv4 is string %}
+set interface ip address bvi{{ bd }} {{ ifdata.ipv4 }}
+{%   endif %}
+{%   if ifdata.ipv6 is defined and ifdata.ipv6 is string and ifdata.ipv6|ansible.utils.ipv6 %}
+set interface ip address bvi{{ bd }} {{ ifdata.ipv6 }}
+{%     if role == 'router' %}
+{%       if ifdata.ra.disable|default(false) is true %}
+ip6 nd bvi{{ bd }} ra-suppress
+{%       else %}
+ip6 nd bvi{{ bd }} ra-interval 5
+{%         set nd_prefix = ifdata.ipv6|ansible.utils.ipaddr(0) %}
+ip6 nd bvi{{ bd }} prefix {{ nd_prefix }} default
+{%       endif %}
+{%     endif %}
+{%   endif %}
+{% endfor %}

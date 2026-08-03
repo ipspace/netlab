@@ -1,0 +1,34 @@
+{% from '_extra_initial.j2' import extra_initial with context %}
+#!/usr/bin/env bash
+#
+
+NETNS=${NETNS:="dataplane"}
+CLAB_VPP_FILE="/etc/vpp/config/clab-interfaces.vpp"
+
+echo "Creating dataplane namespace"
+/usr/bin/mkdir -p /etc/netns/$NETNS
+/usr/bin/touch /etc/netns/$NETNS/resolv.conf
+/usr/sbin/ip netns add $NETNS
+/usr/bin/nsenter --net=/run/netns/$NETNS /usr/sbin/ip link set lo up
+
+echo "Generating $CLAB_VPP_FILE"
+mkdir -p $(dirname $CLAB_VPP_FILE)
+: > $CLAB_VPP_FILE
+MTU=9216
+for IFNAME in $(ip -br link | awk '{ print $1 }' | cut -f1 -d@ | grep -E '^eth[1-9][0-9]*$' | sort); do
+  MAC=$(ip -br link show dev $IFNAME | awk '{ print $3 }')
+  echo " * $IFNAME hw-addr $MAC mtu $MTU"
+  ip link set $IFNAME up mtu $MTU
+  cat << EOF >> $CLAB_VPP_FILE
+create host-interface name $IFNAME hw-addr $MAC
+set interface mtu $MTU host-$IFNAME
+set interface state host-$IFNAME up
+
+EOF
+done
+
+{{ extra_initial() }}
+
+touch /var/run/initial.done
+
+exit 0

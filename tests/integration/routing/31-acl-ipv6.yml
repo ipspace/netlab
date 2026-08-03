@@ -1,0 +1,134 @@
+message: |
+  The device under test is a simple router with in/out IPv6 ACLs
+  on the interface facing h1
+
+defaults.sources.extra: [ ../warnings.yml, ../wait_times.yml ]
+
+module: [routing ]
+plugin: [files]
+
+prefix:
+  s_pfx:
+    ipv6: 2001:db8:5::/48
+
+addressing:
+  loopback:
+    ipv4: false
+    ipv6: 2001:db8:1::/48
+  lan:
+    ipv4: false
+    ipv6: 2001:db8:2::/48
+  p2p:
+    ipv4: false
+    ipv6: 2001:db8:3::/48
+  lan_h2:
+    ipv4: false
+    ipv6: 2001:db8:5::/48
+
+routing.acl:
+  h1_filter:
+  - action: permit
+    protocol: icmp
+    description: test IPv6 ACL
+  - action: permit
+    protocol: tcp
+    src.ipv6: 2001:db8:2::1
+    dst.ipv6: 2001:db8:5::2
+    dst.port.eq: 100
+  - action: deny
+    protocol: tcp
+    src.node: h1
+    src.role: probe
+    dst.pool: lan_h2
+    dst.port.in: [ 50, 150 ]
+  - action: permit
+    protocol: tcp
+    src.node: h1
+    src.interface: eth1
+    dst.prefix: s_pfx
+    dst.port.not_in: [ 50, 150 ]
+  h1_est:
+  - protocol: tcp
+    established: true
+    log: true
+  - action: deny
+    protocol: tcp
+  - protocol: ipv6
+
+groups:
+  hosts:
+    members: [h1, h2]
+    device: linux
+    provider: clab
+    clab:
+      exec: apk add netcat-openbsd
+
+nodes:
+  h1:
+    config: h1
+  h2:
+    config: h2
+  dut:
+
+links:
+- h1:
+  dut:
+    routing.acl.in.ipv6: h1_filter
+    routing.acl.out.ipv6: h1_est
+  role: probe
+- h2:
+  dut:
+  pool: lan_h2
+
+configlets:
+  h1: |
+    #!/bin/sh
+    nohup nc -6 -l -k -p 100 >/dev/null 2>&1 &
+  h2: |
+    #!/bin/sh
+    for p in 30 100 150 151; do
+      nohup nc -6 -l -k -p $p >/dev/null 2>&1 &
+    done
+
+validate:
+  ra:
+    description: Check RA-generated default route
+    wait: ra_send
+    wait_msg: Waiting for RA message to generate the default route
+    nodes: [ h1, h2 ]
+    plugin: default6()
+    stop_on_error: True
+  ping_h2:
+    description: "h1->h2 ICMPv6 echo must succeed."
+    nodes: [ h1 ]
+    plugin: ping('h2', af='ipv6')
+  h2_tcp_100:
+    description: "TCP h1-h2:100 must succeed"
+    devices: [ linux ]
+    nodes: [ h1 ]
+    exec: "nc -6 -s 2001:db8:2::1 -z -w2 h2 100 && echo OK || echo FAIL"
+    valid: "'OK' in stdout"
+  h2_tcp_150:
+    description: "TCP h1->h2:150 must fail"
+    devices: [ linux ]
+    nodes: [ h1 ]
+    exec: "nc -6 -s 2001:db8:2::1 -z -w2 h2 150 && echo OK || echo FAIL"
+    valid: "'FAIL' in stdout"
+  h2_tcp_151:
+    description: "TCP h1->h2:151 must succeed"
+    devices: [ linux ]
+    nodes: [ h1 ]
+    exec: "nc -6 -s 2001:db8:2::1 -z -w2 h2 151 && echo OK || echo FAIL"
+    valid: "'OK' in stdout"
+  h2_tcp_30:
+    description: "TCP h1->h2:30 must succeed"
+    devices: [ linux ]
+    nodes: [ h1 ]
+    exec: "nc -6 -s 2001:db8:2::1 -z -w2 h2 30 && echo OK || echo FAIL"
+    valid: "'OK' in stdout"
+  h1_tcp_100:
+    description: "TCP h2-h1:100 must fail"
+    devices: [ linux ]
+    nodes: [ h2 ]
+    exec: "nc -6 -s 2001:db8:5::2 -z -w2 h1 100 && echo OK || echo FAIL"
+    valid: "'FAIL' in stdout"

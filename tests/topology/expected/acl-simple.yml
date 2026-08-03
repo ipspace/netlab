@@ -1,0 +1,497 @@
+input:
+- topology/input/acl-simple.yml
+- package:topology-defaults.yml
+links:
+- _linkname: links[1]
+  interfaces:
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 192.168.0.2/24
+    node: n1
+    routing:
+      acl:
+        in: h1_filter
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 192.168.0.1/24
+    node: h1
+  linkindex: 1
+  node_count: 2
+  prefix:
+    _name: s_pfx
+    ipv4: 192.168.0.0/24
+  type: p2p
+- _linkname: links[2]
+  interfaces:
+  - ifindex: 2
+    ifname: eth2
+    ipv4: 192.168.0.1/24
+    node: n1
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 192.168.0.3/24
+    node: h2
+  linkindex: 2
+  node_count: 2
+  pool: lan_h2
+  prefix:
+    allocation: id_based
+    ipv4: 192.168.0.0/24
+  type: p2p
+module:
+- routing
+name: input
+nodes:
+  h1:
+    af:
+      ipv4: true
+    box: none
+    device: none
+    id: 2
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 192.168.0.1/24
+      linkindex: 1
+      name: h1 -> n1
+      neighbors:
+      - ifname: eth1
+        ipv4: 192.168.0.2/24
+        node: n1
+        routing:
+          acl:
+            in: h1_filter
+      type: p2p
+    - ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.102
+      mac: ca:fe:00:02:00:00
+    module:
+    - routing
+    name: h1
+  h2:
+    af:
+      ipv4: true
+    box: none
+    device: none
+    id: 3
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 192.168.0.3/24
+      linkindex: 2
+      name: h2 -> n1
+      neighbors:
+      - ifname: eth2
+        ipv4: 192.168.0.1/24
+        node: n1
+      pool: lan_h2
+      type: p2p
+    - ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.3/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.3/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.103
+      mac: ca:fe:00:03:00:00
+    module:
+    - routing
+    name: h2
+  n1:
+    af:
+      ipv4: true
+    box: none
+    device: none
+    id: 1
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 192.168.0.2/24
+      linkindex: 1
+      name: n1 -> h1
+      neighbors:
+      - ifname: eth1
+        ipv4: 192.168.0.1/24
+        node: h1
+      routing:
+        acl:
+          in:
+            ipv4: h1_filter
+      type: p2p
+    - ifindex: 2
+      ifname: eth2
+      ipv4: 192.168.0.1/24
+      linkindex: 2
+      name: n1 -> h2
+      neighbors:
+      - ifname: eth1
+        ipv4: 192.168.0.3/24
+        node: h2
+      pool: lan_h2
+      type: p2p
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.101
+      mac: ca:fe:00:01:00:00
+    module:
+    - routing
+    name: n1
+    routing:
+      _acl:
+        ipv4:
+          h1_filter:
+          - description: test ACL
+            sequence: 100
+          - action: permit
+            dst:
+              any: true
+              ipv4: 0.0.0.0/0
+            protocol: icmp
+            sequence: 110
+            src:
+              any: true
+              ipv4: 0.0.0.0/0
+          - description: Allowed server ports
+            sequence: 120
+          - action: permit
+            dst:
+              ipv4: 192.168.0.3/24
+              port: 25
+              port_op: eq
+            protocol: tcp
+            sequence: 130
+            src:
+              ipv4: 192.168.0.1/24
+          - action: permit
+            dst:
+              ipv4: 192.168.0.3/24
+              port: 80
+              port_op: eq
+            protocol: tcp
+            sequence: 140
+            src:
+              ipv4: 192.168.0.1/24
+          - action: permit
+            dst:
+              ipv4: 192.168.0.3/24
+              port: 443
+              port_op: eq
+            protocol: tcp
+            sequence: 150
+            src:
+              ipv4: 192.168.0.1/24
+          - action: permit
+            dst:
+              ipv4: 10.0.0.3/32
+              port: 25
+              port_op: eq
+            protocol: tcp
+            sequence: 160
+            src:
+              ipv4: 192.168.0.1/24
+          - action: permit
+            dst:
+              ipv4: 10.0.0.3/32
+              port: 80
+              port_op: eq
+            protocol: tcp
+            sequence: 170
+            src:
+              ipv4: 192.168.0.1/24
+          - action: permit
+            dst:
+              ipv4: 10.0.0.3/32
+              port: 443
+              port_op: eq
+            protocol: tcp
+            sequence: 180
+            src:
+              ipv4: 192.168.0.1/24
+          - action: permit
+            dst:
+              ipv4: 192.168.0.3/24
+              port: 25
+              port_op: eq
+            protocol: tcp
+            sequence: 190
+            src:
+              ipv4: 10.0.0.2/32
+          - action: permit
+            dst:
+              ipv4: 192.168.0.3/24
+              port: 80
+              port_op: eq
+            protocol: tcp
+            sequence: 200
+            src:
+              ipv4: 10.0.0.2/32
+          - action: permit
+            dst:
+              ipv4: 192.168.0.3/24
+              port: 443
+              port_op: eq
+            protocol: tcp
+            sequence: 210
+            src:
+              ipv4: 10.0.0.2/32
+          - action: permit
+            dst:
+              ipv4: 10.0.0.3/32
+              port: 25
+              port_op: eq
+            protocol: tcp
+            sequence: 220
+            src:
+              ipv4: 10.0.0.2/32
+          - action: permit
+            dst:
+              ipv4: 10.0.0.3/32
+              port: 80
+              port_op: eq
+            protocol: tcp
+            sequence: 230
+            src:
+              ipv4: 10.0.0.2/32
+          - action: permit
+            dst:
+              ipv4: 10.0.0.3/32
+              port: 443
+              port_op: eq
+            protocol: tcp
+            sequence: 240
+            src:
+              ipv4: 10.0.0.2/32
+          - description: Named prefix -> host (not in port range)
+            sequence: 250
+          - action: permit
+            dst:
+              host: true
+              ipv4: 10.0.0.1
+              port: 1
+              port_op: lt
+            protocol: tcp
+            sequence: 260
+            src:
+              ipv4: 192.168.0.0/24
+          - action: permit
+            dst:
+              host: true
+              ipv4: 10.0.0.1
+              port: 1024
+              port_op: gt
+            protocol: tcp
+            sequence: 270
+            src:
+              ipv4: 192.168.0.0/24
+          - description: Port.in test
+            sequence: 280
+          - action: deny
+            dst:
+              host: true
+              ipv4: 10.0.0.42
+              port_op: in
+              port_range:
+                max: 64
+                min: 1
+            protocol: tcp
+            sequence: 290
+            src:
+              ipv4: 192.168.0.0/24
+          - description: Permit all UDP
+            sequence: 300
+          - action: permit
+            dst:
+              any: true
+              ipv4: 0.0.0.0/0
+            protocol: udp
+            sequence: 310
+            src:
+              any: true
+              ipv4: 0.0.0.0/0
+      acl:
+        h1_filter:
+        - action: permit
+          description: test ACL
+          dst:
+            ipv4:
+            - 0.0.0.0/0
+            ipv6:
+            - ::/0
+          protocol: icmp
+          sequence: 10
+          src:
+            ipv4:
+            - 0.0.0.0/0
+            ipv6:
+            - ::/0
+        - action: permit
+          description: Allowed server ports
+          dst:
+            ipv4:
+            - 192.168.0.3/24
+            - 10.0.0.3/32
+            port:
+              eq:
+              - 25
+              - 80
+              - 443
+          protocol: tcp
+          sequence: 20
+          src:
+            ipv4:
+            - 192.168.0.1/24
+            - 10.0.0.2/32
+        - action: permit
+          description: Named prefix -> host (not in port range)
+          dst:
+            ipv4:
+            - 10.0.0.1
+            port:
+              gt: 1024
+              lt: 1
+          protocol: tcp
+          sequence: 30
+          src:
+            ipv4:
+            - 192.168.0.0/24
+        - action: deny
+          description: Port.in test
+          dst:
+            ipv4:
+            - 10.0.0.42
+            port:
+              in:
+              - 1
+              - 64
+          protocol: tcp
+          sequence: 40
+          src:
+            ipv4:
+            - 192.168.0.0/24
+        - action: permit
+          description: Permit all UDP
+          dst:
+            ipv4:
+            - 0.0.0.0/0
+            ipv6:
+            - ::/0
+          protocol: udp
+          sequence: 50
+          src:
+            ipv4:
+            - 0.0.0.0/0
+            ipv6:
+            - ::/0
+prefix:
+  any:
+    ipv4: 0.0.0.0/0
+    ipv6: ::/0
+  s_pfx:
+    _name: s_pfx
+    ipv4: 192.168.0.0/24
+provider: libvirt
+routing:
+  acl:
+    h1_filter:
+    - action: permit
+      description: test ACL
+      dst:
+        ipv4:
+        - 0.0.0.0/0
+        ipv6:
+        - ::/0
+      protocol: icmp
+      sequence: 10
+      src:
+        ipv4:
+        - 0.0.0.0/0
+        ipv6:
+        - ::/0
+    - action: permit
+      description: Allowed server ports
+      dst:
+        ipv4:
+        - 192.168.0.3/24
+        - 10.0.0.3/32
+        port:
+          eq:
+          - 25
+          - 80
+          - 443
+      protocol: tcp
+      sequence: 20
+      src:
+        ipv4:
+        - 192.168.0.1/24
+        - 10.0.0.2/32
+    - action: permit
+      description: Named prefix -> host (not in port range)
+      dst:
+        ipv4:
+        - 10.0.0.1
+        port:
+          gt: 1024
+          lt: 1
+      protocol: tcp
+      sequence: 30
+      src:
+        ipv4:
+        - 192.168.0.0/24
+    - action: deny
+      description: Port.in test
+      dst:
+        ipv4:
+        - 10.0.0.42
+        port:
+          in:
+          - 1
+          - 64
+      protocol: tcp
+      sequence: 40
+      src:
+        ipv4:
+        - 192.168.0.0/24
+    - action: permit
+      description: Permit all UDP
+      dst:
+        ipv4:
+        - 0.0.0.0/0
+        ipv6:
+        - ::/0
+      protocol: udp
+      sequence: 50
+      src:
+        ipv4:
+        - 0.0.0.0/0
+        ipv6:
+        - ::/0

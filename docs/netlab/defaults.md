@@ -98,6 +98,7 @@ You can also use glob expressions to select the parameters you want to display. 
 $ netlab defaults '*clab.image'
 daemons.bird.clab.image = netlab/bird:latest
 daemons.dnsmasq.clab.image = netlab/dnsmasq:latest
+devices.vpp.clab.image = netlab/vpp:latest
 devices.arubacx.clab.image = vrnetlab/vr-aoscx:20240129204649
 devices.cat8000v.clab.image = vrnetlab/vr-c8000v:17.13.01a
 devices.csr.clab.image = vrnetlab/cisco_csr1000v:17.03.08

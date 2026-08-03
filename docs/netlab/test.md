@@ -6,12 +6,12 @@
 ## Usage
 
 ```text
-usage: netlab test [-h] [-w WORKDIR] [-v] {clab,grpc,libvirt}
+usage: netlab test [-h] [-w WORKDIR] [-v] {clab,grpc,libvirt,podman}
 
 Test virtual lab installation
 
 positional arguments:
-  {clab,grpc,libvirt}
+  {clab,grpc,libvirt,podman}
                         Run tests for the specified provider/environment
 
 options:
@@ -21,17 +21,21 @@ options:
   -v, --verbose         Verbose logging
 ```
 
+You can execute these tests:
+
+| Name | Tests |
+|------|---------------|
+| clab | Docker and containerlab using FRR Docker containers |
+| grpc | Docker, containerlab, and gRPC libraries using SR Linux Docker containers |
+| libvirt | Vagrant and libvirt using Linux virtual machines |
+| podman | Podman and containerlab using FRR podman containers |
+
 ## Testing Procedure
 
 **netlab test** command:
 
-* Checks whether the selected virtualization provider and Vagrant are installed;
-* Creates a working directory and copies sample lab topology containing three routers and a few links into that directory;
+* Checks whether the selected virtualization provider is installed;
+* Creates a working directory and copies the sample lab topology containing three routers and a few links into that directory;
 * Executes **netlab up** to create configuration files, start the lab, and configure network devices.
 * Destroys the lab with **netlab down**
 * Cleans up the working directory
-
-## Notes on Containerlab Tests
-
-* *containerlab* tests start Cumulus VX containers in *Docker* mode (container, not a micro-VM) and thus test the *containerlab* but not *firecracker* or *KVM* functionality.
-* See [Platform Support](../platforms.md) for more details on Cumulus VX running under *containerlab*.
