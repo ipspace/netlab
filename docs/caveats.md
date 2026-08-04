@@ -62,6 +62,39 @@ GRE tunnel caveats:
 * IS-IS does not work over GRE tunnels
 * Arista cEOS might forward multiple copies of the packets received over GRE tunnels
 
+(caveats-arcos)=
+## Arrcus ArcOS
+
+ArcOS is a commercial NOS; there is no public container image. See the [ArcOS installation
+notes](build-arcos) for the image, the first-boot bootstrap, the supported configuration modules,
+and validation. Configuration is deployed with a bash script executed within the ArcOS container.
+
+* Initial device configuration sets the ArcOS interface MTU to the lab topology layer-3 MTU
+  (**interface.mtu**) plus 26.
+* _netlab_ configures static routes and they are used for traffic forwarding, but the tested ArcOS
+  image does not report them in the OpenConfig RIB tree.
+* While _netlab_ configures SR-MPLS, MPLS/LDP, and SRv6, the dataplane does not work in the
+  container image.
+* BGP sessions come up roughly 70 seconds after the rest of the configuration; the BGP daemon
+  rejects session state changes until it has finished reading its boot-time configuration. The
+  integration tests declare that wait. OSPF and IS-IS are not affected.
+* An OSPF ABR summarizes loopback host routes with the wrong prefix length, so a loopback placed in
+  a non-backbone area is not reachable from other areas. Loopbacks in area 0 and all inter-area
+  transit prefixes are unaffected.
+* IS-IS IPv6 is single-topology; the tested image has no multi-topology (RFC 5120) knob. Devices
+  running multi-topology IS-IS -- which is how _netlab_ configures every other device -- will not
+  install ArcOS IPv6 routes, so IPv6 IS-IS works only in an all-ArcOS IS-IS domain. IPv4 IS-IS
+  interoperates normally.
+* ArcOS computes the IPv4 VRRPv3 checksum over the IPv4 pseudo-header and has no knob to disable
+  it, while _netlab_ configures every other device the other way, so IPv4 VRRP does not interoperate
+  with other _netlab_ devices. A single ArcOS first-hop router works. IPv6 VRRP is unaffected.
+* With static VXLAN flooding, the container image withdraws the head-end-replication entry shortly
+  after programming it, so an ArcOS VTEP cannot originate BUM traffic (receiving works). Use
+  `vxlan.flooding: evpn`.
+* A discard (blackhole) static route pointing to a directly-connected host is displaced by the
+  connected route once that host's neighbor entry becomes reachable. Discard routes for prefixes
+  that are not directly connected work normally.
+
 (caveats-aruba)=
 ## Aruba AOS-CX
 

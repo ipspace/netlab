@@ -1,0 +1,241 @@
+{% import "templates/bgp/arcos.macro.j2" as bgpcfg %}
+{#- ArcOS per-VRF config: L3VRF network-instance + interface binding + per-VRF OSPFv2/v3/BGP/ISIS.
+  NOT declared (measured as unsupported, not just untested): import/export route-target leaking
+  between VRFs -- the export half can be driven to "Export ready" and puts correctly targeted VPN
+  routes in the per-VRF exported-rib, but a locally exported VPN path never reaches the local
+  import machinery (default-instance L3VPN loc-rib stays empty, every VRF stays at
+  "paths-imported 0"), so nothing leaks on a single device. See netsim/devices/arcos.yml.
+
+  Redistribution of connected subnets into a VRF BGP instance IS supported, but not through a
+  table-connection: DIRECTLY_CONNECTED has no addressable source instance on this image, so the
+  connected() macro in templates/bgp/arcos.macro.j2 renders one BGP network statement per
+  connected prefix instead.
+
+  Kept CONSISTENT with the global-table templates (theme: global vs VRF parity): the per-VRF
+  OSPF renders the same per-interface parameters (network-type/metric/bfd/priority/timers) and
+  the same multi-area layout as templates/ospf/arcos.j2, and the per-VRF IS-IS carries the same
+  dual-AF handling (IPv4 and IPv6 unicast, each gated on vdata.isis.af.<af>) as
+  templates/isis/arcos.j2. The IPv6 IS-IS single-topology caveat there applies here too
+  (cross-vendor IPv6 IS-IS is unsupported).
+
+  A protocol *instance tag* ("p1", "i1") is a GLOBAL namespace
+  across every network-instance on this ArcOS build, NOT scoped per network-instance -- reusing
+  the default instance's tag for a VRF's protocol instance aborts the commit ("Protocol instance
+  'p1'/'i1' already configured under network-instance 'default'"). Tag every VRF protocol
+  instance with the VRF name so it can never collide with the default instance or another VRF's
+  instance of the same protocol. -#}
+{%- macro ospf_if_params(l, ospf) %}
+{# same fix as templates/ospf/arcos.j2: only fall back to l.type == 'p2p' when
+   ospf.network_type wasn't explicitly set, so an explicit "broadcast" isn't overridden #}
+{%   set nt = l.ospf.network_type|default('point-to-point' if l.type|default('') == 'p2p' else '') %}
+{%   if nt == 'point-to-point' %}
+   network-type POINT_TO_POINT_NETWORK
+{%   endif %}
+{%   if l.ospf.cost is defined %}
+   metric {{ l.ospf.cost }}
+{%   endif %}
+{#-  Passive interface, same as templates/ospf/arcos.j2 (global/VRF parity). -#}
+{%   if l.ospf.passive|default(false) %}
+   passive true
+{%   endif %}
+{%   if l.ospf.bfd|default(ospf.bfd|default(false)) %}
+   bfd enabled true
+{%   endif %}
+{%   if l.ospf.priority is defined %}
+   priority {{ l.ospf.priority }}
+{%   endif %}
+{%   if l.ospf.timers.hello is defined %}
+   timers hello-interval {{ l.ospf.timers.hello }}
+{%   endif %}
+{%   if l.ospf.timers.dead is defined %}
+   timers dead-interval {{ l.ospf.timers.dead }}
+{%   endif %}
+{%- endmacro %}
+{% if vrfs is defined %}
+{%   for vname, vdata in vrfs.items() %}
+network-instance {{ vname }} type L3VRF
+{# templates/initial/arcos.j2 already created the instance and bound every interface it
+   configures itself (it has to: an address is validated against the network-instance the
+   interface is in). Repeating those bindings is a no-op and picks up the interfaces created by
+   the modules that run in between -- an SVI cannot be bound before the VLAN template creates
+   it ("Interface vlanN subinterface 0 does not exist"). #}
+{%     for l in interfaces|default([]) %}
+{%       if l.vrf|default("") == vname %}
+network-instance {{ vname }} interface {{ l.ifname }}
+{%       endif %}
+{%     endfor %}
+{#- per-VRF OSPFv2, gated on vdata.ospf.af.ipv4 exactly like the OSPFv3 block below: netlab
+    only sets vrf.ospf.af.<family> for the families the VRF has, so without the gate an
+    IPv6-only VRF got an OSPFv2 instance with a router ID and no areas. -#}
+{%     if vdata.ospf is defined and vdata.ospf.af.ipv4|default(false) %}
+{%       set _vdflt = vdata.ospf.area|default('0.0.0.0') %}
+{%       set _vareas = vdata.ospf.areas|default([{'area': _vdflt, '_area_int': 0}]) %}
+network-instance {{ vname }} protocol OSPF p-{{ vname }}
+ global router-id {{ vdata.ospf.router_id }}
+{%       for a in _vareas %}
+{%         set _body %}
+{%           for l in vdata.ospf.interfaces|default([]) if l.ipv4 is defined and (l.ospf.area|default(_vdflt)) == a.area %}
+  interface {{ l.ifname }}
+{{ ospf_if_params(l, ospf) }}
+{%           endfor %}
+{%         endset %}
+{%         if _body.strip() %}
+ area {{ a.area }}
+{{ _body }}
+{%         endif %}
+{%       endfor %}
+{%     endif %}
+{#- per-VRF OSPFv3: SEPARATE `protocol OSPF3` instance inside the SAME L3VRF network-instance,
+    mirroring the default-instance dual-stack pattern in templates/ospf/arcos.j2 (area written
+    as a bare integer, not dotted-decimal). Gated on vdata.ospf.af.ipv6 (netlab vrf.ospf.af,
+    feature vrf.ospfv3) so v4-only VRF OSPF topologies are unaffected. -#}
+{%     if vdata.ospf is defined and vdata.ospf.af.ipv6|default(false) %}
+{%       set _vdflt = vdata.ospf.area|default('0.0.0.0') %}
+{%       set _vareas = vdata.ospf.areas|default([{'area': _vdflt, '_area_int': 0}]) %}
+network-instance {{ vname }} protocol OSPF3 p-{{ vname }}
+ global router-id {{ vdata.ospf.router_id }}
+{%       for a in _vareas %}
+{%         set _body %}
+{%           for l in vdata.ospf.interfaces|default([]) if l.ipv6 is defined and (l.ospf.area|default(_vdflt)) == a.area %}
+  interface {{ l.ifname }}
+{{ ospf_if_params(l, ospf) }}
+{%           endfor %}
+{%         endset %}
+{%         if _body.strip() %}
+ area {{ a._area_int }}
+{{ _body }}
+{%         endif %}
+{%       endfor %}
+{%     endif %}
+{#- per-VRF BGP: a BGP protocol instance inside the L3VRF network-instance, rendered with the
+    same macros as the default-instance BGP in templates/bgp/arcos.j2 (global/VRF parity: same
+    router-id / address-family / network / neighbor handling, IPv4 and IPv6 alike).
+
+    ArcOS specifics, all verified on the device:
+    * the AS number is NOT part of the per-VRF model ("global as" does not exist inside an
+      L3VRF) -- the VRF instance inherits the AS from the default instance, which the netlab
+      data model guarantees is there (a VRF BGP neighbor implies the node runs the bgp module);
+    * "global afi-safi <AF>_UNICAST" must be present before a neighbor may activate that AF
+      ("BGP global AF must be configured first"), but instance, AFs and neighbors all commit in
+      a SINGLE transaction -- unlike the table-connections, this needs no #COMMIT split;
+    * the protocol instance tag is "{{ vname }}" to match templates/evpn/arcos.j2, which adds
+      the L3VNI route-distinguisher and the L3VPN AF to that same instance.
+
+    VRF route-target import/export leaking is NOT rendered: local RT/L3VPN leaking does not work
+    on this image, and the one local mechanism that does work (a static route with
+    next-network-instance-name) is /32-only and cannot carry netlab's prefix lists. Neither is a
+    declared feature -- see the caveats in netsim/devices/arcos.yml for both measurements.
+
+    The VRF module sets vrfs.<name>.bgp on every VRF once it needs an AS number to build the
+    route distinguishers, so 'vdata.bgp is defined' is not enough to decide there is anything to
+    configure -- the guard right below spells out what actually counts. The node also has to run
+    the BGP module, because a VRF instance inherits its AS from the default instance. -#}
+{#- Render the instance when the VRF has anything for it to carry: neighbors, networks to
+    advertise, or a route import (netlab auto-generates bgp.import for a VRF that runs an IGP, and
+    an EVPN L3VNI VRF can have an import and no neighbors at all -- evpn/22-ospf-ce-router). The
+    AF check keeps an address-less VRF from producing a BGP instance with no address family. -#}
+{%     if 'bgp' in module and (vdata.bgp.neighbors|default([]) or vdata.bgp.advertise|default([])
+             or (vdata.bgp.import|default({}) and vdata.af|default({}))) %}
+network-instance {{ vname }} protocol BGP {{ vname }}
+ global router-id {{ vdata.bgp.router_id|default(bgp.router_id) }}
+ global route-distinguisher {{ vdata.rd }}
+{{ bgpcfg.afi_safi(vdata.af|default({})) -}}
+{{ bgpcfg.advertise(vdata.bgp.advertise|default([]),vdata.af|default({})) -}}
+{#- bgp.import.connected inside the VRF: the connected subnets of the interfaces bound to this
+    VRF, rendered as BGP network statements by the same macro the default instance uses. netlab
+    generates this import automatically for every VRF (features.bgp.import carries 'connected'
+    and 'vrf'), which is what makes a CE-to-CE path across the PE work: without the PE-CE subnets
+    in VRF BGP a CE has no route back to the far CE's interface address. -#}
+{%       if vdata.bgp.import.connected is defined %}
+{{         bgpcfg.connected(
+             interfaces|default([])|selectattr('vrf','defined')|selectattr('vrf','eq',vname)|list,
+             vdata.af|default({}),vdata.bgp.import.connected,vdata.bgp.advertise|default([])) -}}
+{%       endif %}
+{{ bgpcfg.neighbors(vdata.bgp.neighbors|default([]),vdata.af|default({})) -}}
+{%     endif %}
+{#- per-VRF IS-IS: network-instance <vrf> protocol ISIS -- verified: instance/net/level +
+    interface bindings commit inside an L3VRF, adjacency forms in-VRF. IPv4/IPv6 unicast each
+    gated on vdata.isis.af.<af> (same as templates/isis/arcos.j2, incl. the single-topology
+    IPv6 caveat). -#}
+{%     if vdata.isis is defined %}
+{%       set vcaps = {"level-1":"LEVEL_1","level-2":"LEVEL_2","level-1-2":"LEVEL_1_2"} %}
+{%       set vtyp = vdata.isis.type|default("level-2") %}
+network-instance {{ vname }} protocol ISIS i-{{ vname }}
+ global net {{ vdata.isis.net }}
+ global level-capability {{ vcaps[vtyp]|default("LEVEL_2") }}
+{%       if vdata.isis.af.ipv4|default(false) %}
+ global af IPV4 UNICAST enabled true
+{%       endif %}
+{%       if vdata.isis.af.ipv6|default(false) %}
+ global af IPV6 UNICAST enabled true
+{%       endif %}
+{%       set vdo_l1 = vtyp in ["level-1","level-1-2"] %}
+{%       set vdo_l2 = vtyp in ["level-2","level-1-2"] %}
+{%       if vdo_l1 %}
+ level 1 enabled true
+{%       endif %}
+{%       if vdo_l2 %}
+ level 2 enabled true
+{%       endif %}
+{%       for l in vdata.isis.interfaces|default([]) %}
+ interface {{ l.ifname }} enabled true
+{%         if vdata.isis.af.ipv4|default(false) %}
+ interface {{ l.ifname }} af IPV4 UNICAST enabled true
+{%         endif %}
+{%         if vdata.isis.af.ipv6|default(false) %}
+ interface {{ l.ifname }} af IPV6 UNICAST enabled true
+{%         endif %}
+{%         set vnt = l.isis.network_type|default('point-to-point' if l.type|default('') == 'p2p' else '') %}
+{%         if vnt == 'point-to-point' %}
+ interface {{ l.ifname }} network-type POINT_TO_POINT
+{%         endif %}
+{%         if vdo_l1 %}
+ interface {{ l.ifname }} level 1 enabled true
+{%         endif %}
+{%         if vdo_l2 %}
+ interface {{ l.ifname }} level 2 enabled true
+{%         endif %}
+{#-        Per-interface metric, same shape as templates/isis/arcos.j2 (global/VRF parity):
+           ArcOS keeps it on the interface's level container, so it is emitted per level. -#}
+{%         if l.isis.cost is defined or l.isis.metric is defined %}
+{%           set _metric = l.isis.metric|default(l.isis.cost) %}
+{%           if vdo_l1 %}
+ interface {{ l.ifname }} level 1 metric {{ _metric }}
+{%           endif %}
+{%           if vdo_l2 %}
+ interface {{ l.ifname }} level 2 metric {{ _metric }}
+{%           endif %}
+{%         endif %}
+{%         if l.isis.passive|default(false) %}
+ interface {{ l.ifname }} passive true
+{%         endif %}
+{%       endfor %}
+{%     endif %}
+{%   endfor %}
+{#- IGP -> VRF BGP redistribution, in a SECOND pass over the VRFs.
+
+    It cannot go in the loop above: ArcOS rejects a table-connection that references a protocol
+    instance created in the same transaction ("SRC/DST instance does not exist"), so every VRF's
+    OSPF/OSPF3/ISIS/BGP instance has to be committed first. One #COMMIT marker (see
+    provider/clab/arcos/netlab-config.j2) splits the whole module render in two, and this pass
+    then renders the table-connections for every VRF with the shared macro the default routing
+    table uses. The per-VRF instance tags are the ones the loop above emitted: "p-<vrf>" for
+    OSPFv2/OSPFv3, "i-<vrf>" for IS-IS, "<vrf>" for BGP. -#}
+{%   set _vrf_redist = [] %}
+{%   for vname, vdata in vrfs.items() if 'bgp' in module %}
+{%     if vdata.bgp.import.ospf is defined and vdata.ospf is defined
+          or vdata.bgp.import.isis is defined and vdata.isis is defined %}
+{%       set _ = _vrf_redist.append((vname,vdata)) %}
+{%     endif %}
+{%   endfor %}
+{%   if _vrf_redist %}
+#COMMIT
+{%     set _vrf_pol = [] %}
+{%     for vname, vdata in _vrf_redist %}
+{{       bgpcfg.redistribute_igp(vname,vdata.bgp.import,vdata.af|default({}),vname,
+           {'ospf': 'p-' ~ vname if vdata.ospf is defined else none,
+            'isis': 'i-' ~ vname if vdata.isis is defined else none},
+           _vrf_pol) -}}
+{%     endfor %}
+{%   endif %}
+{% endif %}

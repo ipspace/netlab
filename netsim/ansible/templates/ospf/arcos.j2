@@ -1,18 +1,97 @@
+{#
+  ArcOS OSPFv2 + OSPFv3. Same area/area-interface shape for both AFs modulo two differences:
+  the protocol keyword (OSPF vs OSPF3), and the area ID is written as a plain integer ("area 0",
+  from ospf.areas[]._area_int) in OSPFv3, not dotted-decimal ("area 0.0.0.0") like OSPFv2.
+
+  MULTI-AREA: one `area <id>` block is emitted per area the node participates in (netlab
+  pre-computes ospf.areas), and every interface is filed under its own ospf.area (an ABR then
+  carries interfaces in several areas under the same OSPF instance -- ArcOS accepts multiple
+  area blocks per instance, verified). The system loopback goes into loopback.ospf.area. An area
+  block is emitted only when it actually has an interface (or the loopback) in this AF, so a
+  v4-only area does not produce an empty OSPFv3 area block (or vice-versa).
+
+  Known ArcOS limit (see docs/caveats.md): the ABR floods correct inter-area Type-3 summaries for
+  transit networks, but summarizes a /32 loopback host route with a /0 mask, so a loopback in a
+  NON-backbone area is not reachable from other areas. Adjacencies, intra-area routes and
+  inter-area transit prefixes are unaffected. Nothing to configure around it here -- it is an LSA
+  origination bug in this build.
+
+  MTU interop note: an ArcOS<->FRR OSPF adjacency needs both sides to advertise the same MTU in
+  their DBD exchange. ArcOS reprograms the real kernel netdev MTU (and the value OSPF advertises)
+  to (configured-leaf - 26) on every commit, so netsim/ansible/templates/initial/arcos.j2 sets
+  the interface MTU leaf to `l.mtu + 26` to land exactly on netlab's intended value. With that
+  device-side compensation the adjacency converges without any containerlab/core change.
+#}
 {% set pid = ospf.process|default(1) %}
-
+{% set _dflt_area = ospf.area|default('0.0.0.0') %}
+{% set _areas = ospf.areas|default([{'area': _dflt_area, '_area_int': 0}]) %}
+{% macro area_interfaces(af, area_dotted) %}
+{%   for l in interfaces|default([]) if l.ospf is defined and l[af] is defined and (l.ospf.area|default(_dflt_area)) == area_dotted %}
+  interface {{ l.ifname }}
+{# network-type selection (matches netlab's cross-vendor OSPF semantics):
+   1) netlab's canonical ospf.network_type value is "point-to-point" (hyphen) -- see
+      netsim/modules/ospf.py's network_type() allowed-value list; match that spelling.
+   2) fall back to point-to-point on a 2-node p2p link ONLY when ospf.network_type was not set
+      explicitly, so an explicit `ospf.network_type: broadcast` is honoured (a 2-node link is
+      always netlab type p2p) rather than forced to point-to-point, which would stall an
+      FRR<->ArcOS adjacency in ExStart on a network-type mismatch. An explicit "broadcast"
+      renders nothing (ArcOS's own default network-type). #}
+{%     set nt = l.ospf.network_type|default('point-to-point' if l.type|default('') == 'p2p' else '') %}
+{%     if nt == 'point-to-point' %}
+   network-type POINT_TO_POINT_NETWORK
+{%     endif %}
+{%     if l.ospf.cost is defined %}
+   metric {{ l.ospf.cost }}
+{%     endif %}
+{#-  Passive interface. netlab sets ospf.passive both explicitly (link-level ospf.passive)
+     and implicitly on a stub link, and the flag is a plain bool, so it is rendered whenever
+     it is true. This macro serves OSPFv2 and OSPFv3 alike, so both address families get it. -#}
+{%     if l.ospf.passive|default(false) %}
+   passive true
+{%     endif %}
+{%     if l.ospf.bfd|default(ospf.bfd|default(false)) %}
+   bfd enabled true
+{%     endif %}
+{%     if l.ospf.priority is defined %}
+   priority {{ l.ospf.priority }}
+{%     endif %}
+{%     if l.ospf.timers.hello is defined %}
+   timers hello-interval {{ l.ospf.timers.hello }}
+{%     endif %}
+{%     if l.ospf.timers.dead is defined %}
+   timers dead-interval {{ l.ospf.timers.dead }}
+{%     endif %}
+{%   endfor %}
+{% endmacro %}
+{% if ospf.router_id is defined and ospf.af.ipv4|default(false) %}
 network-instance default protocol OSPF p{{ pid }}
-  global log-adjacency-changes LOG_ADJ_ENABLE_DETAILED 
-  area {{ ospf.area }}
-    interface Loopback0
-    {% for l in interfaces|default([]) %}
-    interface {{ l.ifname }}
-      {% if l.type|default("") == "p2p" %}
-        network-type POINT_TO_POINT_NETWORK
-      {% endif %}
-      {% if l.ospf.cost is defined %}
-        metric {{ l.ospf.cost }}
-      {% endif %}
-    {% endfor %}
-
-       
-  
+ global router-id {{ ospf.router_id }}
+ global log-adjacency-changes LOG_ADJ_ENABLE_DETAILED
+{%   for a in _areas %}
+{%     set _has_lb = loopback.ipv4 is defined and (loopback.ospf.area|default(_dflt_area)) == a.area %}
+{%     set _body %}{{ area_interfaces('ipv4', a.area) }}{% endset %}
+{%     if _has_lb or _body.strip() %}
+ area {{ a.area }}
+{%       if _has_lb %}
+  interface loopback0
+{%       endif %}
+{{ _body }}
+{%     endif %}
+{%   endfor %}
+{% endif %}
+{% if ospf.router_id is defined and ospf.af.ipv6|default(false) %}
+network-instance default protocol OSPF3 p{{ pid }}
+ global router-id {{ ospf.router_id }}
+ global log-adjacency-changes LOG_ADJ_ENABLE_DETAILED
+{%   for a in _areas %}
+{%     set _has_lb = loopback.ipv6 is defined and (loopback.ospf.area|default(_dflt_area)) == a.area %}
+{%     set _body %}{{ area_interfaces('ipv6', a.area) }}{% endset %}
+{%     if _has_lb or _body.strip() %}
+ area {{ a._area_int }}
+{%       if _has_lb %}
+  interface loopback0
+{%       endif %}
+{{ _body }}
+{%     endif %}
+{%   endfor %}
+{% endif %}

@@ -12,6 +12,7 @@ The following table describes per-platform support of individual STP features:
 | Operating system   | STP | MSTP | RSTP | Per-VLAN<br>RSTP | Enable<br>per port |
 | ------------------ |:---:|:---:|:---:|:---:|:---:|
 | Arista EOS[^EOS]   | ✅  | ✅  | ✅  | ✅ |  ✅ |
+| Arrcus ArcOS[^ARCOS] | ❌  |  ❌  |  ❌  | ✅ | ❌   |
 | Cisco IOL L2[^IOLL2]   | ✅  | ✅  | ✅  | ✅ |  ✅ |
 | Cisco IOSv L2[^IOLL2]   | ✅  | ✅  | ✅  | ✅ |  ✅ |
 | Aruba AOS-CX[^AOSCX] | ❗  | ✅  | ❌  | ✅ |  ✅ |
@@ -22,6 +23,7 @@ The following table describes per-platform support of individual STP features:
 
 
 [^EOS]: MSTP is enabled by default
+[^ARCOS]: Rapid PVST is the only flavor and is enabled by default; the only off switch is global -- there is no per-port and no per-VLAN disable
 [^AOSCX]: MSTP is enabled by default; STP is stated as not supported, but it is configured as MSTP (see tip below).
 [^CL]: STP is enabled by default
 [^OS10]: PVRST is enabled by default, STP does not work on virtual networks (which are used for VXLAN)

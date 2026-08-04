@@ -1,0 +1,35 @@
+{#
+  ArcOS first-hop redundancy -- VRRP. The config path hangs off the interface's OWN primary
+  address in the address family the VRRP group serves:
+  interface <if> subinterface 0 <af> address <primary> vrrp vrrp-group <vrid>
+    virtual-address <vip> | priority <p> | advertisement-interval <ms> | accept-mode <bool>
+  IPv4 and IPv6 expose the identical leaf set (verified on the device), so both are rendered from
+  one loop -- the interface may be IPv4-only, IPv6-only or dual-stack, and gateway.ipv4 /
+  gateway.ipv6 are independent.
+
+  gateway.vrrp.preempt is NOT rendered: this image has no preempt leaf under vrrp-group in either
+  address family ("preempt", "preempt enabled" and "preempt-mode" are all rejected with "element
+  does not exist"), and VRRP preemption is on by default. Anycast gateway is not declared --
+  untested on this image, and nothing here renders it.
+
+  The IPv4 VRRPv3 checksum is NOT rendered either, because ArcOS has no leaf for it: ArcOS follows
+  RFC 5798 and always includes the IPv4 pseudo-header, while netlab tells every other VRRP device
+  to exclude it (gateway/frr/vrrp-cp.j2, gateway/eos.j2, gateway/exos.j2), so IPv4 advertisements
+  are discarded in both directions and both routers stay Master. IPv6 is unaffected. See the ArcOS
+  section of docs/caveats.md.
+
+  The VRRP daemon itself only runs because netsim/devices/arcos.yml restores the process manager's
+  file-descriptor soft limit to the systemd default from netlab_start_exec -- without it the config
+  below commits and the protocol never starts.
+#}
+{% for l in interfaces|default([]) if l.gateway is defined and l.gateway.protocol|default('') == 'vrrp' %}
+{%   for af in ['ipv4','ipv6'] if l[af] is defined and l[af] is string and l.gateway[af] is defined %}
+{%     set _vrrp = 'interface ' ~ l.ifname ~ ' subinterface 0 ' ~ af ~ ' address '
+                   ~ (l[af] | ansible.utils.ipaddr('address')) ~ ' vrrp vrrp-group '
+                   ~ l.gateway.vrrp.group %}
+{{ _vrrp }} virtual-address {{ l.gateway[af] | ansible.utils.ipaddr('address') }}
+{%     if l.gateway.vrrp.priority is defined %}
+{{ _vrrp }} priority {{ l.gateway.vrrp.priority }}
+{%     endif %}
+{%   endfor %}
+{% endfor %}

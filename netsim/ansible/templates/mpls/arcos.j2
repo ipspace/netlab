@@ -1,0 +1,14 @@
+{#
+  ArcOS MPLS/LDP. LDP over the IGP underlay. Native container has NO kernel MPLS
+  (net.mpls.platform_labels absent) so label FORWARDING is not testable here -- this brings up
+  the LDP control plane (sessions + FEC/label bindings), same datapath caveat as SR.
+#}
+{% if ldp is defined %}
+network-instance default mpls signaling-protocols ldp global enable true
+network-instance default mpls signaling-protocols ldp global lsr-id {{ ldp.router_id }}
+{%   for l in interfaces if l.ldp is defined and not l.ldp.passive|default(false) %}
+network-instance default mpls signaling-protocols ldp interface-attributes interface {{ l.ifname }} link-hello true
+{# the AF enable is REQUIRED -- without it hellos flow but the session never forms #}
+network-instance default mpls signaling-protocols ldp interface-attributes interface {{ l.ifname }} address-family IPV4 enabled true
+{%   endfor %}
+{% endif %}

@@ -1,0 +1,54 @@
+#!/bin/bash
+#
+# ArcOS containerlab configuration-deploy wrapper (netlab native "sh" config mode).
+#
+# netlab renders each module's configuration into /config/netlab/NN-<module>.sh with the shebang
+# '#!/config/netlab/netlab-config.sh' as its first line, then deploys it with
+# `docker exec <node> /config/netlab/NN-<module>.sh`; the kernel therefore invokes THIS script
+# with that rendered config file as $1. This is the same mapped-script deploy pattern FRR and
+# Juniper cRPD use (netsim/templates/provider/clab/crpd/netlab-config.j2) -- only the CLI back
+# end differs: ArcOS loads configuration through confd_cli.
+#
+# The tested container build has no cliconf-compatible SSH CLI (SSH/NETCONF/gNMI are disabled),
+# so configuration is driven through the device's own `config` / `load merge <file>` / `commit`
+# sequence, fed to confd_cli non-interactively on stdin.
+#
+# CHUNKED COMMITS: a module template may emit a '#COMMIT' marker on its own line to force a hard
+# transaction split -- ConfD rejects some constructs (e.g. a named list entry created and then
+# referenced in the SAME transaction: `vlan 10 name red` followed by a trunk-vlans reference to
+# it) unless each piece is committed first. A template that emits no '#COMMIT' marker loads as a
+# single commit; an empty rendered module is a no-op.
+#
+set -o pipefail
+
+SRC="$1"
+STRIPPED="/tmp/netlab-config.cfg"                  # config text with the shebang line removed
+PFX="/tmp/netlab-config.chunk."
+MSG="$(basename "$SRC") configuration pushed by netlab"
+
+tail -n +2 "$SRC" > "$STRIPPED"                    # drop the '#!/config/netlab/netlab-config.sh' shebang
+rm -f "${PFX}"*
+awk -v pfx="$PFX" 'BEGIN{n=0} /^#COMMIT/{n++; next} {print > sprintf("%s%02d", pfx, n)}' "$STRIPPED"
+
+rc=0
+for f in "${PFX}"*; do
+  [ -e "$f" ] || continue                          # no chunks -> empty module, nothing to push
+  # Retry each chunk on "configuration database is locked by session none" -- a transient ConfD
+  # lock that can appear right after another confd_cli session on the same node and clears on its
+  # own within a few seconds. Any other rejection (Error:/Aborted:/syntax error) fails at once.
+  for i in $(seq 1 6); do
+    OUT=$(printf 'config\nload merge %s\ncommit comment "%s"\nend\n' "$f" "$MSG" \
+          | confd_cli -C -u admin 2>&1)
+    if printf '%s' "$OUT" | grep -qi 'is locked by session'; then
+      sleep 3
+      continue
+    fi
+    break
+  done
+  printf '%s\n' "$OUT"
+  if printf '%s' "$OUT" | grep -qiE 'Error:|Aborted:|syntax error'; then
+    rc=1
+    break
+  fi
+done
+exit $rc

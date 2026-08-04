@@ -7,6 +7,19 @@ message: |
 
 defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
 
+# The root-election checks race the election on ArcOS. 'root_red' has no wait of its own, so it
+# runs within a second or two of 'vlan_red' -- and 'vlan_red' passes as soon as ANY interface
+# forwards, which is true long before the per-VLAN roots settle. Measured on ArcOS: both VLANs
+# move to the configured roots 22 seconds after 'netlab up' returns.
+#
+# 'root_blue' is exposed to the same race. It is not protected by its own wait: 10, because a
+# wait is a deadline measured from the previous waited test, so with no wait on 'root_red' the
+# whole tail of the sequence bunches up behind 'vlan_red' -- both root checks have been observed
+# failing together that way. Give each root check its own device-specific wait so the result does
+# not depend on how much delay an earlier test happens to contribute.
+defaults.devices.arcos.netlab_validate.root_red.wait: 40
+defaults.devices.arcos.netlab_validate.root_blue.wait: 40
+
 module: [ vlan, stp ]
 
 groups:

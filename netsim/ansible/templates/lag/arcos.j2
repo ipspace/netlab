@@ -1,0 +1,18 @@
+{#
+  ArcOS LAG template. Aggregate = `interface bond<N>` + `aggregation lag-type
+  LACP|STATIC` (+ min-links); members = `ethernet aggregate-id bond<N>`. The bond's L3
+  addressing is rendered by the initial template (bond appears as a regular interface with
+  type lag).
+#}
+{% for intf in interfaces if intf.type == 'lag' %}
+interface {{ intf.ifname }}
+ enabled true
+ aggregation lag-type {{ 'STATIC' if intf.lag.lacp|default('') == 'off' else 'LACP' }}
+!
+{%   for ch in interfaces if ch.lag._parentindex|default(None) == intf.lag.ifindex %}
+interface {{ ch.ifname }}
+ enabled true
+ ethernet aggregate-id {{ intf.ifname }}
+!
+{%   endfor %}
+{% endfor %}

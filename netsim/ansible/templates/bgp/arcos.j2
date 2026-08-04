@@ -1,0 +1,91 @@
+{#
+  ArcOS BGP. Dual-stack peers get TWO separate BGP sessions (one keyed on the IPv4 transport
+  address, one on IPv6) rather than one session carrying both AFs.
+
+  A session can take ~70 seconds longer to reach ESTABLISHED than committing this implies: the
+  ArcOS BGP daemon rejects every FSM transition until it finishes reading its startup config. That
+  is a device startup barrier, not a protocol timer, and nothing is rendered for it -- the wait is
+  declared as arcos.ebgp_session / arcos.ibgp_session in tests/integration/wait_times.yml.
+
+  The address-family, network and neighbor rendering lives in templates/bgp/arcos.macro.j2 so the
+  per-VRF BGP instances in templates/vrf/arcos.j2 render exactly the same way (global/VRF parity).
+  The AS and the router-id stay with the caller: a VRF BGP instance has no `global as` at all, and
+  it takes its router-id from a different place in the data model.
+
+  Because a dual-stack peer is two single-AF sessions, `n.activate` (bgp.activate, gated by
+  features.bgp.activate_af) is applied per SESSION rather than per neighbor. That gating lives in
+  the neighbor macro, so the per-VRF instances honour it too -- see templates/bgp/arcos.macro.j2.
+
+  The bgp.session plugin (per-neighbor password/gtsm/timers/passive/bfd) is a separate template
+  and is not yet supported.
+#}
+{% import "templates/bgp/arcos.macro.j2" as bgpcfg %}
+{{ bgpcfg.nhs_policy(bgp.neighbors|default([]),bgp) -}}
+network-instance default protocol BGP b1
+ global as {{ bgp.as }}
+ global router-id {{ bgp.router_id }}
+{{ bgpcfg.cluster_id(bgp) -}}
+{{ bgpcfg.afi_safi(bgp) -}}
+{{ bgpcfg.advertise(bgp.advertise|default([]),bgp) -}}
+{#- bgp.import.connected in the global routing table: every connected subnet outside a VRF,
+    rendered as BGP network statements (see the connected() macro for why ArcOS cannot use a
+    DIRECTLY_CONNECTED table-connection). The node loopback is passed in with the interfaces
+    because netlab keeps it out of node.interfaces; advertise() may already have emitted it
+    (bgp.advertise_loopback), and the macro de-duplicates against bgp.advertise. -#}
+{% if bgp.import.connected is defined %}
+{{   bgpcfg.connected(
+       ([loopback] if loopback is defined else []) +
+         (interfaces|default([])|rejectattr('vrf','defined')|list),
+       bgp,bgp.import.connected,bgp.advertise|default([])) -}}
+{% endif %}
+{{ bgpcfg.neighbors(bgp.neighbors|default([]),bgp) -}}
+
+{#  Redistribution into BGP via OpenConfig table-connections (bgp.import):
+    STATIC->BGP with src-dst-instance <static-inst> <bgp-inst> + import-policy, rendered for
+    EACH AF the BGP instance carries so IPv4 and IPv6 statics are both redistributed -- STATIC
+    BGP IPV6 commits identically to IPV4 (verified). Static protocol instance is "default"
+    (routing template), BGP instance is "b1". The per-AF policy name matches
+    templates/routing/arcos.j2's per-AF policy-definitions (<policy>-ipv4 / <policy>-ipv6).
+    The other declared sources are rendered differently: connected as BGP network statements
+    (ArcOS has no DIRECTLY_CONNECTED source instance) and ospf/isis as their own table-connections
+    -- both live in templates/bgp/arcos.macro.j2 and are shared with the per-VRF instances.
+
+    Two ArcOS rules, identical to STATIC->ISIS in templates/isis/arcos.j2 (both verified live):
+    (1) the BGP instance "b1" must be COMMITTED before a table-connection can reference it --
+    ArcOS rejects the table-connection if b1 is created in the SAME transaction -- so a #COMMIT
+    marker (see provider/clab/arcos/netlab-config.j2) splits the transaction; (2) the BGP dst
+    rejects `default-import-policy` and a bare table-connection redistributes nothing (implicit
+    reject), so an explicit accept import-policy is required. The default accept policy is emitted
+    per AF; a custom bgp.import.static.policy references templates/routing/arcos.j2's per-AF
+    policy-definitions (<policy>-ipv4 / <policy>-ipv6). #}
+{#- The IGP sources (bgp.import.ospf / bgp.import.isis) are rendered by the shared
+    redistribute_igp macro; the global OSPF/OSPFv3 instance tag is "p1" and the IS-IS instance tag
+    is "i1" (templates/ospf/arcos.j2, templates/isis/arcos.j2). Both this block and the static
+    block below live after the same #COMMIT marker because both reference the "b1" instance
+    created earlier in this file. -#}
+{% set _redist_pol = [] %}
+{% if bgp.import.static is defined or bgp.import.ospf is defined or bgp.import.isis is defined %}
+#COMMIT
+{% endif %}
+{% if bgp.import.ospf is defined or bgp.import.isis is defined %}
+{{   bgpcfg.redistribute_igp('default',bgp.import,bgp,'b1',
+       {'ospf': 'p1' if 'ospf' in module else none, 'isis': 'i1' if 'isis' in module else none},
+       _redist_pol) -}}
+{% endif %}
+{% if bgp.import.static is defined %}
+{%   set imp = bgp.import.static %}
+{%   set _base = imp.policy if (imp is mapping and imp.policy is defined) else "bgp-redist-accept" %}
+{%   for _af in ['ipv4','ipv6'] if bgp[_af] is defined %}
+{%     set _pol = _base ~ "-" ~ _af %}
+{%     if _base == "bgp-redist-accept" and _pol not in _redist_pol %}
+{%       set _ = _redist_pol.append(_pol) %}
+routing-policy policy-definition {{ _pol }}
+ statement s10
+  actions accept-route
+ exit
+!
+{%     endif %}
+network-instance default table-connection STATIC BGP {{ _af|upper }} src-dst-instance default b1 import-policy [ {{ _pol }} ]
+!
+{%   endfor %}
+{% endif %}

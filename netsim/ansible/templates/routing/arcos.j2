@@ -1,0 +1,224 @@
+{#
+  ArcOS generic-routing template (statics, prefix-sets, policies). OpenConfig-CLI:
+  defined-sets prefix-set, policy-definition/statement, protocol STATIC static-route/
+  next-hop-index. The routing-policy defined-sets prefix-set container is AF-agnostic (accepts
+  either family in the same 'prefix' leaf) -- so the same rendering loop covers ipv4 and ipv6.
+  STATIC route-install is likewise AF-agnostic (one STATIC instance, IPv4 and IPv6 static-routes
+  rendered from one loop over both AFs).
+
+  COMMUNITY LISTS become OpenConfig bgp-defined-sets: a netlab standard list is a
+  `community-set` with `community-member`s, a large list a `large-community-set` with
+  `large-community-member`s. Members may be literals or regular expressions -- both verified by
+  effect on a peer. An ArcOS set has NO per-member action, only a whole-set match option
+  (ANY / ALL / INVERT), so a netlab list that mixes permit and deny entries has no faithful
+  rendering; see _match_opts below and the arcos_community_list quirk in netsim/devices/arcos.py.
+
+  PREFIX SETS carry no per-entry action -- an ArcOS prefix-set is a flat list of members and the
+  accept/reject decision lives on the policy statement that references it. A netlab prefix list
+  has an action per entry, where a 'deny' entry means "this prefix does NOT match the list", so
+  the faithful rendering is to emit the PERMIT entries only; the deny entries are simply absent
+  and therefore do not match. A list with no permit entries at all matches nothing, so the set is
+  not emitted and the statement referencing it is skipped entirely (an empty prefix-set is not a
+  no-op -- it would leave the statement with no condition, i.e. matching everything). The one
+  ordering that cannot be expressed -- a deny entry shadowing a later permit entry it overlaps --
+  is refused by the prefix_list_shape quirk in netsim/devices/arcos.py.
+
+  POLICIES: netlab route policies apply to whichever AF references them, so each policy is
+  rendered once per AF as `<name>-ipv4` and `<name>-ipv6` (the bgp/isis import table-connections
+  are per-AF and pick the matching name). ArcOS routing-policy is otherwise AF-agnostic (a
+  prefix-set holds either family, bgp-actions are AF-independent), so the two variants differ
+  only in name; a policy that matches an IPv4-only prefix-set simply matches nothing in its
+  -ipv6 form (and vice-versa), which is correct.
+#}
+{% if routing.prefix|default({}) %}
+{%   for pf_af in ['ipv4', 'ipv6'] if pf_af in routing._prefix|default({}) %}
+{%     for p_name, p_all in routing._prefix[pf_af].items() %}
+{#-      Permit entries only -- see the header. A deny entry is not a member, so it does not
+         match; a list with none left over is emitted at all. -#}
+{%       set p_value = p_all|rejectattr('action','eq','deny')|list %}
+{%       if p_value %}
+routing-policy defined-sets prefix-set {{ p_name }}
+{%       for p_entry in p_value %}
+{%         set lo = p_entry.min|default(p_entry[pf_af]|ansible.utils.ipaddr('prefix')) %}
+{%         set hi = p_entry.max|default(128 if pf_af == 'ipv6' else 32) %}
+{%         if p_entry.min is defined or p_entry.max is defined %}
+ prefix {{ p_entry[pf_af] }} {{ lo }}..{{ hi }}
+{%         else %}
+ prefix {{ p_entry[pf_af] }} exact
+{%         endif %}
+{%       endfor %}
+ exit
+!
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
+{#- A netlab community list carries a per-entry action; an ArcOS community-set does not -- it has
+    one match option for the whole set. Two shapes are expressible and nothing else:
+      * every entry permits            -> the members ARE the set,   match-set-options ANY
+      * deny entries + a catch-all '.*' permit -> the DENIED members are the set, and the sense is
+                                          flipped with match-set-options INVERT ("matches none of")
+    The quirk in netsim/devices/arcos.py refuses any other mix up front, so these two macros never
+    have to guess. -#}
+{% macro _match_opts(c_data) %}{{ 'INVERT' if c_data.value|selectattr('action','eq','deny')|list else 'ANY' }}{% endmacro %}
+{% macro _members(c_data) %}
+{%- set _deny = c_data.value|selectattr('action','eq','deny')|list -%}
+{{- (_deny if _deny else c_data.value)|map(attribute='_value')|join(' ') -}}
+{% endmacro %}
+{#- Community lists, and the large-community-sets the set.community.large action has to reference
+    (ArcOS has no INLINE form for large communities -- only 'method REFERENCE' -- so a literal
+    netlab value list is materialised into a set named SETLC_<policy>_<sequence>). Both are
+    emitted before the policy-definitions that use them, and a #COMMIT separates them: ArcOS
+    rejects a reference to a named list created in the same transaction (same trap as
+    templates/vlan/arcos.j2). Emitted only when there is something to emit, so a topology with no
+    communities renders exactly as before. -#}
+{% set _lsets = [] %}
+{% for p_name, p_entries in (routing.policy|default({})).items() %}
+{%   for p_entry in p_entries if p_entry.set.community.large is defined %}
+{%     set _ = _lsets.append((p_name,p_entry.sequence,p_entry.set.community.large)) %}
+{%   endfor %}
+{% endfor %}
+{% if routing.community|default({}) or _lsets %}
+{%   for c_name, c_data in (routing.community|default({})).items() %}
+{%     set _kind = 'large-community-set' if c_data.type == 'large' else 'community-set' %}
+{%     set _leaf = 'large-community-member' if c_data.type == 'large' else 'community-member' %}
+routing-policy defined-sets bgp-defined-sets {{ _kind }} {{ c_name }}
+ {{ _leaf }} [ {{ _members(c_data) }} ]
+ exit
+!
+{%   endfor %}
+{%   for (p_name, p_seq, p_val) in _lsets %}
+routing-policy defined-sets bgp-defined-sets large-community-set SETLC_{{ p_name }}_{{ p_seq }}
+ large-community-member [ {{ p_val|join(' ') }} ]
+ exit
+!
+{%   endfor %}
+#COMMIT
+{% endif %}
+{% if routing.policy|default({}) %}
+{%   for p_name, p_entries in routing.policy.items() %}
+{%     for af in ['ipv4', 'ipv6'] %}
+routing-policy policy-definition {{ p_name }}-{{ af }}
+{%       for p_entry in p_entries %}
+{#-      A statement whose match.prefix names a list with no permit entries in THIS address family
+         can never match, so it is skipped rather than rendered without its condition -- an
+         unconditional statement would match every prefix and apply the opposite outcome. -#}
+{%         set _pfx = p_entry.match.prefix|default('') %}
+{%         set _pfx_empty = _pfx and not (routing._prefix[af][_pfx]|default([])|rejectattr('action','eq','deny')|list) %}
+{%         if not _pfx_empty %}
+ statement s{{ p_entry.sequence|default(loop.index * 10) }}
+{%         if p_entry.match.prefix is defined %}
+  conditions match-prefix-set prefix-set {{ p_entry.match.prefix }}
+{%         endif %}
+{#-  match.community: the standard and large families are separate ArcOS conditions. The match
+     option comes from the shape of the referenced list (see _match_opts). -#}
+{%         if p_entry.match.community.standard is defined %}
+{%           set _cl = routing.community[p_entry.match.community.standard] %}
+  conditions bgp-conditions match-community-set community-set {{ p_entry.match.community.standard }}
+  conditions bgp-conditions match-community-set match-set-options {{ _match_opts(_cl) }}
+{%         endif %}
+{%         if p_entry.match.community.large is defined %}
+{%           set _cl = routing.community[p_entry.match.community.large] %}
+  conditions bgp-conditions match-large-community-set large-community-set {{ p_entry.match.community.large }}
+  conditions bgp-conditions match-large-community-set match-set-options {{ _match_opts(_cl) }}
+{%         endif %}
+{%         if p_entry.set.locpref is defined %}
+  actions bgp-actions set-local-pref {{ p_entry.set.locpref }}
+{%         endif %}
+{%         if p_entry.set.med is defined %}
+  actions bgp-actions set-med {{ p_entry.set.med }}
+{%         endif %}
+{#  set-community: ArcOS has ONLY standard communities (inline communities leaf-list). No
+    set-large-community / set-ext-community action exists -> not declared in features. #}
+{%         if p_entry.set.community.standard is defined %}
+  actions bgp-actions set-community method INLINE
+  actions bgp-actions set-community options {{ 'ADD' if p_entry.set.community.append|default(false) else 'REPLACE' }}
+  actions bgp-actions set-community inline communities [ {{ p_entry.set.community.standard|join(' ') }} ]
+{%         endif %}
+{#-  set.community.large: ArcOS has no INLINE form for large communities, so the values are
+     referenced through the SETLC_ set emitted above. (An earlier version of this template claimed
+     ArcOS has no set-large-community action at all and rendered a comment instead -- measured
+     wrong: 'method REFERENCE options ADD' adds the community, observed on a peer.) -#}
+{%         if p_entry.set.community.large is defined %}
+  actions bgp-actions set-large-community method REFERENCE
+  actions bgp-actions set-large-community options {{ 'ADD' if p_entry.set.community.append|default(false) else 'REPLACE' }}
+  actions bgp-actions set-large-community reference large-community-set-ref SETLC_{{ p_name }}_{{ p_entry.sequence }}
+{%         endif %}
+{#-  delete.community.list.<family>: removal is a REFERENCE to a community-set with options
+     REMOVE, on the "-additional" leaf so that a statement which also SETS communities does not
+     collide with itself on the same leaf. netlab turns every delete request -- literal values as
+     well as an explicit list -- into a community list for us, because the device declares
+     features.routing.policy.delete.community: clist. -#}
+{%         if p_entry.delete.community.list.standard is defined %}
+  actions bgp-actions set-community-additional method REFERENCE
+  actions bgp-actions set-community-additional options REMOVE
+  actions bgp-actions set-community-additional reference community-set-ref {{ p_entry.delete.community.list.standard }}
+{%         endif %}
+{%         if p_entry.delete.community.list.large is defined %}
+  actions bgp-actions set-large-community-additional method REFERENCE
+  actions bgp-actions set-large-community-additional options REMOVE
+  actions bgp-actions set-large-community-additional reference large-community-set-ref {{ p_entry.delete.community.list.large }}
+{%         endif %}
+  actions {{ 'accept-route' if p_entry.action|default('permit') == 'permit' else 'reject-route' }}
+  exit
+{%         endif %}
+{%       endfor %}
+ exit
+!
+{%     endfor %}
+{%   endfor %}
+{% endif %}
+{#- STATIC routes, global table and VRFs, from one macro so the two render identically.
+
+    ArcOS scopes static routes by network-instance -- "network-instance <ni> protocol STATIC
+    <instance>" -- so a VRF static route is the same construct as a global one with a different
+    network-instance. Verified on the device: an IPv4 and an IPv6 static route committed under
+    "network-instance red protocol STATIC red" install into red's table only
+    ("10.99.99.0/24 via 172.18.0.1 dev swp1 proto static", nothing in any other VRF).
+
+    Only ONE STATIC instance may exist per network-instance -- a second one is rejected with
+    "Exceeded max STATIC instances" -- so the instance tag is simply the VRF name (and "default"
+    in the global table, unchanged). Unlike the OSPF/IS-IS instance tags, a STATIC tag may repeat
+    a tag used by another protocol: "protocol STATIC red" and "protocol BGP red" coexist in the
+    same VRF (verified), so no p-/i-style prefix is needed.
+
+    A discard (blackhole) route is "next-hop DROP": it installs as "blackhole <prefix> proto
+    static" (verified). DROP is the only accepted keyword -- DISCARD, discard, blackhole, REJECT
+    and Null0 are all rejected by the parser.
+
+    Inter-VRF static routes (nexthop.vrf) are NOT rendered and NOT declared: ArcOS expresses them
+    as "next-network-instance-name <vrf>", which takes host routes only -- a shorter IPv4 prefix
+    is rejected with "Expect /32 v4 prefix when configuring static route with next-network-instance
+    option" and IPv6 likewise needs a /128. netlab's static routes are prefix-based, so the
+    construct cannot carry them. See the caveats in netsim/devices/arcos.yml. -#}
+{% macro static_routes(sr_list,af) %}
+{%   for sr_data in sr_list if sr_data[af] is defined and (sr_data.nexthop[af] is defined or sr_data.nexthop.discard is defined) %}
+ static-route {{ sr_data[af] }}
+  next-hop-index nh{{ sr_data.nexthop.idx|default(0) }}
+   next-hop {{ 'DROP' if sr_data.nexthop.discard is defined else sr_data.nexthop[af] }}
+   exit
+  exit
+{%   endfor %}
+{% endmacro %}
+{#- an entry with an inter-VRF next hop is skipped everywhere (see above) -#}
+{% set sr_all = routing.static|default([])|rejectattr('nexthop.vrf','defined')|list %}
+{% set sr_global = sr_all|rejectattr('vrf','defined')|list %}
+{% if sr_global %}
+network-instance default protocol STATIC default
+{%   for af in ['ipv4', 'ipv6'] %}
+{{     static_routes(sr_global,af) -}}
+{%   endfor %}
+ exit
+!
+{% endif %}
+{% for vname in vrfs|default({}) %}
+{%   set sr_vrf = sr_all|selectattr('vrf','defined')|selectattr('vrf','eq',vname)|list %}
+{%   if sr_vrf %}
+network-instance {{ vname }} protocol STATIC {{ vname }}
+{%     for af in ['ipv4', 'ipv6'] %}
+{{       static_routes(sr_vrf,af) -}}
+{%     endfor %}
+ exit
+!
+{%   endif %}
+{% endfor %}

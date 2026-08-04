@@ -1,0 +1,216 @@
+{#- ArcOS BGP rendering macros, shared by the global-table BGP configuration
+    (templates/bgp/arcos.j2) and the per-VRF BGP instances rendered from
+    templates/vrf/arcos.j2 -- a VRF BGP instance takes the same router-id,
+    address-family, network and neighbor knobs as the default-instance one.
+
+    Every macro emits the lines that belong UNDER a
+    "network-instance <ni> protocol BGP <instance>" header; the caller emits that
+    header because both the network-instance and the protocol instance tag differ
+    between the default routing table and a VRF.
+
+    netlab AF names map onto the OpenConfig afi-safi names as <AF>_UNICAST. Every
+    macro takes the dictionary carrying the BGP instance's AF flags (node 'bgp' in
+    the default table, 'vrfs.<name>.af' in a VRF) instead of assuming IPv4, so
+    IPv4-only, dual-stack and IPv6-only topologies render only the families they
+    actually use. -#}
+{% macro afi_safi(af_flags) -%}
+{%   for af in ['ipv4','ipv6'] if af_flags[af] is defined %}
+ global afi-safi {{ af|upper }}_UNICAST
+{%   endfor %}
+{%- endmacro %}
+{% macro advertise(pfx_list,af_flags) -%}
+{%   for pfx in pfx_list %}
+{%     for af in ['ipv4','ipv6'] if af_flags[af] is defined and pfx[af] is defined %}
+ global afi-safi {{ af|upper }}_UNICAST network {{ pfx[af] }}
+{%     endfor %}
+{%   endfor %}
+{%- endmacro %}
+{#- Redistribution of CONNECTED subnets into BGP (bgp.import.connected), used by the default
+    routing table and by the per-VRF BGP instances alike.
+
+    ArcOS has no usable DIRECTLY_CONNECTED redistribution: the OpenConfig source identity is in
+    the model, but "table-connection DIRECTLY_CONNECTED BGP ..." is rejected with "Source protocol
+    must be configured" for every src-instance value, and the "protocol DIRECTLY_CONNECTED <ni>"
+    container the schema does accept never registers a runtime instance ("SRC instance does not
+    exist"). What this device does have is an explicit BGP "network" statement per connected
+    prefix: the same set of prefixes, originated exactly like bgp.advertise, with
+    "network <pfx> export-policy <policy>" carrying an optional bgp.import.connected.policy
+    (all verified on the device, IPv4 and IPv6).
+
+    Prefixes the advertise() macro already emitted (the node/VRF loopbacks netlab takes from
+    bgp.advertise) are skipped: "network" is a keyed list, so the same prefix must not be emitted
+    twice with different options. Interface addresses that are not prefix strings (unnumbered
+    IPv4, IPv6 LLA-only) have no subnet to advertise and are skipped as well. -#}
+{% macro connected(intf_list,af_flags,imp,pfx_list=[]) -%}
+{%   set policy = imp.policy if imp is mapping and imp.policy is defined else '' %}
+{%   set done = [] %}
+{%   for pfx in pfx_list %}
+{%     for af in ['ipv4','ipv6'] if pfx[af] is defined %}
+{%       set _ = done.append(pfx[af]) %}
+{%     endfor %}
+{%   endfor %}
+{%   for l in intf_list %}
+{%     for af in ['ipv4','ipv6'] if af_flags[af] is defined and l[af] is string %}
+{%       set subnet = l[af]|ansible.utils.ipaddr('subnet') %}
+{%       if subnet not in done %}
+{%         set _ = done.append(subnet) %}
+ global afi-safi {{ af|upper }}_UNICAST network {{ subnet }}{{ " export-policy " ~ policy ~ "-" ~ af if policy else "" }}
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{%- endmacro %}
+{#- IGP -> BGP redistribution (bgp.import.ospf / bgp.import.isis) rendered as OpenConfig
+    table-connections, for the default routing table and for a VRF BGP instance alike.
+
+    netlab AUTO-GENERATES these imports: netsim/modules/_routing.py::process_imports() adds
+    bgp.import.<proto> = { auto: True } for every protocol in defaults.const.vrf_igp_protocols
+    that a VRF runs, and that branch never consults the device feature list -- so a VRF running
+    OSPF or IS-IS next to BGP asks for the redistribution whether the user wrote it or not. It has
+    to be rendered, or those routes silently never reach the CE.
+
+    ArcOS specifics, all verified on the device:
+    * the source is keyed by PROTOCOL INSTANCE TAG, and OSPFv3 is a separate source identity
+      (OSPF3) from OSPFv2 (OSPF) -- hence the per-AF source protocol name;
+    * the same two rules as STATIC->BGP in templates/bgp/arcos.j2 and STATIC->ISIS in
+      templates/isis/arcos.j2 apply: the destination BGP instance must be COMMITTED before a
+      table-connection may reference it (the caller emits the #COMMIT split), and a bare
+      table-connection redistributes nothing (implicit reject), so an explicit accept
+      import-policy is required;
+    * a custom bgp.import.<proto>.policy references templates/routing/arcos.j2's per-AF
+      policy-definitions (<policy>-ipv4 / <policy>-ipv6), exactly like the static import.
+
+    `defined` accumulates the accept policies already emitted into this file, so the default
+    "bgp-redist-accept-<af>" definition is written once even when several VRFs redistribute. -#}
+{% macro redistribute_igp(ni,imports,af_flags,dst_inst,src_tags,defined=[]) -%}
+{%   for proto in ['ospf','isis'] if imports[proto] is defined and src_tags[proto] is defined %}
+{%     set imp = imports[proto] %}
+{%     set base = imp.policy if imp is mapping and imp.policy is defined else 'bgp-redist-accept' %}
+{%     for af in ['ipv4','ipv6'] if af_flags[af] is defined %}
+{%       set pol = base ~ '-' ~ af %}
+{%       set src = ('OSPF3' if af == 'ipv6' else 'OSPF') if proto == 'ospf' else 'ISIS' %}
+{%       if base == 'bgp-redist-accept' and pol not in defined %}
+{%         set _ = defined.append(pol) %}
+routing-policy policy-definition {{ pol }}
+ statement s10
+  actions accept-route
+ exit
+!
+{%       endif %}
+network-instance {{ ni }} table-connection {{ src }} BGP {{ af|upper }} src-dst-instance {{ src_tags[proto] }} {{ dst_inst }} import-policy [ {{ pol }} ]
+!
+{%     endfor %}
+{%   endfor %}
+{%- endmacro %}
+{#- A dual-stack peer gets TWO sessions (one keyed on the IPv4 transport address,
+    one on IPv6), each carrying only its own AF -- ArcOS does not run both AFs
+    over a single session. `n.activate` (bgp.activate, gated by features.bgp.activate_af)
+    therefore applies per SESSION, exactly as eos/frr key their "neighbor <n[af]> activate"
+    on the same-AF address: a session whose only address family is not activated is not
+    configured at all, because ArcOS cannot bring up a neighbor with no address family.
+    Inside a VRF the flag is not user-controllable -- netsim/modules/bgp.py sets
+    activate[af] on every VRF neighbor that carries that AF -- so the gate is a no-op there. -#}
+{% macro neighbors(nb_list,af_flags) -%}
+{%   for n in nb_list %}
+{%     for af in ['ipv4','ipv6'] if af_flags[af] is defined and n[af] is defined and n.activate[af]|default(false) %}
+ neighbor {{ n[af] }} peer-as {{ n.as }}
+{#       bgp.local_as: netlab's replace_global_as (default true) means the local AS REPLACES the
+         global one in the AS path rather than being prepended to it -- "no-prepend replace-as" on
+         FRR, and the identically named leaves here. Rendering only "local-as" left the global AS
+         in the path, so a peer whose own AS equals it dropped the update as an AS-path loop: in
+         evpn/12-vxlan-ibgp-ebgp the spine advertised its loopback to an FRR leaf that never
+         installed it ("0 accepted" with nothing inbound-filtered, because a loop is discarded
+         before policy), the leaf had no route to the spine loopback, and the EVPN session over
+         that loopback stayed Active forever. With both leaves set the leaf receives the prefix
+         with AS path "65100" and the session comes up. -#}
+{%       if n.local_as is defined %}
+ neighbor {{ n[af] }} ebgp-local-as local-as {{ n.local_as }}
+{%         if n.replace_global_as|default(True) %}
+ neighbor {{ n[af] }} ebgp-local-as no-prepend true
+ neighbor {{ n[af] }} ebgp-local-as replace-as true
+{%         endif %}
+{%       endif %}
+{#-      iBGP-over-loopback: without an explicit transport local-address a session
+         addressed at the peer loopback stays IDLE forever -- ArcOS does not
+         auto-source from the interface with the best route to the peer. #}
+{%       if n.type|default("") == "ibgp" and n._source_intf[af] is defined %}
+ neighbor {{ n[af] }} transport local-address {{ n._source_intf[af] | ansible.utils.ipaddr('address') }}
+{%       endif %}
+ neighbor {{ n[af] }} afi-safi {{ af|upper }}_UNICAST
+{#       Route reflection (bgp.rr): route-reflector-client is a per-neighbor knob that applies
+         to every AFI/SAFI configured on the session, so it is emitted once per session rather
+         than per address family. The matching cluster-id is global -- see the cluster_id macro. #}
+{%       if n.rr_client|default(False) %}
+ neighbor {{ n[af] }} route-reflector route-reflector-client true
+{%       endif %}
+{#       next-hop-self (bgp.next_hop_self). The per-AF "next-hop SELF" knob under the neighbor
+         is unconditional -- it rewrites the next hop of REFLECTED IBGP routes too (verified on
+         the device), so it is netlab's 'all' flavour, the equivalent of "next-hop-self force".
+         The default 'ebgp' flavour must not touch reflected routes and is rendered as an export
+         policy instead -- see the nhs_policy and export_policy macros below.
+         No integration test reaches this branch: every topology that sets next_hop_self to 'all'
+         (bgp/08-ibgp-localas, bgp/09-vrf-localas, bgp/40-confederation) is refused on arcos for an
+         unrelated reason. The force semantics were established by measuring the leaf directly. #}
+{%       if n.next_hop_self|default('') == 'all' %}
+ neighbor {{ n[af] }} afi-safi {{ af|upper }}_UNICAST next-hop SELF
+{%       endif %}
+{{ export_policy(n,af) -}}
+{%     endfor %}
+{%   endfor %}
+{%- endmacro %}
+{#- RFC 4456 cluster-id: a global (per BGP instance) knob, emitted only on a route reflector
+    that has an explicit rr_cluster_id. Without it ArcOS prepends the router-id to the
+    CLUSTER_LIST, which is netlab's own default. Only templates/bgp/arcos.j2 calls this -- netlab
+    has no way to make a VRF BGP instance a route reflector, so templates/vrf/arcos.j2 does not. -#}
+{% macro cluster_id(bgp_data) -%}
+{%   if bgp_data.rr|default(False) and bgp_data.rr_cluster_id|default(False) %}
+ global cluster-id {{ bgp_data.rr_cluster_id }}
+{%   endif %}
+{%- endmacro %}
+
+{#- Export-policy chain that carries next-hop-self. An ArcOS policy chain stops at the first
+    accept-route/reject-route action and, if no policy in the chain executes one, the route is
+    REJECTED -- the chain's default disposition is reject-route and a BGP neighbor has no
+    default-export-policy knob to change that. The next-hop-self policy carries no disposition of
+    its own (it must not stop the chain), so the accept-everything policy that nhs_policy renders
+    alongside it closes the chain.
+
+    This never collides with the export policy extra/bgp/policy/arcos.j2 writes into the same
+    leaf-list: bgp.policy attaches policies only to interface EBGP neighbors
+    (extra/bgp/policy/__init__.py -> intf_neighbors(select=['ebgp'])), while next_hop_self ==
+    'ebgp' is set only on IBGP loopback sessions (netsim/modules/bgp.py), so no session ever
+    carries both. -#}
+{% macro export_policy(n,af) -%}
+{%   if n.next_hop_self|default('') == 'ebgp' %}
+ neighbor {{ n[af] }} afi-safi {{ af|upper }}_UNICAST apply-policy export-policy [ bgp-next-hop-self-{{ af }} bgp-export-accept-{{ af }} ]
+{%   endif %}
+{%- endmacro %}
+{#- next-hop-self for netlab's default 'ebgp' flavour: rewrite the next hop of EBGP-learned routes
+    only, leaving routes reflected to an RR client with the originator's next hop (RFC 4456). The
+    statement has NO accept-route action -- an ArcOS policy chain stops at the first accept-route,
+    so accepting here would leave the trailing accept-everything policy unreachable and make the
+    pair fragile to reorder. The trailing policy is what supplies the disposition; see the
+    export_policy macro.
+
+    Rendered once per address family, in the global routing-policy tree (routing-policy is not
+    per-network-instance), so the global BGP instance owns it; netsim/modules/bgp.py never sets the
+    'ebgp' flavour on a VRF neighbor. -#}
+{% macro nhs_policy(nb_list,af_flags) -%}
+{#- The selection mirrors the neighbors macro exactly, activate gate included, so an address
+    family that is present on a neighbor but not activated does not leave orphan
+    policy-definitions behind (visible in bgp/20-dual-stack-activate). -#}
+{%   for af in ['ipv4','ipv6'] if af_flags[af] is defined
+         and nb_list|selectattr('next_hop_self','defined')|selectattr('next_hop_self','eq','ebgp')
+                    |selectattr(af,'defined')|map(attribute='activate.' ~ af,default=False)|select|list %}
+routing-policy policy-definition bgp-next-hop-self-{{ af }}
+ statement s10
+  conditions bgp-conditions route-type EXTERNAL
+  actions bgp-actions set-next-hop SELF
+ exit
+!
+routing-policy policy-definition bgp-export-accept-{{ af }}
+ statement s10
+  actions accept-route
+ exit
+!
+{%   endfor %}
+{%- endmacro %}

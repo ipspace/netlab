@@ -15,6 +15,7 @@
 | Virtual network device | netlab device type | support level |
 | -----------------------| ------------------ | ------------- |
 | Arista vEOS/cEOS [❗](caveats-eos) | eos    | full          |
+| Arrcus ArcOS [❗](caveats-arcos) | arcos  | best effort   |
 | Aruba AOS-CX [❗](caveats-aruba) | arubacx  | full          |
 | Cisco 8000v [❗](caveats-cisco8000v) | cisco8000v | minimal |
 | Cisco ASAv [❗](caveats-asav)    | asav     | minimal       |
@@ -114,6 +115,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Virtual network device | Vagrant<br />[Libvirt](labs/libvirt.md) | [Containerlab](labs/clab.md) |
 | ------------------ | :-: | :-: |
 | Arista vEOS        |  [✅](build-eos)  |  [✅](build-ceos)  |
+| Arrcus ArcOS       |  ❌  |  [✅](build-arcos)  |
 | Aruba AOS-CX       |  [✅](build-arubacx)  |  ✅[❗](clab-vrnetlab)  |
 | Cisco 8000v        |  ❌  |  ✅   |
 | Cisco ASAv         |  [✅](build-asav)  |  ✅ [❗](clab-vrnetlab)  |
@@ -194,6 +196,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Operating system      | Deploy<br>configuration | Collect<br> configuration | Configurable<br>save to startup |
 | --------------------- |:--:|:--:|:--:|
 | Arista EOS            | ✅ | ✅ |
+| Arrcus ArcOS [❗](caveats-arcos) | ✅ | ✅ |
 | Aruba AOS-CX          | ✅ | ✅ |
 | Cisco ASAv            | ✅ | ✅ |
 | Cisco IOS/IOS XE[^18v]| ✅ [❗](cisco-ios-ssh) | ✅ |
@@ -288,6 +291,7 @@ The following system-wide features are configured on supported network operating
 | Operating system      | Hostname | IPv4/IPv6<br>hosts |           LLDP            | IPv4<br>Loopback | IPv6<br>Loopback |
 | --------------------- | :------: | :--------: | :-----------------------: | :------------------------: | :------------------------: |
 | Arista EOS               | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Arrcus ArcOS             | ✅  |  ❌  |  ❌  | ✅  | ✅  |
 | Aruba AOS-CX             | ✅  |  ❌  | ✅  | ✅  | ✅  |
 | Cisco ASAv               | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
 | Cisco IOS/IOS XE[^18v]   | ✅  | ✅  | ✅  | ✅  | ✅  |
@@ -320,6 +324,7 @@ The following interface parameters are configured on supported network operating
 | Operating system      | Interface<br />description | Interface<br />bandwidth | MTU | Additional<br />loopbacks
 | --------------------- |:---:|:---:|:---:|:---:|
 | Arista EOS            | ✅  | ✅  | ✅  | ✅  |
+| Arrcus ArcOS          |  ❌  |  ❌  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  |  ❌  | ✅  | ✅  |
 | Cisco ASAv            | ✅  |  ❌  | ✅  |  ❌  |
 | Cisco IOSv/IOSvL2     | ✅  | ✅  | ✅  | ✅  |
@@ -350,6 +355,7 @@ The following interface addresses are supported on various platforms; most daemo
 | Operating system      | IPv4<br />addresses | IPv6<br />addresses | Unnumbered<br />IPv4 interfaces | Configurable<br>IPv6 RA |
 | --------------------- | :-: | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  | ✅  |
+| Arrcus ArcOS          | ✅  | ✅  |  ❌  |  ❌  |
 | Aruba AOS-CX          | ✅  | ✅  | ✅  |  ❌  |
 | Cisco ASAv            | ✅  | ✅  |  ❌  |  ❌  |
 | Cisco IOSv/IOSvL2     | ✅  | ✅  |  ❌  | ✅  |
@@ -400,6 +406,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Operating system      | [OSPF](module/ospf.md) | [IS-IS](module/isis.md) | [EIGRP](module/eigrp.md) | [BGP](module/bgp.md) | [RIPv2/ng](module/ripv2.md)
 | --------------------- | :--: | :--: | :--: | :--: | :--: |
 | Arista EOS            | ✅   |  ✅  |   ❌  |  ✅  |  ✅  |
+| Arrcus ArcOS [❗](caveats-arcos) | ✅ | ✅ | ❌ | ✅ | ❌ |
 | Aruba AOS-CX          | ✅   |  ❌   |   ❌  |  ✅  |   ❌  |
 | BIRD Internet Routing Daemon | ✅ [❗](caveats-bird) | ❌ | ❌ | ✅ [❗](caveats-bird) | ❌ |
 | Cisco ASAv            | ✅ [❗](caveats-asav) | ✅ [❗](caveats-asav) | ❌ | ✅ | ❌ |
@@ -427,6 +434,7 @@ These devices support additional control-plane protocols or BGP address families
 | Operating system | [BFD](module/bfd.md) | [EVPN](module/evpn.md) | [MPLS/VPN](module/mpls.md) | [FHRP](module/gateway.md) |
 | --------------------- | :-: | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  | ✅  |
+| Arrcus ArcOS [❗](caveats-arcos) | ✅  | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  | ✅  | ✅  | ✅  |
 | BIRD                  |  ❌  | ✅  |  ❌  | ✅  |
 | Cisco IOS XE[^XE]     | ✅  | ✅  | ✅  | ✅  |
@@ -459,6 +467,7 @@ The layer-2 control plane [configuration modules](module-reference.md) are suppo
 | Operating system          | [Spanning<br>Tree Protocol](module/stp.md) | [Link Aggregation<br>Groups](module/lag.md) |
 | ------------------------- |:--:|:--:|
 | Arista EOS                | ✅ | ✅ |
+| Arrcus ArcOS [❗](caveats-arcos) | ✅[❗](caveats-arcos) | ✅ |
 | Aruba CX                  | ✅ | ✅ |
 | BIRD                      | ❌  | ✅ |
 | Cumulus Linux             | ✅ | ✅ |
@@ -475,6 +484,7 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | Operating system      | [VLAN](module/vlan.md) | [VRF](module/vrf.md) | [VXLAN](module/vxlan.md) | [MPLS](module/mpls.md) | [SR-MPLS](module/sr-mpls.md) | [SRv6](module/srv6.md) |
 | --------------------- |:--:|:--:|:--:|:--:|:--:|:--:|
 | Arista EOS            | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
+| Arrcus ArcOS [❗](caveats-arcos) | ✅ | ✅ | ✅[❗](caveats-arcos) | ✅[❗](caveats-arcos) | ✅[❗](caveats-arcos) | ✅[❗](caveats-arcos) |
 | Aruba AOS-CX          | ✅ | ✅ |  ✅[❗](caveats-aruba) | [❗](caveats-aruba) | ❌ | ❌ |
 | BIRD                  | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
 | Cisco 8000v (IOS XR)  | ✅ | ✅ |  ❌ | ✅ | ✅ | ✅ |
@@ -525,6 +535,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Operating system      | OSPFv3 | IS-IS MT | EIGRP<br />IPv6 AF | BGP<br />IPv6 AF | SR-MPLS |
 | --------------------- |:--:|:--:|:--:|:--:|:--:|
 | Arista EOS            | ✅ | ✅ | ❌ | ✅ | ✅ |
+| Arrcus ArcOS          | ✅ | ❌[❗](caveats-arcos) | ❌ | ✅ | ❌ |
 | Aruba AOS-CX          | ✅ | ❌ | ❌ | ✅ | ❌ |
 | BIRD                  | ✅ | ❌ | ❌ | ✅ | ❌ |
 | Cisco ASAv            | ❌ | ✅ | ❌ | ✅ | ❌ |

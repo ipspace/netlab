@@ -1,0 +1,42 @@
+{#
+  ArcOS bgp.policy plugin configuration -- apply the routing policies the plugin generated to the
+  BGP neighbors. The policies themselves (locpref/MED/community/prefix matching) are rendered by
+  templates/routing/arcos.j2, which emits one policy-definition per address family named
+  <policy>-ipv4 / <policy>-ipv6; the per-neighbor apply-policy below is per address family too, so
+  it picks the matching one.
+
+  A dual-stack peer is TWO ArcOS neighbors (one keyed on the IPv4 transport address, one on the
+  IPv6 one -- see templates/bgp/arcos.j2), each carrying a single address family, so the neighbor
+  address and the AFI/SAFI always come from the same `af`.
+
+  Applied in the default network-instance AND in every L3VRF that has policy-carrying neighbors:
+  templates/vrf/arcos.j2 renders a per-VRF BGP instance tagged with the VRF name, and this template
+  is deployed after it, so the instance a VRF neighbor lives in already exists.
+
+  Not rendered because ArcOS cannot express them, and therefore not declared in
+  netsim/devices/arcos.yml either: bgp.weight (no per-neighbor weight leaf), bgp.bandwidth,
+  bgp.role (RFC 9234), AS-path prepending, and EXTENDED-community set actions. (Large-community
+  set actions ARE rendered, by templates/routing/arcos.j2 -- an earlier version of this header said
+  otherwise.)
+#}
+{% macro apply_policy(nb_list) %}
+{%   for af in ['ipv4','ipv6'] %}
+{%     for n in nb_list if n[af] is defined and n[af] is string %}
+{%       for direction in ['in','out'] if direction in n.policy %}
+ neighbor {{ n[af] }} afi-safi {{ af|upper }}_UNICAST apply-policy {{ 'import-policy' if direction == 'in' else 'export-policy' }} [ {{ n.policy[direction] }}-{{ af }} ]
+{%       endfor %}
+{%     endfor %}
+{%   endfor %}
+{%- endmacro %}
+{% set _pol_ngb = bgp.neighbors|default([])|selectattr('policy','defined')|list %}
+{% if _pol_ngb %}
+network-instance default protocol BGP b1
+{{ apply_policy(_pol_ngb) -}}
+{% endif %}
+{% for vname,vdata in (vrfs|default({})).items() %}
+{%   set _vrf_pol_ngb = vdata.bgp.neighbors|default([])|selectattr('policy','defined')|list %}
+{%   if _vrf_pol_ngb %}
+network-instance {{ vname }} protocol BGP {{ vname }}
+{{ apply_policy(_vrf_pol_ngb) -}}
+{%   endif %}
+{% endfor %}
