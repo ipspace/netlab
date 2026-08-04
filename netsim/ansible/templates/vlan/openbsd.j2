@@ -1,36 +1,20 @@
-{% from "initial/openbsd-ifconfig.j2" import ifconfig with context %}
-{#
-  This script configures OpenBSD VLANs
-#}
 #!/bin/sh
 
 set -e # Exit immediately when any command fails
 set -x # Track commands for troubleshooting
 
 {% for ifdata in interfaces if ifdata.vlan is defined %}
-{% if ifdata.type == 'vlan_member' %}
-ifconfig {{ ifdata.ifname }} parent {{ ifdata.parent_ifname }} vnetid {{ ifdata.vlan.access_id }}
-{% endif %}
-{{ ifconfig(ifdata) }}
-{% if ifdata.vlan.access is defined %}
-ifconfig veb{{ vlans[ifdata.vlan.access].id }} add {{ ifdata.ifname }} up
-{% endif %}
-{% if ifdata.vlan.native is defined %}
-ifconfig veb{{ vlans[ifdata.vlan.native].id }} add {{ ifdata.ifname }} up
-{% endif %}
-{% if ifdata.type=='svi' %}
-{%   for vname,vdata in vlans.items() %}
-{%     if ifdata.vlan.name == vname %}
+{%   if ifdata.vlan.access is defined %}
+ifconfig veb{{ ifdata.vlan.access_id }} add {{ ifdata.ifname }} up
+{%   endif %}
+{%   if ifdata.vlan.native is defined %}
+ifconfig veb{{ ifdata.vlan.access_id }} add {{ ifdata.ifname }} up
+{%   endif %}
+{%   if ifdata.type=='svi' %}
+{%     for vname,vdata in (vlans|default({})).items() %}
+{%       if ifdata.vlan.name == vname %}
 ifconfig veb{{ vdata.id }} add {{ ifdata.ifname }} up
-{%     endif %}
-{%   endfor %}
-{% endif %}
+{%       endif %}
+{%     endfor %}
+{%   endif %}
 {% endfor %}
-
-{% if role == 'router' %}
-#
-# (re-)start RA daemon
-#
-pkill -q rad || true
-rad
-{% endif %}
