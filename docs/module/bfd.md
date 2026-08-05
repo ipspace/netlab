@@ -5,6 +5,20 @@ This configuration module configures the basic BFD ([RFC5880](https://datatracke
 (bfd-platform)=
 BFD is supported on these platforms:
 
+```eval_rst
+.. features::
+   - title: BFD<br>protocol
+     enabled: bfd
+     caveats: bfd.caveats
+   - title: OSPF<br>with BFD
+     enabled: ospf and bfd
+   - title: IS-IS<br>with BFD
+     enabled: isis and bfd
+   - title: BGP<br>with BFD
+     enabled: bgp.bfd
+     caveats: bgp.bfd.caveats
+```
+
 | Operating system      | Configurable<br>timers | OSPF | IS-IS | BGP |
 | --------------------- | :-: | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  | ✅ |
