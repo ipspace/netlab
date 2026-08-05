@@ -5,8 +5,7 @@ This configuration module configures the basic BFD ([RFC5880](https://datatracke
 (bfd-platform)=
 BFD is supported on these platforms:
 
-```eval_rst
-.. features::
+```{features}
    - title: BFD<br>protocol
      enabled: bfd
      caveats: bfd.caveats

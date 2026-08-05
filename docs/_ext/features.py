@@ -17,6 +17,7 @@ from box import Box, BoxList
 from box.exceptions import BoxError
 from docutils import nodes
 from sphinx.util.docutils import SphinxDirective
+from sphinx.util.parsing import nested_parse_to_nodes
 
 from netsim.augment import devices
 from netsim.data import append_to_list, get_box, get_empty_box
@@ -26,14 +27,17 @@ SETTINGS: Box
 DIRECTIVE: SphinxDirective
 TABLE_COUNT: int = 0
 
-def table_cell(text: str, align: str = '', fn: typing.Optional[Box] = None) -> nodes.entry:
+def table_cell(
+      text: str,
+      align: str = '',
+      fn: typing.Optional[Box] = None) -> nodes.entry:
   entry = nodes.entry()
   if align:
     entry['classes'].append('text-'+align)
   para_list = []
   for line in text.split('<br>'):
     paragraph = nodes.paragraph()
-    paragraph += DIRECTIVE.parse_text_to_nodes(line)
+    paragraph += nested_parse_to_nodes(DIRECTIVE.state,line,offset=DIRECTIVE.content_offset)
     para_list += paragraph
   if fn:
     para_list[-1] += nodes.footnote_reference(text=fn.label,refid=fn.refid)
@@ -71,7 +75,10 @@ def features_body(tgroup: nodes.tgroup, device_data: typing.List[typing.List]) -
       if 'text' in d_data:
         trow += table_cell(d_data['text'],fn=d_data.get('fn',''))
       elif 'status' in d_data:
-        trow += table_cell('✅' if d_data['status'] else '❌',align='center')
+        txt = '✅' if d_data['status'] else '❌'
+        if 'caveat' in d_data:
+          txt += f'[❗]({d_data["caveat"]})'
+        trow += table_cell(txt,align='center')
       else:
         trow += table_cell('🤦‍♂️')    
 
@@ -81,12 +88,20 @@ def get_feature_list(settings: Box, table_def: Box) -> Box:
   for dname,ddata in settings.devices.items():
     df_row = []
     f_valid = False
+    local_data = ddata + ddata.features
     for f_def in table_def.features:
       try:
-        f_OK = bool(eval(f_def.enabled,locals=ddata + ddata.features))
+        f_OK = bool(eval(f_def.enabled,locals=local_data))
       except Exception:
         f_OK = False
-      df_row.append({'status': f_OK})
+      dt_value = {'status': f_OK}
+      if f_OK and 'caveats' in f_def:
+        try:
+          f_caveat = eval(f_def.caveats,locals=local_data)
+          dt_value['caveat'] = 'caveats-'+dname if f_caveat is True else f_caveat
+        except Exception:
+          pass
+      df_row.append(dt_value)
       f_valid = f_valid or f_OK
 
     if f_valid:
@@ -103,7 +118,7 @@ def remove_duplicate_features(settings: Box, df_data: Box) -> None:
     parent = p_list[0]
     if parent not in df_data:
       continue
-    if not ddata.get('docparent',True):
+    if not settings.devices[parent].get('docparent',True):
       continue
     if df_data[dname].features == df_data[parent].features:
       df_data.pop(dname)
