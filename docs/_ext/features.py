@@ -1,14 +1,15 @@
 """
 Sphinx extension implementing the *features* directive.
 
-The directive takes a comma-separated list of ``feature=header`` parameters.
-Each parameter defines one column of a table: *feature* is the machine-readable
-feature name used by the code populating the table body, *header* is the
-human-readable column header.
+The directive takes a YAML-formatted list of features as its content.
+See developer documentation (docs/dev/feature-tables.md) for details.
 
-Usage::
+Usage (from within MyST parser)::
 
-    .. features:: vlan=VLAN support, vrf=VRF support, mpls=MPLS support
+    ```{features}
+    - title: VLAN support
+      enabled: bfd
+    ```
 """
 
 import typing
@@ -27,6 +28,19 @@ SETTINGS: Box
 DIRECTIVE: SphinxDirective
 TABLE_COUNT: int = 0
 
+BUILTINS: dict = {                            # Allowed built-in functions. Extend as needed ;)
+  'len': len
+}
+
+def safer_eval(xpr: str, locals: Box) -> typing.Any:
+  """
+  We might need operators and functions in feature/caveat expressions, so we
+  need to use "eval". However, we could make it a bit safer ;)
+  """
+  global BUILTINS
+
+  return eval(xpr,locals=locals,globals={ '__builtins__': BUILTINS })
+
 def table_cell(
       text: str,
       align: str = '',
@@ -44,9 +58,9 @@ def table_cell(
   for line in text.split('<br>'):                           # Iterate over lines of text
     paragraph = nodes.paragraph()                           # Each line becomes a paragraph, its contents parsed as Markdown
     paragraph += nested_parse_to_nodes(DIRECTIVE.state,line,offset=DIRECTIVE.content_offset)
-    para_list += paragraph
+    para_list.append(paragraph)
   if fn:                                                    # If needed, add footnote reference to the last paragraph
-    para_list[-1] += nodes.footnote_reference(text=fn.label,refid=fn.refid)
+    paragraph[-1] += nodes.footnote_reference(text=fn.label,refid=fn.refid)
   entry += para_list                                        # ... add paragraphs to the cell
   return entry                                              # ... and return cell data structure
 
@@ -119,13 +133,13 @@ def get_feature_list(settings: Box, table_def: Box) -> Box:
     local_data = ddata + ddata.features           # Prepare local data that will be used to evaluate features
     for f_def in table_def.features:              # Ready? Now iterate over feature definitions
       try:                                        # Try to evaluate whether the device supports the feature
-        f_OK = bool(eval(f_def.enabled,locals=local_data))
+        f_OK = bool(safer_eval(f_def.enabled,locals=local_data))
       except Exception:                           # Failed miserably? It could be any number of reasons
         f_OK = False                              # ... but we'll just assume the device DOES NOT support the feature
       dt_value = {'status': f_OK}                 # Save the results
       if f_OK and 'caveats' in f_def:             # ... but wait, there's more. Do we need to check for caveats?
         try:                                      # Let's do it. Try to evaluate caveat data
-          f_caveat = eval(f_def.caveats,locals=local_data)
+          f_caveat = safer_eval(f_def.caveats,locals=local_data)
           dt_value['caveat'] = 'caveats-'+dname if f_caveat is True else f_caveat
         except Exception:                         # Failed? Looks like there's nothing to mentio ;)
           pass
