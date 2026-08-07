@@ -4,7 +4,7 @@ If you want to run a network device on a virtualization provider that is not yet
 
 Here's what you have to do:
 
-* Build a Vagrant box from whatever image your vendor supplies. It's not as hard as it sounds, there are [tons of recipes on codingpackets.com](https://codingpackets.com/blog/tag/#vagrant). If you want to build a container to use with *containerlab*, please refer to [their documentation](https://containerlab.srlinux.dev/).
+* Build a Vagrant box from whatever image your vendor supplies. It's not as hard as it sounds, there are [tons of recipes on codingpackets.com](https://codingpackets.com/blog/tag/#vagrant). If you want to build a container to use with *containerlab*, please refer to [their documentation](https://containerlab.dev/).
 * Document the process in a blog post or GitHub gist.
 * Modify the device parameter file `netsim/devices/<device>.yml`
 * Update [Supported Platforms](supported-platforms) and [box](libvirt-build-boxes) or [container](clab-images) building documentation.

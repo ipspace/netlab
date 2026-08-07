@@ -1,9 +1,9 @@
 (lab-clab)=
 # Using Containerlab with *netlab*
 
-[Containerlab](https://containerlab.srlinux.dev/) is a Linux-based container orchestration system that creates virtual network topologies using containers as network devices. To use it:
+[Containerlab](https://containerlab.dev/) is a Linux-based container orchestration system that creates virtual network topologies using containers as network devices. To use it:
 
-* Use **[netlab install containerlab](../netlab/install.md)** on Ubuntu, or follow the [containerlab installation guide](https://containerlab.srlinux.dev/install/) on other Linux distributions.
+* Use **[netlab install containerlab](../netlab/install.md)** on Ubuntu, or follow the [containerlab installation guide](https://containerlab.dev/install/) on other Linux distributions.
 * Install network device container images
 * Create [lab topology file](../topology-overview.md). Use `provider: clab` in lab topology to select the *containerlab* virtualization provider.
 * Start the lab with **[netlab up](../netlab/up.md)**
@@ -66,7 +66,7 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 * FRR, Linux, Nokia SR Linux, and VyOS images are automatically downloaded from public container registries.
 * Build the [BIRD](build-bird), dnsmasq, [VPP](build-vpp), and [Netscaler](build-netscaler) images with the **netlab clab build** command. BIRD and VPP FD.io build process supports configurable software releases.
 * The Arista cEOS image has to be [downloaded and installed manually](ceos.md).
-* Nokia SR OS and SR-SIM container images require a license; see also [vrnetlab instructions](https://containerlab.srlinux.dev/manual/vrnetlab/).
+* Nokia SR OS and SR-SIM container images require a license; see also [vrnetlab instructions](https://containerlab.dev/manual/vrnetlab/).
 * Follow Cisco's documentation to install the IOS XRd container, making sure the container image name matches the one _netlab_ uses (alternatively, [change the default image name](default-device-image) for the IOS XRd container).
 * Cisco 8000v containerlab image (once you manage to get it) has to be  [installed](https://containerlab.dev/manual/kinds/c8000/#getting-cisco-8000-containerlab-docker-images) with the **docker image load** command.
 

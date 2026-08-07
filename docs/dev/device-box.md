@@ -6,7 +6,7 @@ Here's what you have to do:
 
 * Choose a short name for the new device type (examples: *ios*, *eos*, *cumulus*...)
 * Select one or more virtualization providers you want to work with.
-* Build a Vagrant box from whatever image your vendor supplies. It's not as hard as it sounds, there are [tons of recipes on codingpackets.com](https://codingpackets.com/blog/tag/#vagrant). If you want to build a container to use with *containerlab*, please refer to [their documentation](https://containerlab.srlinux.dev/).
+* Build a Vagrant box from whatever image your vendor supplies. It's not as hard as it sounds, there are [tons of recipes on codingpackets.com](https://codingpackets.com/blog/tag/#vagrant). If you want to build a container to use with *containerlab*, please refer to [their documentation](https://containerlab.dev/).
 * Document the process in a blog post or GitHub gist.
 * Add device parameter file `<device>.yml` to `netsim/devices` directory (see the next section for details).
 * Update [Supported Platforms](supported-platforms) and [box](libvirt-build-boxes) or [container](clab-images) building documentation.
