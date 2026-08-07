@@ -2,7 +2,7 @@
 Sphinx extension implementing the *features* directive.
 
 The directive takes a YAML-formatted list of features as its content.
-See developer documentation (docs/dev/feature-tables.md) for details.
+See developer documentation (docs/dev/features-tables.md) for details.
 
 Usage (from within MyST parser)::
 
@@ -281,7 +281,7 @@ class Features(SphinxDirective):
 
     raise self.error(f"Cannot parse feature table definition as YAML: {error}")
 
-  def _build_table(self, table_def: Box) -> nodes.table:
+  def _build_table(self, table_def: Box) -> typing.Tuple:
     """
     Build docutils table: create it, add header, collect device data and footnotes,
     and convert device data into a full-blown table
