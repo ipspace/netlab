@@ -56,7 +56,7 @@ The source interface/IP address for a tunnel is specified with the **tunnel.sour
 * **link.role** -- matches link/interface **role** attribute
 * **ifindex** -- matches the source interface based on its **ifindex** (useful only when you [specify **ifindex** on interfaces](link-attributes-intf))
 
-The source interface selection algorithm evaluates all interfaces in the VRF specified with the **tunnel.vrf** parameter or global interfaces when the tunnel link/interface has no **tunnel.vrf** parameter. The selected interface must match the optional **ifindex**, **name**, or **role** parameters and must have an IP address in the **tunnel.af** address family.
+The source interface selection algorithm evaluates all interfaces in the VRF specified with the **tunnel.vrf** parameter or global interfaces when the tunnel link/interface has no **tunnel.vrf** parameter. The selected interface must match the optional **tunnel.source** parameters and must have an IP address in the **tunnel.af** address family.
 
 The loopback interface(s) are skipped unless you set the **tunnel.type** attribute to **loopback**. The tunnel interfaces are always skipped[^TIS].
 

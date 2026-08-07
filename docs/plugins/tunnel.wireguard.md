@@ -87,7 +87,7 @@ The source interface/IP address for a tunnel is specified with the **tunnel.sour
 * **link.role** -- matches link/interface **role** attribute
 * **ifindex** -- matches the source interface based on its **ifindex** (useful only when you [specify **ifindex** on interfaces](link-attributes-intf))
 
-The source interface selection algorithm evaluates all interfaces in the VRF specified with the **tunnel.vrf** parameter or global interfaces when the tunnel link/interface has no **tunnel.vrf** parameter. The selected interface must match the optional **ifindex**, **name**, or **role** parameters and must have an IP address in the **tunnel.af** address family.
+The source interface selection algorithm evaluates all interfaces in the VRF specified with the **tunnel.vrf** parameter or global interfaces when the tunnel link/interface has no **tunnel.vrf** parameter. The selected interface must match the specified **tunnel.source** and **tunnel.af** parameters.
 
 When the source is not pinned to a specific interface, the plugin prefers the underlay interface connected to the tunnel peer. This helps multi-homed nodes select the correct underlay for each tunnel.
 
