@@ -146,7 +146,7 @@ Starting with _netlab_ release 1.9.3, you can no longer use the link **type** to
 ```
 
 (links-loopback)=
-### Loopback Links
+## Loopback Links
 
 Stub links (links with a single node) are treated as physical links and consume VM/container interfaces. Some virtualization platforms limit the number of VM interfaces, so you might be forced to turn such links into loopback interfaces.
 
@@ -168,13 +168,13 @@ defaults:
 ```
 
 (links-tunnel)=
-### Tunnel Links
+## Tunnel Links
 
 Links with **type: tunnel** can be used to create tunnel interfaces. Tunnel links are addressed like LAN links and can have any valid link/module attribute.
 
 _netlab_ assigns an IP prefix to the tunnel link, creates tunnel interfaces on nodes connected to tunnel links, assigns IP addresses to the tunnel interfaces, and copies all other link parameters into interface data. The tunnel interface name is generated from device data (when available) or specified in the **ifname** interface (node-on-link) parameter.
 
-Standard _netlab_ device configuration templates will create tunnel interfaces and configure all _netlab_-supported parameters. Use tunnel plugins (for example, [](plugin-tunnel-gre ) or [](plugin-tunnel-wireguard)) or custom configuration templates to configure tunnel-technology-specific parameters (for example, source and destination underlay IP address and tunnel encapsulation).
+Standard _netlab_ device configuration templates will create tunnel interfaces and configure all _netlab_-supported parameters. Use tunnel plugins (for example, [](plugin-tunnel-gre) or [](plugin-tunnel-wireguard)) or custom configuration templates to configure tunnel-technology-specific parameters (for example, source and destination underlay IP address and tunnel encapsulation).
 
 For example, this topology creates a tunnel between two Cisco CSR edge routers.
 
