@@ -66,11 +66,12 @@ def get_tunnel_source(ndata: Box, t_intf: Box, topology: Box) -> typing.List[Box
   only interfaces with at least one numbered address are included. Returns
   the list of viable interfaces.
   '''
-  t_vrf  = t_intf.get('tunnel.vrf',None)
-  t_type = t_intf.get('tunnel.source.type',None)
-  t_name = t_intf.get('tunnel.source.link.name',None)
-  t_role = t_intf.get('tunnel.source.link.role',None)
-  t_af   = t_intf.get('tunnel.af',None)           # Optional transport AF: filter interfaces on it when set
+  t_vrf    = t_intf.get('tunnel.vrf',None)
+  t_type   = t_intf.get('tunnel.source.type',None)
+  t_name   = t_intf.get('tunnel.source.link.name',None)
+  t_role   = t_intf.get('tunnel.source.link.role',None)
+  t_linkid = t_intf.get('tunnel.source.linkid',None)
+  t_af     = t_intf.get('tunnel.af',None)         # Optional transport AF: filter interfaces on it when set
 
   iflist = ndata.get('interfaces',[])
   if 'loopback' in ndata and t_type == 'loopback' and t_vrf is None:
@@ -94,6 +95,9 @@ def get_tunnel_source(ndata: Box, t_intf: Box, topology: Box) -> typing.List[Box
     if t_name and t_name != intf.get('name',None):
       continue                                    # Mismatch in interface name
 
+    if t_linkid and t_linkid != intf.get('linkid',None):
+      continue                                    # Mismatch in link ID
+
     if t_role:                                    # Do we want to check on roles?
       if 'role' in intf:                          # Is role specified on the interface?
         if t_role != intf.role:
@@ -112,6 +116,18 @@ def get_tunnel_source(ndata: Box, t_intf: Box, topology: Box) -> typing.List[Box
       continue
 
     underlay_iflist.append(intf)
+
+  if underlay_iflist:                             # Found something?
+    return underlay_iflist                        # ... return the list of candidate interfaces
+
+  s_expr = [ f'{kw}={val}'                        # Collect the select expression data
+              for (kw,val) in
+                (('vrf',t_vrf),('type',t_type),('name',t_name),('linkid',t_linkid),('role',t_role),('af',t_af)) if val ]
+  log.error(
+    f'Cannot find a source interface for tunnel {t_intf.name} on node {ndata.name}',
+    more_data=f'Specified filters: {", ".join(s_expr) or "none"}',
+    category=log.MissingDependency,
+    module='tunnel')
 
   return underlay_iflist
 

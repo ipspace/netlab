@@ -95,6 +95,8 @@ def tunnel_source(
         intf.tunnel.af = default_af                         # Set the default AF for the tunnel
 
       u_iflist = _tunnel.get_tunnel_source(ndata,intf,topology)
+      if not u_iflist:                                      # The error message was already generated
+        continue
       if not _tunnel.set_tunnel_source(intf,u_iflist,ndata,topology):
         continue
 

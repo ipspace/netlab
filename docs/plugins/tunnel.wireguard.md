@@ -81,10 +81,11 @@ Set **tunnel.allowed_ips** to a narrower prefix only when you want to restrict w
 
 The source interface/IP address for a tunnel is specified with the **tunnel.source** link/interface attribute. This attribute can have these components:
 
-* **ifindex** -- matches the source interface based on its **ifindex** (useful only when you [specify **ifindex** on interfaces](link-attributes-intf))
-* **name** -- matches link/interface **name** attribute
-* **role** -- matches link/interface **role** attribute
+* **linkid** -- matches the transport interface [link identifier](link-linkid)
 * **type** -- specifies source interface type (valid value: **loopback**)
+* **link.name** -- matches link/interface **name** attribute
+* **link.role** -- matches link/interface **role** attribute
+* **ifindex** -- matches the source interface based on its **ifindex** (useful only when you [specify **ifindex** on interfaces](link-attributes-intf))
 
 The source interface selection algorithm evaluates all interfaces in the VRF specified with the **tunnel.vrf** parameter or global interfaces when the tunnel link/interface has no **tunnel.vrf** parameter. The selected interface must match the optional **ifindex**, **name**, or **role** parameters and must have an IP address in the **tunnel.af** address family.
 
