@@ -1,0 +1,94 @@
+sys name {{ inventory_hostname.replace("_","-") }}
+{# 
+{% for vname in vrfs|default({}) %}
+create virtual-router {{ vname }} type user
+{% endfor %}
+
+{% if vlans is defined %}
+{% include 'exos.vlan.j2' %}
+{% endif %}
+
+{% for l in netlab_interfaces %}
+{%   set is_loopback = l.type|default('') == 'loopback' %}
+{%   set is_svi = l.type|default('') == 'svi' %}
+{%   set is_switchport = l.vlan is defined and not is_svi %}
+{%   set is_routed_physical = not is_loopback and not is_svi and not is_switchport %}
+{%   set has_l3_vlan = is_loopback or is_svi or is_routed_physical %}
+{%   if is_loopback %}
+{%     set vlan_name = 'VLAN_LO' + l.ifindex|string %}
+create vlan "{{ vlan_name }}"
+enable loopback-mode vlan {{ vlan_name }}
+{%   elif is_svi %}
+{%     set vlan_name = l.vlan.name %}
+{%   elif is_routed_physical %}
+{%     set vlan_name = 'VLAN_P' + l.ifname %}
+create vlan "{{ vlan_name }}"
+configure vlan {{ vlan_name }} add ports {{ l.ifname }} untagged
+{%   endif %}
+{%   if not is_loopback and not is_svi %}
+{%     if l.name is defined %}
+configure ports {{ l.ifname }} display-string {{ (l.name + ("-"+l.role if l.role is defined else "")) | replace('->','to') | replace(' ','_') }}
+{%     elif l.type == "stub" %}
+configure ports {{ l.ifname }} display-string Stub
+{%     endif %}
+{%     if l.mtu is defined and l.mtu > 1500 %}
+enable jumbo-frame ports {{ l.ifname }}
+{%     endif %}
+{%   endif %}
+{%   if has_l3_vlan %}
+{%     if l.vrf is defined %}
+configure vlan {{ vlan_name }} virtual-router {{ l.vrf }}
+{%     endif %}
+{%     if not is_loopback and role == 'router' and l.ipv6 is defined %}
+{%       set ra_prefix = l.ipv6|ansible.utils.ipaddr(0) if l.ipv6 is string and l.ipv6|ansible.utils.ipv6 else None %}
+{%       if l.ra.disable|default(false) is true %}
+disable router-discovery ipv6 vlan {{ vlan_name }}
+{%       else %}
+enable router-discovery ipv6 vlan {{ vlan_name }}
+configure vlan {{ vlan_name }} router-discovery ipv6 max-interval 5
+configure vlan {{ vlan_name }} router-discovery ipv6 min-interval 3
+{%         if ra_prefix %}
+configure vlan {{ vlan_name }} router-discovery ipv6 add prefix {{ ra_prefix }}
+{%           if l.ra.slaac|default(true) is false %}
+configure vlan {{ vlan_name }} router-discovery ipv6 set prefix {{ ra_prefix }} autonomous-flag off
+{%           endif %}
+{%           if l.ra.onlink|default(true) is false %}
+configure vlan {{ vlan_name }} router-discovery ipv6 set prefix {{ ra_prefix }} onlink-flag off
+{%           endif %}
+{%         endif %}
+{%         if l.ra.dhcp|default(false) == 'all' %}
+configure vlan {{ vlan_name }} router-discovery ipv6 managed-config-flag on
+{%         endif %}
+{%         if l.ra.dhcp|default(false) == 'other' %}
+configure vlan {{ vlan_name }} router-discovery ipv6 other-config-flag on
+{%         endif %}
+{%       endif %}
+{%     endif %}
+{%     if l.ipv4 is defined %}
+{%       if l.ipv4 is sameas True %}
+! Unnumbered IPv4 not implemented for EXOS
+{%       elif l.ipv4 is string and l.ipv4|ansible.utils.ipv4 %}
+configure vlan {{ vlan_name }} ipaddress {{ l.ipv4|ansible.utils.ipaddr('address') }} {{ l.ipv4|ansible.utils.ipaddr('netmask') }}
+enable ipforwarding vlan {{ vlan_name }}
+{%       else %}
+! Invalid IPv4 address {{ l.ipv4 }}
+{%       endif %}
+{%     endif %}
+{%     if l.ipv6 is defined %}
+{%       if l.ipv6 is sameas True %}
+! Link-local-only IPv6 not implemented for EXOS
+{%       elif l.ipv6 is string and l.ipv6|ansible.utils.ipv6 %}
+configure vlan {{ vlan_name }} ipaddress {{ l.ipv6|upper }}
+enable ipforwarding ipv6 vlan {{ vlan_name }}
+{%       else %}
+! Invalid IPv6 address {{ l.ipv6 }}
+{%       endif %}
+{%     endif %}
+{%     if not is_loopback and l.mtu is defined %}
+configure ip-mtu {{ l.mtu }} vlan {{ vlan_name }}
+{%     endif %}
+{%   endif %}
+{%   if not is_loopback and not is_svi %}
+enable ports {{ l.ifname }}
+{%   endif %}
+{% endfor %} #}
