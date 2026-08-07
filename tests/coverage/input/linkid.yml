@@ -1,0 +1,40 @@
+defaults.device: none
+defaults.vlan.warnings.trunk_attribute: False
+
+module: [ vlan ]
+
+vlans:
+  red:
+  blue:
+    linkid: blue
+
+nodes:
+  a:
+  b:
+  c:
+    vlans:
+      red:
+        linkid: red_c
+
+links:
+- linkid: first
+  a:
+  b:
+    linkid: b_only
+- interfaces: [ a, b, c ]
+  vlan.access: red
+  linkid: red_access
+- interfaces: [ a, b, c ]
+  vlan.access: blue
+  linkid: blue_access
+- interfaces: [ a, b ]
+  vlan.trunk: [ red, blue ]
+  linkid: vlan_trunk
+
+defaults.outputs.report.linkid: |
+  {% for n,ndata in nodes.items() %}
+  {{ n }}
+  {%   for intf in ndata.interfaces %}
+    {{ intf.ifname}} ({{ intf.linkid|default('no id') }}) {{ intf.name|default('no name') }}
+  {%   endfor %}
+  {% endfor %}

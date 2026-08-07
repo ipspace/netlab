@@ -71,9 +71,10 @@ A dictionary describing an individual link contains *node names* and *additional
 * **gateway** -- sets the default gateway for hosts attached to the link. See [Hosts and Default Gateways](links-gateway) and [](module-gateway) for more details.
 * **group** -- [link group](link-groups) identifier
 * **linkindex** [R/O] -- link sequence number (starting with one), used to generate default bridge names in libvirt.
+* **linkid** (identifier) -- an identifier that [uniquely identifies a link or a node interface](link-linkid).
 * **members** -- list of links in a [link group](link-groups)
 * **mtu** -- link MTU (see [Changing MTU](links-mtu) section for more details)
-* **name** -- link name (used for interface description)
+* **name** -- [link name](link-name) (used for interface description)
 * **pool** -- addressing pool used to assign a prefix to this link. The **pool** attribute is ignored on links with a **prefix** attribute.
 * **prefix** -- [prefix (or a set of prefixes)](links-static-addressing) used on the link. Setting **prefix** to *false* will give you a link without any IP configuration[^NOIP]
 * **ra** -- IPv6 Router Advertisement parameters ([more details](links-ra))
@@ -173,7 +174,7 @@ Links with **type: tunnel** can be used to create tunnel interfaces. Tunnel link
 
 _netlab_ assigns an IP prefix to the tunnel link, creates tunnel interfaces on nodes connected to tunnel links, assigns IP addresses to the tunnel interfaces, and copies all other link parameters into interface data. The tunnel interface name is generated from device data (when available) or specified in the **ifname** interface (node-on-link) parameter.
 
-Standard _netlab_ device configuration templates will create tunnel interfaces and configure all _netlab_-supported parameters. You must use custom configuration templates to configure tunnel-technology-specific parameters (for example, source and destination underlay IP address and tunnel encapsulation).
+Standard _netlab_ device configuration templates will create tunnel interfaces and configure all _netlab_-supported parameters. Use tunnel plugins (for example, [](plugin-tunnel-gre ) or [](plugin-tunnel-wireguard)) or custom configuration templates to configure tunnel-technology-specific parameters (for example, source and destination underlay IP address and tunnel encapsulation).
 
 For example, this topology creates a tunnel between two Cisco CSR edge routers.
 
@@ -194,6 +195,7 @@ links:
 * **r1** will get tunnel interface `Tunnel0` (Cisco CSR device data contains tunnel interface name template)
 * The tunnel on **r2** will be named `Tunnel42` due to **ifname** parameter.
 
+(link-name)=
 ## Link Names
 
 Each link could have a **name** attribute. That attribute is copied into interface data and used to set interface **description**. Interfaces connected to links with no **name** attribute get default names as follows:
@@ -236,6 +238,15 @@ links:
 2. `r1 -> [r2,r3]`
 3. `P2P link`
 4. `LAN link`
+
+(link-linkid)=
+## Link Identifiers
+
+You can use the **linkid** link/interface parameter to uniquely identify a link or an interface (for example, as an endpoint of a GRE tunnel or a next hop of a static route).
+
+The **linkid** can be specified on a link or on an interface (a node connected to a link). The **linkid** of a non-VLAN link is copied to all interfaces connected to that link that do not have a **linkid** attribute.
+
+The **linkid** of a VLAN access or trunk link is not copied to the attached interfaces. The layer-2 interfaces (access or trunk switch ports) do not have a **linkid**, and the SVI interface gets its **linkid** from global- or node **vlans._vname_** dictionary.
 
 (link-groups)=
 ## Link Groups

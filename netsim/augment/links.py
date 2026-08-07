@@ -6,7 +6,7 @@ import ipaddress
 import typing
 
 import netaddr
-from box import Box
+from box import Box, BoxList
 
 from .. import data
 from ..data.global_vars import get_const
@@ -1378,16 +1378,56 @@ def expand_groups(topology: Box) -> None:
   # Finally, remove group links from the link list
   topology.links = expanded_links
 
+def check_duplicate_link_ids(link_list: BoxList) -> None:
+  """
+  Check whether the same link ID is used on multiple links
+  """
+  found_ids: dict = {}
+  for link in link_list:                          # Iterate over all links
+    if link.get('type','') == 'vlan_member':      # Skip VLAN member links created from VLAN trunks
+      continue                                    # ... they would have the same (VLAN) linkid anyway
+    if 'linkid' not in link:                      # Link w/o linkid, move on
+      continue
+    linkid = link.linkid
+    if linkid in found_ids:                       # Have we seen it before?
+      log.error(
+        f'Duplicate linkid {linkid} used on links {found_ids[linkid]} and {link._linkname}',
+        category=log.IncorrectValue,
+        module='links')
+    else:
+      found_ids[linkid] = link._linkname          # Unique ID, remember where we've first seen it
+
+def check_duplicate_intf_ids(nodes: Box) -> None:
+  """
+  Check whether the same link ID is used on multiple interfaces of the same node
+  """
+  for nname,ndata in nodes.items():
+    found_ids: dict = {}
+    for intf in ndata.interfaces:                 # Iterate over all node interfaces
+      if 'linkid' not in intf:                    # Interface w/o linkid, move on
+        continue
+      linkid = intf.linkid
+      if linkid in found_ids:                     # Have we seen it before?
+        p_intf = found_ids[linkid]                # Fetch the previous interface
+        log.error(
+          f'Linkid {linkid} used on multiple interfaces of node {nname}',
+          more_data=f'{p_intf.ifname} ({p_intf.name}) and {intf.ifname} ({intf.name})',
+          category=log.IncorrectValue,
+          module='links')
+      else:
+        found_ids[linkid] = intf                  # Unique ID, remember where we've first seen it
+
 def links_init(topology: Box) -> None:
   topology.links = adjust_link_list(topology.links,topology.nodes)
   set_linknames(topology)
   expand_groups(topology)
   set_linkindex(topology)
 
-def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools: Box) -> typing.Optional[Box]:
+def transform(link_list: typing.Optional[BoxList], defaults: Box, nodes: Box, pools: Box) -> typing.Optional[BoxList]:
   if not link_list:
     return None
 
+  check_duplicate_link_ids(link_list)
   for link in link_list:
     set_link_type_role(link=link,pools=pools,nodes=nodes,defaults=defaults)
     if not check_link_type(data=link):
@@ -1407,6 +1447,7 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
     if defaults.warnings.duplicate_address:
       check_duplicate_address(link)
 
+  check_duplicate_intf_ids(nodes)
   interface_feature_check(nodes,defaults)
   set_node_af(nodes)
   return link_list
