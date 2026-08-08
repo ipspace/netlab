@@ -33,4 +33,4 @@ def post_transform(topology: Box) -> None:
   if log.get_error_count():                                 # Has someone reported an error?
     return                                                  # Might have been us, no reason to continue
 
-  _p2p.tunnel_destination(topology,node_iflist,t_mode='gre')
+  _p2p.tunnel_destination(topology,node_iflist,t_mode='gre',mtu_adjust={'ipv4': 24,'ipv6': 48})
