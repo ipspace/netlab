@@ -55,6 +55,7 @@ nodes:
 * IPv6 BFD for IS-IS cannot be enabled on individual interfaces.  If you set **isis.bfd.ipv6** to *True*, BFD is enabled on all IS-IS interfaces.
 * Arista EOS virtual machines and containers use [proprietary control-plane messages to indicate the loss of Ethernet line protocol](https://blog.ipspace.net/2025/03/arista-spooky-action-distance/). Set the **netlab_phy_control** node variable to *False* to disable this functionality.
 * Device configurations that contain `no lldp transmit` or `no lldp receive` configuration command trigger configuration reload failures due to an Arista EOS bug ([more details](https://github.com/ipspace/netlab/issues/2577)). These commands are thus automatically removed from collected device configurations.
+* Arista EOS uses per-protocol Segment Routing Global Blocks. If you run SR-MPLS with OSPFv2 and IS-IS on the same device, the SRGB specified in the lab topology is applied to IS-IS and not to OSPFv2.
 
 GRE tunnel caveats:
 

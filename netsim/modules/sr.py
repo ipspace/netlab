@@ -43,8 +43,9 @@ class SR(_Module):
       srgb = sr_data.srgb
       for (kw_start,kw_size,kw_end) in (('start','size','_end'),('dyn_start','dyn_size','_dyn_end')):
         if kw_start in srgb:                                # Do we have configured label block?
-          sr_size = srgb.get(kw_size,8000)                  # Default label block size = 8000 labels. Can be changed with device defaults
-          srgb[kw_end] = srgb[kw_start] + sr_size - 1       # Calcuate the end label
+          if kw_size not in srgb:                           # ... if we do, we also need its size
+            srgb[kw_size] = 8000                            # Default label block size = 8000 labels. Can be changed with device defaults
+          srgb[kw_end] = srgb[kw_start] + srgb[kw_size] - 1 # Calcuate the end label
 
     proto_af: set = set()                                   # Collect AFs supported by SR-MPLS protocols
     OK = True
