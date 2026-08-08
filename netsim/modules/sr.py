@@ -37,6 +37,15 @@ class SR(_Module):
     sr_attr = topology.defaults.sr.attributes
     _routing.node_proto_af(node,'sr',None)                  # Create node SR-MPLS AF if needed
 
+    # Calculate global and dynamic SR label block
+    #
+    if 'srgb' in sr_data:
+      srgb = sr_data.srgb
+      for (kw_start,kw_size,kw_end) in (('start','size','_end'),('dyn_start','dyn_size','_dyn_end')):
+        if kw_start in srgb:                                # Do we have configured label block?
+          sr_size = srgb.get(kw_size,8000)                  # Default label block size = 8000 labels. Can be changed with device defaults
+          srgb[kw_end] = srgb[kw_start] + sr_size - 1       # Calcuate the end label
+
     proto_af: set = set()                                   # Collect AFs supported by SR-MPLS protocols
     OK = True
     for sr_proto in node.sr.protocol:                       # Iterate over SR-MPLS protocols used on the node
