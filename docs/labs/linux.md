@@ -61,13 +61,17 @@ The netlab-generated entries are *appended* to the existing `/etc/hosts` file on
 (linux-forwarding)=
 ## Static Routes and Packet Forwarding on Linux
 
-Linux devices are usually hosts that use [static routes](node-router-host) with the [default gateway](links-gateway) as the next hop. The default route is created by *containerlab* and points to the management network, allowing Linux containers to access external destinations through the management network.
+Linux devices are usually hosts that use [static routes](node-router-host) with the [default gateway](links-gateway) as the next hop. The IPv4 default route is created by *containerlab* and points to the management network, allowing Linux containers to access external destinations through the management network.
 
 IPv4 and IPv6 packet forwarding on Linux devices is controlled with the **role** node parameter:
 
 * **host** (default): a Linux device does not perform packet forwarding and cannot be the default gateway for other hosts.
 * **gateway**: a Linux device does not perform packet forwarding but acts as the default gateway for other hosts. You will have to install a proxy (or a similar solution) for inter-subnet packet forwarding.
 * **router**: A Linux device performs packet forwarding but does not run routing protocols. Use the **frr** device if you want to run routing protocols on a Linux server.
+
+```{warning}
+Linux-based *host* devices use the RA-derived IPv6 default route for intra-lab connectivity. The Linux container management interface is thus configured not to accept RA messages.
+```
 
 You can also enable the IPv4/IPv6 packet forwarding on a Linux device with the **netlab_ip_forwarding** node attribute/group variable set to *True*.
 
