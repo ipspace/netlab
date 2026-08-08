@@ -78,7 +78,8 @@ change:
   name: 'ml-{id}'
   defaults.name: 'ml-{id}'
   defaults.providers.libvirt.tunnel_id: '{id}'
-  defaults.providers.libvirt.vifprefix: 'vif_{id}'
+  defaults.providers.libvirt.vifprefix: 'vgif_{id}'
+  defaults.providers.clab.mgmt_default_ipv6: 'fd00:df:1ab:{id}::/64'
   addressing.mgmt:
     ipv4: '192.168.{id}.0/24'
     _network: 'nl_mgmt_{id}'
