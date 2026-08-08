@@ -63,10 +63,12 @@ You can also control which address families participate in SR-MPLS with the glob
 
 ## Device Parameters
 
-Some devices (Nokia SR OS, Nokia SR Linux) have a configurable Segment Routing Global Block (SRGB). The SRGB can be configured with these device- or node attributes:
+Some devices have a configurable Segment Routing Global Block (SRGB). The SRGB can be configured with these device- or node attributes:
 
 * **sr.srgb.start** -- the start of SRGB
 * **sr.srgb.size** -- the size of SRGB
+
+On a few devices, you can also set the dynamic label block with the **sr.srgb.dyn_start** and **sr.srgb.dyn_size** parameters.
 
 You can set these parameters as node attributes or change device [defaults](topo-defaults), for example:
 
