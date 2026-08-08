@@ -34,7 +34,10 @@ author = 'Ivan Pepelnjak'
 
 source_suffix = ['.rst', '.md']
 
+sys.path.insert(0, os.path.abspath('_ext'))
+
 extensions = [
+  'features',
   'myst_parser',
   'sphinxcontrib.jquery',
   'sphinx_rtd_dark_mode'

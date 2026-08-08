@@ -213,7 +213,10 @@ def process_child_device(dname: str, devices: Box) -> None:
 
   process_child_device(p_device,devices)                    # Process inheritance in parent device
   p_data = Box(devices[p_device].to_dict())                 # Build a copy of parent device data
-  for kw in ("template","_meta_device"):                    # ... remove the template/meta device flags
+
+  # Remove fields that should not be inherited
+  #
+  for kw in ("template","_meta_device","docname","docparent"):
     p_data.pop(kw,None)
   devices[dname] = p_data + devices[dname]                  # ... and merge parent settings with the child device
   data.append_to_list(devices[dname],'_parents',p_device)

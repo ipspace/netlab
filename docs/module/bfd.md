@@ -5,23 +5,18 @@ This configuration module configures the basic BFD ([RFC5880](https://datatracke
 (bfd-platform)=
 BFD is supported on these platforms:
 
-| Operating system      | Configurable<br>timers | OSPF | IS-IS | BGP |
-| --------------------- | :-: | :-: | :-: | :-: |
-| Arista EOS            | ✅  | ✅  | ✅  | ✅ |
-| Aruba AOS-CX          | ✅  | ✅  |  ❌  | ✅ |
-| BIRD                  | ✅  |  ❌  |  ❌  | ✅  |
-| Cisco IOS             | ✅  | ✅  | ✅  | ✅ |
-| Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  | ✅ |
-| Cisco Nexus OS        | ✅  | ✅  | ✅  |  ❌  |
-| Cumulus Linux         | ✅[❗](caveats-frr) | ✅  |  ❌  | ✅ |
-| FRR                   | ✅[❗](caveats-frr) | ✅  |  ❌  | ✅ |
-| Dell OS10             | ✅  | ✅  |  ❌  |  ❌  |
-| Junos[^Junos]         | ✅[❗](caveats-junos) | ✅  | ✅  | ✅ |
-| Mikrotik RouterOS 6   |  ❌  | ✅  | ✅  |  ❌  |
-| Mikrotik RouterOS 7   | ✅  | ✅  |  ❌  |  ❌  |
-| Nokia SR Linux        | ✅  | ✅  | ✅  | ✅ |
-| Nokia SR OS[^SROS]    | ✅  | ✅  | ✅  |  ❌  |
-| VyOS                  | ✅[❗](caveats-vyos) | ✅  | ✅  |  ❌  |
+```{features}
+- title: BFD<br>protocol
+  enabled: bfd
+  caveats: bfd.caveats
+- title: OSPF<br>with BFD
+  enabled: ospf and bfd
+- title: IS-IS<br>with BFD
+  enabled: isis and bfd
+- title: BGP<br>with BFD
+  enabled: bgp.bfd
+  caveats: bgp.bfd.caveats
+```
 
 ```{tip}
 See the integration test results for more details:
@@ -30,12 +25,6 @@ See the integration test results for more details:
 * [OSPFv3 test results](https://release.netlab.tools/_html/coverage.ospfv3)
 * [BGP sessions test results](https://release.netlab.tools/_html/coverage.bgp.session)
 ```
-
-[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
-
-[^Junos]: Includes cRPD, vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
-
-[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
 ## Parameters
 
