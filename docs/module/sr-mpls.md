@@ -68,7 +68,7 @@ Some devices have a configurable Segment Routing Global Block (SRGB). The SRGB c
 * **sr.srgb.start** -- the start of SRGB
 * **sr.srgb.size** -- the size of SRGB
 
-On a few devices, you can also set the dynamic label block with the **sr.srgb.dyn_start** and **sr.srgb.dyn_end** parameters.
+On a few devices, you can also set the dynamic label block with the **sr.srgb.dyn_start** and **sr.srgb.dyn_size** parameters.
 
 You can set these parameters as node attributes or change device [defaults](topo-defaults), for example:
 
