@@ -20,7 +20,13 @@ sysctl -w net.ipv6.conf.all.forwarding={{ pkt_fwd }}
 {% if loopback is defined %}
 {{ ifconfig(loopback) }}
 {% endif %}
-
+#
+# Disable RA-derived IPv6 default route on management interface. We need it for intra-lab connectivity
+#
+if ip -6 addr show dev {{ mgmt.ifname }} | grep inet6; then
+  sysctl -qw net/ipv6/conf/{{ mgmt.ifname }}/accept_ra=0
+  sudo ip -6 route del default dev {{ mgmt.ifname }} || echo "No default route on {{ mgmt.ifname }}"
+fi
 #
 # Interface addressing, create any bond devices
 #

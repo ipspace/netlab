@@ -3,6 +3,8 @@ message: |
   can successfully configure them. It also checks the configuration of containers
   disconnected from the management network.
 
+defaults.sources.extra: [ ../../integration/wait_times.yml ]
+
 provider: clab
 defaults.device: eos
 module: [ ospf ]
@@ -11,7 +13,11 @@ ospf.timers:
   dead: 4
 
 defaults.multilab.change.addressing.mgmt.ipv4: '192.42.42.0/24'
-addressing.mgmt.ipv4: '192.42.42.0/24'
+addressing:
+  mgmt.ipv4: '192.42.42.0/24'
+  loopback.ipv6: 2001:db8:1::/48
+  lan.ipv6: 2001:db8:cafe::/48
+  p2p.ipv6: 2001:db8:42::/48
 
 nodes:
   r1:
@@ -25,11 +31,34 @@ nodes:
   r3:
     device: frr
     clab.network-mode: none
+  h1:
+    device: linux
+    clab.network-mode: none
+  h2:
+    device: linux
 
-links: [ r1-r2, r2-r3 ]
+links: [ r1-r2, r2-r3, r3-h1, r3-h2 ]
 
 validate:
   adj:
     plugin: ospf_neighbor(nodes.r2.ospf.router_id)
-    wait: 15
+    wait: ospfv2_adj_p2p
     nodes: [ r1, r3 ]
+  ra:
+    description: Check RA-generated default route
+    wait: ra_send
+    wait_msg: Waiting for RA message to generate the default route
+    nodes: [ h1, h2 ]
+    plugin: default6()
+    stop_on_error: True
+  v6mgmt:
+    description: Check for default IPv6 management subnet
+    nodes: [ h2 ]
+    exec.linux: ip -6 addr show dev {{ mgmt.ifname }} scope global
+    valid: |
+      'inet6' in stdout
+  ping:
+    description: Check end-to-end connectivity
+    wait: ping_long
+    nodes: [ h1, h2, r3 ]
+    plugin: ping('r1',af='ipv6')
