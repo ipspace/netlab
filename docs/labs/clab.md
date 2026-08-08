@@ -141,7 +141,7 @@ In multi-provider topologies, set the **uplink** parameter only for the primary 
 *containerlab* creates a dedicated Docker network to connect the container management interfaces to the host TCP/IP stack. You can change the management network parameters in the **addressing.mgmt** pool:
 
 * **ipv4**: The IPv4 prefix used for the management network (default: `192.168.121.0/24`)
-* **ipv6**: Optional IPv6 management network prefix. It's not set by default.
+* **ipv6**: Optional IPv6 management network prefix (`fd00:df:1ab::/64` is configured on the management Docker network when this parameter is not set).
 * **start**: The offset of the first management IP address in the management network (default: `100`). For example, with **start** set to 50, the device with **node.id** set to 1 will get the 51st IP address in the management IP prefix.
 * **\_network**: The Docker network name (default: `netlab_mgmt`)
 * **\_bridge**: The name of the underlying Linux bridge (default: unspecified, created by Docker)
