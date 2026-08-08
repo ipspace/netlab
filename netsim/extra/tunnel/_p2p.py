@@ -104,7 +104,8 @@ def tunnel_source(
 def tunnel_destination(
       topology: Box,
       node_iflist: dict,
-      t_mode: str) -> None:
+      t_mode: str,
+      mtu_adjust: typing.Optional[dict] = None) -> None:
   '''
   All nodes with tunnel interfaces should have tunnel._source interface
   values by now. Iterate over those nodes and use the neighbor
@@ -138,3 +139,10 @@ def tunnel_destination(
         continue
 
       intf.tunnel._destination = ngb_intf.tunnel._source
+      if 'mtu' in intf or not mtu_adjust:                   # Did user set the tunnel MTU? Can we adjust it?
+        continue                                            # ... no luck, move on
+
+      t_af = intf.get('tunnel.af','unknown')                # Get the transport AF (it impacts the overhead)
+      if mtu_adjust and t_af in mtu_adjust:                 # Do we know how much?
+        mtu = min(intf.get('tunnel._source.mtu',1500),ngb_intf.get('tunnel._source.mtu',1500))
+        intf.mtu = mtu - mtu_adjust[t_af]                   # Adjust the tunnel MTU to the min of local/remote MTU - overhead
