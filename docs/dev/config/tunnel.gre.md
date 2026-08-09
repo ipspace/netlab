@@ -37,6 +37,7 @@ GRE tunnel attributes are defined in `netsim/extra/tunnel/gre/defaults.yml` with
 When `tunnel.source` is specified, it can contain:
 
 * **type** (string) -- source interface type. Currently, only `loopback` is supported as a valid value.
+* **linkid** (identifier) -- select the source interface by its [link identifier](link-linkid).
 * **link.name** (string) -- select the source interface by its link name.
 * **link.role** (string) -- select the source interface by its link role.
 * **ifindex** (integer) -- specify the source interface ifindex directly (rarely needed).
@@ -47,7 +48,8 @@ _netlab_ automatically selects the best underlay source interface by iterating o
 
 1. If `tunnel.source.type` is not set, interfaces of type `loopback` or `tunnel` are excluded.
 2. If `tunnel.vrf` is not set, VRF interfaces are excluded. Otherwise, only interfaces in `tunnel.vrf` VRF are considered.
-4. If `tunnel.source.link.name` is set, the interface name must match.
+3. If `tunnel.source.link.name` is set, the interface name must match.
+4. If `tunnel.source.linkid` is set, the interface [link identifier](link-linkid) must match.
 5. If `tunnel.source.link.role` is set, the interface or its link role must match.
 6. If `tunnel.af` is set, only interfaces with a numbered address in that address family are considered.
 7. Otherwise, only interfaces with at least one numbered IPv4 or IPv6 address are considered.
@@ -59,7 +61,7 @@ The first matching interface is used as the tunnel source.
 After the `post_transform` phase, each tunnel interface receives:
 
 * **tunnel.\_source.ifname** (string) -- name of the selected source interface.
-* **tunnel.\_source.mtu** (integer) -- MTU of the source interface (defaults to node MTU, usually 1500).
+* **tunnel.\_source.mtu** (integer) -- MTU of the source interface.
 * **tunnel.\_source.ipv4** / **tunnel.\_source.ipv6** (string) -- IP address of the source interface for the tunnel transport AF.
 * **tunnel.\_destination.ipv4** / **tunnel.\_destination.ipv6** (string) -- IP address of the remote tunnel endpoint (copied from the neighbor's `tunnel._source`).
 
@@ -67,6 +69,7 @@ The interface also gets:
 
 * **type** set to `tunnel` during `pre_transform`.
 * **virtual_interface** set to `True` during link transformation.
+* **mtu** (integer) -- the tunnel interface MTU, set during `post_transform` when the user did not specify one. It is calculated as `min(local and remote tunnel._source.mtu)` minus the transport overhead (24 bytes for IPv4 transport, 48 bytes for IPv6 transport).
 * An interface description enhanced with `[GRE tunnel]` during `post_transform`.
 
 ## Device Features
@@ -85,6 +88,8 @@ Common capability combinations:
 |---|---|
 | FRR | `[ vrf, ipv4, ipv6 ]` |
 | Cisco IOS/IOS-XE | `[ vrf, ipv4, ipv6 ]` |
+| Arista EOS | `[ ipv4, vrf ]` |
+| Mikrotik RouterOS 7 | `[ ipv4, ipv6, vrf ]` |
 | Juniper vJunos Router | `[ vrf, ipv4 ]` |
 | OpenBSD | `[ ipv4 ]` |
 
@@ -94,11 +99,12 @@ The `check_feature` function in `netsim/extra/tunnel/__init__.py` validates devi
 
 Tunnel interfaces get `ifindex` values starting at 20000 (the tunnel type is the second entry in `VIRTUAL_INTERFACE_TYPES`, at offset index 1, so `(1 + 1) * 10000 = 20000`).
 
-Each device defines a `tunnel_interface_name` template that controls the tunnel interface name format, for example:
+Each device defines a `tunnel_interface_name` template that controls the tunnel interface name format. Devices that use different names for different tunnel technologies define it as a dictionary keyed by the tunnel mode, for example, FRR uses `gre{ifindex + 1}` for GRE and `wg{ifindex}` for WireGuard tunnels:
 
 | Device | Interface Name Template |
 |---|---|
-| FRR, VyOS, Cumulus | `tun{ifindex}` |
+| FRR | `gre{ifindex + 1}` |
+| VyOS, Cumulus | `tun{ifindex}` |
 | Cisco IOS, Arista EOS | `Tunnel{ifindex}` |
 | RouterOS 7 | `tunnel{ifindex}` |
 | OpenBSD | `gre{ifindex}` |
@@ -132,7 +138,7 @@ The plugin hooks into the topology transformation pipeline via two hooks defined
 
 1. **`_p2p.feature_check(topology, ...)`** -- iterates over all nodes, finds those with GRE tunnel interfaces, and validates device feature support (basic GRE, transport AF, and VRF). Calls `api.node_config(ndata, 'tunnel.gre')` for each node that passes all checks.
 2. **`_p2p.tunnel_source(topology, node_iflist, ...)`** -- for each node with tunnel interfaces, resolves the source interface using `_tunnel.get_tunnel_source()` and populates `tunnel._source` via `_tunnel.set_tunnel_source()`. Sets `tunnel.af` to `ipv4` as default when not specified.
-3. **`_p2p.tunnel_destination(topology, node_iflist, ...)`** -- for each tunnel interface, copies the neighbor's `tunnel._source` to the local `tunnel._destination`.
+3. **`_p2p.tunnel_destination(topology, node_iflist, ...)`** -- for each tunnel interface, copies the neighbor's `tunnel._source` to the local `tunnel._destination` and, when the user did not specify the tunnel MTU, computes the interface `mtu` as the minimum of the local and remote source interface MTUs minus the transport overhead (24 bytes for IPv4, 48 bytes for IPv6).
 
 If any errors are detected during source resolution, the destination resolution step is skipped.
 
@@ -216,5 +222,5 @@ Integration tests in `tests/integration/tunnel/`:
 
 Coverage tests in `tests/coverage/`:
 
-* `input/gre-source.yml` -- tests automatic tunnel source interface selection with `tunnel.source.link.name` and `tunnel.source.link.role` options.
+* `input/gre-source.yml` -- tests automatic tunnel source interface selection with the `tunnel.source.linkid` and `tunnel.source.link.role` options.
 * `errors/gre-support.yml` -- tests error conditions: unsupported device, unsupported transport AF, unsupported VRF, and missing tunnel source.
