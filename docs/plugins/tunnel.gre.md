@@ -7,6 +7,19 @@ The **tunnel.gre** plugin implements point-to-point GRE tunnels over IPv4 and IP
 
 The plugin includes Jinja2 templates for the following platforms:
 
+```{features}
+- title: GRE over<br>IPv4
+  enabled: |-
+    'ipv4' in tunnel.gre
+- title: GRE over<br>IPv6
+  enabled: |-
+    'ipv6' in tunnel.gre
+- title: Transport<br>VRF
+  enabled: |-
+    'vrf' in tunnel.gre
+```
+
+
 | Operating system    | GRE over<br>IPv4 | GRE over<br>IPv6 | Transport<br>VRF |
 |--------------|:-:|:-:|:-:|
 | Arista EOS          | ✅ | ❌ | ✅ |
