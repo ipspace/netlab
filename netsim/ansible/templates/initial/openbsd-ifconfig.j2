@@ -28,4 +28,10 @@ ifconfig {{ intf.ifname }} down
 {% else %}
 ifconfig {{ intf.ifname }} up
 {% endif %}
+{%   if 'ipv6' in intf and intf.tunnel.mode|default('') in ['wireguard'] %}
+# OpenBSD Wireguard does not automatically create IPv6 LLA make it ourselves
+{% set _last = range(1, 65536) | random %}
+{% set _lla = 'fe80::%x/64' | format(_last) %}
+ifconfig {{ intf.ifname }} inet6 {{ _lla }}
+{%   endif %}
 {% endmacro %}

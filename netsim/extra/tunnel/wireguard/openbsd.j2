@@ -1,0 +1,10 @@
+#!/bin/sh
+# wg endpoint
+{% for intf in netlab_interfaces if intf.tunnel.mode|default('') in ['wireguard'] %}
+{%   set dst = intf.tunnel._destination %}
+{%   set peer_ip = ('[' ~ dst.ipv6 ~ ']') if intf.tunnel.af == 'ipv6' else dst.ipv4 %}
+{%   set peer_endpoint = peer_ip ~ ':' ~ dst.listen_port %}
+ifconfig {{ intf.ifname }} wgkey {{ intf.tunnel.private_key }} wgport {{ intf.tunnel.listen_port }} up
+ifconfig {{ intf.ifname }} wgpeer {{ dst.public_key }} wgendpoint {{ peer_ip }} {{ dst.listen_port }} wgpka {{ intf.tunnel.persistent_keepalive }}
+ifconfig {{ intf.ifname }} wgpeer {{ dst.public_key }} wgaip {{ intf.tunnel.allowed_ips.split(',') | join(' wgaip ') }}
+{% endfor %}
