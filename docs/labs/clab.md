@@ -439,6 +439,7 @@ server.
    :maxdepth: 1
    :hidden:
 
+   arcos.md
    ceos.md
    bird.md
    linux.md
