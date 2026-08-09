@@ -1,0 +1,15 @@
+---
+- name: Wait for CLI to be ready on VOSS devices
+  ansible.netcommon.cli_command:
+    command: "{{ netlab_check_command | default('show sys-info | head 5') }}"
+  register: cli_out
+  until: cli_out.stdout is defined and cli_out.stdout | length > 0
+  retries: "{{ netlab_check_retries | default(40) }}"
+  delay: "{{ netlab_check_delay | default(10) }}"
+  failed_when: false
+  changed_when: false
+
+- name: Confirm VOSS CLI is ready
+  debug:
+    msg: "Node {{ inventory_hostname }} is ready."
+  when: cli_out.stdout is defined and cli_out.stdout | length > 0
