@@ -24,8 +24,10 @@ sysctl -w net.ipv6.conf.all.forwarding={{ pkt_fwd }}
 # Disable RA-derived IPv6 default route on management interface. We need it for intra-lab connectivity
 #
 if ip -6 addr show dev {{ mgmt.ifname }} | grep inet6; then
-  sysctl -qw net/ipv6/conf/{{ mgmt.ifname }}/accept_ra=0
-  sudo ip -6 route del default dev {{ mgmt.ifname }} || echo "No default route on {{ mgmt.ifname }}"
+  echo "Disabling IPv6 RA listener on management interface"
+  sysctl -w net/ipv6/conf/{{ mgmt.ifname }}/accept_ra=0
+  sysctl -w net/ipv6/conf/{{ mgmt.ifname }}/accept_ra_defrtr=0 || echo "Cannot disable RA-based default route"
+  ip -6 route flush default
 fi
 #
 # Interface addressing, create any bond devices
