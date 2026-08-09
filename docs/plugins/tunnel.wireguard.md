@@ -12,12 +12,19 @@ The **tunnel.wireguard** plugin implements point-to-point WireGuard tunnels over
 
 ## Supported Platforms
 
-The plugin includes Jinja2 templates for the following platforms:
+You can use WireGuard tunnels with these platforms:
 
-| Operating system | WireGuard tunnels | Transport VRF |
-|------------------|:-:|:-:|
-| FRR              |✅|✅|
-| RouterOS 7       |✅|✅|
+```{features}
+- title: WireGuard<br>Tunnels
+  enabled: tunnel.wireguard
+- title: Transport<br>VRF
+  enabled: |-
+    'vrf' in tunnel.wireguard
+```
+
+```{tip}
+See the [integration test results](https://release.netlab.tools/_html/coverage.tunnel) for more details.
+```
 
 ## Using the Plugin
 
