@@ -18,7 +18,7 @@ The module currently depends on IS-IS and will trigger a configuration error if 
 The following table describes the per-platform support of SRv6 features:
 
 ```{features}
-- title: SRv6<br>with ISIS
+- title: SRv6<br>with IS-IS
   enabled: srv6.isis
 - title: Global BGP<br>over SRv6[^GB]
   enabled: srv6.bgp
@@ -32,9 +32,9 @@ The following table describes the per-platform support of SRv6 features:
 * When in doubt, check the [SRv6 integration test results](https://release.netlab.tools/_html/coverage.srv6).
 ```
 
-[^GB]: Using SRv6 next hops for global IPv4/IPv6 BGP routes:
+[^GB]: Using SRv6 next hops for global IPv4/IPv6 BGP routes.
 
-[^L3V]: Using SRv6 next hops for L3VPN routes. VPNv4 and VPNv6 address families are enabled on IPv6 IBGP sessions
+[^L3V]: Using SRv6 next hops for L3VPN routes. VPNv4 and VPNv6 address families are enabled on IPv6 IBGP sessions.
 
 ## Configurable Global and Node Parameters
 
