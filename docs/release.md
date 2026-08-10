@@ -30,7 +30,7 @@ We also had to make a few breaking changes:
 
 **Release 26.05 (2026-05-16)**
 
-* Support for [global BGP routes with SRv6 next hops](module-srv6-services) on FRR and IOS XR
+* Support for global BGP routes with SRv6 next hops on FRR and IOS XR
 * Support for Juniper cSRX container
 * Streamline and speed up the FortiOS initial device configuration
 * Junos OSPF/IS-IS [route redistribution](routing_import), VRF [IS-IS instances](isis-platform), and OSPF [interface parameters](ospf-interface-optional-support)

@@ -15,36 +15,26 @@ The module currently depends on IS-IS and will trigger a configuration error if 
 (module-srv6-platform)=
 ## Platform Support
 
-The following table describes the per-platform support of SRv6-enabled routing protocols:
+The following table describes the per-platform support of SRv6 features:
 
-| Operating system   | IS-IS | OSPFv3 |
-|--------------------|:--:|:-:|
-| Cisco IOS XE[^XE]  | ✅ | ❌ |
-| Cisco IOS XR[^XR]  | ✅ | ❌ |
-| FRR                | ✅ | ❌ |
+```{features}
+- title: SRv6<br>with IS-IS
+  enabled: srv6.isis
+- title: Global BGP<br>over SRv6[^GB]
+  enabled: srv6.bgp
+- title: L3VPN<br>over SRv6[^L3V]
+  enabled: srv6.vpn
+```
 
-[^XE]: Includes Catalyst 8000v, Cisco IOL, and Cisco IOL layer-2 image. The minimum Cisco IOS/XE release with working SRv6 is release 17.16.01a.
+```{note}
+* The minimum Cisco IOS/XE release with working SRv6 is release 17.16.01a.
+* Cisco 8000v does not support the *shift-only* microsegment behavior needed to interoperate with other SRv6 implementations. 
+* When in doubt, check the [SRv6 integration test results](https://release.netlab.tools/_html/coverage.srv6).
+```
 
-[^XR]: Includes IOS XRv, IOS XRd, but not Cisco 8000v. Cisco 8000v does not support the *shift-only* microsegment behavior needed to interoperate with other SRv6 implementations. Please [open an issue](https://github.com/ipspace/netlab/issues/new/choose) if you're interested in running SRv6 on Cisco 8000v.
+[^GB]: Using SRv6 next hops for global IPv4/IPv6 BGP routes.
 
-(module-srv6-services)=
-These platforms can use SRv6 next hops for global IPv4/IPv6 BGP routes:
-
-| Operating system   | Global IPv4<br>BGP routes | Global IPv6<br>BGP routes | 
-|--------------------|:--:|:-:|
-| Cisco IOS XR       | ✅ | ✅ |
-| FRR                | ✅ | ✅ |
-
-These platforms support SRv6-based L3VPN services:
-
-| Operating system      | VPNv4 | VPNv6 |
-| ----------------------| :---: | :---: |
-| Cisco IOS XE[^XE]     |   ✅  |  ✅  |
-| Cisco IOS XR[^XR]     |   ✅  |  ✅  |
-| FRR                   |   ✅  |  ✅ [❗️](caveats-frr)  |
-
-**Notes**
-* VPNv4 and VPNv6 address families are enabled on IPv6 IBGP sessions
+[^L3V]: Using SRv6 next hops for L3VPN routes. VPNv4 and VPNv6 address families are enabled on IPv6 IBGP sessions.
 
 ## Configurable Global and Node Parameters
 
