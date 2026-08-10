@@ -1,0 +1,115 @@
+Creating Device configuration snippets
+[CREATED] dut: initial,routing
+[CREATED] x1: initial,ospf
+[CREATED] x2: initial,ospf
+Config Deploying device configurations
+ [INFO] Executing initial configuration for node x1
+ [INFO] Executing initial configuration for node x2
+ [INFO] Executing ospf configuration for node x2
+ [INFO] Executing ospf configuration for node x1
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "initial configuration for dut\n=========================================\n\n/system/identity set name=\"dut\"\n\n/interface/bridge add name=loopback protocol-mode=none\n\n# Host entries\n/ip/dns/static add name=x1 address=10.42.0.1\n/ip/dns/static add name=x2 address=10.0.0.3\n/ip/dns/static add name=x1 address=2001:db8:cafe:42::1\n/ip/dns/static add name=x2 address=2001:db8:cafe:43::1\n\n/ip/address add interface=loopback address=10.0.0.1/32\n/ipv6/address add interface=loopback address=2001:db8:1:1::1/64\n\n\n\n\n/interface/ethernet set comment=\"dut -> x1\" ether2\n/ip/address add interface=ether2 address=10.1.0.1/30\n/ip/address set [find where interface=ether2] comment=\"dut -> x1\"\n/ipv6/address add interface=ether2 address=2001:db8:3::1/64\n/ipv6/nd add interface=ether2 advertise-dns=no ra-interval=3s-30s\n\n/interface/ethernet set comment=\"dut -> x1\" ether3\n/ip/address add interface=ether3 address=10.1.0.5/30\n/ip/address set [find where interface=ether3] comment=\"dut -> x1\"\n/ipv6/address add interface=ether3 address=2001:db8:3:1::1/64\n/ipv6/nd add interface=ether3 advertise-dns=no ra-interval=3s-30s\n\n/ip/neighbor/discovery-settings set discover-interface-list=all\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+
+TASK [load initial from /work/netlab_cicd/node_files/dut/initial] **************
+ok: [dut]
+
+TASK [Run commands on CHR] *****************************************************
+changed: [dut]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for routing] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "routing configuration for dut\n=========================================\n#\n# Static routes\n#\n\n\n#\n#\n# Adding direct static routes\n/ip/route add dst-address=10.42.0.1/32 gateway=10.1.0.2@main routing-table=main scope=10\n/ip/route add dst-address=10.42.0.1/32 gateway=10.1.0.6@main routing-table=main scope=10\n/ipv6/route add dst-address=2001:db8:cafe:42::/64 gateway=2001:db8:3::2@main routing-table=main scope=10\n/ipv6/route add dst-address=2001:db8:cafe:42::/64 gateway=2001:db8:3:1::2@main routing-table=main scope=10\n# Adding indirect static routes\n# Target Scope is set to 41, which is higher than all other routing protocols static=10, ospf/rip=20, isis=30, bgp=40\n/ip/route add dst-address=10.0.0.3/32 gateway=10.42.0.1@main routing-table=main target-scope=41\n/ipv6/route add dst-address=2001:db8:cafe:43::/64 gateway=2001:db8:cafe:42::1@main routing-table=main target-scope=41\n"
+}
+
+TASK [Deploy routing configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+
+TASK [load routing from /work/netlab_cicd/node_files/dut/routing] **************
+ok: [dut]
+
+TASK [Run commands on CHR] *****************************************************
+changed: [dut]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
+
+TASK [Find configuration template for ospf] ************************************
+skipping: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+
+TASK [Deploy ospf configuration] ***********************************************
+skipping: [dut]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut                        : ok=20   changed=2    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+
+Results of configuration script deployments
+================================================================================
+x1               Script:  initial,ospf
+x2               Script:  initial,ospf
+
+
+Use this topology to test global IPv4 and IPv6 static routes. DUT has
+to have static routes for loopback addresses of X1 and X2.
+

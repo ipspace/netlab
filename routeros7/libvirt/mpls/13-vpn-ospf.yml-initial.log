@@ -12,15 +12,15 @@ Config Deploying device configurations
  [INFO] Executing initial configuration for node p1
  [INFO] Executing initial configuration for node p2
  [INFO] Executing ospf configuration for node ce1
+ [INFO] Executing ospf configuration for node p1
  [INFO] Executing ospf configuration for node ce2
+ [INFO] Executing ospf configuration for node p2
  [INFO] Executing ospf configuration for node pe2
+ [INFO] Executing mpls configuration for node p1
+ [INFO] Executing mpls configuration for node p2
  [INFO] Executing bgp configuration for node pe2
  [INFO] Executing mpls configuration for node pe2
  [INFO] Executing vrf configuration for node pe2
- [INFO] Executing ospf configuration for node p1
- [INFO] Executing mpls configuration for node p1
- [INFO] Executing ospf configuration for node p2
- [INFO] Executing mpls configuration for node p2
  [INFO] Starting Ansible playbook to deploy the rest of the
           configurations
 [WARNING]: Found variable using reserved name: hosts
@@ -47,7 +47,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "initial configuration for dut\n=========================================\n\n/system/identity set name=\"dut\"\n\n/interface/bridge add name=loopback protocol-mode=none\n\n\n/ip/address add interface=loopback address=10.0.0.3/32\n\n\n\n\n/ip/vrf add place-before=0 name=tenant interfaces=ether3\n\n\n\n/interface/ethernet set comment=\"dut -> p1\" ether2\n\n/ip/address add interface=ether2 address=10.1.0.1/30\n/ip/address set [find where interface=ether2] comment=\"dut -> p1\"\n\n\n/interface/ethernet set comment=\"dut -> ce1\" ether3\n\n/ip/address add interface=ether3 address=10.1.0.14/30\n/ip/address set [find where interface=ether3] comment=\"dut -> ce1\"\n\n\n/ip/neighbor/discovery-settings set discover-interface-list=all\n"
+    "msg": "initial configuration for dut\n=========================================\n\n/system/identity set name=\"dut\"\n\n/interface/bridge add name=loopback protocol-mode=none\n\n# Host entries\n/ip/dns/static add name=ce1 address=10.0.0.1\n/ip/dns/static add name=ce2 address=10.0.0.2\n/ip/dns/static add name=dut-tenant address=10.1.0.14\n/ip/dns/static add name=p1 address=10.0.0.5\n/ip/dns/static add name=p2 address=10.0.0.6\n/ip/dns/static add name=pe2 address=10.0.0.4\n/ip/dns/static add name=pe2-tenant address=10.1.0.18\n\n/ip/address add interface=loopback address=10.0.0.3/32\n\n/ip/vrf add place-before=0 name=tenant interfaces=ether3\n\n\n\n/interface/ethernet set comment=\"dut -> p1\" ether2\n/ip/address add interface=ether2 address=10.1.0.1/30\n/ip/address set [find where interface=ether2] comment=\"dut -> p1\"\n\n/interface/ethernet set comment=\"dut -> ce1\" ether3\n/ip/address add interface=ether3 address=10.1.0.14/30\n/ip/address set [find where interface=ether3] comment=\"dut -> ce1\"\n\n/ip/neighbor/discovery-settings set discover-interface-list=all\n"
 }
 
 TASK [Deploy initial configuration] ********************************************
@@ -84,7 +84,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "ospf configuration for dut\n=========================================\n\n\n\n/routing/ospf/instance add name=default4 version=2 router-id=10.0.0.3 vrf=main\n\n/routing/ospf/area add instance=default4 name=\"main_2_0.0.0.0\" area-id=0.0.0.0\n\n\n\n\n\n\n\n\n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default4] interface=loopback \n\n\n\n\n\n\n\n\n\n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default4] interface=ether2 type=ptp\n\n\n\n"
+    "msg": "ospf configuration for dut\n=========================================\n\n\n/routing/ospf/instance add name=default4 version=2 router-id=10.0.0.3 vrf=main\n\n/routing/ospf/area add instance=default4 name=\"main_2_0.0.0.0\" area-id=0.0.0.0\n\n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default4] interface=loopback \n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default4] interface=ether2 type=ptp\n\n"
 }
 
 TASK [Deploy ospf configuration] ***********************************************
@@ -162,7 +162,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "vrf configuration for dut\n=========================================\n/routing/bgp/vpn add label-allocation-policy=per-vrf vrf=tenant route-distinguisher=65000:1 import.route-targets=65000:1 export.route-targets=65000:1 instance=main export.redistribute=bgp,connected,ospf,static,vpn\n/routing/bgp/template add name=vrf_tenant as=65001 output.network=bgp-networks-tenant vrf=tenant routing-table=tenant output.redistribute=bgp,bgp-mpls-vpn,connected,ospf,static,vpn\n\n/routing/bgp/template set vrf_tenant output.redistribute=([get vrf_tenant output.redistribute],\"ospf\")\n\n\n\n\n\n\n\n/routing/ospf/instance add name=default4_tenant version=2 router-id=10.0.0.3 vrf=tenant\n\n/routing/ospf/area add instance=default4_tenant name=\"tenant_2_0.0.0.0\" area-id=0.0.0.0\n\n\n\n\n\n\n\n\n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default4_tenant] interface=ether3 type=ptp\n\n\n\n/routing/ospf/instance set [/routing/ospf/instance find name=default4_tenant] redistribute=bgp,bgp-mpls-vpn,vpn,connected,static routing-table=tenant\n"
+    "msg": "vrf configuration for dut\n=========================================\n/routing/bgp/vpn add label-allocation-policy=per-vrf vrf=tenant route-distinguisher=65000:1 import.route-targets=65000:1 export.route-targets=65000:1 instance=main export.redistribute=bgp,connected,ospf,static,vpn\n/routing/bgp/template add name=vrf_tenant as=65001 output.network=bgp-networks-tenant vrf=tenant routing-table=tenant output.redistribute=bgp,bgp-mpls-vpn,connected,ospf,static,vpn\n\n/routing/bgp/template set vrf_tenant output.redistribute=([get vrf_tenant output.redistribute],\"ospf\")\n\n\n\n\n\n\n/routing/ospf/instance add name=default4_tenant version=2 router-id=10.0.0.3 vrf=tenant\n\n/routing/ospf/area add instance=default4_tenant name=\"tenant_2_0.0.0.0\" area-id=0.0.0.0\n\n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default4_tenant] interface=ether3 type=ptp\n\n/routing/ospf/instance set [/routing/ospf/instance find name=default4_tenant] redistribute=bgp,bgp-mpls-vpn,vpn,connected,static routing-table=tenant\n"
 }
 
 TASK [Deploy vrf configuration] ************************************************

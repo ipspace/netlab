@@ -1,0 +1,157 @@
+Creating Device configuration snippets
+[CREATED] dut: initial,routing,ospf,vrf
+[CREATED] x1: initial,routing,ospf
+[CREATED] x2: initial,routing,ospf
+[CREATED] x3: initial,routing,ospf
+Config Deploying device configurations
+ [INFO] Executing initial configuration for node x1
+ [INFO] Executing initial configuration for node x2
+ [INFO] Executing initial configuration for node x3
+ [INFO] Executing routing configuration for node x2
+ [INFO] Executing routing configuration for node x3
+ [INFO] Executing routing configuration for node x1
+ [INFO] Executing ospf configuration for node x3
+ [INFO] Executing ospf configuration for node x2
+ [INFO] Executing ospf configuration for node x1
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "initial configuration for dut\n=========================================\n\n/system/identity set name=\"dut\"\n\n/interface/bridge add name=loopback protocol-mode=none\n\n# Host entries\n/ip/dns/static add name=dut-red address=10.1.0.5\n/ip/dns/static add name=dut-blue address=10.1.0.9\n/ip/dns/static add name=x1 address=10.42.0.1\n/ip/dns/static add name=x2 address=10.42.0.2\n/ip/dns/static add name=x3 address=10.42.0.3\n/ip/dns/static add name=dut-red address=2001:db8:3:1::1\n/ip/dns/static add name=dut-blue address=2001:db8:3:2::1\n/ip/dns/static add name=x1 address=2001:db8:cafe:1::1\n/ip/dns/static add name=x2 address=2001:db8:cafe:2::1\n/ip/dns/static add name=x3 address=2001:db8:cafe:3::1\n\n/ip/address add interface=loopback address=10.0.0.1/32\n/ipv6/address add interface=loopback address=2001:db8:1:1::1/64\n\n/ip/vrf add place-before=0 name=red interfaces=ether3\n/ip/vrf add place-before=0 name=blue interfaces=ether4\n\n\n\n/interface/ethernet set comment=\"dut -> x3\" ether2\n/ip/address add interface=ether2 address=10.1.0.1/30\n/ip/address set [find where interface=ether2] comment=\"dut -> x3\"\n/ipv6/address add interface=ether2 address=2001:db8:3::1/64\n/ipv6/nd add interface=ether2 advertise-dns=no ra-interval=3s-30s\n\n/interface/ethernet set comment=\"dut -> x1\" ether3\n/ip/address add interface=ether3 address=10.1.0.5/30\n/ip/address set [find where interface=ether3] comment=\"dut -> x1\"\n/ipv6/address add interface=ether3 address=2001:db8:3:1::1/64\n/ipv6/nd add interface=ether3 advertise-dns=no ra-interval=3s-30s\n\n/interface/ethernet set comment=\"dut -> x2\" ether4\n/ip/address add interface=ether4 address=10.1.0.9/30\n/ip/address set [find where interface=ether4] comment=\"dut -> x2\"\n/ipv6/address add interface=ether4 address=2001:db8:3:2::1/64\n/ipv6/nd add interface=ether4 advertise-dns=no ra-interval=3s-30s\n\n/ip/neighbor/discovery-settings set discover-interface-list=all\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+
+TASK [load initial from /work/netlab_cicd/node_files/dut/initial] **************
+ok: [dut]
+
+TASK [Run commands on CHR] *****************************************************
+changed: [dut]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=vrf)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for routing] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "routing configuration for dut\n=========================================\n#\n# Static routes\n#\n\n\n#\n#\n# Adding indirect static routes\n# Target Scope is set to 41, which is higher than all other routing protocols static=10, ospf/rip=20, isis=30, bgp=40\n/ip/route add dst-address=10.42.0.1/32 gateway=10.42.0.1@red routing-table=blue target-scope=41\n/ipv6/route add dst-address=2001:db8:cafe:1::/64 gateway=2001:db8:cafe:1::1@red routing-table=blue target-scope=41\n/ip/route add dst-address=10.42.0.2/32 gateway=10.42.0.2@blue routing-table=red target-scope=41\n/ipv6/route add dst-address=2001:db8:cafe:2::/64 gateway=2001:db8:cafe:2::1@blue routing-table=red target-scope=41\n/ip/route add dst-address=10.42.0.2/32 gateway=10.42.0.2@blue routing-table=main target-scope=41\n/ipv6/route add dst-address=2001:db8:cafe:2::/64 gateway=2001:db8:cafe:2::1@blue routing-table=main target-scope=41\n/ip/route add dst-address=10.42.0.3/32 gateway=10.42.0.3@main routing-table=blue target-scope=41\n/ipv6/route add dst-address=2001:db8:cafe:3::/64 gateway=2001:db8:cafe:3::1@main routing-table=blue target-scope=41\n"
+}
+
+TASK [Deploy routing configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+
+TASK [load routing from /work/netlab_cicd/node_files/dut/routing] **************
+ok: [dut]
+
+TASK [Run commands on CHR] *****************************************************
+changed: [dut]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "ospf configuration for dut\n=========================================\n\n\n/routing/ospf/instance add name=default4 version=2 router-id=10.0.0.1 vrf=main\n\n/routing/ospf/area add instance=default4 name=\"main_2_0.0.0.0\" area-id=0.0.0.0\n\n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default4] interface=loopback \n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default4] interface=ether2 type=ptp\n\n\n/routing/ospf/instance add name=default6 version=3 router-id=10.0.0.1 vrf=main\n\n/routing/ospf/area add instance=default6 name=\"main_3_0.0.0.0\" area-id=0.0.0.0\n\n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default6] interface=loopback \n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default6] interface=ether2 type=ptp\n"
+}
+
+TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+
+TASK [load ospf from /work/netlab_cicd/node_files/dut/ospf] ********************
+ok: [dut]
+
+TASK [Run commands on CHR] *****************************************************
+changed: [dut]
+
+TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [dut]
+
+TASK [Find configuration template for vrf] *************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "vrf configuration for dut\n=========================================\n\n\n\n\n/routing/ospf/instance add name=default4_red version=2 router-id=10.0.0.1 vrf=red\n\n/routing/ospf/area add instance=default4_red name=\"red_2_0.0.0.0\" area-id=0.0.0.0\n\n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default4_red] interface=ether3 type=ptp\n\n/routing/ospf/instance set [/routing/ospf/instance find name=default4_red] redistribute=bgp,bgp-mpls-vpn,vpn,connected,static routing-table=red\n\n\n/routing/ospf/instance add name=default6_red version=3 router-id=10.0.0.1 vrf=red\n\n/routing/ospf/area add instance=default6_red name=\"red_3_0.0.0.0\" area-id=0.0.0.0\n\n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default6_red] interface=ether3 type=ptp\n\n/routing/ospf/instance set [/routing/ospf/instance find name=default6_red] redistribute=bgp,bgp-mpls-vpn,vpn,connected,static routing-table=red\n\n\n/routing/ospf/instance add name=default4_blue version=2 router-id=10.0.0.1 vrf=blue\n\n/routing/ospf/area add instance=default4_blue name=\"blue_2_0.0.0.0\" area-id=0.0.0.0\n\n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default4_blue] interface=ether4 type=ptp\n\n/routing/ospf/instance set [/routing/ospf/instance find name=default4_blue] redistribute=bgp,bgp-mpls-vpn,vpn,connected,static routing-table=blue\n\n\n/routing/ospf/instance add name=default6_blue version=3 router-id=10.0.0.1 vrf=blue\n\n/routing/ospf/area add instance=default6_blue name=\"blue_3_0.0.0.0\" area-id=0.0.0.0\n\n/routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default6_blue] interface=ether4 type=ptp\n\n/routing/ospf/instance set [/routing/ospf/instance find name=default6_blue] redistribute=bgp,bgp-mpls-vpn,vpn,connected,static routing-table=blue\n"
+}
+
+TASK [Deploy vrf configuration] ************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+
+TASK [load vrf from /work/netlab_cicd/node_files/dut/vrf] **********************
+ok: [dut]
+
+TASK [Run commands on CHR] *****************************************************
+changed: [dut]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut                        : ok=34   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+
+Results of configuration script deployments
+================================================================================
+x1               Script:  initial,routing,ospf
+x2               Script:  initial,routing,ospf
+x3               Script:  initial,routing,ospf
+
+
+Use this topology to test inter-VRF and VRF-to-global IPv4 and IPv6 static
+routes with indirect next hops.
+

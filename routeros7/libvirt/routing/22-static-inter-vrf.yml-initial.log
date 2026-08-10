@@ -1,0 +1,133 @@
+Creating Device configuration snippets
+[CREATED] dut: initial,routing,vrf
+[CREATED] x1: initial,routing
+[CREATED] x2: initial,routing
+[CREATED] x3: initial,routing
+Config Deploying device configurations
+ [INFO] Executing initial configuration for node x1 (namespace clab-
+          ml-17-x1)
+ [INFO] Executing initial configuration for node x2 (namespace clab-
+          ml-17-x2)
+ [INFO] Executing initial configuration for node x3 (namespace clab-
+          ml-17-x3)
+ [INFO] Executing routing configuration for node x1 (namespace clab-
+          ml-17-x1)
+ [INFO] Executing routing configuration for node x3 (namespace clab-
+          ml-17-x3)
+ [INFO] Executing routing configuration for node x2 (namespace clab-
+          ml-17-x2)
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "initial configuration for dut\n=========================================\n\n/system/identity set name=\"dut\"\n\n/interface/bridge add name=loopback protocol-mode=none\n\n# Host entries\n/ip/dns/static add name=dut-red address=172.16.0.1\n/ip/dns/static add name=dut-blue address=172.16.1.1\n/ip/dns/static add name=x1 address=172.16.0.2\n/ip/dns/static add name=x2 address=172.16.1.3\n/ip/dns/static add name=x3 address=172.16.2.4\n/ip/dns/static add name=dut-red address=2001:db8:2::1\n/ip/dns/static add name=dut-blue address=2001:db8:2:1::1\n/ip/dns/static add name=x1 address=2001:db8:2::2\n/ip/dns/static add name=x2 address=2001:db8:2:1::3\n/ip/dns/static add name=x3 address=2001:db8:2:2::4\n\n/ip/address add interface=loopback address=10.0.0.1/32\n/ipv6/address add interface=loopback address=2001:db8:1:1::1/64\n\n/ip/vrf add place-before=0 name=red interfaces=ether2\n/ip/vrf add place-before=0 name=blue interfaces=ether3\n\n\n\n/interface/ethernet set comment=\"dut -> x1 [stub]\" ether2\n/ip/address add interface=ether2 address=172.16.0.1/24\n/ip/address set [find where interface=ether2] comment=\"dut -> x1 [stub]\"\n/ipv6/address add interface=ether2 address=2001:db8:2::1/64\n/ipv6/nd add interface=ether2 advertise-dns=no ra-interval=3s-30s\n\n/interface/ethernet set comment=\"dut -> x2 [stub]\" ether3\n/ip/address add interface=ether3 address=172.16.1.1/24\n/ip/address set [find where interface=ether3] comment=\"dut -> x2 [stub]\"\n/ipv6/address add interface=ether3 address=2001:db8:2:1::1/64\n/ipv6/nd add interface=ether3 advertise-dns=no ra-interval=3s-30s\n\n/interface/ethernet set comment=\"dut -> x3 [stub]\" ether4\n/ip/address add interface=ether4 address=172.16.2.1/24\n/ip/address set [find where interface=ether4] comment=\"dut -> x3 [stub]\"\n/ipv6/address add interface=ether4 address=2001:db8:2:2::1/64\n/ipv6/nd add interface=ether4 advertise-dns=no ra-interval=3s-30s\n\n/ip/neighbor/discovery-settings set discover-interface-list=all\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+
+TASK [load initial from /work/netlab_cicd/node_files/dut/initial] **************
+ok: [dut]
+
+TASK [Run commands on CHR] *****************************************************
+changed: [dut]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=vrf)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for routing] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "routing configuration for dut\n=========================================\n#\n# Static routes\n#\n\n\n#\n#\n# Adding direct static routes\n/ip/route add dst-address=172.16.41.0/24 gateway=172.16.0.2@red routing-table=blue scope=10\n/ipv6/route add dst-address=3fff:cafe:0:1::/64 gateway=2001:db8:2::2@red routing-table=blue scope=10\n/ip/route add dst-address=172.16.42.0/24 gateway=172.16.1.3@blue routing-table=red scope=10\n/ipv6/route add dst-address=3fff:cafe:0:2::/64 gateway=2001:db8:2:1::3@blue routing-table=red scope=10\n/ip/route add dst-address=172.16.42.0/24 gateway=172.16.1.3@blue routing-table=main scope=10\n/ipv6/route add dst-address=3fff:cafe:0:2::/64 gateway=2001:db8:2:1::3@blue routing-table=main scope=10\n/ip/route add dst-address=172.16.40.0/24 gateway=172.16.2.4@main routing-table=blue scope=10\n/ipv6/route add dst-address=3fff:cafe::/64 gateway=2001:db8:2:2::4@main routing-table=blue scope=10\n"
+}
+
+TASK [Deploy routing configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+
+TASK [load routing from /work/netlab_cicd/node_files/dut/routing] **************
+ok: [dut]
+
+TASK [Run commands on CHR] *****************************************************
+changed: [dut]
+
+TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [dut]
+
+TASK [Find configuration template for vrf] *************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "vrf configuration for dut\n=========================================\n\n"
+}
+
+TASK [Deploy vrf configuration] ************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+
+TASK [load vrf from /work/netlab_cicd/node_files/dut/vrf] **********************
+ok: [dut]
+
+TASK [Run commands on CHR] *****************************************************
+changed: [dut]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut                        : ok=26   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+
+Results of configuration script deployments
+================================================================================
+x1               Script:  initial,routing
+x2               Script:  initial,routing
+x3               Script:  initial,routing
+
+
+Use this topology to test inter- VRF IPv4 and IPv6 static routes. DUT has
+to have static routes for loopback addresses of X1 and X2.
+
