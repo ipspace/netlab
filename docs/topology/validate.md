@@ -50,6 +50,7 @@ The **config** parameter can be a string (the template to deploy) or a dictionar
 **Notes:**
 
 * Every test entry should have **show**, **exec**, **config**, **suzieq**, **ansible** or **wait** parameter.
+* The device types specified in **show**, **exec**, or **valid** dictionaries can be *parent devices* (for example, `ios` to cover all Cisco IOS platforms).
 * A test entry with just the **wait** parameter is valid and can be used to delay the test procedure.
 * Test entries with **show** parameter must have **valid** expression.
 * Test entries with **valid** expression must have **show**,  **exec**, **suzieq**, or **ansible** parameter.

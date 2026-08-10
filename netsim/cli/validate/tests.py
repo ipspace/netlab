@@ -124,7 +124,8 @@ def execute_node_validation(
   node = topology.nodes[n_name]
   result = data.get_empty_box()
 
-  action = utils.find_test_action(v_entry,node) # Find the action to show/execute/wait
+  # Find the action to show/execute/wait
+  action = utils.find_test_action(v_entry,node,topology)
   if action == 'wait':                          # Test with pure 'wait'
     return (True,True)                          # is assumed to be successful
 
