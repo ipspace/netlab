@@ -340,6 +340,7 @@ def augment_device_settings(topology: Box) -> None:
 
   for dname in list(devices.keys()):              # After completing device transformation, do a few sanity checks
     if 'template' in devices[dname]:              # Remove template devices
+      data.append_to_list(topology.defaults.const,'template_devices',dname)
       devices.pop(dname,None)
       continue
 
