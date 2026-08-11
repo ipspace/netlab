@@ -15,15 +15,19 @@ The initial version of the Network Services configuration module implements [DNS
 
 _netlab_ can configure DNS clients or servers on these platforms:
 
-| Operating system      | IPv4 DNS<br>client | IPv6 DNS<br>client | Transport<br>VRF | DNS server |
-| --------------------- | :-: | :-: | :-: | :-: |
-| Arista EOS            | ✅  | ✅  | ✅  |  ❌  |
-| Cisco IOS/IOS XE[^18v]| ✅  | ✅  | ✅  |  ❌  |
-| FRR (containers)      | ✅  | ✅  | ❌  |  ❌  |
-| Linux (containers)    | ✅  | ✅  | ❌  |  ❌  |
-| dnsmasq               | ✅  | ✅  | ❌  |  ✅  |
-
-[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOSv, Cisco IOSv L2 image, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
+```{features}
+- title: IPv4 DNS<br>client
+  enabled: |
+    services.dns is True or 'ipv4' in services.dns
+- title: IPv6 DNS<br>client
+  enabled: |
+    services.dns is True or 'ipv6' in services.dns
+- title: Transport<br>VRF
+  enabled: |
+    services.dns and services.get('dns.transport_vrf',True) != False
+- title: DNS server
+  enabled: services.server.dns
+```
 
 (services-dns-parameters)=
 ## DNS Parameters
