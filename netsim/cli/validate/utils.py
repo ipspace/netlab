@@ -60,9 +60,6 @@ def get_entry_value(v_entry: Box, action: str, node: Box, topology: Box) -> typi
         indent=indent)
       return None
 
-  if value is None:
-    log.error(f'Cannot find the {action} value for {node.device} in {v_entry}',category=log.MissingDependency,module='validate')
-
   if not isinstance(value,str):
     return value
   
