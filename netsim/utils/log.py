@@ -192,15 +192,16 @@ def print_related_doc_url(
   """
   global _HINTS_CACHE
 
-  if '://' not in doc_url:
-    doc_url_pfx = global_vars.get_const('doc_url_prefix')
-    doc_url = doc_url_pfx + doc_url
+  if '://' not in doc_url:                                  # Did we get a full URL?
+    doc_url_pfx = global_vars.get_const('doc_url_prefix')   # Nope, let's try to get documentation prefix
+    if doc_url_pfx:                                         # Did we get something useful?
+      doc_url = doc_url_pfx + doc_url                       # ... so use it
 
   doc_txt = strings.eval_format(doc_url_text,{'url': doc_url})
-  if doc_txt not in _HINTS_CACHE:
+  if doc_txt not in _HINTS_CACHE:                           # Did we already display the URL-based hint?
     print_more_hints([ doc_txt ],h_name='DOCS',h_warning=h_warning,indent=indent)
-  _HINTS_CACHE.append(doc_txt)
-  
+    _HINTS_CACHE.append(doc_txt)                            # ... well, now we did. Remember that.
+
 def get_calling_module(module: typing.Optional[str]) -> str:
   """
   If needed, get the module name that called an error function. Return whatever the caller
