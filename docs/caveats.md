@@ -723,7 +723,6 @@ It looks like the official VyOS container is not updated as part of the daily bu
 Other VyOS caveats:
 
 * VyOS configuration template configures BFD timers only at the global level
-* Multi-topology IS-IS (assumed by the [IS-IS configuration module](module-isis)) cannot be configured with VyOS IS-IS CLI ([bug report](https://vyos.dev/T6332)).
 * VyOS containers need host kernel modules (drivers) to implement the data-plane functionality of _vrf_, _mpls_, and _vxlan_ netlab modules. The kernel modules are automatically loaded (when available) during the **netlab up** processing.
 * VyOS containers cannot deal with min/max MTU sizes on dummy Ethernet interfaces used to implement stub networks. Stub networks in containers are implemented as **dum** interfaces.
 * VRF and VXLAN kernel modules are usually bundled with a Linux distribution. If your Ubuntu distribution does not include the MPLS drivers, try installing them with `sudo apt install linux-generic`.
