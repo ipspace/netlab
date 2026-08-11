@@ -184,12 +184,17 @@ def validate_dictionary(
 
   # Validate keys if needed
   if '_keytype' in data_type:
+    key_type = get_box(transform_validation_shortcuts(data_type._keytype))
+    validation_function = getattr(_tv,f'must_be_{key_type.type}',None)
+    if not validation_function:                                 # No validation function
+      log.fatal(f'No validation function for {key_type.type}')
     for k in data.keys():
-      if not validate_value(
-                value=k,
-                data_type=data_type._keytype,
+      if not validation_function(                                # We're validating a standalone value
+                parent=None,
+                key=k,
                 path=f'NOATTR:{parent_path}.{k}',
-                module=module):
+                module=module,
+                **get_validation_attr(key_type)):
         return_value = False
 
   # Option #1: Validate dictionary where every value is another type
