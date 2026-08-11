@@ -987,7 +987,7 @@ def must_be_rd(value: typing.Any) -> dict:
 
 
 @type_test()
-def must_be_device(value: typing.Any) -> dict:
+def must_be_device(value: typing.Any, include_templates: bool = False) -> dict:
   from .validate import list_of_devices
 
   status = {
@@ -1000,8 +1000,13 @@ def must_be_device(value: typing.Any) -> dict:
     return status
 
   if not value in list_of_devices:
-    status['_value'] = f'known device type identifier (got {value})'
-    return status
+    error = True
+    if include_templates:
+      template_devices = global_vars.get_const('template_devices',[])
+      error = value not in template_devices
+    if error:
+      status['_value'] = f'known device type identifier (got {value})'
+      return status
 
   return { '_valid': True }
 
