@@ -7,26 +7,46 @@ import typing
 
 from box import Box, BoxList
 
+from ...augment import devices as a_devices
 from ...utils import log, templates
 from . import plugin, report
 
-'''
-Get generic or per-device action from a validation entry
 
-* If the validation entry is a string, use that
-* If the validation entry is a dictionary, use device-specific item
-* If the result of the above is not a string we have a failure, get out
-* If the resulting string contains '{{' run it through Jinja2 engine
+def get_device_inheritance_list(node: Box, topology: Box) -> list:
+  '''
+  Get the device inheritance list for the current node, starting with the
+  device type and ending with the most generic parent. If the device has no
+  'parent' attribute, the list has one element (the device type)
+  '''
+  dev_data = a_devices.get_consolidated_device_data(node,topology.defaults)
+  dev_search: list = dev_data.get('_parents',[]) + [ node.device ]
+  return list(reversed(dev_search))
 
-If we try to get the string to pass to the device from a plugin, then any
-plugin evaluation errors indicate something is badly broken, so we log the
-error with as much data as feasible... and if the end-user ever sees that
-error message, the author of the validation plugin did a lousy job.
-'''
 def get_entry_value(v_entry: Box, action: str, node: Box, topology: Box) -> typing.Any:
-  n_device = node.device
+  '''
+  Get generic or per-device action from a validation entry
+
+  * If the validation entry is a string, use that
+  * If the validation entry is a dictionary, use device-specific item
+  * If the result of the above is not a string we have a failure, get out
+  * If the resulting string contains '{{' run it through Jinja2 engine
+
+  If we try to get the string to pass to the device from a plugin, then any
+  plugin evaluation errors indicate something is badly broken, so we log the
+  error with as much data as feasible... and if the end-user ever sees that
+  error message, the author of the validation plugin did a lousy job.
+  '''
   if action in v_entry:
-    value = v_entry[action][n_device] if isinstance(v_entry[action],dict) else v_entry[action]
+    value = None
+    if not isinstance(v_entry[action],dict):
+      value = v_entry[action]
+    else:
+      for device in get_device_inheritance_list(node,topology):
+        if device in v_entry[action]:
+          if log.VERBOSE and device != node.device:
+            log.info(f'Using {device} {action} definition for node {node.name}/{node.device}')
+          value = v_entry[action][device]
+          break
   elif 'plugin' in v_entry:
     try:
       value = plugin.exec_plugin_function(action,v_entry,node)
@@ -81,7 +101,7 @@ find_test_action -- find something that can be executed on current node
 * If there's no plugin, but we have 'wait' action, return 'wait'
 * If everything fails, return None (nothing usable for the current node)
 '''
-def find_test_action(v_entry: Box, node: Box) -> typing.Optional[str]:
+def find_test_action(v_entry: Box, node: Box, topology: Box) -> typing.Optional[str]:
   action_kw_found = False
   for kw in ('show','exec','config','suzieq','ansible'):
     if kw not in v_entry:
@@ -90,8 +110,11 @@ def find_test_action(v_entry: Box, node: Box) -> typing.Optional[str]:
     action_kw_found = True
     if kw in ['suzieq','config'] or isinstance(v_entry[kw],(str,int)):
       return kw
-    if node.device in v_entry[kw]:
-      return kw
+
+    # Iterate device options from most-specific (device) to most generic (top parent)
+    for device in get_device_inheritance_list(node,topology):
+      if device in v_entry[kw]:
+        return kw
 
   if 'plugin' in v_entry:
     return plugin.find_plugin_action(v_entry,node)
