@@ -1,0 +1,161 @@
+files:
+- content: '! hello world configlet'
+  path: hello/frr.j2
+input:
+- coverage/input/check-config-files.yml
+- package:topology-defaults.yml
+links:
+- _linkname: links[1]
+  interfaces:
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.1/30
+    node: r1
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.2/30
+    node: r2
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  type: p2p
+name: input
+nodes:
+  r1:
+    _node_config:
+      hello: /etc/config/02-hello.sh:sh
+      initial: /etc/config/01-initial.sh:sh
+    af:
+      ipv4: true
+    box: quay.io/frrouting/frr:10.6.1
+    clab:
+      binds:
+      - source: node_files/r1/initial
+        target: /etc/config/01-initial.sh
+      - source: node_files/r1/hello
+        target: /etc/config/02-hello.sh
+      - source: node_files/r1/daemons
+        target: /etc/frr/daemons
+      - mode: ro
+        source: node_files/-shared-hosts
+        target: /etc/hosts
+      - source: node_files/r1/resolv
+        target: /etc/resolv.conf
+      config_templates:
+      - mode: sh
+        source: initial
+        target: /etc/config/01-initial.sh
+      - mode: sh
+        source: hello
+        target: /etc/config/02-hello.sh
+      - source: daemons
+        target: /etc/frr/daemons
+      - mode: shared
+        source: hosts
+        target: /etc/hosts
+      - source: resolv
+        target: /etc/resolv.conf
+      exec:
+      - sleep 1
+      kind: linux
+    config:
+    - hello
+    device: frr
+    hostname: clab-input-r1
+    id: 1
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      mtu: 1500
+      name: r1 -> r2
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.2/30
+        node: r2
+      type: p2p
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.101
+      mac: ca:fe:00:01:00:00
+    mtu: 1500
+    name: r1
+    netlab_ansible_skip_module:
+    - initial
+    - hello
+    role: router
+  r2:
+    _node_config:
+      initial: /etc/config/01-initial.sh:sh
+    af:
+      ipv4: true
+    box: quay.io/frrouting/frr:10.6.1
+    clab:
+      binds:
+      - source: node_files/r2/initial
+        target: /etc/config/01-initial.sh
+      - source: node_files/r2/daemons
+        target: /etc/frr/daemons
+      - mode: ro
+        source: node_files/-shared-hosts
+        target: /etc/hosts
+      - source: node_files/r2/resolv
+        target: /etc/resolv.conf
+      config_templates:
+      - mode: sh
+        source: initial
+        target: /etc/config/01-initial.sh
+      - source: daemons
+        target: /etc/frr/daemons
+      - mode: shared
+        source: hosts
+        target: /etc/hosts
+      - source: resolv
+        target: /etc/resolv.conf
+      exec:
+      - sleep 1
+      kind: linux
+    device: frr
+    hostname: clab-input-r2
+    id: 2
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      mtu: 1500
+      name: r2 -> r1
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.1/30
+        node: r1
+      type: p2p
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.102
+      mac: ca:fe:00:02:00:00
+    mtu: 1500
+    name: r2
+    netlab_ansible_skip_module:
+    - initial
+    role: router
+plugin:
+- files
+- check.config
+provider: clab
