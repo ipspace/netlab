@@ -9,6 +9,7 @@ import os
 import sys
 import textwrap
 import typing
+import urllib.parse
 from pathlib import Path
 
 import requests
@@ -79,11 +80,20 @@ def fix_git_repo_url(url: str) -> str:
 Fetch topology from the specified URL, store it in 'downloaded.yml' file in
 current directory, warn if the directory is not empty
 """
+HTTP_FETCH_TIMEOUT: int = 20
+
 def http_fetch_content(url: str, args: typing.Union[argparse.Namespace,Box]) -> str:
   fname = 'downloaded.yml'
   url = fix_git_repo_url(url)
+  scheme = urllib.parse.urlsplit(url).scheme.lower()
+  if scheme not in ('http','https'):
+    error_and_exit(
+      f'Cannot download the lab topology from {url}',
+      module='http',
+      category=log.FatalError,
+      more_hints=f'Unsupported URL scheme "{scheme}"; only http and https topology URLs are allowed')
   try:
-    c = requests.get(url)
+    c = requests.get(url,timeout=HTTP_FETCH_TIMEOUT)
     Path(fname).write_text(c.text)
     try:
       Box().from_yaml(yaml_string=c.text)
