@@ -36,7 +36,7 @@ The plugin functions (hooks) are executed at these stages of the transformation 
 **Notes:**
 
 * Every plugin function is called with a single *topology* argument: the current topology data structure. The node or link-manipulation functions must iterate over the `topology.nodes` dictionary or the `topology.links` list.
-* Plugins extending [configuration modules](../modules.md) might have to define additional module attributes. The [module attribute lists](module-attributes.md) must be extended before any module validation code is executed, either with the [attributes](dev-plugin-attributes) with [plugin defaults](dev-plugin-defaults) (see also [sample plugin](dev-plugin-sample)) or in the plugin **init** function.
+* Plugins extending [configuration modules](../modules.md) might have to define additional module attributes. The [module attribute lists](module-attributes.md) must be extended before any module validation code is executed, either by defining the [attributes](dev-plugin-attributes) in the [plugin defaults](dev-plugin-defaults) (see also [sample plugin](dev-plugin-sample)) or in the plugin **init** function.
 
 (dev-plugin-cli-hooks)=
 ## Plugin CLI Hooks
