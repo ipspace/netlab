@@ -7,7 +7,7 @@ Plugins are either Python files or directories containing Python code plus confi
 You can inspect the plugin search path with the **netlab show defaults paths.plugin** command and [modify it if needed](change-search-paths).
 ```
 
-The plugin name specifies either a Python file name (without the `.py` extension) or a directory with the `plugin.py` Python module, optional plugin defaults (`defaults.yml`), and Jinja2 templates (one per supported **netlab_device_type**/**ansible_network_os**).
+The plugin name specifies either a Python file name (without the `.py` extension) or a directory with the `plugin.py` or `__init__.py`, optional plugin defaults (`defaults.yml`), and Jinja2 templates (one per supported **netlab_device_type**/**ansible_network_os**).
 
 ```{warning}
 This is an underdocumented feature. Performing operations beyond simple data transformation might require digging through the source code. Before proceeding, you might want to [open a discussion on *netlab* GitHub repository](https://github.com/ipspace/netlab/discussions).
@@ -16,26 +16,27 @@ This is an underdocumented feature. Performing operations beyond simple data tra
 (dev-plugin-hooks)=
 ## Plugin Hooks
 
-Plugins can define well-known functions that are invoked during the [topology transformation process](transform.md), which includes these steps:
+Plugins can define well-known functions that are invoked during the [topology transformation process](transform.md).
 
-* execute plugin **init** function
-* check topology top-level elements
-* adjust global parameters (defaults), node list, link list, and address pools
-* execute plugin **pre_transform** function
-* execute module **pre_transform** function
-* adjust groups (including setting node data from **node_data**)
-* execute plugin **pre_node_transform** function
-* transform node data
-* execute plugin **post_node_transform** function
-* execute plugin **pre_link_transform** function
-* transform link data
-* execute plugin **post_link_transform** function
-* execute module **post_transform** function
-* execute plugin **post_transform** function
+The plugin functions (hooks) are executed at these stages of the transformation process:
 
-Every plugin function is called with a single *topology* argument: the current topology data structure. The node or link-manipulation functions must iterate over the `topology.nodes` dictionary or the `topology.links` list.
+{.table-wrap}
+| Hook | Executed at |
+|------|-------------|
+| **topology_expand** | Very early in the transformation process, after node roles have been initialized, but before the link data structures are checked or initialized. Use it to add nodes and links to the topology (example: the [fabric plugin](../plugins/fabric.md)) |
+| **init** | Early in the transformation process, after all data structures have been initialized, but before they've been validated. Executes before module **normalize** hook |
+| **pre_transform** | Executes after the data structures have been validated, but before any other (module, provider) **pre_transform** hooks |
+| **pre_node_transform** | Executes before node data transformation. Called after the **pre_transform** hooks and the module/provider **pre_transform** functions |
+| **post_node_transform** | Executes after the node data transformation has been completed, before the module **post_node_transform** hooks |
+| **pre_link_transform** | Executes before link data transformation. Called only when the topology contains **links**, after link validation and before the module **pre_link_transform** hooks |
+| **post_link_transform** | Executes after the link data transformation has been completed. Called only when the topology contains **links** |
+| **post_transform** | Executes after all other data transformations have been completed; the module **post_transform** hooks are called before the plugin **post_transform** hook |
+| **cleanup** | Executes as the very last step of the transformation process, after the topology data structures have been finalized (module **cleanup** hooks are called before the plugin **cleanup** hook). Use it to delete temporary data structures |
 
-Plugins extending [configuration modules](../modules.md) might have to define additional module attributes. The [module attribute lists](module-attributes.md) must be extended before any module validation code is executed, either with the plugin defaults or in the plugin **init** function.
+**Notes:**
+
+* Every plugin function is called with a single *topology* argument: the current topology data structure. The node or link-manipulation functions must iterate over the `topology.nodes` dictionary or the `topology.links` list.
+* Plugins extending [configuration modules](../modules.md) might have to define additional module attributes. The [module attribute lists](module-attributes.md) must be extended before any module validation code is executed, either by defining the [attributes](dev-plugin-attributes) in the [plugin defaults](dev-plugin-defaults) (see also [sample plugin](dev-plugin-sample)) or in the plugin **init** function.
 
 (dev-plugin-cli-hooks)=
 ## Plugin CLI Hooks
@@ -63,10 +64,12 @@ A plugin can specify global variables that are used to influence the plugin's be
 * `_execute_after`: A list of plugins that should execute before the current plugin. For example, the **ebgp.multihop** plugin has to be executed after **ebgp.utils** plugin, and therefore defines `_execute_after = [ 'ebgp.utils' ]`
 * `_config_name`: The name of extra configuration templates to add to the node **config** attribute when a node using the plugin functionality requires additional device configuration. This variable is set during the plugin initialization process, but it's still recommended to define it in the plugin and set its value to a string to prevent **mypy** complaints.
 
+(dev-plugin-defaults)=
 ## Plugin Defaults
 
 A directory containing the `plugin.py` Python module can include plugin defaults (`defaults.yml`). The contents of the `defaults.yml` file are merged with the topology defaults after processing **merge** and **copy** requests for attributes and device features.
 
+(dev-plugin-attributes)=
 ### Merging Attributes
 
 Within the `defaults.yml` file, you can copy an attribute definition from another attribute with the **copy** or **merge** parameter that contains the namespace of the other attribute. The **copy**/**merge** parameter must be specified on a top-level attribute within an attribute namespace.
@@ -108,6 +111,9 @@ devices:
     copy: iosv
 ```
 
+However, most device features (at least for system plugins) should be predefined in the `devices` YAML files.
+
+(dev-plugin-sample)=
 ## Sample Plugin
 
 All anycast servers in a BGP anycast topology should have the same AS number but [do not need IBGP sessions between themselves](https://blog.ipspace.net/2022/01/netsim-plugins.html). A [custom plugin](https://github.com/ipspace/netlab-examples/tree/master/plugins/adjust-bgp-sessions) deletes IBGP sessions for any node with **bgp.anycast** attribute.
@@ -186,9 +192,4 @@ def post_transform(topo: Box) -> None:
 Notes:
 
 * The global `_config_name` variable is set during the plugin initialization.
-* `api.node_config` appends the specified custom configuration template to the list of node configuration templates. While equivalent to...\
-  \
-  `node.config.append(template)`\
-  \
-  ... the utility function handles edge cases like a missing **config** attribute or duplicate configuration templates.
-
+* `api.node_config` appends the specified custom configuration template to the list of node configuration templates. While equivalent to `node.config.append(template)`, the utility function handles edge cases like a missing **config** attribute or duplicate configuration templates.
