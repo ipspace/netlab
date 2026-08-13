@@ -3,7 +3,6 @@ import typing
 from box import Box
 
 from netsim import data
-from netsim.augment import devices as a_devices
 from netsim.utils import files as _files
 from netsim.utils import log, strings
 
@@ -11,10 +10,9 @@ _execute_after    = [ 'files' ]
 
 def post_quirks(topology: Box) -> None:
   missing = data.get_empty_box()
+  extra_files: set = set()
   if 'files' in topology:
-    extra_files = [ x.path for x in topology.files if isinstance(x,Box) and 'path' in x ]
-  else:
-    extra_files = []
+    extra_files = { x.path for x in topology.files if isinstance(x,Box) and 'path' in x }
 
   for ndata in topology.nodes.values():
     if not 'config' in ndata:
