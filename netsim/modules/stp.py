@@ -42,16 +42,18 @@ class STP(_Module):
     supported_protocols = features.get("stp.supported_protocols",[])
     if node.stp.protocol not in supported_protocols:
       log.error(
-        f'node {node.name} (device {node.device}) does not support requested STP protocol ({node.stp.protocol})',
+        f'node {node.name} (device {node.device}) does not support the requested STP protocol ({node.stp.protocol})',
         log.IncorrectValue,
-        'stp')
+        doc_url='module/stp/#stp-platform',
+        doc_url_text="See {url} for the list of supported platforms",
+        module='stp')
 
     priority = node.get('stp.priority',None)
     if priority is not None and (priority % 4096):
         log.error(
-            f'node {node.name} (device {node.device}) stp.priority: {priority} must be a multiple of 4096',
-            log.IncorrectValue,
-            'stp')
+          f'node {node.name} (device {node.device}) stp.priority: {priority} must be a multiple of 4096',
+          log.IncorrectValue,
+          'stp')
 
     stub_port_type = topology.get('stp.stub_port_type','none')
     for intf in node.get('interfaces',[]):
@@ -59,8 +61,9 @@ class STP(_Module):
         if 'ipv4' in intf or 'ipv6' in intf:
           log.error(
             f'node {node.name}: Cannot apply STP to L3 interface ({intf.name})',
-            log.IncorrectAttr,
-            'stp')
+            category=log.IncorrectAttr,
+            doc_url='module/stp/#module-stp-params',
+            module='stp')
         if 'enable' in intf.stp and not features.get('stp.enable_per_port',False):
           log.error(
             f'node {node.name} (device {node.device}) does not support enabling/disabling STP only on a specific port ({intf.ifname})',
@@ -95,13 +98,16 @@ class STP(_Module):
         if node.stp.protocol != 'pvrst':
           log.error(
             f"Topology requires per-VLAN STP (pvrst) used on VLAN '{vname}' but global default is '{node.stp.protocol}'",
-            log.IncorrectValue,
-            'stp')
+            category=log.IncorrectValue,
+            doc_url="module/stp/#module-stp-global-params",
+            module='stp')
         elif not 'pvrst' in features.get('stp.supported_protocols',[]):
           log.error(
             f"node {node.name} (device {node.device}) does not support per-VLAN STP (pvrst) used on VLAN '{vname}'",
-            log.IncorrectValue,
-            'stp')
+            category=log.IncorrectValue,
+            doc_url='module/stp/#stp-platform',
+            doc_url_text="See {url} for the list of supported platforms",
+            module='stp')
 
     # Normalize STP data model: mark interfaces that need STP configuration
     # This makes templates easier to consume by avoiding complex Jinja2 filters like:

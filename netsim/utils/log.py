@@ -11,6 +11,7 @@ import warnings
 import rich.table
 from box import Box
 
+from ..data import global_vars
 from ..data import types as _types
 from . import strings
 
@@ -180,11 +181,32 @@ def print_more_hints(
     else:
       print(f"... {line}",file=sys.stderr,flush=True)       # Teletype/file, just print the line
 
-"""
-If needed, get the module name that called an error function. Return whatever the caller
-supplied if it's not none, otherwise inspect the stack.
-"""
+def print_related_doc_url(
+      doc_url: str,
+      doc_url_text: str,
+      h_warning: bool,                                      # The last two arguments are passed through to print_more_hints
+      indent: int) -> None:
+  """
+  Print a link to the documentation as supplied by the error/warning caller.
+  Do not print a single link more than once.
+  """
+  global _HINTS_CACHE
+
+  if '://' not in doc_url:                                  # Did we get a full URL?
+    doc_url_pfx = global_vars.get_const('doc_url_prefix')   # Nope, let's try to get documentation prefix
+    if doc_url_pfx:                                         # Did we get something useful?
+      doc_url = doc_url_pfx + doc_url                       # ... so use it
+
+  doc_txt = strings.eval_format(doc_url_text,{'url': doc_url})
+  if doc_txt not in _HINTS_CACHE:                           # Did we already display the URL-based hint?
+    print_more_hints([ doc_txt ],h_name='DOCS',h_warning=h_warning,indent=indent)
+    _HINTS_CACHE.append(doc_txt)                            # ... well, now we did. Remember that.
+
 def get_calling_module(module: typing.Optional[str]) -> str:
+  """
+  If needed, get the module name that called an error function. Return whatever the caller
+  supplied if it's not none, otherwise inspect the stack.
+  """
   if module is not None:
     return module or 'topology'
 
@@ -194,13 +216,6 @@ def get_calling_module(module: typing.Optional[str]) -> str:
   except:
     return 'unknown'
 
-"""
-Display an error message, including error category, calling module and optional hints
-
-When called with calling module set to None, the function uses stack trace to find out
-which module called it. The display of the calling module is skipped if the module is
-set to '-' and the category is Warning (used to repeat warnings)
-"""
 def error(
       text: str,                                                    # Error text
       category: typing.Union[typing.Type[Warning],typing.Type[Exception]] = UserWarning,
@@ -210,7 +225,16 @@ def error(
       more_data: typing.Optional[typing.Union[str,list]] = None,
       indent: int = 10,
       skip_header: typing.Optional[bool] = None,
+      doc_url: typing.Optional[str] = None,
+      doc_url_text: str = "See also: {url}",
       exit_on_error: bool = False) -> None:
+  """
+  Display an error message, including error category, calling module and optional hints
+
+  When called with calling module set to None, the function uses stack trace to find out
+  which module called it. The display of the calling module is skipped if the module is
+  set to '-' and the category is Warning (used to repeat warnings)
+  """
 
   global _ERROR_LOG,_WARNING_LOG,_HINTS_CACHE,QUIET,NO_WARNING
   global err_class_map,err_color_map,_error_header_printed
@@ -254,6 +278,9 @@ def error(
       print_more_hints(more_hints,h_warning=category is Warning,indent=indent)
     _HINTS_CACHE.append(more_hints)
 
+  if doc_url:
+    print_related_doc_url(doc_url,doc_url_text,h_warning=category is Warning,indent=indent)
+
   if hint is None:                                                  # No pointers to static hints
     if exit_on_error and category is not Warning:
       sys.exit(1)
@@ -285,20 +312,20 @@ def error(
   if exit_on_error and category is not Warning:
     sys.exit(1)
 
-"""
-Print a warning. The arguments are similar to the 'error' function apart from:
-
-* Category is assumed to be 'Warning'
-* The 'flag' argument specifies a defaults setting to check. If it includes a dot, it's
-  assumed to be a global warning (under defaults.warnings), otherwise it's a module-level
-  warning (under defaults._module_.warnings).
-"""
 def warning(*,
       text: str,
       module: typing.Optional[str] = None,
       flag: typing.Optional[str] = None,
       once: bool = False,
       **kwargs: typing.Any) -> None:
+  """
+  Print a warning. The arguments are similar to the 'error' function apart from:
+
+  * Category is assumed to be 'Warning'
+  * The 'flag' argument specifies a defaults setting to check. If it includes a dot, it's
+    assumed to be a global warning (under defaults.warnings), otherwise it's a module-level
+    warning (under defaults._module_.warnings).
+  """
 
   global _HINTS_CACHE,_WARNING_CACHE,QUIET
   if QUIET:
