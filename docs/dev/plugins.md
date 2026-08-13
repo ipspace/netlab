@@ -16,7 +16,7 @@ This is an underdocumented feature. Performing operations beyond simple data tra
 (dev-plugin-hooks)=
 ## Plugin Hooks
 
-Plugins can define well-known functions that are invoked during the [topology transformation process](transform.md), which includes these steps:
+Plugins can define well-known functions that are invoked during the [topology transformation process](transform.md).
 
 The plugin functions (hooks) are executed at these stages of the transformation process:
 
