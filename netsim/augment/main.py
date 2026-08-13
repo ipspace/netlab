@@ -111,10 +111,13 @@ def post_transform(topology: Box) -> None:
   augment.nodes.cleanup(topology)
   log.exit_on_error()
 
+  augment.plugin.execute('pre_quirks',topology)
   quirks.process_quirks(topology)
+  augment.plugin.execute('post_quirks',topology)
   log.exit_on_error()
   
   providers.execute("post_transform",topology)
+  augment.plugin.execute('post_provider_transform',topology)
   log.exit_on_error()
 
   augment.links.cleanup(topology)

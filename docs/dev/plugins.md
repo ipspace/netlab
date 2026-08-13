@@ -31,6 +31,9 @@ The plugin functions (hooks) are executed at these stages of the transformation 
 | **pre_link_transform** | Executes before link data transformation. Called only when the topology contains **links**, after link validation and before the module **pre_link_transform** hooks |
 | **post_link_transform** | Executes after the link data transformation has been completed. Called only when the topology contains **links** |
 | **post_transform** | Executes after all other data transformations have been completed; the module **post_transform** hooks are called before the plugin **post_transform** hook |
+| **pre_quirks** | Executes before the device quirks, but after the core data transformation has been completed. The post-transform hooks have been called, the node module lists have been sorted in dependency order, the group custom configs have been fully evaluated, and the node data structures have been cleaned up |
+| **post_quirks** | Executes after the device quirks, but before the provider post-transform hooks. Use this hook when you have to inspect the (almost) final data structure |
+| **post_provider_transform** | Executes after the provider post-transform hooks. Use this hook when you have to modify the provider-specific data structures. |
 | **cleanup** | Executes as the very last step of the transformation process, after the topology data structures have been finalized (module **cleanup** hooks are called before the plugin **cleanup** hook). Use it to delete temporary data structures |
 
 **Notes:**
