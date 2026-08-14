@@ -1,3 +1,4 @@
+import typing
 
 from box import Box
 
@@ -5,9 +6,14 @@ from netsim import data
 from netsim.utils import files as _files
 from netsim.utils import log, strings
 
+_execute_after    = [ 'files' ]
 
-def cleanup(topology: Box) -> None:
+def post_quirks(topology: Box) -> None:
   missing = data.get_empty_box()
+  extra_files: set = set()
+  if 'files' in topology:
+    extra_files = { x.path for x in topology.files if isinstance(x,Box) and 'path' in x }
+
   for ndata in topology.nodes.values():
     if not 'config' in ndata:
       continue
@@ -18,9 +24,14 @@ def cleanup(topology: Box) -> None:
       f'{ndata.device}.j2' ]
 
     for cfg in list(ndata.config):
+      cfg_file: typing.Optional[str] = None
       for cfg_candidate in candidate_files:
-        cfg_file = _files.find_file(f'{cfg}/{cfg_candidate}',topology.defaults.paths.custom.dirs)
+        cfg_path = f'{cfg}/{cfg_candidate}'
+        if cfg_path in extra_files:
+          cfg_file = cfg_path
+          break
 
+        cfg_file = _files.find_file(cfg_path,topology.defaults.paths.custom.dirs)
         if cfg_file:
           break
 
