@@ -110,7 +110,7 @@ def show_plugins(args: argparse.Namespace) -> None:
 
 def show_devices(args: argparse.Namespace) -> None:
   d_stat = stats.read_stats()
-  topology = _read.load("package:cli/empty.yml")
+  topology = _read.system_defaults(include_user=True)
   t_header = { 'key': 'device', 'total': 'Total' }
   p_list = sorted(topology.defaults.providers.keys())
   for p_name in p_list:

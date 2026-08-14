@@ -95,12 +95,11 @@ def run(cli_args: typing.List[str]) -> None:
 
   args = parse_show_args(cli_args)
 
-  empty_file = "package:cli/empty.yml"
-  user_defaults: typing.Optional[list] = [] if 'system' in args and args.system else None
-  topology = _read.load(empty_file,user_defaults=user_defaults)
-  if topology is None:
-    log.fatal("Cannot read system settings")
-    return
+  user_defaults = not ('system' in args and args.system)
+  try:
+    topology = _read.system_defaults(include_user=user_defaults)
+  except Exception as ex:
+    log.fatal(f"Cannot read system settings: {str(ex)}")
 
   # Skip meta devices when displaying device/module support
   DEVICES_TO_SKIP.extend(
