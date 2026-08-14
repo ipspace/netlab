@@ -80,7 +80,8 @@ def use_paramiko(node: Box, topology: Box) -> None:
 
   try:
     import paramiko  # type:ignore
-    if paramiko.__version__ >= '5.0.0':
+    major = str(paramiko.__version__).split(".",1)[0]
+    if major.isdigit() and int(major) >= 5:
       report_quirk(
         f"Paramiko version {paramiko.__version__} does not support ancient SSH algorithms used in Cisco IOSv",
         node,
