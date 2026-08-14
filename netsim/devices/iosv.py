@@ -64,17 +64,32 @@ def use_paramiko(node: Box, topology: Box) -> None:
     except:
       ANSIBLE_USE_PARAMIKO = False
 
-  if ANSIBLE_USE_PARAMIKO:
-    device = node.device
-    dev_vars = topology.defaults.devices[device].group_vars
-    if 'ansible_network_cli_ssh_type' not in dev_vars:
-      dev_vars.ansible_network_cli_ssh_type = 'paramiko'    # Force Paramiko connection
+  if not ANSIBLE_USE_PARAMIKO:
+    return
+
+  device = node.device
+  dev_vars = topology.defaults.devices[device].group_vars
+  if 'ansible_network_cli_ssh_type' not in dev_vars:
+    dev_vars.ansible_network_cli_ssh_type = 'paramiko'    # Force Paramiko connection
+    report_quirk(
+      f"Changing Ansible network_cli connection SSH type to 'paramiko'",
+      node,
+      quirk='paramiko',
+      category=Warning,
+      more_hints=[ 'The installed version of ansible-pylibssh might not work with Cisco IOS devices' ])
+
+  try:
+    import paramiko  # type:ignore
+    if paramiko.__version__ >= '5.0.0':
       report_quirk(
-        f"Changing Ansible network_cli connection SSH type to 'paramiko'",
+        f"Paramiko version {paramiko.__version__} does not support ancient SSH algorithms used in Cisco IOSv",
         node,
-        quirk='paramiko',
-        category=Warning,
-        more_hints=[ 'The installed version of ansible-pylibssh might not work with Cisco IOS devices' ])
+        quirk='paramiko_50',
+        category=log.MissingDependency,
+        more_hints=['Use "pip install --upgrade \'paramiko<5.0\'" to downgrade paramiko to version 4.0.0'],
+        doc_url='caveats/#cisco-ios-ssh')
+  except:
+    pass
 
 def tunnel_mtu(node: Box) -> None:
   """
