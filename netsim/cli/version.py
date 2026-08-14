@@ -29,10 +29,14 @@ MISSING_OK = ['ruamel.yaml']
 
 def print_default_locations() -> None:
   try:
-    topology = _read.load('package:cli/empty.yml')
-    print(f"  user defaults: {[ src for src in topology.input if 'package:' not in src ]}")
+    topology = _read.system_defaults(include_user=True)
+    user_defaults = [ src for src in topology.input if 'package:' not in src ]
+    if user_defaults:
+      print(f"  user defaults: {user_defaults}")
+    else:
+      print("  no user defaults")
   except Exception as ex:
-    print(f"  cannot load default topology: {str(ex)}")
+    print(f"  cannot load default settings: {str(ex)}")
 
 def package_version(package: str) -> None:
   try:
