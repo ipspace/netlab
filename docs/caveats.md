@@ -205,7 +205,7 @@ These caveats are common to all Cisco IOS XE platforms:
 
 The Cisco IOSv SSH implementation uses RSA keys and older encryption algorithms that may not be enabled by default on newer Linux distributions.
 
-That wasn't a problem for Ansible users until October 2025, when the new version of the `ansible-pylibssh` package (installed with Ansible) was released. `ansible-pylibssh` release 1.3.0 uses `libssh` release 0.11.0, which [no longer supports legacy SSH algorithms](https://github.com/ipspace/netlab/discussions/2759).
+That wasn't a problem for Ansible users until October 2025, when the new version of the `ansible-pylibssh` package (installed with Ansible) was released. `ansible-pylibssh` release 1.3.0 bundles `libssh` release 0.11.0 with [disabled legacy SSH algorithms](https://github.com/ipspace/netlab/discussions/2759).
 
 _netlab_ automatically tells Ansible to use the **paramiko** library when it detects a newer version of the `ansible-pylibssh` library. You could also downgrade `ansible-pylibssh` to release 1.2.2 with a command similar to `pip3 install --upgrade ansible-pylibssh==1.2.2` (you might have to prefix the command with `sudo` or add the `--break-system-packages` argument to the **pip3** command). Alternatively, you can tell Ansible to use the **paramiko** SSH library with:
 
@@ -214,7 +214,7 @@ $ export ANSIBLE_NETWORK_CLI_SSH_TYPE=paramiko
 $ export ANSIBLE_PARAMIKO_LOOK_FOR_KEYS=False
 ```
 
-However, even the **paramiko** release 5.0 removed support for the ancient algorithms used in Cisco IOSv. You might be able to get IOSv to work with a downgraded version of paramiko installed, for example, with `pip3 install --upgrade 'paramiko<5.0'`. However, it would be much better if you could use IOL and IOLL2 containers instead of IOSv and IOSvL2.
+However, even the **paramiko** release 5.0 [removed support for the ancient algorithms used in Cisco IOSv](https://github.com/ipspace/netlab/discussions/3714). You might be able to get IOSv to work with a downgraded version of paramiko installed, for example, with `pip3 install --upgrade 'paramiko<5.0'`. However, it would be much better if you could use IOL and IOLL2 containers instead of IOSv and IOSvL2.
 
 We added a similar mechanism to _netlab_ commands that use SSH to connect to network devices. These commands append the group variable `netlab_ssh_args` (when defined) to the **ssh** command; the value of that variable for Cisco IOS/IOS-XE devices is set to:
 
