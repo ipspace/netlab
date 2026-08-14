@@ -32,9 +32,8 @@ def print_default_locations() -> None:
     topology = _read.system_defaults(include_user=True)
     user_defaults = [ src for src in topology.input if 'package:' not in src ]
     if user_defaults:
-      print(f"  user defaults: {user_defaults}")
     else:
-      print(f"  no user defaults")
+      print("  no user defaults")
   except Exception as ex:
     print(f"  cannot load default settings: {str(ex)}")
 
