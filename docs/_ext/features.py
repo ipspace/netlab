@@ -171,6 +171,8 @@ def remove_duplicate_features(settings: Box, df_data: Box) -> None:
   device (so they were probably inherited)
   """
   for dname in list(df_data.keys()):              # Iterate over all relevant devices
+    if dname not in settings.devices:             # Skip device/provider keys
+      continue
     ddata = settings.devices[dname]
     p_list = ddata.get('_parents',[])             # ... and get a list of device's parent
     if not p_list:                                # ... No parent? Cool.
@@ -192,6 +194,8 @@ def remove_meta_devices(settings: Box,df_data: Box) -> None:
   This automatically removes the "none" and "unknown" devices.
   """
   for dname in list(df_data.keys()):
+    if dname not in settings.devices:             # Skip device/provider keys
+      continue
     ddata = settings.devices[dname]
     if not ddata.get('_meta_device',False):       # Not a meta device? Move on...
       continue
