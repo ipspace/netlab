@@ -120,7 +120,27 @@ def features_body(tgroup: nodes.tgroup, device_data: typing.List[typing.List]) -
       else:
         trow += table_cell('🤦‍♂️')                  # None of the above, we failed miserably :()
 
-def get_feature_list(settings: Box, table_def: Box) -> Box:
+def get_feature_row(device_data: Box, dname: str, table_def: Box) -> typing.Optional[list]:
+  df_row = []                                   # ... starting with an empty row for each device
+  f_valid = False                               # ... assuming the device is not relevant and should not be included
+  for f_def in table_def.features:              # Ready? Now iterate over feature definitions
+    try:                                        # Try to evaluate whether the device supports the feature
+      f_OK = bool(safer_eval(f_def.enabled,locals=device_data))
+    except Exception:                           # Failed miserably? It could be any number of reasons
+      f_OK = False                              # ... but we'll just assume the device DOES NOT support the feature
+    dt_value: dict = {'status': f_OK}           # Save the results
+    if f_OK and 'caveats' in f_def:             # ... but wait, there's more. Do we need to check for caveats?
+      try:                                      # Let's do it. Try to evaluate caveat data
+        f_caveat = safer_eval(f_def.caveats,locals=device_data)
+        dt_value['caveat'] = 'caveats-'+dname if f_caveat is True else f_caveat
+      except Exception:                         # Failed? Looks like there's nothing to mentio ;)
+        pass
+    df_row.append(dt_value)                     # OK, the "feature status" is ready, append it to the device features row
+    f_valid = f_valid or f_OK                   # ... and remember if the device is relevant (at least one feature is implemented)
+
+  return df_row if f_valid else None
+
+def get_device_features(settings: Box, table_def: Box) -> Box:
   """
   Build the per-device lists of features displayed in the table from the device
   definitions.
@@ -128,26 +148,20 @@ def get_feature_list(settings: Box, table_def: Box) -> Box:
   df_data = get_empty_box()
 
   for dname,ddata in settings.devices.items():    # Iterate over all devices
-    df_row = []                                   # ... starting with an empty row for each device
-    f_valid = False                               # ... assuming the device is not relevant and should not be included
-    local_data = ddata + ddata.features           # Prepare local data that will be used to evaluate features
-    for f_def in table_def.features:              # Ready? Now iterate over feature definitions
-      try:                                        # Try to evaluate whether the device supports the feature
-        f_OK = bool(safer_eval(f_def.enabled,locals=local_data))
-      except Exception:                           # Failed miserably? It could be any number of reasons
-        f_OK = False                              # ... but we'll just assume the device DOES NOT support the feature
-      dt_value = {'status': f_OK}                 # Save the results
-      if f_OK and 'caveats' in f_def:             # ... but wait, there's more. Do we need to check for caveats?
-        try:                                      # Let's do it. Try to evaluate caveat data
-          f_caveat = safer_eval(f_def.caveats,locals=local_data)
-          dt_value['caveat'] = 'caveats-'+dname if f_caveat is True else f_caveat
-        except Exception:                         # Failed? Looks like there's nothing to mentio ;)
-          pass
-      df_row.append(dt_value)                     # OK, the "feature status" is ready, append it to the device features row
-      f_valid = f_valid or f_OK                   # ... and remember if the device is relevant (at least one feature is implemented)
-
-    if f_valid:                                   # Do we have a relevant device?
-      df_data[dname].features = df_row            # We do? Store its data, it needs to get into the features table
+    f_data = ddata + ddata.features
+    df_row = get_feature_row(f_data,dname,table_def)
+    if df_row:                                    # Does the device supports the specified feature set?
+      df_data[dname].features = df_row            # ... go and store its data
+    is_daemon = ddata.get('daemon',False)         # Only clab provider is checked for daemons
+    p_list = ['clab'] if is_daemon else list(settings.providers) 
+    for p_name in p_list:                         # Next, check for provider-specific features
+      pf_data = ddata.get(f'{p_name}.features')   # Try to fetch device.provider.features dict
+      if not pf_data:                             # Not there? Cool, move on
+        continue
+      dpf_row = get_feature_row(f_data + pf_data,dname,table_def)
+      if dpf_row and dpf_row != df_row:           # Are the per-provider features different from device ones?
+        dpf_name = dname if is_daemon else f'{dname}/{p_name}'
+        df_data[dpf_name].features = dpf_row      # Store as device for daemons, device/provider otherwise
 
   return df_data
 
@@ -198,11 +212,27 @@ def build_device_feature_matrix(
   footnotes:   list = []                          # We might need "this parent device includes these children" footnotes
 
   dev_data = settings.devices
-  devices = { dname: dev_data[dname].get('docname',dev_data[dname].get('description',dname)) 
-                for dname in dev_data }           # Get device short names (or descriptions or just device codes)
+  devices: dict = {}                              # We need a lookup table for device short names
+  provider_object: dict = {                       # Name of provider-specific objects
+    'libvirt': 'VMs',
+    'clab': 'containers'}
+
+  def get_device_docname(dname: str) -> str:      # Helper function: get device's documentation name
+    return dev_data[dname].get('docname',dev_data[dname].get('description',dname))
+
+  device_codes = set(dev_data).union(df_data)     # Add defined devices and device/provider pairs
+  for dname in device_codes:                      # Now build the device-to-docname mapping
+    if '/' not in dname:                          # Simple device?
+      devices[dname] = get_device_docname(dname)  # ... just store its docname
+    else:                                         # Device/provider pair?
+      (d_name,p_name) = dname.split('/',1)        # Extract components
+      p_name = provider_object.get(p_name,p_name) # ... and map provider to provider object name
+      devices[dname] = get_device_docname(d_name) + f' ({p_name})'
 
   label_count = 0
-  for dname in sorted(devices,key=devices.get):   # type: ignore # This is how you get dict keys sorted by dict value, but MyPy hates it
+  dname_list = list(devices)                      # Get a list of devices sorted by docnames
+  dname_list.sort(key=lambda x: devices[x].upper())
+  for dname in dname_list:                        # Finally! Iterate over devices
     if dname not in df_data:
       continue
 
@@ -236,7 +266,9 @@ def device_features(settings: Box, table_def: Box) -> typing.Tuple[typing.List[t
   * Remove meta devices that have no children
   * Return the list-of-lists table data structure and footnotes
   """
-  df_data = get_feature_list(settings,table_def)
+  df_data = get_device_features(settings,table_def)
+#  for dk,dv in df_data.items():
+#    print(f'{dk}: {dv}')
   remove_duplicate_features(settings,df_data)
   remove_meta_devices(settings,df_data)
   return build_device_feature_matrix(settings,df_data)
