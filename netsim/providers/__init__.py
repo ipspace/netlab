@@ -9,6 +9,7 @@ import ipaddress
 import os
 import pathlib
 import platform
+import threading
 import typing
 
 # Related modules
@@ -28,6 +29,7 @@ here because we need to refer to them from functions that are not class methods.
 SHARED_PREFIX = '-shared-'
 SHARED_SUFFIX = 'shared'
 READ_ONLY_SUFFIX = 'ro'
+PRINT_LOCK = threading.Lock()
 
 def get_cpu_model() -> str:
   processor_name = ""

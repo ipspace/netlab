@@ -2,6 +2,7 @@
 # Containerlab provider module
 #
 import pathlib
+import subprocess
 import typing
 
 from box import Box
@@ -10,6 +11,7 @@ from ...augment import devices
 from ...cli import external_commands
 from ...data import append_to_list
 from ...utils import log, strings
+from .. import PRINT_LOCK
 from . import utils
 
 '''
@@ -97,7 +99,7 @@ def generate_startup_config(n: Box) -> None:
     log.status_created()
     print(f"startup configuration for {n.name}",flush=True)
 
-def  deploy_container_config(node: Box, node_name: str, deploy_list: list) -> None:
+def deploy_container_config(node: Box, node_name: str, deploy_list: list) -> None:
   for cfg_item in node.clab.config_templates:                 # Go through configuration files (we know they exist)
     mod_name = cfg_item.source                                # Get module name
     f_type = cfg_item.get('mode',None)
@@ -121,7 +123,7 @@ def  deploy_container_config(node: Box, node_name: str, deploy_list: list) -> No
 
     config_cmd = None                                         # Command to execute
     if f_type == 'ns':                                        # Is this a host-side script?
-      config_cmd = f'sudo ip netns exec {node_name} sh node_files/{node.name}/{mod_name}' 
+      config_cmd = ['sudo','ip','netns','exec',node_name,'sh',f'node_files/{node.name}/{mod_name}' ]
       log.info(f'Executing {mod_name} configuration for node {node.name} (namespace {node_name})')
     elif f_type in ('sh','cp_sh'):
       if not cfg_item.target:
@@ -131,7 +133,7 @@ def  deploy_container_config(node: Box, node_name: str, deploy_list: list) -> No
           category=log.FatalError,
           module='clab')
         break
-      config_cmd = f'docker exec {node_name} {cfg_item.target}' # Container-side script
+      config_cmd = ['docker','exec',node_name,cfg_item.target] # Container-side script
       log.info(f'Executing {mod_name} configuration for node {node.name}')
     elif f_type == 'startup':                                 # Is this part of startup config?
       append_to_list(node._deploy,'startup',mod_name)
@@ -139,31 +141,34 @@ def  deploy_container_config(node: Box, node_name: str, deploy_list: list) -> No
     if not config_cmd:                                        # Not an executable file?
       continue
 
-    status = external_commands.run_command(
-                config_cmd,                                   # Execute config command
-                ignore_errors=True,
-                check_result=True,                            # Capture stdout
-                return_exitcode=True)                         # and return exit code
+    if log.VERBOSE > 1:
+      print(f'clab deploy: running {config_cmd}')
+    try:
+      status = subprocess.run(config_cmd,capture_output=True,text=True,check=False)
+    except Exception as ex:
+      status = subprocess.CompletedProcess(config_cmd,returncode=1,stdout='',stderr=str(ex))
     printout = ''                                           # Collect any printout we might have received
-    if external_commands.CAPTURED_STDOUT:                   # ... making sure it ends with a single newline
-      stdout = external_commands.CAPTURED_STDOUT.strip(" \n") + "\n"
+    if status.stdout:                                       # ... making sure it ends with a single newline
+      stdout = status.stdout.strip(" \n") + "\n"
       printout +='  '+strings.wrap_error_message(stdout,indent=2)
-    if external_commands.CAPTURED_STDERR:
-      stderr = external_commands.CAPTURED_STDERR.strip(" \n") + "\n"
+    if status.stderr:
+      stderr = status.stderr.strip(" \n") + "\n"
       printout +='  '+strings.wrap_error_message(stderr,indent=2)
-    if status == 0:                                           # Everything OK?
+    if status.returncode == 0:                              # Everything OK?
       if log.VERBOSE:
-        log.info(f"Results of executing {mod_name} configuration on {node.name}")
-        strings.print_colored_text(txt=printout,color='green')
+        with PRINT_LOCK:
+          log.info(f"Results of executing {mod_name} configuration on {node.name}")
+          strings.print_colored_text(txt=printout,color='green')
       append_to_list(node._deploy,'success',mod_name)
     else:                                                     # Otherwise we failed
-      if printout:                                            # And print it
-        strings.print_colored_text(txt=printout,color='bright_black')
-      log.error(
-        f'{mod_name} configuration in namespace {node_name} failed for node {node.name}',
-        category=log.FatalError,
-        more_data=f'Executed command: {config_cmd}',
-        skip_header=True,
-        module='initial')
+      with PRINT_LOCK:
+        if printout:                                            # And print it
+          strings.print_colored_text(txt=printout,color='bright_black')
+        log.error(
+          f'{mod_name} configuration in namespace {node_name} failed for node {node.name}',
+          category=log.FatalError,
+          more_data=f'Executed command: {config_cmd}',
+          skip_header=True,
+          module='initial')
       append_to_list(node._deploy,'failed',mod_name)
       break
