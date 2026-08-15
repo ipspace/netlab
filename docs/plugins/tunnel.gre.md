@@ -19,20 +19,6 @@ The plugin includes Jinja2 templates for the following platforms:
     'vrf' in tunnel.gre
 ```
 
-
-| Operating system    | GRE over<br>IPv4 | GRE over<br>IPv6 | Transport<br>VRF |
-|--------------|:-:|:-:|:-:|
-| Arista EOS          | ✅ | ❌ | ✅ |
-| Cisco IOS/XE[^18v] |✅|✅|✅|
-| FRR                 |✅|✅|✅|
-| Juniper vJunos-switch[❗](caveats-junos) |✅|❌|✅|
-| Juniper vSRX[❗](caveats-junos) |✅|❌|✅|
-| Mikrotik RouterOS 7 |✅|✅|✅|
-| OpenBSD            |✅|❌|❌|
-| VyOS               |✅|✅|✅|
-
-[^18v]: Includes Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
-
 ## Specifying Tunnel Parameters
 
 The GRE tunnels are configured as [links](topo-links) with **tunnel.mode** attribute set to **gre**[^ATT].

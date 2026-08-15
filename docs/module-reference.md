@@ -20,6 +20,7 @@ The following configuration modules are included in the **netlab** distribution:
    module/ospf.md
    module/ripv2.md
    module/sr-mpls.md
+   module/srv6.md
    module/stp.md
    module/vrf.md
    module/vlan.md
@@ -39,15 +40,4 @@ The following configuration modules are included in the **netlab** distribution:
    :maxdepth: 1
 
    module/routing_protocols.md
-```
-
-## Experimental Modules
-
-Experimental modules are usually implemented on a small set of devices. We're also not (yet) entirely sure about the data model describing their features; it might change in future releases as we gain more experience with them.
-
-```eval_rst
-.. toctree::
-   :maxdepth: 1
-
-   module/srv6.md
 ```
