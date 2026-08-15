@@ -143,10 +143,10 @@ def deploy_container_config(node: Box, node_name: str, deploy_list: list) -> Non
 
     if log.VERBOSE > 1:
       print(f'clab deploy: running {config_cmd}')
-try:
-  status = subprocess.run(config_cmd,capture_output=True,text=True,check=False)
-except Exception as ex:
-  status = subprocess.CompletedProcess(config_cmd,1,stdout='',stderr=str(ex))
+    try:
+      status = subprocess.run(config_cmd,capture_output=True,text=True,check=False)
+    except Exception as ex:
+      status = subprocess.CompletedProcess(config_cmd,returncode=1,stdout='',stderr=str(ex))
     printout = ''                                           # Collect any printout we might have received
     if status.stdout:                                       # ... making sure it ends with a single newline
       stdout = status.stdout.strip(" \n") + "\n"
