@@ -18,6 +18,7 @@ from box import Box
 from .. import augment
 from ..outputs import _TopologyOutput
 from ..utils import log, strings
+from ..utils import read as _read
 from . import common_parse_args, error_and_exit, lab_status_log, load_topology, topology_parse_args
 from ._hooks import cli_plugin_hooks
 
@@ -76,24 +77,26 @@ def fix_git_repo_url(url: str) -> str:
   
   return url
 
-"""
-Fetch topology from the specified URL, store it in 'downloaded.yml' file in
-current directory, warn if the directory is not empty
-"""
-HTTP_FETCH_TIMEOUT: int = 20
-
 def http_fetch_content(url: str, args: typing.Union[argparse.Namespace,Box]) -> str:
+  """
+  Fetch topology from the specified URL, store it in 'downloaded.yml' file in
+  current directory, warn if the directory is not empty
+  """
+
   fname = 'downloaded.yml'
   url = fix_git_repo_url(url)
+  default_topo = _read.system_defaults(include_user=True)
+  download_settings = default_topo.defaults.netlab.create.download
   scheme = urllib.parse.urlsplit(url).scheme.lower()
-  if scheme not in ('http','https'):
+  download_proto = download_settings.get('methods',['http','https'])
+  if scheme not in download_proto:
     error_and_exit(
       f'Cannot download the lab topology from {url}',
       module='http',
       category=log.FatalError,
-      more_hints=f'Unsupported URL scheme "{scheme}"; only http and https topology URLs are allowed')
+      more_hints=f'Unsupported URL protocol {scheme}; allowed protocols: {",".join(download_proto)}')
   try:
-    c = requests.get(url,timeout=HTTP_FETCH_TIMEOUT)
+    c = requests.get(url,timeout=download_settings.get('timeout',20))
     Path(fname).write_text(c.text)
     try:
       Box().from_yaml(yaml_string=c.text)
@@ -108,7 +111,7 @@ def http_fetch_content(url: str, args: typing.Union[argparse.Namespace,Box]) -> 
       f'Cannot download the lab topology from {url}',
       module='http',
       category=log.FatalError,
-      more_hints=f'{str(ex)}')
+      more_data=f'{str(ex)}')
 
   if args.quiet:
     return fname
