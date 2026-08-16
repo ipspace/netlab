@@ -1,8 +1,11 @@
 (plugin-bonding)=
 # Host-side Link Bonding
 
-Linux networking has long supported *bonding*, the ability to use multiple links simultaneously. Netlab supports bonding with LACP through the *lag* module,
-this plugin adds support for the other bonding modes (that don't require any special configuration on peers)
+Linux networking has long supported *bonding*, the ability to use multiple links simultaneously. Netlab supports bonding with LACP through the *lag* module; this plugin adds support for the other bonding modes (that don't require any special configuration on peers).
+
+```{warning}
+You cannot combine this plugin with access- or trunk VLANs on the Linux side. [More details](https://github.com/ipspace/netlab/issues/1802)...
+```
 
 ```eval_rst
 .. contents:: Table of Contents
