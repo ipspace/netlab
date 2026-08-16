@@ -1,0 +1,52 @@
+message: |
+  The test checks the DNS client in a VRF. The validate.ping entry must
+  specify the "ping" command for all supported devices; the test
+  performs the ping, checks for the presence of remote IP address in the
+  output (= name resolution works), and then checks for the DNS query on
+  the DNS server (= DNS client works).
+
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
+vrfs:
+  oob_nms:
+
+nodes:
+  dut:
+    module: [ services, vrf ]
+    services:
+      dns:
+        server: dnssrv
+        transport_vrf: oob_nms
+      server.dns: False
+  dnssrv:
+    device: dnsmasq
+    provider: clab
+    services.server.dns.forwarder.ipv4: 8.8.8.8
+  t1:
+    device: linux
+    provider: clab
+
+links:
+- dut.vrf: oob_nms
+  dnssrv:
+- dut-t1
+
+validate:
+  ping:
+    nodes: [ dut ]
+    wait: ping
+    wait_msg: Waiting for interfaces/DNS to wake up
+    exec:
+      eos: ping t1 repeat 3
+      ios: ping t1
+      linux: ping -c 3 t1
+      frr: ping -c 3 t1
+      junos: ping count 3 t1
+    valid: >-
+      "172.16.1.3" in stdout
+  query:
+    nodes: [ dnssrv ]
+    devices: [ dnsmasq ]
+    exec: cat /var/log/dnsmasq
+    valid: >-
+      "from 172.16.0.1" in stdout
