@@ -1,0 +1,40 @@
+message: |
+  The test checks the DNS server. A client executes a "ping" command (to
+  test forward name resolution) and traceroute (to test reverse name
+  resolution).
+
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
+module: [ services ]
+services.dns.server: dut
+
+groups:
+  probes:
+    members: [ h1, h2, rtr ]
+    provider: clab
+  hosts:
+    members: [ h1, h2 ]
+    module: [ services ]
+    device: linux
+
+nodes:
+  dut:
+    services.server.dns: True
+  rtr:
+    device: frr
+  h1:
+  h2:
+
+links: [ rtr-dut, rtr-h1, rtr-h2 ]
+
+validate:
+  ping:
+    nodes: [ h1 ]
+    wait: ping
+    wait_msg: Waiting for interfaces/DNS to wake up
+    plugin: ping('h2')
+  trace:
+    nodes: [ h1 ]
+    exec.linux: traceroute h2
+    valid: |-
+      "eth2.rtr" in stdout
