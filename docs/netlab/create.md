@@ -88,7 +88,8 @@ For more details on the topology file format, please read the [lab topology over
 * You can specify the lab topology with a URL. The contents from the specified URL will be downloaded, saved into `downloaded.yml`, and used as the lab topology.
 
 ```{tip}
-The lab topology downloaded from a URL must be self-contained. Any external files it needs must be embedded in the lab topology with the **[‌files](plugin-files)** plugin.
+* The lab topology downloaded from a URL must be self-contained. Any external files it needs must be embedded in the lab topology with the **[‌files](plugin-files)** plugin.
+* netlab downloads topologies using HTTP or HTTPS. To use other URL schemes, change the `defaults.netlab.create.download.methods` [system default](topo-defaults).
 ```
 
 * The **netlab create** command supports comprehensive [debugging options](dev-debug). Use the [`--debug` CLI argument](dev-debug-flag) to troubleshoot topology transformation, addressing, module processing, and more.
