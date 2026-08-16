@@ -33,6 +33,7 @@ class Containerlab(_Provider):
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
     utils.add_clab_exec(node,'netlab_start_exec',topology)
+    configs.set_node_config_targets(node,topology)
     configs.add_default_config_mode(node,topology)
     binds.add_config_filemaps(node,topology)
     binds.normalize_clab_filemaps(node)

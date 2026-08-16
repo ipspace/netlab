@@ -14,10 +14,11 @@ from ...utils import log, strings
 from .. import PRINT_LOCK
 from . import utils
 
-'''
-add_default_config_mode: if the netlab_config_mode is set, add configured modules to _node_config dictionary
-'''
+
 def add_default_config_mode(node: Box, topology: Box) -> None:
+  '''
+  If the netlab_config_mode is set, add configured modules to _node_config dictionary
+  '''
   cfg_mode = devices.get_node_group_var(node,'netlab_config_mode',topology.defaults)
   if not cfg_mode:
     return
@@ -57,10 +58,27 @@ def add_default_config_mode(node: Box, topology: Box) -> None:
   # add the exec commands to the container exec list
   utils.add_clab_exec(node,'netlab_config_exec',topology)
 
-'''
-Get all configuration snippets with the specified mode
-'''
+def set_node_config_targets(node: Box, topology: Box) -> None:
+  '''
+  Set target filenames for sh/cp_sh config scripts that have no assigned target
+  '''
+  if '_node_config' not in node:
+    return
+
+  nc_dict = node._node_config
+  node_cfg_path: typing.Optional[str] = None
+  for nc_idx,nc_module in enumerate(nc_dict,start=100):
+    # We have to assign targets to bare sh/cp_sh methods
+    if nc_dict[nc_module] not in [':sh',':cp_sh']:
+      continue
+    if not node_cfg_path:                         # Find a viable config path
+      node_cfg_path = devices.get_node_group_var(node,'netlab_config_path',topology.defaults) or '/etc/cfg-'
+    nc_dict[nc_module] = f'{node_cfg_path}{nc_idx}-{nc_module}.sh{nc_dict[nc_module]}'
+
 def get_templates_with_mode(n: Box, mode: typing.Optional[str]) -> list:
+  '''
+  Get all configuration snippets with the specified mode
+  '''
   return [ item for item in n.get('clab.config_templates',[])   # Collect config template items
               if 'mode' in item and                             # ... that have mode set
                  (item.mode == mode or mode is None) ]          # ... and match the requested mode (None == all modes)
