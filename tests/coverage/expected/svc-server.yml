@@ -1,3 +1,10 @@
+groups:
+  netlab_no_collect:
+    members:
+    - dns_c1
+  netlab_no_reload:
+    members:
+    - dns_c1
 input:
 - coverage/input/svc-server.yml
 - package:topology-defaults.yml
@@ -14,16 +21,22 @@ links:
     ipv4: 172.16.0.2/24
     ipv6: 2001:db8::2/64
     node: dns_c2
+    ra:
+      slaac: true
   - ifindex: 1
     ifname: eth1
     ipv4: 172.16.0.3/24
     ipv6: 2001:db8::3/64
     node: dns_s1
+    ra:
+      slaac: true
   - ifindex: 1
     ifname: eth1
     ipv4: 172.16.0.4/24
     ipv6: 2001:db8::4/64
     node: dns_s2
+    ra:
+      slaac: true
   linkindex: 1
   node_count: 4
   prefix:
@@ -35,21 +48,52 @@ message: 'Check server resolution in services module
   '
 module:
 - services
+- routing
 name: input
 nodes:
   dns_c1:
+    _node_config:
+      initial: :ns
+      routing: :ns
+      services: /etc/cfg-102-services.sh:sh
     af:
       ipv4: true
     box: none
-    device: none
+    clab:
+      binds:
+      - source: node_files/dns_c1/services
+        target: /etc/cfg-102-services.sh
+      - source: node_files/dns_c1/hosts
+        target: /etc/hosts
+      - source: node_files/dns_c1/resolv
+        target: /etc/resolv.conf
+      config_templates:
+      - mode: ns
+        source: initial
+        target: ''
+      - mode: ns
+        source: routing
+        target: ''
+      - mode: sh
+        source: services
+        target: /etc/cfg-102-services.sh
+      - source: hosts
+        target: /etc/hosts
+      - source: resolv
+        target: /etc/resolv.conf
+      kind: linux
+    device: linux
     hostname: clab-input-dns_c1
     id: 1
     interfaces:
     - bridge: input_1
+      gateway:
+        ipv4: 172.16.0.2/24
       ifindex: 1
       ifname: eth1
       ipv4: 172.16.0.1/24
       linkindex: 1
+      mtu: 1500
       name: dns_c1 -> [dns_c2,dns_s1,dns_s2]
       neighbors:
       - ifname: eth1
@@ -65,20 +109,42 @@ nodes:
         ipv6: 2001:db8::4/64
         node: dns_s2
       type: lan
-    loopback:
-      ifindex: 0
-      ifname: Loopback0
-      ipv4: 10.0.0.1/32
-      neighbors: []
-      type: loopback
-      virtual_interface: true
     mgmt:
       ifname: eth0
       ipv4: 192.168.121.101
       mac: ca:fe:00:01:00:00
     module:
     - services
+    - routing
+    mtu: 1500
     name: dns_c1
+    netlab_ansible_skip_module:
+    - initial
+    - routing
+    - services
+    role: host
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.0.2
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.0.2
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.0.2
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.0.2
     services:
       dns:
         _no_hosts: true
@@ -120,6 +186,8 @@ nodes:
         ipv4: 172.16.0.4/24
         ipv6: 2001:db8::4/64
         node: dns_s2
+      ra:
+        slaac: true
       type: lan
     loopback:
       ifindex: 0
@@ -179,6 +247,8 @@ nodes:
         ipv4: 172.16.0.4/24
         ipv6: 2001:db8::4/64
         node: dns_s2
+      ra:
+        slaac: true
       type: lan
     loopback:
       ifindex: 0
@@ -239,6 +309,8 @@ nodes:
         ipv4: 172.16.0.3/24
         ipv6: 2001:db8::3/64
         node: dns_s1
+      ra:
+        slaac: true
       type: lan
     mgmt:
       ifname: eth0
