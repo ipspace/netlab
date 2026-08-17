@@ -47,7 +47,7 @@ _Syslog_ is supported on these platforms:
 
 You can configure the services (DNS, Syslog) clients with the global/node **services._service_** dictionary, which can contain these parameters:
 
-* **server** (node name or list of node names): Specifies the DNS server(s) node name. The node name(s) are resolved to IPv4/IPv6 addresses, which are then used to configure the lab devices.
+* **server** (node name or list of node names): Specifies the DNS/Syslog server(s) node name. The node name(s) are resolved to IPv4/IPv6 addresses, which are then used to configure the lab devices.
 * **ipv4** and **ipv6** (address or list of addresses): Hard-coded IPv4/IPv6 server addresses.
 * **transport_vrf**: the VRF used to reach the DNS/Syslog server.
 

@@ -103,7 +103,9 @@ def check_vrf(ndata: Box,mod_attr: Box) -> None:
 
 def set_dns_fields(ndata: Box) -> None:
   """
-  Set extra fields to simplify DNS templates
+  Set DNS-related extra fields to simplify configuration templates:
+
+  * Disable static host definition
   """
   dns_servers = ndata.get('services.dns._server_list',[])
   if not dns_servers:                             # No DNS servers configured, nothing to do
