@@ -105,6 +105,39 @@ Generate error label of specified width (default: 10)
 def pad_err_code(t: str, w: int = 10) -> str:
   return pad_text(f"[{t}]",w)
 
+"""
+Memory size units (as printed by 'docker stats') and their size in KB
+"""
+MEMORY_UNITS: typing.Final[dict] = {
+  'B':   1 / 1024,
+  'KiB': 1,
+  'MiB': 1024,
+  'GiB': 1024 * 1024,
+  'TiB': 1024 * 1024 * 1024 }
+
+"""
+Print the memory size (specified in KB) the way 'docker stats' does it
+"""
+def format_memory_size(kb: float) -> str:
+  if kb >= MEMORY_UNITS['GiB']:
+    return f'{kb / MEMORY_UNITS["GiB"]:.3f}GiB'
+
+  return f'{kb / MEMORY_UNITS["MiB"]:.1f}MiB'
+
+"""
+Parse a memory size printed by format_memory_size or 'docker stats' into KB.
+Anything we cannot parse (including an empty string) counts as zero.
+"""
+def parse_memory_size(txt: str) -> float:
+  m = re.match(r'^([0-9.]+)([KMGT]iB|B)$',txt.strip())
+  if not m:
+    return 0
+
+  try:
+    return float(m.group(1)) * MEMORY_UNITS[m.group(2)]
+  except ValueError:
+    return 0
+
 def format_structured_dict(d: Box, prefix: str = '') -> str:
   lines = []
   for k,v in d.items():

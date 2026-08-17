@@ -96,10 +96,45 @@ class Containerlab(_Provider):
         log.error(f'Cannot get Docker status: {ex}',category=log.FatalError,module='clab')
         return stat_box
 
+      self.add_memory_usage(stat_box)
       return stat_box
     except Exception as ex:
       log.error(f'Cannot execute "docker ps": {ex}',category=log.FatalError,module='clab')
       return get_empty_box()
+
+  """
+  Add the current memory usage of running containers to the lab status data. 'docker stats'
+  reports the memory usage as 'used / limit'; we're interested only in the 'used' part.
+
+  Failures are non-fatal -- memory usage is extra information, not a prerequisite for
+  displaying the lab status.
+  """
+  def add_memory_usage(self, stat_box: Box) -> None:
+    try:
+      stats = external_commands.run_command(
+                  'docker stats --no-stream --format json',
+                  check_result=True,
+                  ignore_errors=True,
+                  return_stdout=True,
+                  run_always=True)
+    except Exception as ex:
+      log.print_verbose(f'Cannot execute "docker stats": {ex}')
+      return
+
+    if not isinstance(stats,str):
+      return
+
+    try:
+      for line in stats.split('\n'):
+        if not line.startswith('{'):
+          continue
+        docker_stats = json.loads(line)
+        c_name = docker_stats.get('Name',None)
+        if c_name not in stat_box:                          # Ignore containers not in this lab
+          continue
+        stat_box[c_name].memory = docker_stats.get('MemUsage','').split('/')[0].strip()
+    except Exception as ex:
+      log.print_verbose(f'Cannot get Docker memory usage: {ex}')
 
   """
   Defines the container host naming convention (globally), this becomes "ansible_host" in Ansible

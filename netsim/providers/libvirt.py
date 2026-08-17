@@ -259,6 +259,31 @@ def create_vagrant_batches(topology: Box) -> None:
     if libvirt_defaults.batch_interval:
       libvirt_defaults.start.append(f'sleep {libvirt_defaults.batch_interval}')
 
+"""
+Copy the memory usage from the 'virsh domstats' data of a single VM into the lab status data.
+
+The libvirt domain name is '<lab_prefix>_<node>' while the lab status data is keyed by the
+Vagrant machine name (<node>), so we have to find the matching lab status entry. Domains
+belonging to some other lab (or to a VM not managed by netlab) are silently ignored.
+
+Without a balloon driver in the guest OS we cannot get the memory the VM uses on the host
+and have to report the assigned memory instead (flagged with 'max' to avoid confusion).
+"""
+def set_vm_memory(stat_box: Box, vm_name: str, vm_stats: Box) -> None:
+  for wk_name in stat_box:
+    if vm_name != wk_name and not vm_name.endswith(f'_{wk_name}'):
+      continue
+
+    try:
+      if 'balloon.rss' in vm_stats:
+        stat_box[wk_name].memory = strings.format_memory_size(int(vm_stats['balloon.rss']))
+      elif 'balloon.current' in vm_stats:
+        stat_box[wk_name].memory = strings.format_memory_size(int(vm_stats['balloon.current'])) + ' (max)'
+    except ValueError as ex:
+      log.print_verbose(f'Cannot get the memory usage of libvirt domain {vm_name}: {ex}')
+
+    return
+
 class Libvirt(_Provider):
 
   """
@@ -472,10 +497,53 @@ class Libvirt(_Provider):
         log.error(f'Cannot get Vagrant status: {ex}',category=log.FatalError,module='libvirt')
         return stat_box
 
+      self.add_memory_usage(stat_box)
       return stat_box
     except Exception as ex:
       log.error(f'Cannot execute "vagrant status --machine-readable": {ex}',category=log.FatalError,module='libvirt')
       return get_empty_box()
+
+  """
+  Add the memory usage of the lab VMs to the lab status data.
+
+  'virsh domstats --balloon' reports (in KB) the resident set size of the QEMU process
+  (balloon.rss -- the memory the VM actually uses on the host) and the memory assigned to
+  the VM (balloon.current). The RSS value is available only when the VM runs a balloon
+  driver or a guest agent; without it, we can report only the assigned memory.
+
+  Vagrant knows the VMs as 'r1' while libvirt calls them '<lab_prefix>_r1', so we have to
+  match the libvirt domain names with the Vagrant machine names we already know about.
+
+  Failures are non-fatal -- memory usage is extra information, not a prerequisite for
+  displaying the lab status.
+  """
+  def add_memory_usage(self, stat_box: Box) -> None:
+    try:
+      stats = external_commands.run_command(
+                  'virsh domstats --balloon --list-running',
+                  check_result=True,
+                  ignore_errors=True,
+                  return_stdout=True,
+                  run_always=True)
+    except Exception as ex:
+      log.print_verbose(f'Cannot execute "virsh domstats": {ex}')
+      return
+
+    if not isinstance(stats,str):
+      return
+
+    vm_name = None
+    vm_stats = get_empty_box()
+    for line in stats.split('\n') + [ 'Domain: end-of-data' ]:
+      line = line.strip()
+      if line.startswith('Domain:'):                        # Start of a new domain, save the previous one
+        if vm_name is not None:
+          set_vm_memory(stat_box,vm_name,vm_stats)
+        vm_name = line.split("'")[1] if "'" in line else None
+        vm_stats = get_empty_box()
+      elif '=' in line:
+        (k,v) = line.split('=',1)
+        vm_stats[k] = v
 
   def get_node_name(self, node: str, topology: Box) -> str:
     return f'{ topology.name.split(".")[0] }_{ node }'
