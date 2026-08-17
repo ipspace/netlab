@@ -82,18 +82,18 @@ updates:
 {% set if_index = if_name_index[1] if if_name_index|length > 1 else '0' %}
 - path: /network-instance[name={{ vrf }}]
   value:
-   type: {{ 'default' if vrf=='default' else 'ip-vrf' }}
-   interface:
-   - name: {{ if_name }}.{{ if_index }}
+    type: {{ 'default' if vrf=='default' else 'ip-vrf' }}
+    interface:
+    - name: {{ if_name }}.{{ if_index }}
 {% endfor %}
 {% endmacro %}
 
 {# Make sure the default VRF is called 'default', and has system0.0 interface #}
 - path: /network-instance[name=default]
   value:
-   type: default
-   interface:
-   - name: system0.0
+    type: default
+    interface:
+    - name: system0.0
 
 {{ list_interfaces('default') }}
 
@@ -104,4 +104,22 @@ updates:
 {{ list_interfaces(vname) }}
 
 {% endfor %}
+{% endif %}
+
+{% if services.dns._no_hosts is not defined %}
+- path: /system/dns-instance[name=default]
+  value:
+    network-instance: default
+{%   for hname,hdata in hosts.items() if hname != inventory_hostname %}
+{%     if loop.first %}
+    host-entry:
+{%     endif %}
+    - name: "{{ hname }}"
+{%     if 'ipv4' in hdata %}
+      ipv4-address: {{ hdata.ipv4 }}
+{%     endif %}
+{%     if 'ipv6' in hdata %}
+      ipv6-address: {{ hdata.ipv6 }}
+{%     endif %}
+{%   endfor %}
 {% endif %}
