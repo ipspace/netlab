@@ -66,7 +66,7 @@ The DNS server is enabled on supported nodes with the **services.server.dns** pa
 * **forwarder.ipv4** and **forwarder.ipv6** (address or list of addresses): upstream DNS servers used for name resolution of domains other than **services.dns.domain**.
 
 (services-syslog-parameters)=
-## syslog Parameters
+## Syslog Parameters
 
 * Specify the Syslog server(s) on client nodes with the [common network services parameters](services-common-parameters)
 * The syslog server is enabled on supported nodes with the **services.server.syslog: True** parameter.
