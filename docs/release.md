@@ -7,7 +7,7 @@ The highlights of release 26.08 include:
 
 * Support for ArcOS by [@roc-ops](https://github.com/roc-ops), VPP (FD.io) by [@jbemmel](https://github.com/jbemmel), and SONiC containers (also by [@roc-ops](https://github.com/roc-ops))
 * The [**routing** module](generic-routing) supports [IPv4/IPv6 access control lists](generic-routing-acl) (by [@DanPartelly](https://github.com/danpartelly))
-* The new [**services** module](module-services) configures [DNS clients and servers](services-dns-platform)
+* The new [**services** module](module-services) configures [DNS clients and servers](services-platform)
 * GRE tunnels on Arista EOS and GRE/WireGuard tunnels on Mikrotik RouterOS7 and OpenBSD (by [@snuffy22](https://github.com/snuffy22))
 * *clab* provider supports the **podman** container runtime ([details](lab-clab))
 

@@ -105,8 +105,8 @@ def set_dns_fields(ndata: Box) -> None:
   """
   Set extra fields to simplify DNS templates
   """
-  dns_servers = ndata.get('services.dns._server_list',{})
-  if not dns_servers:                             # No DNS services, nothing to do
+  dns_servers = ndata.get('services.dns._server_list',[])
+  if not dns_servers:                             # No DNS servers configured, nothing to do
     return
   if 'services.server.dns' not in ndata:          # Are we also a DNS server?
     ndata.services.dns._no_hosts = True           # Nope, we can skip the "ip host" definitions
