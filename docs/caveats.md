@@ -368,7 +368,7 @@ Netlab enables VRRPv3 by default on Dell OS10, overriding any platform defaults.
 (caveats-dnsmasq)=
 ## dnsmasq DHCP server
 
-* You have to build the *dnsmasq* container image with the **netlab clab build dnsmasq** command.
+You have to build the *dnsmasq* container image with the **netlab clab build dnsmasq** command ([more details](build-dnsmasq))
 
 (caveats-vpp)=
 ## VPP (Vector Packet Processor)

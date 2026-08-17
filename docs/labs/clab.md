@@ -64,7 +64,7 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | VyOS                   | ghcr.io/sysoleg/vyos-container |
 
 * FRR, Linux, Nokia SR Linux, and VyOS images are automatically downloaded from public container registries.
-* Build the [BIRD](build-bird), dnsmasq, [VPP](build-vpp), and [Netscaler](build-netscaler) images with the **netlab clab build** command. BIRD and VPP FD.io build process supports configurable software releases.
+* Build the [BIRD](build-bird), [dnsmasq](build-dnsmasq), [VPP](build-vpp), and [Netscaler](build-netscaler) images with the **netlab clab build** command. BIRD and VPP FD.io build process supports configurable software releases.
 * The Arista cEOS image has to be [downloaded and installed manually](ceos.md).
 * Nokia SR OS and SR-SIM container images require a license; see also [vrnetlab instructions](https://containerlab.dev/manual/vrnetlab/).
 * Follow Cisco's documentation to install the IOS XRd container, making sure the container image name matches the one _netlab_ uses (alternatively, [change the default image name](default-device-image) for the IOS XRd container).
@@ -442,6 +442,7 @@ server.
    arcos.md
    ceos.md
    bird.md
+   dnsmasq.md
    linux.md
    netscaler.md
    vpp.md

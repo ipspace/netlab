@@ -1,0 +1,42 @@
+message: |
+  The test checks the syslog client configuration on DUT. An OSPFv2
+  session is established between X1 and DUT, and we expect DUT to log it
+  to the syslog server.
+
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
+groups:
+  probes:
+    members: [ x1 ]
+    device: frr
+    provider: clab
+
+nodes:
+  dut:
+    module: [ services, ospf ]
+    services:
+      syslog.server: nms
+      server.syslog: False
+  nms:
+    device: dnsmasq
+    provider: clab
+    services.server.syslog: True
+  x1:
+    module: [ services, ospf ]
+
+links:
+- interfaces: [ dut, nms, x1 ]
+  ospf.network_type: point-to-point
+
+validate:
+  ospf_adj:
+    nodes: [ x1 ]
+    wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPF adjacency
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  logging:
+    nodes: [ nms ]
+    devices: [ dnsmasq ]
+    exec: cat /var/log/syslog
+    valid: >-
+      " dut " in stdout
