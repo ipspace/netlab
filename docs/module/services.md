@@ -39,6 +39,10 @@ You can configure the DNS client with the global/node **services.dns** dictionar
 * **services.dns.ipv4** and **services.dns.ipv6** (address or list of addresses): Hard-coded IPv4/IPv6 DNS server addresses.
 * **services.dns.transport_vrf**: the VRF used to reach the DNS server.
 
+```{warning}
+Configuring `module: [ services ]` and `services.dns.server` at the lab topology level is not enough to run DNS clients on all [host nodes](node-role-host). The hosts do not inherit topology-level modules; you have to configure the *‌services* module on hosts (preferably within a [group](topo-groups)).
+```
+
 The DNS server is configured with the **services.server.dns** parameter, which can be a boolean value or a dictionary with these parameters:
 
 * **forwarder.ipv4** and **forwarder.ipv6** (address or list of addresses): upstream DNS servers used for name resolution of domains other than **services.dns.domain**.

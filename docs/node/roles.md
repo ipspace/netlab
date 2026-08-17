@@ -24,13 +24,15 @@ Routers usually run routing protocols but can also rely on static routing. When 
 
 Hosts do not have loopback interfaces (it's easiest if they have a single interface) unless you [specify **loopback** parameters in node data](node-loopback).
 
-Hosts use static routes toward an adjacent [default gateway](links-gateway). On devices that don't have the management VRF, Vagrant or containerlab sets up the default route, and _netlab_ adds static IPv4 routes for IPv4 prefixes defined in [address pools](address-pools).
+Hosts use static routes toward an adjacent [default gateway](links-gateway). On devices without the management VRF, Vagrant or containerlab sets up the IPv4 default route, and _netlab_ adds static IPv4 routes for IPv4 prefixes defined in [address pools](address-pools).
 
 Hosts that have a management VRF (mostly network devices used as hosts) get two IPv4 default routes. Vagrant or containerlab sets up the IPv4 default route in the management VRF, and netlab adds a default route toward an adjacent router in the global routing table.
 
 Most hosts listen to IPv6 RA messages to get the IPv6 default route. _netlab_ can add an IPv6 default route[^SRv6] on devices that do not listen to RA messages.
 
 [^SRv6]: Or a set of static IPv6 routes for address pool prefixes on devices without a management VRF
+
+Finally, hosts do not inherit modules configured with the topology-level `module` parameter. Declare host modules on individual nodes or [node groups](topo-groups).
 
 (node-role-bridge)=
 ## Bridges
