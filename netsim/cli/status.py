@@ -145,7 +145,7 @@ def show_lab_instance(iid: Lab_Instance_ID, lab_state: Box) -> None:
   if lab_state.providers:
     print(f'  provider(s): {",".join(lab_state.providers)}')
   if lab_state.memory:
-    print(f'  memory used:      {lab_state.memory}')
+    print(f'  memory used: {lab_state.memory}')
   print()
 
 def load_provider_status(p_status: dict, provider: str, topology: Box) -> None:
