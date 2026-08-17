@@ -1,7 +1,7 @@
 (module-services)=
 # Network Services Configuration Module
 
-The initial version of the Network Services configuration module implements [DNS clients and servers](services-dns-platform), with syslog, NTP, and SNMP planned for future releases.
+The Network Services configuration module implements DNS and Syslog clients and servers; NTP and SNMP are planned for future releases.
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -10,8 +10,8 @@ The initial version of the Network Services configuration module implements [DNS
    :backlinks: none
 ```
 
-(services-dns-platform)=
-## DNS Support
+(services-platform)=
+## Platform Support
 
 _netlab_ can configure DNS clients or servers on these platforms:
 
@@ -29,20 +29,44 @@ _netlab_ can configure DNS clients or servers on these platforms:
   enabled: services.server.dns
 ```
 
-(services-dns-parameters)=
-## DNS Parameters
+_Syslog_ is supported on these platforms:
 
-You can configure the DNS client with the global/node **services.dns** dictionary:
-
-* **services.dns.domain** (string): The lab domain (default: `netlab.local`)
-* **services.dns.server** (node name or list of node names): Specifies the DNS server(s) node name. The node name(s) are resolved to IPv4/IPv6 addresses, which are then used to configure the lab devices.
-* **services.dns.ipv4** and **services.dns.ipv6** (address or list of addresses): Hard-coded IPv4/IPv6 DNS server addresses.
-* **services.dns.transport_vrf**: the VRF used to reach the DNS server.
-
-```{warning}
-Configuring `module: [ services ]` and `services.dns.server` at the lab topology level is not enough to run DNS clients on all [host nodes](node-role-host). The hosts do not inherit topology-level modules; you have to configure the *services* module on hosts (preferably within a [group](topo-groups)).
+```{features}
+- title: Syslog<br>client
+  enabled: |
+    services.syslog
+- title: Transport<br>VRF
+  enabled: |
+    services.syslog and services.get('syslog.transport_vrf',True) != False
+- title: Syslog server
+  enabled: services.server.syslog
 ```
 
-The DNS server is configured with the **services.server.dns** parameter, which can be a boolean value or a dictionary with these parameters:
+(services-common-parameters)=
+## Common Network Services Parameters
+
+You can configure the services (DNS, Syslog) clients with the global/node **services._service_** dictionary, which can contain these parameters:
+
+* **server** (node name or list of node names): Specifies the DNS/Syslog server(s) node name. The node name(s) are resolved to IPv4/IPv6 addresses, which are then used to configure the lab devices.
+* **ipv4** and **ipv6** (address or list of addresses): Hard-coded IPv4/IPv6 server addresses.
+* **transport_vrf**: the VRF used to reach the DNS/Syslog server.
+
+```{warning}
+Configuring `module: [ services ]` and `services.dns.server` at the lab topology level is not enough to run DNS clients on all [host nodes](node-role-host). Hosts do not inherit topology-level modules; you must configure the *services* module on hosts (preferably within a [group](topo-groups)).
+```
+
+(services-dns-parameters)=
+## DNS-Specific Parameters
+
+* Specify the DNS server(s) on the DNS clients with the **services.dns** [common network services parameters](services-common-parameters).
+* The **services.dns.domain** (string) global/node parameter sets the lab DNS domain (default: `netlab.local`)
+
+The DNS server is enabled on supported nodes with the **services.server.dns** parameter, which can be a boolean value or a dictionary with these parameters:
 
 * **forwarder.ipv4** and **forwarder.ipv6** (address or list of addresses): upstream DNS servers used for name resolution of domains other than **services.dns.domain**.
+
+(services-syslog-parameters)=
+## syslog Parameters
+
+* Specify the Syslog server(s) on client nodes with the [common network services parameters](services-common-parameters)
+* The syslog server is enabled on supported nodes with the **services.server.syslog: True** parameter.
