@@ -13,18 +13,21 @@ def resolve_servers(node: Box, svc_data: Box, topology: Box, mod_attr: Box, svc_
   for kw in svc_data.keys():
     if kw not in mod_attr.clients:
       continue
-    if 'server' not in svc_data[kw]:
-      if kw not in svc_data.get('server',{}) and 'ipv4' not in svc_data[kw] and 'ipv6' not in svc_data[kw]:
+    has_attr  = [ atk for atk in svc_data[kw] if atk not in mod_attr.clients[kw].ignore ]
+    is_client = [ atk for atk in svc_data[kw] if atk in mod_attr.clients[kw].must_have and svc_data[kw][atk] ]
+    if not is_client:
+      if has_attr:
         log.error(
           f'Node {node.name} has services.{kw} parameters, but is neither a client nor a server',
           more_hints=[
-            f'Every node using {kw} services must have either services.{kw}.server or services.server.{kw} attribute',
-            f'You can also specify {kw} server as services.{kw}.ipv4 or services.{kw}.ipv6 address'],
+            f'Every node using {kw} services must have either non-empty services.{kw}.server',
+            f'or services.server.{kw} attribute. You can also specify {kw} server as',
+            f'non-empty services.{kw}.ipv4 or services.{kw}.ipv6 address lists'],
           category=log.MissingValue,
           module='services')
       continue
 
-    for srv_name in svc_data[kw].server:
+    for srv_name in svc_data[kw].get('server',[]):
       if 'err_clients' in svc_cache[srv_name][kw]:
         data.append_to_list(svc_cache[srv_name][kw],'err_clients',node.name)
         continue
@@ -48,6 +51,10 @@ def resolve_servers(node: Box, svc_data: Box, topology: Box, mod_attr: Box, svc_
 
       if not af_found:
         data.append_to_list(svc_cache[srv_name][kw],'err_af',node.name)
+
+    srv_list = svc_data[kw].get('ipv6',[]) + svc_data[kw].get('ipv4',[])
+    if srv_list:                                    # We're a client and have some server(s) configured
+      svc_data[kw]._server_list = srv_list          # ... so remember them
 
 def check_feature_support(ndata: Box, svc_data: Box, topology: Box, mod_attr: Box) -> None:
   is_server = 'services.server' in ndata
@@ -98,15 +105,11 @@ def set_dns_fields(ndata: Box) -> None:
   """
   Set extra fields to simplify DNS templates
   """
-  dns_data = ndata.get('services.dns',{})
-  if not dns_data:                                # No DNS services, nothing to do
+  dns_servers = ndata.get('services.dns._server_list',{})
+  if not dns_servers:                             # No DNS services, nothing to do
     return
-  srv_list = dns_data.get('ipv6',[]) + dns_data.get('ipv4',[])
-  if not srv_list:                                # No DNS servers defined
-    return
-  dns_data._server_list = srv_list                # Set combined IPv4/IPv6 server list field
   if 'services.server.dns' not in ndata:          # Are we also a DNS server?
-    dns_data._no_hosts = True                     # Nope, we can skip the "ip host" definitions
+    ndata.services.dns._no_hosts = True           # Nope, we can skip the "ip host" definitions
 
 def disable_shared_hosts(ndata: Box) -> None:
   """
