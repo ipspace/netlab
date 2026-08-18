@@ -292,7 +292,7 @@ The following system-wide features are configured on supported network operating
 | --------------------- | :------: | :--------: | :-----------------------: | :------------------------: | :------------------------: |
 | Arista EOS               | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Arrcus ArcOS             | ✅  |  ❌  |  ❌  | ✅  | ✅  |
-| Aruba AOS-CX             | ✅  |  ❌  | ✅  | ✅  | ✅  |
+| Aruba AOS-CX             | ✅  |  ✅  | ✅  | ✅  | ✅  |
 | Cisco ASAv               | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
 | Cisco IOS/IOS XE[^18v]   | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Cisco IOS XR[^XR]        | ✅  | ✅  | ✅  | ✅  | ✅  |
