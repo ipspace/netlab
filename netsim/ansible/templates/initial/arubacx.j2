@@ -11,6 +11,27 @@ lldp
 {% include 'arubacx.vlan.j2' %}
 {% endif %}
 
+{# {% if services.dns._no_hosts is not defined %}
+{%   for h_af in ['ipv4','ipv6'] if h_af in af %}
+{%     for k,v in hostvars.items() if k != inventory_hostname and v.af[h_af]|default(False) %}
+{%       if v.loopback[h_af] is defined %}
+ip dns host {{ v.loopback[h_af]|ansible.utils.ipaddr('address') }} {{ k }}
+{%       elif v.interfaces|default([]) and v.interfaces[0][h_af]|default(False) is string %}
+ip dns host {{ v.interfaces[0][h_af]|ansible.utils.ipaddr('address') }} {{ k }}
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{% endif %} #}
+!
+{% if services.dns._no_hosts is not defined %}
+{%     for hname,hdata in hosts.items() if 'ipv4' in hdata and hname != inventory_hostname %}
+ip dns host {{ hname|replace('_','') }} {{ hdata.ipv4[0] }}
+{%     endfor %}
+{%     for hname,hdata in hosts.items() if 'ipv6' in hdata and hname != inventory_hostname %}
+ip dns host {{ hname|replace('_','') }} {{ hdata.ipv6[0] }}
+{%     endfor %}
+{% endif %}
+!
 interface {{ mgmt.ifname|default('mgmt') }}
     no lldp transmit
     no lldp receive
