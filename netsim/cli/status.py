@@ -168,7 +168,7 @@ def fetch_node_status(ls: Box, topology: Box, collect_status: dict) -> None:
   collect_info = collect_status.get('info',False) and (strings.rich_color and strings.rich_width > 30)
   if collect_info:
     strings.print_colored_text('[INFO] ',color='bright_cyan')
-    print('Collecting provider information',end="\r")
+    print('Collecting provider information',end="\r",flush=True)
 
   for n_name,n_data in topology.nodes.items():
     n_ext = outputs_common.adjust_inventory_host(
@@ -228,7 +228,7 @@ def fetch_node_status(ls: Box, topology: Box, collect_status: dict) -> None:
     ls.memory = strings.format_memory_size(total_memory)
 
   if collect_info:
-    print(" " * (strings.rich_width - 3),end="\r")
+    print(" " * (strings.rich_width - 3),end="\r",flush=True)
 
 def show_lab_nodes(ls: Box, topology: Box, collect_status: dict) -> None:
   rows = []
