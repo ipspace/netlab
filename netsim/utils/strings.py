@@ -110,6 +110,10 @@ Memory size units (as printed by 'docker stats') and their size in KB
 """
 MEMORY_UNITS: typing.Final[dict] = {
   'B':   1 / 1024,
+  'KB':  1000 / 1024,
+  'MB':  1000 * 1000 / 1024,
+  'GB':  1000 * 1000 * 1000 / 1024,
+  'TB':  1000 * 1000 * 1000 * 1000 / 1024,
   'KiB': 1,
   'MiB': 1024,
   'GiB': 1024 * 1024,
@@ -129,7 +133,7 @@ Parse a memory size printed by format_memory_size or 'docker stats' into KB.
 Anything we cannot parse (including an empty string) counts as zero.
 """
 def parse_memory_size(txt: str) -> float:
-  m = re.match(r'^([0-9.]+)([KMGT]iB|B)$',txt.strip())
+  m = re.match(r'^([0-9.]+)([KMGT]iB|[KMGT]B|B)$',txt.strip())
   if not m:
     return 0
 
