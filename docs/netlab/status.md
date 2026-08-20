@@ -8,8 +8,8 @@ This command uses the *netlab* status file (default: `~/.netlab/status.yml`) to 
 ## Usage
 
 ```
-usage: netlab status [-h] [-l] [--cleanup] [--reset] [--format {json,yaml,text}] [--all]
-                     [-v] [-q] [-i INSTANCE]
+usage: netlab status [-h] [-l] [--cleanup] [--reset] [--format {json,yaml,text}]
+                     [--memory] [--all] [-v] [-q] [-i INSTANCE]
 
 Display lab status
 
@@ -20,6 +20,7 @@ options:
   --reset               Reset the lab instance tracking system
   --format {json,yaml,text}
                         Specify the output format
+  --memory              Include memory utilization statistics
   --all                 Display an overview of all lab instance(s)
   -v, --verbose         Verbose logging (add multiple flags for increased verbosity)
   -q, --quiet           Report only major errors
@@ -27,14 +28,14 @@ options:
                         Specify the lab instance to inspect
 ```
 
-* **netlab status** displays the status and workload (VMs or containers) of the current or selected lab instance.
+* **netlab status** displays the status and workload (VMs or containers) of the current or selected lab instance. Add the **--memory** option to include VM/container memory utilization.
 * **netlab status --all** displays an overview of all currently running lab instances.
-* **netlab status --log** displays detailed status log (including state changes and executed commands) of the current- or selected lab instance(s)
+* **netlab status --log** displays the detailed status log (including state changes and executed commands) of the current or selected lab instance(s)
 * **netlab status --cleanup** shuts down selected lab instance(s). It changes the current directory to the lab directory saved in the status file and executes **netlab down --cleanup** in that directory
 * **netlab status --reset** deletes the status file. Use this command only if the status file becomes corrupted.
 
 ```{tip}
-You can use the `--format json` or `--format yaml` option to display the lab status in automation-friendly format
+You can use the `--format json` or `--format yaml` option to display the lab status in an automation-friendly format
 ```
 
 ## Display Lab Instance State
@@ -42,34 +43,56 @@ You can use the `--format json` or `--format yaml` option to display the lab sta
 The **netlab status** command displays the selected lab instance and its VMs and containers:
 
 ```
-Lab default in /home/user/net101/tools/X
-  status: started
-  provider(s): clab
+Lab default in /home/user
+  status:      started
+  topology:    /home/user/tools/tests/integration/bgp/04-originate.yml
+  provider(s): libvirt,clab
 
-┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
-┃ node    ┃ device ┃ image                       ┃ mgmt IP         ┃ connection ┃ provider ┃ VM/container   ┃ status       ┃
-┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━┩
-│ host-1  │ linux  │ python:3.9-alpine           │ 192.168.121.107 │ docker     │ clab     │ clab-X-host-1  │ Up 4 minutes │
-├─────────┼────────┼─────────────────────────────┼─────────────────┼────────────┼──────────┼────────────────┼──────────────┤
-│ host-2  │ linux  │ python:3.9-alpine           │ 192.168.121.108 │ docker     │ clab     │ clab-X-host-2  │ Up 4 minutes │
-├─────────┼────────┼─────────────────────────────┼─────────────────┼────────────┼──────────┼────────────────┼──────────────┤
-│ leaf-1  │ frr    │ quay.io/frrouting/frr:9.1.0 │ 192.168.121.101 │ docker     │ clab     │ clab-X-leaf-1  │ Up 4 minutes │
-├─────────┼────────┼─────────────────────────────┼─────────────────┼────────────┼──────────┼────────────────┼──────────────┤
-│ leaf-2  │ frr    │ quay.io/frrouting/frr:9.1.0 │ 192.168.121.102 │ docker     │ clab     │ clab-X-leaf-2  │ Up 4 minutes │
-├─────────┼────────┼─────────────────────────────┼─────────────────┼────────────┼──────────┼────────────────┼──────────────┤
-│ leaf-3  │ frr    │ quay.io/frrouting/frr:9.1.0 │ 192.168.121.103 │ docker     │ clab     │ clab-X-leaf-3  │ Up 4 minutes │
-├─────────┼────────┼─────────────────────────────┼─────────────────┼────────────┼──────────┼────────────────┼──────────────┤
-│ leaf-4  │ frr    │ quay.io/frrouting/frr:9.1.0 │ 192.168.121.104 │ docker     │ clab     │ clab-X-leaf-4  │ Up 4 minutes │
-├─────────┼────────┼─────────────────────────────┼─────────────────┼────────────┼──────────┼────────────────┼──────────────┤
-│ spine-1 │ frr    │ quay.io/frrouting/frr:9.1.0 │ 192.168.121.105 │ docker     │ clab     │ clab-X-spine-1 │ Up 4 minutes │
-├─────────┼────────┼─────────────────────────────┼─────────────────┼────────────┼──────────┼────────────────┼──────────────┤
-│ spine-2 │ frr    │ quay.io/frrouting/frr:9.1.0 │ 192.168.121.106 │ docker     │ clab     │ clab-X-spine-2 │ Up 4 minutes │
-└─────────┴────────┴─────────────────────────────┴─────────────────┴────────────┴──────────┴────────────────┴──────────────┘
+┏━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃ node ┃ device  ┃ image                        ┃ mgmt IP         ┃ connection  ┃ provider ┃ VM/container ┃ status     ┃
+┡━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
+│ dut  │ arubacx │ aruba/cx                     │ 192.168.121.101 │ network_cli │ libvirt  │ bgp_dut      │ running    │
+├──────┼─────────┼──────────────────────────────┼─────────────────┼─────────────┼──────────┼──────────────┼────────────┤
+│ dut2 │ arubacx │ aruba/cx                     │ 192.168.121.102 │ network_cli │ libvirt  │ bgp_dut2     │ running    │
+├──────┼─────────┼──────────────────────────────┼─────────────────┼─────────────┼──────────┼──────────────┼────────────┤
+│ x1   │ frr     │ quay.io/frrouting/frr:10.6.1 │ 192.168.121.103 │ docker      │ clab     │ clab-bgp-x1  │ Up 3 hours │
+├──────┼─────────┼──────────────────────────────┼─────────────────┼─────────────┼──────────┼──────────────┼────────────┤
+│ x2   │ frr     │ quay.io/frrouting/frr:10.6.1 │ 192.168.121.104 │ docker      │ clab     │ clab-bgp-x2  │ Up 3 hours │
+├──────┼─────────┼──────────────────────────────┼─────────────────┼─────────────┼──────────┼──────────────┼────────────┤
+│ r1   │ frr     │ quay.io/frrouting/frr:10.6.1 │ 192.168.121.105 │ docker      │ clab     │ clab-bgp-r1  │ Up 3 hours │
+└──────┴─────────┴──────────────────────────────┴─────────────────┴─────────────┴──────────┴──────────────┴────────────┘
+```
+
+With the `--memory` option, the printout includes the VM/container memory utilization:
+
+```
+Lab default in /home/user
+  status:      started
+  topology:    /home/user/tools/tests/integration/bgp/04-originate.yml
+  provider(s): libvirt,clab
+  memory used: 3.473GiB
+
+┏━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┓
+┃ node ┃ device  ┃ image                        ┃ mgmt IP         ┃ connection  ┃ provider ┃ VM/container ┃ status     ┃ memory   ┃
+┡━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━┩
+│ dut  │ arubacx │ aruba/cx                     │ 192.168.121.101 │ network_cli │ libvirt  │ bgp_dut      │ running    │ 1.708GiB │
+├──────┼─────────┼──────────────────────────────┼─────────────────┼─────────────┼──────────┼──────────────┼────────────┼──────────┤
+│ dut2 │ arubacx │ aruba/cx                     │ 192.168.121.102 │ network_cli │ libvirt  │ bgp_dut2     │ running    │ 1.692GiB │
+├──────┼─────────┼──────────────────────────────┼─────────────────┼─────────────┼──────────┼──────────────┼────────────┼──────────┤
+│ x1   │ frr     │ quay.io/frrouting/frr:10.6.1 │ 192.168.121.103 │ docker      │ clab     │ clab-bgp-x1  │ Up 3 hours │ 22.66MiB │
+├──────┼─────────┼──────────────────────────────┼─────────────────┼─────────────┼──────────┼──────────────┼────────────┼──────────┤
+│ x2   │ frr     │ quay.io/frrouting/frr:10.6.1 │ 192.168.121.104 │ docker      │ clab     │ clab-bgp-x2  │ Up 3 hours │ 22.63MiB │
+├──────┼─────────┼──────────────────────────────┼─────────────────┼─────────────┼──────────┼──────────────┼────────────┼──────────┤
+│ r1   │ frr     │ quay.io/frrouting/frr:10.6.1 │ 192.168.121.105 │ docker      │ clab     │ clab-bgp-r1  │ Up 3 hours │ 29.77MiB │
+└──────┴─────────┴──────────────────────────────┴─────────────────┴─────────────┴──────────┴──────────────┴────────────┴──────────┘
 ```
 
 (netlab-status-provider)=
 ```{tip}
-**‌netlab status** executes **‌vagrant status --machine-readable** to get the status of Vagrant-controlled virtual machines and **‌docker ps** to get the status of running containers. The **vagrant status‌** might take a few seconds when executed on large labs and significantly longer if Vagrant cannot determine the state of a virtual machine (returning **‌inaccessible**).
+* **‌netlab status** executes **‌vagrant status --machine-readable** to get the status of Vagrant-controlled virtual machines and **‌docker ps** to get the status of running containers. The **vagrant status‌** might take a few seconds when executed on large labs and significantly longer if Vagrant cannot determine the state of a virtual machine (returning **‌inaccessible**).
+* **‌netlab status --memory** executes **‌virsh domstats** and **‌docker stats**. At least the **‌docker stats** command is not blazingly fast.
+* The **‌virsh domstats** reports the Resident Set Size (RSS) of the QEMU process running the virtual machine (the physical RAM allocation), not the amount of virtual RAM allocated to the virtual machine.
+* With Linux Kernel Samepage Merging (KSM) enabled, the reported memory utilization overstates the real usage. 
 ```
 
 ## Display Lab Instance Log
