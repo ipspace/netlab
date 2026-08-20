@@ -200,8 +200,9 @@ def fetch_node_status(ls: Box, topology: Box, collect_status: dict) -> None:
       wk_name = p_module.call('get_node_name',n_name,topology)
       node_stat.provider_name = wk_name
       wk_state = p_status[n_provider].get(wk_name,None) or p_status[n_provider].get(n_name,None) or get_empty_box()
-      node_stat.status = wk_state.get('status','Unknown')
-      node_stat.memory = wk_state.get('memory','Unknown')
+      for kw in ('status','memory'):
+        if kw in wk_state:
+          node_stat[kw] = wk_state[kw]
 
     ls.nodes[n_name] = node_stat
 
@@ -217,9 +218,10 @@ def fetch_node_status(ls: Box, topology: Box, collect_status: dict) -> None:
       'connection': 'docker',
       'provider': n_provider,
       'provider_name': wk_name,
-      'status': wk_state.get('status','Not running'),
-      'memory': wk_state.get('memory','Unknown')
+      'status': wk_state.get('status','Not running')
     }
+    if 'memory' in wk_state:
+      ls.nodes[t_name].memory = wk_state.memory
 
   total_memory = sum(strings.parse_memory_size(n.get('memory','')) for n in ls.nodes.values())
   if total_memory:
