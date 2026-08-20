@@ -86,12 +86,18 @@ class Containerlab(_Provider):
       if not isinstance(status,str):
         return stat_box
       try:
-        for line in status.split('\n'):
+        status_str = status.strip()
+        if status_str.startswith('['):                        # Podman: normalize array to one-object-per-line
+          status_str = '\n'.join(
+            json.dumps({**item, 'Names': item['Names'][0] if isinstance(item.get('Names'), list) else item.get('Names','')})
+            for item in json.loads(status_str))
+
+        for line in status_str.split('\n'):
           if not line.startswith('{'):
             continue
           docker_stats = json.loads(line)
-          stat_box[docker_stats['Names']].status = docker_stats['Status']
-          stat_box[docker_stats['Names']].image = docker_stats['Image']
+          stat_box[docker_stats['Names']].status = docker_stats.get('Status','')
+          stat_box[docker_stats['Names']].image = docker_stats.get('Image','')
       except Exception as ex:
         log.error(f'Cannot get Docker status: {ex}',category=log.FatalError,module='clab')
         return stat_box
@@ -127,14 +133,22 @@ class Containerlab(_Provider):
       return
 
     try:
-      for line in stats.split('\n'):
+      stats_str = stats.strip()
+      if stats_str.startswith('['):                           # Podman: normalize array to one-object-per-line
+        stats_str = '\n'.join(
+          json.dumps({**item, 'Name': item.get('name', item.get('Name','')), 'MemUsage': item.get('mem_usage', item.get('MemUsage',''))})
+          for item in json.loads(stats_str))
+
+      for line in stats_str.split('\n'):
         if not line.startswith('{'):
           continue
         docker_stats = json.loads(line)
-        c_name = docker_stats.get('Name',None)
+        c_name = docker_stats.get('Name', None)
         if c_name not in stat_box:                          # Ignore containers not in this lab
           continue
-        stat_box[c_name].memory = docker_stats.get('MemUsage','').split('/')[0].strip()
+        mem_str = docker_stats.get('MemUsage', '').split('/')[0].strip()
+        mem_kb = strings.parse_memory_size(mem_str)
+        stat_box[c_name].memory = strings.format_memory_size(mem_kb) if mem_kb else mem_str
     except Exception as ex:
       log.print_verbose(f'Cannot get Docker memory usage: {ex}')
 
