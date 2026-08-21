@@ -30,7 +30,11 @@ def check_netmiko(n_data: Box) -> bool:
     return True                                   # ... cool, life is good
 
   if NETMIKO_LOAD_ERROR:                          # Did we already scream at the user?
-    log.error(f'Cannot load netmiko library to configure {n_data.name}: {NETMIKO_LOAD_ERROR}',category=log.FatalError,module='netmiko')
+    log.error(
+      f'Cannot load netmiko library to configure {n_data.name}: {NETMIKO_LOAD_ERROR}',
+      more_hints='use "pip3 install netmiko" or equivalent to install it',
+      category=log.FatalError,
+      module='netmiko')
     NETMIKO_LOAD_ERROR = ''
 
   return False
@@ -77,7 +81,7 @@ def prepare_params(n_data: Box, topology: Box) -> typing.Optional[dict]:
   netmiko_params['session_log'] = f'node_files/{n_data.name}/netmiko.log'
   return netmiko_params
 
-def connect(n_data: Box, netmiko_params: dict) -> typing.Optional[_netmiko.BaseConnection]:
+def connect(n_data: Box, netmiko_params: dict) -> 'typing.Optional[_netmiko.BaseConnection]':
   """
   Use netmiko to open a SSH session to a lab device
   """
@@ -101,14 +105,17 @@ def deploy(n_data: Box,topology: Box,n_deploy: list) -> None:
     return
 
   if not check_netmiko(n_data):
+    append_to_list(n_data._deploy,'failed',n_deploy[0])
     return
 
   netmiko_params = prepare_params(n_data,topology)
   if not netmiko_params:
+    append_to_list(n_data._deploy,'failed',n_deploy[0])
     return None
 
   net_connect = connect(n_data,netmiko_params)
   if not net_connect:
+    append_to_list(n_data._deploy,'failed',n_deploy[0])
     return
 
   session_log = netmiko_params["session_log"]
@@ -120,6 +127,7 @@ def deploy(n_data: Box,topology: Box,n_deploy: list) -> None:
     cfg_file = f'node_files/{n_data.name}/{cfg_item}'
     if not os.path.exists(cfg_file):
       log.error(f'Skipping {cfg_item} config on {n_data.name}; cannot find {cfg_file}',category=log.FatalError,module='netmiko')
+      append_to_list(n_data._deploy,'failed',cfg_item)
       continue
     try:
       net_connect.send_config_from_file(cfg_file,error_pattern=netmiko_errors)
