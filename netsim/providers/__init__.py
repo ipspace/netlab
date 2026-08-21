@@ -147,7 +147,7 @@ class _Provider(Callback):
   def post_configuration_create(self, topology: Box) -> None:
     pass
 
-  def get_lab_status(self) -> Box:
+  def get_lab_status(self,collect_status: dict) -> Box:
     return get_empty_box()
   
   def get_node_name(self, node: str, topology: Box) -> str:

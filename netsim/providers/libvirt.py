@@ -476,7 +476,7 @@ class Libvirt(_Provider):
         continue
       log.print_verbose(f"... disabled STP on {linux_bridge}")
 
-  def get_lab_status(self) -> Box:
+  def get_lab_status(self,collect_status: dict) -> Box:
     try:
       status = external_commands.run_command(
                   'vagrant status --machine-readable',
@@ -497,7 +497,8 @@ class Libvirt(_Provider):
         log.error(f'Cannot get Vagrant status: {ex}',category=log.FatalError,module='libvirt')
         return stat_box
 
-      self.add_memory_usage(stat_box)
+      if collect_status.get('memory',False):
+        self.add_memory_usage(stat_box)
       return stat_box
     except Exception as ex:
       log.error(f'Cannot execute "vagrant status --machine-readable": {ex}',category=log.FatalError,module='libvirt')

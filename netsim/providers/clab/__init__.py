@@ -73,7 +73,7 @@ class Containerlab(_Provider):
       else:
         labops.destroy_linux_bridge(brname)
 
-  def get_lab_status(self) -> Box:
+  def get_lab_status(self,collect_status: dict) -> Box:
     try:
       status = external_commands.run_command(
                   'docker ps --format json',
@@ -96,7 +96,9 @@ class Containerlab(_Provider):
         log.error(f'Cannot get Docker status: {ex}',category=log.FatalError,module='clab')
         return stat_box
 
-      self.add_memory_usage(stat_box)
+      if collect_status.get('memory',False):
+        self.add_memory_usage(stat_box)
+
       return stat_box
     except Exception as ex:
       log.error(f'Cannot execute "docker ps": {ex}',category=log.FatalError,module='clab')

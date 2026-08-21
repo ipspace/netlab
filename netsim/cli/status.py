@@ -47,6 +47,11 @@ def status_parse(args: typing.List[str]) -> argparse.Namespace:
     default='text',
     help='Specify the output format')
   parser.add_argument(
+    '--memory',
+    dest='memory',
+    action='store_true',
+    help='Include memory utilization statistics')
+  parser.add_argument(
     '--all',
     dest='all',
     action='store_true',
@@ -148,14 +153,23 @@ def show_lab_instance(iid: Lab_Instance_ID, lab_state: Box) -> None:
     print(f'  memory used: {lab_state.memory}')
   print()
 
-def load_provider_status(p_status: dict, provider: str, topology: Box) -> None:
+def load_provider_status(p_status: dict, provider: str, topology: Box, collect_status: dict) -> None:
+  if provider in p_status:
+    return
+
   p_module = providers.get_provider_module(topology,provider)
+  p_status[provider] = p_module.call('get_lab_status',collect_status) or get_empty_box()
 
-  if not provider in p_status:
-    p_status[provider] = p_module.call('get_lab_status') or get_empty_box()
-
-def fetch_node_status(ls: Box, topology: Box) -> None:
+def fetch_node_status(ls: Box, topology: Box, collect_status: dict) -> None:
   p_status: dict = {}
+
+  # Display "collecting information" message only when (A) told to do so and (B) running in an interactive session
+  #
+  collect_info = collect_status.get('info',False) and (strings.rich_color and strings.rich_width > 30)
+  if collect_info:
+    strings.print_colored_text('[INFO] ',color='bright_cyan')
+    print('Collecting provider information',end="\r",flush=True)
+
   for n_name,n_data in topology.nodes.items():
     n_ext = outputs_common.adjust_inventory_host(
               node=topology.nodes[n_name],
@@ -164,8 +178,8 @@ def fetch_node_status(ls: Box, topology: Box) -> None:
 
     n_provider = n_data.get('provider',topology.defaults.provider)
     p_module   = providers.get_provider_module(topology,n_provider)
-    load_provider_status(p_status,n_provider,topology)
 
+    load_provider_status(p_status,n_provider,topology,collect_status)
     node_stat = get_empty_box()
     for source_attr,status_attr in {
       'device': 'device',
@@ -186,14 +200,15 @@ def fetch_node_status(ls: Box, topology: Box) -> None:
       wk_name = p_module.call('get_node_name',n_name,topology)
       node_stat.provider_name = wk_name
       wk_state = p_status[n_provider].get(wk_name,None) or p_status[n_provider].get(n_name,None) or get_empty_box()
-      node_stat.status = wk_state.get('status','Unknown')
-      node_stat.memory = wk_state.get('memory','Unknown')
+      for kw in ('status','memory'):
+        if kw in wk_state:
+          node_stat[kw] = wk_state[kw]
 
     ls.nodes[n_name] = node_stat
 
   for t_name,t_data in topology.tools.items():
     n_provider = 'clab'
-    load_provider_status(p_status,n_provider,topology)
+    load_provider_status(p_status,n_provider,topology,collect_status)
 
     wk_name = f'{topology.name}_{t_name}'
     wk_state = p_status[n_provider].get(wk_name,get_empty_box())
@@ -203,25 +218,37 @@ def fetch_node_status(ls: Box, topology: Box) -> None:
       'connection': 'docker',
       'provider': n_provider,
       'provider_name': wk_name,
-      'status': wk_state.get('status','Not running'),
-      'memory': wk_state.get('memory','Unknown')
+      'status': wk_state.get('status','Not running')
     }
+    if 'memory' in wk_state:
+      ls.nodes[t_name].memory = wk_state.memory
 
   total_memory = sum(strings.parse_memory_size(n.get('memory','')) for n in ls.nodes.values())
   if total_memory:
     ls.memory = strings.format_memory_size(total_memory)
 
-def show_lab_nodes(ls: Box, topology: Box) -> None:
+  if collect_info:
+    print(" " * (strings.rich_width - 3),end="\r",flush=True)
+
+def show_lab_nodes(ls: Box, topology: Box, collect_status: dict) -> None:
   rows = []
-  heading = [ 'node', 'device', 'image', 'mgmt IP', 'connection', 'provider', 'VM/container', 'status', 'memory']
+  heading = [ 'node', 'device', 'image', 'mgmt IP', 'connection', 'provider', 'VM/container']
+
+  for kw in ('status','memory'):
+    if collect_status.get(kw,False):
+      heading.append(kw)
 
   for n_name,n_data in ls.nodes.items():
     mgmt = "\n".join([ addr for addr in (n_data.get('mgmt'),n_data.get('mgmt6')) if addr ])
 
     row = [ n_name, n_data.device, n_data.image, mgmt,
             n_data.connection, n_data.get('provider',''),
-            n_data.get('provider_name',''), n_data.status,
-            n_data.get('memory','') ]
+            n_data.get('provider_name','') ]
+
+    for kw in ('status','memory'):
+      if collect_status.get(kw,False):
+        row.append(n_data.get(kw,''))
+
     rows.append(row)
 
   strings.print_table(heading,rows)
@@ -284,13 +311,19 @@ def show_lab(args: argparse.Namespace,lab_states: Box) -> None:
     print_lab_log(lab_state.log)
     return
 
-  fetch_node_status(lab_state,topology)
+  collect_status: dict = {'status': True}
+  if args.memory:
+    collect_status['memory'] = True
+  if args.format == 'text':
+    collect_status['info'] = True
+
+  fetch_node_status(lab_state,topology,collect_status)
   if args.format != 'text':
     print_result(lab_state,args.format)
     return
 
   show_lab_instance(iid,lab_state)
-  show_lab_nodes(lab_state,topology)
+  show_lab_nodes(lab_state,topology,collect_status)
   if lab_status != 'started':
     print()
     log.warning(
