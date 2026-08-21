@@ -262,13 +262,13 @@ _netlab_ uses Ansible playbooks and device-specific task lists to deploy device 
 
 [^cRBS]: The configuration deployment uses a custom **bash** script that calls **cli** command to execute **load merge** followed by **commit**. The custom script is used as the *shebang* interpreter for the configuration snippets.
 
-Several other devices can use alternate (faster) configuration methods that are not enabled by default; you have to set the **netlab_config_mode** group variable[^NCMGV] or node parameter to use them:
+Several other devices can use alternate (faster) configuration methods that are not enabled by default; you have to set the **netlab_config_mode** device group variable[^NCMGV] or node parameter to use them:
 
 | Device    | containerlab<br> deployment method |
 |-----------|------------------------------------|
 | Arista EOS | **sh**[^EOSSH] |
 | Aruba CX  | **startup** |
-| Cisco IOS/IOS XE[^18v] | **startup** |
+| Cisco IOS/IOS XE[^18v] | **startup**, **netmiko** |
 | Cisco IOS XRd | **sh**[^XRDSH] |
 | Dell OS10 | **startup** |
 | Junos[^Junos] | **startup** |
@@ -279,9 +279,10 @@ Several other devices can use alternate (faster) configuration methods that are 
 
 **Notes:**
 
-* The **startup** deployment method uses *containerlab* `startup-config` parameter with partial device configurations. This is an experimental method that won't report errors in device configurations ([more details](https://blog.ipspace.net/2026/02/netlab-startup-config-caveats/)).
+* The **startup** deployment method (available only for containers) uses *containerlab* `startup-config` parameter with partial device configurations. This experimental method won't report errors in device configurations ([more details](https://blog.ipspace.net/2026/02/netlab-startup-config-caveats/)).
+* The **netmiko** deployment method (available for containers and virtual machines) uses the *netmiko* library to configure network devices. **netlab install ansible** automatically installs it; you can also install it manually with **pip3 install netmiko**.
 
-[^NCMGV]: For example, set the **defaults.devices.iol.clab.group_vars.netlab_config_mode** [topology default](topo-defaults) to **startup** to use startup configuration with Cisco IOL nodes
+[^NCMGV]: For example, set the **defaults.devices.iol.clab.group_vars.netlab_config_mode** [topology default](topo-defaults) to **startup** to use startup configuration with Cisco IOL nodes, or **defaults.devices.ios.group_vars.netlab_config_mode** to **netmiko** to use *netmiko* to configure Cisco IOS-based devices.
 
 ## Initial Device Configurations
 
