@@ -15,7 +15,7 @@ NETMIKO_IS_MISSING: bool = False
 NETMIKO_LOAD_ERROR: str = ''
 
 try:
-  import netmiko as _netmiko
+  import netmiko as _netmiko  # type: ignore # Do not try to type-check netmiko if it's missing
 except Exception as ex:
   NETMIKO_LOAD_ERROR = str(ex)
   NETMIKO_IS_MISSING = True
