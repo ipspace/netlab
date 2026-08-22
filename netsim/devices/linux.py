@@ -38,7 +38,7 @@ def etc_resolv_mapping(node: Box, topology: Box) -> None:
     return
   if 'services.dns._server_list' not in node:
     return
-  if 'clab.node.config_templates.resolv' not in node:
+  if 'clab.config_templates.resolv' not in node:
     node.clab.config_templates.resolv = '/etc/resolv.conf'
 
 class Linux(_Quirks):
