@@ -5,6 +5,7 @@ from box import Box
 
 from ..utils import log
 from . import _Quirks, report_quirk
+from .linux import etc_resolv_mapping
 
 """
 Because FRR uses a 'bridge per VLAN' model, STP BPDUs are sent as tagged packets, not untagged.
@@ -28,6 +29,7 @@ class FRR(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
+    etc_resolv_mapping(node,topology)
     mods = node.get('module',[])
     if 'stp' in mods and node.get('stp.enable',True):
       if log.debug_active('quirks'):

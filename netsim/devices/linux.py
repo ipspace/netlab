@@ -30,11 +30,23 @@ def check_extra_loopbacks(node: Box, topology: Box) -> None:
     category=log.IncorrectType,
     quirk='ubuntu_dummy')
 
+def etc_resolv_mapping(node: Box, topology: Box) -> None:
+  """
+  Add /etc/resolv.conf mapping for Linux-based containers using DNS services
+  """
+  if devices.get_provider(node,topology) != 'clab':
+    return
+  if 'services.dns._server_list' not in node:
+    return
+  if 'clab.node.config_templates.resolv' not in node:
+    node.clab.config_templates.resolv = '/etc/resolv.conf'
+
 class Linux(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
     check_indirect_static_routes(node)
+    etc_resolv_mapping(node,topology)
 
     if devices.get_provider(node,topology) != 'clab':
       check_vm_modules(node,topology)
