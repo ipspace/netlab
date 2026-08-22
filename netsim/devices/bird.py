@@ -5,6 +5,7 @@ from box import Box
 
 from . import _Quirks
 from ._common import check_daemon_dataplane_config
+from .linux import etc_resolv_mapping
 
 
 def bird_transform_rt(rt: str) -> str:
@@ -46,6 +47,7 @@ class Bird(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
+    etc_resolv_mapping(node,topology)
     check_daemon_dataplane_config(node,topology)
     bird_vrf_rt(node)
     bird_vlan_evpn_rt(node)
