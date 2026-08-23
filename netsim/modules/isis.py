@@ -85,7 +85,20 @@ class ISIS(_Module):
         _routing.passive(l,'isis',topology)
         err = _routing.network_type(l,'isis',['point-to-point'])
         if err:
-          log.error(f'{err}\n... node {node.name} link {l}')
+          log.error(err,more_data=[f'node {node.name} interface {l.name}'],category=log.IncorrectValue,module='isis')
+
+        # Normalize isis.cost into isis.metric
+        if 'isis.cost' in l:
+          if 'isis.metric' in l:
+            log.warning(
+              text=f'metric and cost specified on the same interface; cost is ignored',
+              more_data=[f'node {node.name} interface {l.name}'],
+              module='isis')
+          else:
+            l.isis.metric = l.isis.cost
+          l.isis.pop('cost',None)
+
+        # Check IS-IS circuit type support
         if 'isis.type' in l and not features.isis.circuit_type:
           isis_ct_intf.append(l.ifname)
 
