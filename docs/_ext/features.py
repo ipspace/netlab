@@ -115,7 +115,9 @@ def features_body(tgroup: nodes.tgroup, device_data: typing.List[typing.List]) -
       elif 'status' in d_data:                    # ... or status (OK/MISSING)
         txt = '✅' if d_data['status'] else '❌'
         if 'caveat' in d_data:                    # Do we have to add a caveat?
-          txt += f'[❗]({d_data["caveat"]})'      # Use Markdown link to point to the caveat (MyST will resolve ref IDs)
+          caveat_ptr = d_data["caveat"]           # Get the caveat pointer
+          # Use Markdown link to point to the caveat (MyST will resolve ref IDs)
+          txt += '❗' if caveat_ptr == 'yes' else f'[❗]({caveat_ptr})'
         trow += table_cell(txt,align='center')
       else:
         trow += table_cell('🤦‍♂️')                  # None of the above, we failed miserably :()
@@ -132,7 +134,8 @@ def get_feature_row(device_data: Box, dname: str, table_def: Box) -> typing.Opti
     if f_OK and 'caveats' in f_def:             # ... but wait, there's more. Do we need to check for caveats?
       try:                                      # Let's do it. Try to evaluate caveat data
         f_caveat = safer_eval(f_def.caveats,locals=device_data)
-        dt_value['caveat'] = 'caveats-'+dname if f_caveat is True else f_caveat
+        if f_caveat:
+          dt_value['caveat'] = 'caveats-'+dname if f_caveat is True else f_caveat
       except Exception:                         # Failed? Looks like there's nothing to mentio ;)
         pass
     df_row.append(dt_value)                     # OK, the "feature status" is ready, append it to the device features row
