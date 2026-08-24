@@ -1,20 +1,17 @@
 (module-isis)=
 # IS-IS Configuration Module
 
-This configuration module configures the IS-IS routing process on Arista EOS, Cisco ASAv, Cisco IOS, Cisco IOS-XR, Cisco NX-OS,  FRRouting, Junos, Nokia SR OS, Nokia SR Linux, and VyOS.
-
-The module supports the following IS-IS features:
+This configuration module configures the IS-IS routing process, and supports the following IS-IS features:
 
 * IPv4 and IPv6
 * IS type and circuit type (L1 and/or L2)
-* Multi-topology IPv6 (enabled by default as soon as the node has at least one IPv6 address, cannot be disabled)
+* Multi-topology IPv6 (enabled by default as soon as the node has at least one IPv6 address; cannot be disabled)
 * Wide metrics (enabled by default, cannot be turned off)
 * Unnumbered IPv4 interfaces
 * Passive interfaces
 * VRF IS-IS instances
 * Route import (redistribution)
 * BFD
-
 
 ```eval_rst
 .. contents:: Table of Contents
