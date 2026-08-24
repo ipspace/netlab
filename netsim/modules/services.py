@@ -60,16 +60,17 @@ def check_feature_support(ndata: Box, svc_data: Box, topology: Box, mod_attr: Bo
   is_server = 'services.server' in ndata
   for kw in mod_attr.clients:
     if kw in svc_data:
+      check_client = True
       if "check_when" in mod_attr.clients[kw]:      # Check attributes that have to be present for feature check
-        if not any(attr in svc_data[kw] for attr in mod_attr.clients[kw].check_when):
-          continue
-      devices.check_optional_features(
-        data=svc_data[kw],
-        path=f'topology.nodes.{ndata.name}.services',
-        node=ndata,
-        topology=topology,
-        attribute=f'services.{kw}',
-        check_mode=devices.FC_MODE.BLACKLIST)
+        check_client = any(attr in svc_data[kw] for attr in mod_attr.clients[kw].check_when)
+      if check_client:
+        devices.check_optional_features(
+          data=svc_data[kw],
+          path=f'topology.nodes.{ndata.name}.services',
+          node=ndata,
+          topology=topology,
+          attribute=f'services.{kw}',
+          check_mode=devices.FC_MODE.BLACKLIST)
     if is_server and kw in svc_data.server:
       devices.check_optional_features(
         data=svc_data.server[kw],
