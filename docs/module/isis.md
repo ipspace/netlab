@@ -26,67 +26,27 @@ The module supports the following IS-IS features:
 (isis-platform)=
 ## Platform Support
 
-The following table describes per-platform support of individual IS-IS features:
+The following table describes IS-IS support by platform. All IS-IS implementations support wide IS-IS metrics, IPv6 address family, and IS-IS circuit type. A few platforms do not support IS-IS multi-topology for the IPv6 address family or the point-to-point network type. See device caveats for details.
 
-| Operating system   | IS type | Circuit<br>type | IPv6<br>AF | Multi<br>topology |
-|------------------- | :-: | :-: | :-: | :-: |
-| Arista EOS         | ✅  | ✅  | ✅  | ✅  |
-| Cisco ASAv         | ✅  | ✅  | ✅  | ✅  |
-| Cisco IOS/XE[^18v] | ✅  | ✅  | ✅  | ✅  |
-| Cisco IOS XR[^XR]  | ✅  | ✅  | ✅  | ✅  |
-| Cisco Nexus OS     | ✅  | ✅  | ✅  | ✅  |
-| FRR                | ✅  | ✅  | ✅  | ✅  |
-| Junos[^Junos]      | ✅  | ✅  | ✅  | ✅  |
-| Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  |
-| Nokia SR OS[^SROS] | ✅  | ✅  | ✅  | ✅  |
-| VyOS               | ✅  | ✅  | ✅  | ✅  |
-
-These platforms support additional IS-IS features:
-
-| Operating system   | Unnumbered<br />interfaces | Route<br>import | VRF<br>instances |
-|------------------- | :-: | :-: | :-: |
-| Arista EOS         | ✅  | ✅  | ✅  |
-| Cisco IOS/XE[^18v] | ✅  | ✅  |  ❌  |
-| Cisco IOS XR[^XR]  | ✅  | ✅  | ✅  |
-| Cisco Nexus OS     | ✅  |  ❌  |  ❌  |
-| FRR                | ✅  | ✅  | ✅  |
-| Junos[^Junos]      | ✅  | ✅  | ✅ [❗](caveats-junos) | 
-| Nokia SR Linux     | ✅  | ✅ [❗](caveats-srlinux) | ✅  |
-| Nokia SR OS[^SROS] | ✅  | ✅ [❗](caveats-sros) | ✅  |
-
-[^18v]: Includes Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
-
-[^Junos]: Includes cRPD, vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
-
-[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
-
-[^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
-
-**Notes:**
-* On Arista EOS, IPv6 is enabled on all interfaces as soon as one has an IPv6 address. Arista EOS implementation of IS-IS refuses to work on interfaces with missing address families.
-* On VyOS, IPv6 is enabled on all interfaces as soon as one has an IPv6 address.
-* Cisco ASA does not support P2P IS-IS links. You could add `isis.network_type: false` to point-to-point links connecting ASA to other devices.
-* Use the `netlab show modules -m isis` command to display the route types that can be imported into IS-IS.
-
-```{tip}
-See [IS-IS Integration Tests Results](https://release.netlab.tools/_html/coverage.isis) for more details.
+```{features}
+- title: Core<br>IS-IS
+  enabled: features.isis
+  caveats: isis.caveats
+- title: Unnumbered<br>interfaces
+  enabled: isis.unnumbered
+  caveats: isis.unnumbered.caveats
+- title: Route<br>import
+  enabled: isis.get('import')
+- title: VRF<br>instances
+  enabled: vrf.isis
+- title: BFD
+  enabled: features.isis and features.bfd
 ```
 
-Some platforms can use BFD to speed up IS-IS convergence:
-
-| Operating system      | IPv4<br />BFD | IPv6<br />BFD |
-| ------------------ | :-: | :-: |
-| Arista EOS         | ✅  | ✅❗|
-| Cisco IOSv/IOSvL2  | ✅  | ✅ | 
-| Cisco IOS XE[^18v] | ✅  | ✅ | 
-| Cisco Nexus OS     | ✅  |  ❌ |
-| Junos[^Junos]      | ✅  | ✅ |
-| Nokia SR Linux     | ✅  | ✅ | 
-| Nokia SR OS[^SROS] | ✅  | ✅ | 
-| VyOS               | ✅  | ✅ |
-
 **Notes:**
-* On Arista EOS, IPv6 BFD for IS-IS is enabled globally (on all IS-IS-enabled interfaces).
+* You can get the same information with the `netlab show modules -m isis` command.
+* Use the `netlab show modules -m isis --feature import` command to display the route types that can be imported into IS-IS.
+* See [IS-IS Integration Tests Results](https://release.netlab.tools/_html/coverage.isis) for more details.
 
 ## Global Parameters
 
