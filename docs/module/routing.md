@@ -20,37 +20,35 @@ This configuration module implements generic routing features:
 (generic-routing-platforms)=
 ## Platform Support
 
-The following table describes high-level per-platform support of generic routing features:
+These platforms support generic routing features:
 
-| Operating system      | Routing<br>policies | Prefix<br>filters| AS-path<br>filters | BGP<br>communities | Static<br>routes| IPv4/IPv6<br>ACL|
-| ------------------ |:--:|:--:|:--:|:--:|:--:|:--:|
-| Arista EOS         | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Aruba AOS-CX       | ✅ | ✅ | ✅ | ✅ | ✅ |❌  |
-| BIRD               | ❌  | ❌  | ❌  | ❌  | ✅ |❌  |
-| Cisco IOS/IOS XE[^18v] | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Cisco IOS XR[^XR]  | ✅ | ✅ | ✅ | ✅ | ✅ |❌  |
-| Cisco Nexus OS     | ❌  | ❌  | ❌  | ❌  | ✅ |❌  |
-| Cumulus Linux      | ✅ | ✅ | ✅ | ✅ | ✅ |❌  |
-| Cumulus NVUE 5.x   | ❌  | ❌  | ❌  | ❌  | ✅ |❌  |
-| Dell OS10          | ✅ | ✅ | ✅ | ✅ | ✅ |❌  |
-| Fortinet FortiOS   | ❌  | ❌  | ❌  | ❌  | ✅ |❌  |
-| FRR                | ✅ | ✅ | ✅ | ✅ | ✅ |❌  |
-| Linux              | ❌  | ❌  | ❌  | ❌  | ✅ |❌  |
-| Junos              | ✅ | ✅ | ✅ | ✅ | ✅ |❌  |
-| Nokia SR Linux     |  ✅ | ✅ [❗](caveats-srlinux) | ❌  | ❌  | ✅ |❌  |
-| Nokia SR OS[^SROS] | ✅ | ❌  | ❌  | ❌  | ✅ |❌  |
-| OpenBSD            | ❌  | ❌  | ❌  | ❌  | ✅ |❌  |
-| VyOS               | ✅ | ✅ | ✅ | ✅ | ❌ |❌  |
+```{features}
+- title: Routing<br>policies
+  enabled: routing.policy
+- title: Static<br>routes
+  enabled: routing.static
+  caveats: routing.static.caveats
+- title: IPv4/IPv6<br>ACL
+  enabled: routing.acl
+```
+
+You can use these objects in routing policies (on platforms that support them):
+
+```{features}
+- title: Prefix<br>filters
+  enabled: routing.prefix
+  caveats: routing.prefix.caveats
+- title: AS-path<br>filters
+  enabled: routing.aspath
+  caveats: routing.aspath.caveats
+- title: BGP community<br>lists
+  enabled: routing.community
+  caveats: routing.community.caveats
+```
 
 ```{tip}
 See [Routing Integration Tests Results](https://release.netlab.tools/_html/coverage.routing) for more details.
 ```
-
-[^18v]: Includes Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image. ACLs are not supported on Cisco CSR 1000v, Cisco Catalyst 8000v
-
-[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
-
-[^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
 
 ```{include} routing-policy.txt
 ```
