@@ -1,0 +1,27 @@
+updates:
+{% if services.syslog._server_list is defined %}
+- path: configure/log
+  val:
+    route-preference:
+      primary: inband
+      secondary: outband
+    syslog:
+{%   for syslog_host in services.syslog._server_list %}
+    - syslog-name: "{{ syslog_host }}"
+      address: "{{ syslog_host }}"
+      hostname:
+        use-system-name: {}
+{%   endfor %}
+    log-id:
+{%   for syslog_host in services.syslog._server_list %}
+    - name: "{{ syslog_host }}"
+      description: "syslog to {{ syslog_host }}"
+      admin-state: enable
+      source:
+        main: true
+        change: true
+        security: true
+      destination:
+        syslog: "{{ syslog_host }}"
+{%   endfor %}
+{% endif %}
