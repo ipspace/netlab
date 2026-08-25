@@ -12,51 +12,7 @@ from ...cli import external_commands
 from ...data import append_to_list
 from ...utils import log, strings
 from .. import PRINT_LOCK
-from . import utils
 
-
-def add_default_config_mode(node: Box, topology: Box) -> None:
-  '''
-  If the netlab_config_mode is set, add configured modules to _node_config dictionary
-  '''
-  cfg_mode = devices.get_node_group_var(node,'netlab_config_mode',topology.defaults)
-  if not cfg_mode:
-    return
-
-  d_features = devices.get_device_features(node,topology.defaults)
-  if cfg_mode not in d_features.get('initial.config_mode',[]):
-    log.error(
-      f'Configuration mode {cfg_mode} is not valid for device {node.device} (node {node.name})',
-      module='clab',
-      category=log.IncorrectValue)
-
-  # Get what's already been processed and the list of configuration snippets. That list
-  # has to include initial configuration, all modules, and custom config templates
-  #
-  features = devices.get_device_features(node,topology.defaults)
-  mod_list = ['normalize'] if features.initial.get('normalize',False) else []
-  mod_list += ['initial'] + node.get('module',[]) + node.get('config',[])
-  node_cfg = node.get('_node_config',{}) + node.get('_daemon_config',{})
-  node_cfg_path = devices.get_node_group_var(node,'netlab_config_path',topology.defaults)
-  for idx,m in enumerate(mod_list,start=1):
-    append_to_list(node,'netlab_ansible_skip_module',m)
-    m = m.replace('.','@')                        # Use the @-as-. hack for things like bgp.session
-    if m in node_cfg:                             # Module already processed, move on
-      continue
-    file_target = ''                              # By default, config file is not accessible in the container
-    if cfg_mode == 'sh':                          # File mapped into container using a containerlab bind
-      cfg_path = node_cfg_path or '/etc/config/'
-      file_target = f'{cfg_path}{idx:02d}-{m}.sh'
-    elif cfg_mode == 'cp_sh':                     # File copied into container, must use existing directory
-      cfg_path = node_cfg_path or '/etc/cfg-'
-      file_target = f'{cfg_path}-{idx:02d}-{m}.sh'
-
-    # Finally, store the mapping of this config item into _node_config
-    node._node_config[m] = f'{file_target}:{cfg_mode}'
-
-  # Finally, if the container needs extra precautions to work with config mode (hi there, FRR),
-  # add the exec commands to the container exec list
-  utils.add_clab_exec(node,'netlab_config_exec',topology)
 
 def set_node_config_targets(node: Box, topology: Box) -> None:
   '''

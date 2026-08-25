@@ -18,7 +18,14 @@ from ..cli import external_commands, is_dry_run
 from ..data import get_box, get_empty_box, types
 from ..utils import files as _files
 from ..utils import linuxbridge, log, strings
-from . import _Provider, get_provider_forwarded_ports, node_add_forwarded_ports, tc_netem_set, validate_mgmt_ip
+from . import (
+  _Provider,
+  add_default_config_mode,
+  get_provider_forwarded_ports,
+  node_add_forwarded_ports,
+  tc_netem_set,
+  validate_mgmt_ip,
+)
 
 LIBVIRT_MANAGEMENT_NETWORK_NAME  = "vagrant-libvirt"
 LIBVIRT_MANAGEMENT_BRIDGE_NAME   = "libvirt-mgmt"
@@ -350,13 +357,20 @@ class Libvirt(_Provider):
       pad_node_interfaces(node,topology)
     validate_mgmt_ip(node,required=True,v4only=True,provider='libvirt',mgmt=topology.addressing.mgmt)
 
-    # libvirt does not support netlab_config_mode parameter yet, but we have
-    # to make it work with "none" device to pass CI/CD integration tests.
+    # libvirt does not support provider-specific netlab_config_mode parameter (it can work with 'netmiko),
+    # but we have to make it work with "none" device to pass CI/CD integration tests.
     #
-    if devices.get_node_group_var(node,'netlab_config_mode',topology.defaults) and node.device != 'none':
+    ncm = devices.get_node_group_var(node,'netlab_config_mode',topology.defaults)
+    if not ncm:
+      return
+
+    if ncm not in ['netmiko'] and node.device != 'none':
       log.error(
         'netlab_config_mode parameter is not usable with libvirt provider',
         category=log.IncorrectAttr)
+      return
+
+    add_default_config_mode(node,topology)
 
   def transform_node_images(self, topology: Box) -> None:
     self.node_image_version(topology)
