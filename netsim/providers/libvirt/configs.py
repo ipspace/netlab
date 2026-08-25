@@ -71,6 +71,7 @@ def deploy_config(node: Box, topology: Box, deploy_list: list) -> None:
 
     cmd_marker = "__NETMIKO_RC:"                            # Use a marker to get back the return code
     cmd = f'sh {cfg_file} 2>&1; rc=$?; echo {cmd_marker}$rc'     # ChatGPT-inspired hack. Ugly, but it works
+    log.info(f'Executing {mod_name} configuration for node {node.name}')
     output: str = net_conn.send_command(cmd)
     (result,rc) = output.rsplit(cmd_marker,1)               # Get the command printout and the exit code
     rc = rc.split('\n')[0]                                  # Extract the return code from the clutter
@@ -93,42 +94,3 @@ def deploy_config(node: Box, topology: Box, deploy_list: list) -> None:
 
     mark_failed(node,mod_name)
     return
-
-
-"""
-    config_cmd = None                                         # Command to execute
-    if f_type == 'ns':                                        # Is this a host-side script?
-      config_cmd = ['sudo','ip','netns','exec',node_name,'sh',f'node_files/{node.name}/{mod_name}' ]
-      log.info(f'Executing {mod_name} configuration for node {node.name} (namespace {node_name})')
-    elif f_type in ('sh','cp_sh'):
-      if not cfg_item.target:
-        log.error(
-          f'Internal error: bash script for module {mod_name} is not mapped into a container file',
-          more_data = [f'node: {node.name} / device: {node.device}'],
-          category=log.FatalError,
-          module='clab')
-        break
-      config_cmd = ['docker','exec',node_name,cfg_item.target] # Container-side script
-      log.info(f'Executing {mod_name} configuration for node {node.name}')
-    elif f_type == 'startup':                                 # Is this part of startup config?
-      append_to_list(node._deploy,'startup',mod_name)
-
-    if not config_cmd:                                        # Not an executable file?
-      continue
-
-    if log.VERBOSE > 1:
-      print(f'clab deploy: running {config_cmd}')
-    try:
-      status = subprocess.run(config_cmd,capture_output=True,text=True,check=False)
-    except Exception as ex:
-      status = subprocess.CompletedProcess(config_cmd,returncode=1,stdout='',stderr=str(ex))
-    printout = ''                                           # Collect any printout we might have received
-    if status.stdout:                                       # ... making sure it ends with a single newline
-      stdout = status.stdout.strip(" \n") + "\n"
-      printout +='  '+strings.wrap_error_message(stdout,indent=2)
-    if status.stderr:
-      stderr = status.stderr.strip(" \n") + "\n"
-      printout +='  '+strings.wrap_error_message(stderr,indent=2)
-    if status.returncode == 0:                              # Everything OK?
-    else:                                                     # Otherwise we failed
-"""
