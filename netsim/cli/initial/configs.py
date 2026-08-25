@@ -69,6 +69,14 @@ def create_node_configs(
     skip_items :typing.List[str] = []
     config_templates = n_data.get(f'{n_provider}.config_templates',[])
     template_mode = { cfg_item.source:cfg_item.mode for cfg_item in config_templates if 'mode' in cfg_item }
+
+    for mod,target in n_data.get('_node_config',{}).items():          # Augment template mode from config templates with _node_config
+      if ':' not in target:                                           # node_config does not specify a method, move on
+        continue
+      mod = mod.replace('@','.')                                      # Recreate the actual config file name
+      if mod not in template_mode:                                    # Unknown so far?
+        template_mode[mod] = target.rsplit(':',1)[-1]                 # ... let's use the _node_config value
+
     if log.debug_active('template'):
       print(f'config_templates for {n_data.name}:')
       for item in config_templates:
