@@ -271,6 +271,7 @@ Several other devices can use alternate (faster) configuration methods that are 
 | Cisco IOS/IOS XE[^18v] | **startup**, **netmiko** | **netmiko** |
 | Cisco IOS XRd | **sh**[^XRDSH] |
 | Dell OS10 | **startup** |
+| FRRouting | | **sh** |
 | Junos[^Junos] | **startup** |
 | Linux || **sh** |
 
