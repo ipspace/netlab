@@ -17,7 +17,7 @@ import typing
 from box import Box
 
 from ...providers import get_cpu_model
-from ...providers.libvirt import LIBVIRT_MANAGEMENT_NETWORK_NAME, create_vagrant_network
+from ...providers.libvirt.labops import LIBVIRT_MANAGEMENT_NETWORK_NAME, create_vagrant_network
 from ...utils import files as _files
 from ...utils import log, status, strings, templates
 from .. import error_and_exit, external_commands, parser_add_debug, parser_add_verbose
