@@ -4,7 +4,6 @@ Deploy configuration to libvirt nodes using sh/cp_sh config method
 
 import typing
 
-import scp  # type: ignore
 from box import Box
 
 from ...data import append_to_list
@@ -60,6 +59,7 @@ def deploy_config(node: Box, topology: Box, deploy_list: list) -> None:
       log.info(f'SCPing {src_file} to {node.name} {cfg_file}')
 
     try:                                                    # Try to SCP the config script to the node
+      import scp  # type: ignore                            # Fails unless you have netmiko installed
       scp_conn = scp.SCPClient(net_conn.remote_conn_pre.get_transport())
       scp_conn.put(src_file,cfg_file)
       scp_conn.close()
