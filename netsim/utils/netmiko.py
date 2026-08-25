@@ -101,8 +101,11 @@ def connect(n_data: Box, netmiko_params: dict) -> 'typing.Optional[_netmiko.Base
 
   return net_connect
 
-def has_commit(conn: 'typing.Optional[_netmiko.BaseConnection]') -> bool:
+def has_commit(conn: '_netmiko.BaseConnection') -> bool:
   """
   Does the netmiko connection support commit() call?
   """
-  return bool(_netmiko and inspect.getattr_static(conn,'commit') is not _netmiko.BaseConnection.commit)
+  if NETMIKO_IS_MISSING:
+    return False
+
+  return inspect.getattr_static(conn,'commit') is not _netmiko.BaseConnection.commit
