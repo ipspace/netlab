@@ -20,7 +20,7 @@ from .. import (
   tc_netem_set,
   validate_mgmt_ip,
 )
-from . import labops, stats
+from . import configs, labops, stats
 
 
 class Libvirt(_Provider):
@@ -221,6 +221,12 @@ class Libvirt(_Provider):
         log.error(f"Cannot disable STP on Linux bridge {linux_bridge}")
         continue
       log.print_verbose(f"... disabled STP on {linux_bridge}")
+
+  def deploy_node_config(self, node: Box, topology: Box, deploy_list: list) -> None:
+    cfg_files = node.get('_node_config',[])
+    if not cfg_files:                                          # No node files => no config to deploy here
+      return
+    configs.deploy_config(node,topology,deploy_list)
 
   def get_lab_status(self,collect_status: dict) -> Box:
     return stats.get_lab_status(collect_status)
