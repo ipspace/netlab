@@ -69,9 +69,12 @@ def deploy_config(node: Box, topology: Box, deploy_list: list) -> None:
         more_data=[ str(ex) ], module='libvirt', category=log.FatalError)
       return mark_failed(node,mod_name)
 
+    # ChatGPT-inspired hack. Ugly, but it works
+    #
     cmd_marker = "__NETMIKO_RC:"                            # Use a marker to get back the return code
-    cmd = f'sh {cfg_file} 2>&1; rc=$?; echo {cmd_marker}$rc'     # ChatGPT-inspired hack. Ugly, but it works
-    log.info(f'Executing {mod_name} configuration for node {node.name}')
+    cmd = f'chmod a+x {cfg_file}; {cfg_file} 2>&1; rc=$?; echo {cmd_marker}$rc'
+
+    log.info(f'Executing {mod_name} configuration for node {node.name} (netmiko/script)')
     output: str = net_conn.send_command(cmd)
     (result,rc) = output.rsplit(cmd_marker,1)               # Get the command printout and the exit code
     rc = rc.split('\n')[0]                                  # Extract the return code from the clutter

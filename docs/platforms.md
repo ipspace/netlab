@@ -264,8 +264,8 @@ _netlab_ uses Ansible playbooks and device-specific task lists to deploy device 
 
 Several other devices can use alternate (faster) configuration methods that are not enabled by default; you have to set the **netlab_config_mode** device group variable[^NCMGV] or node parameter to use them:
 
-| Device    | containerlab<br>deployment method | libvirt<br>deployment method |
-|-----------|------------------------------------|
+| Device | containerlab<br>deployment method | libvirt<br>deployment method |
+|-|-| -|
 | Arista EOS | **sh**[^EOSSH] |
 | Aruba CX  | **startup** |
 | Cisco IOS/IOS XE[^18v] | **startup**, **netmiko** | **netmiko** |
