@@ -98,7 +98,7 @@ class Libvirt(_Provider):
 
     if ncm not in topology.defaults.providers.libvirt.config_mode and node.device != 'none':
       log.error(
-        'netlab_config_mode {ncm} does not work with libvirt provider',
+        f'netlab_config_mode {ncm} does not work with libvirt provider',
         category=log.IncorrectAttr)
       return
 
