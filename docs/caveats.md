@@ -7,17 +7,26 @@
    :backlinks: none
 ```
 
-(caveats-eos)=
 ## Arista EOS
 
+(caveats-veos)=
 ### Arista vEOS VM Caveats
 
 * Use **libvirt.uuid** node property to ensure a vEOS VM does not change its serial number every time you start the lab.
+* You can also configure Arista vEOS VMs with the *netmiko* library. To use this configuration method, set the **defaults.devices.eos.libvirt.group_vars.netlab_config_mode** [topology default](topo-defaults) or **netlab_config_mode** node variable to **netmiko**.
+* Using *netmiko* to configure Arista vEOS VMs disables Arista's proprietary linkdown emulation.
 
 (caveats-ceos)=
 ### Arista cEOS Container Caveats
 
-* Arista cEOS containers are configured through an Ansible playbook, using an SSH session with the **arista.eos.eos_config** Ansible modules. To configure them with Linux scripts using FastCLI, set the **defaults.devices.eos.clab.group_vars.netlab_config_mode** [topology default](topo-defaults) to **sh**. You can also set the **netlab_config_mode** node variable to **sh** to experiment with this feature.
+Device configuration:
+
+* With no additional settings, Arista cEOS containers are configured through an Ansible playbook, using an SSH session with the **arista.eos.eos_config** Ansible modules.
+* To configure cEOS containers with Linux scripts using FastCLI, set the **defaults.devices.eos.clab.group_vars.netlab_config_mode** [topology default](topo-defaults) to **sh**. You can also set the **netlab_config_mode** node variable to **sh** to experiment with this feature.
+* You can also configure Arista cEOS containers with the *netmiko* library. Set the **netlab_config_mode** parameter to **netmiko** to try out this experimental feature.
+* Using Linux scripts or *netmiko* to configure Arista cEOS containers disables Arista's proprietary linkdown emulation.
+
+Other caveats:
 * You can set Arista cEOS serial number and system MAC address with the **eos.serialnumber** and **eos.systemmacaddr** node properties.
 * Anycast gateways and DHCP/DHCPv6 clients do not work on Arista cEOS Ethernet interfaces.
 * cEOS MPLS data plane was introduced in release 4.32.1F.
@@ -45,6 +54,7 @@ nodes:
       intf_map: /mnt/flash/EosIntfMapping_json
 ```
 
+(caveats-eos)=
 ### Other Arista EOS Caveats
 
 * Routed VLANs cannot be used in EVPN MPLS VLAN bundles
