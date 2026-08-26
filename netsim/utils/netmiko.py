@@ -91,6 +91,7 @@ def connect(n_data: Box, netmiko_params: dict) -> 'typing.Optional[_netmiko.Base
     net_connect = _netmiko.ConnectHandler(**netmiko_params)
     if log.VERBOSE:
       log.info(f'Connected to {n_data.name}',module='netmiko')
+    net_connect.enable()
   except Exception as ex:
     log.error(
       f'netmiko cannot connect to {n_data.name}',
