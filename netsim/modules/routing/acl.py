@@ -11,16 +11,17 @@ from netsim.utils import log
 
 from ...data import append_to_list, get_box
 from .normalize import check_routing_object, import_routing_object
+from .utils import eval_prefixset
 
 
-def expand_acl_address_entry(p_entry: Box, topology: Box) -> Box:
+def expand_acl_address_entry(p_entry: Box, path: str, topology: Box) -> Box:
   """
   expand_acl_address_entry:
   * Transform 'pool' and 'prefix' keywords into 'ipv4' and 'ipv6'
   * Resolve node-inteface and node-role tuples into 'ipv4' and 'ipv6'
   """
 
-  def add_acl_prefixes(p_entry: Box, data: Box) -> None:
+  def add_acl_prefixes(p_entry: Box, data: dict) -> None:
     for af in log.AF_LIST:
       if af in data and isinstance(data[af],str):
         append_to_list(p_entry,af,data[af])
@@ -29,7 +30,7 @@ def expand_acl_address_entry(p_entry: Box, topology: Box) -> Box:
     add_acl_prefixes(p_entry,topology.addressing[p_name])
 
   for p_name in p_entry.get('prefix',[]):
-    add_acl_prefixes(p_entry,topology.prefix[p_name])
+    add_acl_prefixes(p_entry,eval_prefixset(p_name,path,topology))
 
   for node_name in p_entry.get('node',[]):
     node_data = topology.nodes[node_name]
@@ -142,7 +143,7 @@ def expand_acl(p_name: str, o_name: str, node: Box, topology: Box) -> typing.Opt
     ctx.idx = idx
     for addr_key in ("src", "dst"):
       if addr_key in entry:
-        entry[addr_key] = expand_acl_address_entry(entry[addr_key], topology)
+        entry[addr_key] = expand_acl_address_entry(entry[addr_key],f'{p_name}.{o_name}[{idx}]',topology)
     validate_acl_address_entry(entry, ctx)
     acl_list[idx] = entry
 
