@@ -14,7 +14,7 @@
 
 | Virtual network device | netlab device type | support level |
 | -----------------------| ------------------ | ------------- |
-| Arista vEOS/cEOS [❗](caveats-eos) | eos    | full          |
+| Arista vEOS[❗](caveats-veos)/cEOS[❗](caveats-ceos)  | eos    | full          |
 | Arrcus ArcOS [❗](caveats-arcos) | arcos  | best effort   |
 | Aruba AOS-CX [❗](caveats-aruba) | arubacx  | full          |
 | Cisco 8000v [❗](caveats-cisco8000v) | cisco8000v | minimal |
@@ -266,13 +266,13 @@ Several other devices can use alternate (faster) configuration methods that are 
 
 | Device | containerlab<br>deployment method | libvirt<br>deployment method |
 |-|-| -|
-| Arista EOS | **sh**[^EOSSH] |
-| Aruba CX  | **startup** |
+| Arista EOS | **sh**[^EOSSH], **netmiko** [❗](caveats-ceos) | **netmiko** [❗](caveats-veos) |
+| Aruba CX  | **startup** ||
 | Cisco IOS/IOS XE[^18v] | **startup**, **netmiko** | **netmiko** |
-| Cisco IOS XRd | **sh**[^XRDSH] |
-| Dell OS10 | **startup** |
-| FRRouting | | **sh** |
-| Junos[^Junos] | **startup** |
+| Cisco IOS XRd | **sh**[^XRDSH] ||
+| Dell OS10 | **startup** ||
+| FRRouting || **sh** |
+| Junos[^Junos] | **startup** ||
 | Linux || **sh** |
 
 [^EOSSH]: Arista EOS device configurations are converted into FastCli scripts and executed as Linux scripts within the cEOS container. This method works on EOS software releases that have the **‌platform tfa phy control-frame disabled** interface configuration command (probably starting with EOS release 4.30)
