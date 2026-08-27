@@ -16,6 +16,8 @@ def _link_list_prefix(link_list: list) -> Box:
   for link in link_list:
     if 'prefix' not in link:
       continue
+    if not isinstance(link.prefix,dict):
+      continue
     for af in log.AF_LIST:
       if af in link.prefix:
         append_to_list(result,af,link.prefix[af])

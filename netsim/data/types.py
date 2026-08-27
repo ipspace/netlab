@@ -1111,26 +1111,31 @@ def must_be_prefixset(value: typing.Any, use: str = 'prefix_or_host') -> dict:
     return { '_type': 'a prefix (a string)' }
 
   dotcount = value.count('.')
-  if dotcount <= 1 and ':' not in value:
-    if not dotcount:
+  #
+  # Namespaced prefix should have at most one dot (otherwise it's an IPv4 address),
+  # start with an identifier (the first character must not be a digit) and not have
+  # a colon (otherwise it's an IPv6 address)
+  #
+  if dotcount <= 1 and value > '9' and ':' not in value:
+    if not dotcount:                                        # No dots, assuming named prefix
       p_value = value
       p_type = 'prefix'
-    else:
+    else:                                                   # ... otherwise it's namespace.identifier
       (p_type,p_value) = value.split('.',1)
     if p_type not in ['prefix','vlan','link','role','pool']:
-      result = {
+      result = {                                            # Namespace is not valid
         '_value': 'a prefix within a valid prefix namespace',
         '_more_data': f'Found {p_type} as namespace'}
     else:
-      result = _id_validator(p_value)
-      if '_type' in result or '_value' in result:
+      result = _id_validator(p_value)                       # Valid namespace, just check that we have an identifier
+      if '_type' in result or '_value' in result:           # ... values will be checked later
         result = {
           '_value': 'a prefix in format namespace.identifier',
           '_more_data': f'found {p_value} as identifier'}
-  else:
-    if value.count(':') > 0:
+  else:                                                     # Not a namespaced prefix, must be an address
+    if value.count(':') > 0:                                # IPv6?
       result = _ipv6_validator(value,use=use)
-    elif dotcount > 1:
+    else:                                                   # ... otherwise must be IPv4
       result = _ipv4_validator(value,use=use)
     if '_value' in result:
       result['_value'] = 'an IP address or a prefix'
