@@ -9,7 +9,7 @@ from box import Box
 
 from netsim.utils import log
 
-from ...data import append_to_list, get_box
+from ...data import append_to_list, get_a_list, get_box
 from .normalize import check_routing_object, import_routing_object
 from .utils import eval_prefixset
 
@@ -23,14 +23,17 @@ def expand_acl_address_entry(p_entry: Box, path: str, topology: Box) -> Box:
 
   def add_acl_prefixes(p_entry: Box, data: dict) -> None:
     for af in log.AF_LIST:
-      if af in data and isinstance(data[af],str):
-        append_to_list(p_entry,af,data[af])
+      if af in data:
+        for pfx in get_a_list(data[af]):
+          if isinstance(pfx,str):
+            append_to_list(p_entry,af,pfx)
 
   for p_name in p_entry.get('pool',[]):
     add_acl_prefixes(p_entry,topology.addressing[p_name])
 
   for p_name in p_entry.get('prefix',[]):
-    add_acl_prefixes(p_entry,eval_prefixset(p_name,path,topology))
+    pfx_data = eval_prefixset(p_name,path,topology)
+    add_acl_prefixes(p_entry,pfx_data)
 
   for node_name in p_entry.get('node',[]):
     node_data = topology.nodes[node_name]

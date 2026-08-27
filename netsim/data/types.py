@@ -1117,7 +1117,7 @@ def must_be_prefixset(value: typing.Any, use: str = 'prefix_or_host') -> dict:
       p_type = 'prefix'
     else:
       (p_type,p_value) = value.split('.',1)
-    if p_type not in ['prefix','vlans','links','roles','pool']:
+    if p_type not in ['prefix','vlan','link','role','pool']:
       result = {
         '_value': 'a prefix within a valid prefix namespace',
         '_more_data': f'Found {p_type} as namespace'}
