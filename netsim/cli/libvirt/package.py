@@ -430,6 +430,7 @@ preceded by "netlab/".
 
   strings.print_colored_text('[IMPORT]  ','green',None)
   print(f"Importing Vagrant box {boxname} version {version}")
+  os.environ["VAGRANT_DEFAULT_PROVIDER"] = "libvirt"
   if not external_commands.run_command(f"vagrant box add {json_name}"):
     error_and_exit(
       f'Failed to add Vagrant box. Fix the error(s) and use "vagrant box add {json_name}" to add it.',
