@@ -130,7 +130,9 @@ def wrong_type_message(
     text=f'{path} must be {expected}',
     category=log.IncorrectValue if '_value' in err_stat else log.IncorrectType,
     module=module or 'topology',
-    more_hints=ctxt)
+    more_hints=ctxt,
+    more_data=err_stat.get('_more_data',None),
+    doc_url=err_stat.get('_doc_url',None))
   return
 
 #
@@ -498,6 +500,15 @@ def must_be_str(value: typing.Any) -> dict:
 
 @type_test()
 def must_be_id(value: typing.Any, max_length: typing.Union[int,str] = 16) -> dict:
+  '''
+  Identifier validation, including optional maximum length
+  '''
+  return _id_validator(value,max_length)
+
+def _id_validator(value: typing.Any, max_length: typing.Union[int,str] = 16) -> dict:
+  '''
+  Identifier validator without decorator arguments
+  '''
   id_length = resolve_const_value(max_length,16)
   if not isinstance(id_length,int):
     log.fatal(f'Internal failure in must_be_id: max_length {max_length} did not resolve into int')
@@ -821,14 +832,14 @@ def common_addr_parse(
     try:
       p_addr = addr_parse(value)
     except Exception as Ex:
-      return { '_value': f'{af} address ({Ex})' }
+      return { '_value': f'{af} address ({Ex})', '_exception': str(Ex) }
 
     return { '_valid': True }
   else:
     try:
       p_addr = net_parse(value,strict=use not in ['interface','host_prefix'])
     except Exception as Ex:
-      return { '_value': f'{af} prefix ({Ex})' }
+      return { '_value': f'{af} prefix ({Ex})', '_exception': str(Ex) }
 
   if use not in ['prefix','prefix_or_host','id']:
     r_hit = check_reserved_range(RESERVED_PREFIXES[af],p_addr)
@@ -838,12 +849,17 @@ def common_addr_parse(
 
   return { '_valid': True }
 
-'''
-IPv4 validation -- use the common code, allowing int values and named prefixes
-'''
 @type_test(false_value=False)
 def must_be_ipv4(value: typing.Any, use: str, named: bool = False) -> dict:
+  '''
+  IPv4 validation -- use the common code, allowing int values and named prefixes
+  '''
+  return _ipv4_validator(value,use,named)
 
+def _ipv4_validator(value: typing.Any, use: str, named: bool = False) -> dict:
+  '''
+  IPv4 validator without the decorator arguments
+  '''
   def transform_to_ipaddr(value: int) -> str:
     return str(ipaddress.IPv4Address(value))
 
@@ -858,11 +874,18 @@ def must_be_ipv4(value: typing.Any, use: str, named: bool = False) -> dict:
             xform_int=transform_to_ipaddr,
             xform_pfx=prefix_to_ipv4)
 
-'''
-IPv6 validation -- use the common code, but without int values or named prefixes
-'''
+
 @type_test(false_value=False)
 def must_be_ipv6(value: typing.Any, use: str) -> dict:
+  '''
+  IPv6 validation -- use the common code, but without int values or named prefixes
+  '''
+  return _ipv6_validator(value,use)
+
+def _ipv6_validator(value: typing.Any, use: str) -> dict:
+  '''
+  IPv6 validator without the decorator arguments
+  '''
   return common_addr_parse(
             value=value,use=use,named=False,af='IPv6',
             net_parse=ipaddress.IPv6Network,
@@ -1081,3 +1104,45 @@ def must_be_r_proto(value: typing.Any) -> dict:
     }
 
   return { '_valid': True }
+
+@type_test()
+def must_be_prefixset(value: typing.Any, use: str = 'prefix_or_host') -> dict:
+  if not isinstance(value,str):
+    return { '_type': 'a prefix (a string)' }
+
+  dotcount = value.count('.')
+  #
+  # Namespaced prefix should have at most one dot (otherwise it's an IPv4 address),
+  # start with an identifier (the first character must not be a digit) and not have
+  # a colon (otherwise it's an IPv6 address)
+  #
+  if dotcount <= 1 and value > '9' and ':' not in value:
+    if not dotcount:                                        # No dots, assuming named prefix
+      p_value = value
+      p_type = 'prefix'
+    else:                                                   # ... otherwise it's namespace.identifier
+      (p_type,p_value) = value.split('.',1)
+    if p_type not in ['prefix','vlan','link','role','pool']:
+      result = {                                            # Namespace is not valid
+        '_value': 'a prefix within a valid prefix namespace',
+        '_more_data': f'Found {p_type} as namespace'}
+    else:
+      result = _id_validator(p_value)                       # Valid namespace, just check that we have an identifier
+      if '_type' in result or '_value' in result:           # ... values will be checked later
+        result = {
+          '_value': 'a prefix in format namespace.identifier',
+          '_more_data': f'found {p_value} as identifier'}
+  else:                                                     # Not a namespaced prefix, must be an address
+    if value.count(':') > 0:                                # IPv6?
+      result = _ipv6_validator(value,use=use)
+    else:                                                   # ... otherwise must be IPv4
+      result = _ipv4_validator(value,use=use)
+    if '_value' in result:
+      result['_value'] = 'an IP address or a prefix'
+      if '_exception' in result:
+        result['_more_data'] = str(result['_exception'])
+
+  if '_type' in result or '_value' in result:
+    result['_doc_url'] = 'module/routing/#generic-routing-prefix-set'
+
+  return result

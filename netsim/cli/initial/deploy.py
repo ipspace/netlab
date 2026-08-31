@@ -15,7 +15,7 @@ from ...augment import devices as _a_devices
 from ...providers import execute_node
 from ...utils import log, strings
 from .. import ansible, error_and_exit, external_commands, get_message, is_dry_run, lab_status_change
-from . import configs, ready, utils
+from . import configs, netmiko, ready, utils
 
 """
 get_normalize_list -- get a list of all nodes that require normalization step
@@ -32,7 +32,11 @@ def get_normalize_list(topology: Box, nodeset: list) -> list:
 
   return normalize_list
 
-def deploy_provider_config(nodeset: list, topology: Box, args: argparse.Namespace) -> typing.Tuple[bool, bool]:
+INTERNAL_CONFIG_MECHANISMS: dict = {
+  'netmiko': netmiko.deploy
+}
+
+def deploy_internal_config(nodeset: list, topology: Box, args: argparse.Namespace) -> typing.Tuple[bool, bool]:
   OK = True
   Used = False
 
@@ -47,7 +51,13 @@ def deploy_provider_config(nodeset: list, topology: Box, args: argparse.Namespac
       return
     if log.VERBOSE:
       log.info(f'Starting deployment thread for {n_name} to deploy {deploy_parts}')
-    execute_node("deploy_node_config", n_data, topology, deploy_list=n_deploy)
+    try:
+      config_mode = _a_devices.get_node_group_var(n_data,'netlab_config_mode',topology.defaults)
+      if config_mode and config_mode in INTERNAL_CONFIG_MECHANISMS:
+        INTERNAL_CONFIG_MECHANISMS[config_mode](n_data,topology,n_deploy)
+      execute_node("deploy_node_config", n_data, topology, deploy_list=n_deploy)
+    except Exception as ex:
+      log.error(f"Failed to deploy configuration on {n_name}: {ex}",category=log.FatalError,module='initial')
 
   with concurrent.futures.ThreadPoolExecutor() as executor:
     executor.map(deploy_node, nodeset)
@@ -177,7 +187,7 @@ def run(
     log.section_header('Config',f'Normalizing device configurations')
     lab_status_change(topology,f'normalizing device configurations')
     args.normalize = True
-    (used_internal, status_internal) = deploy_provider_config(normalize_list, topology, args)
+    (used_internal, status_internal) = deploy_internal_config(normalize_list, topology, args)
     (used_ansible, status_ansible) = deploy_ansible_playbook(topology,args,normalize_list,rest,'normalize' if used_internal else '')
     args.normalize = False
 
@@ -194,7 +204,7 @@ def run(
 
   log.section_header('Config',f'Deploying device configurations')
   lab_status_change(topology, f"deploying configuration: {deploy_text}")
-  (used_internal, status_internal) = deploy_provider_config(nodeset, topology, args)
+  (used_internal, status_internal) = deploy_internal_config(nodeset, topology, args)
   (used_ansible, status_ansible) = deploy_ansible_playbook(topology,args,nodeset,rest,'deploy' if used_internal else '')
 
   print_internal_stats(topology,not used_ansible)

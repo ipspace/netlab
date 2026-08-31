@@ -1,0 +1,17 @@
+#!/bin/sh
+{% if services.dns._server_list is defined %}
+cat <<'CONFIG' >/etc/resolv.conf
+{%     include 'initial/linux/resolv.j2' +%}
+CONFIG
+{% endif %}
+
+# Syslog configuration comes here (eventually)
+{% if services.syslog._server_list is defined %}
+cat <<'SYSLOG' >>/etc/syslog.conf
+{% for syslog_host in services.syslog._server_list|default([]) %}
+*.*		{{ "@udp6:// " if ':' in syslog_host else "@udp4://" }}{{ syslog_host }}
+{% endfor %}
+SYSLOG
+
+rcctl restart syslogd
+{% endif %}

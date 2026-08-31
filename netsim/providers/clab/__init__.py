@@ -15,6 +15,7 @@ from .. import (
   SHARED_PREFIX,
   SHARED_SUFFIX,
   _Provider,
+  add_default_config_mode,
   get_provider_forwarded_ports,
   node_add_forwarded_ports,
   tc_netem_set,
@@ -34,7 +35,8 @@ class Containerlab(_Provider):
   def node_post_transform(self, node: Box, topology: Box) -> None:
     utils.add_clab_exec(node,'netlab_start_exec',topology)
     configs.set_node_config_targets(node,topology)
-    configs.add_default_config_mode(node,topology)
+    if add_default_config_mode(node,topology):                        # Are we using internal config mechanisms?
+      utils.add_clab_exec(node,'netlab_config_exec',topology)         # ... in that case, maybe the device needs extra start commands
     binds.add_config_filemaps(node,topology)
     binds.normalize_clab_filemaps(node)
     validate_mgmt_ip(node,required=True,provider='clab',mgmt=topology.addressing.mgmt)
