@@ -1,0 +1,15 @@
+{% for intf in netlab_interfaces if intf.tunnel.mode|default('') in ['wireguard'] %}
+{%   set dst = intf.tunnel._destination %}
+{%   set peer_ip = ('[' ~ dst.ipv6 ~ ']') if intf.tunnel.af == 'ipv6' else dst.ipv4 %}
+{%   set peer_endpoint = peer_ip ~ ':' ~ dst.listen_port %}
+set interface wireguard {{ intf.ifname }} private-key '{{ intf.tunnel.private_key }}'
+set interface wireguard {{ intf.ifname}} port '{{ intf.tunnel.listen_port }}'
+set interface wireguard {{ intf.ifname}} description '{{ intf.name }}'
+set interface wireguard {{ intf.ifname }} peer "{{ dst.public_key }}" public-key '{{ dst.public_key }}'
+set interface wireguard {{ intf.ifname }} peer "{{ dst.public_key }}" address '{{ peer_ip }}'
+set interface wireguard {{ intf.ifname }} peer "{{ dst.public_key }}" port '{{ dst.listen_port }}'
+set interface wireguard {{ intf.ifname }} peer "{{ dst.public_key }}" persistent-keepalive '{{ intf.tunnel.persistent_keepalive }}'
+{%  for a_ip in intf.tunnel.allowed_ips.split(',') %}
+set interface wireguard {{ intf.ifname }} peer "{{ dst.public_key }}" allowed-ips '{{ a_ip }}'
+{%  endfor %}
+{% endfor %}
