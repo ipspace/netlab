@@ -1,0 +1,56 @@
+message:
+  This lab tests the netmiko-based configuration deployment using Cisco IOL
+  layer-2 image (to include "normalize" setp) as the netmiko-configured node.
+  The test is a simplified copy of the BGP default route origination to test the
+  plugin templates.
+
+plugin: [ bgp.session, files ]
+module: [ bgp ]
+
+defaults:
+  sources.extra: [ ../../integration/wait_times.yml, ../../integration/warnings.yml ]
+  devices.ioll2.group_vars:
+    netmiko_device_type: cisco_ios
+    netlab_config_mode: netmiko
+
+provider: clab
+
+nodes:
+  dut:
+    device: ioll2
+    module: [ bgp ]
+    bgp.as: 65000
+    config.inline: |
+      ip route 1.2.3.4 255.255.255.255 null0
+      router bgp {{ bgp.as }}
+        address-family ipv4
+          network 1.2.3.4 mask 255.255.255.255
+    _features.initial.config_mode: [ netmiko ]
+  x1:                         # Global default route
+    device: frr
+    bgp.as: 65100
+
+links:
+- dut:
+    bgp.default_originate: true
+  x1:
+
+validate:
+  ebgp:
+    description: Check IPv4 EBGP sessions with DUT
+    wait_msg: Waiting for EBGP session establishment
+    wait: ebgp_session
+    nodes: [ x1 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  def_ipv4:
+    description: Check whether DUT advertises IPv4 default route to X1
+    wait: bgp_scan_time
+    wait_msg: Waiting for BGP convergence
+    nodes: [ x1 ]
+    plugin: bgp_prefix('0.0.0.0/0')
+  orig_ipv4:
+    description: Check the origination of custom IPv4 prefix
+    wait: bgp_scan_time
+    wait_msg: Waiting for BGP convergence
+    nodes: [ x1 ]
+    plugin: bgp_prefix('1.2.3.4/32')

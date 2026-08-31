@@ -17,7 +17,7 @@ import typing
 from box import Box
 
 from ...providers import get_cpu_model
-from ...providers.libvirt import LIBVIRT_MANAGEMENT_NETWORK_NAME, create_vagrant_network
+from ...providers.libvirt.labops import LIBVIRT_MANAGEMENT_NETWORK_NAME, create_vagrant_network
 from ...utils import files as _files
 from ...utils import log, status, strings, templates
 from .. import error_and_exit, external_commands, parser_add_debug, parser_add_verbose
@@ -430,9 +430,9 @@ preceded by "netlab/".
 
   strings.print_colored_text('[IMPORT]  ','green',None)
   print(f"Importing Vagrant box {boxname} version {version}")
-  if not external_commands.run_command(f"vagrant box add {json_name}"):
+  if not external_commands.run_command(["vagrant","box","add","--provider","libvirt",json_name]):
     error_and_exit(
-      f'Failed to add Vagrant box. Fix the error(s) and use "vagrant box add {json_name}" to add it.',
+      f'Failed to add Vagrant box. Fix the error(s) and use "vagrant box add --provider libvirt {json_name}" to add it.',
       module='libvirt',
       category=log.FatalError,
       more_hints=[

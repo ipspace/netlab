@@ -1,0 +1,18 @@
+{% if services.dns._server_list is defined %}
+{#
+    Define at most six DNS server addresses
+    Specifying with @vrf allows resolution from 'main'
+#}
+/ip/dns/set servers={%
+      if services.dns.transport_vrf is defined
+        %}{{ services.dns._server_list[:6] | join('@' ~ services.dns.transport_vrf ~ ',') }}@{{ services.dns.transport_vrf }}{%
+      else %}{{ services.dns._server_list[:6] | join(',') }}{% endif %}
+{% endif %}
+
+{% if services.syslog._server_list is defined %}
+{%   for syslog_host in services.syslog._server_list %}
+/system/logging/action add name=syslog{{ loop.index }} remote={{syslog_host}} remote-log-format=syslog target=remote {%
+       if services.syslog.transport_vrf is defined %}vrf={{ services.syslog.transport_vrf }}{% endif +%}
+/system/logging add action=syslog{{ loop.index }} topics=info
+{%   endfor %}
+{% endif %}

@@ -90,12 +90,18 @@ class ConfigurationFiles(_TopologyOutput):
         mod_list = ['normalize'] + mod_list
 
       mod_list += n_data.get('module',[]) + n_data.get('config',[])
+      node_config = n_data.get('_node_config',{})
       for module in mod_list:
         if module in skip_config:
           continue
         if module in create_list:
           continue
-        if do_config(module,f'{n_name}/{module}','cfg'):
+
+        nc_lookup = module.replace('.','@')
+        cfg_mode = 'cfg'
+        if ':' in node_config.get(nc_lookup,''):
+          cfg_mode = node_config[nc_lookup].rsplit(":",1)[-1]
+        if do_config(module,f'{n_name}/{module}',cfg_mode):
           create_list.append(module)
 
       if not log.VERBOSE and create_list:

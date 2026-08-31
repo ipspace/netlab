@@ -212,7 +212,11 @@ def get_calling_module(module: typing.Optional[str]) -> str:
 
   try:
     err_caller = inspect.stack()[2].filename
-    return os.path.splitext(os.path.basename(err_caller))[0]
+    filename = os.path.splitext(os.path.basename(err_caller))[0]
+    if filename != '__init__':
+      return filename
+    return os.path.basename(os.path.dirname(err_caller))
+
   except:
     return 'unknown'
 
