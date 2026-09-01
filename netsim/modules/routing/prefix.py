@@ -171,7 +171,7 @@ expand_prefix_list:
 """
 def expand_prefix_list(p_name: str,o_name: str,node: Box,topology: Box) -> typing.Optional[list]:
   for (p_idx,p_entry) in enumerate(node.routing[o_name][p_name]):
-    x_path = f'nodes.{node.name}.routing.{o_name}.{p_name} sq#{p_entry.sequence}'
+    x_path = f'nodes.{node.name}.routing.{o_name}.{p_name} sequence#{p_entry.sequence}'
     x_entry = expand_prefix_entry(node.routing[o_name][p_name][p_idx],x_path,topology)
     node.routing[o_name][p_name][p_idx] = x_entry
 
