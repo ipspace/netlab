@@ -4,31 +4,26 @@ OK: clab installed and working correctly
 Starting clab nodes
  [INFO] Setting containerlab runtime to docker
 provider clab: executing flock -E 42 /tmp/netlab.lock containerlab deploy --reconfigure -t clab.yml
-16:12:53 INFO Containerlab started version=0.75.0
-16:12:53 INFO Parsing & checking topology file=clab.yml
-16:12:53 INFO Removing directory path=/work/netlab_cicd/clab-ml-17
-16:12:53 INFO Creating docker network name=nl_mgmt_17 IPv4 subnet=192.168.17.0/24 IPv6 subnet=fd00:df:1ab:17::/64 MTU=0
-16:12:53 INFO Creating lab directory path=/work/netlab_cicd/clab-ml-17
-16:12:53 INFO Creating container name=x1
-16:12:53 INFO Creating container name=dut
-16:12:54 INFO Created link: dut:eth1 ▪┄┄▪ x1:eth1
-16:12:55 INFO Executed command node=dut command="sleep 1" stdout=""
-16:12:55 INFO Executed command node=x1 command="sleep 1" stdout=""
-16:12:55 INFO Adding host entries path=/etc/hosts
-16:12:55 INFO Adding SSH config for nodes path=/etc/ssh/ssh_config.d/clab-ml-17.conf
-16:12:55 INFO containerlab version
-  🎉=
-  │ A newer containerlab version (0.78.0) is available!
-  │ Release notes: https://containerlab.dev/rn/0.78/
-  │ Run 'clab version upgrade' or see https://containerlab.dev/install/ for other installation options.
+05:24:06 INFO Containerlab started version=0.79.0
+05:24:06 INFO Parsing & checking topology file=clab.yml
+05:24:06 INFO Removing directory path=/work/netlab_cicd/clab-ml-17
+05:24:06 INFO Creating docker network name=nl_mgmt_17 IPv4 subnet=192.168.17.0/24 IPv6 subnet=fd00:df:1ab:17::/64 MTU=0
+05:24:06 INFO Creating lab directory path=/work/netlab_cicd/clab-ml-17
+05:24:06 INFO Creating container name=dut
+05:24:06 INFO Creating container name=x1
+05:24:07 INFO Created link: dut:eth1 ▪┄┄▪ x1:eth1
+05:24:08 INFO Executed command node=x1 command="sleep 1" stdout=""
+05:24:08 INFO Executed command node=dut command="sleep 1" stdout=""
+05:24:08 INFO Adding host entries path=/etc/hosts
+05:24:08 INFO Adding SSH config for nodes path=/etc/ssh/ssh_config.d/clab-ml-17.conf
 [1m╭[0m[1m────────────────[0m[1m┬[0m[1m──────────────────────────────[0m[1m┬[0m[1m─────────[0m[1m┬[0m[1m───────────────────[0m[1m╮[0m
 [1m│[0m[1m      Name      [0m[1m│[0m[1m          Kind/Image          [0m[1m│[0m[1m  State  [0m[1m│[0m[1m   IPv4/6 Address  [0m[1m│[0m
 [1m├[0m[1m────────────────[0m[1m┼[0m[1m──────────────────────────────[0m[1m┼[0m[1m─────────[0m[1m┼[0m[1m───────────────────[0m[1m┤[0m
 │ clab-ml-17-dut │ linux                        │ running │ 192.168.17.101    │
-│                │ quay.io/frrouting/frr:10.6.1 │         │ fd00:df:1ab:17::2 │
+│                │ quay.io/frrouting/frr:10.7.1 │         │ fd00:df:1ab:17::3 │
 ├────────────────┼──────────────────────────────┼─────────┼───────────────────┤
 │ clab-ml-17-x1  │ linux                        │ running │ 192.168.17.102    │
-│                │ quay.io/frrouting/frr:10.6.1 │         │ fd00:df:1ab:17::3 │
+│                │ quay.io/frrouting/frr:10.7.1 │         │ fd00:df:1ab:17::2 │
 ╰────────────────┴──────────────────────────────┴─────────┴───────────────────╯
 
 Initial configuration skipped, run 'netlab initial' to configure the devices
@@ -49,7 +44,7 @@ TASK [Remember the original deployment path(s)] ********************************
 ok: [dut]
 
 TASK [Do initial device configuration if needed] *******************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -58,94 +53,10 @@ TASK [Find configuration template for initial] *********************************
 ok: [dut]
 
 TASK [fail] ********************************************************************
-skipping: [dut]
-
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [dut]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [dut] => {
-    "msg": "initial configuration for dut\n=========================================\n#!/bin/bash\n#\nset -e\nset -x\n#\n# Create bash profile script\n#\ncat <<'SCRIPT' >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)# \"\necho\necho \"Use vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)\n#\n# FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands\n#\nsysctl -w net.ipv4.ip_forward=1\nsysctl -w net.ipv6.conf.all.forwarding=0\n#\n# Try to create the management VRF if netlab_mgmt_vrf is set. The VRF module has to be loaded\n# and the container has to have eth0 device\n#\nif grep vrf /proc/modules && ip link show dev eth0; then\n  #\n  # Get the current next hop for the default route\n  #\n  def_nh=$(ip route list default|awk '{ print $3 }')\n  #\n  # Create the management VRF and add eth0 to it\n  #\n  if [ ! -e /sys/devices/virtual/net/mgmt ]; then\n    ip link add mgmt type vrf table 42\n  fi\n  ip link set mgmt up\n  sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1\n  ip link set eth0 master mgmt\n  #\n  # Reinstall the default route if we had it before\n  #\n  if [[ -n \"$def_nh\" ]]; then\n    ip route add 0.0.0.0/0 vrf mgmt via $def_nh\n  fi\nfi\n#\n# Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)\n#\n\n# Set system defaults\n#\n# Send ARP requests from a sane source IP address\n#\nsysctl -w net.ipv4.conf.all.arp_announce=2\n\n#\n# Create loopbacks, stub and lag/bond devices\n#\nif [ ! -e /sys/class/net/lo ]; then\n  if [ ! -e /sys/devices/virtual/net/lo ]; then\n    ip link add lo type dummy\n    ip link set dev lo up\n  fi\nfi\n\n# Set Linux interface sysctl parameters: Disable IPv6 (for IPv4-only interfaces)\n# or SLAAC (if the device is a router)\n#\nip link set eth1 down\n# Linux interface parameters for eth1\n#\nsysctl -qw net/ipv6/conf/eth1/disable_ipv6=1\nip link set dev eth1 mtu 1500\nip link set eth1 up\n\n\n#\n# Add vtysh.conf file\necho \"service integrated-vtysh-config\" >/etc/frr/vtysh.conf\n\n\n!\nexit 0\n"
-}
-
-TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for dut
-
-TASK [Attempt to load VRF kernel module] ***************************************
-changed: [dut -> localhost]
-
-TASK [Disable FRR management VRF when modprobe fails] **************************
-skipping: [dut]
-
-TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for dut
-
-TASK [template] ****************************************************************
-changed: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
-TASK [run /tmp/config.sh to deploy initial config from /work/netlab_cicd/node_files/dut/initial.cfg] ***
-changed: [dut]
-
-TASK [run vtysh to import initial config from /work/netlab_cicd/node_files/dut/initial.cfg] ***
-skipping: [dut]
-
-TASK [Deploy saved configuration files] ****************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for dut
-
-TASK [Find configuration template] *********************************************
-ok: [dut]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-
-TASK [Check is the configuration template is a file] ***************************
-ok: [dut -> localhost]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-
-TASK [Process template /work/netlab_cicd/node_files/dut/saved.cfg for dut] *****
-skipping: [dut]
-
-TASK [debug] *******************************************************************
-skipping: [dut]
-
-TASK [debug] *******************************************************************
-skipping: [dut]
-
-TASK [Find custom configuration deployment script] *****************************
-ok: [dut]
-
-TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for dut
-
-TASK [template] ****************************************************************
-changed: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
-TASK [run /tmp/config.sh to deploy saved config from /work/netlab_cicd/node_files/dut/saved.cfg] ***
-skipping: [dut]
-
-TASK [run vtysh to import saved config from /work/netlab_cicd/node_files/dut/saved.cfg] ***
-changed: [dut]
+fatal: [dut]: FAILED! => {"changed": false, "msg": "Cannot find initial configuration template for frr\n"}
 
 PLAY RECAP *********************************************************************
-dut                        : ok=21   changed=5    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+dut                        : ok=5    changed=0    unreachable=0    failed=1    skipped=1    rescued=0    ignored=0   
 
+FatalError in config: Cannot reload initial device configurations
 [CREATED] dut: initial,saved
-Creating Device configuration snippets
-[CREATED] x1: initial,ospf
-Config Deploying device configurations
- [INFO] Executing initial configuration for node x1
- [INFO] Executing ospf configuration for node x1
-
-Results of configuration script deployments
-================================================================================
-x1               Script:  initial,ospf
-
-
