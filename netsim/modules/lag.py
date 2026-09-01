@@ -68,14 +68,36 @@ def check_lag_config(node: str, linkname: str, topology: Box) -> bool:
     return False
   return True
 
+def _supports_mlag(features: Box) -> bool:
+  return bool(features.lag.get('mlag',False))
+
+def _supports_esi_lag(features: Box) -> bool:
+  return bool(features.get('evpn.multihoming.lag',False))
+
 """
-check_mlag_support - check if the given node supports mlag
+check_mlag_support - check if the given node supports classic MLAG (peer-link)
 """
 def check_mlag_support(node: str, linkname: str, topology: Box) -> bool:
   _n = topology.nodes[node]
   features = devices.get_device_features(_n,topology.defaults)
-  if not (features.lag.get('mlag',False) or features.get('evpn.multihoming.lag',False)):
-    log.error(f'Node {_n.name} ({_n.device}) does not support MLAG or ESI-LAG, cannot be part of peerlink or M-side of LAG {linkname}',
+  if not _supports_mlag(features):
+    log.error(f'Node {_n.name} ({_n.device}) does not support MLAG, cannot be part of peerlink {linkname}',
+      category=log.IncorrectValue,
+      module='lag')
+    return False
+  return True
+
+"""
+check_mside_lag_support - check if the node can sit on the M-side of a multi-chassis LAG.
+
+The M-side topology (two nodes toward one host) is used by classic MLAG and by ESI-LAG.
+A peer-link is MLAG-only; ESI-LAG coordinates over EVPN and must not be treated as MLAG.
+"""
+def check_mside_lag_support(node: str, linkname: str, topology: Box) -> bool:
+  _n = topology.nodes[node]
+  features = devices.get_device_features(_n,topology.defaults)
+  if not (_supports_mlag(features) or _supports_esi_lag(features)):
+    log.error(f'Node {_n.name} ({_n.device}) does not support MLAG or ESI-LAG, cannot be part of M-side of LAG {linkname}',
       category=log.IncorrectValue,
       module='lag')
     return False
@@ -124,7 +146,7 @@ def set_lag_ifindex(bond: Box, intf: Box, topology: Box) -> bool:
   is_mside = intf.get('lag._mlag',False)
   _n = topology.nodes[intf.node]
   next_ifindex = _n.get('_lag_ifindex',None)
-  
+
   # print(f"set_lag_ifindex(is_mside={is_mside}) link_lag_ifindex={link_lag_ifindex} intf_lag_ifindex={intf_lag_ifindex} next_ifindex={next_ifindex} ")
   if intf_lag_ifindex is None:
     if link_lag_ifindex is None:
@@ -223,8 +245,8 @@ def create_lag_interfaces(link: Box, mlag_pairs: dict, topology: Box) -> None:
         new_atts = m + node_ifs[0]                              # Take first one
         ifatts = ifatts + { k:v for k,v in new_atts.items() if k not in skip_atts }
 
-      if len(group)==2:                                         # M-side of mlag?
-        if not check_mlag_support(node,link._linkname,topology):
+      if len(group)==2:                                         # M-side of MLAG or ESI-LAG?
+        if not check_mside_lag_support(node,link._linkname,topology):
           return
         ifatts.lag._mlag = True                                 # Set internal flag
       else:
@@ -300,7 +322,7 @@ def process_lag_link(link: Box, mlag_pairs: dict, topology: Box) -> bool:
       category=log.IncorrectAttr,
       module='lag')
     return False
-  elif not _types.must_be_list(parent=link.lag,key='members',path=link._linkname,module='lag'):
+  elif not _types.must_be_list(link.lag,'members',link._linkname,module='lag'):
     return False
 
   peerlink_id = link.get(PEERLINK_ID_ATT,None)   # Turn internal MLAG links into p2p links
@@ -383,7 +405,7 @@ def check_bridge_links(topology: Box) -> None:
       more_hints = [ 'See https://netlab.tools/module/lag/#lag-multi-provider for more details' ],
       module='lag',
       flag='lag.bridge')
-    
+
     err_cache[n_text] = True                                # Remember we already warned the user
 
 class LAG(_Module):
