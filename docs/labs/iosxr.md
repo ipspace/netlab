@@ -3,7 +3,7 @@
 
 Cisco IOS XR is supported by the **netlab libvirt package** command. To build an IOS XR box:
 
-* Create an empty directory on a Ubuntu machine with *libvirt* and *Vagrant*.
+* Create an empty directory on an Ubuntu machine with *libvirt* and *Vagrant*.
 * Download IOS XR software and unpack the image archive to get the `qcow2` disk image (example: `xrv9k-fullk9-x-7.4.2.qcow2`).
 * Execute **netlab libvirt package iosxr _virtual-disk-file-name_** and follow the instructions.
 
