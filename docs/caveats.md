@@ -724,11 +724,11 @@ The `sonic` device also runs under *containerlab* with the community `docker-son
 (caveats-vyos)=
 ## VyOS
 
-**netlab ** uses VyOS 1.5, which is currently a rolling release with daily builds. However, all the configurations should also work on the 1.4 LTS release (since it was tested just before it became the new LTS).
+**netlab ** uses VyOS 1.5-compatible configuration syntax. The configurations should also work on the 1.4 LTS release (since it was tested just before it became the new LTS).
 
 The use of a *rolling release* means potentially any build is broken or with regressions, even if the VyOS team is smart enough to perform some [automated smoke tests](https://github.com/vyos/vyos-1x/tree/current/smoketest/scripts/cli) and load [arbitrary configurations](https://github.com/vyos/vyos-1x/tree/current/smoketest/configs) to ensure there are no errors during config migration and system bootup.
 
-Using the latest build published on [Vagrant Hub](https://app.vagrantup.com/vyos/boxes/current) should allow us to easily track and react to any configuration syntax change (which, anyway, is a very rare event). In any case, if you find a misalignment between the VyOS config and the **netlab** templates, feel free to *Open an Issue* or *Submit a PR*.
+Building a local Vagrant box from a recent [VyOS rolling/nightly](https://vyos.net/get/nightly-builds/) or VyOS Stream ISO image should allow us to easily track and react to any configuration syntax change (which, anyway, is a very rare event). In any case, if you find a misalignment between the VyOS config and the **netlab** templates, feel free to *Open an Issue* or *Submit a PR*.
 
 (vyos-clab)=
 It looks like the official VyOS container is not updated as part of the daily builds; *netlab* uses a [third-party container](https://github.com/sysoleg/vyos-container) (`ghcr.io/sysoleg/vyos-container`) to run VyOS with *containerlab*.

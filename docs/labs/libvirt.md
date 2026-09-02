@@ -57,6 +57,7 @@ You have to use the following box names when installing or building the Vagrant 
 | Mikrotik RouterOS 7    | mikrotik/chr7               |
 | OpenBSD                | netlab/openbsd              |
 | Sonic                  | netlab/sonic                |
+| VyOS                   | vyos-local/vyos             |
 
 The following Vagrant boxes are automatically downloaded from Vagrant Cloud when you're using them for the first time in your lab topology:
 
@@ -64,13 +65,11 @@ The following Vagrant boxes are automatically downloaded from Vagrant Cloud when
 |------------------------|--------------------|
 | Cumulus VX             | CumulusCommunity/cumulus-vx:4.4.0 |
 | Generic Linux          | generic/ubuntu2004 |
-| VyOS                   | vyos/current       |
 
 **NOTES**:
 
 * Even if a new box version is available from Vagrant Cloud, Vagrant will only output a warning to let the user know an update is available. You can ignore that warning or update the box with `vagrant box update`. 
 * Vagrant does not automatically download the updated boxes because boxes can be relatively large (See [Vagrant box versioning](https://developer.hashicorp.com/vagrant/docs/boxes/versioning) for details).
-* We recommend that you periodically download the updated box for `vyos/current`
 
 (libvirt-build-boxes)=
 ### Building Vagrant Boxes
@@ -96,7 +95,7 @@ These documents contain box-building recipes using the **netlab libvirt** utilit
 * [Mikrotik RouterOS 7](routeros7.md) - based on the original [Mikrotik RouterOS](http://stefano.dscnet.org/a/mikrotik_vagrant/) by [Stefano Sasso](http://stefano.dscnet.org)
 * [OpenBSD](openbsd.md)
 * [Sonic](sonic.md)
-* [VyOS](https://github.com/ssasso/packer-vyos-vagrant) by [Stefano Sasso](http://stefano.dscnet.org) - if you don't want to use the one from Vagrant Cloud.
+* [VyOS](vyos.md) by [Stefano Sasso](http://stefano.dscnet.org)
 
 ```{note}
 For more Vagrant details, watch the *[Network Simulation Tools](https://my.ipspace.net/bin/list?id=NetTools#SIMULATE)* part of the *[Network Automation Tools](https://www.ipspace.net/Network_Automation_Tools)* webinar.
@@ -322,5 +321,6 @@ providers.libvirt.probe: []
    openbsd.md
    routeros7.md
    sonic.md
+   vyos.md
 ..
 ```
