@@ -30,6 +30,8 @@ echo
 echo "Install vagrant"
 echo ".. setting up Vagrant repository"
 set +e
+# Delete pre-3848 location for hashicorp keyring
+$SUDO rm /etc/apt/trusted.gpg.d/hashicorp-security.gpg 2>/dev/null
 $SUDO rm /usr/share/keyrings/hashicorp-archive-keyring.gpg
 # Delete old vagrant.list
 # See #3848
