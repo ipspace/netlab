@@ -42,7 +42,7 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | Cisco IOL [❗](caveats-iol)    | vrnetlab/cisco_iol:17.12.01 |
 | Cisco IOL L2 [❗](caveats-iol) | vrnetlab/cisco_iol:L2-17.12.01 |
 | Cisco IOSv             | vrnetlab/cisco_vios:15.9.3   |
-| Cisco IOS XRd [❗](build-iosxr-clab)] | ios-xr/xrd-control-plane:25.2.1 |
+| Cisco IOS XRd [❗](build-iosxr-clab) | ios-xr/xrd-control-plane:25.2.1 |
 | Cisco Nexus OS         | vrnetlab/vr-n9kv:9.3.8       |
 | Citrix Netscaler       | netlab/netscaler:latest      |
 | Dell OS10              | vrnetlab/vr-ftosv            |
