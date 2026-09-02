@@ -30,6 +30,7 @@ echo
 echo "Install vagrant"
 echo ".. setting up Vagrant repository"
 set +e
+$SUDO rm /usr/share/keyrings/hashicorp-archive-keyring.gpg
 # Delete old vagrant.list
 # See #3848
 $SUDO rm /etc/apt/sources.list.d/vagrant.list 2>/dev/null
