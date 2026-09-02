@@ -44,8 +44,8 @@ if ! command -v gpg >/dev/null; then
   $SUDO apt-get install -y gnupg2
 fi
 #
-# Next, add Vagrant repository
-curl -fsSL https://apt.releases.hashicorp.com/gpg | $SUDO gpg --dearmor -o /etc/apt/trusted.gpg.d/hashicorp-security.gpg
+# Next, add Hashicorp repository
+curl -fsSL https://apt.releases.hashicorp.com/gpg | $SUDO gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
 RELEASE_NAME=$(grep -oP '(?<=UBUNTU_CODENAME=).*' /etc/os-release || lsb_release -cs)
 $SUDO sh -c "echo 'deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $RELEASE_NAME main'" | $SUDO tee /etc/apt/sources.list.d/hashicorp.list
 #
