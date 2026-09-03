@@ -46,5 +46,5 @@ The installation script copies _netsim_ firstboot script into the VM as `/config
 
 ## Notes on Using the VyOS Box
 
-The default Vagrant box name used by _netlab_ is `vyos-local/vyos`. When **netlab libvirt package** asks for a box version, use the VyOS image version or build ID, for example `2026.09.01-0034-rolling`.
+The default Vagrant box name used by _netlab_ is `netlab/vyos`. When **netlab libvirt package** asks for a box version, use the VyOS image version or build ID, for example `2026.09.01-0034-rolling`.
 
