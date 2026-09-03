@@ -1,55 +1,27 @@
 Customizing VyOS for Vagrant
 ============================
 
-* The VM should already boot from the VyOS disk image created in the first stage
-* Wait for the 'login' prompt
-* Login as 'vyos' with password 'vyos'
-* Copy-paste the following configuration to enable SSH access to the temporary VM
+The build VM is customized for Vagrant automatically with a NoCloud cloud-init
+sequence delivered as a cidata ISO image (the bootstrap.iso attached as a
+CD-ROM during the second stage).
 
-============================
+* The VM boots from the VyOS disk image created in the first stage
+* cloud-init installs the first-boot script
+  (netsim/install/libvirt/vyos/user-data) as
+  `/opt/vyatta/etc/config/scripts/vyos-preconfig-bootup.script`
+* When the script is in place, cloud-init powers the VM off
 
-configure
-set interfaces ethernet eth0 address dhcp
-set interfaces ethernet eth0 description 'Temporary build management'
-set interfaces ethernet eth0 vrf 'management'
-set service ssh vrf 'management'
-set vrf name management table '65530'
-set system login user vyos authentication public-keys vagrant-insecure type ssh-rsa
-set system login user vyos authentication public-keys vagrant-insecure key 'AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ=='
-commit
-save
+When the packaged box boots in a lab, VyOS runs that persistent preconfig
+script after initial interface name resolution but before interface rescan and
+before the boot configuration is loaded. The script finds the netlab management
+interface by its `ca:fe:*` MAC address and deterministic netlab data interfaces
+by their `ca:f0:*` MAC addresses, writes matching `hw-id` bindings into the boot
+configuration, marks itself done, and triggers a reboot. On the next boot, VyOS
+uses those saved `hw-id` bindings to rename the interfaces before loading the
+configuration.
 
-exit
-
-show interfaces ethernet eth0
-
-============================
-
-* Find the temporary DHCP address assigned to eth0 in the command output
-* From the netlab repository root in another terminal, copy the first-boot script
-  to the temporary VM, replacing TEMP_IP with the eth0 address:
-
-============================
-
-scp netsim/install/libvirt/vyos/netlab-vyos-firstboot vyos@TEMP_IP:/tmp/
-
-============================
-
-* Go back to the VM console
-* Copy-paste the following commands to install the first-boot script and remove
-  the temporary eth0 configuration before packaging the box
-
-============================
-
-sudo install -o root -g root -m 755 /tmp/netlab-vyos-firstboot /config/scripts/vyos-preconfig-bootup.script
-
-configure
-delete interfaces ethernet eth0
-commit
-save
-
-exit
-
-============================
-
-* Shutdown the VM with 'poweroff'
+The box must not contain an `eth0` configuration node. Keeping `eth0` without
+`hw-id` makes VyOS treat it as a pending hardware binding; when a lab VM has
+multiple NICs, VyOS refuses to guess which NIC should inherit the `eth0`
+configuration and the boot fails. If you are reusing a disk from an earlier
+failed attempt, recreate the base qcow2 image before continuing.

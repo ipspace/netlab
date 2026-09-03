@@ -68,11 +68,16 @@ If you're using a *netlab* release older than 1.8.2, or if you're using a Linux 
 
 ## Initial Device Configuration
 
-During the second stage, **netlab libvirt package** starts the installed VyOS disk image with a temporary management interface so you can customize it for Vagrant from the console and copy the first-boot script into the VM. **netlab libvirt config vyos** command displays the build recipe:
+During the second stage, **netlab libvirt package** customizes the installed VyOS disk image for Vagrant automatically with a NoCloud cloud-init sequence. It generates a `cidata` ISO image from the files in `netsim/install/libvirt/vyos/` and attaches it to the build VM as a CD-ROM. On first boot, cloud-init installs the first-boot script into the image and powers the VM off; there is no need to configure the VM from the console. The **netlab libvirt config vyos** command displays the build recipe:
+
+The customizing files in `netsim/install/libvirt/vyos/` are:
+
+* `user-data` -- the cloud-init configuration that installs the first-boot script
+* `meta-data` -- the minimum NoCloud metadata
+
+The cloud-init `user-data` writes the first-boot script to `/opt/vyatta/etc/config/scripts/vyos-preconfig-bootup.script` (see the [VyOS cloud-init documentation](https://docs.vyos.io/en/latest/automation/cloud-init.html) for the script directory conventions). When the real lab VM boots, VyOS runs that persistent preconfig script after initial interface name resolution but before interface rescan and before the boot configuration is loaded. The script finds the netlab management interface by its `ca:fe:*` MAC address and deterministic netlab data interfaces by their `ca:f0:*` MAC addresses, writes matching `hw-id` bindings into the boot configuration, marks itself done, and triggers a reboot. On the next boot, VyOS uses those saved `hw-id` bindings to rename the interfaces before loading the configuration.
 
 The packaged Vagrant box must not contain an `eth0` configuration node. Keeping `eth0` without `hw-id` makes VyOS treat it as a pending hardware binding; when a lab VM has multiple NICs, VyOS refuses to guess which NIC should inherit the `eth0` configuration and the boot fails. If you are reusing a disk from an earlier failed attempt, recreate the base qcow2 image before continuing.
-
-The recipe copies [netsim/install/libvirt/vyos/netlab-vyos-firstboot](../../netsim/install/libvirt/vyos/netlab-vyos-firstboot) into the VM as `/config/scripts/vyos-preconfig-bootup.script`. When the real lab VM boots, VyOS runs that persistent preconfig script after initial interface name resolution but before interface rescan and before the boot configuration is loaded. The script finds the netlab management interface by its `ca:fe:*` MAC address and deterministic netlab data interfaces by their `ca:f0:*` MAC addresses, writes matching `hw-id` bindings into the boot configuration, marks itself done, and triggers a reboot. On the next boot, VyOS uses those saved `hw-id` bindings to rename the interfaces before loading the configuration.
 
 ```{eval-rst}
 .. include:: vyos.txt
