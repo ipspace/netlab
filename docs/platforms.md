@@ -150,7 +150,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | OpenBSD             |  [✅](build-openbsd)  |  [✅](clab-vrnetlab)  |
 | SONiC               | [✅](build-sonic-box) | [✅](build-sonic-container) |
 | VPP                 |  ❌  |  ✅  |
-| VyOS                |  ✅  |  ✅[❗](caveats-vyos)  |
+| VyOS                |  [✅](build-vyos)  |  ✅[❗](caveats-vyos)  |
 
 **Note:**
 

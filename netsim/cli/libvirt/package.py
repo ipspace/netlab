@@ -49,7 +49,7 @@ def package_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
     dest='disk',
     action='store',
     type=argparse.FileType('r'),
-    help='Virtual machine disk (vmdk or qcow2)')
+    help='Virtual machine disk (qcow2, vmdk, ova, zip, or iso)')
 
   parser_add_verbose(parser)
   parser_add_debug(parser)
@@ -175,6 +175,11 @@ def abort_on_failure(cmd: str) -> None:
   if not external_commands.run_command(cmd):
     log.fatal('Aborting')
 
+def check_disk_type(fname: str) -> None:
+  fext = fname.rsplit('.')[-1]
+  if fext not in ('qcow2','vmdk','ova','zip','iso'):
+    log.fatal(f'Unknown disk image type {fext}')
+
 def lp_create_vm_disk(args: argparse.Namespace, workdir: str) -> None:
   name = args.disk.name
 
@@ -184,7 +189,7 @@ def lp_create_vm_disk(args: argparse.Namespace, workdir: str) -> None:
     abort_on_failure(f'unzip {name}')
     name = name[:-4]
 
-  if '.ova' in name:
+  if name.endswith('.ova'):
     strings.print_colored_text('[UNPACK]  ','green',None)
     print(f"Unpacking OVA archive {name}")
     abort_on_failure(f'tar xvf {name}')
@@ -193,11 +198,18 @@ def lp_create_vm_disk(args: argparse.Namespace, workdir: str) -> None:
       log.fatal('The OVA archive did not contain a VMDK disk, aborting','libvirt')
     name = vmdk[0]
 
-  if '.vmdk' in name:
+  if name.endswith('.vmdk'):
     strings.print_colored_text('[CONVERT] ','green',None)
     print(f"Converting {name} into qcow2 format")
     abort_on_failure(f'qemu-img convert -f vmdk -O qcow2 {name} {workdir}/vm.qcow2')
-  else:
+  elif name.endswith('.iso'):
+    strings.print_colored_text('[COPY]    ','green',None)
+    print(f"Creating {workdir}/install.iso from {name}")
+    abort_on_failure(f'cp {name} {workdir}/install.iso')
+    strings.print_colored_text('[CREATE]  ','green',None)
+    print(f"Creating empty VM disk vm.qcow2")
+    abort_on_failure(f'qemu-img create -f qcow2 {workdir}/vm.qcow2 20G')
+  else:     # Must be qcow2, or our type-checking routine is broken
     strings.print_colored_text('[COPY]    ','green',None)
     print(f"Creating a copy of {name} in {workdir}")
     abort_on_failure(f'cp {name} {workdir}/vm.qcow2')
@@ -511,7 +523,7 @@ def run(cli_args: typing.List[str], topology: Box) -> None:
   settings = topology.defaults
   args = package_parse(cli_args,settings)
   log.set_logging_flags(args)
-
+  check_disk_type(args.disk.name)
   workdir = f'/tmp/build_{args.device}'
   try:
     build(args,topology,workdir)
