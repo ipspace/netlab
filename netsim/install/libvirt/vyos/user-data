@@ -1,0 +1,101 @@
+#cloud-config
+hostname: vyos
+create_hostname_file: true
+fqdn: lab.local
+
+write_files:
+- path: /opt/vyatta/etc/config/scripts/vyos-preconfig-bootup.script
+  permissions: '0755'
+  content: |
+    #!/usr/bin/env python3
+
+    from pathlib import Path
+    import subprocess
+
+    from vyos.configtree import ConfigTree
+
+
+    CONFIG_FILE = Path('/opt/vyatta/etc/config/config.boot')
+    MARKER_FILE = Path('/opt/vyatta/etc/config/.netlab-vyos-firstboot.done')
+
+
+    def get_live_interfaces() -> dict[str, str]:
+        interfaces = {}
+        for address_file in sorted(Path('/sys/class/net').glob('eth*/address')):
+            try:
+                mac = address_file.read_text().strip().lower()
+            except OSError:
+                continue
+            interfaces[address_file.parent.name] = mac
+        return interfaces
+
+
+    def get_management_mac(interfaces: dict[str, str]) -> str:
+        for mac in interfaces.values():
+            if mac.startswith('ca:fe:'):
+                return mac
+        return ''
+
+
+    def get_netlab_data_interfaces(interfaces: dict[str, str]) -> dict[str, str]:
+        data_interfaces = {}
+        for _, mac in interfaces.items():
+            octets = mac.split(':')
+            if len(octets) != 6 or octets[0:2] != ['ca', 'f0']:
+                continue
+            ifindex = int(octets[4] + octets[5], 16)
+            if ifindex > 0:
+                data_interfaces[f'eth{ifindex}'] = mac
+        return data_interfaces
+
+
+    def update_boot_config(expected_interfaces: dict[str, str]) -> None:
+        config = ConfigTree(CONFIG_FILE.read_text())
+        eth_base = ['interfaces', 'ethernet']
+        expected_names = set(expected_interfaces)
+        expected_macs = set(expected_interfaces.values())
+
+        if config.exists(eth_base):
+            for ifname in list(config.list_nodes(eth_base)):
+                if_hw_id = eth_base + [ifname, 'hw-id']
+                same_hwid = config.exists(if_hw_id) and config.return_value(if_hw_id).lower() in expected_macs
+                if ifname in expected_names or same_hwid:
+                    config.delete(eth_base + [ifname])
+
+        if not config.exists(eth_base):
+            config.set(eth_base)
+        config.set_tag(eth_base)
+        for ifname, mac in expected_interfaces.items():
+            config.set(eth_base + [ifname, 'hw-id'], value=mac)
+
+        config.set(eth_base + ['eth0', 'address'], value='dhcp')
+        config.set(eth_base + ['eth0', 'description'], value='Out-Of-Band')
+        config.set(eth_base + ['eth0', 'vrf'], value='management')
+
+        CONFIG_FILE.write_text(config.to_string())
+
+
+    def reboot() -> None:
+        subprocess.run(['systemctl', 'reboot', '--no-wall'], check=False)
+
+
+    def main() -> None:
+        if MARKER_FILE.exists() or not CONFIG_FILE.exists():
+            return
+
+        live_interfaces = get_live_interfaces()
+        mgmt_mac = get_management_mac(live_interfaces)
+        if not mgmt_mac:
+            return
+
+        expected_interfaces = {'eth0': mgmt_mac} | get_netlab_data_interfaces(live_interfaces)
+        update_boot_config(expected_interfaces)
+        MARKER_FILE.write_text('done\n')
+        reboot()
+
+
+    if __name__ == '__main__':
+        main()
+
+power_state:
+  mode: poweroff
