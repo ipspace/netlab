@@ -1,5 +1,13 @@
 #!/bin/bash
 #
+set +e
+# Delete pre-3848 location for hashicorp keyring
+$SUDO rm /etc/apt/trusted.gpg.d/hashicorp-security.gpg 2>/dev/null
+$SUDO rm /usr/share/keyrings/hashicorp-archive-keyring.gpg 2>/dev/null
+# Delete old vagrant.list
+# See #3848
+$SUDO rm /etc/apt/sources.list.d/vagrant.list 2>/dev/null
+$SUDO rm /etc/apt/sources.list.d/hashicorp.list 2>/dev/null
 set -e
 #
 echo "Update the package list"
@@ -29,10 +37,6 @@ echo ".. libvirt packages installed"
 echo
 echo "Install vagrant"
 echo ".. setting up Vagrant repository"
-set +e
-$SUDO rm /etc/apt/trusted.gpg.d/hashicorp-security.gpg 2>/dev/null
-$SUDO rm /etc/apt/sources.list.d/vagrant.list 2>/dev/null
-set -e
 # add-apt-repository has been deprecated, doesn't work on Debian 11 and will be removed from Ubuntu 22
 # changed to new method - ghostinthenet - 20220417
 #
@@ -42,9 +46,10 @@ if ! command -v gpg >/dev/null; then
   $SUDO apt-get install -y gnupg2
 fi
 #
-# Next, add Vagrant repository
-curl -fsSL https://apt.releases.hashicorp.com/gpg | $SUDO gpg --dearmor -o /etc/apt/trusted.gpg.d/hashicorp-security.gpg
-$SUDO sh -c 'echo "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" > /etc/apt/sources.list.d/vagrant.list'
+# Next, add Hashicorp repository
+curl -fsSL https://apt.releases.hashicorp.com/gpg | $SUDO gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+RELEASE_NAME=$(grep -oP '(?<=UBUNTU_CODENAME=).*' /etc/os-release || lsb_release -cs)
+$SUDO sh -c "echo 'deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $RELEASE_NAME main'" | $SUDO tee /etc/apt/sources.list.d/hashicorp.list
 #
 # Pin vagrant version to one we know works
 cat <<FILE | $SUDO tee /etc/apt/preferences.d/vagrant
