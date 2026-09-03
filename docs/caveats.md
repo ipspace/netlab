@@ -495,6 +495,21 @@ ansible_httpapi_port: 80
 * An OSPFv3 ABR running FRR release 10.3 does not originate summary external routes from NSSA areas
 * As of FRRouting release 10.6.0, the FRR implementation of EVPN for VXLAN-over-IPv6 is incompatible with the Arista EOS implementation due to different encodings of the PMSI_TUNNEL_ATTRIBUTE.
 
+(caveats-ocnos)=
+## IP Infusion OcNOS
+
+* OcNOS ships a commercial NOS image; there is no public Vagrant/Containerlab box. Obtain the `vrnetlab/ipinfusion_ocnos` container image (or an equivalent OcNOS VM) from IP Infusion and build/import it yourself.
+* OcNOS's CLI (`cmlsh`) is a restricted shell with **no non-interactive exec mode** -- a plain `ssh device 'show ...'` fails with `Try 'cmlsh --help'`. Configuration deploy and collection use the **ipinfusion.ocnos** Ansible collection (`ocnos_config` / `ocnos_facts`) over `ansible_connection: network_cli`, which drives `cmlsh` interactively through dedicated cliconf/terminal plugins. Install the collection with `ansible-galaxy collection install ipinfusion.ocnos`.
+* Because of the `cmlsh` restriction above, *netlab*'s SSH and `docker exec` validation transports cannot issue `show` commands directly against an OcNOS node. OcNOS instead uses the **`ansible` validation action**, which fetches show output through the `ipinfusion.ocnos.ocnos_command` module (declared in `netsim/devices/ocnos.yml` as `netlab_validate.ansible_module`); `netlab validate` works against OcNOS on both the device under test and attached FRR/Linux probes.
+* An OSPF (v2 or v3) network-membership change on an already-running process (a new area or network added to an existing `router ospf`/`router ipv6 ospf`) makes OcNOS's `commit` return a non-empty informational notice (`Use "clear ip[v6] ospf process" command to take effect`). The `ocnos_config` Ansible module treats any non-empty commit response as a failure, which aborts the rest of that node's play -- any modules queued after `ospf` in the same **netlab initial** run (for example `isis`, `bgp`, `vrf`) are silently skipped for that node. Run **netlab initial** a second time after the first OSPF network/area change on a node; the second pass re-sends the now-unchanged OSPF config (no new membership, no notice) and lets the remaining modules deploy normally. This is a one-time cost per fresh OSPF network change, not a per-boot cost.
+* The main loopback interface name is `lo`; the kernel `lo` owns `127.0.0.1`, so *netlab*'s loopback address is configured as a `secondary` address. Additional *netlab* loopbacks become `loopback<N>` (OcNOS does not support `loopback0`).
+* OcNOS declares DHCP client and relay support and renders the corresponding configuration (cross-checked against the OKF CLI reference), but the DHCP **relay datapath** is not exercised by the integration suite on a containerlab-only host -- the `dhcp/11-ipv4-relay` test needs a libvirt-based `dnsmasq` server probe. OcNOS is therefore intentionally omitted from the [DHCP support table](platform-services-support) until that end-to-end path is covered.
+* GRE tunnel configuration renders for OcNOS, but the tunnel line protocol does not come up on the tested OcNOS 7.0 image, so OcNOS is not listed among the [tunnel.gre](plugin-tunnel-gre) supported platforms.
+* VLANs use the Customer Bridge (VLAN-aware bridge) model: `bridge 1 protocol ieee vlan-bridge` + `vlan database`, with SVIs named `vlan1.<vlan-id>`.
+* Per-VRF OSPF uses a positional VRF name, not a `vrf` keyword: `router ospf <process-id> <vrf-name>`.
+* LACP aggregates are named `po<N>`; static (non-LACP) port channels are named `sa<N>`.
+* OSPFv3 is not supported inside a VRF: the `router ipv6 vrf ospf <name>` command commits and the interface area binding is accepted, but the process never actually attaches to the VRF (`show ipv6 ospf` reports zero areas indefinitely). This is a proven NSM-level gap, not a template limitation.
+
 (caveats-junos)=
 ## Common Junos caveats
 

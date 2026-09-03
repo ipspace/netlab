@@ -1,0 +1,24 @@
+{#
+  OcNOS bgp.session plugin template.
+  OKF-verified (differs from IOS): password = `neighbor X authentication-key 0 <clear>`
+  (stored 0x-encrypted); timers = `neighbor X timers <keepalive> <hold>`. GTSM =
+  `neighbor X ttl-security hops <n>` (parser-probe before relying). bfd/passive already
+  handled by the base bgp template / bfd module. Router-level neighbor commands.
+#}
+{% if bgp.as is defined %}
+router bgp {{ bgp.as }}
+{% for n in bgp.neighbors|default([]) %}
+{% for af in ['ipv4'] if n[af] is defined and n[af] is string %}
+{% if n.password is defined %}
+ neighbor {{ n[af] }} authentication-key 0 {{ n.password }}
+{% endif %}
+{% if n.timers is defined %}
+ neighbor {{ n[af] }} timers {{ n.timers.keepalive|default(60) }} {{ n.timers.hold|default(180) }}
+{% endif %}
+{% if n.gtsm is defined %}
+ neighbor {{ n[af] }} ttl-security hops {{ n.gtsm }}
+{% endif %}
+{% endfor %}
+{% endfor %}
+!
+{% endif %}

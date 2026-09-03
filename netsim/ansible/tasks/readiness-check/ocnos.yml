@@ -1,0 +1,17 @@
+#
+# OcNOS device readiness check (triggered by netlab_ready: [ ansible ] in devices/ocnos.yml).
+#
+# OcNOS CLI (cmlsh) has no non-interactive exec mode, so the generic raw-SSH readiness probe
+# (tasks/readiness-check/ssh.yml runs `ssh node "show version"`, which cmlsh rejects) never
+# succeeds. Instead probe over the ipinfusion.ocnos connection -- the same transport config
+# deploy uses -- retrying until the management CLI answers. The vrnetlab OcNOS VM takes ~9 min
+# to boot, so the bound is netlab_check_retries x netlab_check_delay (default 60 x 12 = 720s).
+#
+---
+- name: "Wait for OcNOS management CLI to become ready ({{ inventory_hostname }})"
+  ipinfusion.ocnos.ocnos_command:
+    commands: [ show version ]
+  register: _ocnos_ready
+  until: _ocnos_ready is succeeded
+  retries: "{{ netlab_check_retries | default(60) }}"
+  delay: "{{ netlab_check_delay | default(12) }}"

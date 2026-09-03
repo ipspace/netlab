@@ -1,0 +1,28 @@
+{#
+  OcNOS MPLS template (LDP + MPLS/VPN).
+  OKF-verified syntax (mpls guide): `router ldp` + `transport-address ipv4 <lo>`;
+  core interfaces need `label-switching` AND `enable-ldp ipv4`.
+  VPNv4: `address-family vpnv4` under router bgp + per-neighbor activate.
+#}
+{% if ldp is defined %}
+router ldp
+{% if loopback.ipv4 is defined and loopback.ipv4 is string %}
+ transport-address ipv4 {{ loopback.ipv4 | ansible.utils.ipaddr('address') }}
+{% endif %}
+!
+{% for l in netlab_interfaces if 'ldp' in l and not l.ldp.passive|default(false) %}
+interface {{ l.ifname }}
+ label-switching
+ enable-ldp ipv4
+!
+{% endfor %}
+{% endif %}
+{% if mpls.vpn is defined and bgp.as is defined %}
+router bgp {{ bgp.as }}
+ address-family vpnv4
+{% for n in bgp.neighbors|default([]) if n.vpnv4 is defined %}
+ neighbor {{ n.vpnv4 }} activate
+{% endfor %}
+ exit-address-family
+!
+{% endif %}

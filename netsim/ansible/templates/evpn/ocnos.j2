@@ -1,0 +1,40 @@
+{#
+  OcNOS EVPN template (EVPN-VXLAN control plane).
+  Per-VNI EVPN instance = `mac vrf <name>` with rd/route-targets (OKF); BGP gets
+  `address-family l2vpn evpn` with per-neighbor activate.
+#}
+{% if evpn.transport|default("vxlan") == "mpls" %}
+{# --- EVPN-MPLS control plane: LDP/BGP-EVPN L2 EVI over MPLS.
+     Control-plane VERIFIED live (type-3 + network port up); the untagged-host AC
+     datapath is a confirmed access-model gap -- see OKF + blocker issue. --- #}
+evpn mpls enable
+evpn mpls vtep-ip-global {{ loopback.ipv4.split("/")[0] }}
+!
+{% for vname, v in vlans.items() if v.evpn.evi is defined %}
+mac vrf {{ vname }}
+ rd {{ v.evpn.rd }}
+ route-target both {{ bgp.as }}:{{ v.evpn.evi }}
+ evpn-vlan-service vlan-based
+!
+evpn mpls id {{ v.evpn.evi }}
+ host-reachability-protocol evpn-bgp {{ vname }}
+!
+{% endfor %}
+{# AC binding: untagged L2 subinterface per access port (control-plane binds; datapath gap) #}
+{% for l in netlab_interfaces|default([]) if l.vlan.access is defined and vlans[l.vlan.access].evpn.evi is defined %}
+interface {{ l.ifname }}.{{ l.vlan.access_id }} switchport
+ encapsulation untagged
+ access-if-evpn
+  map vpn-id {{ vlans[l.vlan.access].evpn.evi }}
+!
+{% endfor %}
+{% endif %}
+{% if bgp.as is defined %}
+router bgp {{ bgp.as }}
+ address-family l2vpn evpn
+{% for n in bgp.neighbors|default([]) if n.evpn|default(False) %}
+ neighbor {{ n.ipv4 }} activate
+{% endfor %}
+ exit-address-family
+!
+{% endif %}

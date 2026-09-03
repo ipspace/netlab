@@ -1,0 +1,106 @@
+{#
+  OcNOS initial (base) config template
+  Renders netlab's per-node data model into OcNOS 7.0 CLI. Follows the netlab template
+  structure (netlab.tools/dev/config/initial): static -> system -> loopback -> mgmt -> data.
+  Syntax verified against demos/bisbee/20-target-ocnos.cfg + OKF wiki/okf/ocnos-sp-7.0/.
+  NOTE: no whitespace-stripping comment tags near "!" separators (they are OcNOS comment
+  markers — a stripped newline would fold the next command into a comment).
+  LLDP: OcNOS global enable is `lldp run` (verified against the live 7.0.0 parser + OKF).
+  The mgmt interface is configured by clab/vrnetlab, so netlab doesn't touch it.
+#}
+lldp run
+!
+{# gNMI dial-in server (:9339) + OpenConfig model translation — enables the gNMI validator #}
+feature streaming-telemetry vrf management
+!
+netconf translation openconfig
+!
+hostname {{ inventory_hostname }}
+!
+{% if vrfs is defined %}
+{% for vname, vdata in vrfs.items() %}
+ip vrf {{ vname }}
+{% if vdata.rd is defined %}
+ rd {{ vdata.rd }}
+{% endif %}
+{% for rt in vdata.import | default([]) %}
+ route-target import {{ rt }}
+{% endfor %}
+{% for rt in vdata.export | default([]) %}
+ route-target export {{ rt }}
+{% endfor %}
+!
+{% endfor %}
+{% endif %}
+{# VLAN (Customer Bridge): create the VLAN-aware bridge + the VLAN database. Physical
+   ports get their switchport membership in vlan/ocnos.j2; SVIs are configured below. #}
+{% if vlans is defined %}
+{% set bproto = {'stp':'ieee','rstp':'rstp','mstp':'mstp'}[stp.protocol] if stp.protocol is defined else 'ieee' %}
+{# MSTP takes NO 'vlan-bridge' suffix (parser: bridge protocol mstp -> ring|<cr> only); it's a VLAN-aware bridge by nature. ieee/rstp need the suffix. #}
+bridge 1 protocol {{ bproto }}{{ ' vlan-bridge' if bproto != 'mstp' else '' }}
+!
+vlan database
+{% for vname, vdata in vlans.items() %}
+ vlan {{ vdata.id }} bridge 1 state enable
+{% endfor %}
+!
+{% endif %}
+{% if loopback is defined %}
+interface {{ loopback.ifname | default('lo') }}
+{% if loopback.ipv4 is defined and loopback.ipv4 is string %}
+{#   the kernel "lo" owns 127.0.0.1 (address must be secondary); numbered loopbacks take primaries #}
+ ip address {{ loopback.ipv4 }}{{ ' secondary' if loopback.ifname | default('lo') == 'lo' else '' }}
+{% endif %}
+{% if loopback.ipv6 is defined and loopback.ipv6 is string %}
+ ipv6 address {{ loopback.ipv6 }}
+{% endif %}
+!
+{% endif %}
+{% for l in netlab_interfaces | default([]) if l.type | default('') == 'loopback' and l.ifname != loopback.ifname | default('lo') %}
+interface {{ l.ifname }}
+{% if l.name is defined %}
+ description {{ l.name }}
+{% endif %}
+{% if l.ipv4 is defined and l.ipv4 is string %}
+ ip address {{ l.ipv4 }}
+{% endif %}
+{% if l.ipv6 is defined and l.ipv6 is string %}
+ ipv6 address {{ l.ipv6 }}
+{% endif %}
+!
+{% endfor %}
+{% for l in netlab_interfaces | default([]) if l.type | default('') != 'loopback' %}
+interface {{ l.ifname }}
+{% if l.name is defined %}
+ description {{ l.name }}{{ " [" + l.role + "]" if l.role is defined else "" }}
+{% endif %}
+{% if l.type | default('') == 'lag' and l.vlan.access is defined and vlans is defined and vlans[l.vlan.access].vni is defined %}
+{#   L2/L3 mode can't be set on an aggregator once it has members ("cannot be explicitly
+     configured on aggregator interfaces with member") -- a VNI-mapped ES-LAG (evpn.multihoming) must become a switchport HERE, before lag module adds channel-group members #}
+ switchport
+{% endif %}
+{% if l.mtu is defined and not l.virtual_interface | default(false) and l.lag._parentindex is not defined %}
+{#   LAG members refuse interface-level config ("%% Cannot configure on LAG member");
+     the aggregate po<N> carries the MTU #}
+ mtu {{ l.mtu }}
+{% endif %}
+{# VRF membership must be set BEFORE the IP address (OcNOS clears the address otherwise) #}
+{% if l.vrf is defined %}
+ ip vrf forwarding {{ l.vrf }}
+{% endif %}
+{% set _irbgw = l.vlan.mode|default('') == 'irb' and l.vrf is defined and vrfs is defined and vrfs[l.vrf].evpn.transit_vni is defined %}
+{% if l.ipv4 is defined and l.ipv4 is string and '/' in l.ipv4 and not _irbgw %}
+ ip address {{ l.ipv4 }}
+{% endif %}
+{% if l.ipv6 is defined and l.ipv6 is string and '/' in l.ipv6 %}
+ ipv6 address {{ l.ipv6 }}
+{% endif %}
+{% if not l.virtual_interface | default(false) %}
+{% if l.shutdown | default(false) %}
+ shutdown
+{% else %}
+ no shutdown
+{% endif %}
+{% endif %}
+!
+{% endfor %}

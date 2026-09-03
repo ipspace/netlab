@@ -1,0 +1,17 @@
+---
+# netlab config-deploy task for OcNOS. Pushes the rendered config file
+# (config_template) to the node using the ipinfusion.ocnos Ansible collection over
+# ansible.netcommon.network_cli -- OcNOS's cmlsh restricted shell has no
+# non-interactive exec mode, so raw SSH command push (paramiko/netmiko) does not
+# work; this collection ships the cliconf/terminal plugins that drive cmlsh
+# interactively. Requires: ansible-galaxy collection install ipinfusion.ocnos
+- name: "ocnos_config: deploying {{ netsim_action | default('config') }} from {{ config_template }}"
+  ipinfusion.ocnos.ocnos_config:
+    src: "{{ config_template }}"
+    # match: none -- send the rendered file verbatim in order. The default
+    # line-matching skips lines already present in running-config, including
+    # mode-exit lines like exit-address-family, which breaks mode tracking on
+    # re-deploys. Our templates are written to be re-runnable, so verbatim is
+    # correct.
+    match: none
+  tags: [ print_action, always ]

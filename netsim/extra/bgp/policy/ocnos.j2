@@ -1,0 +1,27 @@
+{#
+  OcNOS bgp.policy plugin template. Attaches an already-defined route-map
+  (rendered by the `routing` module: routing/ocnos.j2 -> `route-map <name>-<af> ...`,
+  OKF-verified) to a BGP neighbor's inbound/outbound policy.
+  OKF-verified (layer-3/.../configure-route-map-continue-on-r1.md): `neighbor X route-map
+  Y in|out` is an ADDRESS-FAMILY command (config-router-af) -- rejected at the top-level
+  router-bgp context, same as `neighbor X activate` in the base bgp template. Re-entering
+  `router bgp <as>` / `address-family <af> unicast` in a later, separate commit (this
+  module deploys after bgp + bgp.session) is the same pattern bgp.session/ocnos.j2 uses.
+#}
+{% if bgp.as is defined %}
+router bgp {{ bgp.as }}
+{% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
+{% for n in bgp.neighbors|default([]) if n[af] is defined and n[af] is string and n.policy is defined %}
+{% if loop.first %}
+ address-family {{ af }} unicast
+{% endif %}
+{% for direction in ['in','out'] if direction in n.policy %}
+ neighbor {{ n[af] }} route-map {{ n.policy[direction] }}-{{ af }} {{ direction }}
+{% endfor %}
+{% if loop.last %}
+ exit-address-family
+{% endif %}
+{% endfor %}
+{% endfor %}
+!
+{% endif %}

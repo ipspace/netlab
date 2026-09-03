@@ -1,0 +1,19 @@
+{#
+  OcNOS LAG template (LACP port-channels).
+  Parser-probed + OKF-verified syntax: member interface `channel-group <N> mode
+  active|passive`; the aggregate is `po<N>` (auto-created by `interface po<N>`, which
+  the initial template already addresses). Static channels (`static-channel-group` ->
+  `sa<N>`) use a DIFFERENT aggregate name and are not modeled — netlab lag.lacp=off
+  topologies would need lag_interface_name to switch patterns.
+#}
+{% for intf in interfaces if intf.type == 'lag' %}
+{% for ch in interfaces if ch.lag._parentindex|default(None) == intf.lag.ifindex %}
+interface {{ ch.ifname }}
+{%   if intf.lag.lacp|default('') == 'off' %}
+ static-channel-group {{ intf.lag.ifindex }}
+{%   else %}
+ channel-group {{ intf.lag.ifindex }} mode {{ 'passive' if intf.lag.lacp_mode|default('active') == 'passive' else 'active' }}
+{%   endif %}
+!
+{% endfor %}
+{% endfor %}

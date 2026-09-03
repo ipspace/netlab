@@ -1,0 +1,86 @@
+{#
+  OcNOS BGP config template
+  netlab data model: node.bgp {as, router_id, neighbors[], ipv4, ipv6, advertise_loopback,
+  advertise[]}; each neighbor {name, as, type(ibgp/ebgp), ipv4|ipv6 (string or True),
+  activate.{af}, next_hop_self}. OcNOS syntax verified vs demos/bisbee/20-target-ocnos.cfg:
+  per-neighbor `neighbor <ip> remote-as`, `update-source lo` for iBGP, and
+  `address-family <af> unicast` / `exit-address-family` blocks with `neighbor <ip> activate`.
+  No whitespace-strip tags near "!" (OcNOS comment marker).
+
+  Route reflector: node.bgp.rr + bgp.rr_cluster_id ->
+  `bgp cluster-id`; per-neighbor n.rr_client -> `neighbor <ip> route-reflector-client`
+  (address-family scoped, like send-community/next-hop-self). Live-verified against
+  tests/integration/bgp/03-ibgp-rr.yml on vrnetlab/ipinfusion_ocnos:7.0.0-262: reflected
+  route, correct next hop, and RR cluster-id all present in the client's BGP table.
+#}
+{% if bgp.as is defined %}
+{# bgp.originate: OcNOS advertises a  only if it is in the RIB, so back each
+   originated prefix with a Null0 discard route #}
+{% for pfx in bgp.originate|default([]) %}
+ip route {{ pfx }} Null0
+{% endfor %}
+router bgp {{ bgp.as }}
+{% if bgp.router_id is defined %}
+ bgp router-id {{ bgp.router_id }}
+{% endif %}
+{% if bgp.rr|default(False) and bgp.rr_cluster_id|default(False) %}
+ bgp cluster-id {{ bgp.rr_cluster_id }}
+{% endif %}
+{% for n in bgp.neighbors | default([]) %}
+{% for af in ['ipv4','ipv6'] if n[af] is defined and n[af] is string %}
+ neighbor {{ n[af] }} remote-as {{ n.as }}
+{% if n.local_as is defined %}
+ neighbor {{ n[af] }} local-as {{ n.local_as }}
+{% endif %}
+{% if n.bfd|default(False) %}
+ neighbor {{ n[af] }} fall-over bfd
+{% endif %}
+{% if n.name is defined %}
+ neighbor {{ n[af] }} description {{ n.name }}
+{% endif %}
+{% if n.type == 'ibgp' %}
+ neighbor {{ n[af] }} update-source {{ loopback.ifname | default('lo') }}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
+ !
+ address-family {{ af }} unicast
+{% if af == 'ipv4' %}
+{% for s_proto in bgp.import|default({}) %}
+ redistribute {{ s_proto }}
+{% endfor %}
+{% endif %}
+{# bgp.advertise is the consolidated origination list — it already includes the
+   loopback prefix when advertise_loopback is set, so don't emit it twice. #}
+{% for pfx in bgp.advertise | default([]) if af in pfx %}
+  network {{ pfx[af] }}
+{% endfor %}
+{% for n in bgp.neighbors | default([]) if n[af] is defined and n[af] is string %}
+  neighbor {{ n[af] }} activate
+{% if n.type in bgp.community|default({}) %}
+{% set c_list = bgp.community[n.type] %}
+{# send-community is an ADDRESS-FAMILY command on OcNOS (rejected at router level).
+   OcNOS enables communities by default and re-enabling errors ("%% already
+   enabled") while the `no` form is silently idempotent -> delete-then-add,
+   the same converging pattern as the VRRP disable/enable wrap #}
+ no neighbor {{ n[af] }} send-community both
+{% if 'standard' in c_list and 'extended' in c_list %}
+ neighbor {{ n[af] }} send-community both
+{% else %}
+{% for c_type in c_list %}
+ neighbor {{ n[af] }} send-community {{ c_type }}
+{% endfor %}
+{% endif %}
+{% endif %}
+{% if n.next_hop_self | default(false) %}
+  neighbor {{ n[af] }} next-hop-self
+{% endif %}
+{% if n.rr_client | default(false) %}
+  neighbor {{ n[af] }} route-reflector-client
+{% endif %}
+{% endfor %}
+ exit-address-family
+{% endfor %}
+!
+{% endif %}

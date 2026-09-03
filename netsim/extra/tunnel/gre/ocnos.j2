@@ -1,0 +1,14 @@
+{#
+  OcNOS GRE tunnel template. Parser-verified: interface Tunnel<N>
+  (capital T), tunnel source/destination take IP addresses, NO mode line
+  (GRE is implicit on OcNOS; only `tunnel mode vxlan` exists).
+#}
+{% for intf in netlab_interfaces if intf.tunnel.mode|default("") == "gre" %}
+interface {{ intf.ifname }}
+ tunnel source {{ intf.tunnel._source.ipv4 | ansible.utils.ipaddr("address") }}
+ tunnel destination {{ intf.tunnel._destination[intf.tunnel.af] | ansible.utils.ipaddr("address") }}
+{% if intf.ipv4 is defined and intf.ipv4 is string %}
+ ip address {{ intf.ipv4 }}
+{% endif %}
+!
+{% endfor %}

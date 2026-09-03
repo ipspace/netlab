@@ -1,0 +1,36 @@
+{#
+  OcNOS SRv6 template. ISIS-only for now (features.srv6.isis), matching
+  the ArcOS precedent (Arrcus is an SRv6 flagship vendor) and avoiding the OSPFv3
+  tagged-process trap already found+fixed in templates/ospf/ocnos.j2 (a `router ipv6
+  ospf <tag>` + srv6 sub-mode combo is untested here and risks the same instance-id
+  mismatch). netlab data: srv6.locator (per-node /48 auto-allocated from the
+  srv6_locator pool), srv6.igp.
+  OKF-verified (segment-routing/.../isis-configuration-2.md + r1-configuration.md):
+  the locator is defined GLOBALLY under `segment-routing / srv6 / locators / locator
+  <name> / prefix <v6/len>`, then ATTACHED to the IGP under `router isis <tag> /
+  address-family ipv6 / segment-routing srv6 / srv6-locator <name>`. The device
+  auto-derives End/End.X SIDs from the locator once attached -- no manual prefix-sid
+  needed (`show segment-routing srv6 sid` is the verification command).
+#}
+{% if srv6.locator is defined %}
+{%   set locname = inventory_hostname ~ "-loc" %}
+segment-routing
+ srv6
+  locators
+   locator {{ locname }}
+    prefix {{ srv6.locator }}
+    exit-locator
+   exit-locators
+  exit-srv6
+ exit
+!
+{% if 'isis' in srv6.igp|default([]) %}
+router isis {{ isis.instance | default('1') }}
+ address-family ipv6
+  segment-routing srv6
+   srv6-locator {{ locname }}
+   exit-srv6
+  exit
+!
+{% endif %}
+{% endif %}

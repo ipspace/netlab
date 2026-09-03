@@ -1,0 +1,35 @@
+{#
+  OcNOS ospf.areas plugin template.
+  Parser-verified (live) under `router ospf <id>`:
+    area <id> stub [no-summary]
+    area <id> nssa [no-summary|default-information-originate [metric N metric-type T]]
+    area <id> default-cost <0-16777215>
+    area <id> range A.B.C.D/M
+  netlab ospf.areas plugin data: ospf.areas[] = {area(dotted), kind, inter_area,
+  default.cost, range[]}. inter_area defaults True for stub/nssa (advertise summaries);
+  False => totally-stubby (`no-summary`). IPv4 only.
+#}
+{% macro area_config(adata, abr) %}
+{%   if adata.kind == 'stub' %}
+ area {{ adata.area }} stub{{ ' no-summary' if not adata.inter_area else '' }}
+{%   elif adata.kind == 'nssa' %}
+ area {{ adata.area }} nssa{{ ' no-summary' if not adata.inter_area else '' }}
+{%     if abr and adata.default|default(false) %}
+ area {{ adata.area }} nssa default-information-originate{% if adata.default.cost is defined %} metric {{ adata.default.cost }} metric-type 1{% endif +%}
+{%     endif %}
+{%   endif %}
+{%   if adata.kind in ['stub','nssa'] and adata.default.cost is defined %}
+ area {{ adata.area }} default-cost {{ adata.default.cost }}
+{%   endif %}
+{%   if abr %}
+{%     for range in adata.range|default([]) if range.ipv4 is defined %}
+ area {{ adata.area }} range {{ range.ipv4 }}{% if range.cost is defined %} cost {{ range.cost }}{% endif +%}
+{%     endfor %}
+{%   endif %}
+{% endmacro %}
+{% if ospf.areas is defined %}
+router ospf {{ ospf.process|default(1) }}
+{% for adata in ospf.areas %}
+{{ area_config(adata, ospf._abr|default(false)) }}
+{% endfor %}
+{% endif %}
