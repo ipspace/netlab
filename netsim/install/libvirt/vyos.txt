@@ -1,55 +1,20 @@
-Customizing VyOS for Vagrant
+Installing VyOS from ISO image
+==============================
+
+* Wait for the VM to boot
+* Log in using `vyos` as username and password
+* Run `install image`
+* Install VyOS on `/dev/vda`. Answer 'Y' or accept defaults for all questions.
+  Set password to `vyos`
+* Reboot the VM with `reboot`
+
+Initial configuration
 ============================
 
-* The VM should already boot from the VyOS disk image created in the first stage
-* Wait for the 'login' prompt
-* Login as 'vyos' with password 'vyos'
-* Copy-paste the following configuration to enable SSH access to the temporary VM
+* Wait for the VM to boot
+* Log in using `vyos` as username and password
+* Mount the secondary CD-ROM with `sudo mount /dev/sr1 /mnt`
+* Execute `bash /mnt/install.sh`
 
-============================
-
-configure
-set interfaces ethernet eth0 address dhcp
-set interfaces ethernet eth0 description 'Temporary build management'
-set interfaces ethernet eth0 vrf 'management'
-set service ssh vrf 'management'
-set vrf name management table '65530'
-set system login user vyos authentication public-keys vagrant-insecure type ssh-rsa
-set system login user vyos authentication public-keys vagrant-insecure key 'AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ=='
-commit
-save
-
-exit
-
-show interfaces ethernet eth0
-
-============================
-
-* Find the temporary DHCP address assigned to eth0 in the command output
-* From the netlab repository root in another terminal, copy the first-boot script
-  to the temporary VM, replacing TEMP_IP with the eth0 address:
-
-============================
-
-scp netsim/install/libvirt/vyos/netlab-vyos-firstboot vyos@TEMP_IP:/tmp/
-
-============================
-
-* Go back to the VM console
-* Copy-paste the following commands to install the first-boot script and remove
-  the temporary eth0 configuration before packaging the box
-
-============================
-
-sudo install -o root -g root -m 755 /tmp/netlab-vyos-firstboot /config/scripts/vyos-preconfig-bootup.script
-
-configure
-delete interfaces ethernet eth0
-commit
-save
-
-exit
-
-============================
-
-* Shutdown the VM with 'poweroff'
+The installation script configures the management VRF, installs pre-boot script,
+and powers off the VM
