@@ -51,39 +51,42 @@ def adjust_lag_vlan_mtu(node: Box) -> None:
     if lag.get('type') != 'lag':
       continue
 
-    lag_vlans = set(lag.get('vlan.trunk', {}))
+    required_mtu = 0
 
-    access_vlan = lag.get('vlan.access')
-    if access_vlan is not None:
-      lag_vlans.add(access_vlan)
+    # VLAN access/trunk configuration stored on the LAG.
+    if 'vlan' in lag:
+      required_mtu = lag.get('mtu', 1500) + 4
 
-    # A trunk/access VLAN without an SVI uses the default MTU.
-    vlan_mtu = 1500 if lag_vlans else 0
-
-    # Find the largest MTU of any VLAN using this LAG.
+    # Routed VLAN subinterfaces stored separately from the LAG.
     for vlan in node.interfaces:
-      if vlan.get('type') == 'vlan_member':
-        if vlan.get('parent_ifindex') != lag.ifindex:
-          continue
-
-      elif vlan.get('type') == 'svi':
-        if vlan.get('vlan.name') not in lag_vlans:
-          continue
-
-      else:
+      if vlan.get('type') != 'vlan_member':
         continue
 
-      vlan_mtu = max(vlan_mtu,vlan.get('mtu', 1500),)
+      if vlan.get('parent_ifindex') != lag.ifindex:
+        continue
 
-    if not vlan_mtu:
+      required_mtu = max(required_mtu,vlan.get('mtu', 1500) + 4,)
+
+    if not required_mtu:
       continue
 
-    required_mtu = vlan_mtu + 4
-
-    # Apply that MTU to every physical member of this LAG.
     for member in node.interfaces:
       if member.get('lag._parentindex') == lag.lag.ifindex:
-        member.mtu = max(member.get('mtu', 0),required_mtu,)
+        member.mtu = max(member.get('mtu', 1500),required_mtu,)
+
+def adjust_lag_vlan_mtu2(node: Box) -> None:
+  for lag in node.interfaces:
+    if lag.get('type') != 'lag':
+      continue
+
+    if 'vlan' not in lag:
+      continue
+
+    required_mtu = lag.get('mtu',1500) + 4
+
+    for member in node.interfaces:
+      if member.get('lag._parentindex') == lag.lag.ifindex:
+        member.mtu = max(member.get('mtu',1500),required_mtu,)
 
 class RouterOS7(_Quirks):
   @classmethod
