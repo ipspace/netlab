@@ -1,0 +1,17 @@
+{% for intf in interfaces if intf.type == 'lag' %}
+{%   set bond_intfs=[] %}
+{%   for i in interfaces if i.lag._parentindex|default(None) == intf.lag.ifindex %}
+{%     set _ = bond_intfs.append(i.ifname) %}
+{%   endfor %}
+/interface/bonding add name={{ intf.ifname }} slaves={{ bond_intfs|join(',') }} mode=802.3ad
+{% endfor +%}
+{#
+    Set LAG member MTU before creating VLAN interfaces on the bond
+#}
+{% for intf in interfaces %}
+{%   if intf.lag is defined
+      and intf.lag._parentindex is defined
+      and intf.mtu is defined %}
+/interface/ethernet set [ find name={{ intf.ifname }} ] mtu={{ intf.mtu }}
+{%   endif %}
+{% endfor %}

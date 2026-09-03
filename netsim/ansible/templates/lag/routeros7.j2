@@ -1,0 +1,29 @@
+{% for intf in interfaces if intf.type == 'lag' %}
+{%    if intf.lag.lacp|default('') == 'fast' %}
+/interface/bonding set [find name={{ intf.ifname }}] lacp-rate=1sec
+{%    elif intf.lag.lacp|default('') == 'slow' %}
+/interface/bonding set [find name={{ intf.ifname }}] lacp-rate=30sec
+{%    elif intf.lag.lacp|default('') == 'off' %}
+/interface/bonding set [find name={{ intf.ifname }}] mode=xor-hash
+{%    endif %}
+{%   if intf.lag.lacp_system_id is defined %}
+/interface/bonding set [find name={{ intf.ifname }}] lacp-system-id={{ intf.lag.lacp_system_id }}
+{%   endif %}
+{%   if intf.lag.lacp_mode|default('') == 'active' %}
+/interface/bonding set [find name={{ intf.ifname }}] lacp-mode=active
+{%   elif intf.lag.lacp_mode|default('') == 'passive' %}
+/interface/bonding set [find name={{ intf.ifname }}] lacp-mode=passive
+{%     endif %}
+
+{%   if intf.vlan is defined and intf.vlan.access_id is defined %}
+/interface/bridge/port add interface={{ intf.ifname }} bridge=switch pvid={{ intf.vlan.access_id }}
+{%   else %}
+/interface/bridge/port add interface={{ intf.ifname }} bridge=switch
+{%   endif %}
+
+{%   if intf.vlan.trunk_id is defined %}
+{%     for vid in intf.vlan.trunk_id %}
+/interface/bridge/vlan add tagged={{ intf.ifname }},switch bridge=switch vlan-ids={{ vid }}
+{%     endfor %}
+{%   endif %}
+{% endfor +%}
