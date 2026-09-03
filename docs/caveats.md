@@ -726,20 +726,21 @@ The `sonic` device also runs under *containerlab* with the community `docker-son
 
 **netlab ** uses VyOS 1.5-compatible configuration syntax. The configurations should also work on the 1.4 LTS release (since it was tested just before it became the new LTS).
 
-The use of a *rolling release* means potentially any build is broken or with regressions, even if the VyOS team is smart enough to perform some [automated smoke tests](https://github.com/vyos/vyos-1x/tree/current/smoketest/scripts/cli) and load [arbitrary configurations](https://github.com/vyos/vyos-1x/tree/current/smoketest/configs) to ensure there are no errors during config migration and system bootup.
+The use of a *rolling release* means that potentially any build is broken or has regressions, even if the VyOS team is smart enough to perform some [automated smoke tests](https://github.com/vyos/vyos-1x/tree/current/smoketest/scripts/cli) and load [arbitrary configurations](https://github.com/vyos/vyos-1x/tree/current/smoketest/configs) to ensure there are no errors during config migration and system bootup.
 
-Building a local Vagrant box from a recent [VyOS rolling/nightly](https://vyos.net/get/nightly-builds/) or VyOS Stream ISO image should allow us to easily track and react to any configuration syntax change (which, anyway, is a very rare event). In any case, if you find a misalignment between the VyOS config and the **netlab** templates, feel free to *Open an Issue* or *Submit a PR*.
+(vyos-vagrant)=
+[Building a local Vagrant box](build-vyos) from a recent [VyOS rolling/nightly](https://vyos.net/get/nightly-builds/) or VyOS Stream ISO image lets us easily track and react to any configuration syntax change (which, anyway, is very rare). However, we're testing all new functionality only with VyOS containers; if you find a misalignment between the VyOS VM config and the **netlab** templates, feel free to *Open an Issue* or *Submit a PR*.
 
 (vyos-clab)=
-It looks like the official VyOS container is not updated as part of the daily builds; *netlab* uses a [third-party container](https://github.com/sysoleg/vyos-container) (`ghcr.io/sysoleg/vyos-container`) to run VyOS with *containerlab*.
+Speaking of containers, there's no official VyOS container; the documentation only describes how to build your own from the sources or downloaded ISO images. *netlab* uses a [third-party container](https://github.com/sysoleg/vyos-container) (`ghcr.io/sysoleg/vyos-container`) to run VyOS with *containerlab*.
 
 Other VyOS caveats:
 
 * VyOS configuration template configures BFD timers only at the global level
-* VyOS containers need host kernel modules (drivers) to implement the data-plane functionality of _vrf_, _mpls_, and _vxlan_ netlab modules. The kernel modules are automatically loaded (when available) during the **netlab up** processing.
+* VyOS containers need host kernel modules (drivers) to implement the data-plane functionality of _vrf_, _mpls_, and _vxlan_ netlab modules. The kernel modules load automatically (when available) during **netlab up** processing.
 * On VyOS, IPv6 is enabled on all interfaces as soon as one has an IPv6 address.
 * VyOS containers cannot deal with min/max MTU sizes on dummy Ethernet interfaces used to implement stub networks. Stub networks in containers are implemented as **dum** interfaces.
 * VRF and VXLAN kernel modules are usually bundled with a Linux distribution. If your Ubuntu distribution does not include the MPLS drivers, try installing them with `sudo apt install linux-generic`.
 * You cannot load kernel modules in GitHub Codespaces and thus cannot use _vrf_, _mpls_, or _vxlan_ modules on VyOS nodes in that environment.
-* While VyOS itself supports IPv6 transport for VXLAN, using static flooding with the **vxlan** module, this seems not to work with EVPN, where an IPv4 VTEP is always announced by **frr**.
-* VyOS does not have a simple way to handle a management VRF on containerlab, so it will always have a default IPv4 route (`0.0.0.0/0`) on the default routing table. This can cause some problems if you want to originate a default only if received by other routers.
+* While VyOS itself supports IPv6 transport for VXLAN, using static flooding with the **vxlan** module, the version of the FRR BGP daemon it uses does not support EVPN with IPv6 next hops.
+* VyOS does not have a simple way to handle a management VRF on containerlab, so it will always have a default IPv4 route (`0.0.0.0/0`) in the default routing table. This can cause problems if you want a device to originate a default route only when it receives one from other routers.
