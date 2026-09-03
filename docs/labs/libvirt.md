@@ -57,7 +57,7 @@ You have to use the following box names when installing or building the Vagrant 
 | Mikrotik RouterOS 7    | mikrotik/chr7               |
 | OpenBSD                | netlab/openbsd              |
 | Sonic                  | netlab/sonic                |
-| VyOS                   | vyos-local/vyos             |
+| VyOS                   | netlab/vyos                 |
 
 The following Vagrant boxes are automatically downloaded from Vagrant Cloud when you're using them for the first time in your lab topology:
 
