@@ -81,17 +81,17 @@ Use **netlab show devices** to display the up-to-date device list and device sup
 (platform-host)=
 Most devices behave as routers (or layer-3 switches); the following devices can take multiple roles or behave as [IP hosts](node-router-host):
 
-| Device | router | host | bridge |
-|-----------------------|:--:|:--:| :--:|
-| Arista EOS            | ✅ | ✅ | ✅ |
-| BIRD                  | ✅ | ✅ | ❌  |
-| Cisco IOS/IOS XE[^18v]| ✅ | ✅ | ✅ |
-| dnsmasq               | ❌  | ✅ | ❌  |
-| FRRouting             | ✅ | ✅ | ✅ |
-| Generic Linux         | ❌  | ✅ | ✅ |
-| Kubernetes in Docker  | ❌  | ✅ | ❌  |
-| Open BSD              | ✅ | ✅ | ❌  |
-| VPP                   | ✅ | ❌  | ✅ |
+```{features}
+- title: router
+  enabled: >-
+    "router" in initial.roles and len(initial.roles) > 1
+- title: host
+  enabled: >-
+    "host" in initial.roles
+- title: bridge
+  enabled: >-
+    "bridge" in initial.roles
+```
 
 **Notes:**
 
