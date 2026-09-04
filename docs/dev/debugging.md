@@ -20,7 +20,13 @@ The following commands have built-in `--debug` support:
 | **[netlab config](netlab-config)** | Deploy custom configuration template to network devices |
 | **[netlab validate](netlab-validate)** | Run validation tests specified in the lab topology |
 
-You can specify these categories with the `--debug` flag (most categories are recognized by **netlab create** and **netlab up** commands, other commands implement a smaller subset of debugging options):
+Most commands also take debugging parameters from the `NETLAB_DEBUG` environment variable (in particular those that accept `-v` or `-q` arguments), with `--debug` parameter having precedence. For example, you could enable defaults and template debugging with:
+
+```
+$ export NETLAB_DEBUG=defaults,template
+```
+
+You can specify these categories with the `--debug` flag (most categories are recognized by **netlab create** and **netlab up** commands; other commands implement a smaller subset of debugging options):
 
 | Choice | Description |
 |--------|-------------|
