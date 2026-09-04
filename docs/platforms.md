@@ -188,45 +188,27 @@ Vagrant configuration files for KVM/libvirt environments specify the number of v
 **‌virtio** is the default KVM/libvirt NIC model.
 ```
 
+(platform-config-support)=
 ## Configuration Deployments
 
-Ansible playbooks included with **netlab** can deploy and collect device configuration on these network operating systems:
+_netlab_ can deploy configuration on all supported devices. It can also collect device configuration and reload it after a lab restart on these devices:
 
-(platform-config-support)=
-| Operating system      | Deploy<br>configuration | Collect<br> configuration | Configurable<br>save to startup |
-| --------------------- |:--:|:--:|:--:|
-| Arista EOS            | ✅ | ✅ |
-| Arrcus ArcOS [❗](caveats-arcos) | ✅ | ✅ |
-| Aruba AOS-CX          | ✅ | ✅ |
-| Cisco ASAv            | ✅ | ✅ |
-| Cisco IOS/IOS XE[^18v]| ✅ [❗](cisco-ios-ssh) | ✅ |
-| Cisco IOS XR[^XR]     | ✅ | ✅ |
-| Cisco Nexus OS        | ✅ | ✅ |
-| Cumulus Linux         | ✅ | ✅ |
-| Dell OS10             | ✅ | ✅ | ✅ |
-| Extreme Networks EXOS | ✅ | ✅  |
-| Fortinet FortiOS      | ✅ | ✅ |
-| FRR                   | ✅ [❗](caveats-frr)  | ✅[❗](caveats-frr) |
-| Generic Linux         | ✅ | ❌  |
-| Juniper cSRX         | ✅ | ❌  |
-| Junos[^Junos]         | ✅ | ✅ |
-| Mikrotik RouterOS 6   | ✅ | ✅ |
-| Mikrotik RouterOS 7   | ✅ | ✅ |
-| Netscaler CPX         | ✅ | ❌  |
-| Nokia SR Linux        | ✅ | ✅ |
-| Nokia SR OS[^SROS]    | ✅ | ✅ |
-| OpenBSD               | ✅ | ❌  |
-| Sonic                 | ✅ | ✅ |
-| VPP FD.io             | ✅ | ❌  | 
-| VyOS                  | ✅ | ✅ |
+```{features}
+- title: Collect<br>configuration
+  enabled: initial.collect
+- title: Reload<br>configuration
+  enabled: initial.reload
+```
 
-**Note:** *netlab* can deploy daemon configurations, but cannot collect them. Use the **netlab initial -o** command to create daemon configuration files in a custom directory.
+```{note}
+Use the **netlab initial -o** command to create configuration files in a custom directory.
+```
 
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOSv, Cisco IOSv layer-2 image, Cisco IOS-on-Linux (IOL) and IOL Layer-2 image
 
 [^XE]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL) and IOL Layer-2 image
 
-[^Junos]: Includes cRPD, vMX, vSRX, vPTX, vJunos-switch, and vJunos-router but not cSRX
+[^Junos]: Includes cRPD, vMX, vSRX, vPTX, vJunos-switch, and vJunos-router, but not cSRX
 
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
