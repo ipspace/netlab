@@ -2,10 +2,13 @@
 message: |
   Use this topology to test route maps with prefix lists for IPv4 and IPv6
 
-plugin: [ bgp.policy, test.vrf_check ]
+defaults.paths.prepend.plugin: [ "topology:../plugin" ]
+
+plugin: [ bgp.policy, test.vrf_check, adjust_test ]
 module: [ bgp ]
 
 defaults.sources.extra: [ defaults-ds.yml, ../wait_times.yml, ../warnings.yml ]
+defaults.devices.srlinux.warnings.prefix_deny: False
 
 prefix:
   b_orig_1.ipv4: 172.42.42.0/24
@@ -96,6 +99,15 @@ links:
 - vx1:
   prefix: b_orig_3
   bgp.advertise: True
+
+_adjust:
+- warning: Tested device does not have DENY action in prefix lists
+  nodes: [ dut ]
+  devices: [ srlinux ]                  # SR Linux cannot deny prefixes in a prefix-list
+  remove:                               # ... so we have to remove all tests relying on that functionality
+  - validate.pfx_o2_v4
+  - validate.pfx_o3_v6
+  - validate.vrf_o3_v6
 
 validate:
   ebgp_v4:
