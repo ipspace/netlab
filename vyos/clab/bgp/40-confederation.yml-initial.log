@@ -1,6 +1,8 @@
 Creating Device configuration snippets
-[CREATED] dut: initial,ospf,bgp
-[CREATED] x1: initial,ospf,bgp,bgp.session
+[CREATED] dut: initial,bgp
+[CREATED] r2: initial,bgp
+[CREATED] r3: initial,bgp
+[CREATED] x1: initial,bgp
 [CREATED] x2: initial,bgp
 Checking Are lab devices ready to be configured?
  [INFO] Checking lab devices with an Ansible playbook
@@ -31,12 +33,14 @@ PLAY RECAP *********************************************************************
 dut                        : ok=5    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 
 Config Deploying device configurations
+ [INFO] Executing initial configuration for node r2
+ [INFO] Executing initial configuration for node r3
  [INFO] Executing initial configuration for node x1
  [INFO] Executing initial configuration for node x2
  [INFO] Executing bgp configuration for node x2
- [INFO] Executing ospf configuration for node x1
  [INFO] Executing bgp configuration for node x1
- [INFO] Executing bgp.session configuration for node x1
+ [INFO] Executing bgp configuration for node r3
+ [INFO] Executing bgp configuration for node r2
  [INFO] Starting Ansible playbook to deploy the rest of the
           configurations
 [WARNING]: Found variable using reserved name: hosts
@@ -63,7 +67,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "initial configuration for dut\n=========================================\nset system host-name 'dut'\n\n\n\n\n\nset interfaces dummy dum0 address 10.0.0.1/32\n\nset system static-host-mapping host-name x1 inet 10.0.0.2\nset system static-host-mapping host-name x2 inet 172.42.42.1\n\n\n\nset interfaces ethernet eth1 description 'dut -> x1'\n\nset interfaces ethernet eth1 mtu 1500\n\nset interfaces ethernet eth1 address 10.1.0.1/30\n\n\n\n\n\nset interfaces ethernet eth2 description 'dut -> x2 [external]'\n\nset interfaces ethernet eth2 mtu 1500\n\nset interfaces ethernet eth2 address 10.1.0.5/30\n\n\n\n\nset service lldp interface all\n>/dev/null 2>/dev/null set service lldp interface eth0 disable\n>/dev/null 2>/dev/null set service lldp interface eth0 mode disable\n\n\nset service ssh\n\ncommit\n\n# Restart FRR to pick up the new hostname\nsudo service frr restart\n"
+    "msg": "initial configuration for dut\n=========================================\nset system host-name 'dut'\n\n\n\n\n\nset interfaces dummy dum0 address 10.0.0.1/32\nset interfaces dummy dum0 address 2001:db8:1:1::1/64\n\nset system static-host-mapping host-name r2 inet 10.0.0.2\nset system static-host-mapping host-name r3 inet 10.0.0.3\nset system static-host-mapping host-name x1 inet 10.0.0.4\nset system static-host-mapping host-name x2 inet 10.0.0.5\nset system static-host-mapping host-name r2 inet 2001:db8:1:2::1\nset system static-host-mapping host-name r3 inet 2001:db8:1:3::1\nset system static-host-mapping host-name x1 inet 2001:db8:1:4::1\nset system static-host-mapping host-name x2 inet 2001:db8:1:5::1\n\n\n\nset interfaces ethernet eth1 description 'dut -> x1 [external]'\n\nset interfaces ethernet eth1 mtu 1500\n\nset interfaces ethernet eth1 address 10.1.0.1/30\n\nset interfaces ethernet eth1 address 2001:db8:3::1/64;\n\n\n\n\nset interfaces ethernet eth2 description 'dut -> r2 [external]'\n\nset interfaces ethernet eth2 mtu 1500\n\nset interfaces ethernet eth2 address 10.1.0.5/30\n\nset interfaces ethernet eth2 address 2001:db8:3:1::1/64;\n\n\n\nset service lldp interface all\n>/dev/null 2>/dev/null set service lldp interface eth0 disable\n>/dev/null 2>/dev/null set service lldp interface eth0 mode disable\n\nset service router-advert interface eth1\nset service router-advert interface eth2\n\nset service ssh\n\ncommit\n\n# Restart FRR to pick up the new hostname\nsudo service frr restart\n"
 }
 
 TASK [Deploy initial configuration] ********************************************
@@ -84,37 +88,7 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=bgp)
-
-TASK [Figure out whether to deploy the module ospf on current device] **********
-ok: [dut]
-
-TASK [Find configuration template for ospf] ************************************
-ok: [dut]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-
-TASK [Find configuration deployment deploy_script for ospf] ********************
-ok: [dut]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [dut] => {
-    "msg": "ospf configuration for dut\n=========================================\n\nset protocols ospf parameters router-id 10.0.0.1\n\n\n\n\nset protocols ospf interface dum0 passive\nset protocols ospf interface dum0 area 0.0.0.0\n\n\nset protocols ospf interface eth1 area 0.0.0.0\n\nset protocols ospf interface eth1 network point-to-point\n\n\n"
-}
-
-TASK [Deploy ospf configuration] ***********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for dut
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
-TASK [template] ****************************************************************
-changed: [dut]
-
-TASK [execute config-ospf.sh to deploy ospf config from /work/netlab_cicd/node_files/dut/ospf] ***
-changed: [dut]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
@@ -130,7 +104,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "bgp configuration for dut\n=========================================\n\nset protocols bgp system-as 65000\n\nset protocols bgp parameters router-id 10.0.0.1\n\n\n\n\nset protocols bgp neighbor 10.0.0.2 remote-as 65000\nset protocols bgp neighbor 10.0.0.2 description 'x1'\n \nset protocols bgp neighbor 10.0.0.2 update-source dum0\n\n\n\n\nset protocols bgp neighbor 10.1.0.6 remote-as 65100\nset protocols bgp neighbor 10.1.0.6 description 'x2'\n \n\n\n\n\n# Work on Family ipv4\n\nset protocols bgp address-family ipv4-unicast network 10.0.0.1/32\n\n\n\nset protocols bgp neighbor 10.0.0.2 address-family ipv4-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.0.0.2 address-family ipv4-unicast nexthop-self\n\n\n\n\nset protocols bgp neighbor 10.1.0.6 address-family ipv4-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.1.0.6 address-family ipv4-unicast nexthop-self\n\nset protocols bgp neighbor 10.1.0.6 address-family ipv4-unicast disable-send-community extended\n\n\n"
+    "msg": "bgp configuration for dut\n=========================================\n\nset protocols bgp system-as 65001\n\nset protocols bgp parameters router-id 10.0.0.1\n\nset protocols bgp parameters confederation identifier 65000\nset protocols bgp parameters confederation peers 65002\nset protocols bgp parameters confederation peers 65003\n\n\n\nset protocols bgp neighbor 10.1.0.2 remote-as 65100\nset protocols bgp neighbor 10.1.0.2 description 'x1'\n \n\n\n\n\nset protocols bgp neighbor 2001:db8:3::2 remote-as 65100\nset protocols bgp neighbor 2001:db8:3::2 description 'x1'\n \n\n\n\n\nset protocols bgp neighbor 10.1.0.6 remote-as 65002\nset protocols bgp neighbor 10.1.0.6 description 'r2'\n \n\n\n\n\nset protocols bgp neighbor 2001:db8:3:1::2 remote-as 65002\nset protocols bgp neighbor 2001:db8:3:1::2 description 'r2'\n \n\n\n\n\n# Work on Family ipv4\n\nset protocols bgp address-family ipv4-unicast network 10.0.0.1/32\n\n\n\nset protocols bgp neighbor 10.1.0.2 address-family ipv4-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.1.0.2 address-family ipv4-unicast nexthop-self\n\nset protocols bgp neighbor 10.1.0.2 address-family ipv4-unicast disable-send-community extended\n\n\n\nset protocols bgp neighbor 10.1.0.6 address-family ipv4-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.1.0.6 address-family ipv4-unicast nexthop-self\n\n\n\n\n# Work on Family ipv6\n\nset protocols bgp address-family ipv6-unicast network 2001:db8:1:1::/64\n\n\n\nset protocols bgp neighbor 2001:db8:3::2 address-family ipv6-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 2001:db8:3::2 address-family ipv6-unicast nexthop-self\n\nset protocols bgp neighbor 2001:db8:3::2 address-family ipv6-unicast disable-send-community extended\n\n\n\nset protocols bgp neighbor 2001:db8:3:1::2 address-family ipv6-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 2001:db8:3:1::2 address-family ipv6-unicast nexthop-self\n\n\n\n"
 }
 
 TASK [Deploy bgp configuration] ************************************************
@@ -149,17 +123,15 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=29   changed=6    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+dut                        : ok=20   changed=4    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
 
 Results of configuration script deployments
 ================================================================================
-x1               Script:  initial,ospf,bgp,bgp.session
+r2               Script:  initial,bgp
+r3               Script:  initial,bgp
+x1               Script:  initial,bgp
 x2               Script:  initial,bgp
 
 
-Use this topology to test the baseline IPv4 IBGP and EBGP implementation
-and next-hop-self on IBGP sessions.
-
-DUT has the default device role (router or host) and thus might have to
-establish IBGP session from the LAN interface.
+Use this topology to test BGP confederations on IPv4 and IPv6 EBGP sessions
 
