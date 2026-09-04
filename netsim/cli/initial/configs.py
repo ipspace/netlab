@@ -38,8 +38,9 @@ def cleanup_config_dir(output_path: Path, args: argparse.Namespace) -> None:
 
 def config_file_suffix(sfx: typing.Optional[str], cfg_mode: typing.Optional[str]) -> str:
   """
-  Figure out the correct suffix for the configuration file. It could be (A) no
-  suffix, based on configuration mode, or '.cfg' (for "netlab config")
+  Figure out the correct suffix for the generated configuration files. Honors
+  explicit suffix requests ('none' or '.cfg'), otherwise derives '.sh' or '.cfg'
+  from the configuration mode.
   """
   if sfx == 'none':                               # Explicit request for no suffix
     return ''
