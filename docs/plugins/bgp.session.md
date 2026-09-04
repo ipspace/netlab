@@ -59,80 +59,61 @@ BGP session attributes can be specified at the global, node, link, or interface 
 The plugin implements generic BGP session features for the following platforms:
 
 (bgp-session-platforms)=
-| Operating system    | default<br>originate | BGP<br>timers |  BFD | Passive<br>peer | Graceful<br>Restart |
-| ------------------- | :--: | :--: | :--: | :--: | :--: |
-| Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  | ✅  |
-| Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |   ❌  |  ❌  |
-| BIRD                |  ✅  |  ✅  |  ✅  |  ✅  |  ❌  |
-| Cisco IOSv/IOSvL2   |  ✅  |  ✅  |  ✅  |  ✅  |  ❌  |
-| Cisco IOS XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |  ❌  |
-| Cisco IOS XR[^XR]   |  ✅  |  ✅  |   ❌  |  ✅  |  ❌  |
-| Cisco Nexus OS      |  ✅  |  ✅  |   ❌  |  ✅  |  ❌  |
-| Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |  ❌  |
-| Dell OS10           |  ✅  |  ✅  |  ✅  |   ❌  |  ❌  |
-| Fortinet FortiOS    |   ❌  |  ✅  |   ❌  |  ✅  | ✅[❗](caveats-fortios) |
-| FRR                 |  ✅  |  ✅  |  ✅  |  ✅  | ✅  |
-| Junos[^Junos]       |  ✅  |  ✅  |  ✅  |  ✅  |  ❌  |
-| Mikrotik RouterOS 7 |  ✅  |   ❌  |   ❌  |   ❌  |  ❌  |
-| Nokia SR Linux      |  ✅  |  ✅  |  ✅  |  ✅  |  ❌  |
-| Nokia SR OS         |  ✅  |   ❌  |   ❌  |   ❌  |  ❌  |
-| OpenBSD             |  ✅  |  ✅  |   ❌  |  ✅  |  ❌  |
-| VyOS                |  ✅  |   ❌  |   ❌  |   ❌  |  ❌  |
-
-[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
-
-[^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
-
-[^Junos]: Includes vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
+```{features}
+- title: default<br>originate
+  enabled: |
+    bgp.default_originate
+- title: BGP<br>timers
+  enabled: |
+    bgp.timers
+- title: BFD
+  enabled: |
+    bgp.bfd
+- title: Passive<br>peer
+  enabled: |
+    bgp.passive
+- title: Graceful<br>Restart
+  enabled: |
+    bgp.gr
+  caveats: |
+    bgp.gr.caveats
+```
 
 **Notes:**
 * Arista EOS supports TCP-AO only when running as a virtual machine
 * _netlab_ always configures HMAC-SHA1-96 as the cryptographic algorithm on IOS XE
 
 (bgp-session-security)=
-BGP session security features are available on these platforms:
-
-| Operating system    | password | GTSM | TCP-AO |
-| ------------------- | :------: | :-: | :-:  |
-| Arista EOS          |    ✅    | ✅  |  ✅ |
-| Aruba AOS-CX        |    ✅    | ✅  |  ❌  |
-| BIRD                |    ✅    | ✅   | ❌   |
-| Cisco IOSv/IOSvL2   |    ✅    | ✅  |  ❌  |
-| Cisco IOS XE[^18v]  |    ✅    | ✅  |  ✅ |
-| Cisco IOS XR[^XR]   |    ✅    | ✅  |  ✅ |
-| Cisco Nexus OS      |    ✅    | ✅  |  ❌  |
-| Cumulus Linux       |    ✅    | ✅  |  ❌  |
-| Dell OS10           |    ✅    | ❌  |  ❌  |
-| Fortinet FortiOS    |    ✅    | ❌  |  ❌  |
-| FRR                 |    ✅    | ✅  |  ❌  |
-| Junos[^Junos]       |    ✅    | ❌  |  ❌  |
-| Mikrotik RouterOS 7 |    ✅    | ❌  |  ❌  |
-| Nokia SR Linux      |    ✅    | ❌  |  ❌  |
-| Nokia SR OS         |    ✅    | ❌  |  ✅  |
-| OpenBSD             |    ✅    | ✅  |  ❌  |
+```{features}
+- title: password
+  enabled: |
+    bgp.password
+- title: GTSM
+  enabled: |
+    bgp.gtsm
+- title: TCP-AO
+  enabled: |
+    bgp.tcp_ao
+```
 
 (bgp-session-as-path)=
-The plugin implements AS-path-mangling nerd knobs for the following platforms:
-
-| Operating system    | Allow<br>AS in | AS<br>override | Remove<br>private AS | Route<br>Server | Route Server<br>Client |
-| ------------------- | :--: | :--: | :--: | :--: | :--: |
-| Arista EOS          |  ✅  |  ✅  |  ✅  |   ❌  |  ✅  |
-| Aruba AOS-CX        |  ✅  |  ❌   |  ✅  |   ❌  |   ❌  |
-| BIRD                |   ❌  |   ❌  |   ✅  |  ✅  |  ✅  |
-| Cisco IOSv/IOSvL2   |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cisco IOS XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cisco IOS XR[^XR]   |  ✅  |  ✅  |  ✅  |   ❌  |  ✅  |
-| Cisco Nexus OS      |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
-| Cumulus Linux 4.x   |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cumulus 5.x (NVUE)  |  ✅  |  ❌  |  ❌  |  ❌  |  ❌  |
-| Dell OS10           |  ✅  |  ❌  |  ✅  |  ❌  |  ❌  |
-| FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
-| Junos[^Junos]       |   ✅  |  ✅  |   ✅  |   ❌  |   ❌  |
-| Mikrotik RouterOS 7 |  ✅  |  ✅  |   ❌  |   ❌  |   ❌  |
-| Nokia SR Linux      |  ✅  |  ✅  |  ✅  |   ❌  |  ✅  |
-| Nokia SR OS         |  ✅  |  ✅  |   ❌  |   ❌  |   ❌  |
-| OpenBSD.            |  ✅  |  ✅  |   ❌  |  ✅  |  ✅  |
-| VyOS                |  ✅  |  ✅  |   ❌  |   ❌  |   ❌  |
+```{features}
+- title: Allow<br>AS in
+  enabled: |
+    bgp.allowas_in
+- title: AS<br>override
+  enabled: |
+    bgp.as_override
+- title: Remove<br>private AS
+  enabled: |
+    bgp.remove_private_as
+- title: Route<br>Server
+  enabled: |
+    bgp.rs
+- title: Route Server<br>Client
+  enabled: |
+    bgp.rs_client
+```
 
 (bgp-session-apply)=
 ## Applying BGP Session Attributes to IBGP Sessions
@@ -189,15 +170,31 @@ You can specify the **bgp.remove_private_as** attribute as a boolean value (equi
 
 The implementations of the **neighbor remove-private-as** command vary widely across supported network devices, as described in the following table:
 
-| Operating system    | on | all | replace | ingress | ingress-replace |
-| ------------------- | :--: | :--: | :--: | :--: | :--: |
-| Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cisco IOSv/IOSvL2   |  ✅  |  ❗  |  ❗  |   ❌  |   ❌  |
-| Cisco IOS-XE        |  ✅  |  ❗  |  ❗  |   ❌  |   ❌  |
-| Cumulus Linux       |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
-| Dell OS10           |  ✅  |  ❌  |  ❌  |   ❌  |   ❌  |
-| FRR                 |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
-| Nokia SR Linux      |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
+```{features}
+- title: on
+  enabled: |
+    'on' in bgp.remove_private_as.valid
+- title: all
+  enabled: |
+    'all' in bgp.remove_private_as.valid
+  caveats: |
+    bgp.remove_private_as.caveats.all
+- title: replace
+  enabled: |
+    'replace' in bgp.remove_private_as.valid
+  caveats: |
+    bgp.remove_private_as.caveats.replace
+- title: ingress
+  enabled: |
+    'ingress' in bgp.remove_private_as.valid
+  caveats: |
+    bgp.remove_private_as.caveats.ingress
+- title: ingress-replace
+  enabled: |
+    'ingress-replace' in bgp.remove_private_as.valid
+  caveats: |
+    bgp.remove_private_as.caveats.ingress-replace
+```
 
 **Notes:**
 
