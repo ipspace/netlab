@@ -498,7 +498,7 @@ def print_verbose(t: typing.Any) -> None:
 def set_logging_flags(args: typing.Union[argparse.Namespace,Box]) -> None:
   global VERBOSE, LOGGING, DEBUG, QUIET, WARNING, RAISE_ON_ERROR, NO_WARNING
   global _error_header_printed
-  
+
   if 'verbose' in args and args.verbose:
     VERBOSE = args.verbose
 
@@ -510,7 +510,12 @@ def set_logging_flags(args: typing.Union[argparse.Namespace,Box]) -> None:
       DEBUG = None
     else:
       DEBUG = args.debug if args.debug else ['all']
-      print(f'Debugging flags set: {DEBUG}')
+
+  if not DEBUG and 'NETLAB_DEBUG' in os.environ:
+    DEBUG = os.environ['NETLAB_DEBUG'].split(',')
+
+  if DEBUG:
+    print(f'Debugging flags set: {DEBUG}')
 
   if 'test' in args and args.test and 'errors' in args.test:
     _error_header_printed = True
