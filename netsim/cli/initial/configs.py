@@ -36,10 +36,21 @@ def cleanup_config_dir(output_path: Path, args: argparse.Namespace) -> None:
   except ValueError:
     log.info(f'Cannot clean a directory outside of the lab directory')
 
-"""
-Create all node configuration files, either those specified in the config_templates
-or in the node 'module' or 'config' lists
-"""
+def config_file_suffix(sfx: typing.Optional[str], cfg_mode: typing.Optional[str]) -> str:
+  """
+  Figure out the correct suffix for the generated configuration files. Honors
+  explicit suffix requests ('none' or '.cfg'), otherwise derives '.sh' or '.cfg'
+  from the configuration mode.
+  """
+  if sfx == 'none':                               # Explicit request for no suffix
+    return ''
+  if sfx in ('cfg','.cfg'):                       # Explicit request for '.cfg' suffix
+    return '.cfg'
+
+  # No explicit suffix request, use configuration mode to select .sh or .cfg prefix
+  #
+  return '.sh' if (cfg_mode in ('ns','sh','cp_sh')) else '.cfg'
+
 def create_node_configs(
       topology: Box,
       nodeset: list,
@@ -49,6 +60,11 @@ def create_node_configs(
       node_directory: bool = False,
       default_suffix: typing.Optional[str] = None,
       flatten_output_fname: bool = False) -> None:
+  """
+  Create all node configuration files, either those specified in the config_templates
+  or in the node 'module' or 'config' lists
+  """
+
   all_configs = utils.deploy_all_configs(args)
   for n_name in nodeset:
     n_data = topology.nodes[n_name]
@@ -82,6 +98,7 @@ def create_node_configs(
       for item in config_templates:
         print(f'  - {item}')
       print(f'... template_mode: {template_mode}')
+      print(f'... default suffix: {default_suffix}')
     created_list :typing.List[str] = []
 
     # Now build the list of items to create
@@ -108,7 +125,7 @@ def create_node_configs(
 
     for module in item_list:
       config_mode = template_mode.get(module,default_suffix)
-      o_suffix = '' if default_suffix == 'none' else '.sh' if (config_mode in ('ns','sh','cp_sh')) else '.cfg'
+      o_suffix = config_file_suffix(default_suffix,config_mode)
       if flatten_output_fname:                          # Create all output files in the same directory?
         o_fname = f'{n_name}.{module}{o_suffix}'        # ... we need node name in file name
         o_fname = o_fname.replace('/','.')              # ... and remove the paths
