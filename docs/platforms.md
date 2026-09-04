@@ -191,7 +191,7 @@ Vagrant configuration files for KVM/libvirt environments specify the number of v
 (platform-config-support)=
 ## Configuration Deployments
 
-_netlab_ can deploy configuration on all supported devices. It can also collect information from and reload it after a lab restart on these devices:
+_netlab_ can deploy configuration on all supported devices. It can also collect device configuration and reload it after a lab restart on these devices:
 
 ```{features}
 - title: Collect<br>configuration
@@ -200,7 +200,9 @@ _netlab_ can deploy configuration on all supported devices. It can also collect 
   enabled: initial.reload
 ```
 
-**Note:** Use the **netlab initial -o** command to create deployed configuration files in a custom directory.
+```{note}
+Use the **netlab initial -o** command to create configuration files in a custom directory.
+```
 
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOSv, Cisco IOSv layer-2 image, Cisco IOS-on-Linux (IOL) and IOL Layer-2 image
 
