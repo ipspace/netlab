@@ -12,6 +12,7 @@ Usage (from within MyST parser)::
     ```
 """
 
+import os
 import typing
 
 from box import Box, BoxList
@@ -28,7 +29,7 @@ SETTINGS: Box
 DIRECTIVE: SphinxDirective
 TABLE_COUNT: int = 0
 
-BUILTINS: dict = {                            # Allowed built-in functions. Extend as needed ;)
+BUILTINS: dict = {                                # Allowed built-in functions. Extend as needed ;)
   'len': len
 }
 
@@ -39,7 +40,11 @@ def safer_eval(xpr: str, locals: Box) -> typing.Any:
   """
   global BUILTINS
 
-  return eval(xpr,locals=locals,globals={ '__builtins__': BUILTINS })
+  locals = Box(locals)                            # Have to disable auto-created objects for builtins to work
+  return eval(xpr,{ '__builtins__': BUILTINS },locals)
+
+def debug_active(flag: str) -> bool:
+  return flag in os.environ.get('NETLAB_DEBUG_FEATURES','')
 
 def table_cell(
       text: str,
@@ -126,11 +131,14 @@ def get_feature_row(device_data: Box, dname: str, table_def: Box) -> typing.Opti
   df_row = []                                   # ... starting with an empty row for each device
   f_valid = False                               # ... assuming the device is not relevant and should not be included
   for f_def in table_def.features:              # Ready? Now iterate over feature definitions
+    dt_value: dict = {}
     try:                                        # Try to evaluate whether the device supports the feature
       f_OK = bool(safer_eval(f_def.enabled,locals=device_data))
-    except Exception:                           # Failed miserably? It could be any number of reasons
+    except Exception as ex:                     # Failed miserably? It could be any number of reasons
       f_OK = False                              # ... but we'll just assume the device DOES NOT support the feature
-    dt_value: dict = {'status': f_OK}           # Save the results
+      dt_value['exception'] = str(ex)
+
+    dt_value['status'] = f_OK                   # Save the results
     if f_OK and 'caveats' in f_def:             # ... but wait, there's more. Do we need to check for caveats?
       try:                                      # Let's do it. Try to evaluate caveat data
         f_caveat = safer_eval(f_def.caveats,locals=device_data)
@@ -155,6 +163,8 @@ def get_device_features(settings: Box, table_def: Box) -> Box:
     df_row = get_feature_row(f_data,dname,table_def)
     if df_row:                                    # Does the device supports the specified feature set?
       df_data[dname].features = df_row            # ... go and store its data
+      if debug_active('df_row'):
+        print(f'DF_ROW: {dname} {df_row}')
     is_daemon = ddata.get('daemon',False)         # Only clab provider is checked for daemons
     p_list = ['clab'] if is_daemon else list(settings.providers) 
     for p_name in p_list:                         # Next, check for provider-specific features
