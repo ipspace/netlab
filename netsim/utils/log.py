@@ -507,12 +507,16 @@ def set_logging_flags(args: typing.Union[argparse.Namespace,Box]) -> None:
 
   if 'debug' in args:
     if args.debug is None:
-      DEBUG = None
+      DEBUG = []
     else:
       DEBUG = args.debug if args.debug else ['all']
 
+  # Try to get debugging flags from the environment variable. To be on the safe side,
+  # leading/trailing spaces are removed from the specified values, and the empty values
+  # are removed
+  #
   if not DEBUG and 'NETLAB_DEBUG' in os.environ:
-    DEBUG = os.environ['NETLAB_DEBUG'].split(',')
+    DEBUG = [ flag.strip() for flag in os.environ['NETLAB_DEBUG'].split(',') if flag.strip() ]
 
   if DEBUG:
     print(f'Debugging flags set: {DEBUG}')
