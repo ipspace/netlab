@@ -27,6 +27,12 @@ from . import binds, configs, labops, utils
 class Containerlab(_Provider):
   
   def augment_node_data(self, node: Box, topology: Box) -> None:
+    if node.name in topology.defaults.providers.clab.reserved_names:
+      log.error(
+        f'Node name {node.name} cannot be used with clab provider',
+        category=log.IncorrectValue)
+      return
+
     node.hostname = self.get_node_name(node.name,topology)
     node_fp = get_provider_forwarded_ports(node,topology)
     if node_fp:
