@@ -46,7 +46,7 @@ Each column definition (feature) can have these parameters:
 The directive supports two mutually exclusive modes for displaying feature data:
 
 * **enabled** -- the Python expression that results in a truthy value if the feature works on the device. The cell is displayed as a green checkmark or a red cross. The expression can use all device definition data (for example, `libvirt.image`) and the device features (for example, `ospf.areas`).
-* **text** -- the Python expression whose result is displayed as text in the table cell. Lists are joined with commas, booleans are converted to checkmarks/crosses, and other values are converted to strings. Use this when you need to display non-boolean information (like deployment methods or configuration modes).
+* **text** -- the Python expression whose result is displayed as text in the table cell. Falsy values are displayed as red crosses, lists are joined with commas, booleans are converted to checkmarks/crosses, and other values are converted to strings. Use this when you need to display non-boolean information (like deployment methods or configuration modes).
 
 For example, to display the list of non-default configuration deployment methods:
 
@@ -183,9 +183,9 @@ To test a feature table, build the documentation and inspect the rendered output
 
 1. **Add the new *features* table** next to the original table. The new table should match the original one unless we were sloppy and forgot to update feature tables (in which case device settings/code are the final arbiter).
 2. **Build the documentation** with `make html` ([more details](dev-testing-docs)). When modifying device data, `touch` the `.md` file to trigger the build process
-2. **Open the relevant page** in `_build/html/` in your browser and verify the table looks correct.
-3. **Iterate**: edit the feature table YAML, rebuild, and compare the output until the table matches the expected result.
-4. **Remove** the original table once you're done.
+3. **Open the relevant page** in `_build/html/` in your browser and verify the table looks correct.
+4. **Iterate**: edit the feature table YAML, rebuild, and compare the output until the table matches the expected result.
+5. **Remove** the original table once you're done.
 
 ### Debugging
 
