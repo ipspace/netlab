@@ -68,7 +68,7 @@ The `tests/` directory contains several shell scripts to run subsets of the test
 
 | Script | Command | Purpose |
 |---|---|---|
-| `run-tests.sh` | `mypy` + `pytest -v -k 'xform_ or error_cases'` + `yamllint` | **Main CI/CD suite**. Accepts `ci` argument for fail-fast mode (`set -e`). |
+| `run-tests.sh` | `pytest -v -k 'xform_ or error_cases'` + `mypy` + `yamllint` | Main local pre-PR suite (excludes `tests/coverage` fixtures). Accepts `ci` argument for fail-fast mode (`set -e`). |
 | `run-xform.sh` | `pytest -v -k xform_` | Transformation tests only |
 | `run-xerr.sh` | `pytest -v -k error_cases` | Error tests only |
 | `run-yamllint.sh` | `yamllint --no-warnings` on `netsim/` and `tests/` | Standalone YAML linting |
