@@ -129,7 +129,7 @@ def features_body(tgroup: nodes.tgroup, device_data: typing.List[typing.List]) -
 
 def feature_to_text(v: typing.Any) -> str:
   if isinstance(v,list):
-    return ', '.join(v)
+    return ', '.join(str(x) for x in v)
   if isinstance(v,bool):
     return '✅' if v else '❌'
   return str(v)
@@ -206,7 +206,7 @@ def remove_duplicate_features(settings: Box, df_data: Box) -> None:
   for fd_name in list(df_data.keys()):            # Iterate over all relevant devices
     pname: typing.Optional[str] = None
     if '/' in fd_name:
-      (dname,pname) = fd_name.split('/')
+      (dname,pname) = fd_name.split('/',1)
     else:
       dname = fd_name
 
@@ -221,7 +221,6 @@ def remove_duplicate_features(settings: Box, df_data: Box) -> None:
       continue                                    # Some devices (like FRR) don't want to appear as parents (for SONiC)
     if pname:                                     # Check provider-specific parent when dealing with provider-specific feature set
       parent += '/' + pname
-    print(f'Checking {fd_name}/{dname} against {parent}')
     if parent not in df_data:                     # But it wasn't relevant? No worries, move on
       continue
     if df_data[fd_name].features == df_data[parent].features:
