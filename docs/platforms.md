@@ -215,57 +215,66 @@ Use the **netlab initial -o** command to create configuration files in a custom 
 [^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
 
 (platform-config-mode)=
+### Configuration Deployment Mechanisms
+
+_netlab_ can use a variety of device configuration deployment mechanisms:
+
+{.table-wrap}
+| Method | Description |
+|------|-------------|
+| daemon<br>configurations | Daemon configuration files are generated on the host and mapped into the containers running [daemons](platform-daemons) like *dnsmasq* or *bird* |
+| **ansible** | Starts an Ansible playbook that uses device-specific task lists executing Ansible device modules |
+| **sh** | Uses **docker exec** command to execute shell scripts *mapped* into containers[^CMSH] |
+| **cp_sh** | Copies shell scripts into containers (using **docker cp**) or virtual machines (using *netmiko* implementation of **scp**) and executed within them with **docker exec** or **netmiko.send_command()**. |
+| **ns** | Uses **ip netns exec** to execute shell scripts on the host within the container namespace[^CMNS] |
+| **netmiko** | Uses the *netmiko* library to send configuration commands over an SSH session. **netlab install ansible** automatically installs the *netmiko* library; you can also install it manually with **pip3 install netmiko**. |
+| **startup** | Configuration files are merged into a partial startup configuration that is passed to the *containerlab* `startup-config` parameter. This experimental method works only for containers and [won't report device configuration errors](https://blog.ipspace.net/2026/02/netlab-startup-config-caveats/). |
+
+[^CMSH]: This method can be used in most native containers, but not in [containers running virtual machines](clab-vrnetlab).
+
+[^CMNS]: Used to configure networking parameters for containers that do not have the **ip** command
+
 _netlab_ uses Ansible playbooks and device-specific task lists to deploy device configuration snippets onto most devices, with these notable exceptions:
 
 :::{table}
 :class: table-wrap
 
-| Device | Provider | Configuration deployment method |
+| Device | Provider | Default configuration deployment method |
 |--------|----------|---------------------------------|
-| bird   | clab     | **bash** scripts or daemon configuration files[^BBS] |
-| dnsmasq | clab    | **bash** scripts or daemon configuration files[^DBS] |
-| FRRouting    | clab     | **bash** or **vtysh** scripts[^FRRBV] |
+| BIRD   | clab     | Daemon configuration files and **bash** scripts[^BBS] |
+| dnsmasq | clab    | Daemon configuration files and **bash** scripts[^DBS] |
+| FRRouting    | clab     | **bash** and **vtysh** scripts[^FRRBV] |
 | Junos cRPD | clab | **bash** scripts[^cRBS] |
 | KinD   | clab     | **bash** scripts copied into and executed in containers |
-| linux  | clab     | host- or container-side **bash** scripts[^LBS] |
-| Sonic (containerlab) | clab | **bash** or **vtysh** scripts[^FRRBV] over **docker exec** |
-| vpp    | clab     | **bash** scripts, node configuration files, and VPP CLI configuration files[^VPPC] |
+| Linux  | clab     | host- or container-side scripts[^LBS] |
+| Sonic  | clab | inherits FRRouting configuration methods |
+| VPP    | clab     | **bash** scripts, node configuration files, and VPP CLI configuration files[^VPPC] |
 :::
-
-[^FRRBV]: Configurations starting with a *shebang* are assumed to be Linux scripts; all other configurations are assumed to be **vtysh** scripts and get a `#!/usr/bin/vtysh -f` shebang prepended to them.
-
-[^LBS]: Initial device configurations, static routes, VLANs, and interface bonding are configured with host-side scripts executed in the container namespace. Custom configuration templates are assumed to be Linux scripts executed within the container ([more details](generic-linux-devices)).
 
 [^BBS]: Initial device configurations, VLANs, and link aggregation are configured with **bash** scripts. All other features are configured with the BIRD configuration files.
 
 [^DBS]: Initial device configurations, VLANs, static routes, and link aggregation are configured with **bash** scripts. All other features are configured with the dnsmasq configuration files.
 
-[^VPPC]: Initial device configuration is deployed with **bash** scripts executed within the container. VPP **startup.conf** is deployed as a node configuration file. The VPP startup configuration loads `/etc/vpp/config/setup.vpp`, a generated VPP CLI configuration file; the initial script creates `/etc/vpp/config/clab-interfaces.vpp`. The container waits for **netlab initial** to finish before starting VPP.
+[^FRRBV]: Configurations starting with a *shebang* are assumed to be Linux scripts; all other configurations are assumed to be **vtysh** scripts and get a `#!/usr/bin/vtysh -f` shebang prepended to them.
 
 [^cRBS]: The configuration deployment uses a custom **bash** script that calls **cli** command to execute **load merge** followed by **commit**. The custom script is used as the *shebang* interpreter for the configuration snippets.
 
-Several other devices can use alternate (faster) configuration methods that are not enabled by default; you have to set the **netlab_config_mode** device group variable[^NCMGV] or node parameter to use them:
+[^LBS]: Initial device configurations, static routes, VLANs, and interface bonding are configured with host-side scripts executed in the container namespace. Custom configuration templates are assumed to be Linux scripts executed within the container ([more details](generic-linux-devices)).
 
-| Device | containerlab<br>deployment method | libvirt<br>deployment method |
-|-|-| -|
-| Arista EOS | **sh**[^EOSSH], **netmiko** [❗](caveats-ceos) | **netmiko** [❗](caveats-veos) |
-| Aruba CX  | **startup** ||
-| Cisco IOS/IOS XE[^18v] | **startup**, **netmiko** | **netmiko** |
-| Cisco IOS XRd | **sh**[^XRDSH] ||
-| Dell OS10 | **startup** ||
-| FRRouting || **sh** |
-| Junos[^Junos] | **startup** ||
-| Linux || **sh** |
+[^VPPC]: Initial device configuration is deployed with **bash** scripts executed within the container. VPP **startup.conf** is deployed as a node configuration file. The VPP startup configuration loads `/etc/vpp/config/setup.vpp`, a generated VPP CLI configuration file; the initial script creates `/etc/vpp/config/clab-interfaces.vpp`. The container waits for **netlab initial** to finish before starting VPP.
 
-[^EOSSH]: Arista EOS device configurations are converted into FastCli scripts and executed as Linux scripts within the cEOS container. This method works on EOS software releases that have the **‌platform tfa phy control-frame disabled** interface configuration command (probably starting with EOS release 4.30)
+Several other devices can use configuration methods faster than Ansible playbooks. These configuration methods are not enabled by default; you have to set the **netlab_config_mode** device group variable[^NCMGV] or node parameter to use them:
 
-[^XRDSH]: The Cisco IOS XRd deployment uses a custom **bash** script that calls **xrapply** ZTP command to load and commit a configuration file. The custom script is used as the *shebang* interpreter for the configuration snippets. This deployment method *does not work* on XRv virtual machines packaged into *vrnetlab* containers.
+```{features}
+- title: Alternate<br>deployment method
+  text: >-
+    [ x for x in initial.config_mode if x not in group_vars.get('netlab_config_mode',[]) ]
+```
+
 
 **Notes:**
-
-* The **startup** deployment method (available only for containers) uses *containerlab* `startup-config` parameter with partial device configurations. This experimental method won't report device configuration errors ([more details](https://blog.ipspace.net/2026/02/netlab-startup-config-caveats/)).
-* The **netmiko** deployment method (available for containers and virtual machines) uses the *netmiko* library to configure network devices. **netlab install ansible** automatically installs it; you can also install it manually with **pip3 install netmiko**.
-* The **sh** deployment method maps configuration files into containers and executes them with **docker exec**. It uses *netmiko* to connect to virtual machines, SCP to transfer configuration scripts, and *netmiko.send_command()* to execute the scripts.
+* When using the **sh** method on Arista cEOS containers, _netlab_ converts the device configurations into FastCli scripts and executes them as Linux scripts within the cEOS container. This method works on EOS software releases that have the **‌platform tfa phy control-frame disabled** interface configuration command (probably starting with EOS release 4.30)
+* The Cisco IOS XRd **sh** deployment method uses a custom **bash** script that calls the **xrapply** ZTP command to load and commit a configuration file. The custom script is used as the *shebang* interpreter for the configuration snippets. This deployment method *does not work* on XRd vRouter or XRv virtual machines packaged into *vrnetlab* containers.
 
 [^NCMGV]: For example, set the **defaults.devices.iol.clab.group_vars.netlab_config_mode** [topology default](topo-defaults) to **startup** to use startup configuration with Cisco IOL nodes, or **defaults.devices.ios.group_vars.netlab_config_mode** to **netmiko** to use *netmiko* to configure Cisco IOS-based devices.
 
