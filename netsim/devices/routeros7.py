@@ -42,6 +42,52 @@ def build_afi_lists(node: Box) -> None:
         if bgp_af in ngb and (ngb[bgp_af] == ngb[t_af] or ngb[bgp_af] == t_af):
           ngb._afi_list[t_af].append(bgp_af)
 
+def adjust_lag_vlan_mtu(node: Box) -> None:
+  '''
+  When creating a LAG that uses VLANs, we need to add 4 bytes to the parent interface
+  for the VLAN Header so the VLAN MTU is the expected size ie. 1500 vs 1496
+  '''
+  for lag in node.interfaces:
+    if lag.get('type') != 'lag':
+      continue
+
+    required_mtu = 0
+
+    # VLAN access/trunk configuration stored on the LAG.
+    if 'vlan' in lag:
+      required_mtu = lag.get('mtu', 1500) + 4
+
+    # Routed VLAN subinterfaces stored separately from the LAG.
+    for vlan in node.interfaces:
+      if vlan.get('type') != 'vlan_member':
+        continue
+
+      if vlan.get('parent_ifindex') != lag.ifindex:
+        continue
+
+      required_mtu = max(required_mtu,vlan.get('mtu', 1500) + 4,)
+
+    if not required_mtu:
+      continue
+
+    for member in node.interfaces:
+      if member.get('lag._parentindex') == lag.lag.ifindex:
+        member.mtu = max(member.get('mtu', 1500),required_mtu,)
+
+def adjust_lag_vlan_mtu2(node: Box) -> None:
+  for lag in node.interfaces:
+    if lag.get('type') != 'lag':
+      continue
+
+    if 'vlan' not in lag:
+      continue
+
+    required_mtu = lag.get('mtu',1500) + 4
+
+    for member in node.interfaces:
+      if member.get('lag._parentindex') == lag.lag.ifindex:
+        member.mtu = max(member.get('mtu',1500),required_mtu,)
+
 class RouterOS7(_Quirks):
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
@@ -50,3 +96,5 @@ class RouterOS7(_Quirks):
     _common.check_tagged_vlan_1(node)
     if node.get('bgp.neighbors'):
       build_afi_lists(node)
+    if 'lag' in node.get('module',[]) and 'vlan' in node.get('module',[]):
+      adjust_lag_vlan_mtu(node)
