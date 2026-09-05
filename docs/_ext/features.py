@@ -127,18 +127,35 @@ def features_body(tgroup: nodes.tgroup, device_data: typing.List[typing.List]) -
       else:
         trow += table_cell('🤦‍♂️')                  # None of the above, we failed miserably :()
 
+def feature_to_text(v: typing.Any) -> str:
+  if isinstance(v,list):
+    return ', '.join(str(x) for x in v)
+  if isinstance(v,bool):
+    return '✅' if v else '❌'
+  return str(v)
+
 def get_feature_row(device_data: Box, dname: str, table_def: Box) -> typing.Optional[list]:
   df_row = []                                   # ... starting with an empty row for each device
   f_valid = False                               # ... assuming the device is not relevant and should not be included
+  if debug_active('df_data'):
+    print(f'DF_DATA: {dname}\n{device_data.to_yaml()}')
   for f_def in table_def.features:              # Ready? Now iterate over feature definitions
     dt_value: dict = {}
     try:                                        # Try to evaluate whether the device supports the feature
-      f_OK = bool(safer_eval(f_def.enabled,locals=device_data))
+      if 'text' in f_def:
+        f_OK = safer_eval(f_def.text,device_data)
+        if f_OK:
+          dt_value['text'] = feature_to_text(f_OK)
+        else:
+          dt_value['status'] = False
+      else:
+        f_OK = bool(safer_eval(f_def.enabled,device_data))
+        dt_value['status'] = f_OK                   # Save the results
     except Exception as ex:                     # Failed miserably? It could be any number of reasons
       f_OK = False                              # ... but we'll just assume the device DOES NOT support the feature
       dt_value['exception'] = str(ex)
+      dt_value['status'] = False
 
-    dt_value['status'] = f_OK                   # Save the results
     if f_OK and 'caveats' in f_def:             # ... but wait, there's more. Do we need to check for caveats?
       try:                                      # Let's do it. Try to evaluate caveat data
         f_caveat = safer_eval(f_def.caveats,locals=device_data)
@@ -149,6 +166,8 @@ def get_feature_row(device_data: Box, dname: str, table_def: Box) -> typing.Opti
     df_row.append(dt_value)                     # OK, the "feature status" is ready, append it to the device features row
     f_valid = f_valid or f_OK                   # ... and remember if the device is relevant (at least one feature is implemented)
 
+  if debug_active('df_row'):
+    print(f'DF_ROW: {dname} {df_row}')
   return df_row if f_valid else None
 
 def get_device_features(settings: Box, table_def: Box) -> Box:
@@ -163,15 +182,16 @@ def get_device_features(settings: Box, table_def: Box) -> Box:
     df_row = get_feature_row(f_data,dname,table_def)
     if df_row:                                    # Does the device supports the specified feature set?
       df_data[dname].features = df_row            # ... go and store its data
-      if debug_active('df_row'):
-        print(f'DF_ROW: {dname} {df_row}')
     is_daemon = ddata.get('daemon',False)         # Only clab provider is checked for daemons
     p_list = ['clab'] if is_daemon else list(settings.providers) 
-    for p_name in p_list:                         # Next, check for provider-specific features
-      pf_data = ddata.get(f'{p_name}.features')   # Try to fetch device.provider.features dict
-      if not pf_data:                             # Not there? Cool, move on
+    for p_name in p_list:                         # Next, check for provider-specific data and features
+      p_data = ddata.get(p_name,{})
+      pf_data = ddata.get(f'{p_name}.features',{})
+      if not p_data:                              # Not there? Cool, move on
         continue
-      dpf_row = get_feature_row(f_data + pf_data,dname,table_def)
+      if debug_active('df_data'):
+        print(f'Checking provider-specific data: {dname} {p_name}')
+      dpf_row = get_feature_row(f_data + p_data + pf_data,dname,table_def)
       if dpf_row and dpf_row != df_row:           # Are the per-provider features different from device ones?
         dpf_name = dname if is_daemon else f'{dname}/{p_name}'
         df_data[dpf_name].features = dpf_row      # Store as device for daemons, device/provider otherwise
@@ -183,20 +203,28 @@ def remove_duplicate_features(settings: Box, df_data: Box) -> None:
   The craziest of them all: remove child devices that have identical features as the parent
   device (so they were probably inherited)
   """
-  for dname in list(df_data.keys()):              # Iterate over all relevant devices
-    if dname not in settings.devices:             # Skip device/provider keys
+  for fd_name in list(df_data.keys()):            # Iterate over all relevant devices
+    pname: typing.Optional[str] = None
+    if '/' in fd_name:
+      (dname,pname) = fd_name.split('/',1)
+    else:
+      dname = fd_name
+
+    if dname not in settings.devices:             # Skip unknown devices
       continue
     ddata = settings.devices[dname]
     p_list = ddata.get('_parents',[])             # ... and get a list of device's parent
     if not p_list:                                # ... No parent? Cool.
       continue
     parent = p_list[0]                            # Here's the cool trick: the most-generic parent is always the first in the list ;)
-    if parent not in df_data:                     # But it wasn't relevant? No worries, move on
-      continue
     if not settings.devices[parent].get('docparent',True):
       continue                                    # Some devices (like FRR) don't want to appear as parents (for SONiC)
-    if df_data[dname].features == df_data[parent].features:
-      df_data.pop(dname)                          # Child and (grand?)parent have identical features? Remove the child
+    if pname:                                     # Check provider-specific parent when dealing with provider-specific feature set
+      parent += '/' + pname
+    if parent not in df_data:                     # But it wasn't relevant? No worries, move on
+      continue
+    if df_data[fd_name].features == df_data[parent].features:
+      df_data.pop(fd_name)                        # Child and (grand?)parent have identical features? Remove the child
       append_to_list(df_data[parent],'ch_match',dname)
     else:                                         # Otherwise mark that a (grand)child has diverted from the parent
       append_to_list(df_data[parent],'ch_mismatch',dname)
@@ -252,8 +280,9 @@ def build_device_feature_matrix(
   for dname in dname_list:                        # Finally! Iterate over devices
     if dname not in df_data:
       continue
-
     df_results = df_data[dname].features          # Get the device feature data
+    if not df_results:
+      continue
     dc_name = get_box({'text': devices[dname] })  # First cell is the device short name
     ch_match = df_data[dname].get('ch_match',[])  # Is this a parent device?
     if ch_match:                                  # ... then we need a footnote saying "this includes these other devices"
