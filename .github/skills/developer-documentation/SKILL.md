@@ -13,4 +13,4 @@ description: Write configuration template developer documentation
 * Find the relevant tests in the `tests/integration` directory tree and mention them
 * Use `jinja` syntax highlighter for Jinja2 template examples.
 * Mention where the configuration templates should be stored, and how the platform name is calculated (based on `netlab_device_type` or `ansible_network_os` variable)
-* Headers use Title Case using Chicago Manual of Style
+* Documentation headers use Title Case (Chicago Manual of Style).
