@@ -1,4 +1,5 @@
-# Automated CI/CD Tests
+(dev-testing)=
+# Manual and CI/CD Testing
 
 *netlab* uses GitHub Workflows CI/CD pipeline; see `.github/workflows/tests.yml` for details. The automated tests executed on every push, pull request, or merge include:
 
@@ -12,6 +13,36 @@ You can run the same tests with the `run-tests.sh` script in *tests* directory. 
 * The CI/CD tests use PyYAML. You can run them on a system with `ruamel.yaml` installed, but they might take longer (see [bug report](https://github.com/ipspace/netlab/issues/3345) and [related PR](https://github.com/ipspace/netlab/pull/3353) for details). Uninstalling `ruamel.yaml` might not be a bad idea. 
 ```
 
+## Before Submitting a PR
+
+If your PR includes modifications to Python code:
+
+* Run the `run-tests.sh` script in the `tests` directory to run the [automated tests](dev-testing-auto) that will be run as part of the CI/CD pipeline.
+* If the tests fail, your code modifications changed the data transformation logic or error messages.
+* If you're absolutely sure your changes are correct, run the `create-transformation-tests.sh` and `create-error-tests.sh` scripts in the `tests` directory to recreate the expected test results.
+* Check the differences between previous and new expected test results.
+* Add modified test results to your commit.
+
+```{tip}
+Automated CI/CD tests will check your expected test results anyway, and we'll have a discussion if you submit "suboptimal" content ;)
+```
+
+When modifying documentation:
+
+* Test the [documentation changes](dev-testing-docs)
+
+When modifying device templates or adding new device functionality:
+
+* Run the relevant [integration tests](dev-testing-integration). 
+* If possible, add the integration test results to the PR.
+
+Finally: 
+
+* Submit a PR.
+* The PR should be in *draft* state when you're still working on it and in *ready for review* state when you're done.
+* Ask someone to review your code. GitHub is pretty good at identifying who worked on the code recently; that person might be your best bet.
+
+(dev-testing-auto)=
 ## Automated Tests
 
 The **test_transformation.py** test harness runs three types of transformation tests:
@@ -20,6 +51,7 @@ The **test_transformation.py** test harness runs three types of transformation t
 * Error cases -- topologies that should generate an error resulting in an aborted transformation attempt. Add tests to this directory only when you need to test error messages in the Python code.
 * Verbose test cases -- identical to regular transformations but with more logging. Used only when measuring code coverage (to ensure all logging printouts are triggered)
 
+(dev-testing-xform)=
 ### Data Transformation Tests
 
 The regular transformation tests:
@@ -33,6 +65,7 @@ Whenever you're creating a new test case or modifying an existing one, you **HAV
 
 To create *expected results* files run `create-transformation-tests.sh` script in the *tests* directory. The script assumes that your code works flawlessly and that whatever the code does is the correct result. That might *not* be the case, so it's highly recommended that you execute `git diff topology` after running `create-transformation-tests.sh` script and do a thorough check of the differences.
 
+(dev-testing-errmsg)=
 ### Transformation Error Tests
 
 The transformation error tests:
@@ -50,24 +83,59 @@ To create the *expected error messages* files, run the `create-error-tests.sh` s
 You cannot create a new error test on a system with `ruamel.yaml` package (details in the [bug report](https://github.com/ipspace/netlab/issues/3345) and [related PR](https://github.com/ipspace/netlab/pull/3353)). Uninstall `ruamel.yaml` before running the `create-error-tests.sh` script.
 ```
 
-## Before Submitting a PR
+(dev-testing-docs)=
+## Testing Documentation Changes
 
-If your PR includes modifications to Python code, make sure you follow these steps before submitting it:
+*netlab* documentation is built with Sphinx. You can generate and inspect the HTML output locally before submitting a PR.
 
-* Run `create-transformation-tests.sh` script
-* Check the differences (again)
-* Add modified test results to your commit
-* Run the `run-tests.sh` script in the `tests` directory.
-* Submit a PR
+### Prerequisites
 
-```{tip}
-Automated CI/CD tests will check your expected test results, and we'll have a discussion if you submit "suboptimal" content ;)
+From the repository root directory, install the documentation build dependencies:
+
+```bash
+pip3 install -r docs/requirements.txt
 ```
 
+This installs Sphinx, the MyST parser, the Read the Docs theme, and other required packages. The `docs/requirements.txt` file pins specific versions to ensure consistent CI/CD builds.
+
+### Building HTML Documentation
+
+From the `docs` directory, run:
+
+```bash
+make html
+```
+
+This invokes `sphinx-build` and writes the generated HTML files to `_build/html/`.
+
+_netlab_ documentation uses Sphinx extensions that rely on _netsim_ modules to fetch default settings. The documentation build process might fail if you don't have the GitHub repository in the Python path. In that case, use:
+
+```bash
+PYTHONPATH=.. make html
+```
+
+Sphinx will report warnings for broken links, missing references, or markup errors during the build -- fix these before submitting a PR.
+
+```{tip}
+Run `make clean html` to do a full rebuild, avoid stale cached pages, and detect broken links in pages you haven't modified.
+```
+
+### Inspecting the Result
+
+From the `docs` directory, open the top-level HTML page in your browser:
+
+```bash
+open _build/html/index.html          # macOS
+xdg-open _build/html/index.html      # Linux
+```
+
+Browse the pages you modified.
+
+(dev-testing-integration)=
 ## Integration Tests
 
 [Integration tests](integration-testing) are run by hand; it's too much hassle to set up an automated test environment with vendor boxes/containers/license files. The latest results are available at [https://tests.netlab.tools/](https://tests.netlab.tools/).
 
 The test topologies are stored in the `tests/integration` directory. If you're adding new device features or changing device configuration templates, please [run the relevant tests](integration-test-suite) before submitting a PR.
 
-Most integration tests include automated validation. The easiest way to use it is to [run](integration-test-single) the `netlab up _test_scenario_ --validate` command.
+Most integration tests include automated validation. The easiest way to use automated validation with a single test is to [run](integration-test-single) the `netlab up _test_scenario_ --validate` command.
