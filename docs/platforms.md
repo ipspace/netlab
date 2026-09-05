@@ -268,7 +268,7 @@ Several other devices can use configuration methods faster than Ansible playbook
 ```{features}
 - title: Alternate<br>deployment method
   text: >-
-    [ x for x in initial.config_mode if x not in group_vars.get('netlab_config_mode',[]) ]
+    [ x for x in initial.config_mode if x != group_vars.get('netlab_config_mode','') ]
 ```
 
 
