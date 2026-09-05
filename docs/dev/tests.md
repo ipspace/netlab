@@ -90,13 +90,13 @@ You cannot create a new error test on a system with `ruamel.yaml` package (detai
 
 ### Prerequisites
 
-Install the documentation build dependencies:
+From the repository root directory, install the documentation build dependencies:
 
 ```bash
 pip3 install -r docs/requirements.txt
 ```
 
-This installs Sphinx, the MyST parser, the Read the Docs theme, and other required packages. The `docs/requirements.txt` file pins specific versions to match the CI/CD builds.
+This installs Sphinx, the MyST parser, the Read the Docs theme, and other required packages. The `docs/requirements.txt` file pins specific versions to ensure consistent CI/CD builds.
 
 ### Building HTML Documentation
 
@@ -106,7 +106,7 @@ From the `docs` directory, run:
 make html
 ```
 
-This invokes `sphinx-build` and writes the generated HTML files to `docs/_build/html/`.
+This invokes `sphinx-build` and writes the generated HTML files to `_build/html/`.
 
 _netlab_ documentation uses Sphinx extensions that rely on _netsim_ modules to fetch default settings. The documentation build process might fail if you don't have the GitHub repository in the Python path. In that case, use:
 
@@ -114,20 +114,22 @@ _netlab_ documentation uses Sphinx extensions that rely on _netsim_ modules to f
 PYTHONPATH=.. make html
 ```
 
-### Inspecting the Result
-
-Open the top-level page in your browser:
-
-```bash
-open docs/_build/html/index.html          # macOS
-xdg-open docs/_build/html/index.html      # Linux
-```
-
-Browse the pages you modified. Sphinx will report warnings for broken links, missing references, or markup errors during the build -- fix these before submitting a PR.
+Sphinx will report warnings for broken links, missing references, or markup errors during the build -- fix these before submitting a PR.
 
 ```{tip}
 Run `make clean html` to do a full rebuild, avoid stale cached pages, and detect broken links in pages you haven't modified.
 ```
+
+### Inspecting the Result
+
+From the `docs` directory, open the top-level HTML page in your browser:
+
+```bash
+open _build/html/index.html          # macOS
+xdg-open _build/html/index.html      # Linux
+```
+
+Browse the pages you modified.
 
 (dev-testing-integration)=
 ## Integration Tests
