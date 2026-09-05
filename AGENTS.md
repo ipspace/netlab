@@ -122,6 +122,7 @@ IMPORTANT -- the Box objects must have the default_box and box_dots flags set to
 - Docstrings follow Google style (not strictly enforced but preferred)
 - CLI help in `netsim/cli/help.py`
 - User documentation in `docs/` directory
+- Headers use Title Case using Chicago Manual of Style
 
 ## Development Philosophy
 
