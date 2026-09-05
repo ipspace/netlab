@@ -7,7 +7,7 @@ The **bgp.session** plugin implements numerous BGP session attributes (MD5 and T
 
 **Notes:**
 
-* The plugin configuration template should be stored in `netsim/extra/bgp.session/<nos>.j2` where **nos** is the value of the **netlab_device_type** or **ansible_network_os** variable (see [Using Your Devices with Ansible Playbooks](../devices.md#using-your-device-with-ansible-playbooks) for more details).
+* The plugin configuration template should be stored in `netsim/extra/bgp/session/<nos>.j2` where **nos** is the value of the **netlab_device_type** or **ansible_network_os** variable (see [Using Your Devices with Ansible Playbooks](../devices.md#using-your-device-with-ansible-playbooks) for more details).
 * The plugin adds `bgp.session` to the node **config** list for every node using one or more of its attributes. The configuration snippet is deployed after the standard BGP configuration template.
 * The plugin configuration template should only configure the BGP session attributes described in this document; all other BGP configuration (BGP process, neighbors, address families, prefix origination) is handled by the standard BGP template (see [](dev-config-bgp)).
 * Some devices (FortiOS) and daemons (BIRD) render the session attributes inside the standard BGP template. Their `bgp.session` templates (for example, `fortios.j2`) are empty.
