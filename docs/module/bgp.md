@@ -53,27 +53,38 @@ Even more BGP features are implemented in the following plugins:
 (bgp-platform)=
 ## Platform Support
 
-_netlab_ supports most BGP features on [all platforms supporting BGP configuration module](platform-routing-support) (see [platform support table](platform-routing-support) for device-specific caveats).
+_netlab_ supports these  BGP features on [all platforms supporting BGP configuration module](platform-routing-support) (see [platform support table](platform-routing-support) for device-specific caveats):
+
+* 2-octet and 4-octet BGP AS numbers. 4-octet AS numbers can be specified in as.dot notation.
+* IPv4 and IPv6 address families
+* Direct (single-hop) EBGP sessions
+* IBGP sessions between loopback interfaces
+* BGP route reflectors
+* Next-hop-self control on IBGP sessions
+* BGP community propagation
+* Configurable activation of default address families
+* Configurable link prefix and routing table advertisement
+* Additional (dummy) prefix advertisement
+* Static router-id and cluster-id
 
 The following features are only supported on a subset of platforms:
 
 ```{features}
-- title: Configurable<br>default AF
-  enabled: |
-    bgp.activate_af
 - title: BGP<br>confederations
   enabled: |
     bgp.confederation
 - title: Route<br>import
   enabled: |
-    'connected' in bgp['import']
+    bgp['import']
   caveats: |
-    bgp['import_caveats']
+    bgp.caveats['import']
+- title: BGP in VRF
+  enabled: vrf.bgp
 - title: VRF Route<br>import
   enabled: |
-    'vrf' in bgp['import']
+    vrf.bgp and 'vrf' in bgp['import']
   caveats: |
-    'vrf' in bgp['import_caveats']
+    bgp.caveats.vrf_import
 ```
 
 These devices support EBGP sessions between IPv6 LLA or IPv4 AF on IPv6 EBGP sessions:
