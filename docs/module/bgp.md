@@ -53,76 +53,73 @@ Even more BGP features are implemented in the following plugins:
 (bgp-platform)=
 ## Platform Support
 
-_netlab_ supports most BGP features on [all platforms supporting BGP configuration module](platform-routing-support) (see [platform support table](platform-routing-support) for device-specific caveats).
+_netlab_ supports these  BGP features on [all platforms supporting BGP configuration module](platform-routing-support) (see [platform support table](platform-routing-support) for device-specific caveats):
+
+* 2-octet and 4-octet BGP AS numbers. 4-octet AS numbers can be specified in as.dot notation.
+* IPv4 and IPv6 address families
+* Direct (single-hop) EBGP sessions
+* IBGP sessions between loopback interfaces
+* BGP route reflectors
+* Next-hop-self control on IBGP sessions
+* BGP community propagation
+* Configurable activation of default address families
+* Configurable link prefix and routing table advertisement
+* Additional (dummy) prefix advertisement
+* Static router-id and cluster-id
 
 The following features are only supported on a subset of platforms:
 
-|   Operating system       | Configurable<br>default AF | BGP<br>confederations | Route<br>import | VRF route<br>import |
-| ------------------------ | :-: | :-: | :-: | :-: |
-| Arista EOS               |  ✅ | ✅ |  ✅ |  ✅ |
-| Aruba AOS-CX             |  ✅ |  ❌  |  ✅ |  ✅ |
-| BIRD                     |  ✅ | ✅ |  ✅ |  ✅ |
-| Cisco IOS/IOS XE[^18v]   |  ✅ |  ✅ |  ✅ |  ✅ |
-| Cisco IOS XR[^XR]        |  ✅ |  ✅ |  ✅ |  ✅ |
-| Cumulus Linux 4.x        |  ✅ |  ❌  |  ✅ |  ✅ |
-| Cumulus Linux 5.x (NVUE) |  ✅ |  ❌  |  ✅ |  ❌ |
-| Dell OS10                |  ✅ | ✅ |  ✅ |  ✅ |
-| Fortinet FortiOS         |  ✅ |  ❌  |  ✅ |  ❌  |
-| FRR                      |  ✅ | ✅ |  ✅ |  ✅ |
-| Junos[^Junos]            |  ✅ | ✅ |  ✅ |  ✅ |
-| Nokia SR Linux           |  ✅ |  ❌  |  ✅ [❗](caveats-srlinux) |  ✅ [❗](caveats-srlinux) |
-| Nokia SR OS[^SROS]       |  ✅ |  ❌  |  ✅ [❗](caveats-sros) |  ✅ [❗](caveats-sros) |
-| Sonic                    |  ✅ |  ❌  |  ❌  |  ❌  |
-| VyOS                     |  ✅ |  ❌  |  ✅ |  ✅ |
-
-[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
-
-[^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
+```{features}
+- title: BGP<br>confederations
+  enabled: |
+    bgp.confederation
+- title: Route<br>import
+  enabled: |
+    bgp['import']
+  caveats: |
+    bgp.caveats['import']
+- title: BGP in VRF
+  enabled: vrf.bgp
+- title: VRF Route<br>import
+  enabled: |
+    vrf.bgp and 'vrf' in bgp['import']
+  caveats: |
+    bgp.caveats.vrf_import
+```
 
 These devices support EBGP sessions between IPv6 LLA or IPv4 AF on IPv6 EBGP sessions:
-
-|   Operating system       | IPv6 LLA<br />EBGP<br />sessions | Unnumbered<br />IPv4 EBGP<br />sessions[^INTv4] | RFC 8950<br>IPv4<br />next hops[^RFC8950] |
-| ------------------------ | :-: | :-: | :-: |
-| Arista EOS               |  ✅ |  ✅ |  ❌  |
-| BIRD                     |  ❌  |  ❌  |  ✅ |
-| Cumulus Linux 4.x        |  ✅ |  ✅ |  ✅ |
-| Cumulus Linux 5.x (NVUE) |  ✅ |  ✅ |  ✅ |
-| Dell OS10                |  ✅ |  ✅ |  ❌  |
-| FRR                      |  ✅ |  ✅ |  ✅ |
-| Nokia SR Linux           |  ✅ |  ✅ |  ❌  |
-| Sonic                    |  ✅ |  ✅ |  ❌  |
-| VyOS                     |  ✅ |  ✅ |  ❌  |
+```{features}
+- title: IPv6 LLA<br>EBGP<br>sessions
+  enabled: |
+    bgp.ipv6_lla
+- title: Unnumbered<br>IPv4 EBGP<br>sessions[^INTv4]
+  enabled: |
+    bgp.ipv6_lla
+- title: RFC 8950<br>IPv4<br>next hops[^RFC8950]
+  enabled: |
+    bgp.rfc8950
+```
 
 [^RFC8950]: IPv6 next hops for IPv4 prefixes advertised over a regular (non-LLA) IPv6 EBGP session. RFC 8950-style next hops over IPv6 LLA sessions used to implement interface EBGP sessions are documented in the *Unnumbered IPv4 EBGP sessions* column.
 
 These devices support BGP local-AS functionality to build EBGP or IBGP sessions:
+```{features}
+- title: EBGP<br>local AS
+  enabled: |
+    bgp.local_as
+- title: IBGP<br>local AS
+  enabled: |
+    bgp.local_as_ibgp
+- title: VRF<br>local AS
+  enabled: |
+    bgp.vrf_local_as
+```
 
-|   Operating system       | EBGP<br>local AS | IBGP<br>local AS |
-| ------------------------ | :-: | :-: |
-| Arista EOS               |  ✅ |  ✅ |
-| Aruba AOS-CX             |  ✅ |  ❌  |
-| BIRD                     |  ✅ |  ✅ |
-| Cisco IOS/IOS XE[^18v]   |  ✅ |  ✅ |
-| Cisco IOS XR[^XR]        |  ✅ |  ✅ |
-| Cumulus Linux 4.x        |  ✅ |  ❌  |
-| Cumulus Linux 5.x (NVUE) |  ✅ |  ✅ |
-| Dell OS10                |  ✅ |  ❌  |
-| FRR                      |  ✅ |  ✅ |
-| JunOS                    |  ✅ |  ✅ |
-| Nokia SR Linux           |  ✅ |  ✅ |
-| Nokia SR OS[^SROS]       |  ✅ |  ✅ |
-| OpenBSD                  |  ✅ |  ❌  |
-| Sonic                    |  ✅ |  ✅ |
-| VyOS                     |  ✅ |  ❌  |
 
 ```{tip}
 * See [BGP Integration Tests Results](https://release.netlab.tools/_html/coverage.bgp) for more details.
 * Use the `netlab show modules -m bgp` command to display the route types that can be imported into BGP.
 ```
-
-[^18v]: Includes Cisco IOSv, IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL) and IOL Layer-2 images
-
-[^Junos]: Includes cRPD, vJunos-evolved, vJunos-switch, vJunos-router, vMX, vPTX, and vSRX
 
 [^INTv4]: IPv4 address family activated on an EBGP session established between IPv6 LLA interfaces and using IPv6 next hop for IPv4 prefixes according to RFC 8950
 
