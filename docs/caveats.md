@@ -206,8 +206,7 @@ These caveats are common to all Cisco IOS/IOS XE platforms:
 * Cisco IOS requires a *default metric* when redistributing routes into RIPv2. The RIPv2 configuration template sets the default metric to the value of the **netlab_ripv2_default_metric** node parameter (default: 5)
 * Cisco IOS behaves like an awful IP host from the 1980s with the **no ip routing** configuration; it does not use static routes and relies only on the **ip default-gateway**. IPv4 routing is thus enabled even when a Cisco IOS device has **role** set to *host*.
 * You can use the **ios.debug** global- or node attribute to [enable debugging](node-debug-attribute) during the initial device configuration.
-* `remove-private-as all` option is not accepted when the local BGP AS number is private.
-* `remove-private-as replace` option is not accepted when the local BGP AS number is private.
+* The **remove-private-as** option **all** or **replace** is not accepted when the local BGP AS number is private.
 
 These caveats are common to all Cisco IOS XE platforms:
 
@@ -274,13 +273,12 @@ See also [common Cisco IOS](caveats-ios) caveats.
 * Cisco IOS XR routing policies cannot use traditional prefix lists. _netlab_ thus implements **routing.prefix** lists as **prefix-sets** which cannot mix **permit** and **deny** conditions. When encountering such a filter, _netlab_ generates a warning and does its best (**deny** check followed by **permit** check).
 * The same limitation applies to BGP AS-path matching (using **as-set** objects) and BGP community matching (using **community-set** objects)
 * _netlab_ translates **match.community** routing policy entry into IOS XR `community matches-any` test, and the **community-set** object cannot match two (or more) communities in a single entry. You cannot use the current _netlab_ IOS XR implementation of BGP community lists to match two (or more) communities being attached to the route *at the same time*.
-* `remove-private-as all` option is not accepted when the local BGP AS number is private.
-* `remove-private-as replace` option is not accepted when the local BGP AS number is private.
+* The **remove-private-as** option **all** or **replace** is not accepted when the local BGP AS number is private.
 
 ### Cisco IOS XRv
 
-* netlab was tested with IOS XR release 7.4. Earlier releases might use a different management interface name. In that case, you must set **defaults.devices.iosxr.mgmt_if** parameter to the name of the management interface
-* Copying Vagrant public insecure SSH key into IOS XR during the box building process is cumbersome. The vagrant configuration file uses a fixed SSH password.
+* netlab was tested with IOS XR release 7.4. Earlier releases might use a different management interface name. In that case, you must set the **defaults.devices.iosxr.mgmt_if** parameter to the name of the management interface
+* Copying the Vagrant public insecure SSH key into IOS XR during the box building process is cumbersome. The vagrant configuration file uses a fixed SSH password.
 * Maximum interface bandwidth on IOS XRv is 1 Gbps (1000000).
 * It seems IOS XR starts an SSH server before it parses the device configuration[^WCPGW], and newer versions of Vagrant don't like that and will ask you for the password for user **vagrant**. Ignore that prompt and the subsequent error messages[^POT]; you might get a running lab in a few minutes[^MAS].
 

@@ -84,6 +84,8 @@ The plugin implements generic BGP session features for the following platforms:
 * _netlab_ always configures HMAC-SHA1-96 as the cryptographic algorithm on IOS XE
 
 (bgp-session-security)=
+BGP session security features are available on these platforms:
+
 ```{features}
 - title: password
   enabled: |
@@ -97,6 +99,8 @@ The plugin implements generic BGP session features for the following platforms:
 ```
 
 (bgp-session-as-path)=
+The plugin implements AS-path-mangling nerd knobs for the following platforms:
+
 ```{features}
 - title: Allow<br>AS in
   enabled: |
@@ -171,9 +175,9 @@ You can specify the **bgp.remove_private_as** attribute as a boolean value (equi
 The implementations of the **neighbor remove-private-as** command vary widely across supported network devices, as described in the following table:
 
 ```{features}
-- title: on
+- title: "on"
   enabled: |
-    'on' in bgp.remove_private_as.valid
+    bgp.remove_private_as is True or 'on' in bgp.remove_private_as.valid
 - title: all
   enabled: |
     'all' in bgp.remove_private_as.valid
@@ -195,10 +199,6 @@ The implementations of the **neighbor remove-private-as** command vary widely ac
   caveats: |
     bgp.remove_private_as.caveats.ingress-replace
 ```
-
-**Notes:**
-
-* Cisco IOSv/IOS-XE do not accept **all** or **replace** option when the local BGP AS number is private.
 
 (bgp-session-route-server)=
 ## BGP Route Servers
