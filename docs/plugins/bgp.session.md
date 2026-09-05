@@ -177,7 +177,7 @@ The implementations of the **neighbor remove-private-as** command vary widely ac
 ```{features}
 - title: "on"
   enabled: |
-    bgp.remove_private_as is True or 'on' in bgp.remove_private_as.valid
+    'on' in bgp.remove_private_as.valid
 - title: all
   enabled: |
     'all' in bgp.remove_private_as.valid
