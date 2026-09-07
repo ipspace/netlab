@@ -33,7 +33,7 @@ Supported OSPF features:
 * [Default route origination](ospf-default)
 * BFD (optionally with RFC9355 strict mode)
 * Graceful Restart
-* VRF OSPFv2 instances (on platforms with [VRF support](module-vrf-platform-support))
+* VRF OSPFv2/OSPFv3 instances (on platforms with [VRF support](module-vrf-platform-support))
 * Stub and NSSA areas (implemented in a separate [ospf.areas plugin](plugin-ospf-areas))
 
 Missing features:
@@ -49,131 +49,66 @@ Need one of those? Create a plugin and contribute it.
 (ospf-platform)=
 ## Platform Support
 
-The following table describes the per-platform support of individual router-level OSPF features:
+We implemented OSPFv2, OSPFv3, OSPF areas, reference bandwidth, passive interfaces, and point-to-point circuits on almost all devices. The missing bits are documented as caveats in the *Core OSPF features* column in the following table, which includes the per-platform support of other router-level OSPF features:
 
-| Operating system         | Areas | Reference<br/>bandwidth | OSPFv3 | Route<br>import | Default<br>route |
-| ------------------------ |:-:|:-:|:-:|:-:|:-:|
-| Arista EOS               | ✅| ✅| ✅| ✅| ✅|
-| Aruba AOS-CX             | ✅| ✅| ✅| ✅| ✅|
-| BIRD                     | ✅| ✅| ✅| ✅| ✅|
-| Cisco ASAv               | ✅| ✅| ❌ | ❌ | ✅|
-| Cisco IOSv/IOSvL2        | ✅| ✅| ✅| ✅| ✅|
-| Cisco IOS XE[^18v]       | ✅| ✅| ✅| ✅| ✅|
-| Cisco IOS XR[^XR]        | ✅| ✅| ✅| ✅| ✅|
-| Cisco Nexus OS           | ✅| ✅| ✅| ❌ | ❌ |
-| Cumulus Linux            | ✅| ✅| ✅| ✅| ✅|
-| Dell OS10 ([❗](caveats-os10)) | ✅| ✅| ✅| ✅| ✅|
-| Cumulus Linux 5.x (NVUE) | ✅| ✅| ❌ | ✅ | ✅|
-| Extreme Networks EXOS    | ✅| ✅| ✅| ❌ | ❌ | 
-| Fortinet FortiOS         |[❗](caveats-fortios)| ✅ | ✅ | ✅ | ✅ |
-| FRR                      | ✅| ✅| ✅| ✅| ✅|
-| Junos[^Junos]            | ✅| ✅| ✅| ✅| ❌ |
-| Mikrotik RouterOS 6      | ✅| ❌ | ❌ | ❌ | ❌ |
-| Mikrotik RouterOS 7      | ✅| ❌ | ✅| ❌ | ❌ |
-| Nokia SR Linux           | ✅| ✅| ✅| ✅ [❗](caveats-srlinux) | ✅ [❗](caveats-srlinux) |
-| Nokia SR OS[^SROS]       | ✅| ✅| ✅| ✅ [❗](caveats-sros) | ❌ |
-| OpenBSD                  | ✅| ❌ | ✅ [❗](caveats-openbsd) | ✅| ✅|
-| VyOS                     | ✅| ✅| ✅| ✅| ✅|
-
+```{features}
+- title: Core OSPF<br>features
+  enabled: ospf
+  caveats: ospf.caveats.core
+- title: Unnumbered<br>IPv4 interfaces
+  enabled: ospf.unnumbered
+  caveats: ospf.caveats.unnumbered
+- title: Route<br>import
+  enabled: |
+    ospf['import']
+  caveats: |
+    ospf.caveats['import']
+- title: Default<br>route
+  enabled: ospf.default
+  caveats: ospf.caveats.default
+- title: BFD
+  enabled: ospf and bfd
+  caveats: ospf.caveats.bfd
+```
 
 **Notes:**
-* Dell OS10 does not support OSPF on the so-called *Virtual Network* interface, the VLAN implementation model currently used in our templates.
 * Use the `netlab show modules -m ospf` command to display the route types that can be imported into OSPFv2/OSPFv3.
-
-[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
-
-[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
-
-[^Junos]: Includes cRPD, vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
-
-[^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
-
-The following devices support BFD with OSPF:
-
-| Operating system         | BFD  | BFD<br/>Strict-Mode |
-| ------------------------ | :--: | :--: |
-| Arista EOS               |  ✅  |  ❌   |
-| Aruba AOS-CX             |  ✅  |  ❌   |
-| BIRD                     |  ✅  |  ❌   |
-| Cisco IOS                |  ✅  |  ❌   |
-| Cisco IOS XE[^18v]       |  ✅  |  ❌   |
-| Cisco Nexus OS           |  ✅  |  ❌   |
-| Cumulus Linux            |  ✅  |  ❌   |
-| Dell OS10                |  ✅  |  ❌   |
-| Junos[^Junos]            |  ✅  |  ❌   |
-| Mikrotik RouterOS 6      |  ✅  |  ❌   |
-| Mikrotik RouterOS 7      |  ✅  |  ❌   |
-| Nokia SR Linux           |  ✅  |  ❌   |
-| Nokia SR OS[^SROS]       |  ✅  |  ✅  |
-| VyOS                     |  ✅  |  ❌   |
-
-**Notes:**
-* Mikrotik RouterOS and VyOS support BFD on OSPF only with the system default values for interval and multiplier.
 
 The following devices support OSPF graceful restart:
 
-| Operating system | OSPFv2 | OSPFv3 |
-| ---------------- | :--: | :--: |
-| BIRD             |  ✅  |  ✅  |
-| Fortinet FortiOS |  ✅  |  ✅  |
-| FRR              |  ✅  |  ✅  |
+```{features}
+- title: OSPFv2
+  enabled: >-
+    'ipv4' in ospf.gr
+- title: OSPFv3
+  enabled: >-
+    'ipv6' in ospf.gr
+```
 
 ```{tip}
 See [OSPFv2](https://release.netlab.tools/_html/coverage.ospf.ospfv2) and [OSPFv3](https://release.netlab.tools/_html/coverage.ospf.ospfv3) Integration Tests Results for more details.
 ```
 
 (ospf-interface-support)=
-The following table documents the common interface-level OSPF features:
-
-| Operating system         | Cost  | Network<br />type | Unnumbered<br />IPv4 interfaces | Passive<br />interfaces |
-| ------------------------ |:--:|:--:|:--:|:--:|
-| Arista EOS               | ✅ | ✅ | ✅ | ✅ |
-| Aruba AOS-CX             | ✅ | ✅ | ✅  | ✅ |
-| BIRD                     | ✅ | ✅ | ✅(*) | ✅ |
-| Cisco ASAv               | ✅ | [❗](caveats-asav) | ❌  | ✅ |
-| Cisco IOS                | ✅ | ✅ | ❌  | ✅ |
-| Cisco IOS XE[^18v]       | ✅ | ✅ | ✅ | ✅ |
-| Cisco IOS XR[^XR]        | ✅ | ✅ | ✅ | ✅ |
-| Cisco Nexus OS           | ✅ | ✅ | ✅ | ✅ |
-| Cumulus Linux            | ✅ | ✅ | ✅ | ✅ |
-| Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ✅ | ✅ |
-| Dell OS10                | ✅ | ✅ | ❌  | ✅ |
-| Extreme Networks EXOS    | ✅ | ✅ | ❌  | ✅ |
-| Fortinet FortiOS         | ✅ | [❗](caveats-fortios) | ❌ | ✅ |
-| FRR                      | ✅ | ✅ | ✅ | ✅ |
-| Junos[^Junos]            | ✅ | ✅ | ✅ | ✅ |
-| Mikrotik RouterOS 6      | ✅ | ✅ | ❌  | ✅ |
-| Mikrotik RouterOS 7      | ✅ | ✅ | ❌  | ✅ |
-| Nokia SR Linux           | ✅ | ✅ | ✅ | ✅ |
-| Nokia SR OS[^SROS]       | ✅ | ✅ | ✅ | ✅ |
-| OpenBSD                  | ✅ | ✅ | ✅ | ✅ [❗](caveats-openbsd) |
-| VyOS                     | ✅ | ✅ | ✅ | ✅ |
-
-**Notes:**
-* Arista EOS, Cisco Nexus OS, SR Linux, and Dell OS10 support point-to-point and broadcast network types. Other network types will not be configured.
-* SR OS supports point-to-point, broadcast, and non-broadcast network types. It will not configure a point-to-multipoint network type.
-* Control-plane daemons like BIRD usually have a single interface. Running OSPF on them seems frivolous unless you need OSPF to get paths toward remote endpoints of IBGP sessions.
-* Unnumbered IPv4 interfaces on BIRD require a single unnumbered peer 
-
-(ospf-interface-optional-support)=
 These devices also support optional OSPF interface attributes:
 
-| Operating system         | Interface<br>timers | Router<br />priority | Cleartext<br>password | MD5<br>digest |
-| ------------------------ |:--:|:--:|:--:|:--:|
-| Arista EOS               | ✅ | ✅ | ✅ | ❌  |
-| Aruba AOS-CX             | ✅ | ✅ | ✅ | ❌  |
-| BIRD                     | ✅ | ✅ | ✅ | ❌ |
-| Cisco ASAv               | ✅ | ✅ | ✅ | ❌  |
-| Cisco IOSv/IOSvL2        | ✅ | ✅ | ✅ | ❌  |
-| Cisco IOS XE[^18v]       | ✅ | ✅ | ✅ | ❌  |
-| Cisco IOS XR[^XR]        | ✅ | ✅ | ✅ | ❌  |
-| Cisco Nexus OS           | ✅ | ✅ | ✅ | ❌  |
-| Cumulus Linux 4.x        | ✅ | ✅ | ✅ | ❌  |
-| Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ❌  | ❌  |
-| Dell OS10                | ✅ | ✅ | ✅ | ❌  |
-| Extreme Networks EXOS    | ✅ | ✅ | ❌  | ❌  |
-| Junos[^Junos]            | ✅ | ✅ | ✅ | ❌  | 
-| OpenBSD                  | ✅ | ✅ | ✅ | ❌  |
+```{features}
+- title: Interface<br>timers
+  enabled: ospf.timers
+- title: Router<br>priority
+  enabled: ospf.priority
+- title: Cleartext<br>password
+  enabled: ospf.password
+```
+
+VRF OSPF instances are implemented on these devices:
+
+```{features}
+- title: OSPFv2 VRF<br>instances
+  enabled: vrf.ospfv2
+- title: OSPFv3 VRF<br>instances
+  enabled: vrf.ospfv3
+```
 
 (ospf-node-parameters)=
 ## Node Parameters

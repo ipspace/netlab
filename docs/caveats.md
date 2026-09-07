@@ -141,6 +141,10 @@ and validation. Configuration is deployed with a bash script executed within the
 * The VM or container running BIRD in host mode starts with static routes pointing to one of the adjacent routers (see [](linux-forwarding)). After establishing routing adjacencies, BIRD copies BGP and OSPF into the kernel IP routing table.
 * The **bird** container starts BIRD in foreground mode with logging messages (including debugging messages) sent to *stderr*. Use the **docker logs** command to inspect the BIRD messages.
 
+### Unnumbered Interfaces
+
+* Unnumbered IPv4 interfaces on BIRD require a single unnumbered peer
+
 ### OSPF Caveats
 
 * BIRD OSPF implementation has no *reference bandwidth*. The default OSPF cost is 10.
@@ -159,6 +163,7 @@ and validation. Configuration is deployed with a bash script executed within the
 
 * Some ASAv versions use older SSH protocols. For more details, see the [SSH Access to Cisco IOS/IOS-XE](cisco-ios-ssh).
 * ASAv does not have a standard implementation of OSPFv2 or IS-IS point-to-point circuits. netlab reports an error if you try to use them with ASAv nodes. You could add `isis.network_type: false` to point-to-point links connecting ASA to other devices.
+* We did not implement OSPFv3 for ASAv
 * The ASAv OSPF and IS-IS configuration templates were not tested, as all OSPFv2/IS-IS integration tests include at least one point-to-point circuit
 
 (caveats-cat8000v)=
@@ -616,6 +621,7 @@ See [](generic-linux-devices)
 * The CHR free license offers full features with a 1Mbps upload limit per interface, upgradeable to an unrestricted 60-day trial by registering a free MikroTik account and using the ```/system license renew``` command.
 * LLDP on Mikrotik CHR RouterOS is enabled on all the interfaces.
 * A BGP VRF instance cannot have the same Router ID as the default one. The current configuration template uses the IP address of the last interface in the VRF as the VRF instance Router ID.
+* _netlab_ cannot configure OSPFv3 on Mikrotik RouterOS 6
 
 (caveats-routeros7)=
 ## Mikrotik RouterOS 7
@@ -624,6 +630,8 @@ See [](generic-linux-devices)
 * LLDP on Mikrotik CHR RouterOS is enabled on all the interfaces.
 * The CHR free license offers full features with a 1Mbps upload limit per interface, upgradeable to an unrestricted 60-day trial by registering a free MikroTik account and using the `/system license renew` command.
 * The RouterOS7 BGP configuration templates use the newer BGP configuration model. Use a recent software release (we tested them with release 7.21.4).
+* _netlab_ does not configure the OSPF reference bandwidth
+* BFD with OSPF uses the system default values for interval and multiplier.
 
 Other caveats you might encounter:
 
@@ -701,6 +709,7 @@ See also [](caveats-sros) caveats for further details.
 
 * The virtual disk size of the `qcow2` image you can download from https://bsd-cloud-image.org/ is too small to survive the kernel reordering OpenBSD performs after every boot.
 * The kernel reordering is disabled in the Vagrant box, leaving you with approximately 170 MB of free disk space. You'll have a bit less than that in the *vrnetlab* container.
+* OSPF reference bandwidth is not implemented
 * OpenBSD OSPFv3 implementation does not support ABR functionality. It also advertises passive interfaces with a very high cost.
 * _netlab_ RIPv2/RIPng template implements route redistribution, but only for static and connected prefixes
 * The device role on nodes with a loopback interface is automatically changed to **router** (contrary to most other network devices, OpenBSD does not allow you to reach non-connected IP addresses unless the IPv4/IPv6 forwarding is enabled).
@@ -746,3 +755,4 @@ Other VyOS caveats:
 * You cannot load kernel modules in GitHub Codespaces and thus cannot use _vrf_, _mpls_, or _vxlan_ modules on VyOS nodes in that environment.
 * While VyOS itself supports IPv6 transport for VXLAN, using static flooding with the **vxlan** module, the version of the FRR BGP daemon it uses does not support EVPN with IPv6 next hops.
 * VyOS does not have a simple way to handle a management VRF on containerlab, so it will always have a default IPv4 route (`0.0.0.0/0`) in the default routing table. This can cause problems if you want a device to originate a default route only when it receives one from other routers.
+* BFD with OSPF uses the system default values for interval and multiplier.
