@@ -87,8 +87,8 @@ proceeding. The cleanup process will start once you press RETURN.
 def cleanup_working_directory(args: argparse.Namespace, force_cleanup: bool) -> None:
   if force_cleanup:
     cleanup_force()
-  if args.verbose:
-    print("\nCleaning up -- removing %s and its contents" % args.workdir)
+  print()
+  log.info(f"Cleaning up -- removing '{args.workdir}' directory and its contents")
   os.chdir("..")
   try:
     shutil.rmtree(args.workdir)
@@ -104,12 +104,12 @@ def cleanup_working_directory(args: argparse.Namespace, force_cleanup: bool) -> 
   if args.verbose:
     print("... done, test completed\n")
 
-def run_netlab_command(cmd: str) -> typing.Any:
+def run_netlab_command(cmd: str, args: argparse.Namespace) -> typing.Any:
   try:
     return external_commands.run_command(cmd)
   except KeyboardInterrupt:
     log.error(f'User interrupted the {cmd} command',category=log.FatalError,module='test')
-    cleanup_force()
+    cleanup_working_directory(args,True)
     sys.exit(1)
 
 def run(cli_args: typing.List[str]) -> None:
@@ -134,12 +134,12 @@ def run(cli_args: typing.List[str]) -> None:
   copy_topology(args)
   force_cleanup = False
   log.section_header('Executing','netlab up','bright_cyan')
-  if not run_netlab_command('netlab up'):
+  if not run_netlab_command('netlab up',args):
     log.error('netlab up failed, aborting',log.FatalError,'test')
     force_cleanup = True
   else:
     log.section_header('Executing','netlab down','bright_cyan')
-    if not external_commands.run_command('netlab down'):
+    if not run_netlab_command('netlab down',args):
       log.error('netlab down failed',log.FatalError,'test')
       force_cleanup = True
 
