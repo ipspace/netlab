@@ -7,6 +7,7 @@ import argparse
 import os
 import shutil
 import subprocess
+import sys
 import typing
 from pathlib import Path
 
@@ -103,6 +104,14 @@ def cleanup_working_directory(args: argparse.Namespace, force_cleanup: bool) -> 
   if args.verbose:
     print("... done, test completed\n")
 
+def run_netlab_command(cmd: str) -> typing.Any:
+  try:
+    return external_commands.run_command(cmd)
+  except KeyboardInterrupt:
+    log.error(f'User interrupted the {cmd} command',category=log.FatalError,module='test')
+    cleanup_force()
+    sys.exit(1)
+
 def run(cli_args: typing.List[str]) -> None:
   settings = _read.read_yaml('package:topology-defaults.yml')
   if not cli_args:
@@ -125,7 +134,7 @@ def run(cli_args: typing.List[str]) -> None:
   copy_topology(args)
   force_cleanup = False
   log.section_header('Executing','netlab up','bright_cyan')
-  if not external_commands.run_command('netlab up'):
+  if not run_netlab_command('netlab up'):
     log.error('netlab up failed, aborting',log.FatalError,'test')
     force_cleanup = True
   else:
