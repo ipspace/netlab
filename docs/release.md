@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+**Release 26.09 (2026-09-xx)**
+
+*** missing ***
+
+We also decided to sunset the libvirt (Vagrant) provider. We don't plan to change anything or remove it, but we won't be adding new features or run device integration tests with the **libvirt** provider.
+
+[More details](release-26.09), new [device features](release-26.09-device-features), and [breaking changes](release-26.09-breaking)
+
 **Release 26.08 (2026-08-10)**
 
 The highlights of release 26.08 include:
