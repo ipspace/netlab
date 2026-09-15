@@ -3,7 +3,7 @@
 
 *netlab* uses *Vagrant* with the *vagrant-libvirt* plugin to start virtual machines in the libvirt/KVM environment.
 
-(lab-libvirt-sunset)=
+(libvirt-sunset)=
 ```{warning}
 We're sunsetting the **libvirt** provider. It will remain part of _netlab_, and we'll fix eventual bugs, but it won't get new features, and we won't run device integration tests with it. Moving forward, we're focusing exclusively on the *containerlab* (**clab**) provider.
 

@@ -5,7 +5,7 @@ Release Notes
 
 *** missing ***
 
-We also decided to sunset the libvirt (Vagrant) provider. We don't plan to change anything or remove it, but we won't be adding new features or run device integration tests with the **libvirt** provider.
+We also decided to [sunset the libvirt (Vagrant) provider](libvirt-sunset). We don't plan to change anything or remove it, but we won't be adding new features or run device integration tests with the **libvirt** provider.
 
 [More details](release-26.09), new [device features](release-26.09-device-features), and [breaking changes](release-26.09-breaking)
 

@@ -109,7 +109,7 @@ Most devices behave as routers (or layer-3 switches); the following devices can 
 * External -- *meta* virtualization provider that allows you to configure external physical or virtual devices with *netlab*
 
 ```{warning}
-We're sunsetting the **libvirt** provider. [More details](labs-libvirt-sunset).
+We're sunsetting the **libvirt** provider. [More details](libvirt-sunset).
 ```
 
 You cannot use all supported network devices with all virtualization providers. These are the supported combinations (use **[netlab show images](netlab/show.md)** command to display the current system settings); daemons always run in containers.
