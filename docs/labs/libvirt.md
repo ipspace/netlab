@@ -3,6 +3,13 @@
 
 *netlab* uses *Vagrant* with the *vagrant-libvirt* plugin to start virtual machines in the libvirt/KVM environment.
 
+(libvirt-sunset)=
+```{warning}
+We're sunsetting the **libvirt** provider. It will remain part of _netlab_, and we'll fix eventual bugs, but it won't get new features, and we won't run device integration tests with it. Moving forward, we're focusing exclusively on the *containerlab* (**clab**) provider.
+
+If you're relying on the **‌libvirt** provider, try migrating your virtual machines to the *[vrnetlab](https://netlab.tools/labs/clab/#clab-vrnetlab)* containers (it's usually a pretty straightforward process) and [report any potential problems](https://github.com/srl-labs/vrnetlab/issues/new) to the *vrnetlab* team; they are usually very responsive.
+```
+
 To use the libvirt/KVM environment on a Linux bare-metal server or a Linux VM:
 
 * Install *netlab* ([Linux server](../install/linux.md), [Ubuntu virtual machine](../install/ubuntu-vm.md))
@@ -27,7 +34,7 @@ To use the libvirt/KVM environment on a Linux bare-metal server or a Linux VM:
 
 ## Supported Versions
 
-We tested _netlab_ with Vagrant version 2.4.0 and vagrant-libvirt plugin version 0.12.2. These are also the versions installed by the **netlab install libvirt** command.
+We tested _netlab_ with Vagrant version 2.4.9 and vagrant-libvirt plugin version 0.12.2. These are also the versions installed by the **netlab install libvirt** command.
 
 (libvirt-vagrant-boxes)=
 ## Vagrant Boxes
