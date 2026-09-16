@@ -77,6 +77,10 @@ Global VXLAN settings are specified in the **multiserver.vxlan** dictionary:
 
 VXLAN tunnels bind to the global interface specified in **multiserver.vxlan.dev**. If your workers use different interface names, you can override this interface per-worker using the **vxlan_dev** parameter under each worker in the **multiserver.servers** dictionary.
 
+```{warning}
+The maximum MTU of a VXLAN interface is set to 50 bytes less than the MTU of the underlying Ethernet interface. You MUST set the uplink Ethernet MTU to a large enough value, or you might get configuration errors during initial (container) device configurations.
+```
+
 (multiserver-assignment)=
 ## Assignment Modes
 
@@ -291,7 +295,7 @@ netlab down
 
 When multi-access VXLAN tunnels are present, `netlab down` runs `vxlan-teardown.sh` automatically via a CLI hook registered by the plugin.
 
-## Customising What Gets Copied
+## Customizing What Gets Copied
 
 By default, the plugin copies `group_vars/` and `templates/` subdirectories, plus `ansible.cfg`, into every worker directory. To add extra items on top of the defaults, use **extra_copy_dirs** and **extra_copy_files**:
 
@@ -313,8 +317,9 @@ The Ansible inventory (`hosts.yml`) is always written into each worker directory
 
 ## Limitations
 
-* Only the **containerlab** provider is supported. Libvirt and virtualbox topologies cannot be split across workers.
-* Cross-worker VXLAN tunnels use a flat VNI space starting at **vni_base**. The maximum VNI value is 16777215 (24-bit). Topologies with more than ~16 million cross-worker links will fail validation, if you somehow manage to hit that number ;)
+* The plugin supports only the **containerlab** provider.
+* Cross-worker VXLAN tunnels use a flat VNI space starting at **vni_base**. The maximum VNI value is 16777215 (24-bit). Topologies with more than ~16 million cross-worker links will fail validation if you somehow manage to hit that number ;)
+* Maximum MTU of VXLAN interfaces (container interfaces for P2P links or VXLAN interfaces connected to Linux bridges) is set to 50 bytes less than the uplink Ethernet MTU. While you can lower the VXLAN MTU, it cannot exceed that limit. Set the MTU on the uplink Ethernet interface(s) to a sufficiently large value, for example, the maximum MTU supported by the uplink interface.
 * All workers must have direct IP reachability — the plugin does not support NAT traversal or relay hosts between workers.
 
 (multiserver-replicate)=
