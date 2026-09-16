@@ -1,0 +1,48 @@
+MGMT_NETWORK="ms_mgmt"
+
+def configure_vm(srv,name,mac,ip)
+  srv.vm.box = "netlab/ubuntu"
+  srv.vm.provider :libvirt do |lv|
+    lv.memory = "8192"
+    lv.cpus = 2
+    lv.management_network_mac = mac
+  end
+  srv.vm.provision "shell", privileged: false, inline: <<-SHELL
+    sudo hostnamectl set-hostname #{name}
+    sudo apt-get update
+    sudo apt-get upgrade
+    sudo apt-get install -y python3-pip python3-venv
+    sudo pip3 install --break-system-packages -r /nl/requirements.txt
+    /nl/netlab install -y ubuntu ansible containerlab
+  SHELL
+  srv.trigger.before :"VagrantPlugins::ProviderLibvirt::Action::CreateNetworkInterfaces", type: :action do |t|
+    t.info = "Configuring DHCP mapping #{mac} => #{ip} for #{name}"
+    t.run = {
+      inline: <<~SHELL
+        virsh net-update #{MGMT_NETWORK} add ip-dhcp-host \
+          "<host mac='#{mac}' ip='#{ip}'/ name='#{name}'>" \
+          --live --config
+      SHELL
+    }
+  end
+end
+
+Vagrant.configure("2") do |config|
+  config.vm.synced_folder "../../../..","/nl" ,type: "nfs", nfs_udp: false 
+  config.vm.synced_folder '.', '/vagrant' , disabled: true
+  #type: "nfs", nfs_version: "4", nfs_udp: false  
+  config.vm.provider :libvirt do |lv|
+    lv.management_network_name = MGMT_NETWORK
+    lv.management_network_address = "192.168.48.0/24"
+    lv.management_network_mode = "nat"
+    lv.management_network_autostart = true
+    lv.management_network_mtu = 9000
+  end
+
+  config.vm.define "s1" do |srv|
+    configure_vm(srv,"s1","52:54:00:aa:bb:01","192.168.48.11")
+  end
+  config.vm.define "s2" do |srv|
+    configure_vm(srv,"s2","52:54:00:aa:bb:02","192.168.48.12")
+  end
+end
