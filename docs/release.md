@@ -1,9 +1,16 @@
 Release Notes
 =============
 
-**Release 26.09 (2026-09-xx)**
+**Release 26.09 (2026-09-16)**
 
-*** missing ***
+The highlights of release 26.09 include:
+
+* The [**services** module](module-services) supports [syslog clients and servers](services-syslog-parameters) in addition to DNS clients; a dnsmasq node can act as a DNS or syslog server
+* DNS clients on ArubaCX, Cisco IOS XR, Cisco Nexus OS, Junos, Mikrotik RouterOS7, SR Linux, OpenBSD, and VyOS
+* [Cisco IOS XRd vRouter](build-iosxr-clab) containers
+* The new **netmiko** [device configuration mode](platform-config-mode) for virtual machines
+* [Generic prefix sets](generic-routing-prefix-set) in ACL rules and `routing.prefix` lists
+* Debugging with the `NETLAB_DEBUG` environment variable
 
 We also decided to [sunset the libvirt (Vagrant) provider](libvirt-sunset). We don't plan to change anything or remove it, but we won't be adding new features or run device integration tests with the **libvirt** provider.
 
@@ -195,6 +202,7 @@ For older releases, check the [release notes archive](release-archive.md).
    :caption: Individual release notes
    :maxdepth: 1
 
+   release/26.09.md
    release/26.08.md
    release/26.07.md
    release/26.06.md
