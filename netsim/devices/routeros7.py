@@ -44,49 +44,44 @@ def build_afi_lists(node: Box) -> None:
 
 def adjust_lag_vlan_mtu(node: Box) -> None:
   '''
-  When creating a LAG that uses VLANs, we need to add 4 bytes to the parent interface
-  for the VLAN Header so the VLAN MTU is the expected size ie. 1500 vs 1496
+  RouterOS includes the 802.1Q header in the MTU of a VLAN carried over a bond.
+  Increase the physical LAG member MTU to the LAG MTU plus four bytes.
   '''
-  for lag in node.interfaces:
-    if lag.get('type') != 'lag':
+  lag_by_ifindex: dict[int,Box] = {}
+  lag_mtu: dict[int,int] = {}
+
+  # Find LAGs and VLAN configuration stored directly on them.
+  for lag_intf in node.interfaces:
+    if lag_intf.get('type') != 'lag':
       continue
 
-    required_mtu = 0
+    lag_by_ifindex[lag_intf.ifindex] = lag_intf
 
-    # VLAN access/trunk configuration stored on the LAG.
-    if 'vlan' in lag:
-      required_mtu = lag.get('mtu', 1500) + 4
+    if 'vlan' in lag_intf:
+      lag_mtu[lag_intf.lag.ifindex] = lag_intf.get('mtu',1500) + 4
 
-    # Routed VLAN subinterfaces stored separately from the LAG.
-    for vlan in node.interfaces:
-      if vlan.get('type') != 'vlan_member':
-        continue
-
-      if vlan.get('parent_ifindex') != lag.ifindex:
-        continue
-
-      required_mtu = max(required_mtu,vlan.get('mtu', 1500) + 4,)
-
-    if not required_mtu:
+  # Find VLAN subinterfaces attached to a LAG.
+  for vlan_intf in node.interfaces:
+    if vlan_intf.get('type') != 'vlan_member':
       continue
 
-    for member in node.interfaces:
-      if member.get('lag._parentindex') == lag.lag.ifindex:
-        member.mtu = max(member.get('mtu', 1500),required_mtu,)
+    parent_lag_intf = lag_by_ifindex.get(vlan_intf.get('parent_ifindex'))
 
-def adjust_lag_vlan_mtu2(node: Box) -> None:
-  for lag in node.interfaces:
-    if lag.get('type') != 'lag':
+    if parent_lag_intf is None:
       continue
 
-    if 'vlan' not in lag:
+    lag_mtu[parent_lag_intf.lag.ifindex] = (parent_lag_intf.get('mtu',1500) + 4)
+
+  # Raise each physical member's MTU, preserving larger values.
+  for lag_member in node.interfaces:
+    required_mtu = lag_mtu.get(lag_member.get('lag._parentindex'))
+
+    if required_mtu is None:
       continue
 
-    required_mtu = lag.get('mtu',1500) + 4
+    lag_member.mtu = max(lag_member.get('mtu',1500),required_mtu,)
 
-    for member in node.interfaces:
-      if member.get('lag._parentindex') == lag.lag.ifindex:
-        member.mtu = max(member.get('mtu',1500),required_mtu,)
+
 
 class RouterOS7(_Quirks):
   @classmethod
