@@ -1,0 +1,179 @@
+Creating Device configuration snippets
+[CREATED] dut: initial,routing,ospf,tunnel.wireguard
+[CREATED] r2: initial,routing,ospf,tunnel.wireguard
+[CREATED] r3: initial,routing,ospf,tunnel.wireguard
+[CREATED] core: initial
+Config Deploying device configurations
+ [INFO] Executing initial configuration for node r2
+ [INFO] Executing initial configuration for node r3
+ [INFO] Executing initial configuration for node core
+ [INFO] Executing routing configuration for node r3
+ [INFO] Executing ospf configuration for node r3
+ [INFO] Executing tunnel.wireguard configuration for node r3
+ [INFO] Executing routing configuration for node r2
+ [INFO] Executing ospf configuration for node r2
+ [INFO] Executing tunnel.wireguard configuration for node r2
+ [INFO] Starting Ansible playbook to deploy the rest of the
+          configurations
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "initial configuration for dut\n=========================================\nset system host-name 'dut'\n\n\nset interface wireguard wg0 private-key 'dwdtCnMYpX08FsFyUbJmRd9ML4frwJkqsXf7pR25LCo='\nset interface wireguard wg1 private-key 'dwdtCnMYpX08FsFyUbJmRd9ML4frwJkqsXf7pR25LCo='\n\n\n\nset interfaces dummy dum0 address 10.0.0.1/32\nset interfaces dummy dum0 address 2001:db8:1::1/128\n\n\n\nset interfaces ethernet eth1 description 'dut -> core [core]'\n\nset interfaces ethernet eth1 mtu 1560\n\nset interfaces ethernet eth1 address 172.22.0.1/24\n\nset interfaces ethernet eth1 address 2001:db8:4::1/64;\n\n\n\n\nset interfaces wireguard wg0 description 'dut -> r2 [WireGuard tunnel]'\n\nset interfaces wireguard wg0 mtu 1500\n\nset interfaces wireguard wg0 address 10.1.0.1/30\n\nset interfaces wireguard wg0 address 2001:db8:3::1/64;\n\n\n\n\nset interfaces wireguard wg1 description 'dut -> r3 [WireGuard tunnel]'\n\nset interfaces wireguard wg1 mtu 1500\n\nset interfaces wireguard wg1 address 10.1.0.5/30\n\nset interfaces wireguard wg1 address 2001:db8:3:1::1/64;\n\n\n\nset service lldp interface all\n>/dev/null 2>/dev/null set service lldp interface eth0 disable\n>/dev/null 2>/dev/null set service lldp interface eth0 mode disable\n\nset service router-advert interface eth1\nset service router-advert interface wg0\nset service router-advert interface wg1\n\n\ncommit\n\n# Restart FRR to pick up the new hostname\nsudo service frr restart\n"
+}
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for dut
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [execute config-initial.sh to deploy initial config from /work/netlab_cicd/node_files/dut/initial] ***
+changed: [dut]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=ospf)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [dut]
+
+TASK [Find configuration template for routing] *********************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "routing configuration for dut\n=========================================\n\n\n\n\n# Static routing\n\nset  protocols static route 172.22.0.0/16 next-hop 172.22.0.4 interface eth1\nset  protocols static route6 2001:db8:4::/48 next-hop 2001:db8:4::4 interface eth1\n"
+}
+
+TASK [Deploy routing configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for dut
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [execute config-routing.sh to deploy routing config from /work/netlab_cicd/node_files/dut/routing] ***
+changed: [dut]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => {
+    "msg": "ospf configuration for dut\n=========================================\n\nset protocols ospf parameters router-id 10.0.0.1\n\n\n\n\nset protocols ospf interface dum0 passive\nset protocols ospf interface dum0 area 0.0.0.0\n\n\nset protocols ospf interface wg0 area 0.0.0.0\n\nset protocols ospf interface wg0 network point-to-point\n\n\n\nset protocols ospf interface wg1 area 0.0.0.0\n\nset protocols ospf interface wg1 network point-to-point\n\n\n\nset protocols ospfv3 parameters router-id 10.0.0.1\n\n\n\n\nset protocols ospfv3 interface dum0 passive\nset protocols ospfv3 interface dum0 area 0.0.0.0\n\n\nset protocols ospfv3 interface wg0 area 0.0.0.0\n\nset protocols ospfv3 interface wg0 network point-to-point\n\n\n\nset protocols ospfv3 interface wg1 area 0.0.0.0\n\nset protocols ospfv3 interface wg1 network point-to-point\n\n\n"
+}
+
+TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for dut
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [execute config-ospf.sh to deploy ospf config from /work/netlab_cicd/node_files/dut/ospf] ***
+changed: [dut]
+
+PLAY [Deploy custom deployment templates] **************************************
+
+TASK [Run custom configuration deployment scripts] *****************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=tunnel.wireguard)
+
+TASK [Find configuration template] *********************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Check is the configuration template is a file] ***************************
+ok: [dut -> localhost]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Process template /work/netlab_cicd/node_files/dut/tunnel.wireguard for dut] ***
+skipping: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
+
+TASK [Find custom configuration deployment script] *****************************
+ok: [dut]
+
+TASK [Run the configuration deployment script] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for dut
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [execute config-tunnel.wireguard.sh to deploy tunnel.wireguard config from /work/netlab_cicd/node_files/dut/tunnel.wireguard] ***
+changed: [dut]
+
+PLAY RECAP *********************************************************************
+dut                        : ok=37   changed=8    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+
+Results of configuration script deployments
+================================================================================
+r2               Script:  initial,routing,ospf,tunnel.wireguard
+r3               Script:  initial,routing,ospf,tunnel.wireguard
+core             Script:  initial
+
+
+Test dual-stack WireGuard tunnels. The tested device has a WireGuard
+tunnel carrying both IPv4 and IPv6 and runs OSPFv2 and OSPFv3 over it. The
+probe should receive the routes advertised from the tested device and be
+able to ping its loopback over both address families.
+
