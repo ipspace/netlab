@@ -47,6 +47,7 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | Citrix Netscaler       | netlab/netscaler:latest      |
 | Dell OS10              | vrnetlab/vr-ftosv            |
 | dnsmasq                | netlab/dnsmasq:latest        |
+| Extreme VOSS           | vrnetlab/extreme_voss:9.4.0.0 |
 | Fortinet FortiOS       | vrnetlab/vr-fortios:7.4.8    |
 | FRR                    | quay.io/frrouting/frr:10.1.2 |
 | Juniper vMX            | vrnetlab/vr-vmx:18.2R1.9     |
