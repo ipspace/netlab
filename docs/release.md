@@ -1,11 +1,17 @@
 Release Notes
 =============
 
-**Release 26.09 (2026-09-xx)**
+**Release 26.09 (2026-09-18)**
 
-*** missing ***
+The highlights of release 26.09 include:
 
-We also decided to [sunset the libvirt (Vagrant) provider](libvirt-sunset). We don't plan to change anything or remove it, but we won't be adding new features or run device integration tests with the **libvirt** provider.
+* The [**services** module](module-services) supports [syslog clients and servers](services-syslog-parameters).
+* DNS and Syslog are implemented on most supported platforms.
+* The new **netmiko** [device configuration mode](platform-config-mode) for virtual machines
+* [Generic prefix sets](generic-routing-prefix-set) in ACL rules and prefix lists
+* LAG on Mikrotik RouterOS7
+
+We also decided to [deprecate Cisco IOSv](caveats-iosv) and [sunset the libvirt (Vagrant) provider](libvirt-sunset).
 
 [More details](release-26.09), new [device features](release-26.09-device-features), and [breaking changes](release-26.09-breaking)
 
@@ -59,7 +65,7 @@ We also had to make a few breaking changes:
 * Support for global BGP routes with SRv6 next hops on FRR and IOS XR
 * Support for Juniper cSRX container
 * Streamline and speed up the FortiOS initial device configuration
-* Junos OSPF/IS-IS [route redistribution](routing_import), VRF [IS-IS instances](isis-platform), and OSPF [interface parameters](ospf-interface-optional-support)
+* Junos OSPF/IS-IS [route redistribution](routing_import), VRF [IS-IS instances](isis-platform), and OSPF interface parameters
 * We changed the minimum supported Python version to 3.10. New _netlab_ versions will thus no longer run on Ubuntu 20.04.
 * You can [define scripts](dev-cli-hooks) (for example, device license management) that are executed at various points in the `netlab up` and `netlab down` processes.
 
@@ -195,6 +201,7 @@ For older releases, check the [release notes archive](release-archive.md).
    :caption: Individual release notes
    :maxdepth: 1
 
+   release/26.09.md
    release/26.08.md
    release/26.07.md
    release/26.06.md
