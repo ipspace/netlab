@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-**Release 26.09 (2026-09-16)**
+**Release 26.09 (2026-09-18)**
 
 The highlights of release 26.09 include:
 
@@ -9,6 +9,7 @@ The highlights of release 26.09 include:
 * DNS and Syslog are implemented on most supported platforms.
 * The new **netmiko** [device configuration mode](platform-config-mode) for virtual machines
 * [Generic prefix sets](generic-routing-prefix-set) in ACL rules and prefix lists
+* LAG on Mikrotik RouterOS7
 
 We also decided to [deprecate Cisco IOSv](caveats-iosv) and [sunset the libvirt (Vagrant) provider](libvirt-sunset).
 
