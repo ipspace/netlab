@@ -1,7 +1,7 @@
 (install-linux-server)=
 # Running *netlab* on a Linux Server
 
-This page describes generic installation steps for creating a virtual lab environment on any Linux distribution ([follow these instructions](ubuntu.md) if you plan to run your labs on a Debian or Ubuntu server, including Windows Subsystem for Linux).
+This page describes generic installation steps for creating a virtual lab environment on any Linux distribution ([follow these instructions](install-ubuntu) if you plan to run your labs on a Debian or Ubuntu server, including Windows Subsystem for Linux).
 
 ```{warning}
 We test _netlab_ on Ubuntu to provide a reasonably hassle-free experience for networking engineers without Linux sysadmin skills. Unfortunately, we cannot help you if you run _netlab_ on another Linux distribution (dealing with one distro is more than enough pain). Still, please try to make it work; we would appreciate it if you could add your findings to this document. Thank you!
@@ -66,7 +66,7 @@ Always start your labs with the **[netlab up](netlab-up)** command; it automatic
 (install-linux-server-test)=
 ## Testing the Installation
 
-The easiest way to test your installation is to use the **[netlab test](../netlab/test.md)** command. If you prefer to do step-by-step tests, you might find this recipe helpful:
+The easiest way to test your installation is to use the **[netlab test](netlab-test)** command. If you prefer to do step-by-step tests, you might find this recipe helpful:
 
 * Create an empty directory and a `topology.yml` file with the following contents within that directory:
 

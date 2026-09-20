@@ -7,7 +7,7 @@ On a Linux system, *netlab* uses Docker or Podman to run containers[^CVM] and li
 
 ![netlab-tools on Linux](linux-architecture.png)
 
-The simplest way to install *netlab* and the whole low-level toolchain on an existing Ubuntu server (bare-metal or VM) is to use the **[netlab install](../netlab/install.md)** command (see below). You could also [do manual software installation](linux.md).
+The simplest way to install *netlab* and the whole low-level toolchain on an existing Ubuntu server (bare-metal or VM) is to use the **[netlab install](netlab-install)** command (see below). You could also [do manual software installation](install-linux-server).
 
 * If needed, install Python3 and **pip3** with `sudo apt-get update && sudo apt-get install -y python3-pip`
 * Install the _netlab_ Python package with `sudo python3 -m pip install networklab` or your preferred Python package installation procedure.

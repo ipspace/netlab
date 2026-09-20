@@ -1,3 +1,4 @@
+(platform-caveats)=
 # Platform Caveats
 
 ```eval_rst

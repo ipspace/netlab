@@ -1,7 +1,7 @@
 (install-ubuntu-vm)=
 # Ubuntu VM Installation
 
-The easiest way to set up your lab environment on your laptop or in your virtualized compute infrastructure is to create an Ubuntu virtual machine (use the WSL virtual machine on Windows) and run the **netlab install** command inside it to install the required software packages. You could also run _netlab_ on a [Ubuntu instance in a public cloud](cloud.md).
+The easiest way to set up your lab environment on your laptop or in your virtualized compute infrastructure is to create an Ubuntu virtual machine (use the WSL virtual machine on Windows) and run the **netlab install** command inside it to install the required software packages. You could also run _netlab_ on a [Ubuntu instance in a public cloud](install-cloud).
 
 ```{warning}
 Running *‌libvirt* within an Ubuntu VM requires *‌nested virtualization*. You don't need nested virtualization to run Docker containers within an Ubuntu VM.
@@ -17,7 +17,7 @@ You can also use [Vagrant](ubuntu-vm-vagrant) or [create the virtual machine you
 ## Running netlab on Windows Subsystem for Linux
 
 * Follow Microsoft's documentation to install Windows Subsystem for Linux.
-* Ensure you have WSL version 2.7.10.0 (or later) and use the latest Debian image.
+* Ensure you have WSL version 2.7.10.0 (or later) and use the latest Ubuntu or Debian image.
 * Add the following lines to the `/etc/wsl.conf` file:
 
 ```

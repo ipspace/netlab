@@ -14,7 +14,7 @@ _netlab_ is a high-level abstraction and orchestration tool that relies on other
 * Container/VM orchestration with containerlab or Vagrant
 * Configuration deployment with shell scripts, netmiko, or Ansible[^ANS]
 
-[^ANS]: Our [integration tests](https://release.netlab.tools/) use recent Ansible versions. Some devices might require additional Ansible collections; see [caveats](caveats.md) for further details.
+[^ANS]: Our [integration tests](https://release.netlab.tools/) use recent Ansible versions. Some devices might require additional Ansible collections; see [caveats](platform-caveats) for further details.
 
 ![High-level architecture](high-level-architecture.png)
 
@@ -25,9 +25,9 @@ Otherwise, you'll have to [select the platform](platform) you want to use and [c
 (platform)=
 ## Selecting the Platform and Low-Level Tools
 
-We test *netlab* with [Docker/containerlab](labs/clab.md) and [libvirt/Vagrant](labs/libvirt.md) on Ubuntu. Both combinations should work on non-Debian-based Linux distributions but will likely require manual software installation.
+We test *netlab* with [Docker/containerlab](lab-clab) and [libvirt/Vagrant](lab-libvirt) on Ubuntu. Both combinations should work on non-Debian-based Linux distributions but will likely require manual software installation.
 
-You can also run *netlab* in a [Linux virtual machine](install/ubuntu-vm.md) or a [Ubuntu instance in a public cloud](install/cloud.md).
+You can also run *netlab* in a [Linux virtual machine](install-ubuntu-vm) or a [Ubuntu instance in a public cloud](install-cloud).
 
 When selecting the virtualization environment, consider the following:
 
@@ -53,10 +53,10 @@ We have documented how you can set up your lab:
 [^GHR]: Useful when you want to run the latest code or participate in netlab development
 
 ```{tip}
-If you decide to run the network labs within an Ubuntu VM, [create a new VM and use the automated software installation procedure](install/ubuntu-vm.md). Starting with a fresh VM is much easier and safer than installing the necessary software on an existing VM.
+If you decide to run the network labs within an Ubuntu VM, [create a new VM and use the automated software installation procedure](install-ubuntu-vm). Starting with a fresh VM is much easier and safer than installing the necessary software on an existing VM.
 ```
 
-Finally, you can use _netlab_ on Apple Silicon ([basics](https://blog.ipspace.net/2024/03/netlab-bgp-apple-silicon/), [using Arista cEOS](https://blog.ipspace.net/2025/02/arista-ceos-arm-apple-silicon/)), but all we managed to do was run containers (Arista EOS, FRR, SR Linux) on a Multipass-provisioned Ubuntu VM. If you're using a laptop with Apple silicon, run more complex labs on a [Ubuntu VM](ubuntu-vm-manual) running on-premises or in a [public cloud](install/cloud.md), or a [bare-metal server](install/ubuntu.md).
+Finally, you can use _netlab_ on Apple Silicon ([basics](https://blog.ipspace.net/2024/03/netlab-bgp-apple-silicon/), [using Arista cEOS](https://blog.ipspace.net/2025/02/arista-ceos-arm-apple-silicon/)), but all we managed to do was run containers (Arista EOS, FRR, SR Linux) on a Multipass-provisioned Ubuntu VM. If you're using a laptop with Apple silicon, run more complex labs on a [Ubuntu VM](ubuntu-vm-manual) running on-premises or in a [public cloud](install-cloud), or a [bare-metal server](install-ubuntu).
 
 ```eval_rst
 .. toctree::
