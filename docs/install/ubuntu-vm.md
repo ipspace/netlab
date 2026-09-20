@@ -1,35 +1,45 @@
 (install-ubuntu-vm)=
 # Ubuntu VM Installation
 
-Suppose you'd like to use *netlab* with *libvirt* or run network devices as containers on a Windows- or MacOS-based computer. You'll have to run the whole toolchain needed to create networking labs (netlab ⇨ Vagrant ⇨ libvirt ⇨ KVM) within a Linux virtual machine.
-
-The easiest way to set up your lab environment is to create a Ubuntu virtual machine and use the **netlab install** command within that virtual machine to install the required software packages[^2]. You could also run _netlab_ on a [Ubuntu instance in a public cloud](cloud.md).
-
-![Running Ubuntu VM on a desktop OS](ubuntu-on-desktop-os.png)
-
-[^2]: See also the [tutorial created by Leo Kirchner](https://blog.kirchne.red/posts/netsim-tools-quickstart/).
+The easiest way to set up your lab environment on your laptop or in your virtualized compute infrastructure is to create an Ubuntu virtual machine (use the WSL virtual machine on Windows) and run the **netlab install** command inside it to install the required software packages. You could also run _netlab_ on a [Ubuntu instance in a public cloud](cloud.md).
 
 ```{warning}
-Running *‌libvirt* within an Ubuntu VM requires *‌nested virtualization*. You don't need nested virtualization to run Docker containers within a Ubuntu VM.
+Running *‌libvirt* within an Ubuntu VM requires *‌nested virtualization*. You don't need nested virtualization to run Docker containers within an Ubuntu VM.
 ```
 
-The easiest way to get a Ubuntu VM on a Windows machine is to use Windows Subsystem for Linux.
+The easiest way to run an Ubuntu VM on Windows is to use [Windows Subsystem for Linux](ubuntu-vm-wsl).
 
-On other platforms, [Canonical Multipass](https://multipass.run/) is probably the easiest way to start a Ubuntu VM on your laptop if you don't need nested virtualization. Create an instance with [as much RAM and as many CPU cores](https://multipass.run/docs/create-an-instance#heading--create-an-instance-with-custom-cpu-number-disk-and-ram) as you can afford, and [install the necessary software on it](ubuntu-vm-manual).
+On other platforms, [Canonical Multipass](https://multipass.run/) is probably the easiest way to start an Ubuntu VM on your laptop if you don't need nested virtualization. Create an instance with [as much RAM and as many CPU cores](https://multipass.run/docs/create-an-instance#heading--create-an-instance-with-custom-cpu-number-disk-and-ram) as you can afford, and [install the necessary software on it](ubuntu-vm-manual).
 
-You can also use [Vagrant](ubuntu-vm-vagrant) or [create the virtual machine yourself](ubuntu-vm-manual) (using, for example, VMware GUI).
+You can also use [Vagrant](ubuntu-vm-vagrant) or [create the virtual machine yourself](ubuntu-vm-manual) (for example, using the VMware GUI).
+
+(ubuntu-vm-wsl)=
+## Running netlab on Windows Subsystem for Linux
+
+* Follow Microsoft's documentation to install Windows Subsystem for Linux.
+* Ensure you have WSL version 2.7.10.0 (or later) and use the latest Debian image.
+* Add the following lines to the `/etc/wsl.conf` file:
+
+```
+[boot]
+systemd=true
+```
+
+* Follow the [_netlab_ on Ubuntu VM](ubuntu-vm-manual) installation instructions
 
 (ubuntu-vm-vagrant)=
 ## Creating Ubuntu VM with Vagrant
 
-You can use Vagrant on your computer to set up an Ubuntu VM. Vagrant will automatically:
+You can use Vagrant to set up an Ubuntu VM on your computer. Vagrant will automatically:
 
 * Download the required virtual disk image
 * Start the virtual machine
 * Enable SSH access to the virtual machine
 * Provision the software on the virtual machine
 
-Installation steps:
+![Running Ubuntu VM on a desktop OS](ubuntu-on-desktop-os.png)
+
+Installation steps (assuming you're using VMware Fusion):
 
 * Install VMware Fusion/Workstation
 * Install [Vagrant](https://www.vagrantup.com/docs/installation)
@@ -98,9 +108,9 @@ netlab install -y ubuntu ansible libvirt containerlab
 * Running multiple installation scripts with **‌netlab install** might fail on some Ubuntu distributions. If you experience that problem, execute multiple **‌netlab install** commands (one per installation script).
 ```
 
-* After completing the software installation, log out from the VM, log back in, and test your installation with the **[netlab test](netlab-test)** command. If those tests fail, you might have to use **usermod** to add your user to the *libvirt* and *docker* groups.
+* After completing the software installation, log out, log back in (to get new group memberships), and test your installation with the **[netlab test](netlab-test)** command. If those tests fail, you might have to use **sudo usermod** to add your user to the *libvirt* and *docker* groups.
 
-## Installing Virtualization Providers
+## Next Steps
 
 * [](lab-clab)
 * [](lab-libvirt)
