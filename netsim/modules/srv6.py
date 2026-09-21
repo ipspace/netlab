@@ -102,8 +102,8 @@ class SRV6(_Module):
     mods = node.get('module',[])
     d_features = devices.get_device_features(node,topology.defaults)
     for igp in node.get('srv6.igp',[]):
-      igp = igp.replace('ebgp','bgp')                       # EBGP as IGP requires BGP module
-      if igp not in mods:
+      mod = igp.replace('ebgp','bgp')                       # EBGP as IGP requires BGP module
+      if mod not in mods:
         log.error(
           f"Node {node.name} does not have the {igp} IGP module enabled to run SRv6",
           category=log.MissingDependency,
