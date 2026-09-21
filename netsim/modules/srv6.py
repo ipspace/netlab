@@ -56,8 +56,9 @@ def configure_bgp_for_srv6(node: Box, topology: Box) -> None:
     if not need_srv6:                                   # No SRv6 for this neighbor?
       continue                                          # ... cool, let's get out of here
 
-    if nb.type == 'ebgp':                               # Are we running SRv6 services with EBGP neighbor?
-      nb.srv6.next_hop_unchanged = True                 # Cool, but we have to take care of next hops
+    node.bgp.srv6 = True                                # BGP SRv6 is enabled on this node
+    if 'ebgp' in srv6.get('igp',[]):                    # Are we using EBGP with SRv6?
+      nb.srv6.next_hop_unchanged = True                 # We have to take care of unchanged next hops
 
 
 class SRV6(_Module):
@@ -87,7 +88,7 @@ class SRV6(_Module):
           module='srv6')
 
   def module_pre_transform(self, topology: Box) -> None:
-    addressing.get(topology.pools,[get_pool_name()])                  # Throw away the all-zeroes prefix
+    addressing.get(topology.pools,[get_pool_name()])        # Throw away the all-zeroes prefix
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
     if 'srv6' in node:
@@ -101,7 +102,8 @@ class SRV6(_Module):
     mods = node.get('module',[])
     d_features = devices.get_device_features(node,topology.defaults)
     for igp in node.get('srv6.igp',[]):
-      if igp not in mods:
+      mod = igp.replace('ebgp','bgp')                       # EBGP as IGP requires BGP module
+      if mod not in mods:
         log.error(
           f"Node {node.name} does not have the {igp} IGP module enabled to run SRv6",
           category=log.MissingDependency,
@@ -144,7 +146,8 @@ class SRV6(_Module):
           category=log.MissingValue,
           module='srv6')
     mods = node.get('module',[])
-    for igp in node.get('srv6.igp',[]):                      # Check if the IGP module is still active, it may have been removed
+    for igp in node.get('srv6.igp',[]):           # Check if the IGP module is still active, it may have been removed
+      igp = igp.replace('ebgp','bgp')             # EBGP as IGP requires BGP module
       if igp not in mods:
         log.warning(
           text=f"The IGP module for {igp} on node {node.name} has been removed, SRv6 will likely not work",

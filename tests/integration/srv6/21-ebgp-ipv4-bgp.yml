@@ -1,8 +1,9 @@
 ---
 message: |
-  The tested device (DUT) is a PE-router running IS-IS, BGP and SRv6 across an IPv6-only network to interconnect
-  two IPv4-only networks. The validation test checks end-to-end IPv4 connectivity across a SRv6 core.
-  See https://www.ietf.org/archive/id/draft-mishra-idr-v4-islands-v6-core-4pe-06.html
+  The tested device runs inter-AS SRv6 across an IPv6-only network to
+  interconnect two IPv4-only networks. The validation test checks end-to-end
+  IPv4 connectivity across a SRv6 core. See
+  https://www.ietf.org/archive/id/draft-mishra-idr-v4-islands-v6-core-4pe-06.html
 
 defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
 
@@ -20,11 +21,10 @@ addressing:
     prefix: 32
 
 srv6.bgp:
-  ipv4: True                  # Enable IPv4 in the overlay (for IBGP)
+  ipv4: [ ebgp ]              # Enable IPv4-over-EBGP in the overlay
   ipv6: False
 srv6.vpn: False
-
-bgp.as: 65000                 # single iBGP AS
+srv6.igp: [ ebgp ]
 
 groups:
   _auto_create: True
@@ -33,73 +33,64 @@ groups:
     device: linux
     provider: clab
   pe:
-    members: [ dut, pe2 ]
-    module: [ isis, bgp, srv6 ]
-    bgp.import: [ connected ]
-    bgp.advertise_loopback: False # Using IS-IS for this
+    members: [ dut_pe, pe2 ]
+    module: [ bgp, srv6 ]
   core:
-    members: [ p ]
-    module: [ isis ]
+    members: [ dut_p ]
+    module: [ bgp, srv6 ]
   ce:
     members: [ ce1, ce2 ]
     module: [ bgp ]
     loopback.pool: lb_ce
   x_switches:
-    members: [ p, pe2, ce1, ce2 ]
+    members: [ pe2, ce1, ce2 ]
     device: frr
     provider: clab
 
 nodes:
-  dut:
-  pe2:
-  ce1:
-    bgp.as: 65101
-  ce2:
-    bgp.as: 65102
+  dut_pe.bgp.as: 65001
+  dut_p.bgp.as: 65000
+  pe2.bgp.as: 65002
+  ce1.bgp.as: 65101
+  ce2.bgp.as: 65102
 
 links:
 - group: core
   pool: core
-  members: [ dut-p, p-pe2 ]
+  members: [ dut_pe-dut_p, dut_p-pe2 ]
 - group: edge
-  isis: False
-  members: [ h1-dut, h2-pe2 ]
+  members: [ h1-dut_pe, h2-pe2 ]
 - group: customer
-  members: [ ce1-dut, ce2-pe2 ]
+  members: [ ce1-dut_pe, ce2-pe2 ]
 
 validate:
-  isis_dut:
-    description: Check ISIS sessions with DUT
-    wait: isis_adj_p2p
-    wait_msg: Waiting for ISIS adjacency
-    nodes: [ p ]
-    plugin: isis_neighbor('dut',level='L2',area='49.0001')
-    stop_on_error: true
-  isis_pe2:
-    description: Check ISIS sessions with PE2
-    wait: isis_adj_p2p
-    wait_msg: Waiting for ISIS adjacency
-    nodes: [ p ]
-    plugin: isis_neighbor('pe2',level='L2',area='49.0001')
+  ebgp_core:
+    description: Check EBGP session PE2-DUT_P
+    wait: ebgp_session
+    wait_msg: Waiting for EBGP session PE2-DUT_P adjacency
+    nodes: [ pe2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut_p',af='ipv6')
     stop_on_error: true
   ebgp_dut:
-    description: Check EBGP session DUT-CE1
+    description: Check EBGP session DUT_PE-CE1
     wait: ebgp_session
     wait_msg: Waiting for EBGP session DUT-CE1
     nodes: [ ce1 ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv4')
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut_pe',af='ipv4')
+    stop_on_error: true
   ebgp_pe2:
     description: Check EBGP session PE2-CE2
     wait: ebgp_session
     wait_msg: Waiting for EBGP session PE2-CE2
     nodes: [ ce2 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'pe2',af='ipv4')
-  ibgp:
-    description: Check IBGP session with activation of IPv4 over IPv6
-    wait: ibgp_session
-    wait_msg: Waiting for IBGP sessions to start
+    stop_on_error: true
+  srv6_locator:
+    description: Check whether DUT_PE SRv6 locator is present on PE2
+    wait_msg: Waiting for BGP convergence
+    wait: bgp_scan_long
     nodes: [ pe2 ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6',activate='ipv4')
+    plugin: bgp_prefix(nodes.dut_pe.srv6.locator,af='ipv6')
     stop_on_error: true
   pfx_ce1:
     description: Did CE1 prefix propagate to CE2?

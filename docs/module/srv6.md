@@ -20,6 +20,8 @@ The following table describes the per-platform support of SRv6 features:
 ```{features}
 - title: SRv6<br>with IS-IS
   enabled: srv6.isis
+- title: SRv6<br>with EBGP
+  enabled: srv6.ebgp
 - title: Global BGP<br>over SRv6[^GB]
   enabled: srv6.bgp
 - title: L3VPN<br>over SRv6[^L3V]
@@ -40,9 +42,9 @@ The following table describes the per-platform support of SRv6 features:
 
 * **addressing.srv6_locator** -- global address pool[^poolname] for allocation of SRv6 locator prefixes, the default prefix is defined in `topology.defaults.srv6.locator_pool` (5F00::/16, the IANA reserved range defined by [RFC9602](https://datatracker.ietf.org/doc/rfc9602/)
 * **srv6.allocate_loopback** -- global flag (default: `False`) to replace the IPv6 loopback address of each SRv6-enabled node with an IPv6 address allocated from the locator range
-* **srv6.bgp** -- enable BGP with IPv4 and IPv6 address families over SRv6, default IPv4 + IPv6 over iBGP.
-* **srv6.vpn** -- enable BGP with VPNv4 and VPNv6 address families over SRv6. BGP/SRv6 L3VPN is disabled by default.
-* **srv6.igp** -- list of IGP protocols for which to enable SRv6, default `[isis]`
+* **srv6.bgp** -- enable BGP with IPv4 and IPv6 address families over SRv6 (disabled by default, [more details](srv6-services)).
+* **srv6.vpn** -- enable BGP with VPNv4 and VPNv6 address families over SRv6 ([more details](srv6-services)). BGP/SRv6 L3VPN is disabled by default.
+* **srv6.igp** -- list of IGP protocols for which to enable SRv6, default `[isis]`. To exchange SRv6 SIDs between autonomous systems, add `ebgp` to **srv6.igp**
 
 [^poolname]: You can change the name of the default SRv6 locator pool with the `topology.defaults.const.srv6.locator_pool.name` parameter
 
@@ -52,6 +54,7 @@ The following table describes the per-platform support of SRv6 features:
 * **srv6.locator**: an optional IPv6 address prefix to allocate to a given SRv6 node; by default, each node is assigned a unique /48 prefix from the global pool
 * **srv6.transit_only**: an optional Boolean flag to optimize resource usage and only allocate transit behaviors, not endpoint behaviors
 
+(srv6-services)=
 ## Configurable BGP/SRv6 IPv4/6 and L3VPN Parameters
 
 This module provides 2 parameters that are identical in structure, controlling different BGP address families:
@@ -70,6 +73,6 @@ Each parameter could be a boolean (*True* to enable both IP address families on 
 * Boolean value *True* to enable the address family on IBGP sessions
 * A string or a list of *ibgp/ebgp* keywords[^NE]
 
-For a tested example, see the [SRv6 integration tests](https://github.com/ipspace/netlab/tree/dev/tests/integration/srv6).
+For tested examples, see the [SRv6 integration tests](https://github.com/ipspace/netlab/tree/dev/tests/integration/srv6).
 
-[^NE]: SRv6 services over EBGP are currently not supported
+[^NE]: The only SRv6 service _netlab_ supports over EBGP are global BGPv4 routes with SRv6 SID next hops.

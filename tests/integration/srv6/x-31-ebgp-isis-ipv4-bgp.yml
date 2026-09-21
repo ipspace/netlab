@@ -1,8 +1,9 @@
 ---
 message: |
-  The tested device (DUT) is a PE-router running IS-IS, BGP and SRv6 across an IPv6-only network to interconnect
-  two IPv4-only networks. The validation test checks end-to-end IPv4 connectivity across a SRv6 core.
-  See https://www.ietf.org/archive/id/draft-mishra-idr-v4-islands-v6-core-4pe-06.html
+  The tested device runs inter-AS SRv6 across an IPv6-only network to
+  interconnect two IPv4-only networks. The validation test checks end-to-end
+  IPv4 connectivity across a SRv6 core. See
+  https://www.ietf.org/archive/id/draft-mishra-idr-v4-islands-v6-core-4pe-06.html
 
 defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
 
@@ -20,11 +21,10 @@ addressing:
     prefix: 32
 
 srv6.bgp:
-  ipv4: True                  # Enable IPv4 in the overlay (for IBGP)
+  ipv4: True                  # Enable IPv4 in the overlay (for IBGP/EBGP)
   ipv6: False
 srv6.vpn: False
-
-bgp.as: 65000                 # single iBGP AS
+srv6.igp: [ isis, ebgp ]
 
 groups:
   _auto_create: True
@@ -38,16 +38,22 @@ groups:
     bgp.import: [ connected ]
     bgp.advertise_loopback: False # Using IS-IS for this
   core:
-    members: [ p ]
-    module: [ isis ]
+    members: [ p1, p2 ]
+    module: [ isis, bgp, srv6 ]
   ce:
     members: [ ce1, ce2 ]
     module: [ bgp ]
     loopback.pool: lb_ce
   x_switches:
-    members: [ p, pe2, ce1, ce2 ]
+    members: [ p1, p2, pe2, ce1, ce2 ]
     device: frr
     provider: clab
+  as1:
+    members: [ dut, p1 ]
+    bgp.as: 65001
+  as2:
+    members: [ p2, pe2 ]
+    bgp.as: 65002
 
 nodes:
   dut:
@@ -60,7 +66,7 @@ nodes:
 links:
 - group: core
   pool: core
-  members: [ dut-p, p-pe2 ]
+  members: [ dut-p1, p1-p2, p2-pe2 ]
 - group: edge
   isis: False
   members: [ h1-dut, h2-pe2 ]
@@ -72,15 +78,22 @@ validate:
     description: Check ISIS sessions with DUT
     wait: isis_adj_p2p
     wait_msg: Waiting for ISIS adjacency
-    nodes: [ p ]
+    nodes: [ p1 ]
     plugin: isis_neighbor('dut',level='L2',area='49.0001')
     stop_on_error: true
   isis_pe2:
     description: Check ISIS sessions with PE2
     wait: isis_adj_p2p
     wait_msg: Waiting for ISIS adjacency
-    nodes: [ p ]
+    nodes: [ p2 ]
     plugin: isis_neighbor('pe2',level='L2',area='49.0001')
+    stop_on_error: true
+  ibgp_dut:
+    description: Check IBGP sessions DUT-P1
+    wait: ibgp_session
+    wait_msg: Waiting for IBGP session in AS 65001
+    nodes: [ p1 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
     stop_on_error: true
   ebgp_dut:
     description: Check EBGP session DUT-CE1
