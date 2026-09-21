@@ -1,8 +1,17 @@
+{% if 'ebgp' in srv6.igp|default([]) %}
+interface ${SRv6_DEV}
+  ipv6 address {{ srv6.locator }}
+{% endif %}
+!
 router bgp {{ bgp.as }}
  segment-routing srv6
   locator {{ inventory_hostname }}
  exit
-
+{% if 'ebgp' in srv6.igp|default([]) %}
+ address-family ipv6 unicast
+  network {{ srv6.locator }}
+ exit-address-family
+{% endif %}
 {#
   The core bgp module only provisions neighbors for which the transport matches the address family, i.e. IPv4 over v4
   and IPv6 over v6. This template modifies IPv6 neighbors, adding VPNv4/6 AF over IPv6 transport and setting various
@@ -14,18 +23,20 @@ router bgp {{ bgp.as }}
   neighbor {{ peer }} encapsulation-srv6
 {%   if n.next_hop_unchanged is defined %}
   neighbor {{ peer }} attribute-unchanged next-hop
-{%   endif %}
-{%   if n.type=='ibgp' and bgp.next_hop_self|default(True) %}
+{%   elif n.type=='ibgp' and bgp.next_hop_self|default(True) %}
   neighbor {{ peer }} next-hop-self
 {%   endif %}
 {% endmacro -%}
 
 {% if srv6.vpn|default(False) or srv6.bgp|default(False) %}
-{%   for n in bgp.neighbors|default([]) if n.ipv6 is defined and n.type == 'ibgp' %}
+{%   for n in bgp.neighbors|default([]) if n.srv6 is defined %}
 {%     set peer = n.ipv6 %}
  neighbor {{ peer }} description {{ n.name }} (SRv6)
 {%     if n.extended_nexthop is defined %}
  neighbor {{ peer }} capability extended-nexthop
+{%     endif %}
+{%     if n.type == 'ebgp' %}
+ neighbor {{ peer }} disable-connected-check
 {%     endif %}
 
 {%-    for af in ['ipv4','ipv6'] %}
@@ -33,12 +44,14 @@ router bgp {{ bgp.as }}
  address-family {{ af }} unicast
 !
   sid export auto
-{{         bgp_neighbor(n,peer,af) -}}
+{{         bgp_neighbor(n,peer,af) }}
+ exit-address-family
 {%       endif %}
 {%       if n.type in srv6.vpn[af]|default('') %}
  address-family {{ af }} vpn
 !
-{{         bgp_neighbor(n,peer,af) -}}
+{{         bgp_neighbor(n,peer,af) }}
+ exit-address-family
 {%       endif %}
 {%     endfor %}
 {%   endfor %}
