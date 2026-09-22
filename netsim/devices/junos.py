@@ -287,9 +287,11 @@ def _bgp_neigh_export_policy_chain_build(neigh: Box, default: list, vrf_name: st
         neigh_policy.append(policy_name)
         need_to_have_neigh_policy = True
 
-  if 'srv6' in neigh:
-    neigh_policy.append(strings.eval_format(JUNOS_POLICY_NHS,{'next_hop_self': 'all', 'af': 'ipv4' }))
-    need_to_have_neigh_policy = True
+  if 'ipv4' in neigh.get('srv6.bgp',[]):
+    policy_name = strings.eval_format(JUNOS_POLICY_NHS,{'next_hop_self': 'all', 'af': 'ipv4' })
+    if policy_name not in neigh_policy:
+      neigh_policy.append(policy_name)
+      need_to_have_neigh_policy = True
 
   if neigh.get('default_originate', False):
     neigh_policy.append(JUNOS_POLICY_DEFAULT_ORIGINATE)
