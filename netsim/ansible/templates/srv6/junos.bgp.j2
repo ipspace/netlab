@@ -1,3 +1,29 @@
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() %}
+{%     for af in 'ipv4','ipv6' if af in vdata.af and af in srv6.vpn|default({}) %}
+{%       if loop.first %}
+routing-instances {
+  {{ vname }} {
+    protocols {
+      bgp {
+        source-packet-routing {
+          srv6 {
+            locator {{ inventory_hostname }} {
+{%       endif %}
+              micro-dt{{ af.replace('ipv','') }}-sid;
+{%       if loop.last %}
+            }
+          }
+        }
+      }
+    }
+  }
+}
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
+
 protocols {
   bgp {
     source-packet-routing {
@@ -15,9 +41,19 @@ protocols {
 {%     endif %}
       neighbor {{ n.ipv6 }} {
 {%     for af in n.srv6.vpn|default([]) %}
-{#       L3VPN support is still missing #}
+        delete: shutdown;
+        family {{ 'inet-vpn' if af == 'ipv4' else 'inet6-vpn' }} {
+          unicast {
+{%       if af == 'ipv4' %}
+            extended-nexthop;
+{%       endif %}
+            advertise-srv6-service;
+            accept-srv6-service;
+          }
+        }
 {%     endfor %}
 {%     for af in n.srv6.bgp|default([]) %}
+        delete: shutdown;
         family {{ 'inet' if af == 'ipv4' else 'inet6' }} {
           unicast {
 {%       if af == 'ipv4' %}
