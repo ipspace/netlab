@@ -67,6 +67,7 @@ def build_bgp_policy_chains(node: Box) -> None:
   """
   Build neighbor- and peer-group import/export policy chains
   """
+  has_srv6_l3svc = bool([ af for af,v in node.get('srv6.bgp',{}).items() if v ])
   for bgp_data,_,vrf in _routing.rp_data(node,'bgp'):
     vrf = 'default' if vrf is None else vrf
     bgp_data._import_chain.ebgp = ['accept_all']
@@ -87,6 +88,10 @@ def build_bgp_policy_chains(node: Box) -> None:
       nhs_p_name = 'bgp_nhs_' + ngb.next_hop_self
       pc['_export_chain'] = [nhs_p_name]
       append_to_list(node.bgp,'_policy',nhs_p_name)
+
+    if vrf == 'default' and has_srv6_l3svc and 'srv6.bgp' not in ngb:
+      pc['_export_chain'] += ['clean_srv6_tlv']
+      append_to_list(node.bgp,'_policy','clean_srv6_tlv')
 
     pc['_export_chain'] += [vrf+'_bgp_export']
 

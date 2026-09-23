@@ -1,0 +1,52 @@
+{% import 'templates/bgp/srlinux.macro.j2' as bgpcfg with context %}
+{% for af in srv6.bgp|default({}) if srv6.bgp[af] %}
+{%   if loop.first %}
+#
+# Create DTx uSIDs in the default network instance to support layer-3 services
+#
+- path: /network-instance[name=default]/segment-routing/srv6/instance[id=1]
+  value:
+    locator:
+    - locator-name: {{ inventory_hostname }}
+      micro-segment:
+        function:
+{%   endif %}
+          udt{{ af.replace('ipv','') }}:
+            value: {{ '1' if af == 'ipv4' else '2' }}
+{% endfor %}
+
+{% for af in srv6.bgp|default({}) if srv6.bgp[af] %}
+{%   if loop.first %}
+#
+# Enable SRv6 TLVs for global layer-3 services
+#
+- path: /network-instance[name=default]/protocols/bgp
+  value:
+    srv6:
+      source-address: {{ loopback.ipv6|ansible.utils.ipaddr('address') }}
+    afi-safi:
+{%   endif %}
+    - afi-safi-name: {{ af }}-unicast
+      {{ af }}-unicast:
+        srv6:
+          process-received-srv6-tlvs: true
+          add-srv6-tlvs:
+            locator-name: {{ inventory_hostname }}
+{% endfor %}
+{% for n in bgp.neighbors|default([]) if 'ipv4' in n.srv6.bgp|default([]) %}
+{%   if loop.first %}
+#
+# Enable RFC 8950 IPv4 AF on SRv6-enabled IPv6 BGP sessions
+#
+- path: /network-instance[name=default]/protocols/bgp
+  value:
+    neighbor:
+{%   endif %}
+    - peer-address: "{{ n.ipv6 }}"
+      afi-safi:
+      - afi-safi-name: ipv4-unicast
+        admin-state: enable
+        ipv4-unicast:
+          advertise-ipv6-next-hops: True
+          receive-ipv6-next-hops: True
+{% endfor %}
