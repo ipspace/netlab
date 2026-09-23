@@ -1,16 +1,19 @@
 (module-srv6)=
 # Segment Routing over IPv6 (srv6) Configuration Module
 
-This configuration module configures SRv6 over IS-IS with IBGP using advertised SIDs for global and VPN connectivity services.
+This configuration module configures SRv6 over IS-IS or BGP and can use the advertised SIDs for global and L3VPN connectivity services.
 
 Supported SRv6 features:
 
-* End SIDs (nodes) and End-x SIDs (links), all statically allocated
-* IS-IS routing protocol with SRv6 TLVs
-* SRv6 transport for global IPv4/IPv6 BGP routes
+* Micro SIDs in F3216 format
+* IS-IS routing with SRv6 TLVs
+* Advertising SRv6 SIDs with BGP
+* SRv6 next hops for global IPv4/IPv6 BGP routes (Layer-3 services with SRv6)
 * BGP IPv4/IPv6 L3VPN over SRv6
 
-The module currently depends on IS-IS and will trigger a configuration error if the **isis** module is not enabled in the network topology. It supports the L3VPN use case, as well as IPv4 islands over SRv6 (IPv4aaS) and IPv6 transport between SRv6 endpoints.
+You can use IS-IS or EBGP to advertise SRv6 SIDs[^CRM], and use SRv6 for layer-3 services (IPv4 islands over SRv6, BGP-free core with IPv6) and IPv4/IPv6 layer-3 VPNs.
+
+[^CRM]: The module checks whether the corresponding routing module is enabled and will trigger a configuration error if it's missing.
 
 (module-srv6-platform)=
 ## Platform Support
@@ -55,7 +58,7 @@ The following table describes the per-platform support of SRv6 features:
 * **srv6.transit_only**: an optional Boolean flag to optimize resource usage and only allocate transit behaviors, not endpoint behaviors
 
 (srv6-services)=
-## Configurable BGP/SRv6 IPv4/6 and L3VPN Parameters
+## Configurable Layer-3 Services and L3VPN Parameters
 
 This module provides 2 parameters that are identical in structure, controlling different BGP address families:
 
