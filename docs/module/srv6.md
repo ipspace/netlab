@@ -1,7 +1,7 @@
 (module-srv6)=
 # Segment Routing over IPv6 (srv6) Configuration Module
 
-This configuration module configures SRv6 over IS-IS with IBGP using advertised SIDs for global and VPN connectivity services.
+This configuration module configures SRv6 over IS-IS or BGP and can use the advertised SIDs for global and L3VPN connectivity services.
 
 Supported SRv6 features:
 
