@@ -1,10 +1,10 @@
-FROM mcr.microsoft.com/devcontainers/python:3.11-bookworm
+FROM mcr.microsoft.com/devcontainers/python:3.14
 
 ARG PIP_OPTIONS
 ENV PIP_OPTIONS=${PIP_OPTIONS}
 ENV NETLAB_DEVICES_FRR_CLAB_GROUP__VARS_NETLAB__MGMT__VRF=False
 ENV ANSIBLE_CONFIG=./ansible.cfg
-LABEL org.opencontainers.image.source https://github.com/ipspace/netlab
+LABEL org.opencontainers.image.source=https://github.com/ipspace/netlab
 
 RUN echo "deb [trusted=yes] https://netdevops.fury.site/apt/ /" | \
     tee -a /etc/apt/sources.list.d/netdevops.list
@@ -42,7 +42,8 @@ USER vscode
 # create ssh key for vscode user to enable passwordless ssh to devices
 RUN ssh-keygen -t ecdsa -b 256 -N "" -f ~/.ssh/id_ecdsa && \
     mkdir -p /home/vscode/.docker && \
-    echo "{}" > /home/vscode/.docker/config.json
+    echo "{}" > /home/vscode/.docker/config.json && \
+    sudo usermod -a -G clab_admins vscode
 
 # setup zsh
 #COPY ./.devcontainer/zsh/.zshrc /home/vscode/.zshrc
