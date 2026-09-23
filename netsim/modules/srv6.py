@@ -1,6 +1,7 @@
 #
 # SRv6 transformation module
 #
+import ipaddress
 import typing
 
 from box import Box
@@ -18,16 +19,16 @@ DEFAULT_BGP_AF: typing.Final[dict] = {
   'ipv6': [ 'ibgp' ]
 }
 
-"""
-Returns the name for the SRv6 locator address pool, default 'srv6_locator'
-"""
 def get_pool_name() -> str:
+  """
+  Returns the name for the SRv6 locator address pool, default 'srv6_locator'
+  """
   return get_const('srv6.locator_pool.name','srv6_locator')
 
-"""
-Configures BGP address families for neighbors, including extended nexthop where needed
-"""
 def configure_bgp_for_srv6(node: Box, topology: Box) -> None:
+  """
+  Configures BGP address families for neighbors, including extended nexthop where needed
+  """
   srv6 = node.get('srv6',{})
   if not srv6:
     return
@@ -60,6 +61,29 @@ def configure_bgp_for_srv6(node: Box, topology: Box) -> None:
     if 'ebgp' in srv6.get('igp',[]):                    # Are we using EBGP with SRv6?
       nb.srv6.next_hop_unchanged = True                 # We have to take care of unchanged next hops
 
+
+def process_srv6_locator(node: Box, topology: Box) -> None:
+  """
+  Allocate an SRv6 locator to a node (if needed) and check whether it conforms to F3216 format
+  """
+  locator = node.get('srv6.locator')
+  if not locator:
+    prefix = addressing.get(topology.pools,[get_pool_name()])['ipv6']
+    locator = str(prefix)
+    node.srv6.locator = locator
+
+  locator_pfx = ipaddress.IPv6Network(locator)
+  if locator_pfx.prefixlen != 48:
+    log.error(
+      f'The SRv6 node uSID should be in the F3126 format (a /48 prefix), found {node.srv6.locator} on {node.name}',
+      category=log.IncorrectValue)
+    return
+
+  # Split the locator prefix into block (upper 32 bits) and node ID (next 16 bits)
+  #
+  locator_addr = locator_pfx.network_address
+  node.srv6._usid_block = str(ipaddress.IPv6Network(str(locator_addr)+"/32",strict=False))
+  node.srv6._usid_node_id = (int(locator_addr) >> 80) & 0xffff
 
 class SRV6(_Module):
   """
@@ -133,12 +157,8 @@ class SRV6(_Module):
         category=log.IncorrectValue,
         module='srv6')
 
-    locator = node.get('srv6.locator')
-    if not locator:
-       prefix = addressing.get(topology.pools,[get_pool_name()])['ipv6']
-       locator = str(prefix)
-       node.srv6.locator = locator
-
+    process_srv6_locator(node,topology)
+    
   def node_post_transform(self, node: Box, topology: Box) -> None:
     if 'ipv6' not in node.loopback:
         log.error(

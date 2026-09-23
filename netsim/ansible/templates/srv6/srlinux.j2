@@ -1,0 +1,43 @@
+updates:
+- path: /system/srv6/micro-segment
+  value:
+    block-length: 32
+    gib-size: 48
+    sid-length: 16
+    block:
+    - block-name: usid-block
+      prefix:
+        ip-prefix: {{ srv6._usid_block }}
+      static-function:
+        max-entries: 256
+
+- path: /system/srv6/locator[locator-name={{ inventory_hostname }}]
+  value:
+    micro-segment:
+      block: usid-block
+      algorithm: 0
+      un:
+        srh-mode: psp
+        value: {{ srv6._usid_node_id }}
+
+- path: /system/srv6
+  value:
+    default-source-address: {{ loopback.ipv6|ansible.utils.ipaddr('address') }}
+    source-address: 
+    - ip-address: {{ loopback.ipv6|ansible.utils.ipaddr('address') }}
+
+{% if 'isis' in srv6.igp|default([]) %}
+- path: /network-instance[name=default]/protocols/isis/instance[name={{ isis.instance }}]
+  value:
+    segment-routing:
+      srv6:
+        admin-state: enable
+        locator:
+        - locator-name: {{ inventory_hostname }}
+          multi-topology:
+            multi-topology-0: false
+            multi-topology-2: true
+{% endif %}
+{% if bgp.srv6 is defined %}
+{%   include "srlinux.bgp.j2" %}
+{% endif %}
