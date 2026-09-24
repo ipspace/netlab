@@ -1,3 +1,4 @@
+{% import 'templates/bgp/srlinux.macro.j2' as bgpcfg %}
 {#
   Enables the EVPN address family for eBGP or iBGP peers (ipv4 for now). Assumes bgp.as == AS used for EVPN
 
@@ -36,6 +37,15 @@ updates:
         inter-as-vpn: True
 {%     endif %}
 {%   endfor %}
+{% endfor %}
+{#
+   Enable EVPN AF on interface neighbor peer groups
+#}
+{% for ngb in bgp.neighbors|default([]) if ngb.local_if %}
+{{ bgpcfg.cfg_interface_peer_group('default',ngb) }}
+    afi-safi:
+    - afi-safi-name: evpn
+      admin-state: enable
 {% endfor %}
 
 {# Enable IP advertisement for all irb interfaces in EVPN vlans #}
