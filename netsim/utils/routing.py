@@ -42,7 +42,7 @@ def neighbors(node: Box, vrf: bool = True, select: list = ['ibgp','ebgp']) -> ty
     return
 
   for ngb in node.get('bgp.neighbors',[]):
-    if ngb.type in select:
+    if ngb.type in select or '*' in select:
       yield ngb
 
   if not vrf:
@@ -50,7 +50,7 @@ def neighbors(node: Box, vrf: bool = True, select: list = ['ibgp','ebgp']) -> ty
 
   for vname,vdata in node.get('vrfs',{}).items():
     for ngb in vdata.get('bgp.neighbors',[]):
-      if ngb.type in select:
+      if ngb.type in select or '*' in select:
         ngb._src_vrf = vname
         yield ngb
 
