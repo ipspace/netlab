@@ -9,6 +9,7 @@ import re
 from box import Box
 
 from ..augment import devices as a_devices
+from ..data import append_to_list
 from ..utils import log
 from ..utils import routing as _routing
 from . import _Quirks, need_ansible_collection, report_quirk
@@ -33,7 +34,7 @@ def check_prefix_deny(node: Box) -> None:
 
 def cleanup_neighbor_transport(node: Box, topology: Box) -> None:
   """Remove unused BGP transport addresses when no address family is activated."""
-  for ngb in _routing.neighbors(node,vrf=True):
+  for ngb in _routing.neighbors(node,vrf=True,select=['*']):
     if 'local_if' in ngb:               # True unnumbered, move on
       continue
     ipv4 = ngb.get('ipv4',None)
@@ -61,6 +62,41 @@ def cleanup_neighbor_transport(node: Box, topology: Box) -> None:
         node=node,
         category=Warning)
       ngb.pop(af)
+
+def build_bgp_policy_chains(node: Box) -> None:
+  """
+  Build neighbor- and peer-group import/export policy chains
+  """
+  for bgp_data,_,vrf in _routing.rp_data(node,'bgp'):
+    vrf = 'default' if vrf is None else vrf
+    bgp_data._import_chain.ebgp = ['accept_all']
+    bgp_data._import_chain.ibgp = ['ibgp-mark']
+    bgp_data._export_chain.ebgp = [vrf + '_bgp_export']
+    bgp_data._export_chain.ibgp = [vrf + '_bgp_export']
+    if bgp_data.get('next_hop_self',False):
+      append_to_list(node.bgp,'_policy','bgp_nhs_ebgp')
+      bgp_data._export_chain.ibgp = ['bgp_nhs_ebgp',vrf + '_bgp_export']
+
+  for ngb in _routing.neighbors(node,vrf=True,select=['*']):
+    vrf = ngb.get('_src_vrf','default')
+    bgp_data = node.bgp if vrf == 'default' else node.vrfs[vrf].bgp
+    pc: dict = {}
+    pc['_import_chain'] = ['ibgp-mark'] if 'ibgp' in ngb.type else ['accept_all']
+    pc['_export_chain'] = []
+    if 'next_hop_self' in ngb:
+      nhs_p_name = 'bgp_nhs_' + ngb.next_hop_self
+      pc['_export_chain'] = [nhs_p_name]
+      append_to_list(node.bgp,'_policy',nhs_p_name)
+
+    pc['_export_chain'] += [vrf+'_bgp_export']
+
+    if 'policy.out' in ngb:
+      ngb._export_chain = pc['_export_chain']
+    else:
+      for kw in ['_import_chain','_export_chain']:
+        if kw in bgp_data and ngb.type in bgp_data[kw] and pc[kw] == bgp_data[kw][ngb.type]:
+          continue
+        ngb[kw] = pc[kw]
 
 def set_api_version(node: Box) -> None:
   """Set node._srl_version from the container image tag."""
@@ -181,6 +217,9 @@ def check_mtu(node: Box, clab_type: str) -> None:
       category=log.IncorrectValue)
 
 def check_bgpvpn_rt(node: Box) -> None:
+  """
+  Check that we're not using more than import/export RT per VRF
+  """
   if not node.get('mpls.vpn',False) or 'vrfs' not in node:
     return
   for vname,vdata in node.vrfs.items():
@@ -218,6 +257,7 @@ class SRLINUX(_Quirks):
 
     if 'bgp' in mods:
       cleanup_neighbor_transport(node,topology)
+      build_bgp_policy_chains(node)
       if node._srl_version < [ 25, 3 ]:
         for c,vals in topology.get('bgp.community',[]).items():
           if 'extended' not in vals:
