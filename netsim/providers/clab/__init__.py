@@ -205,7 +205,7 @@ class Containerlab(_Provider):
 
   def set_tc(self, node: Box, topology: Box, intf: Box, error: bool = True) -> None:
     c_name = self.get_node_name(node.name,topology)
-    c_intf = intf.get('clab.name',intf.ifname)
+    c_intf = intf.get('clab.name',intf.ifname).replace('/','-')
     netns = 'sudo ip netns exec ' + c_name
     status = tc_netem_set(intf=c_intf,tc_data=intf.tc,pfx=netns)
     if status is False:
