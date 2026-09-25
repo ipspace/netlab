@@ -1,0 +1,74 @@
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() %}
+{%     for af in 'ipv4','ipv6' if af in vdata.af and af in srv6.vpn|default({}) %}
+{%       if loop.first %}
+routing-instances {
+  {{ vname }} {
+    protocols {
+      bgp {
+        source-packet-routing {
+          srv6 {
+            locator {{ inventory_hostname }} {
+{%       endif %}
+              micro-dt{{ af.replace('ipv','') }}-sid;
+{%       if loop.last %}
+            }
+          }
+        }
+      }
+    }
+  }
+}
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
+
+protocols {
+  bgp {
+    source-packet-routing {
+      srv6 {
+        locator {{ inventory_hostname }} {
+            micro-dt4-sid;
+            micro-dt6-sid;
+        }
+      }
+    }
+{% for n_type in 'ibgp','ebgp' %}
+{%   for n in bgp.neighbors|default([]) if n.srv6 is defined and n.type == n_type %}
+{%     if loop.first %}
+    group {{ 'ibgp-peers-ipv6' if n_type == 'ibgp' else 'ebgp-peers' }} {
+{%     endif %}
+      neighbor {{ n.ipv6 }} {
+{%     for af in n.srv6.vpn|default([]) %}
+        delete: shutdown;
+        family {{ 'inet-vpn' if af == 'ipv4' else 'inet6-vpn' }} {
+          unicast {
+{%       if af == 'ipv4' %}
+            extended-nexthop;
+{%       endif %}
+            advertise-srv6-service;
+            accept-srv6-service;
+          }
+        }
+{%     endfor %}
+{%     for af in n.srv6.bgp|default([]) %}
+        delete: shutdown;
+        family {{ 'inet' if af == 'ipv4' else 'inet6' }} {
+          unicast {
+{%       if af == 'ipv4' %}
+            extended-nexthop;
+{%       endif %}
+            advertise-srv6-service;
+            accept-srv6-service;
+          }
+        }
+{%     endfor %}
+      }
+{%     if loop.last %}
+    }
+{%     endif %}
+{%   endfor %}
+{% endfor %}
+  }
+}
