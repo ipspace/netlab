@@ -203,21 +203,12 @@ class Containerlab(_Provider):
     node_name = self.get_node_name(node.name,topology)
     return strings.string_to_list(f'sudo ip netns exec {node_name}') + cmd
 
-  def get_linux_ifname(self, netns: str, intf: str) -> str:
-    out = external_commands.run_command(
-      cmd=f'{netns} ip -j link show dev {intf}',
-      ignore_errors=True,return_stdout=True,check_result=True)
-    if not isinstance(out,str):
-      return intf
-    data = json.loads(out)
-    return data[0].get('ifname',intf) if data else intf
-
   def set_tc(self, node: Box, topology: Box, intf: Box, error: bool = True) -> None:
     c_name = self.get_node_name(node.name,topology)
     c_intf = intf.get('clab.name',intf.ifname).replace('/','-')
     netns = 'sudo ip netns exec ' + c_name
     if len(c_intf) > 15:             # tc truncates names longer than 15 characters
-      c_intf = self.get_linux_ifname(netns,c_intf)
+      c_intf = utils.get_linux_ifname(netns,c_intf)
     status = tc_netem_set(intf=c_intf,tc_data=intf.tc,pfx=netns)
     if status is False:
       log.error(
