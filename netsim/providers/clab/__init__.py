@@ -207,6 +207,8 @@ class Containerlab(_Provider):
     c_name = self.get_node_name(node.name,topology)
     c_intf = intf.get('clab.name',intf.ifname).replace('/','-')
     netns = 'sudo ip netns exec ' + c_name
+    if len(c_intf) > 15:             # tc truncates names longer than 15 characters
+      c_intf = utils.get_linux_ifname(netns,c_intf)
     status = tc_netem_set(intf=c_intf,tc_data=intf.tc,pfx=netns)
     if status is False:
       log.error(
