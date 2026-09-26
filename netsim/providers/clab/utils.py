@@ -1,8 +1,8 @@
 #
 # Containerlab provider module
 #
-import typing
 import json
+import typing
 
 from box import Box
 
@@ -41,6 +41,8 @@ def get_linux_ifname(netns: str, intf: str) -> str:
   out = external_commands.run_command(
     cmd=f'{netns} ip -j link show dev {intf}',
     ignore_errors=True,return_stdout=True,check_result=True)
+  if not isinstance(out,str):
+    return intf
   try:
     data = json.loads(out)
     return data[0].get('ifname',intf) if data else intf
