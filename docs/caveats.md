@@ -163,9 +163,10 @@ and validation. Configuration is deployed with a bash script executed within the
 ## Cisco ASAv Caveats
 
 * Some ASAv versions use older SSH protocols. For more details, see the [SSH Access to Cisco IOS/IOS-XE](cisco-ios-ssh).
-* ASAv does not have a standard implementation of OSPFv2 or IS-IS point-to-point circuits. netlab reports an error if you try to use them with ASAv nodes. You could add `isis.network_type: false` to point-to-point links connecting ASA to other devices.
+* ASAv does not have a standard implementation of OSPFv2 or IS-IS point-to-point circuits. netlab reports an error if you try to use IS-IS point-to-point with ASAv nodes. You could add `isis.network_type: false` to point-to-point links connecting ASA to other devices.
+* The ASAv IS-IS configuration templates were not tested, as all IS-IS integration tests include at least one point-to-point circuit
+* ASAv implements OSPFv2 point-to-point links with the `point-to-point non-broadcast` network type. *netlab* configures static OSPF neighbors on these links.
 * We did not implement OSPFv3 for ASAv
-* The ASAv OSPF and IS-IS configuration templates were not tested, as all OSPFv2/IS-IS integration tests include at least one point-to-point circuit
 
 (caveats-cat8000v)=
 ## Cisco Catalyst 8000v

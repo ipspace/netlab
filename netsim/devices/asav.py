@@ -25,7 +25,7 @@ class ASA(_Quirks):
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
     mods = node.get('module', [])
-    for igp in ('isis','ospf'):
+    for igp in ('isis'):
       if igp in mods:
         check_isis_p2p_interfaces(node, topology,igp=igp)
 

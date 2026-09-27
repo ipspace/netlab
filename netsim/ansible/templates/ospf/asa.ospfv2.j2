@@ -27,10 +27,19 @@ router ospf {{ ospf_pid }}
 {%   endif %}
   network {{ l.ipv4|ansible.utils.ipaddr('network') }} {{ l.ipv4|ansible.utils.ipaddr('netmask') }} area {{ area_to_int(l.ospf.area) }}
 {% endfor %}
+{# ASA p2p is non-broadcast only - neighbors must be configured statically #}
+{% for l in intf_data if 'ospf' in l and 'ipv4' in l and l.ospf.network_type|default("") == "point-to-point" %}
+{%   for n in l.neighbors|default([]) if n.ipv4 is defined and n.ipv4 is string %}
+  neighbor {{ n.ipv4|ansible.utils.ipaddr('address') }}
+{%   endfor %}
+{% endfor %}
 !
 {% for l in intf_data if 'ospf' in l and 'ipv4' in l %}
 interface {{ l.ifname }}
 ! {{ l.name|default("") }} - OSPF interface parameters
+{%   if l.ospf.network_type|default("") == "point-to-point" %}
+  ospf network point-to-point non-broadcast
+{%   endif %}
 {%   if l.ospf.cost is defined %}
   ospf cost {{ l.ospf.cost }}
 {%   endif %}
