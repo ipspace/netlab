@@ -101,12 +101,12 @@ def create_clab_batches(topology: Box) -> None:
                      and not n_data.get('unmanaged',False) ]
 
   while True:
-    prev_batch = node_list[:batch_size]
-    node_list = node_list[batch_size:]
-    if not node_list:
+    prev_batch = node_list[:batch_size]           # Take the first N clab nodes
+    node_list = node_list[batch_size:]            # ... and reduce the rest of the list
+    if not node_list:                             # ... anything left to do?
       break
-    for n in node_list[:batch_size]:
-      ndata = topology.nodes[n]
+    for n in node_list[:batch_size]:              # Iterate through the future batch
+      ndata = topology.nodes[n]                   # ... and add current batch node names to start_after attribute
       append_to_list(ndata,'clab.start_after',prev_batch,flatten=True)
 
 
@@ -118,23 +118,27 @@ def create_clab_stages(topology: Box) -> None:
   wf_method_cache: dict = {}
   for ndata in topology.nodes.values():
     if devices.get_provider(ndata,defaults) != 'clab':
-      continue
+      continue                                    # Not a containerlab node? Move on
     wf_list = ndata.get('clab.start_after',[])
-    if not wf_list:
+    if not wf_list:                               # No start_after attribute? Move on
       continue
+
+    # Extract nodes already used in wait-for settings (so we don't add them twice)
     p_waitfor = [ wf.node for wf in ndata.clab.get('stages.create.wait-for',[]) ]
     for wf_node in wf_list:
-      if wf_node in p_waitfor:
+      if wf_node in p_waitfor:                    # Already waiting for the node?
         continue
-      wf_ndata = topology.nodes[wf_node]
+      if wf_node not in topology.nodes:           # Is the node ID valid? Might have been unmanaged node...
+        continue
+      wf_ndata = topology.nodes[wf_node]          # Get waited-for node data
       if devices.get_provider(wf_ndata,defaults) != 'clab':
         log.error(
           f'Container {ndata.name} cannot wait for a non-container node {wf_node}',
           category=log.IncorrectValue,
           module='clab')
-      if wf_node in wf_method_cache:
+      if wf_node in wf_method_cache:              # Premature optimization: cache wait-for methods
         wf_method = wf_method_cache[wf_node]
-      else:
+      else:                                       # Figure out whether we can wait for healthcheck or post-deploy
         features = devices.get_device_features(wf_ndata,defaults)
         wf_method = 'healthy' if features.get('initial.healthcheck') else 'configure'
         wf_method_cache[wf_node] = wf_method

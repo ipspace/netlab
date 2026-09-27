@@ -275,6 +275,8 @@ Supported *vrnetlab*-based platforms undergo an additional "*is the device ready
 
 The **netlab_check_retries** parameter is set higher in system defaults for virtual machines that are slow to boot (for example, **vjunos-router**), but if you're working on a slow system, you might have to increase it even further. Set the **netlab_check_retries** node variable to increase the number of retries for an individual node or set the **defaults.devices._device_.clab.group_vars.netlab_check_retries** variable to increase the number of retries for a specific device (see also [](topo-defaults) and [](defaults-user-file))
 
+You might also have trouble starting very large topologies because CPU usage spikes while the virtual machines boot. You could either increase the **netlab_check_retries** parameter significantly or [start containers in batches](clab-batches).
+
 ## Advanced Topics
 
 ### Podman Support
@@ -432,6 +434,7 @@ Do not change the containerlab lab prefix if you're using the **multilab** plugi
 server.
 ```
 
+(clab-batches)=
 ### Starting Containers in Batches
 
 *containerlab* starts all containers in parallel. The resulting CPU overload might cause boot failures in large topologies. As a workaround, you can start containers in batches configured with the **defaults.providers.clab.batch_size** [topology default](topo-defaults) (an integer between 1 and 50). The batch size can also be specified in the `NETLAB_PROVIDERS_CLAB_BATCH__SIZE` environment variable.
