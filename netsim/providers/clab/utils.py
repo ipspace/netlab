@@ -8,7 +8,7 @@ from box import Box
 
 from ...augment import devices
 from ...cli import external_commands
-from ...data import append_to_list
+from ...data import append_to_list, types
 from ...utils import log
 
 
@@ -81,3 +81,60 @@ def validate_docker_image(node: Box,topology: Box,image_cache: dict) -> None:
       category=log.IncorrectValue,
       module='clab',
       more_hints=hints)
+
+def create_clab_batches(topology: Box) -> None:
+  """
+  Create batches of containers to deal with very large topologies. The batches
+  are implemented with the containerlab stages.wait_for attribute which is
+  derived from the start_after list
+  """
+  clab_defaults = topology.defaults.providers.clab
+  if not clab_defaults.get('batch_size',None):
+    return
+
+  types.must_be_int(clab_defaults,'batch_size','defaults.providers.clab',module='clab',min_value=1,max_value=50)
+  log.exit_on_error()
+
+  batch_size = clab_defaults.batch_size
+  node_list = [ n_name for (n_name,n_data) in topology.nodes.items()
+                  if devices.get_provider(n_data,topology.defaults) == 'clab'
+                     and not n_data.get('unmanaged',False) ]
+
+  while True:
+    prev_batch = node_list[:batch_size]
+    node_list = node_list[batch_size:]
+    if not node_list:
+      break
+    for n in node_list:
+      ndata = topology.nodes[n]
+      append_to_list(ndata,'clab.start_after',prev_batch,flatten=True)
+
+
+def create_clab_stages(topology: Box) -> None:
+  """
+  Create containerlab stages dictionary from clab.start_after attribute
+  """
+  defaults = topology.defaults
+  wf_method_cache: dict = {}
+  for ndata in topology.nodes.values():
+    if devices.get_provider(ndata,defaults) != 'clab':
+      continue
+    wf_list = ndata.get('clab.start_after',[])
+    if not wf_list:
+      continue
+    p_waitfor = [ wf.node for wf in ndata.clab.get('stages.create.wait-for',[]) ]
+    for wf_node in wf_list:
+      if wf_node in p_waitfor:
+        continue
+      wf_ndata = topology.nodes[wf_node]
+      if devices.get_provider(wf_ndata,defaults) != 'clab':
+        log.error(
+          f'Container {ndata.name} cannot wait for a non-container node {wf_node}',
+          category=log.IncorrectValue,
+          module='clab')
+      if wf_node in wf_method_cache:
+        wf_method = wf_method_cache[wf_node]
+      else:
+        features = devices.get_device_features(wf_ndata,defaults)
+        wf_method = 'healthy' if features.get('initial.healthcheck') else 'configure'
+      append_to_list(ndata.clab.stages.create,'wait-for',{ 'node': wf_node, 'stage': wf_method })

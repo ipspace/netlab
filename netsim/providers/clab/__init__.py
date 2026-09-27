@@ -49,6 +49,10 @@ class Containerlab(_Provider):
     binds.add_templates_to_binds(node)
     configs.add_startup_config(node)
 
+  def post_transform(self, topology: Box) -> None:
+    utils.create_clab_batches(topology)
+    utils.create_clab_stages(topology)
+
   def post_configuration_create(self, topology: Box) -> None:
     if labops.use_ovs_bridge(topology):
       labops.check_ovs_installation()
