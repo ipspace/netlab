@@ -3,6 +3,7 @@
 #
 import argparse
 import json
+import typing
 
 from box import Box
 
@@ -49,9 +50,10 @@ class Containerlab(_Provider):
     binds.add_templates_to_binds(node)
     configs.add_startup_config(node)
 
-  def post_transform(self, topology: Box) -> None:
+  def create(self, topology: Box, fname: typing.Optional[str]) -> None:
     utils.create_clab_batches(topology)
     utils.create_clab_stages(topology)
+    super().create(topology,fname)
 
   def post_configuration_create(self, topology: Box) -> None:
     if labops.use_ovs_bridge(topology):

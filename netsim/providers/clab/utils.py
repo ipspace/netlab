@@ -105,7 +105,7 @@ def create_clab_batches(topology: Box) -> None:
     node_list = node_list[batch_size:]
     if not node_list:
       break
-    for n in node_list:
+    for n in node_list[:batch_size]:
       ndata = topology.nodes[n]
       append_to_list(ndata,'clab.start_after',prev_batch,flatten=True)
 
@@ -137,4 +137,5 @@ def create_clab_stages(topology: Box) -> None:
       else:
         features = devices.get_device_features(wf_ndata,defaults)
         wf_method = 'healthy' if features.get('initial.healthcheck') else 'configure'
+        wf_method_cache[wf_node] = wf_method
       append_to_list(ndata.clab.stages.create,'wait-for',{ 'node': wf_node, 'stage': wf_method })

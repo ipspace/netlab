@@ -471,6 +471,10 @@ Implementation details:
 * The **clab.start_after** list is transformed into the **clab.stages.create.wait-for** list to delay container creation until other containers have started
 * The *wait-for stage* parameter used in the **wait-for** list is `healthy` for containers with defined healthchecks (mostly virtual machines running in containers) and `configure` (the post-deploy scripts are done) for other containers.
 
+```{warning}
+* **‌start_after** and **‌stages** are advanced parameters that _netlab_ does not check for dependency cycles. *‌containerlab* detects them, though, and will refuse to start the lab if one is detected.
+```
+
 ```{eval-rst}
 .. toctree::
    :caption: Building and Installing Container Images
