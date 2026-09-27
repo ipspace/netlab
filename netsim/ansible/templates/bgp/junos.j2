@@ -12,7 +12,6 @@ routing-options {
 }
 
 {% include "junos.policy.j2" with context %}
-
 protocols {
   delete: bgp;
 }
@@ -29,20 +28,15 @@ protocols {
       cluster {{ bgp.rr_cluster_id|default(bgp.router_id) }};
 {% endif %}
 {%   for n in bgp.neighbors if n[af] is defined and n.type == 'ibgp' %}
-      neighbor {{ n[af] }} {
+{%     set peer = n.ipv6 if af == 'ipv4' and n.ipv4_rfc8950 else n[af] %}
+      neighbor {{ peer }} {
 {#     apply per-neighbor policies, if defined #}
 {{     bgpcfg.bgp_neighbor_policy(n) }}
 {%     if n._source_intf[af] is defined %}
         local-address {{ n._source_intf[af]|ansible.utils.ipaddr('address') }};
 {%     endif %}
         description {{ n.name }};
-{%     if n.activate[af]|default(false) %}
-        family {{ JUNOS_AF[af] }} {
-          unicast;
-        }
-{%     else %}
-        shutdown;
-{%     endif %}
+{{     bgpcfg.activate_af(n,af)|indent(8,True) }}
       }
 {%   endfor %}
     }
@@ -55,7 +49,8 @@ protocols {
 {# treat localas_ibgp as ebgp session --> no usage of local address #}
 {% for n in bgp.neighbors if n.type in ['ebgp','confed_ebgp','localas_ibgp'] %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
-      neighbor {{ n[af] }} {
+{%     set peer = n.ipv6 if af == 'ipv4' and n.ipv4_rfc8950 else n[af] %}
+      neighbor {{ peer }} {
 {#     apply per-neighbor policies, if defined #}
 {{     bgpcfg.bgp_neighbor_policy(n) }}
         peer-as {{ n.as }};
@@ -66,13 +61,7 @@ protocols {
 {%     if n.rr_client is defined %}
         cluster {{ bgp.rr_cluster_id|default(bgp.router_id) }};
 {%     endif %}
-{%     if n.activate[af]|default(false) %}
-        family {{ JUNOS_AF[af] }} {
-          unicast;
-        }
-{%     else %}
-        shutdown;
-{%     endif %}
+{{     bgpcfg.activate_af(n,af)|indent(8,True) }}
       }
 {%   endfor %}
 {% endfor %}
