@@ -504,12 +504,16 @@ def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
       nexthops = [ nh_entry for nh_entry in sr_data.nexthop.nhlist if af in nh_entry ]
       if not nexthops:
         continue
+      comment = sr_data.get('comment',None)
       for (nh_idx,nh_entry) in enumerate(nexthops[:sr_features.get('max_nexthop',256)]):
         sr_entry = data.get_box({ af: sr_data[af], 'nexthop': nh_entry })
         sr_entry.nexthop.idx = nh_idx
         if 'vrf' in sr_data:
           sr_entry['vrf'] = sr_data.vrf
 
+        if comment:
+          sr_entry.comment = comment
+          comment = None
         node.routing[o_name].append(sr_entry)
   else:
     sr_data.nexthop.idx = 0
