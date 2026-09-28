@@ -275,6 +275,8 @@ Supported *vrnetlab*-based platforms undergo an additional "*is the device ready
 
 The **netlab_check_retries** parameter is set higher in system defaults for virtual machines that are slow to boot (for example, **vjunos-router**), but if you're working on a slow system, you might have to increase it even further. Set the **netlab_check_retries** node variable to increase the number of retries for an individual node or set the **defaults.devices._device_.clab.group_vars.netlab_check_retries** variable to increase the number of retries for a specific device (see also [](topo-defaults) and [](defaults-user-file))
 
+You might also have trouble starting very large topologies because CPU usage spikes while the virtual machines boot. You could either increase the **netlab_check_retries** parameter significantly or [start containers in batches](clab-batches).
+
 ## Advanced Topics
 
 ### Podman Support
@@ -394,6 +396,7 @@ You can also change these *containerlab* parameters:
 * **clab.ports** to [map container ports to host ports](https://containerlab.dev/manual/nodes/#ports)
 * **clab.cmd** to [change the command of a container image](https://containerlab.dev/manual/nodes/#cmd).
 * **clab.startup-delay** to make certain node(s) [boot/start later than others](https://containerlab.dev/manual/nodes/#startup-delay) (amount in seconds)
+* **clab.stages** to execute additional commands during container deployment or to make containers wait on other containers.
 * **clab.restart-policy** to set the [container restart policy](https://containerlab.dev/manual/nodes/#restart-policy)
 * **clab.network-mode** to set the [network-mode](https://containerlab.dev/manual/nodes/#network-mode)
 
@@ -429,6 +432,50 @@ netlab up topo.yml -s defaults.providers.clab.lab_prefix=""
 ```{warning}
 Do not change the containerlab lab prefix if you're using the **multilab** plugin to run multiple labs on the same
 server.
+```
+
+(clab-batches)=
+### Starting Containers in Batches
+
+*containerlab* starts all containers in parallel. The resulting CPU overload might cause boot failures in large topologies. As a workaround, you can start containers in batches configured with the **defaults.providers.clab.batch_size** [topology default](topo-defaults) (an integer between 1 and 50). The batch size can also be specified in the `NETLAB_PROVIDERS_CLAB_BATCH__SIZE` environment variable.
+
+Example:
+
+```
+provider: clab
+defaults.device: frr
+defaults.providers.clab.batch_size: 2
+
+nodes: [ a,b,c,x,z ]
+module: [ ospf ]
+
+links: [ a-x, a-z, b-x, b-z, c-x, c-z ]
+```
+
+```{tip}
+Please note that the `batch_size` is set artificially low to ensure this small lab topology generates three batches. Realistic `batch_size` depends on your hardware resources (CPU, memory) and VM type.
+```
+
+The containers are batched based on their order in **‌nodes** dictionary. You might want to adjust the node order to group containers with long start times (for example, Cisco Nexus OS or Junos virtual machines running in containers) into as few batches as possible. Alternatively, you could use the **clab.start_after** node parameter to start large nodes in sequence, for example:
+
+```
+provider: clab
+nodes:
+  sw1:
+    device: nxos
+  sw2:
+    device: nxos
+    clab.start_after: [ sw1 ]
+```
+
+Implementation details:
+
+* The containerlab batch size is used behind the scenes to create the **clab.start_after** lists for all nodes started after the first batch.
+* The **clab.start_after** list is transformed into the **clab.stages.create.wait-for** list to delay container creation until other containers have started
+* The *wait-for stage* parameter used in the **wait-for** list is `healthy` for containers with defined healthchecks (mostly virtual machines running in containers) and `configure` (the post-deploy scripts are done) for other containers.
+
+```{warning}
+* **‌start_after** and **‌stages** are advanced parameters that _netlab_ does not check for dependency cycles. *‌containerlab* detects them, though, and will refuse to start the lab if one is detected.
 ```
 
 ```{eval-rst}
