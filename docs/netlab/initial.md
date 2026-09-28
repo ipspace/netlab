@@ -74,6 +74,7 @@ All other arguments are passed directly to ansible-playbook
 * When executed with the `--instance` option, **‌netlab initial -o** switches to the lab directory to execute the Ansible playbook, but stores the results within the directory from which it was executed.
 ```
 
+(netlab-initial-ready)=
 ## Wait for Devices to Become Ready
 
 **netlab initial** starts with a device readiness check to ensure the lab devices are ready for configuration deployment. If you want to execute just this part of the process, use the `--ready` option.
@@ -81,7 +82,7 @@ All other arguments are passed directly to ansible-playbook
 There are several reasons a device might not be ready when the virtualization providers finish their job:
 
 * A virtualization provider might prematurely report that the devices are ready. For example, *containerlab*  does not wait for VMs running in containers to complete their boot process (see [](clab-vrnetlab) for more details).[^vssh] _netlab_ checks the reachability of SSH servers for all containers that are configured via SSH.
-* Some devices are not ready even after their SSH servers start accepting incoming sessions. For example, Cisco Nexus OS or Juniper vPTX requires around a minute to detect data-plane interfaces. In such cases, _netlab_ uses a device-specific Ansible task list to verify that the devices are ready for configuration.
+* Some devices are not ready even after their SSH servers start accepting incoming sessions. For example, Cisco Nexus OS or Juniper vPTX can take about a minute to detect data-plane interfaces. In such cases, _netlab_ uses a device-specific Ansible task list to verify that the devices are ready for configuration.
 
 [^vssh]: Vagrant waits for all devices to become reachable via SSH before reporting them ready.
 
@@ -102,6 +103,8 @@ nodes:
 [^JNS]: Junos devices using networked storage might be a prime example
 
 [^SD]: Use **netlab defaults devices._device_** command to find out where exactly the waiting parameters are set in the device definition.
+
+Alternatively, you could set the minimum wait time for container SSH servers (VM SSH servers are checked by Vagrant) with the **defaults.providers.clab.ssh_timeout** [system default](topo-defaults).
 
 ## Initial Device Configurations
 

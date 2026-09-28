@@ -18,7 +18,10 @@ from . import utils
 """
 Prepare for SSH readiness check -- copy timeouts and retry counters, check for "sshpass", set up the SSH command
 """
+SSH_PROVIDER_TIMEOUT_INFO: dict = {}
+
 def setup_ssh_ready_parameters(nodeset: list, topology: Box) -> None:
+  global SSH_PROVIDER_TIMEOUT_INFO
 
   # Get a group variable (if it's an int) or a default
   #
@@ -59,6 +62,14 @@ def setup_ssh_ready_parameters(nodeset: list, topology: Box) -> None:
     r_data.retries = get_int_var_value(n_data,'netlab_check_retries',20)  # Get sane retries
     r_data.delay   = get_int_var_value(n_data,'netlab_check_delay',5)     # ... and delay values
     r_data.wait    = r_data.retries * r_data.delay                        # ... and calculate total wait time
+    n_provider = a_devices.get_provider(n_data,defaults)
+    p_wait = defaults.providers[n_provider].get('ssh_timeout',r_data.wait)
+    if p_wait > r_data.wait:
+      r_data.wait = p_wait
+      if n_provider not in SSH_PROVIDER_TIMEOUT_INFO:
+        log.info(f'Minimum SSH timeout extended to {p_wait} seconds',module=n_provider)
+        SSH_PROVIDER_TIMEOUT_INFO[n_provider] = True
+
     if log.debug_active('ssh'):
       print(f'SSH wait times for {n_data.name}: delay={r_data.delay}, retries={r_data.retries}')
     r_data.ssh_exec = build_ssh_command(n_data)             # Get the SSH command to execute
