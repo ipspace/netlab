@@ -1,0 +1,42 @@
+#
+# netlab-ui: web-based topology editor and lab manager for netlab
+# https://github.com/Muddyblack/netlab-ui
+#
+# The UI container runs next to the lab and manages the lab directory it was
+# started from. It needs the same access to Docker that containerlab has
+# (privileged, host network and PID namespace), the lab directory mounted at
+# the same path (containerlab bind-mounts node files by path through the host
+# Docker daemon), and ~/.netlab (the lab instance registry) so 'netlab status'
+# on the host and the UI see the same labs.
+#
+---
+runtime: docker
+image: ghcr.io/muddyblack/netlab-ui:latest-full
+host: 127.0.0.1         # Listen on loopback; set to 0.0.0.0 (with 'auth') to reach it remotely
+port: 8000              # Plus the multilab ID when using the multilab plugin
+auth: ''                # 'user:password' enables HTTP Basic authentication
+docker:
+  # The UI can also start and stop the lab it runs next to. When 'netlab up'
+  # or 'netlab down' is executed from within the UI (NETLAB_GUI_IN_CONTAINER is
+  # set in its container), the tool must not start a second copy of itself or
+  # kill the process that is running the command.
+  up:
+    docker inspect '{name}_netlab_ui' >/dev/null 2>&1 ||
+    docker run -d
+      --name '{name}_netlab_ui'
+      --restart unless-stopped
+      --privileged --network host --pid host
+      -v /var/run/docker.sock:/var/run/docker.sock
+      -v /var/run/netns:/var/run/netns
+      -v "$(pwd):$(pwd)" -e NETLAB_WORKSPACE="$(pwd)"
+      -v "$HOME/.netlab:/root/.netlab"
+      -e NETLAB_GUI_CONTAINER='{name}_netlab_ui'
+      -e UVICORN_HOST='{tools.netlab_ui.host or defaults.tools.netlab_ui.host}'
+      -e UVICORN_PORT={(tools.netlab_ui.port or defaults.tools.netlab_ui.port) + (defaults.multilab.id or 0)}
+      -e NETLAB_UI_AUTH='{tools.netlab_ui.auth or defaults.tools.netlab_ui.auth}'
+      '{tools.netlab_ui.image or defaults.tools.netlab_ui.image}'
+  message: >-
+    Open http://{sys.ipurl}:{(tools.netlab_ui.port or defaults.tools.netlab_ui.port) + (defaults.multilab.id or 0)}
+    in your browser (on a remote server, use an SSH tunnel unless netlab_ui.host is set)
+  down:
+    test -n "$NETLAB_GUI_IN_CONTAINER" || docker rm -f '{name}_netlab_ui' >/dev/null

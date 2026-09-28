@@ -52,6 +52,7 @@ _netlab_ includes definitions for the following tools:
    extool/edgeshark.md
    extool/nso.md
    extool/nuts.md
+   extool/netlab-ui.md
 ```
 
 It's relatively easy to add your own tools to the **defaults.tools** dictionary. Read [](dev/extools.md) for more details.
