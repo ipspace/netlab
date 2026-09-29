@@ -233,6 +233,21 @@ def check_bgpvpn_rt(node: Box) -> None:
         quirk='l3vpn_rt',
         category=log.IncorrectValue)
 
+def check_srv6_quirks(node: Box) -> None:
+  """
+  SR Linux cannot run L3SVC with unnumbered CE neighbors (it propagates SRv6 TLVs to them)
+  """
+  if not node.get('srv6.bgp',False):
+    return
+  for ngb in node.get('bgp.neighbors',[]):
+    if 'srv6' in ngb or 'local_if' not in ngb:
+      continue
+    report_quirk(
+      text=f"SR Linux cannot have interface EBGP neighbors when running layer-3 SRv6 services",
+      node=node,
+      quirk='srv6_l3svc',
+      category=log.IncorrectType)
+
 class SRLINUX(_Quirks):
 
   @classmethod
@@ -286,6 +301,9 @@ class SRLINUX(_Quirks):
 
     if 'ospf' in mods:
       check_nssa_default_cost(node)
+
+    if 'srv6' in mods:
+      check_srv6_quirks(node)
 
   def check_config_sw(self, node: Box, topology: Box) -> None:
     need_ansible_collection(node,'nokia.srlinux',version='0.5.0')

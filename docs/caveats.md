@@ -648,7 +648,7 @@ Other caveats you might encounter:
 * Only supported on top of *Containerlab*
 * Supports SR Linux release 24.7.1 or later (due to YANG model changes)
 * Requires `nokia.srlinux` Ansible Galaxy collection (minimum version 0.5.0). Use **ansible-galaxy collection install nokia.srlinux** command to install it.
-* MPLS, LDP, and SR-MPLS are only supported on 7250 IXR and 7730 SXR routers. Set the `clab.type` node attribute to one of the [valid node types](https://containerlab.dev/manual/kinds/srl/#types) to use these features. You will also need a license to run these containers.
+* MPLS, LDP, SR-MPLS, and SRv6 are only supported on 7250 IXR and 7730 SXR routers. Set the `clab.type` node attribute to one of the [valid node types](https://containerlab.dev/manual/kinds/srl/#types) to use these features. You will also need a license to run these containers.
 * Nokia SR Linux needs an EVPN control plane to enable VXLAN functionality. VXLAN ingress replication lists are built from EVPN Route Type 3 updates.
 * Inter-VRF route leaking is supported only in combination with BGP EVPN
 * SR Linux does not support configurable propagation of extended BGP communities.
@@ -657,6 +657,7 @@ Other caveats you might encounter:
 * SR Linux needs a static default route (with low route preference) to implement OSPF **default-originate always** functionality.
 * SR Linux does not set metrics on routes imported into OSPF. While you can specify the metric and metric type of the OSPF default route, those settings have no impact.
 * SR Linux does not support setting a default metric for NSSA areas
+* You cannot use non-SRv6 interface EBGP neighbors in the global routing table together with SRv6 layer-3 services. SR Linux does not strip SRv6 TLVs from outgoing updates sent to interface EBGP neighbors, resulting in incorrect routing tables on the receiving router. 
 
 (caveats-sros)=
 ## Nokia SR OS

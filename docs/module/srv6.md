@@ -27,6 +27,7 @@ The following table describes the per-platform support of SRv6 features:
   enabled: srv6.ebgp
 - title: Global BGP<br>over SRv6[^GB]
   enabled: srv6.bgp
+  caveats: srv6.caveats.bgp
 - title: L3VPN<br>over SRv6[^L3V]
   enabled: srv6.vpn
 ```
