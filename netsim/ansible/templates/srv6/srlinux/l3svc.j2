@@ -1,6 +1,8 @@
 {% import 'templates/bgp/srlinux.macro.j2' as bgpcfg with context %}
-{% for af in srv6.bgp|default({}) if srv6.bgp[af] %}
+{% for af in srv6.bgp if srv6.bgp[af] %}
 {%   if loop.first %}
+#
+# SRv6 layer-3 services
 #
 # Create DTx uSIDs in the default network instance to support layer-3 services
 #
@@ -14,8 +16,12 @@
           udt{{ af.replace('ipv','') }}:
             value: {{ '1' if af == 'ipv4' else '2' }}
 {% endfor %}
-
-{% for af in srv6.bgp|default({}) if srv6.bgp[af] %}
+{% if 'ipv4' in srv6.bgp %}
+- path: /network-instance[name=default]/ip-forwarding
+  value:
+    receive-ipv4-check: false
+{% endif %}
+{% for af in srv6.bgp if srv6.bgp[af] %}
 {%   if loop.first %}
 #
 # Enable SRv6 TLVs for global layer-3 services
@@ -33,7 +39,7 @@
           add-srv6-tlvs:
             locator-name: {{ inventory_hostname }}
 {% endfor %}
-{% for n in bgp.neighbors|default([]) if 'ipv4' in n.srv6.bgp|default([]) %}
+{% for n in bgp.neighbors|default([]) if 'ipv4' in n.srv6.bgp|default({}) %}
 {%   if loop.first %}
 #
 # Enable RFC 8950 IPv4 AF on SRv6-enabled IPv6 BGP sessions
@@ -50,7 +56,7 @@
           advertise-ipv6-next-hops: True
           receive-ipv6-next-hops: True
 {% endfor %}
-{% for af in ['ipv4','ipv6'] if af in srv6.bgp|default([]) %}
+{% for af in ['ipv4','ipv6'] if af in srv6.bgp %}
 {%   for n in bgp.neighbors|default([]) if n.srv6 is not defined and n[af]|default(False) is string %}
 {%     if loop.first %}
 #
@@ -74,4 +80,20 @@
 {%     endif %}
 {%   endfor %}
 {% endfor %}
-#### MISSING: remove SRv6 TLVs from interface EBGP sessions
+{% for n in bgp.neighbors|default([]) if n.srv6 is not defined and n.local_if is defined %}
+{%   if loop.first %}
+#
+# Remove SRv6 TLVs from interface EBGP neighbors
+#
+{%   endif -%}
+{{ bgpcfg.cfg_interface_peer_group('default',n) }}
+    afi-safi:
+    - afi-safi-name: ipv4-unicast
+      ipv4-unicast:
+        srv6:
+          strip-srv6-tlvs: true
+    - afi-safi-name: ipv6-unicast
+      ipv6-unicast:
+        srv6:
+          strip-srv6-tlvs: true
+{% endfor %}

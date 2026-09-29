@@ -67,7 +67,6 @@ def build_bgp_policy_chains(node: Box) -> None:
   """
   Build neighbor- and peer-group import/export policy chains
   """
-#  has_srv6_l3svc = bool([ af for af,v in node.get('srv6.bgp',{}).items() if v ])
   for bgp_data,_,vrf in _routing.rp_data(node,'bgp'):
     vrf = 'default' if vrf is None else vrf
     bgp_data._import_chain.ebgp = ['accept_all']
@@ -89,10 +88,6 @@ def build_bgp_policy_chains(node: Box) -> None:
       pc['_export_chain'] = [nhs_p_name]
       append_to_list(node.bgp,'_policy',nhs_p_name)
 
-#    if vrf == 'default' and has_srv6_l3svc and 'srv6.bgp' not in ngb:
-#      pc['_export_chain'] += ['clean_srv6_tlv']
-#      append_to_list(node.bgp,'_policy','clean_srv6_tlv')
-#
     pc['_export_chain'] += [vrf+'_bgp_export']
 
     if 'policy.out' in ngb:
@@ -238,6 +233,21 @@ def check_bgpvpn_rt(node: Box) -> None:
         quirk='l3vpn_rt',
         category=log.IncorrectValue)
 
+def check_srv6_quirks(node: Box) -> None:
+  """
+  SR Linux cannot run L3SVC with unnumbered CE neighbors (it propagates SRv6 TLVs to them)
+  """
+  if not node.get('srv6.bgp',False):
+    return
+  for ngb in node.get('bgp.neighbors',[]):
+    if 'srv6' in ngb or 'local_if' not in ngb:
+      continue
+    report_quirk(
+      text=f"SR Linux cannot have interface EBGP neighbors when running layer-3 SRv6 services",
+      node=node,
+      quirk='srv6_l3svc',
+      category=log.IncorrectType)
+
 class SRLINUX(_Quirks):
 
   @classmethod
@@ -291,6 +301,9 @@ class SRLINUX(_Quirks):
 
     if 'ospf' in mods:
       check_nssa_default_cost(node)
+
+    if 'srv6' in mods:
+      check_srv6_quirks(node)
 
   def check_config_sw(self, node: Box, topology: Box) -> None:
     need_ansible_collection(node,'nokia.srlinux',version='0.5.0')
