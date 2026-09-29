@@ -96,8 +96,9 @@ class Containerlab(_Provider):
     timeout = topology.defaults.providers.clab.get('healthy_timeout',0)
     if not timeout:
       return
-    log.info(f'Waiting up to {timeout} seconds for containers to become healthy',module='clab')
-    labops.health_check(nodeset,timeout,topology)
+    log.info(f'Waiting up to {timeout} seconds for {len(nodeset)} container(s) to become healthy',module='clab')
+    containers = [ self.get_node_name(node,topology) for node in nodeset ]
+    labops.health_check(containers,timeout,topology)
 
   def get_lab_status(self,collect_status: dict) -> Box:
     try:

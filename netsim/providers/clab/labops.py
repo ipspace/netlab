@@ -189,7 +189,7 @@ def health_ready_setup(topology: Box) -> None:
 
     append_to_list(dev_data.clab.group_vars,'netlab_ready','health')
 
-def health_check(nodeset: list, timeout: int, topology: Box) -> None:
+def health_check(containers: list, timeout: int, topology: Box) -> None:
   """
   Check container health. Keep executing "get_unhealthy_containers" until all devices are healthy
   or the timeout expires.
@@ -198,7 +198,7 @@ def health_check(nodeset: list, timeout: int, topology: Box) -> None:
   end_time = start_time + timeout
   waitset = []
   while time.time() < end_time:
-    waitset = get_unhealthy_containers(topology)
+    waitset = get_unhealthy_containers(containers,topology)
     if not waitset:
       elapsed = round(time.time() - start_time,1)
       log.info(f"All containers are healthy after {elapsed} seconds, continuing the lab configuration process")
@@ -206,7 +206,7 @@ def health_check(nodeset: list, timeout: int, topology: Box) -> None:
     w_time = int(time.time() - start_time)
     if not log.QUIET:
       print(
-        f'Waiting for {len(waitset)} devices ({w_time} seconds)   ',end='\r',flush=True)
+        f'Waiting for {len(waitset)} container(s) ({w_time} seconds)   ',end='\r',flush=True)
     time.sleep(1)
 
   log.error(
@@ -217,7 +217,7 @@ def health_check(nodeset: list, timeout: int, topology: Box) -> None:
     more_hints=['Increase or remove the defaults.providers.clab.health_timeout parameter'],
     doc_url='labs/clab/#vrnetlab-wait')
 
-def get_unhealthy_containers(topology: Box) -> list:
+def get_unhealthy_containers(containers: list,topology: Box) -> list:
   topo_name = 'clab.yml' if topology.provider == 'clab' else 'clab-augment.yml'
   cmd = f'containerlab inspect --topo {topo_name} --format json'
   out = external_commands.run_command(
@@ -233,6 +233,8 @@ def get_unhealthy_containers(topology: Box) -> list:
   unhealthy = []
   for lab_data in data.values():
     for container in lab_data:
+      if container['name'] not in containers:
+        continue
       if container.get('status','').startswith('health: '):
         unhealthy.append(container['name'])
 
