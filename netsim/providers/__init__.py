@@ -64,6 +64,9 @@ class _Provider(Callback):
     else:
       return _Provider(provider,data)
 
+  def init(self,topology: Box) -> None:
+    pass
+
   def get_template_path(self) -> str:
     return 'templates/provider/' + self.provider
 
@@ -147,6 +150,9 @@ class _Provider(Callback):
   def post_configuration_create(self, topology: Box) -> None:
     pass
 
+  def health_check(self, nodeset: list, topology: Box) -> None:
+    pass
+
   def get_lab_status(self,collect_status: dict) -> Box:
     return get_empty_box()
   
@@ -192,15 +198,21 @@ class _Provider(Callback):
     topology.links = [
       link for link in topology.links if link.type not in links.VIRTUAL_INTERFACE_TYPES ]
 
-"""
-select_primary_provider: Find the top provider for the topology. For example, you can have
-clab nodes under libvirt provider, but not vice versa
-"""
+def init_provider_modules(p_set: set, topology: Box) -> None:
+  for provider in p_set:
+    p_module = get_provider_module(topology,provider)
+    p_module.call('init',topology)
+
 def select_primary_provider(topology: Box) -> None:
+  """
+  select_primary_provider: Find the top provider for the topology. For example, you can have
+  clab nodes under libvirt provider, but not vice versa
+  """
   p_default = topology.provider
 
   # Build a set of all providers used in the topology
   p_set = { ndata.provider if 'provider' in ndata else p_default for ndata in topology.nodes.values() }
+  init_provider_modules(p_set,topology)
   if len(p_set) == 1:                             # Single-provider topology
     p_used = list(p_set)[0]
     if p_default != p_used:                       # ... but not using the (default) primary provider

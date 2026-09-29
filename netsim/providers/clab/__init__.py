@@ -26,7 +26,12 @@ from . import binds, configs, labops, utils
 
 
 class Containerlab(_Provider):
-  
+
+  def init(self, topology: Box) -> None:
+    if not topology.defaults.providers.clab.get('healthy_timeout',False):
+      return
+    labops.health_ready_setup(topology)
+
   def augment_node_data(self, node: Box, topology: Box) -> None:
     if node.name in topology.defaults.providers.clab.reserved_names:
       log.error(
@@ -86,6 +91,13 @@ class Containerlab(_Provider):
         labops.destroy_ovs_bridge(brname)
       else:
         labops.destroy_linux_bridge(brname)
+
+  def health_check(self, nodeset: list, topology: Box) -> None:
+    timeout = topology.defaults.providers.clab.get('healthy_timeout',0)
+    if not timeout:
+      return
+    log.info(f'Waiting up to {timeout} seconds for containers to become healthy',module='clab')
+    labops.health_check(nodeset,timeout,topology)
 
   def get_lab_status(self,collect_status: dict) -> Box:
     try:
