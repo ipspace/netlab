@@ -275,7 +275,9 @@ Supported *vrnetlab*-based platforms undergo an additional "*is the device ready
 
 The **netlab_check_retries** parameter is set higher in system defaults for virtual machines that are slow to boot (for example, **vjunos-router**), but if you're working on a slow system, you might have to increase it even further. Set the **netlab_check_retries** node variable to increase the number of retries for an individual node or set the **defaults.devices._device_.clab.group_vars.netlab_check_retries** variable to increase the number of retries for a specific device (see also [](topo-defaults) and [](defaults-user-file))
 
-You might also have trouble starting very large topologies because CPU usage spikes while the virtual machines boot. You could either increase the **netlab_check_retries** parameter significantly or [start containers in batches](clab-batches).
+Alternatively, you could set the minimum wait time for container SSH servers (VM SSH servers are checked by Vagrant) with the **defaults.providers.clab.ssh_timeout** [system default](topo-defaults).
+
+Finally, if you have trouble starting very large topologies because of CPU usage spikes while containers or virtual machines boot, try [starting containers in batches](clab-batches).
 
 ## Advanced Topics
 
