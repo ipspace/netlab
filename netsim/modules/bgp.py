@@ -581,7 +581,12 @@ bgp_process_originate:
 * Append prefixes from 'bgp.originate' list to 'bgp.advertise' list
 * Convert 'bgp.originate' list to a list of IPv4-only prefixes for legacy devices
 """
-DISCARD_NH = data.get_box({'nexthop.discard': True})
+DISCARD_NH = {
+  'comment': 'Originated BGP networks',
+  'nexthop': {
+    'discard': True,
+  },
+}
 
 def bgp_process_originate(node: Box, topology: Box) -> None:
   global DISCARD_NH
@@ -613,16 +618,19 @@ def bgp_process_originate(node: Box, topology: Box) -> None:
       # The second-generation BGP origination append bgp.originate attribute to bgp.advertise
       # list and creates corresponding discard static routes
       #
+      sr_data = data.get_box(DISCARD_NH)                    # Create static route stub entry
+      if vname:                                             # If needed, set the VRF name in static route
+        sr_data.vrf = vname
       for pfx in bgp_data.originate:
+        for af in pfx:
+          data.append_to_list(sr_data,af,pfx[af])           # Flatten all prefixes into a single SR entry
         data.append_to_list(bgp_data,'advertise',pfx)       # Append originate prefix to advertise list
-        sr_data = DISCARD_NH + pfx                          # This will create a new object with discard NH
-        if vname:                                           # If needed, set the VRF name in static route
-          sr_data.vrf = vname
-        data.append_to_list(node,'routing.static',sr_data)  # Add discard static route to node data
-        if not has_routing:                                 # If needed, add routing module
-          data.append_to_list(node,'module','routing')
-          data.append_to_list(topology,'module','routing')
-          has_routing = True
+
+      data.append_to_list(node,'routing.static',sr_data)    # Add discard static route to node data
+      if not has_routing:                                   # If needed, add routing module
+        data.append_to_list(node,'module','routing')
+        data.append_to_list(topology,'module','routing')
+        has_routing = True
 
       bgp_data.pop('originate',None)                        # The bgp.originate attribute has been processed
 

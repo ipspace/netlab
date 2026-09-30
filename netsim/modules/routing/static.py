@@ -6,14 +6,13 @@ import typing
 
 from box import Box, BoxList
 
-from ...augment import addressing, devices
+from ...augment import devices
 from ...data import global_vars
 from ...utils import log
 from ...utils import routing as _rp_utils
 from .. import _routing, data
-from .normalize import (
-  check_routing_object,
-)
+from .normalize import check_routing_object
+from .utils import eval_prefixset
 
 """
 include_global_static_routes: Include global static routes into node static routes
@@ -71,9 +70,12 @@ Get a string identifier for a static route
 * Return 'null' if everything else fails :(
 """
 def get_static_route_id(sr_data: Box) -> str:
-  af_data = [ sr_data[af] for af in log.AF_LIST if af in sr_data ]
+
+  def list2str(l: list) -> str:
+    return ','.join(l)
+  af_data = [ list2str(sr_data[af]) for af in log.AF_LIST if af in sr_data ]
   if not af_data:
-    af_data = [ f'{kw}: {sr_data[kw]}' for kw in ['node','prefix','pool'] if kw in sr_data ]
+    af_data = [ f'{kw}: {list2str(sr_data[kw])}' for kw in ['node','prefix','pool'] if kw in sr_data ]
   if not af_data and 'nexthop' in sr_data:
     af_data = [ 'nexthop: '+str(sr_data.nexthop)]
   return ','.join(af_data) or 'null'
@@ -426,19 +428,56 @@ def check_VRF_static_route(sr_data: Box, node: Box, sr_features: Box) -> bool:
     
   return True
 
+def create_final_sr(pfx: str, af: str, max_nh: int, sr_data: Box) -> list:
+
+  def make_sr_entry() -> Box:
+    sr_entry = data.get_box({ af: pfx })
+    for kw in ('comment','vrf'):
+      if kw in sr_data:
+        sr_entry[kw] = sr_data[kw]
+    return sr_entry
+
+  def clean_nh_data(nh_data: Box) -> Box:
+    return data.get_box({ k:v for k,v in nh_data.items() if k not in log.AF_LIST or k == af })
+
+  sr_list: list = []
+  if 'nhlist' in sr_data.nexthop:
+    nexthops = [ nh_entry for nh_entry in sr_data.nexthop.nhlist if af in nh_entry ]
+    if not nexthops:
+      return sr_list
+    for (nh_idx,nh_entry) in enumerate(nexthops[:max_nh]):
+      sr_entry = make_sr_entry()
+      sr_entry.nexthop = clean_nh_data(nh_entry)
+      sr_entry.nexthop.idx = nh_idx
+      sr_list.append(sr_entry)
+      sr_data.pop('comment',None)
+  else:
+    sr_entry = make_sr_entry()
+    sr_entry.nexthop = clean_nh_data(sr_data.nexthop)
+
+    sr_entry.nexthop.idx = 0
+    sr_list = [ sr_entry ]
+
+  return sr_list
+
 def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
+
+  def augment_pfx_data(sr_data: Box, af_info: dict) -> None:
+    for af in af_info:
+      data.append_to_list(sr_data,af,af_info[af],flatten=True)
+
   sr_data = node.routing[o_name][idx]
   d_features = devices.get_device_features(node,topology.defaults)
   sr_features = d_features.get('routing.static')
   if not isinstance(sr_features,dict):
     sr_features = data.get_empty_box()
 
-  if 'pool' in sr_data:
-    sr_data = sr_data + extract_af_info(topology.addressing[sr_data.pool])
-  elif 'prefix' in sr_data:
-    sr_data = sr_data + extract_af_info(addressing.evaluate_named_prefix(topology,sr_data.prefix))
-  elif 'node' in sr_data:
-    sr_data = sr_data + extract_af_info(_routing.get_remote_cp_endpoint(topology.nodes[sr_data.node]))
+  for pool in sr_data.get('pool',[]):
+    augment_pfx_data(sr_data,extract_af_info(topology.addressing[pool]))
+  for n_name in sr_data.get('node',[]):
+    augment_pfx_data(sr_data,extract_af_info(_routing.get_remote_cp_endpoint(topology.nodes[n_name])))
+  for pfx in sr_data.get('prefix',[]):
+    augment_pfx_data(sr_data,eval_prefixset(pfx,f'nodes.routing.static.{o_name}[{idx}]',topology))
 
   if idx == 0:
     check_routing_object(get_static_route_id(sr_data),o_name,node,topology)
@@ -474,50 +513,36 @@ def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
   elif 'ipv4' in sr_data.nexthop or 'ipv6' in sr_data.nexthop:
     resolve_nexthop_intf(sr_data,node,topology)
 
+  comment = sr_data.get('comment',None)
   for af in ['ipv4','ipv6']:
     if af not in sr_data:
       continue
     
     if af not in sr_data.nexthop:
       if '_skip_missing' in sr_data:
-        sr_data.remove = True
+        continue
       elif 'discard' in sr_data.nexthop:
-        if 'discard' in sr_features:
-          continue
-        log.error(
-          f'Device {node.device} (node {node.name}) does not support discard static routes',
-          category=log.IncorrectAttr,
-          module='routing')        
+        if 'discard' not in sr_features:
+          log.error(
+            f'Device {node.device} (node {node.name}) does not support discard static routes',
+            category=log.IncorrectAttr,
+            module='routing')        
       else:
         log.error(
-          f'A static route for {sr_data[af]} on node {node.name} has no {af} next hop',
+          f'A static route for {",".join(sr_data[af])} on node {node.name} has no {af} next hop',
           more_data=str(sr_data),
           category=log.MissingValue,
           module='routing')
-      return
+        return
 
-  if 'nhlist' in sr_data.nexthop:
-    sr_data.remove = True
-    for af in log.AF_LIST:
-      if af not in sr_data:
-        continue
-      nexthops = [ nh_entry for nh_entry in sr_data.nexthop.nhlist if af in nh_entry ]
-      if not nexthops:
-        continue
-      comment = sr_data.get('comment',None)
-      for (nh_idx,nh_entry) in enumerate(nexthops[:sr_features.get('max_nexthop',256)]):
-        sr_entry = data.get_box({ af: sr_data[af], 'nexthop': nh_entry })
-        sr_entry.nexthop.idx = nh_idx
-        if 'vrf' in sr_data:
-          sr_entry['vrf'] = sr_data.vrf
+    if comment:
+      sr_data.comment = comment
 
-        if comment:
-          sr_entry.comment = comment
-          comment = None
-        node.routing[o_name].append(sr_entry)
-  else:
-    sr_data.nexthop.idx = 0
+    for af_pfx in sr_data[af]:
+      node.routing[o_name].extend(create_final_sr(af_pfx,af,sr_features.get('max_nexthop',256),sr_data))
+      sr_data.pop('comment',None)
 
+  sr_data.remove = True
   node.routing[o_name][idx] = sr_data
 
 def cleanup_static_routes(o_data: BoxList,o_type: str,node: Box,topology: Box) -> None:
