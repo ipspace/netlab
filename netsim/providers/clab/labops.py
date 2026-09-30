@@ -233,9 +233,12 @@ def get_unhealthy_containers(containers: list,topology: Box) -> list:
   unhealthy = []
   for lab_data in data.values():
     for container in lab_data:
-      if container['name'] not in containers:
+      cname = container['name']
+      if cname not in containers:
         continue
-      if container.get('status','').startswith('health: '):
+      if container.get('state','') != 'running':
+        log.fatal(f'Container {cname} has crashed, aborting...')
+      if container.get('status','') != 'healthy':
         unhealthy.append(container['name'])
 
   return unhealthy
