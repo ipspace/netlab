@@ -1,8 +1,10 @@
 #
 # Containerlab provider module
 #
+import json
 import os
 import pathlib
+import time
 
 from box import Box
 
@@ -157,3 +159,86 @@ def set_clab_runtime(topology: Box) -> None:
   os.environ['CLAB_RUNTIME'] = str(runtime)
   if runtime == 'podman' and os.geteuid() != 0:
     log.fatal('You must run netlab as the root user when using podman')
+
+def health_ready_setup(topology: Box) -> None:
+  """
+  Modify device definitions to prepare for the container healthcheck. For every
+  device that has the initial.healthcheck feature, add 'health' to clab
+  netlab_ready group variable.
+  """
+  dev_done: dict = {}
+  defaults = topology.defaults
+
+  for n_data in topology.nodes.values():
+    n_device = n_data.get('device',defaults.device)
+    if n_device in dev_done:
+      continue
+    n_provider = devices.get_provider(n_data,defaults)
+    if n_provider != 'clab':
+      continue
+
+    dev_done[n_device] = True
+    dev_data = defaults.devices.get(n_device,{})
+    dev_health = dev_data.get('clab.features.initial.healthcheck',False)
+    if not dev_health:
+      continue
+
+    if 'clab.group_vars.netlab_ready' not in dev_data:
+      if 'group_vars.netlab_ready' in dev_data:
+        dev_data.clab.group_vars.netlab_ready = dev_data.group_vars.netlab_ready
+
+    append_to_list(dev_data.clab.group_vars,'netlab_ready','health')
+
+def health_check(containers: list, timeout: int, topology: Box) -> None:
+  """
+  Check container health. Keep executing "get_unhealthy_containers" until all devices are healthy
+  or the timeout expires.
+  """
+  start_time = time.time()
+  end_time = start_time + timeout
+  waitset = []
+  while time.time() < end_time:
+    waitset = get_unhealthy_containers(containers,topology)
+    if not waitset:
+      elapsed = round(time.time() - start_time,1)
+      log.info(f"All containers are healthy after {elapsed} seconds, continuing the lab configuration process")
+      return
+    w_time = int(time.time() - start_time)
+    if not log.QUIET:
+      print(
+        f'Waiting for {len(waitset)} container(s) ({w_time} seconds)   ',end='\r',flush=True)
+    time.sleep(1)
+
+  log.error(
+    f'{len(waitset)} containers were not healthy after {timeout} seconds',
+    skip_header=True,
+    module='clab',
+    category=log.FatalError,
+    more_hints=['Increase or remove the defaults.providers.clab.health_timeout parameter'],
+    doc_url='labs/clab/#vrnetlab-wait')
+
+def get_unhealthy_containers(containers: list,topology: Box) -> list:
+  topo_name = 'clab.yml' if topology.provider == 'clab' else 'clab-augment.yml'
+  cmd = f'containerlab inspect --topo {topo_name} --format json'
+  out = external_commands.run_command(
+    cmd=cmd,
+    ignore_errors=True,return_stdout=True,check_result=True)
+  if not isinstance(out,str) or not out:
+    log.fatal(f'Cannot get container health status: {cmd} failed',header=False)
+  try:
+    data = json.loads(out)
+  except Exception:
+    return ['*']
+
+  unhealthy = []
+  for lab_data in data.values():
+    for container in lab_data:
+      cname = container['name']
+      if cname not in containers:
+        continue
+      if container.get('state','') != 'running':
+        log.fatal(f'Container {cname} has crashed, aborting...')
+      if container.get('status','') != 'healthy':
+        unhealthy.append(container['name'])
+
+  return unhealthy

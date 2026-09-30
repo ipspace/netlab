@@ -265,11 +265,14 @@ addressing:
 
 Alternatively, add the same settings to the [user defaults file](defaults-user-file).
 
+(vrnetlab-wait)=
 ### Waiting for the VM
 
-During the **netlab up** process, *containerlab* starts the containers and reports success. The virtual machines in those containers might need minutes to start, which means that _netlab_ cannot continue with the initial configuration process.
+During the **netlab up** process, *containerlab* starts the containers and reports success. The virtual machines in those containers may take minutes to start, and until they're ready and have initial device configuration (including a management IP address and the SSH server configuration), _netlab_ cannot continue the initial configuration process.
 
-Supported *vrnetlab*-based platforms undergo an additional "*is the device ready*" check during the initial configuration process: *netlab* attempts to establish an SSH session with the device and run a command[^NLCC]. The SSH session is retried up to **netlab_check_retries** times (default: 20), with a delay of **netlab_check_delay** (default: 5), for a total of over 100 seconds. Each retry takes up to 10 seconds in case the TCP session is stuck in the SYN state.
+The *vrnetlab* containers usually report their *health state*, changing from `starting` to `healthy` once the VM running inside the container is configured. _netlab_ ignores the container health state by default (it always checks the SSH server availability, though), but you can set the **defaults.providers.clab.healthy_timeout** parameter to the maximum time you expect the containers to need to become healthy.
+
+However, having the *vrnetlab* containers in *healthy* state (the VMs have initial configuration) does not guarantee their SSH servers are ready. _netlab_ thus performs an additional "*is the device ready*" check during the initial configuration process: it attempts to establish an SSH session with the device and run a command[^NLCC]. The SSH session is retried up to **netlab_check_retries** times (default: 20), with a delay of **netlab_check_delay** (default: 5), for a total of over 100 seconds. Each retry takes up to 10 seconds in case the TCP session is stuck in the SYN state.
 
 [^NLCC]: Specified in the **netlab_check_command** variable; usually `show version`
 
