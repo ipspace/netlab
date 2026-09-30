@@ -323,7 +323,8 @@ def execute_tool_commands(cmds: list, topology: Box) -> typing.Optional[str]:
       log.error(
         f'Failed to execute {cmd}',module='tools',
         category=log.ErrorAbort,
-        skip_header=True)
+        skip_header=True,
+        more_data=get_combined_output())
       return None
     else:
       output += status
