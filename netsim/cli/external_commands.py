@@ -142,10 +142,20 @@ def run_command(
 
     log_command(cmd,'OK' if result.stdout != "" else 'FAIL')
     return result.stdout != ""
-  except Exception as ex:
+  except subprocess.CalledProcessError as ex:
+    if log.debug_active('external') or log.VERBOSE >= 3:
+      print(f'... called process error: {ex}',flush=True)
     log_command(cmd,'ERROR')
     if not log.QUIET and not ignore_errors:
       print(f"Error executing {stringify(cmd)}:\n  {ex}",flush=True)
+    CAPTURED_STDERR=ex.stderr or ''               # Make sure they are both strings even when we're not capturing outputs
+    CAPTURED_STDOUT=ex.stdout or ''
+    return False
+  except Exception as ex:
+    if log.debug_active('external') or log.VERBOSE >= 3:
+      print(f'... other process exception: {ex}',flush=True)
+    log_command(cmd,'ERROR')
+    print(f"Error executing {stringify(cmd)}:\n  {ex}",flush=True)
     return False
 
 def test_probe(p : typing.Union[str,list,Box],quiet : bool = False) -> bool:
