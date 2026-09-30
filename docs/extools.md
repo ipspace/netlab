@@ -38,6 +38,14 @@ For example, to use Graphite GUI with every lab you start, add the following lin
 tools.graphite.enabled: True
 ```
 
+:::{tip}
+As you can set a default parameter with an [environment variable](defaults-env), it's trivial to [start additional tools](https://blog.ipspace.net/2025/06/netlab-start-tools/) without changing the lab topology file: set the `NETLAB_TOOLS_toolname_ENABLED` to True, for example:
+
+```
+$ export NETLAB_TOOLS_GRAPHITE_ENABLED=True
+```
+:::
+
 (extools-list)=
 ## Supported Tools
 
