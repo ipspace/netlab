@@ -246,7 +246,9 @@ $ export ANSIBLE_NETWORK_CLI_SSH_TYPE=paramiko
 $ export ANSIBLE_PARAMIKO_LOOK_FOR_KEYS=False
 ```
 
-However, even the **paramiko** release 5.0 [removed support for the ancient algorithms used in Cisco IOSv](https://github.com/ipspace/netlab/discussions/3714). You might be able to get IOSv to work with a downgraded version of paramiko installed, for example, with `pip3 install --upgrade 'paramiko<5.0'`. However, it's much better to use IOL and IOLL2 containers instead of IOSv and IOSvL2.
+However, even the **paramiko** release 5.0 [removed support for the ancient algorithms used in Cisco IOSv](https://github.com/ipspace/netlab/discussions/3714). You might be able to get IOSv to work with a downgraded version of paramiko installed, for example, with `pip3 install --upgrade 'paramiko<5.0'`. Alternatively, use **[netlab install netmiko](netlab-install)** to install the latest *netmiko* library and an old-enough *paramiko* library, and enable *netmiko*-based configuration of Cisco IOS devices (totally bypassing the IOS-related Ansible headaches).
+
+Nonetheless, it's much better to use IOL and IOLL2 containers instead of IOSv and IOSvL2.
 
 We added a similar mechanism to _netlab_ commands that use SSH to connect to network devices. These commands append the group variable `netlab_ssh_args` (when defined) to the **ssh** command; the value of that variable for Cisco IOS/IOS-XE devices is set to:
 
