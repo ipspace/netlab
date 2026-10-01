@@ -15,7 +15,7 @@ from box import Box
 
 from ..utils import log, read, strings
 from ..utils.files import get_moddir
-from . import error_and_exit, external_commands, set_dry_run
+from . import error_and_exit, external_commands, is_dry_run, set_dry_run
 
 
 #
@@ -253,11 +253,16 @@ def script_hook(script: str, hook: str, topology: Box) -> None:
     if not script_hook:
       return
     try:
-      script_hook(topology)
-    except Exception:
-      log.error('Error in {script} {hook} call: {ex}')
-  except ImportError:
+      if is_dry_run():
+        log.info(f'Skipping netsim.install.{script} {hook} call')
+      else:
+        script_hook(topology)
+    except Exception as ex:
+      log.error(f'Error in {script} {hook} call: {ex}')
+  except ModuleNotFoundError:
     return
+  except Exception as ex:
+    log.error(f'Error loading netsim.install.{script} module: {ex}')
 
 def script_confirm(script: str,setup: Box, args: argparse.Namespace) -> None:
   """
