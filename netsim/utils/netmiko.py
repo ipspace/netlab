@@ -6,6 +6,7 @@ netmiko utility functions
 * Connect to a device via SSH
 """
 import inspect
+import logging
 import typing
 
 from box import Box
@@ -83,19 +84,31 @@ def prepare_params(n_data: Box, topology: Box) -> typing.Optional[dict]:
   netmiko_params['session_log'] = f'node_files/{n_data.name}/netmiko.log'
   return netmiko_params
 
+PARAMIKO_LOGGER: typing.Optional[logging.Logger] = None
+
 def connect(n_data: Box, netmiko_params: dict) -> 'typing.Optional[_netmiko.BaseConnection]':
   """
   Use netmiko to open a SSH session to a lab device
   """
+
+  # Create a null paramiko logger to hide Paramiko tracebacks that are handled as Netmiko
+  # exceptions anyway. See https://github.com/ktbyers/netmiko/issues/2615 for details
+  #
+  global PARAMIKO_LOGGER
+  if not log.VERBOSE and not PARAMIKO_LOGGER:
+    PARAMIKO_LOGGER = logging.getLogger("paramiko")
+    PARAMIKO_LOGGER.addHandler(logging.NullHandler())
+
   try:
     net_connect = _netmiko.ConnectHandler(**netmiko_params)
     if log.VERBOSE:
       log.info(f'Connected to {n_data.name}',module='netmiko')
     net_connect.enable()
   except Exception as ex:
+    err = str(ex).strip("\n")
     log.error(
       f'netmiko cannot connect to {n_data.name}',
-      more_data=[ str(ex) ],
+      more_data=[ err ],
       category=log.FatalError,
       module='netmiko')
     return None
