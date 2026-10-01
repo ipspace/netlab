@@ -243,26 +243,30 @@ def check_script(script: str, setup: Box, args: argparse.Namespace) -> None:
 
   check_crazy_pip3(args)
 
-def script_hook(script: str, hook: str, topology: Box) -> None:
+def script_hook(script: str, hook: str, topology: Box) -> bool:
   """
-  When a script has an associated Python module, execute the specified hook in that module
+  When a script has an associated Python module, execute the specified hook in that module.
+  Returns False when the next step should not execute.
   """
   try:
     script_module = importlib.import_module(f'netsim.install.{script}')
     script_hook = getattr(script_module,hook,None)
-    if not script_hook:
-      return
+    if not script_hook:                           # Module found, no script hook => OK to continue
+      return True
     try:
-      if is_dry_run():
+      if is_dry_run():                            # Dry run, assuming successful hook execution
         log.info(f'Skipping netsim.install.{script} {hook} call')
+        return True
       else:
-        script_hook(topology)
-    except Exception as ex:
+        return script_hook(topology)              # Ask the actual hook what to do ;)
+    except Exception as ex:                       # Hook execution failed, report error, fall through to "we failed"
       log.error(f'Error in {script} {hook} call: {ex}')
-  except ModuleNotFoundError:
-    return
-  except Exception as ex:
+  except ModuleNotFoundError:                     # Module not found => OK to continue
+    return True
+  except Exception as ex:                         # Error in installation module: abort, abort, abort
     log.error(f'Error loading netsim.install.{script} module: {ex}')
+
+  return False                                    # Getting so far is a bad omen: do not continue
 
 def script_confirm(script: str,setup: Box, args: argparse.Namespace) -> None:
   """
@@ -335,7 +339,8 @@ def run(cli_args: typing.List[str]) -> None:
       log.section_header('Running',f'{script} installation script')
 
     try:
-      script_hook(script,'pre_install',topology)
+      if not script_hook(script,'pre_install',topology):
+        continue
       if not external_commands.run_command(['bash',script_path],ignore_errors=True):
         print()
         log.fatal(f'Installation script {script}.sh failed, exiting')
