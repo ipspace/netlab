@@ -59,9 +59,10 @@ $ netlab install
 ┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Script       ┃ Installs                                          ┃
 ┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ ubuntu       │ Mandatory and nice-to have Debian/Ubuntu packages │
+│ ubuntu       │ Mandatory and nice-to-have Debian/Ubuntu packages │
 │ libvirt      │ QEMU, KVM, libvirt, and Vagrant                   │
 │ containerlab │ Docker and containerlab                           │
+│ netmiko      │ Netmiko and Paramiko Python libraries             │
 │ ansible      │ Ansible and prerequisite Python libraries         │
 │ grpc         │ GRPC libraries and Nokia GRPC Ansible collection  │
 │ graph        │ GraphViz and D2 software                          │
