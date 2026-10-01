@@ -49,6 +49,7 @@ def deploy(n_data: Box,topology: Box,n_deploy: list) -> None:
       if cfg_item in ['normalize','initial']:
         net_connect.set_base_prompt()
       append_to_list(n_data._deploy,'success',cfg_item)
+      n_data._deploy.method = 'Netmiko'
     except Exception as ex:
       append_to_list(n_data._deploy,'failed',cfg_item)
       log.error(
