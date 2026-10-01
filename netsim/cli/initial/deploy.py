@@ -83,7 +83,7 @@ def print_internal_stats(topology: Box, top_margin: bool = False) -> None:
     if print_legend:
       if top_margin:
         print()
-      print("Results of configuration script deployments")
+      print("Results of non-Ansible configuration deployments")
       print("=" * strings.rich_width)
       print_legend = False
 
@@ -92,9 +92,9 @@ def print_internal_stats(topology: Box, top_margin: bool = False) -> None:
     first_line = True
     method = "{:<10}".format(n_data.get("_deploy.method",'Script') + ":")
     for kw,report,color in [
-          ('failed','Failed:  ','red'),
+          ('failed','Failed:   ','red'),
           ('success',method,'green'),
-          ('startup','Startup: ','green')]:
+          ('startup','Startup:  ','green')]:
       n_result = n_data.get(f"_deploy.{kw}", [])
       if not n_result:
         continue
