@@ -5,6 +5,7 @@
 #
 import argparse
 import csv
+import importlib
 import os
 import sysconfig
 import typing
@@ -63,11 +64,11 @@ def install_parse(args: typing.List[str], setup: Box) -> argparse.Namespace:
 
   return parser.parse_args(args)
 
-"""
-read_config_setup: Read the installation configuration file and add information
-from /etc/os-release file (if it exists)
-"""
 def read_config_setup() -> Box:
+  """
+  Read the installation configuration file and add information
+  from /etc/os-release file (if it exists)
+  """
   cf_name = 'package:install/install.yml'
   setup = read.read_yaml(filename=cf_name)
   if setup is None or not setup:
@@ -85,23 +86,21 @@ def read_config_setup() -> Box:
       error_and_exit(f'Cannot read {str(os_release)}: {str(ex)}')
   return setup
 
-"""
-Adjust installation configuration:
-
-* Update 'env' dictionary from topology variables
-"""
 def adjust_setup(setup: Box, topology: Box, args: argparse.Namespace) -> None:
+  """
+  Adjust installation configuration: update 'env' dictionary from topology variables
+  """
   for k,v in setup.env.items():
     if v in topology.defaults:
       os.environ[k] = str(topology.defaults[v])
       if args.verbose:
         print(f'ENV: {k}={os.environ[k]}')
 
-"""
-check_crazy_pip3: deals with crazy pip3 that thinks installing Python packages in
-local directory will break its sanity
-"""
 def check_crazy_pip3(args: argparse.Namespace) -> None:
+  """
+  Deals with crazy pip3 that thinks installing Python packages in
+  local directory will break its sanity
+  """
   syspath = sysconfig.get_path("stdlib")
   if os.path.exists(f'{syspath}/EXTERNALLY-MANAGED'):
     if not args.yes:
@@ -134,10 +133,10 @@ def check_crazy_pip3(args: argparse.Namespace) -> None:
     os.environ['FLAG_PIP']  = os.environ['FLAG_PIP'] + ' --user'
     os.environ['FLAG_USER'] = 'Y'
 
-"""
-set_quiet_flags: based on CLI flags, set flags for PIP/APT
-"""
 def set_quiet_flags(args: argparse.Namespace) -> None:
+  """
+  Based on CLI flags, set quiet/verbose flags for PIP/APT
+  """
   os.environ['FLAG_PIP'] = ''
   os.environ['FLAG_APT'] = ''
   os.environ['FLAG_QUIET'] = ''
@@ -159,11 +158,11 @@ def set_quiet_flags(args: argparse.Namespace) -> None:
   if args.yes:
     os.environ['FLAG_YES'] = 'Y'
 
-"""
-set_sudo_flag: figures out whether we have 'sudo' installed and whether the user
-is a root user if there's no sudo.
-"""
 def set_sudo_flag() -> None:
+  """
+  Figures out whether we have 'sudo' installed and whether the user
+  is a root user if there's no sudo.
+  """
   os.environ['SUDO'] = ""
   os.environ['DEBIAN_FRONTEND'] = 'noninteractive'
   os.environ['NEEDRESTART_MODE'] = 'a'
@@ -184,10 +183,10 @@ def set_sudo_flag() -> None:
 
   log.fatal('Installation aborted')
 
-"""
-Select the most appropriate distribution settings for the current script
-"""
 def select_distro(script: str, setup: Box, args: argparse.Namespace) -> None:
+  """
+  Select the most appropriate distribution settings for the current script
+  """
   s_data = setup.scripts[script]
   distro = None
   if setup.distro.ID in s_data.distro:                # Perfect match
@@ -207,13 +206,13 @@ def select_distro(script: str, setup: Box, args: argparse.Namespace) -> None:
     if args.verbose:
       log.info(f"Running installation script for {distro}")
 
-"""
-Checks whether it's OK to run the specified installation script:
-
-* Is 'apt-get' command used and available?
-* Is 'pip3' command used, available, and are we using virtual environment
-"""
 def check_script(script: str, setup: Box, args: argparse.Namespace) -> None:
+  """
+  Checks whether it's OK to run the specified installation script:
+
+  * Is 'apt-get' command used and available?
+  * Is 'pip3' command used, available, and are we using virtual environment
+  """
   s_data = setup.scripts[script]
   if 'distro' in s_data:
     select_distro(script,setup,args)
@@ -244,10 +243,26 @@ def check_script(script: str, setup: Box, args: argparse.Namespace) -> None:
 
   check_crazy_pip3(args)
 
-"""
-Display what the installation script will do and ask for user confirmation
-"""
+def script_hook(script: str, hook: str, topology: Box) -> None:
+  """
+  When a script has an associated Python module, execute the specified hook in that module
+  """
+  try:
+    script_module = importlib.import_module(f'netsim.install.{script}')
+    script_hook = getattr(script_module,hook,None)
+    if not script_hook:
+      return
+    try:
+      script_hook(topology)
+    except Exception:
+      log.error('Error in {script} {hook} call: {ex}')
+  except ImportError:
+    return
+
 def script_confirm(script: str,setup: Box, args: argparse.Namespace) -> None:
+  """
+  Display what the installation script will do and ask for user confirmation
+  """
   if args.quiet:
     return
 
@@ -260,10 +275,10 @@ def script_confirm(script: str,setup: Box, args: argparse.Namespace) -> None:
   if not args.yes and not strings.confirm("Are you sure you want to proceed"):
     error_and_exit('User aborted the installation process',category=Warning)
 
-"""
-Installation script has completed
-"""
 def script_completed(script: str,setup: Box, args: argparse.Namespace) -> None:
+  """
+  Installation script has completed, display post-install message
+  """
   if args.quiet:
     return
 
@@ -287,7 +302,7 @@ def run(cli_args: typing.List[str]) -> None:
     return
 
   args = install_parse(cli_args,setup)
-  topology = read.system_defaults()
+  topology = read.system_defaults(include_user=True)
   adjust_setup(setup,topology,args)
 
   for script in args.script:
@@ -315,11 +330,13 @@ def run(cli_args: typing.List[str]) -> None:
       log.section_header('Running',f'{script} installation script')
 
     try:
+      script_hook(script,'pre_install',topology)
       if not external_commands.run_command(['bash',script_path],ignore_errors=True):
         print()
         log.fatal(f'Installation script {script}.sh failed, exiting')
       else:
         script_completed(script,setup,args)
+        script_hook(script,'post_install',topology)
 
     except KeyboardInterrupt:
       print()
