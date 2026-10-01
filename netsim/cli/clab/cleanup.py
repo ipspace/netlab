@@ -46,8 +46,11 @@ def clab_cleanup(args: argparse.Namespace, settings: Box) -> None:
     return_stdout=True)
   if isinstance(docker_ps,str):
     clist = [ cname for cname in docker_ps.split("\n") if cname ]
-    external_commands.print_step(1,"Killing all running containers")
-    external_commands.run_command([ 'docker', 'kill' ] + clist)
+    if clist:
+      external_commands.print_step(1,"Killing all running containers")
+      external_commands.run_command([ 'docker', 'kill' ] + clist)
+    else:
+      log.info("No containers are running","clab")
   else:
     log.info('No containers are running, skipping the first step','clab')
 
