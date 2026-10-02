@@ -1,6 +1,18 @@
 Release Notes
 =============
 
+**Release 26.10 (2026-10-02)**
+
+The highlights of release 26.10 include:
+
+* SRv6 support on Junos and Nokia SR Linux
+* Global IPv4 BGP routes with SRv6 next hops can be propagated over EBGP on FRRouting and Cisco IOS XR.
+* Static route entries can use lists of prefixes, nodes, or pools.
+* *containerlab* nodes can start in batches or wait for other nodes to start.
+* **netlab install netmiko** installs the Netmiko and Paramiko packages needed for Netmiko-based device configuration.
+
+[More details](release-26.10) and new [device features](release-26.10-device-features)
+
 **Release 26.09 (2026-09-18)**
 
 The highlights of release 26.09 include:
@@ -201,6 +213,7 @@ For older releases, check the [release notes archive](release-archive.md).
    :caption: Individual release notes
    :maxdepth: 1
 
+   release/26.10.md
    release/26.09.md
    release/26.08.md
    release/26.07.md
