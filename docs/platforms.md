@@ -227,11 +227,11 @@ _netlab_ can use a variety of device configuration deployment mechanisms:
 | Method | Description |
 |------|-------------|
 | daemon<br>configurations | Daemon configuration files are generated on the host and mapped into the containers running [daemons](platform-daemons) like *dnsmasq* or *bird* |
-| **ansible** | Starts an Ansible playbook that uses device-specific task lists executing Ansible device modules |
+| **ansible** | Starts an Ansible playbook that uses device-specific task lists executing Ansible device modules. Use **netlab install ansible** to install Ansible and the prerequisite Python libraries. |
 | **sh** | Uses **docker exec** command to execute shell scripts *mapped* into containers[^CMSH] |
-| **cp_sh** | Copies shell scripts into containers (using **docker cp**) or virtual machines (using *netmiko* implementation of **scp**) and executed within them with **docker exec** or **netmiko.send_command()**. |
+| **cp_sh** | Copies shell scripts into containers (using **docker cp**) or virtual machines (using *netmiko* implementation of **scp**) and executes them with **docker exec** or **netmiko.send_command()**. |
 | **ns** | Uses **ip netns exec** to execute shell scripts on the host within the container namespace[^CMNS] |
-| **netmiko** | Uses the *netmiko* library to send configuration commands over an SSH session. **netlab install ansible** automatically installs the *netmiko* library; you can also install it manually with **pip3 install netmiko**. |
+| **netmiko** | Uses the *netmiko* library to send configuration commands over an SSH session. Use **netlab install netmiko** to install it. |
 | **startup** | Configuration files are merged into a partial startup configuration that is passed to the *containerlab* `startup-config` parameter. This experimental method works only for containers and [won't report device configuration errors](https://blog.ipspace.net/2026/02/netlab-startup-config-caveats/). |
 
 [^CMSH]: This method can be used in most native containers, but not in [containers running virtual machines](clab-vrnetlab).
@@ -277,6 +277,7 @@ Several other devices can use configuration methods faster than Ansible playbook
 
 
 **Notes:**
+* Use the **[netlab install netmiko](netlab-install)** command to install the *netmiko* library and enable netmiko-based configuration on supported devices.
 * When using the **sh** method on Arista cEOS containers, _netlab_ converts the device configurations into FastCli scripts and executes them as Linux scripts within the cEOS container. This method works on EOS software releases that have the **‌platform tfa phy control-frame disabled** interface configuration command (probably starting with EOS release 4.30)
 * The Cisco IOS XRd **sh** deployment method uses a custom **bash** script that calls the **xrapply** ZTP command to load and commit a configuration file. The custom script is used as the *shebang* interpreter for the configuration snippets. This deployment method *does not work* on XRd vRouter or XRv virtual machines packaged into *vrnetlab* containers.
 

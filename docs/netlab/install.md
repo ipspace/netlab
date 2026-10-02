@@ -38,10 +38,11 @@ Run "netlab install" with no arguments to get install script descriptions
 * The *libvirt* script installs *libvirt* and supporting libraries/packages, *vagrant*, *vagrant-libvirt* plugin, and creates the *vagrant-libvirt* virtual network.
 
 ```{warning}
-Ubuntu 26.04 introduced Hardware Enablement (`-hwe`) version of `qemu-system-x86`. The installation script will try to detect that package and install the corresponding *‌libvirt* packages if the `-hwe` package is present on your system.
+Ubuntu 26.04 introduced the Hardware Enablement (`-hwe`) version of `qemu-system-x86`. The installation script will try to detect that package and install the corresponding _libvirt_ packages if the `-hwe` package is present on your system.
 ```
 
 * The *containerlab* script installs Docker Engine and *containerlab*.
+* The *netmiko* script installs *paramiko* and *netmiko* libraries. While the same libraries are installed with the *ansible* script, this script helps you enable [netmiko-based configuration](platform-config-mode) on supported devices
 * The *ansible* script uses **pip3** to install the latest version of Ansible, networking libraries (*netaddr, paramiko, netmiko*), text parsing libraries (*testfsm, ttp, ntc-templates*), and a few other utility libraries (*jmespath, yamllint, yq*)
 * The *graph* script installs GraphViz and D2 software needed to generate graphs from _netlab_ topologies
 * The *grpc* script installs gRPC Python libraries needed to configure Nokia SR Linux and Nokia SR OS.
@@ -58,9 +59,10 @@ $ netlab install
 ┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Script       ┃ Installs                                          ┃
 ┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ ubuntu       │ Mandatory and nice-to have Debian/Ubuntu packages │
+│ ubuntu       │ Mandatory and nice-to-have Debian/Ubuntu packages │
 │ libvirt      │ QEMU, KVM, libvirt, and Vagrant                   │
 │ containerlab │ Docker and containerlab                           │
+│ netmiko      │ Netmiko and Paramiko Python libraries             │
 │ ansible      │ Ansible and prerequisite Python libraries         │
 │ grpc         │ GRPC libraries and Nokia GRPC Ansible collection  │
 │ graph        │ GraphViz and D2 software                          │

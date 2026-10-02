@@ -314,6 +314,7 @@ def run(cli_args: typing.List[str]) -> None:
 
   args = install_parse(cli_args,setup)
   topology = read.system_defaults(include_user=True)
+  topology.defaults.netlab.args = args
   adjust_setup(setup,topology,args)
 
   for script in args.script:
