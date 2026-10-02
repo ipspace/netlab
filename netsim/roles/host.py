@@ -25,7 +25,7 @@ def default_static_route_list(topology: Box) -> list:
     for af in ['ipv4','ipv6']:
       if not isinstance(ap_data.get(af,False),str):
         continue
-      sr_list.append(data.get_box({ af: ap_data[af], '_skip_missing': True, 'nexthop.gateway': True }))
+      sr_list.append(data.get_box({ af: [ap_data[af]], '_skip_missing': True, 'nexthop.gateway': True }))
 
   return sr_list
 
@@ -45,8 +45,8 @@ the address pools.
 def add_host_static_routes(topology: Box) -> None:
   sr_list = topology.get('routing.static.host',None)
   sr_default = [ 
-    { 'ipv4': '0.0.0.0/0', '_skip_missing': True, 'nexthop.gateway': True },
-    { 'ipv6': '::/0', '_skip_missing': True, 'nexthop.gateway': True } ]
+    { 'ipv4': ['0.0.0.0/0'], '_skip_missing': True, 'nexthop.gateway': True },
+    { 'ipv6': ['::/0'], '_skip_missing': True, 'nexthop.gateway': True } ]
 
   for n_data in select_nodes_by_role(topology,'host'):
     if n_data.get('routing.static',None):         # Host already has static routes, move on
