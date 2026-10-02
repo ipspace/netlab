@@ -408,6 +408,15 @@ ansible-galaxy collection install community.network
 * EXOS does not support the same VRRP group for IPv4 and IPv6
 * Saved EXOS device configuration includes commands that cannot be configured on the EXOS VM. _netlab_ therefore cannot do a configuration reload for EXOS devices.
 
+(caveats-voss)=
+## Extreme Networks VOSS
+
+* The only way to configure VOSS devices with Ansible is the now-deprecated **community.network.voss_config** Ansible module. This collection is no longer actively maintained. To install it, you can still run:
+
+```shell
+ansible-galaxy collection install community.network
+```
+
 (caveats-fortios)=
 ## Fortinet FortiOS
 
