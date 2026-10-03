@@ -1,0 +1,36 @@
+sys name {{ inventory_hostname.replace("_","-") }}
+{# 
+no router isis enable
+y 
+#}
+
+router isis
+{# spbm 1 #}
+{# spbm 1 nick-name 1.11.11 #}
+spbm 1 b-vid 4051,4052 primary 4051
+manual-area 49.0001
+{# system-id 1234.0000.0001 #}
+exit
+
+{% if vlans is defined %}
+{% include 'voss.vlan.j2' %}
+{% endif %}
+
+{% for l in netlab_interfaces if l.type|default('') not in ['loopback'] %}
+{%   if l.type|default('') == 'svi' %}
+interface vlan {{ vlans[l.vlan.name].id }}
+{%     if l.ipv4 is defined and l.ipv4 is string and l.ipv4|ansible.utils.ipv4 %}
+ip address {{ l.ipv4|ansible.utils.ipaddr('address') }} {{ l.ipv4|ansible.utils.ipaddr('netmask') }}
+{%     endif %}
+exit
+{%   else %}
+interface {{ l.ifname }}
+{%     if l.name is defined %}
+name "{{ l.name | replace('->','to') }}"
+{%     elif l.type|default('') == 'stub' %}
+name "Stub"
+{%     endif %}
+no shutdown
+exit
+{%   endif %}
+{% endfor %}
