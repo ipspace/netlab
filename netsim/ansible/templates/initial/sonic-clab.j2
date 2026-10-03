@@ -66,6 +66,18 @@ pgrep -x sshd >/dev/null || /usr/sbin/sshd
 config interface ipv6 disable use-link-local-only {{ l.ifname }}
 {%   endif %}
 {% endfor %}
+#
+# Every port is two kernel interfaces: the port TAP (Ethernet<4n>, addressed below) and its
+# wire veth (ethN, clab.name). Only the port may answer ARP, or neighbours unicast to the
+# veth and labelled traffic is dropped there (MPLS input is on the port only). Same for LAG
+# members and VLAN ports, whose PortChannel/SVI address the veth would otherwise answer for.
+# 8, not 1: the veth must never answer for any address, including ones added later. IPv6
+# needs no equivalent -- Linux answers a neighbour solicitation only for addresses on the
+# receiving interface.
+#
+{% for l in interfaces if l.clab.name is defined %}
+sysctl -w net.ipv4.conf.{{ l.clab.name }}.arp_ignore=8
+{% endfor %}
 # Create config_db PortChannels (lag) and VLANs (vlan) before any aggregate/SVI is addressed
 # below. These live in the per-module init hooks lag/vlan sonic.initial.j2 and are pulled
 # in here, at the correct ordering point, by netlab's extra_module_initial() macro.
@@ -109,33 +121,21 @@ else
 fi
 {%     endif %}
 {%   endif %}
-{#   Set the MTU on the kernel netdev, not through "config interface mtu": on the interfaces
-     containerlab injects for netlab links that command writes CONFIG_DB and never reaches the
-     netdev, exactly like the routed-port IPs below -- measured, the interface stayed at 9500
-     while CONFIG_DB claimed otherwise. The value is netlab MTU with no adjustment:
-     docker-sonic-vs programs it literally (1548 in -> 1548 on the netdev), so the +48 this
-     used to add left every interface 48 bytes above its peers and stalled OSPF in ExStart. #}
+{#   The port is the TAP syncd manages, so portmgrd programs the CONFIG_DB MTU onto the netdev. #}
 {#   L2 switchports (LAG members and VLAN access/trunk ports) reject a direct MTU set once
      they are members ("'interface_name' is in portchannel!" / "is in vlan"); the
      PortChannel/port MTU propagates, so skip them #}
 {%   if l.mtu is defined and l.mtu >= 1500 and not (l.virtual_interface|default(False)) and l.lag._parentindex is not defined and l.vlan.access_id is not defined and l.vlan.trunk_id is not defined %}
-ip link set {{ l.ifname }} mtu {{ l.mtu }}
+config interface mtu {{ l.ifname }} {{ l.mtu }}
 {%   endif %}
 !
 {% endfor %}
 #
-# docker-sonic-vs's intfmgrd/orchagent do not program routed-port IPs from CONFIG_DB onto the
-# kernel netdev (loopbacks work; routed ports do not), so BGP/OSPF over links can't come up
-# without this. Bring the data ports admin-up and mirror the CONFIG_DB INTERFACE IPs onto the
-# kernel netdev. Idempotent.
+# portmgrd brings every front-panel port up admin-down at boot; start the ones this lab uses.
 #
-for p in $(redis-cli -n 4 keys "PORT|Ethernet*" 2>/dev/null | sed 's/PORT|//'); do
-  config interface startup "$p" >/dev/null 2>&1 || true
-done
-redis-cli -n 4 keys "INTERFACE|Ethernet*|*" 2>/dev/null | while IFS= read -r k; do
-  ifc=$(echo "$k" | cut -d'|' -f2); addr=$(echo "$k" | cut -d'|' -f3)
-  [ -n "$addr" ] && ip addr add "$addr" dev "$ifc" 2>/dev/null || true
-done
+{% for l in interfaces if l.clab.name is defined %}
+config interface startup {{ l.ifname }}
+{% endfor %}
 #
 # Enable the FRR daemons needed by the configured modules (docker-sonic-vs ships most of them
 # disabled) and restart FRR once, only if something actually changed.
