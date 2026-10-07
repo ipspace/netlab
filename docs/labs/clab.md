@@ -270,7 +270,11 @@ Alternatively, add the same settings to the [user defaults file](defaults-user-f
 
 During the **netlab up** process, *containerlab* starts the containers and reports success. The virtual machines in those containers may take minutes to start, and until they're ready and have initial device configuration (including a management IP address and the SSH server configuration), _netlab_ cannot continue the initial configuration process.
 
-The *vrnetlab* containers usually report their *health state*, changing from `starting` to `healthy` once the VM running inside the container is configured. _netlab_ ignores the container health state by default (it always checks the SSH server availability, though), but you can set the **defaults.providers.clab.healthy_timeout** parameter to the maximum time you expect the containers to need to become healthy.
+The *vrnetlab* containers usually report their *health state*, changing from `starting` to `healthy` once the VM running inside the container is configured. _netlab_ checks the container health state[^CHS] and the SSH server availability[^CSSH] by default, but you can set the **defaults.providers.clab.healthy_timeout** [topology default](topo-defaults) to zero to disable the health check, or to the maximum time you expect the containers to need to become healthy if you're starting large topologies on an underpowered server.
+
+[^CHS]: For containers that provide it
+
+[^CSSH]: For containers that run the SSH server
 
 However, having the *vrnetlab* containers in *healthy* state (the VMs have initial configuration) does not guarantee their SSH servers are ready. _netlab_ thus performs an additional "*is the device ready*" check during the initial configuration process: it attempts to establish an SSH session with the device and run a command[^NLCC]. The SSH session is retried up to **netlab_check_retries** times (default: 20), with a delay of **netlab_check_delay** (default: 5), for a total of over 100 seconds. Each retry takes up to 10 seconds in case the TCP session is stuck in the SYN state.
 
@@ -278,7 +282,7 @@ However, having the *vrnetlab* containers in *healthy* state (the VMs have initi
 
 The **netlab_check_retries** parameter is set higher in system defaults for virtual machines that are slow to boot (for example, **vjunos-router**), but if you're working on a slow system, you might have to increase it even further. Set the **netlab_check_retries** node variable to increase the number of retries for an individual node or set the **defaults.devices._device_.clab.group_vars.netlab_check_retries** variable to increase the number of retries for a specific device (see also [](topo-defaults) and [](defaults-user-file))
 
-Alternatively, you could set the minimum wait time for container SSH servers (VM SSH servers are checked by Vagrant) with the **defaults.providers.clab.ssh_timeout** [system default](topo-defaults).
+Alternatively, you could set the minimum wait time for container SSH servers (VM SSH servers are checked by Vagrant) with the **defaults.providers.clab.ssh_timeout** [topology default](topo-defaults).
 
 Finally, if you have trouble starting very large topologies because of CPU usage spikes while containers or virtual machines boot, try [starting containers in batches](clab-batches).
 
