@@ -76,6 +76,9 @@ def deploy_config(node: Box, topology: Box, deploy_list: list) -> None:
 
     log.info(f'Executing {mod_name} configuration for node {node.name} (netmiko/script)')
     output: str = net_conn.send_command(cmd)
+    if log.debug_active('netmiko'):
+      print(f'Config {mod_name} on {node.name}:\n{output}')
+
     (result,rc) = output.rsplit(cmd_marker,1)               # Get the command printout and the exit code
     rc = rc.split('\n')[0]                                  # Extract the return code from the clutter
     if rc == '0':                                           # All good?

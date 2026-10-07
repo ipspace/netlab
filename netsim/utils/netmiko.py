@@ -43,23 +43,32 @@ def check_netmiko(n_data: Box) -> bool:
   return False
 
 NETMIKO_GROUP_VARS: dict = {
-  'netmiko_device_type': 'device_type',
   'ansible_user': 'username',
   'ansible_ssh_pass': 'password',
   'ansible_become_password': '*secret'
 }
 
+NETMIKO_PARAM_FEATURES: list = ['device_type']
+
 def prepare_params(n_data: Box, topology: Box) -> typing.Optional[dict]:
   """
   Prepare netmiko connection parameters
   """
-  global NETMIKO_GROUP_VARS
+  global NETMIKO_GROUP_VARS, NETMIKO_PARAM_FEATURES
 
   config_err_list = []                            # Accumulated list of errors
   netmiko_params:dict = {}                        # Netmiko connection parameters
 
+  defaults = topology.defaults
+  features = a_devices.get_device_features(n_data,defaults).netmiko
+  for kw in NETMIKO_PARAM_FEATURES:
+    if kw not in features:
+      config_err_list.append(f'Netmiko feature {kw} is not defined')
+    else:
+      netmiko_params[kw] = features[kw]
+
   for gv,np in NETMIKO_GROUP_VARS.items():        # Translate netsim parameters into netmiko parameters
-    gv_value = a_devices.get_node_group_var(n_data,gv,topology.defaults)
+    gv_value = a_devices.get_node_group_var(n_data,gv,defaults)
     if gv_value is not None:                      # We got a value, but be careful: the target could be optional (marked with '*')
       netmiko_params[np.replace('*','')] = gv_value
     elif '*' not in np:                           # Are we missing a value for a non-optional target?
@@ -82,6 +91,8 @@ def prepare_params(n_data: Box, topology: Box) -> typing.Optional[dict]:
   # Cool, we're good to go. Just the final detail: add session log file
   #
   netmiko_params['session_log'] = f'node_files/{n_data.name}/netmiko.log'
+  if log.debug_active('netmiko'):
+    print(f'Netmiko params for {n_data.name}: {netmiko_params}')
   return netmiko_params
 
 PARAMIKO_LOGGER: typing.Optional[logging.Logger] = None
