@@ -169,6 +169,8 @@ and validation. Configuration is deployed with a bash script executed within the
 * We did not implement OSPFv3 for ASAv
 * ASAv static routes require an outgoing interface. *netlab* does not configure static routes with indirect next hops on ASAv.
 * ASAv does not support equal-cost static routes over multiple interfaces. *netlab* configures only the first next hop of a static route.
+* ASAv releases before 9.18(2) do not support loopback interfaces. As *netlab* uses loopback interfaces for iBGP sessions, iBGP sessions with ASAv nodes are not configured. Use eBGP sessions instead.
+* Route import (redistribution) is implemented only for IPv4. Routing policies cannot be used with route import.
 
 (caveats-cat8000v)=
 ## Cisco Catalyst 8000v
