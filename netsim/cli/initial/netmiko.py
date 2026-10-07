@@ -2,6 +2,7 @@
 Use netmiko instead of Ansible to deploy device configurations
 """
 import os
+import time
 
 from box import Box
 
@@ -32,6 +33,11 @@ def deploy(n_data: Box,topology: Box,n_deploy: list) -> None:
 
   session_log = netmiko_params["session_log"]
   features = a_devices.get_device_features(n_data,topology.defaults)
+
+  netmiko_delay = features.get('netmiko.delay',None)
+  if netmiko_delay:
+    time.sleep(netmiko_delay)
+
   netmiko_err_list = features.get('netmiko.error_regexp',None)
   netmiko_errors = rf"({'|'.join(netmiko_err_list)})" if isinstance(netmiko_err_list,list) else (netmiko_err_list or "")
   if log.debug_active('netmiko'):
