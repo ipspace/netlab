@@ -46,11 +46,13 @@ def deploy(n_data: Box,topology: Box,n_deploy: list) -> None:
       continue
     try:
       cfg_result = net_connect.send_config_from_file(cfg_file,error_pattern=netmiko_errors)
-      if log.debug_active('netmiko'):
-        print(f'Config {cfg_item} on {n_data.name}:\n{cfg_result}')
       log.info(f'Sent {cfg_item} configuration to {n_data.name}',module='netmiko')
       if _netmiko.has_commit(net_connect):
-        net_connect.commit()
+        cfg_result += net_connect.commit()
+      if features.get('netmiko.step_config',False):
+        cfg_result += net_connect.exit_config_mode()
+      if log.debug_active('netmiko'):
+        print(f'Config {cfg_item} on {n_data.name}:\n{cfg_result}')
       if cfg_item in ['normalize','initial']:
         net_connect.set_base_prompt()
       append_to_list(n_data._deploy,'success',cfg_item)
