@@ -167,6 +167,8 @@ and validation. Configuration is deployed with a bash script executed within the
 * The ASAv IS-IS configuration templates were not tested, as all IS-IS integration tests include at least one point-to-point circuit
 * ASAv implements OSPFv2 point-to-point links with the `point-to-point non-broadcast` network type. *netlab* configures static OSPF neighbors on these links.
 * We did not implement OSPFv3 for ASAv
+* ASAv static routes require an outgoing interface. *netlab* does not configure static routes with indirect next hops on ASAv.
+* ASAv does not support equal-cost static routes over multiple interfaces. *netlab* configures only the first next hop of a static route.
 
 (caveats-cat8000v)=
 ## Cisco Catalyst 8000v
