@@ -167,6 +167,8 @@ and validation. Configuration is deployed with a bash script executed within the
 * The ASAv IS-IS configuration templates were not tested, as all IS-IS integration tests include at least one point-to-point circuit
 * ASAv implements OSPFv2 point-to-point links with the `point-to-point non-broadcast` network type. *netlab* configures static OSPF neighbors on these links.
 * We did not implement OSPFv3 for ASAv
+* ASAv releases before 9.18(2) do not support loopback interfaces. As *netlab* uses loopback interfaces for iBGP sessions, iBGP sessions with ASAv nodes are not configured. Use eBGP sessions instead.
+* Route import (redistribution) is implemented only for IPv4. Routing policies cannot be used with route import.
 
 (caveats-cat8000v)=
 ## Cisco Catalyst 8000v
