@@ -410,7 +410,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Arrcus ArcOS [❗](caveats-arcos) | ✅ | ✅ | ❌ | ✅ | ❌ |
 | Aruba AOS-CX          | ✅   |  ❌   |   ❌  |  ✅  |   ❌  |
 | BIRD Internet Routing Daemon | ✅ [❗](caveats-bird) | ❌ | ❌ | ✅ [❗](caveats-bird) | ❌ |
-| Cisco ASAv            | ✅ [❗](caveats-asav) | ✅ [❗](caveats-asav) | ❌ | ✅ | ❌ |
+| Cisco ASAv            | ✅ [❗](caveats-asav) | ✅ [❗](caveats-asav) | ❌ | ✅ [❗](caveats-asav) | ❌ |
 | Cisco IOS/IOS XE[^18v]| ✅   |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco IOS XR[^XR]     | ✅   |  ✅  |   ❌  |  ✅  |   ❌  |
 | Cisco Nexus OS        | ✅   |  ✅  |  ✅  |  ✅  |   ❌  |
