@@ -248,6 +248,7 @@ _netlab_ uses Ansible playbooks and device-specific task lists to deploy device 
 | BIRD   | clab     | Daemon configuration files and **bash** scripts[^BBS] |
 | dnsmasq | clab    | Daemon configuration files and **bash** scripts[^DBS] |
 | Cisco IOS XR | all | **netmiko** |
+| Cisco Nexus OS | all | **netmiko** |
 | FRRouting    | clab     | **bash** and **vtysh** scripts[^FRRBV] |
 | Junos cRPD | clab | **bash** scripts[^cRBS] |
 | KinD   | clab     | **bash** scripts copied into and executed in containers |
