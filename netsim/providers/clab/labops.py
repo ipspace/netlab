@@ -214,7 +214,7 @@ def health_check(containers: list, timeout: int, topology: Box) -> None:
     skip_header=True,
     module='clab',
     category=log.FatalError,
-    more_hints=['Increase or remove the defaults.providers.clab.health_timeout parameter'],
+    more_hints=['Increase or remove the defaults.providers.clab.healthy_timeout parameter'],
     doc_url='labs/clab/#vrnetlab-wait')
 
 def get_unhealthy_containers(containers: list,topology: Box) -> list:
