@@ -152,7 +152,7 @@ def load_kmods(topology: Box) -> None:
 
 def set_clab_runtime(topology: Box) -> None:
   runtime = topology.get('defaults.providers.clab.runtime',None)
-  if not runtime:
+  if not runtime or os.environ.get('CLAB_RUNTIME',None) == str(runtime):
     return
 
   log.info(f'Setting containerlab runtime to {runtime}')

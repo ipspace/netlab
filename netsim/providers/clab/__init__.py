@@ -103,7 +103,7 @@ class Containerlab(_Provider):
   def get_lab_status(self,collect_status: dict) -> Box:
     try:
       status = external_commands.run_command(
-                  'docker ps --format json',
+                  'docker ps -a --format json',     # -a: show stopped nodes as 'Exited'
                   check_result=True,
                   ignore_errors=True,
                   return_stdout=True,
@@ -221,6 +221,17 @@ class Containerlab(_Provider):
     cmd = strings.eval_format_list(cmd,{'intf': args.intf.replace('/','-')})
     node_name = self.get_node_name(node.name,topology)
     return strings.string_to_list(f'sudo ip netns exec {node_name}') + cmd
+
+  def control_node(self, node: Box, topology: Box, action: str) -> bool:
+    labops.set_clab_runtime(topology)
+    if action in ['pause','unpause']:                         # Containerlab cannot pause containers
+      cmd = [ 'docker', action, self.get_node_name(node.name,topology) ]
+    else:
+      c_action = { 'up': 'start', 'down': 'stop' }.get(action,action)
+      c_topo = 'clab.yml' if topology.provider == 'clab' else 'clab-augment.yml'
+      cmd = [ 'containerlab', c_action, '-t', c_topo, '--node', node.name ]
+
+    return bool(external_commands.run_command(cmd,ignore_errors=True))   # containerlab logs to stderr, check exit code only
 
   def set_tc(self, node: Box, topology: Box, intf: Box, error: bool = True) -> None:
     c_name = self.get_node_name(node.name,topology)
