@@ -733,6 +733,8 @@ See also [](caveats-sros) caveats for further details.
 
 The `sonic` device also runs under *containerlab* with the community `docker-sonic-vs` image; see [](build-sonic-container) for how to obtain it and how the two deployments differ.
 
+* Every port is two kernel interfaces: the wire veth that *containerlab* creates, which keeps its `ethN` name, and the port that SONiC derives from it, which is named four apart -- `eth1` is the wire behind `Ethernet0`, `eth2` behind `Ethernet4`. Configure and address only the port; the veth just carries its frames.
+* Use a recent *containerlab* release with this device. Older releases leave that veth answering ARP for the port's address, so a neighbor can cache the veth's MAC instead of the port's. [Current *containerlab* code](https://github.com/srl-labs/containerlab/pull/3390) marks the veth ARP-off and IPv6-off, leaving only the port answering on the link.
 * Configuration is deployed with **docker exec** commands, not over an SSH session.
 * `docker-sonic-vs` ships `sshd` but does not start it.
 * `srv6` is control-plane and kernel-plane only: the locator and End/End.X SIDs are advertised in the IS-IS LSDB and installed as kernel `seg6local` routes, but the end-to-end SRv6 datapath does not resolve -- the same open item as FRR/IS-IS SRv6 on other platforms.
