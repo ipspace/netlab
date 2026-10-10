@@ -1,0 +1,44 @@
+{% import 'templates/mpls/srlinux/vpn.j2' as l3vpn_cfg %}
+#
+# Enable L3VPN address families and global peer groups
+#
+{{ l3vpn_cfg.enable_l3vpn_af(srv6.vpn,ipv4_rfc8950=true) }}
+{{ l3vpn_cfg.enable_l3vpn_peer_groups(srv6.vpn,transport_af='ipv6',ipv4_rfc8950=true) }}
+
+- path: /network-instance[name=default]/protocols/bgp
+  value:
+    srv6:
+      source-address: {{ loopback.ipv6|ansible.utils.ipaddr('address') }}
+
+{% for v_name,v_data in vrfs|default({})|dictsort %}
+{%   set vrfcnt = loop.index %}
+{%   for af in 'ipv4','ipv6' if af in v_data.af %}
+{%     if loop.first %}
+#
+# SRv6 L3VPN for VRF {{ v_name }}
+#
+- path: /network-instance[name={{ v_name }}]/protocols/bgp-ipvpn
+  value:
+    bgp-instance:
+    - id: 1
+      admin-state: enable
+      encapsulation-type: srv6
+      srv6:
+        default-locator: {{ inventory_hostname }}
+        instance: 1
+        source-address: {{ loopback.ipv6|ansible.utils.ipaddr('address') }}
+- path: /network-instance[name={{ v_name }}]
+  value:
+    segment-routing:
+      srv6:
+        instance:
+        - id: 1
+          locator:
+          - locator-name: {{ inventory_hostname }}
+            micro-segment:
+              function:
+{%     endif %}
+                udt{{ af.replace('ipv','') }}:
+                  value: {{ vrfcnt * 2 + loop.index }}
+{%   endfor %}
+{% endfor %}
