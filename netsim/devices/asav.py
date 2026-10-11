@@ -5,6 +5,7 @@ from box import Box
 
 from ..utils import log
 from . import _Quirks, report_quirk
+from ._common import check_indirect_static_routes
 
 
 def check_isis_p2p_interfaces(node: Box, topology: Box, igp: str = 'isis') -> None:
@@ -24,6 +25,7 @@ class ASA(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
+    check_indirect_static_routes(node)
     mods = node.get('module', [])
     for igp in ('isis'):
       if igp in mods:

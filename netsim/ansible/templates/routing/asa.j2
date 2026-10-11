@@ -1,0 +1,22 @@
+{#
+   ASA static routes need the outgoing interface (nameif == ifname in the initial template),
+   so only directly-connected next hops and discard routes can be configured
+#}
+{% for sr_data in routing.static|default([]) if 'intf' in sr_data.nexthop or 'discard' in sr_data.nexthop %}
+{%   if loop.first %}
+!
+! Static routes
+!
+{%   endif %}
+{%   set sr_intf = 'Null0' if 'discard' in sr_data.nexthop else sr_data.nexthop.intf %}
+{%   if 'ipv4' in sr_data %}
+route {{ sr_intf }} {{
+    sr_data.ipv4|ansible.utils.ipaddr('network') }} {{
+    sr_data.ipv4|ansible.utils.ipaddr('netmask') }}{{
+    '' if 'discard' in sr_data.nexthop else ' ' + sr_data.nexthop.ipv4 }}
+{%   endif %}
+{%   if 'ipv6' in sr_data %}
+ipv6 route {{ sr_intf }} {{ sr_data.ipv6 }}{{
+    '' if 'discard' in sr_data.nexthop else ' ' + sr_data.nexthop.ipv6 }}
+{%   endif %}
+{% endfor %}
