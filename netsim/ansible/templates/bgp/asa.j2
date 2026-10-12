@@ -12,17 +12,11 @@ router bgp {{ bgp.as }}
     neighbor {{ n[af] }} remote-as {{ n.as }}
     neighbor {{ n[af] }} description {{ n.name }}
 {%   endfor %}
-{%   if bgp.import is defined and af == 'ipv4' %}
-{{     redistribute.config(bgp,ospf_pid=ospf.process|default(1))|indent(2,first=True) }}
+{%   if bgp.import is defined %}
+{{     redistribute.config(bgp,af=af,ospf_pid=ospf.process|default(1))|indent(2,first=True) }}
 {%   endif %}
-{%   if loopback[af] is defined and bgp.advertise_loopback %}
-{{ bgpcfg.bgp_network(af,loopback[af]) }}
-{%   endif %}
-{%   for l in interfaces|default([]) if l.bgp.advertise|default("") and l[af] is defined %}
-{{ bgpcfg.bgp_network(af,l[af]) }}
-{%   endfor %}
-{%   for pfx in bgp.originate|default([]) if af == 'ipv4' %}
-{{ bgpcfg.bgp_network(af,pfx) }}
+{%   for pfx in bgp.advertise|default([]) if af in pfx %}
+{{     bgpcfg.bgp_network(af,pfx[af]) }}
 {%   endfor %}
 {%   for n in bgp.neighbors if n[af] is defined %}
 {{ bgpcfg.neighbor_af(n,n[af],bgp) }}
