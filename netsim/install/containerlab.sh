@@ -11,18 +11,30 @@ echo "Update the package list"
 #
 echo
 echo "Install support software"
-$SUDO apt-get install -y $FLAG_APT ca-certificates curl gnupg lsb-release iptables
+$SUDO apt-get install -y $FLAG_APT ca-certificates curl iptables
 echo "Install Docker GPG key and set up Docker repository for $DISTRIBUTION"
 
-set +e
-$SUDO rm /usr/share/keyrings/docker-archive-keyring.gpg 2>/dev/null
-# Re-referenced to default APT GPG keyring directory - ghostinthenet - 20220417
-$SUDO rm /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg 2>/dev/null
-set -e
-# Added DISTRIBUTION variable and re-referenced to default APT GPG keyring directory - ghostinthenet - 20220417
-curl -fsSL https://download.docker.com/linux/$DISTRIBUTION/gpg | $SUDO gpg --dearmor -o /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg
-# Added DISTRIBUTION variable and removed custom APT GPG keychain source - ghostinthenet - 20220417
-echo "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/$DISTRIBUTION $(lsb_release -cs) stable" | $SUDO tee /etc/apt/sources.list.d/docker.list > /dev/null
+#
+# Remove the repository definition and the keys created by the previous versions of this script.
+# The old docker.list has to go: APT complains about a repository configured multiple times.
+#
+$SUDO rm -f /etc/apt/sources.list.d/docker.list
+$SUDO rm -f /usr/share/keyrings/docker-archive-keyring.gpg /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg
+#
+# Docker repository in the deb822 format, with the key usable only for that repository
+# (see https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository)
+#
+$SUDO install -m 0755 -d /etc/apt/keyrings
+$SUDO curl -fsSL https://download.docker.com/linux/$DISTRIBUTION/gpg -o /etc/apt/keyrings/docker.asc
+$SUDO chmod a+r /etc/apt/keyrings/docker.asc
+$SUDO tee /etc/apt/sources.list.d/docker.sources >/dev/null <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/$DISTRIBUTION
+Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+Components: stable
+Architectures: $(dpkg --print-architecture)
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
 #
 echo "Install Docker Engine"
 . apt-get-update.sh
