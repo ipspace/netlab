@@ -11,7 +11,7 @@ echo "Update the package list"
 #
 echo
 echo "Install support software"
-$SUDO apt-get install -y $FLAG_APT ca-certificates curl gnupg lsb-release iptables
+$SUDO apt-get install -y $FLAG_APT ca-certificates curl iptables
 echo "Install Docker GPG key and set up Docker repository for $DISTRIBUTION"
 
 #
