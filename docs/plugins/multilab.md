@@ -47,6 +47,12 @@ Use the system-wide _netlab_ status file if multiple users start lab instances o
 All _netlab_ users should be able to write to the _netlab_ status file and the parent directory.
 ```
 
+_netlab_ locks the status file every time a lab instance changes its status, and gives up if it cannot get the lock within three seconds (*Cannot lock lab status file*). When many lab instances start or stop at the same time, increase the timeout with the **‌defaults.lab_status_lock_timeout** parameter (in seconds), for example:
+
+```
+defaults.lab_status_lock_timeout: 10
+```
+
 **Dynamic labs:** Users can run multiple lab instances, including several instances of the same lab topology. Each instance still needs a unique multilab ID that has to be allocated by an external system that passes **defaults.multilab.id** to _netlab_.
 
 ```{tip}

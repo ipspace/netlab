@@ -46,7 +46,7 @@ def change_status(topology: Box, callback: typing.Callable[[Box,Box], None]) -> 
     log.fatal(f'Cannot create lab status directory {status_dir}')
 
   try:                                                      # Try to lock the status file          
-    lock = FileLock(lock_file, timeout=3)
+    lock = FileLock(lock_file, timeout=topology.defaults.get('lab_status_lock_timeout',3))
     lock.acquire()
     if os.path.exists(status_file):                       # If the status file exists, read it
       try:
