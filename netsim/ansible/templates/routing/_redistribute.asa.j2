@@ -1,0 +1,15 @@
+{#
+   Route redistribution for Cisco ASA (no routing policies)
+   OSPF is not redistributed into IPv6 BGP (no OSPFv3 support)
+#}
+{% macro config(pdata,af='ipv4',t_proto='',ospf_pid=1) -%}
+{%   for s_proto,s_data in pdata.import.items() if not (s_proto == 'ospf' and af == 'ipv6') %}
+{%     set sp_config = s_proto %}
+{%     if s_proto == 'bgp' %}
+{%       set sp_config = sp_config + ' ' + bgp.as|string %}
+{%     elif s_proto == 'ospf' %}
+{%       set sp_config = sp_config + ' ' + ospf_pid|string + ' match internal external 1 external 2' %}
+{%     endif %}
+  redistribute {{ sp_config }}{{ ' subnets' if t_proto == 'ospf' else '' }}
+{%   endfor %}
+{%- endmacro %}
