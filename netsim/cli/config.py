@@ -54,6 +54,10 @@ def custom_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespa
     dest='dry_run', action='store_true',
     help='Print actions that would be executed without executing them')
   parser.add_argument(
+    '--check',
+    dest='dry_check', action='store_true',
+    help='Run Ansible playbook in --check mode')
+  parser.add_argument(
     dest='template', action='store',
     help='Configuration template or a directory with templates')
   parser_add_verbose(parser)
@@ -91,6 +95,8 @@ def set_custom_config(
     if not cfg_mode:                              # No "special" config mode?
       continue                                    # ... cool, move on
 
+    if cfg_mode in ['startup']:                   # Cannot use startup configuration hack
+      continue
     if cfg_mode == 'sh':                          # sh config mode won't work as we can't map new template into containers
       features = a_devices.get_device_features(n_data,defaults)
       if 'cp_sh' not in features.get('initial.config_mode'):
@@ -102,7 +108,7 @@ def set_custom_config(
       cfg_file = a_devices.get_node_group_var(n_data,'netlab_config_path',defaults) or '/etc/cfg-'
       cfg_file += f'custom-{cfg_name}.sh'         # Add file name in the device config directory
 
-    n_data._node_config = { cfg_name: cfg_file+':'+cfg_mode }
+    n_data._node_config = { cfg_name.replace('.','@'): cfg_file+':'+cfg_mode }
 
 def get_ansible_args(ans_vars: Box,nodeset: list,cfg_name: str) -> list:
   args = i_utils.common_ansible_args()
@@ -252,7 +258,11 @@ def deploy_custom_config(topology: Box,nodeset: list,args: argparse.Namespace, r
   create_node_files(topology,nodeset,args,cfg_name,extra_vars)
 
   (deploy_args,_) = i_utils.initial_config_parse(['--custom'])
-  (used_internal, config_status) = i_deploy.deploy_internal_config(nodeset,topology,deploy_args)
+  if not args.dry_check:
+    (used_internal, config_status) = i_deploy.deploy_internal_config(nodeset,topology,deploy_args)
+  else:
+    (used_internal, config_status) = (False, True)
+    rest += ['--check']
 
   if used_internal:
     ansible_nodeset = [ n for n in nodeset if '_deploy' not in topology.nodes[n] ]
@@ -274,9 +284,14 @@ def run_config(cli_args: typing.List[str]) -> None:
   set_dry_run(args)
   topology = load_snapshot(args)
 
-  nodeset = _nodeset.parse_nodeset(args.limit,topology) if args.limit else list(topology.nodes.keys())
+  cli_nodeset = _nodeset.parse_nodeset(args.limit,topology) if args.limit else list(topology.nodes.keys())
+  nodeset = i_utils.filter_unprovisioned(cli_nodeset,topology)
   if not nodeset:
-    error_and_exit('The specified nodeset is empty, there are no nodes to configure')
+    if not cli_nodeset:
+      error_and_exit('The specified nodeset is empty, there are no nodes to configure')
+    else:
+      error_and_exit('The specified nodeset contains only unprovisioned nodes')
+
   set_initial_args(args,initial=False)
 
   if args.reload:
