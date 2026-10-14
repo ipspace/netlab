@@ -162,6 +162,9 @@ def create_node_files(
 Reload node configurations
 """
 def reload_node_configs(topology: Box,nodeset: list,args: argparse.Namespace, rest: list) -> None:
+  if args.dry_check:
+    error_and_exit('You cannot use --check parameter with --reload')
+
   cfg_path = Path(args.template).resolve().absolute()
   if not cfg_path.is_dir():                           # Sanity check: are we reloading from a directory?
     error_and_exit('The argument specified with the --reload option must be a directory')
