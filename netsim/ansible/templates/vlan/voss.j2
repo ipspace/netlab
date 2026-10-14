@@ -1,0 +1,26 @@
+{% for ifdata in interfaces if ifdata.vlan is defined and ifdata.type|default('') not in ['svi','vlan_member'] %}
+{%   set port = ifdata.ifname.split(' ')[-1] %}
+{%   if ifdata.vlan.trunk is defined %}
+interface {{ ifdata.ifname }}
+encapsulation dot1q
+exit
+{%     for vname in ifdata.vlan.trunk.keys()|sort %}
+vlan members add {{ vlans[vname].id }} {{ port }}
+{%     endfor %}
+{%     if ifdata.vlan.native is defined %}
+interface {{ ifdata.ifname }}
+default-vlan-id {{ vlans[ifdata.vlan.native].id }}
+untag-port-default-vlan enable
+exit
+{%     endif %}
+{%     if 'default' not in ifdata.vlan.trunk.keys()|map('lower') %}
+vlan members remove 1 {{ port }}
+{%     endif %}
+{%   elif ifdata.vlan.access is defined %}
+vlan members remove 1 {{ port }}
+vlan members add {{ vlans[ifdata.vlan.access].id }} {{ port }}
+interface {{ ifdata.ifname }}
+default-vlan-id {{ vlans[ifdata.vlan.access].id }}
+exit
+{%   endif %}
+{% endfor +%}
