@@ -20,6 +20,7 @@ from . import (
   parser_add_debug,
   parser_add_verbose,
   parser_lab_location,
+  set_dry_run,
 )
 from .initial import configs as i_configs
 from .initial import deploy as i_deploy
@@ -49,6 +50,14 @@ def custom_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespa
     dest='extra_vars',action='append',
     help='Specify extra variables for the configuration template')
   parser.add_argument(
+    '--dry-run',
+    dest='dry_run', action='store_true',
+    help='Print actions that would be executed without executing them')
+  parser.add_argument(
+    '--check',
+    dest='dry_check', action='store_true',
+    help='Run Ansible playbook in --check mode')
+  parser.add_argument(
     dest='template', action='store',
     help='Configuration template or a directory with templates')
   parser_add_verbose(parser)
@@ -69,12 +78,37 @@ def set_custom_config(
       nodeset: list,
       cfg_name: str,
       extra_vars: dict = {}) -> None:
+  """
+  Update the configuration deployment data structures with the custom config template
+  """
 
+  defaults = topology.defaults
   for n_name in nodeset:
-    n_data = topology.nodes[n_name]
-    n_data.config = [ cfg_name ]
-    for k,v in extra_vars.items():
-      n_data[k] = v
+    n_data = topology.nodes[n_name]               # Pretend that the deployed template is the
+    n_data.config = [ cfg_name ]                  # ... only custom config template we have
+    for k,v in extra_vars.items():                # ... and copy extra vars specified on the command line
+      n_data[k] = v                               # ... into node data to be rendered by the template
+
+    # Next, check if the device is using non-ansible configuration mode
+    #
+    cfg_mode = a_devices.get_node_group_var(n_data,'netlab_config_mode',defaults)
+    if not cfg_mode:                              # No "special" config mode?
+      continue                                    # ... cool, move on
+
+    if cfg_mode in ['startup']:                   # Cannot use startup configuration hack
+      continue
+    if cfg_mode == 'sh':                          # sh config mode won't work as we can't map new template into containers
+      features = a_devices.get_device_features(n_data,defaults)
+      if 'cp_sh' not in features.get('initial.config_mode'):
+        continue                                  # Cannot copy into container/VM, use Ansible
+      cfg_mode = 'cp_sh'
+
+    cfg_file = ''
+    if 'sh' in cfg_mode:                          # Do we have sh/cp_sh config mode?
+      cfg_file = a_devices.get_node_group_var(n_data,'netlab_config_path',defaults) or '/etc/cfg-'
+      cfg_file += f'custom-{cfg_name}.sh'         # Add file name in the device config directory
+
+    n_data._node_config = { cfg_name.replace('.','@'): cfg_file+':'+cfg_mode }
 
 def get_ansible_args(ans_vars: Box,nodeset: list,cfg_name: str) -> list:
   args = i_utils.common_ansible_args()
@@ -128,6 +162,9 @@ def create_node_files(
 Reload node configurations
 """
 def reload_node_configs(topology: Box,nodeset: list,args: argparse.Namespace, rest: list) -> None:
+  if args.dry_check:
+    error_and_exit('You cannot use --check parameter with --reload')
+
   cfg_path = Path(args.template).resolve().absolute()
   if not cfg_path.is_dir():                           # Sanity check: are we reloading from a directory?
     error_and_exit('The argument specified with the --reload option must be a directory')
@@ -199,6 +236,15 @@ def reload_node_configs(topology: Box,nodeset: list,args: argparse.Namespace, re
   if not ansible.playbook('reload-config.ansible',rest_args,abort_on_error=False):
     error_and_exit('Cannot reload initial device configurations')
 
+def config_ansible_playbook(cfg_name: str,nodeset: list,topology: Box,extra_vars: dict, rest: list) -> bool:
+  """
+  Run the config.ansible playbook with modified path variables and an adjusted nodeset
+  """
+  #
+  ans_vars = ansible.ansible_extra_vars(topology,reload=False,extra_vars=extra_vars)
+  rest_args = rest + get_ansible_args(ans_vars,nodeset,cfg_name)
+  return ansible.playbook('config.ansible',rest_args,abort_on_error=False)
+
 def deploy_custom_config(topology: Box,nodeset: list,args: argparse.Namespace, rest: list) -> None:
   cfg_name = args.template
   if '/' in cfg_name:                             # Custom config specified as a path to directory
@@ -214,21 +260,41 @@ def deploy_custom_config(topology: Box,nodeset: list,args: argparse.Namespace, r
   extra_vars=parse_extra_vars(args.extra_vars)
   create_node_files(topology,nodeset,args,cfg_name,extra_vars)
 
-  # Run the Ansible playbook with modified path variables and an adjusted nodeset
-  #
-  ans_vars = ansible.ansible_extra_vars(topology,reload=False,extra_vars=extra_vars)
-  rest_args = rest + get_ansible_args(ans_vars,nodeset,cfg_name)
-  if not ansible.playbook('config.ansible',rest_args,abort_on_error=False):
-    error_and_exit('Cannot deploy custom configuration template')
+  (deploy_args,_) = i_utils.initial_config_parse(['--custom'])
+  if not args.dry_check:
+    (used_internal, config_status) = i_deploy.deploy_internal_config(nodeset,topology,deploy_args)
+  else:
+    (used_internal, config_status) = (False, True)
+    rest += ['--check']
+
+  if used_internal:
+    ansible_nodeset = [ n for n in nodeset if '_deploy' not in topology.nodes[n] ]
+  else:
+    ansible_nodeset = nodeset
+
+  if ansible_nodeset:
+    ansible_status = config_ansible_playbook(cfg_name,ansible_nodeset,topology,extra_vars,rest)
+    config_status = config_status and ansible_status
+    print()
+
+  i_deploy.print_internal_stats(topology,not bool(ansible_nodeset))
+  if not config_status:
+    error_and_exit('Custom configuration deployment failed')
 
 def run_config(cli_args: typing.List[str]) -> None:
   (args,rest) = custom_config_parse(cli_args)
   log.set_logging_flags(args)
+  set_dry_run(args)
   topology = load_snapshot(args)
 
-  nodeset = _nodeset.parse_nodeset(args.limit,topology) if args.limit else list(topology.nodes.keys())
+  cli_nodeset = _nodeset.parse_nodeset(args.limit,topology) if args.limit else list(topology.nodes.keys())
+  nodeset = i_utils.filter_unprovisioned(cli_nodeset,topology)
   if not nodeset:
-    error_and_exit('The specified nodeset is empty, there are no nodes to configure')
+    if not cli_nodeset:
+      error_and_exit('The specified nodeset is empty, there are no nodes to configure')
+    else:
+      error_and_exit('The specified nodeset contains only unprovisioned nodes')
+
   set_initial_args(args,initial=False)
 
   if args.reload:

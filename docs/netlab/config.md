@@ -1,9 +1,9 @@
 (netlab-config)=
 # Deploying Custom Device Configurations
 
-**netlab config** is used to deploy custom device configuration templates to lab devices. It reads lab parameters from the _netlab_ snapshot file created by the **[netlab create](netlab-create)** or **[netlab up](netlab-up)** command, renders the supplied Jinja2 template ([limitations](dev-templates)), and uses the internal `config.ansible` Ansible playbook to deploy the rendered configuration snippets.
+**netlab config** is used to deploy custom device configuration templates to lab devices. It reads lab parameters from the _netlab_ snapshot file created by the **[netlab create](netlab-create)** or **[netlab up](netlab-up)** command, renders the supplied Jinja2 template ([limitations](dev-templates)), and uses the [device-specific configuration method](platform-config-mode) or the internal `config.ansible` Ansible playbook to deploy the rendered configuration snippets.
 
-You have to use **netlab config** on a running lab. If you want to try out the configuration templates without starting the lab,  add the [**config** attribute](custom-config) to node data and run **netlab create** (to generate the snapshot file), followed by **[netlab initial -c -o](netlab-initial)** to create the configuration files.
+You have to use **netlab config** on a running lab. If you want to try out the configuration templates without starting the lab,  add the [**config** attribute](custom-config) to node data and run **netlab create** to create the configuration files.
 
 ## Usage
 
@@ -45,9 +45,9 @@ When executed with the `-i` option, **‌netlab config** expects the configurati
 
 ## Limiting the Scope of Configuration Deployments
 
-You can use the `-l` parameter to deploy device configurations on a subset of devices. The parameter value must be a valid _netlab_ node selection expression ([more details](netlab-inspect-node)).
-
-All unrecognized parameters are passed to the internal `config.ansible` Ansible playbook, allowing you to use the **ansible-playbook** CLI parameters to modify the configuration deployment. For example, you can use the `-C` parameter to run the Ansible playbook in dry-run mode.
+* You can use the `-l` parameter to deploy device configurations on a subset of devices. The parameter value must be a valid _netlab_ node selection expression ([more details](netlab-inspect-node)).
+* With the `--dry-run` parameter, you can display the commands that would be executed to configure the devices without executing them.
+* Finally, the `--check` parameter uses Ansible's `--check` mode to display changes that would be made to the devices. This parameter uses Ansible for all device configurations (internal configuration methods cannot compare existing and target device configurations).
 
 ## Extra Variables
 
@@ -79,16 +79,13 @@ After that, it treats the saved device configurations as custom templates (using
 
 ## Debugging Device Configurations
 
-To display device configurations within the Ansible playbook without deploying them, use `-v --tags test` parameters after the template name. 
+To create device configurations without deploying them, use the `--dry-run` parameter. **netlab config** command will create device configurations in the `node_files` directory tree, and then skip the configuration deployment.
 
-The `-v` flag enables debugging output, and the bogus `test` flag skips configuration deployment.
-
-```{tip}
-The **netlab config** command supports comprehensive debugging options. Use `--debug` to troubleshoot template search paths and template rendering.
+The **netlab config** command also supports comprehensive debugging options. Use `--debug` to troubleshoot template search paths and template rendering.
 
 For example:
 - `netlab config my_template.j2 --debug template` - Debug Jinja2 template processing
 - `netlab config my_template.j2 --debug all -vv` - Enable all debugging with verbose output
 
 See [](dev-debug-flag) for complete documentation of all debugging options and which commands support them.
-```
+
