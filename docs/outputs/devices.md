@@ -80,7 +80,7 @@ s2:
   device: frr
   hostname: clab-X-s2
   id: 2
-  kind: linux
+  kind: frr
   links:
   - ifindex: 1
     ifname: eth1
