@@ -169,7 +169,8 @@ and validation. Configuration is deployed with a bash script executed within the
 * We did not implement OSPFv3 for ASAv
 * ASAv static routes require an outgoing interface. *netlab* does not configure static routes with indirect next hops on ASAv.
 * ASAv does not support equal-cost static routes over multiple interfaces. *netlab* configures only the first next hop of a static route.
-* ASAv releases before 9.18(2) do not support loopback interfaces. As *netlab* uses loopback interfaces for iBGP sessions, iBGP sessions with ASAv nodes are not configured. Use eBGP sessions instead.
+* ASAv releases before 9.18(2) do not support loopback interfaces; *netlab* does not configure them by default. Set `loopback: true` on ASAv nodes running release 9.18(2) or later.
+* *netlab* uses loopback interfaces for IBGP sessions. IBGP sessions with ASAv nodes that have no loopback interface do not work; use EBGP sessions instead.
 * OSPF routes are not imported into the IPv6 BGP address family (OSPFv3 is not implemented). Routing policies cannot be used with route import.
 
 (caveats-cat8000v)=

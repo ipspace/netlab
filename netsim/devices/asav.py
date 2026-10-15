@@ -21,6 +21,19 @@ def check_isis_p2p_interfaces(node: Box, topology: Box, igp: str = 'isis') -> No
       more_data=[ f'Node {node.name} {intf.ifname} ({intf.name})' ],
       category=log.IncorrectType)
 
+def check_ibgp_loopback(node: Box) -> None:
+  if 'loopback' in node:
+    return
+  if not any(n.type == 'ibgp' for n in node.get('bgp.neighbors',[])):
+    return
+
+  report_quirk(
+    text=f"ASAv node '{node.name}' has no loopback, iBGP sessions will not work",
+    node=node,
+    quirk='ibgp_no_loopback',
+    more_hints=[ 'Set loopback: true on ASAv 9.18(2) or later, or use eBGP' ],
+    category=Warning)
+
 class ASA(_Quirks):
 
   @classmethod
@@ -36,3 +49,6 @@ class ASA(_Quirks):
         text=f"netlab cannot configure OSPFv3 on ASAv node '{node.name}'",
         node=node,
         category=log.IncorrectType)
+
+    if 'bgp' in mods:
+      check_ibgp_loopback(node)
