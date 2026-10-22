@@ -4,8 +4,8 @@
 # Tested with OcNOS-SP-PLUS-x86-7.0.0-262-GA (the free OcNOS VM) packaged by vrnetlab/ipinfusion/ocnos.
 # Data ports are eth1..ethN (container ethN maps 1:1), eth0 is the management port in the "management" VRF.
 # The loopback interface "lo" already carries 127.0.0.1, so netlab loopback addresses are added as secondary.
-# Configuration is pushed over SSH with the ipinfusion.ocnos Ansible collection (network_cli + ocnos_config,
-# which commits the transaction).
+# Configuration is pushed over SSH with netmiko (ipinfusion_ocnos driver, which commits the transaction).
+# The ipinfusion.ocnos Ansible collection (ocnos_config) is the alternative deployment method.
 description: IP Infusion OcNOS
 interface_name: eth{ifindex}
 mgmt_if: eth0
@@ -21,12 +21,19 @@ group_vars:
   ansible_ssh_pass: admin@123
   netlab_check_retries: 30
   netlab_check_delay: 10
+  netlab_config_mode: netmiko
 features:
   initial:
     ipv4:
       unnumbered: false
     ipv6:
       lla: false
+    config_mode: [ netmiko ]
+  netmiko:
+    device_type: ipinfusion_ocnos
+    error_regexp:                 # OcNOS errors start with '%'; '% Warning' lines are informational
+    - "^%(?! Warning).*"
+    step_config: true
   bgp:
     activate_af: true
     advertise: true

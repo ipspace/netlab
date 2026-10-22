@@ -12,6 +12,7 @@ This document describes how the *netmiko* configuration method works and which d
 | Cisco IOS/IOS XE[^IOS] | `ios.yml` | `cisco_ios` | Ansible |
 | Cisco Nexus OS | `nxos.yml` | `cisco_nxos` | **netmiko** |
 | Cisco IOS XR[^XR] | `xr.yml` | `cisco_xr` | **netmiko** |
+| IP Infusion OcNOS | `ocnos.yml` | `ipinfusion_ocnos` | **netmiko** |
 
 [^IOS]: Including all devices using **ios** as their parent device: Cisco IOSv, IOSvL2, CSR 1000v, Catalyst 8000v, IOL, and IOL L2 image.
 
@@ -107,6 +108,16 @@ netmiko:
   step_config: True
 ```
 
+**IP Infusion OcNOS** (`ocnos.yml`):
+
+```
+netmiko:
+  device_type: ipinfusion_ocnos
+  error_regexp:                 # OcNOS errors start with '%'; '% Warning' lines are informational
+  - "^%(?! Warning).*"
+  step_config: true
+```
+
 ```{tip}
 The **error_regexp** regular expression should match the whole error message, not just its first few characters. The matched text is included in the error message _netlab_ displays when the configuration deployment fails.
 ```
@@ -183,7 +194,7 @@ You can use any integration test (see [](dev-config-initial-tests)) to test the 
 netlab up -d eos -s defaults.devices.eos.group_vars.netlab_config_mode=netmiko <test>
 ```
 
-The `tests/config` directory contains topologies that can be used to test the error detection on Cisco IOS (`ios-netmiko.yml`) and Nexus OS (`nxos-netmiko.yml`) with the **netlab config** command. For example, to verify that the *netmiko* configuration method detects invalid configuration commands on Cisco IOS:
+The `tests/config` directory contains topologies that can be used to test the error detection on Cisco IOS (`ios-netmiko.yml`), Nexus OS (`nxos-netmiko.yml`), and OcNOS (`ocnos-netmiko.yml`) with the **netlab config** command. For example, to verify that the *netmiko* configuration method detects invalid configuration commands on Cisco IOS:
 
 * Start the lab with `netlab up ios-netmiko.yml`
 * Execute `netlab config invalid` to deploy an invalid configuration command; the configuration deployment should fail.
