@@ -8,6 +8,7 @@ The following implementation notes for configuration deployment, initial device 
    :maxdepth: 1
 
    deploy.md
+   netmiko.md
    initial.md
    bfd.md
    bgp.md
