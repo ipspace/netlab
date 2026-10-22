@@ -1,0 +1,49 @@
+---
+# IP Infusion OcNOS (OcNOS-SP virtual machine) -- containerlab ipinfusion_ocnos kind, built with vrnetlab.
+#
+# Tested with OcNOS-SP-PLUS-x86-7.0.0-262-GA (the free OcNOS VM) packaged by vrnetlab/ipinfusion/ocnos.
+# Data ports are eth1..ethN (container ethN maps 1:1), eth0 is the management port in the "management" VRF.
+# The loopback interface "lo" already carries 127.0.0.1, so netlab loopback addresses are added as secondary.
+# Configuration is pushed over SSH with the ipinfusion.ocnos Ansible collection (network_cli + ocnos_config,
+# which commits the transaction).
+description: IP Infusion OcNOS
+interface_name: eth{ifindex}
+mgmt_if: eth0
+loopback_interface_name: '{"loopback" + str(ifindex) if ifindex else "lo"}'
+role: router
+support:
+  level: minimal
+group_vars:
+  netlab_device_type: ocnos
+  ansible_network_os: ipinfusion.ocnos.ocnos
+  ansible_connection: network_cli
+  ansible_user: admin
+  ansible_ssh_pass: admin@123
+  netlab_check_retries: 30
+  netlab_check_delay: 10
+features:
+  initial:
+    ipv4:
+      unnumbered: false
+    ipv6:
+      lla: false
+  bgp:
+    activate_af: true
+    advertise: true
+  isis:
+    circuit_type: true
+  ospf:
+    password: true
+    priority: true
+    timers: true
+clab:
+  image: vrnetlab/ipinfusion_ocnos:7.0.0-262
+  build: https://containerlab.dev/manual/kinds/ipinfusion-ocnos/
+  features:
+    initial:
+      healthcheck: true
+  node:
+    kind: ipinfusion_ocnos
+  interface:
+    name: eth{ifindex}
+graphite.icon: router

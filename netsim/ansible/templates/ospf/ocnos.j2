@@ -1,0 +1,79 @@
+{#
+  OcNOS assigns OSPF areas with "network" statements in the router configuration,
+  not with interface commands. A host prefix (interface address) is accepted and
+  normalized to the subnet.
+#}
+{% set ospf_pid = ospf.process|default(1) %}
+{% if ospf.af.ipv4 is defined %}
+router ospf {{ ospf_pid }}
+{%   if ospf.router_id is defined %}
+ ospf router-id {{ ospf.router_id }}
+{%   endif %}
+{%   if ospf.reference_bandwidth is defined %}
+ auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
+{%   endif %}
+{%   for l in netlab_interfaces if 'ospf' in l and l.ipv4 is string and 'vrf' not in l %}
+ network {{ l.ipv4 }} area {{ l.ospf.area }}
+{%   endfor %}
+{%   for l in netlab_interfaces if l.ospf.passive|default(False) and 'vrf' not in l %}
+ passive-interface {{ l.ifname }} enable
+{%   endfor %}
+!
+{%   for l in netlab_interfaces if 'ospf' in l and l.ipv4 is string and 'vrf' not in l %}
+interface {{ l.ifname }}
+{%     if l.ospf.network_type is defined %}
+ ip ospf network {{ l.ospf.network_type }}
+{%     endif %}
+{%     if l.ospf.cost is defined %}
+ ip ospf cost {{ l.ospf.cost }}
+{%     endif %}
+{%     if l.ospf.timers.hello is defined %}
+ ip ospf hello-interval {{ l.ospf.timers.hello }}
+{%     endif %}
+{%     if l.ospf.timers.dead is defined %}
+ ip ospf dead-interval {{ l.ospf.timers.dead }}
+{%     endif %}
+{%     if l.ospf.priority is defined %}
+ ip ospf priority {{ l.ospf.priority }}
+{%     endif %}
+{%     if l.ospf.password is defined %}
+ ip ospf authentication
+ ip ospf authentication-key {{ l.ospf.password }}
+{%     endif %}
+!
+{%   endfor %}
+{% endif %}
+{#
+  OSPFv3: the process tag is the OSPF process ID; interfaces join an area with
+  "ipv6 router ospf area <area> tag <tag>"
+#}
+{% if ospf.af.ipv6 is defined %}
+router ipv6 ospf {{ ospf_pid }}
+{%   if ospf.router_id is defined %}
+ router-id {{ ospf.router_id }}
+{%   endif %}
+{%   for l in netlab_interfaces if l.ospf.passive|default(False) and 'ipv6' in l and 'vrf' not in l %}
+ passive-interface {{ l.ifname }} enable
+{%   endfor %}
+!
+{%   for l in netlab_interfaces if 'ospf' in l and 'ipv6' in l and 'vrf' not in l %}
+interface {{ l.ifname }}
+ ipv6 router ospf area {{ l.ospf.area }} tag {{ ospf_pid }}
+{%     if l.ospf.network_type is defined %}
+ ipv6 ospf network {{ l.ospf.network_type }}
+{%     endif %}
+{%     if l.ospf.cost is defined %}
+ ipv6 ospf cost {{ l.ospf.cost }}
+{%     endif %}
+{%     if l.ospf.timers.hello is defined %}
+ ipv6 ospf hello-interval {{ l.ospf.timers.hello }}
+{%     endif %}
+{%     if l.ospf.timers.dead is defined %}
+ ipv6 ospf dead-interval {{ l.ospf.timers.dead }}
+{%     endif %}
+{%     if l.ospf.priority is defined %}
+ ipv6 ospf priority {{ l.ospf.priority }}
+{%     endif %}
+!
+{%   endfor %}
+{% endif %}

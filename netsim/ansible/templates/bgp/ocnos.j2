@@ -1,0 +1,32 @@
+{% import "ocnos.macro.j2" as bgpcfg %}
+{#
+  Legacy bgp.originate (IPv4 prefixes): OcNOS advertises a "network" prefix only when it
+  is in the routing table, so add a discard route for each originated prefix
+#}
+{% for pfx in bgp.originate|default([]) %}
+ip route {{ pfx }} null
+{% endfor %}
+!
+router bgp {{ bgp.as }}
+{% if bgp.router_id is defined %}
+ bgp router-id {{ bgp.router_id }}
+{% endif %}
+{% if bgp.rr|default(False) and bgp.rr_cluster_id|default(False) %}
+ bgp cluster-id {{ bgp.rr_cluster_id }}
+{% endif %}
+{% for n in bgp.neighbors %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{{     bgpcfg.neighbor_global(n,n[af]) }}
+{%   endfor %}
+{% endfor %}
+{% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
+ address-family {{ af }} unicast
+{%   for pfx in bgp.advertise|default([]) if af in pfx %}
+  network {{ pfx[af] }}
+{%   endfor %}
+{%   for n in bgp.neighbors if n.activate[af]|default(false) %}
+{{     bgpcfg.neighbor_af(n,n[af],bgp) }}
+{%   endfor %}
+ exit-address-family
+{% endfor %}
+!

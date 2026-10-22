@@ -1,0 +1,29 @@
+{#
+   Global BGP neighbor definition. OcNOS sends standard and extended communities by default
+   ("send-community" on an enabled type is rejected), and advertisement-interval is a
+   router-level neighbor setting.
+#}
+{% macro neighbor_global(n,ip) %}
+ neighbor {{ ip }} remote-as {{ n.as }}
+ neighbor {{ ip }} description {{ n.name }}
+ neighbor {{ ip }} advertisement-interval 0
+{% if n._source_intf is defined %}
+ neighbor {{ ip }} update-source {{ n._source_intf.ifname }}
+{% endif %}
+{%- endmacro %}
+{#
+   Address family BGP neighbor definition
+#}
+{% macro neighbor_af(n,ip,bgp) %}
+  neighbor {{ ip }} activate
+{% if n.next_hop_self|default(False) %}
+  neighbor {{ ip }} next-hop-self
+{% endif %}
+{% if n.rr_client|default(False) %}
+  neighbor {{ ip }} route-reflector-client
+{% endif %}
+{% set c_list = bgp.community[n.type]|default([]) %}
+{% for c_type in ['standard','extended'] if c_type not in c_list %}
+  no neighbor {{ ip }} send-community {{ c_type }}
+{% endfor %}
+{%- endmacro %}
