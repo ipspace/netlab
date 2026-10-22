@@ -137,9 +137,10 @@ If you need a configuration method-specific configuration command, use the **net
 {% for intf in interfaces if intf.virtual_interface is not defined %}
 !
 interface {{ intf.ifname }}
-{% if netlab_config_mode in ['netmiko','sh'] %}
+{%   if netlab_config_mode in ['netmiko','sh'] %}
  platform tfa phy control-frame disabled
-{% endif %}
+{%   endif %}
+{% endfor %}
 ```
 
 ## Deploying the Configuration Snippets
