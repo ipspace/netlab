@@ -1,5 +1,5 @@
 (dev-config-deploy)=
-# Deploying Device Configurations
+# Deploying Device Configurations with Ansible
 
 *netlab* Ansible playbooks deploy configurations through device-specific task lists and templates. Linux-based containers (including daemons such as BIRD or dnsmasq, and routers such as FRRouting or VyOS) can also be configured using shell scripts.
 
