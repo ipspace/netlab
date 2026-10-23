@@ -40,7 +40,7 @@ def run(cli_args: typing.List[str]) -> None:
   log.set_logging_flags(args)
   set_dry_run(args)
 
-  topology = load_snapshot(args)
+  topology = load_snapshot(args,ghosts=False)
   node_list = _nodeset.parse_nodeset(args.node,topology)
   log.exit_on_error()
 

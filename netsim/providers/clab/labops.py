@@ -152,13 +152,17 @@ def load_kmods(topology: Box) -> None:
 
 def set_clab_runtime(topology: Box) -> None:
   runtime = topology.get('defaults.providers.clab.runtime',None)
-  if not runtime or os.environ.get('CLAB_RUNTIME',None) == str(runtime):
+  if not runtime:
+    return
+
+  if runtime == 'podman' and os.geteuid() != 0:
+    log.fatal('You must run netlab as the root user when using podman')
+
+  if os.environ.get('CLAB_RUNTIME',None) == str(runtime):
     return
 
   log.info(f'Setting containerlab runtime to {runtime}')
   os.environ['CLAB_RUNTIME'] = str(runtime)
-  if runtime == 'podman' and os.geteuid() != 0:
-    log.fatal('You must run netlab as the root user when using podman')
 
 def health_ready_setup(topology: Box) -> None:
   """
