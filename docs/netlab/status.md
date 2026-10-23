@@ -89,7 +89,7 @@ Lab default in /home/user
 
 (netlab-status-provider)=
 ```{tip}
-* **‌netlab status** executes **‌vagrant status --machine-readable** to get the status of Vagrant-controlled virtual machines and **‌docker ps** to get the status of running containers. The **vagrant status‌** might take a few seconds when executed on large labs and significantly longer if Vagrant cannot determine the state of a virtual machine (returning **‌inaccessible**).
+* **‌netlab status** executes **‌vagrant status --machine-readable** to get the status of Vagrant-controlled virtual machines and **‌docker ps -a** to get the status of containers (including the [stopped ones](netlab-node)). The **vagrant status‌** might take a few seconds when executed on large labs and significantly longer if Vagrant cannot determine the state of a virtual machine (returning **‌inaccessible**).
 * **‌netlab status --memory** executes **‌virsh domstats** and **‌docker stats**. At least the **‌docker stats** command is not blazingly fast.
 * The **‌virsh domstats** reports the Resident Set Size (RSS) of the QEMU process running the virtual machine (the physical RAM allocation), not the amount of virtual RAM allocated to the virtual machine.
 * With Linux Kernel Samepage Merging (KSM) enabled, the reported memory utilization overstates the real usage. 
