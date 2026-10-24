@@ -50,6 +50,7 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | Extreme VOSS           | vrnetlab/extreme_voss:9.4.0.0 |
 | Fortinet FortiOS       | vrnetlab/vr-fortios:7.4.8    |
 | FRR                    | quay.io/frrouting/frr:10.1.2 |
+| IP Infusion OcNOS [❗](caveats-ocnos) | vrnetlab/ipinfusion_ocnos:7.0.0-262 |
 | Juniper vMX            | vrnetlab/vr-vmx:18.2R1.9     |
 | Juniper vPTX           | vrnetlab/juniper_vjunosevolved:23.4R2-S2.1 |
 | Juniper vSRX           | vrnetlab/vr-vsrx:23.1R1.8    |
@@ -69,7 +70,7 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 * Follow Cisco's documentation to [install the IOS XRd container](build-iosxr-clab) (you have to change topology defaults to use Cisco IOS XRd vRouter), making sure the container image name matches the one _netlab_ uses (alternatively, [change the default image name](default-device-image) for the IOS XRd container).
 * Cisco 8000v containerlab image (once you manage to get it) has to be [installed](https://containerlab.dev/manual/kinds/c8000/#getting-cisco-8000-containerlab-docker-images) with the **docker image load** command.
 
-You can also use [vrnetlab](https://github.com/srl-labs/vrnetlab) to build VM-in-container images for Catalyst 8000v, Cisco CSR 1000v, Cisco IOSv, Cisco IOS on Linux (including layer-2 image), Nexus 9300v, IOS XR, Mikrotik RouterOS, Arista vEOS, Juniper vMX, vPTX, vQFX, and a few other devices.
+You can also use [vrnetlab](https://github.com/srl-labs/vrnetlab) to build VM-in-container images for Catalyst 8000v, Cisco CSR 1000v, Cisco IOSv, Cisco IOS on Linux (including layer-2 image), Nexus 9300v, IOS XR, Mikrotik RouterOS, Arista vEOS, IP Infusion OcNOS, Juniper vMX, vPTX, vQFX, and a few other devices.
 
 ```{warning}
 * You might have to change the default loopback address pool when using _vrnetlab_ images. See [](clab-vrnetlab) for details.

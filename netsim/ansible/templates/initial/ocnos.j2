@@ -1,0 +1,24 @@
+hostname {{ inventory_hostname.replace("_","-") }}
+!
+{% for l in netlab_interfaces %}
+interface {{ l.ifname }}
+{%   if l.name is defined %}
+ description {{ l.name|replace('"','') }}{{ " [" + l.role + "]" if l.role is defined else "" }}
+{%   elif l.type|default("") == "stub" %}
+ description Stub interface
+{%   endif %}
+{%   if l.mtu is defined and l.type|default("") != "loopback" %}
+ mtu {{ l.mtu }}
+{%   endif %}
+{%   if 'ipv4' in l and l.ipv4 is string %}
+{#     "lo" already has 127.0.0.1/8 as its primary address #}
+ ip address {{ l.ipv4 }}{{ " secondary" if l.ifname == "lo" else "" }}
+{%   endif %}
+{%   if 'ipv6' in l and l.ipv6 is string %}
+ ipv6 address {{ l.ipv6 }}
+{%   endif %}
+{%   if l.type|default("") != "loopback" %}
+ {{ "shutdown" if l.shutdown|default(False) else "no shutdown" }}
+{%   endif %}
+!
+{% endfor %}

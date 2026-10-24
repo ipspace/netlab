@@ -34,6 +34,7 @@
 | Fortinet FortiOS [❗](caveats-fortios) | fortios | minimal  |
 | FRRouting (FRR) [❗](caveats-frr) | frr     | full          |
 | [Generic Linux host](generic-linux-devices) | linux | full          |
+| IP Infusion OcNOS [❗](caveats-ocnos) | ocnos | minimal |
 | Juniper cRPD | crpd | full |
 | Juniper cSRX [❗](caveats-csrx) | csrx | minimal |
 | Juniper vMX [❗](caveats-vmx) | vmx         | best effort   |
@@ -138,6 +139,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Fortinet FortiOS   |  [✅](build-fortios)  |  ✅  |
 | FRR |  [✅](build-frr)[❗](caveats-frr)  |  ✅  |
 | Generic Linux (Ubuntu/Alpine)  |  [❗](labs/linux.md)  |  ✅  |
+| IP Infusion OcNOS  |  ❌  |  ✅[❗](caveats-ocnos)  |
 | Juniper cRPD       |  ❌  |  ✅   |
 | Juniper cSRX       |  ❌  |  ✅   |
 | Juniper vMX        |  ❌  |  ✅[❗](clab-vrnetlab)   |
@@ -306,6 +308,7 @@ The following system-wide features are configured on supported network operating
 | Fortinet FortiOS         | ✅  |  ❌  | ✅  | ✅  | ✅  |
 | FRR                      | ✅  | ✅[^HIF]  |  ❌  | ✅  | ✅  |
 | Generic Linux            | ✅  | ✅[^HIF]  |  ✅[❗](linux-lldp) | ✅  | ✅  |
+| IP Infusion OcNOS        | ✅  |  ❌  |  ❌  | ✅  | ✅  |
 | Juniper cSRX            | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
 | Junos[^Junos]            | ✅  |  ❌  | ✅  | ✅  | ✅  |
 | Mikrotik RouterOS 6      | ✅  | ✅  | ✅[❗](caveats-routeros6) | ✅ | ✅ |
@@ -340,6 +343,7 @@ The following interface parameters are configured on supported network operating
 | Fortinet FortiOS      | ✅  | ✅  |  ✅[❗](caveats-fortios)  |  ❌  |
 | FRR                   | ✅  | ✅  | ✅  | ✅  |
 | Generic Linux         |  ❌  |  ❌  | ✅  |  ❌  |
+| IP Infusion OcNOS     | ✅  |  ❌  | ✅  | ✅  |
 | Juniper cSRX         | ✅  |  ❌  | ✅  |  ❌  |
 | Junos[^Junos]         | ✅  | ✅  | ✅  |  ❌  |
 | Mikrotik RouterOS 6   | ✅  |  ❌  | ✅  |  ❌  |
@@ -371,6 +375,7 @@ The following interface addresses are supported on various platforms; most daemo
 | Fortinet FortiOS      | ✅  | ✅  |  ❌  |  ❌  |
 | FRR                   | ✅  | ✅  | ✅  | ✅  |
 | Generic Linux         | ✅  | ✅  |  ❌  |  ❌  |
+| IP Infusion OcNOS     | ✅  | ✅  |  ❌  |  ❌  |
 | Juniper cSRX         | ✅  | ✅  |  ❌  |  ❌  |
 | Junos[^Junos]         | ✅  | ✅  | ✅  |  ❌  |
 | Mikrotik RouterOS 6   | ✅  | ✅  |  ❌  |  ❌  |
@@ -421,6 +426,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Extreme Networks EXOS | ✅   |   ❌   |   ❌   |   ❌   |  ❌  |
 | Fortinet FortiOS      | ✅ [❗](caveats-fortios) |   ❌   |   ❌   |  ✅  |  ❌  |
 | FRR                   | ✅   |  ✅   |   ❌  | ✅  |  ✅  |
+| IP Infusion OcNOS     | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
 | Junos[^Junos]         | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
 | Mikrotik RouterOS 6   | ✅   |   ❌   |   ❌  | ✅  |   ❌  |
 | Mikrotik RouterOS 7   | ✅   |   ❌   |   ❌  | ✅  |   ❌  |
@@ -550,6 +556,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Extreme Networks EXOS | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Fortinet FortiOS      | ✅ | ❌ | ❌ | ✅ | ❌ |
 | FRR                   | ✅ | ✅ | ❌ | ✅ | ❌ |
+| IP Infusion OcNOS     | ✅ | ✅ | ❌ | ✅ | ❌ |
 | Junos[^Junos]         | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
 | Mikrotik RouterOS 6   |  ❌ | ❌ | ❌ | ✅ | ❌ |
 | Mikrotik RouterOS 7   | ✅ | ❌ | ❌ | ✅ | ❌ |

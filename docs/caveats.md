@@ -520,6 +520,16 @@ ansible_httpapi_port: 80
 * An OSPFv3 ABR running FRR release 10.3 does not originate summary external routes from NSSA areas
 * As of FRRouting release 10.6.0, the FRR implementation of EVPN for VXLAN-over-IPv6 is incompatible with the Arista EOS implementation due to different encodings of the PMSI_TUNNEL_ATTRIBUTE.
 
+(caveats-ocnos)=
+## IP Infusion OcNOS
+
+* _netlab_ runs IP Infusion OcNOS as a *vrnetlab* container (*containerlab* kind `ipinfusion_ocnos`). Download the OcNOS VM image for KVM (free, registration required) from the [IP Infusion web site](https://www.ipinfusion.com/free-software-demos/?vm=KVM&src=netlab). Decompress it (`xz -d`), copy the `.qcow2` file into the `ipinfusion/ocnos` directory of the [vrnetlab fork](https://github.com/srl-labs/vrnetlab), and run `make docker-image`.
+* We tested _netlab_ with the `OcNOS-SP-PLUS-x86-7.0.0-262-GA.qcow2` image; `make docker-image` builds it into the `vrnetlab/ipinfusion_ocnos:7.0.0-262` container image.
+* _netlab_ uses the default credentials of the *containerlab* kind (`admin`/`admin@123`).
+* The management interface (`eth0`) is in the `management` VRF, so the *vrnetlab* management subnet (`10.0.0.0/24`) does not conflict with the _netlab_ loopback addresses. The data-plane interfaces start with `eth1`.
+* The loopback interface `lo` always has 127.0.0.1/8 as its primary IPv4 address; _netlab_ configures the loopback IPv4 address as a secondary address. Additional loopback interfaces are named `loopback<n>`.
+* OcNOS assigns OSPFv2 areas with **network** statements in the OSPF routing process.
+
 (caveats-junos)=
 ## Common Junos caveats
 
