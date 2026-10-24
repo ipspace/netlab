@@ -1,0 +1,19 @@
+{#
+  OcNOS uses "authentication-key" for BGP MD5 passwords. All session parameters
+  are router-level neighbor commands
+#}
+router bgp {{ bgp.as }}
+{% for n in bgp.neighbors %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{%     if n.password is defined %}
+ neighbor {{ n[af] }} authentication-key 0 {{ n.password }}
+{%     endif %}
+{%     if n.timers is defined %}
+ neighbor {{ n[af] }} timers {{ n.timers.keepalive|default(60) }} {{ n.timers.hold|default(180) }}
+{%     endif %}
+{%     if n.bfd|default(False) %}
+ neighbor {{ n[af] }} fall-over bfd
+{%     endif %}
+{%   endfor %}
+{% endfor %}
+!
