@@ -40,15 +40,9 @@ class ASA(_Quirks):
   def device_quirks(self, node: Box, topology: Box) -> None:
     check_indirect_static_routes(node)
     mods = node.get('module', [])
-    for igp in ('isis'):
+    for igp in ('isis',):
       if igp in mods:
         check_isis_p2p_interfaces(node, topology,igp=igp)
-
-    if node.get('ospf.af.ipv6',False):
-      report_quirk(
-        text=f"netlab cannot configure OSPFv3 on ASAv node '{node.name}'",
-        node=node,
-        category=log.IncorrectType)
 
     if 'bgp' in mods:
       check_ibgp_loopback(node)

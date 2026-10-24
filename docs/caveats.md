@@ -166,7 +166,8 @@ and validation. Configuration is deployed with a bash script executed within the
 * ASAv does not have a standard implementation of OSPFv2 or IS-IS point-to-point circuits. netlab reports an error if you try to use IS-IS point-to-point with ASAv nodes. You could add `isis.network_type: false` to point-to-point links connecting ASA to other devices.
 * The ASAv IS-IS configuration templates were not tested, as all IS-IS integration tests include at least one point-to-point circuit
 * ASAv implements OSPFv2 point-to-point links with the `point-to-point non-broadcast` network type. *netlab* configures static OSPF neighbors on these links.
-* We did not implement OSPFv3 for ASAv
+* ASAv cannot run OSPFv3 on loopback interfaces; *netlab* does not advertise the IPv6 loopback prefix in OSPFv3.
+* ASAv implements OSPFv3 point-to-point links with the `point-to-point non-broadcast` network type. Unlike OSPFv2, static OSPFv3 neighbors are not needed.
 * ASAv static routes require an outgoing interface. *netlab* does not configure static routes with indirect next hops on ASAv.
 * ASAv does not support equal-cost static routes over multiple interfaces. *netlab* configures only the first next hop of a static route.
 * ASAv releases before 9.18(2) do not support loopback interfaces; *netlab* does not configure them by default. Set `loopback: true` on ASAv nodes running release 9.18(2) or later.
