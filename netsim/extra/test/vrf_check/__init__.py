@@ -44,7 +44,7 @@ def remove_vrf(ndata: Box, topology: Box) -> None:
     topology.validate.v_warning = {
       'wait': 0,
       'level': 'warning',
-      'fail': f'Device {ndata.device} does support VRFs, skipping VRF-specific tests' }
+      'fail': f'Device {ndata.device} does not support VRFs, skipping VRF-specific tests' }
 
 def pre_transform(topology: Box) -> None:
   for node,ndata in topology.nodes.items():
