@@ -453,6 +453,7 @@ These devices support additional control-plane protocols or BGP address families
 | Dell OS10             | ✅  | ✅  |  ❌  |  ❌  |
 | Extreme Networks EXOS |  ❌  |  ❌  |  ❌  | ✅  |
 | FRR                   | ✅  | ✅  | ✅  |  ❌  |
+| IP Infusion OcNOS     | ✅  |  ❌  |  ❌  |  ❌  |
 | Juniper cRPD          | ✅  |  ❌  | ✅  |  ❌  |
 | Juniper vMX           | ✅  |  ❌  | ✅  | ✅  |
 | Juniper vPTX          | ✅  | ✅  | ✅  | ✅  |

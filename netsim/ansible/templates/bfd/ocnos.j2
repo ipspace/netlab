@@ -1,0 +1,16 @@
+{#
+  OcNOS BFD timers use "minrx" (not "min_rx") and accept at most 999 msec. BFD is enabled
+  in routing protocol templates ("bfd all-interfaces" in OSPF/IS-IS, "fall-over bfd" in
+  the bgp.session plugin)
+#}
+{% for l in interfaces|default([]) if bfd|default(False) or l.bfd|default(False) %}
+{%   if not (l.bfd is defined and not l.bfd) %}
+{%     set link_bfd = l.bfd|default({}) %}
+interface {{ l.ifname }}
+ bfd interval {{
+   [link_bfd.min_tx|default(bfd.min_tx)|default(500),999]|min }} minrx {{
+   [link_bfd.min_rx|default(bfd.min_rx)|default(500),999]|min }} multiplier {{
+   link_bfd.multiplier|default(bfd.multiplier)|default(3) }}
+!
+{%   endif %}
+{% endfor %}
