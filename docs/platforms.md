@@ -546,7 +546,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Arrcus ArcOS          | ✅ | ❌[❗](caveats-arcos) | ❌ | ✅ | ❌ |
 | Aruba AOS-CX          | ✅ | ❌ | ❌ | ✅ | ❌ |
 | BIRD                  | ✅ | ❌ | ❌ | ✅ | ❌ |
-| Cisco ASAv            | ❌ | ✅ | ❌ | ✅ | ❌ |
+| Cisco ASAv            | ✅ [❗](caveats-asav) | ✅ | ❌ | ✅ | ❌ |
 | Cisco IOS/IOS XE[^18v]| ✅ | ✅ | ✅ | ✅ | ❌ |
 | Cisco IOS XR[^XR]     | ✅ | ✅ | ❌ | ✅ | ✅ |
 | Cisco Nexus OS        | ✅ | ✅ | ✅ | ✅ | ❌ |

@@ -1,0 +1,47 @@
+{% import "templates/routing/_redistribute.asa.j2" as redistribute with context %}
+!
+{% macro config(ospf_pid,ospf_vrf,ospf_data,intf_data,bgp={}) %}
+ipv6 router ospf {{ ospf_pid }}
+{% if ospf_data.router_id is defined %}
+  router-id {{ ospf_data.router_id }}
+{% endif %}
+{% if ospf_data.default is defined %}
+{%   set dfd = ospf_data.default %}
+  default-information originate{%
+    if dfd.always|default(False) %} always{% endif %}{%
+    if dfd.type|default('') %} metric-type {{ dfd.type.replace('e','') }}{% endif %}{%
+    if dfd.cost|default(0) %} metric {{ dfd.cost }}{% endif +%}
+{% endif %}
+{% if ospf_data.import is defined %}
+{{   redistribute.config(ospf_data,af='ipv6',ospf_pid=ospf_pid) }}
+{% endif %}
+{# ASA cannot run OSPFv3 on loopback interfaces #}
+{% for l in intf_data if 'ospf' in l and 'ipv6' in l and l.type != 'loopback' %}
+{%   if l.ospf.passive|default(False) %}
+  passive-interface {{ l.ifname }}
+{%   endif %}
+{% endfor %}
+!
+{% for l in intf_data if 'ospf' in l and 'ipv6' in l and l.type != 'loopback' %}
+interface {{ l.ifname }}
+! {{ l.name|default("") }} - OSPF interface parameters
+  ipv6 ospf {{ ospf_pid }} area {{ l.ospf.area }}
+{# ASA p2p is non-broadcast only; OSPFv3 static neighbors need link-local addresses, so none are configured #}
+{%   if l.ospf.network_type|default("") == "point-to-point" %}
+  ipv6 ospf network point-to-point non-broadcast
+{%   endif %}
+{%   if l.ospf.cost is defined %}
+  ipv6 ospf cost {{ l.ospf.cost }}
+{%   endif %}
+{%   if l.ospf.timers.hello is defined %}
+  ipv6 ospf hello-interval {{ l.ospf.timers.hello }}
+{%   endif %}
+{%   if l.ospf.timers.dead is defined %}
+  ipv6 ospf dead-interval {{ l.ospf.timers.dead }}
+{%   endif %}
+{%   if l.ospf.priority is defined %}
+  ipv6 ospf priority {{ l.ospf.priority }}
+{%   endif %}
+!
+{% endfor %}
+{% endmacro %}
