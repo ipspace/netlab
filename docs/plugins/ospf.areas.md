@@ -18,13 +18,11 @@ The plugin includes Jinja2 templates for the following platforms:
 | Cumulus NVUE |✅|✅|✅ [❗](caveats-cumulus-nvue) | ❌ |
 | Dell OS10    |✅|✅|✅ [❗](caveats-os10) | ❌ |
 | FRR          |✅|✅|✅ [❗](caveats-frr) |✅|
-| IP Infusion OcNOS[^OcNOS] |✅|✅|✅| ❌ |
+| IP Infusion OcNOS |✅|✅|✅ [❗](caveats-ocnos) | ❌ |
 | Junos[^Junos]|✅|✅|✅|✅|
 | SR Linux     |✅|✅|✅ [❗](caveats-srlinux) |✅|
 
 [^18v]: Includes Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
-
-[^OcNOS]: The OcNOS configuration template supports only OSPFv2 area parameters and does not implement area range filters
 
 [^Junos]: Includes vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
 
