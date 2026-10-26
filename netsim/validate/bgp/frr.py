@@ -189,7 +189,7 @@ def filter_bgp_nh(data: list, value: typing.Any, pfx: str, state: str, **kwargs:
 Select best BGP path(s)
 """
 def filter_best(data: list, value: typing.Any, **kwargs: typing.Any) -> list:
-  return [ p for p in data if p.get('bestpath',{}).get('overall',None) == value ]
+  return [ p for p in data if p.get('bestpath',{}).get('overall',False) == value ]
 
 
 """
