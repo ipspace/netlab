@@ -28,7 +28,7 @@ VRFs are supported on these platforms:
 | Cumulus 5.x (NVUE)    | ✅  |  ✅ [❗](caveats-cumulus-nvue) |  ✅  |
 | Dell OS10             | ✅  | ✅  | ✅  |
 | FRR [❗](caveats-frr) | ✅  | ✅  | ✅  |
-| IP Infusion OcNOS     | ✅  | ✅  | ✅  |
+| IP Infusion OcNOS     | ✅  |  ❌ [❗](caveats-ocnos) | ✅  |
 | Junos[^Junos]         | ✅  | ✅ [❗](caveats-crpd) | ✅  |
 | Mikrotik RouterOS 6   | ✅  | ✅  |  ❌  |
 | Mikrotik RouterOS 7   | ✅  | ✅  | ✅  |
@@ -62,7 +62,7 @@ These platforms support routing protocols in VRFs:
 | Cumulus 5.x (NVUE)    | ✅  |  ❌  | ✅  | ❌  | ❌  | ❌  |
 | Dell OS10             | ✅  |  ❌  | ✅  | ❌  | ❌  | ❌  |
 | FRR [❗](caveats-frr) | ✅  | ✅  | ✅  | ✅ | ✅ | ✅ |
-| IP Infusion OcNOS     | ✅  |  ❌  |  ❌  | ❌  | ❌  | ❌  |
+| IP Infusion OcNOS     | ✅  | ✅  | ✅  | ❌  | ❌  | ❌  |
 | Junos[^Junos]         | ✅  | ✅  | ✅  | ❌  | ❌  | ❌  |
 | Mikrotik RouterOS 6   | ✅  [❗](caveats-routeros6) |  ❌  | ✅  | ❌  | ❌  | ❌  |
 | Mikrotik RouterOS 7   | ✅  | ✅  | ✅  | ❌  | ❌  | ❌  |
