@@ -530,7 +530,6 @@ ansible_httpapi_port: 80
 * The loopback interface `lo` always has 127.0.0.1/8 as its primary IPv4 address; _netlab_ configures the loopback IPv4 address as a secondary address. Additional loopback interfaces are named `loopback<n>`.
 * OcNOS assigns OSPFv2 areas with **network** statements in the OSPF routing process.
 * OcNOS enables BFD for all OSPFv2 or IS-IS interfaces (**bfd all-interfaces**) when you enable BFD for OSPF or IS-IS on a node. BFD timers are limited to 999 msec.
-* The OcNOS BGP configuration template imports routes from other routing protocols only into the IPv4 address family.
 
 (caveats-junos)=
 ## Common Junos caveats
