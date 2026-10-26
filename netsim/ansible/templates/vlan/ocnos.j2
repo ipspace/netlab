@@ -1,0 +1,22 @@
+{#
+  The bridge, the VLAN database and the SVIs are created in the initial configuration.
+  This template attaches access and trunk ports to the VLAN-aware bridge
+#}
+{% for l in interfaces if l.vlan.trunk_id is defined or l.vlan.access_id is defined %}
+interface {{ l.ifname }}
+ switchport
+ bridge-group 1
+{%   if l.vlan.trunk_id is defined %}
+ switchport mode trunk
+{%     for tid in l.vlan.trunk_id|sort %}
+ switchport trunk allowed vlan add {{ tid }}
+{%     endfor %}
+{%     if l.vlan.native is defined %}
+ switchport trunk native vlan {{ l.vlan.access_id }}
+{%     endif %}
+{%   else %}
+ switchport mode access
+ switchport access vlan {{ l.vlan.access_id }}
+{%   endif %}
+!
+{% endfor %}

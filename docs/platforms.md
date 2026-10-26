@@ -484,6 +484,7 @@ The layer-2 control plane [configuration modules](module-reference.md) are suppo
 | Dell OS10                 | ✅ | ✅ |
 | dnsmasq                   | ❌  | ✅ |
 | FRR                       | ✅ | ✅ |
+| IP Infusion OcNOS         | ✅ | ❌  |
 | Linux                     | ❌  | ✅ |
 | Sonic (containerlab)      | ❌  | ✅ |
 
@@ -508,6 +509,7 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | Dell OS10             | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
 | Extreme Networks EXOS | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | FRR                   | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| IP Infusion OcNOS     | ✅ | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
 | Juniper cRPD          |  ❌ |  ❌ |   ❌ | ✅ | ✅ |  ❌ |
 | Juniper vMX           | ✅ | ✅ |  ❌ | ✅ | ✅ |  ❌ |
 | Juniper vPTX          | ✅ | ✅ | ✅ [❗](caveats-vptx) | ✅ | ✅ |  ❌ |

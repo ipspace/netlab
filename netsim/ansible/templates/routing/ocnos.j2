@@ -3,10 +3,11 @@
   that is not on a connected subnet (no next-hop interface) needs the "recursive"
   keyword, or OcNOS keeps the route inactive
 #}
-{% for sr_data in routing.static|default([]) if 'vrf' not in sr_data %}
+{% for sr_data in routing.static|default([]) %}
+{%   set sr_vrf = 'vrf ' ~ sr_data.vrf ~ ' ' if 'vrf' in sr_data else '' %}
 {%   for sr_af in ['ipv4','ipv6'] if sr_af in sr_data %}
 {%     set sr_nh = 'null' if 'discard' in sr_data.nexthop else sr_data.nexthop[sr_af] %}
 {%     set sr_rec = ' recursive' if 'discard' not in sr_data.nexthop and 'intf' not in sr_data.nexthop else '' %}
-{{ 'ip' if sr_af == 'ipv4' else 'ipv6' }} route {{ sr_data[sr_af] }} {{ sr_nh }}{{ sr_rec }}
+{{ 'ip' if sr_af == 'ipv4' else 'ipv6' }} route {{ sr_vrf }}{{ sr_data[sr_af] }} {{ sr_nh }}{{ sr_rec }}
 {%   endfor %}
 {% endfor %}

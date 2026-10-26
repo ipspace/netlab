@@ -1,0 +1,13 @@
+{#
+  OcNOS VLANs live in a VLAN-aware (customer) bridge that has to exist before the VLAN
+  database and the SVIs (vlan1.<id>). The bridge protocol is the STP flavor; MSTP
+  bridges do not take the "vlan-bridge" keyword
+#}
+{% set bproto = {'stp': 'ieee', 'rstp': 'rstp', 'mstp': 'mstp'}[stp.protocol|default('stp')] %}
+bridge 1 protocol {{ bproto }}{{ ' vlan-bridge' if bproto != 'mstp' else '' }}
+!
+vlan database
+{% for vname,vdata in vlans.items() %}
+ vlan {{ vdata.id }} bridge 1 state enable
+{% endfor %}
+!
