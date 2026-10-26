@@ -1,0 +1,36 @@
+{#
+  OSPFv2 and OSPFv3 area parameters use the same commands in "router ospf" and
+  "router ipv6 ospf". OcNOS area ranges have no cost option, and NSSA external
+  ranges are not implemented (see device features)
+#}
+{% macro area_config(adata,af,abr) %}
+{%   if adata.kind == 'stub' %}
+ area {{ adata.area }} stub{{ ' no-summary' if not adata.inter_area else '' }}
+{%   elif adata.kind == 'nssa' %}
+ area {{ adata.area }} nssa{{ ' no-summary' if not adata.inter_area else '' }}
+{%     if abr and adata.default|default(false) %}
+ area {{ adata.area }} nssa default-information-originate{% if adata.default.cost is defined
+   %} metric {{ adata.default.cost }} metric-type 1{% endif +%}
+{%     endif %}
+{%   endif %}
+{%   if adata.kind in ['stub','nssa'] and adata.default.cost is defined %}
+ area {{ adata.area }} default-cost {{ adata.default.cost }}
+{%   endif %}
+{%   if abr %}
+{%     for range in adata.range|default([]) if range[af] is defined %}
+ area {{ adata.area }} range {{ range[af] }}
+{%     endfor %}
+{%     for range in adata.filter|default([]) if range[af] is defined %}
+ area {{ adata.area }} range {{ range[af] }} not-advertise
+{%     endfor %}
+{%   endif %}
+{% endmacro %}
+{% if ospf.areas is defined %}
+{%   for af in ['ipv4','ipv6'] if ospf.af[af] is defined %}
+router {{ 'ipv6 ' if af == 'ipv6' else '' }}ospf {{ ospf.process|default(1) }}
+{%     for adata in ospf.areas %}
+{{       area_config(adata,af,ospf._abr|default(false)) -}}
+{%     endfor %}
+!
+{%   endfor %}
+{% endif %}

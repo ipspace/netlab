@@ -530,6 +530,9 @@ ansible_httpapi_port: 80
 * The management interface (`eth0`) is in the `management` VRF, so the *vrnetlab* management subnet (`10.0.0.0/24`) does not conflict with the _netlab_ loopback addresses. The data-plane interfaces start with `eth1`.
 * The loopback interface `lo` always has 127.0.0.1/8 as its primary IPv4 address; _netlab_ configures the loopback IPv4 address as a secondary address. Additional loopback interfaces are named `loopback<n>`.
 * OcNOS assigns OSPFv2 areas with **network** statements in the OSPF routing process.
+* OcNOS enables BFD for all OSPFv2, OSPFv3, or IS-IS interfaces (**bfd all-interfaces**) when you enable BFD for OSPF or IS-IS on a node. BFD timers are limited to 999 msec.
+* OcNOS OSPF area ranges have no cost option; the **ospf.areas** plugin configures area ranges without the **cost** parameter.
+* OcNOS static routes with a next hop that is not on a connected subnet are configured with the **recursive** keyword. With OcNOS 7.0.0-262, an IPv4 recursive static route whose next hop resolves over more than one equal-cost path is in the routing table, but the router reports its destination as unreachable. IPv6 recursive static routes work in the same scenario.
 
 (caveats-junos)=
 ## Common Junos caveats

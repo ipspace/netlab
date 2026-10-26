@@ -18,6 +18,7 @@ The plugin includes Jinja2 templates for the following platforms:
 | Cumulus NVUE |✅|✅|✅ [❗](caveats-cumulus-nvue) | ❌ |
 | Dell OS10    |✅|✅|✅ [❗](caveats-os10) | ❌ |
 | FRR          |✅|✅|✅ [❗](caveats-frr) |✅|
+| IP Infusion OcNOS |✅|✅|✅ [❗](caveats-ocnos) | ❌ |
 | Junos[^Junos]|✅|✅|✅|✅|
 | SR Linux     |✅|✅|✅ [❗](caveats-srlinux) |✅|
 

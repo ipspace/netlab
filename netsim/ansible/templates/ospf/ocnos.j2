@@ -3,6 +3,7 @@
   not with interface commands. A host prefix (interface address) is accepted and
   normalized to the subnet.
 #}
+{% import "templates/routing/_default.ios.j2" as ospf_default %}
 {% set ospf_pid = ospf.process|default(1) %}
 {% if ospf.af.ipv4 is defined %}
 router ospf {{ ospf_pid }}
@@ -12,6 +13,10 @@ router ospf {{ ospf_pid }}
 {%   if ospf.reference_bandwidth is defined %}
  auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
 {%   endif %}
+{%   if ospf.bfd|default(False) %}
+ bfd all-interfaces
+{%   endif %}
+{{ ospf_default.config(ospf,'ipv4') }}
 {%   for l in netlab_interfaces if 'ospf' in l and l.ipv4 is string and 'vrf' not in l %}
  network {{ l.ipv4 }} area {{ l.ospf.area }}
 {%   endfor %}
@@ -55,6 +60,10 @@ router ipv6 ospf {{ ospf_pid }}
 {%   if ospf.reference_bandwidth is defined %}
  auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
 {%   endif %}
+{%   if ospf.bfd|default(False) %}
+ bfd all-interfaces
+{%   endif %}
+{{ ospf_default.config(ospf,'ipv6') }}
 {%   for l in netlab_interfaces if l.ospf.passive|default(False) and 'ipv6' in l and 'vrf' not in l %}
  passive-interface {{ l.ifname }} enable
 {%   endfor %}

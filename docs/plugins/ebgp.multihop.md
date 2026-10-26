@@ -19,6 +19,7 @@ The plugin includes Jinja2 templates for the following platforms:
 | Cumulus 5.x (NVUE)  |  ✅  |  ✅  |
 | Dell OS10            |  ✅  |  ✅  |
 | FRR                 |  ✅  |  ✅  |
+| IP Infusion OcNOS   |  ✅  |  ❌   |
 | JunOS               |  ✅  |  ✅  |
 | Nokia SR Linux      |  ✅  |  ❌   |
 | Nokia SR OS         |  ✅  |  ✅  |
