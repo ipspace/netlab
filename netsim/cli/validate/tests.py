@@ -145,18 +145,18 @@ def execute_node_validation(
   if action == 'show':                          # We got a 'show' action, try to get parsed results
     result = devices.get_parsed_result(v_entry,n_name,topology,args.verbose)
     if '_error' in result:                      # OOPS, we failed (unrecoverable)
-      report.increase_fail_count(v_entry)
+      report.increase_fail_count(v_entry,error=True)
       return (True, False)                      # ... and return (processed, failed)
   elif action == 'exec':                        # We got an 'exec' action, try to get something out of the device
     result.stdout = devices.get_result_string(v_entry,n_name,topology,report_error)
     if result.stdout is False:                  # Did the exec command fail?
       if report_error:
-        report.increase_fail_count(v_entry)
+        report.increase_fail_count(v_entry,error=True)
         return (True, False)                    # Return (processed, failed)
   elif action == 'ansible':                     # Fetch DUT state via an Ansible module (e.g. OcNOS cmlsh)
     result = ansible.get_result(v_entry,n_name,topology,args.verbose)
     if '_error' in result:
-      report.increase_fail_count(v_entry)
+      report.increase_fail_count(v_entry,error=True)
       return (True, False)
   elif action == 'suzieq':
     result = suzieq.get_result(v_entry,n_name,topology,args.verbose)
@@ -207,7 +207,7 @@ def execute_validation_test(
   if 'wait' in v_entry and not v_entry.nodes:     # Handle pure wait case
     if v_entry.get('stop_on_error',False):
       if TEST_COUNT.failed:
-        report.log_failure('Validation failed due to previous errors',topology)
+        report.log_abort('Validation failed due to previous errors',topology)
         sys.exit(1)
       else:
         report.log_info(v_entry.get('pass','No errors so far, moving on'),topology)
@@ -242,7 +242,9 @@ def execute_validation_test(
 
   while n_remaining:                              # Keep retrying 
     for n_name in n_remaining:                    # Iterate over remaining nodes
+      report.set_node(n_name)                     # Collect JSON results for this node
       (proc,OK) = execute_node_validation(v_entry,topology,n_name,time.time() >= stop_time,args)
+      report.set_node(None)
       if proc:                                    # Have we processed this node? Remove node from remaining list
         n_remaining = [ x for x in n_remaining if x != n_name ]
 

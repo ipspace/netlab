@@ -1,0 +1,129 @@
+message: |
+  Check the JSON results of the 'netlab validate' command
+
+plugin: [ files ]
+module: [ bgp ]
+
+defaults.sources.extra: [ ../../integration/wait_times.yml ]
+defaults.netlab.integration:
+  validate: bash validate_json.sh
+
+# Node device types set via default groups
+#
+nodes:
+  dut_frr.bgp.as: 65000
+  r1.bgp.as: 65101
+  r2:
+    bgp.as: 65102
+    skip_config: [ bgp ]
+
+links: [ dut_frr-r1, dut_frr-r2 ]
+
+validate:
+  bgp_up:
+    description: BGP session with R1 is established
+    nodes: [ dut_frr ]
+    wait: ebgp_session
+    plugin: bgp_neighbor(node.bgp.neighbors,'r1')
+  bgp_down:
+    description: BGP session with R2 is not established (fail)
+    nodes: [ dut_frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'r2')
+  bgp_warn:
+    description: BGP session with R2 is not established (warning)
+    nodes: [ dut_frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'r2')
+    level: warning
+    fail: The BGP session with R2 is not established
+  bgp_xfail:
+    description: BGP session with R2 is not established (expected failure)
+    nodes: [ dut_frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'r2')
+    _expect_fail: True
+  bgp_skip:
+    description: The test is not defined for FRR (skipped)
+    nodes: [ dut_frr ]
+    show:
+      eos: ip bgp summary | json
+    valid: vrfs
+  bgp_error:
+    description: The printout is not JSON (execution error)
+    nodes: [ dut_frr ]
+    show:
+      frr: version
+    valid: vrfs
+
+  stop_now:
+    description: Mandatory test that fails
+    nodes: [ dut_frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'r2')
+    stop_on_error: True
+  stop_never:
+    description: This test should never be executed
+    nodes: [ dut_frr ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'r1')
+
+files:
+  validate_json.sh: |
+    fail() {
+      echo "===================================================================="
+      echo "FAIL: $1"
+      echo "===================================================================="
+      exit 1
+    }
+
+    # Execute 'netlab validate --format json', check the exit code and the JSON syntax
+    #
+    run_json() {                                    # Usage: run_json <output> <exit-code> <args>
+      OUT=$1
+      EXPECTED=$2
+      shift 2
+      echo "Executing netlab validate --format json $*"
+      netlab validate --format json "$@" >$OUT      # Execute the tests, stdout should contain only JSON
+      EXIT_CODE=$?
+      if [ $EXIT_CODE -ne $EXPECTED ]; then
+        fail "netlab validate $* returned exit code $EXIT_CODE (expected $EXPECTED)"
+      fi
+      jq empty $OUT || fail "netlab validate $* did not produce a valid JSON document"
+    }
+
+    # Check a jq expression (that should return true) on the last JSON results
+    #
+    check_json() {                                  # Usage: check_json <jq-expression>
+      jq -e "$1" $OUT >/dev/null || fail "$OUT: $1"
+      echo "OK: $1"
+    }
+
+    run_json results.json 1 'bgp_.*'
+    check_json '.version == 1 and .exit_code == 1 and .aborted == false and (has("reason") | not)'
+    check_json '.started | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")'
+    check_json '(.started | fromdateiso8601) <= now'
+    check_json '.summary | .count == 5 and .passed == 2 and .failed == 1'
+    check_json '.summary | .warning == 1 and .skipped == 1 and .error == 1'
+    check_json '.results | keys_unsorted == ["bgp_up","bgp_down","bgp_warn","bgp_xfail","bgp_skip","bgp_error"]'
+    check_json '.results | map_values(.result) | .bgp_up == "pass" and .bgp_down == "fail" and .bgp_warn == "warning"'
+    check_json '.results | map_values(.result) | .bgp_xfail == "pass" and .bgp_skip == "skip" and .bgp_error == "error"'
+    check_json '.results.bgp_up | .description == "BGP session with R1 is established" and .level == null'
+    check_json '.results.bgp_up | (.elapsed | type == "number") and (.nodes | keys == ["dut_frr"])'
+    check_json '.results.bgp_up.nodes.dut_frr | .device == "frr" and .result == "pass"'
+    check_json '.results.bgp_up.nodes.dut_frr.message | type == "string"'
+    check_json '.results.bgp_down.nodes.dut_frr | .result == "fail" and (.message | test("r2"))'
+    check_json '.results.bgp_warn.level == "warning"'
+    check_json '.results.bgp_warn.nodes.dut_frr.result == "warning"'
+    check_json '.results.bgp_warn.nodes.dut_frr.message == "The BGP session with R2 is not established"'
+    check_json '.results.bgp_xfail.nodes.dut_frr.result == "fail"'
+    check_json '.results.bgp_skip.nodes.dut_frr.message | test("not defined for device frr")'
+    check_json '.results.bgp_error.nodes.dut_frr.message | test("as JSON")'
+
+    run_json abort.json 1 'stop_.*'
+    check_json '.aborted == true and .reason == "Mandatory test failed, validation stopped"'
+    check_json '.results | keys == ["stop_now"]'
+    check_json '.results.stop_now.result == "fail"'
+
+    run_json list.json 0 --list
+    check_json '.version == 1 and (.tests | length == 8)'
+    check_json '.tests.bgp_up | .nodes == ["dut_frr"] and .description == "BGP session with R1 is established"'
+
+    echo "===================================================================="
+    echo "SUCCESS: netlab validate JSON results are correct"
+    echo "===================================================================="
