@@ -155,9 +155,9 @@ def exec_plugin_function(action: str, v_entry: Box, node: Box, result: typing.Op
   except AttributeError as ex:
     if p_name in str(ex):
       return None
-    raise PluginEvalError(str(ex))
+    raise PluginEvalError(str(ex)) from ex
   except Exception as ex:
-    raise PluginEvalError(str(ex))
+    raise PluginEvalError(str(ex)) from ex
 
 """
 execute_validation_plugin:
@@ -177,6 +177,7 @@ def execute_validation_plugin(
       verbosity: int,
       report_error: bool) -> typing.Optional[bool]:
 
+  p_error = False
   try:
     OK = exec_plugin_function('valid',v_entry,node,result)
     if OK is not None and not OK:
@@ -185,6 +186,7 @@ def execute_validation_plugin(
   except Exception as ex:
     if report_error:
       report.p_test_fail(node.name,v_entry,topology,str(ex))
+    p_error = type(ex.__cause__) is not Exception   # Plugins report failures with plain exceptions
     OK = False
 
   if (not OK and verbosity) or verbosity >= 2:
@@ -199,6 +201,6 @@ def execute_validation_plugin(
       report.increase_pass_count(v_entry)
     elif report_error:
       if not v_entry.get('_expect_fail',False):
-        report.increase_fail_count(v_entry)
+        report.increase_fail_count(v_entry,error=p_error)
 
   return OK if OK is None else bool(OK)

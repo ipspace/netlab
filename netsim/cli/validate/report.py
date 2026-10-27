@@ -2,17 +2,125 @@
 # Reporting functions for the "netlab validate" command
 #
 import sys
+import time
 import typing
 
 from box import Box
 
-from ...utils import strings
+from ... import __version__
+from ...data import global_vars
+from ...utils import log, strings
+
+JSON_VERSION = 1
+JSON_STATUS = {                               # Map logging status into JSON results
+  'PASS': 'pass', 'SUCCESS': 'pass', 'FAIL': 'fail', 'WARNING': 'warning', 'SKIPPED': 'skip', 'ERROR': 'error' }
+JSON_RANK = [ 'pass', 'skip', 'warning', 'fail', 'error' ]
+
+'''
+start_test, set_node, record_result: collect the results for the JSON printout
+
+The results are recorded in the logging functions based on the current test/node
+context and the status of the logged message. The last message wins, and execution
+errors cannot be overwritten.
+'''
+def start_test(v_entry: Box) -> None:
+  import netsim.cli.validate as _validate
+  _validate.RESULTS['results'][v_entry.name] = {
+    'description': v_entry.get('description',None),
+    'level': v_entry.get('level',None),
+    'result': None,
+    'message': None,
+    'elapsed': 0.0,
+    'nodes': {},
+    '_expect_fail': v_entry.get('_expect_fail',False) }
+  _validate.CURRENT.clear()
+  _validate.CURRENT.update({ 'test': v_entry.name, 'node': None, 'start': time.time() })
+
+def set_node(n_name: typing.Optional[str]) -> None:
+  import netsim.cli.validate as _validate
+  if _validate.CURRENT:
+    _validate.CURRENT['node'] = n_name
+
+def record_result(f_status: str, msg: typing.Optional[str] = None) -> None:
+  '''
+  Log result into JSON data structure, optionally adding an error message
+  '''
+  import netsim.cli.validate as _validate
+  ctx = _validate.CURRENT
+  result = JSON_STATUS.get(f_status,None)         # Map uppercase log text into JSON result
+  if result is None or not ctx.get('test'):
+    return
+
+  # Fetch the test results from the current test
+  t_result = _validate.RESULTS['results'][ctx['test']]
+  elapsed = round(time.time() - ctx['start'],1)
+  t_result['elapsed'] = elapsed                   # Log maximum test-wide elapsed time
+  n_name = ctx['node']                            # Is the result within the context of a node?
+  if n_name:                                      # Node result, remove node name from the message
+    topology = global_vars.get_topology()         # Fetch the device type (while dealing with imaginary edge cases)
+    n_device = topology.nodes[n_name].device if topology is not None else None
+    entry = t_result['nodes'].setdefault(n_name,{ 'device': n_device, 'result': None, 'message': None })
+    if msg:
+      msg = msg.removeprefix(f'Node {n_name}: ').removeprefix(f'{n_name}: ')
+  else:                                           # Test-level result
+    entry = t_result
+
+  if entry['result'] != 'error':                  # Do not overwrite previous error result
+    entry['result'] = result
+  if msg is not None:                             # But always store message (when avaialble)
+    entry['message'] = msg
+  entry['elapsed'] = elapsed                      # ... and the elapsed time (which makes it max elapsed time)
+
+def json_results(exit_code: int) -> dict:
+  '''
+  Build the JSON results document
+  '''
+  import netsim.cli.validate as _validate
+  TC = _validate.TEST_COUNT
+  summary = {
+    'count': TC.count, 'passed': TC.passed, 'failed': TC.failed,
+    'warning': TC.warning, 'skipped': TC.skip, 'error': 0 }
+  results = {}
+  for t_name,t_result in _validate.RESULTS['results'].items():
+    expect_fail = t_result.pop('_expect_fail',False)
+    entries = list(t_result['nodes'].values()) or [ t_result ]
+    for entry in entries:                     # Errors are counted as failures (or warnings), move them
+      if entry['result'] == 'error':
+        summary['error'] += 1
+        summary['warning' if t_result['level'] == 'warning' else 'failed'] -= 1
+    if not expect_fail:                       # Test result is the worst node result (unless we expect a failure)
+      for entry in t_result['nodes'].values():
+        if entry['result'] and (not t_result['result'] or
+            JSON_RANK.index(entry['result']) > JSON_RANK.index(t_result['result'])):
+          t_result['result'] = entry['result']
+    if t_result['result'] is None:            # Pure 'wait' entries don't produce results
+      continue
+    results[t_name] = t_result
+
+  completed = _validate.RESULTS.get('completed',False)
+  doc: dict = {
+    'version': JSON_VERSION, 'netlab_version': __version__,
+    'started': _validate.RESULTS.get('started',None),
+    'exit_code': exit_code, 'aborted': not completed }
+  if not completed:
+    reason = _validate.RESULTS.get('reason',None)
+    if not reason:                            # No explicit abort reason, use the last fatal/error message
+      err_log = [                             # ... skipping hints and the generic 'exit on error' message
+        line for line in log.get_error_log()
+          if not line.startswith('...') and 'Cannot proceed beyond this point' not in line ]
+      reason = err_log[-1] if err_log else 'Validation stopped'
+    doc['reason'] = reason
+  doc['summary'] = summary
+  doc['results'] = results
+  return doc
 
 '''
 increase_fail_count, increase_pass_count: Increase the counters based on test severity level
 '''
-def increase_fail_count(v_entry: Box) -> None:
+def increase_fail_count(v_entry: Box, error: bool = False) -> None:
   from . import TEST_COUNT
+  if error:                                   # Execution error (not a failed check)
+    record_result('ERROR')
   TEST_COUNT.count += 1
   if v_entry.get('level',None) == 'warning':
     TEST_COUNT.warning += 1
@@ -38,6 +146,7 @@ def p_status(txt: str, color: str, topology: Box, stderr: bool = False) -> None:
 #
 def p_test_header(v_entry: Box,topology: Box) -> None:
   import netsim.cli.validate as _validate
+  start_test(v_entry)
   h_text = v_entry.get('description','Starting test') + \
            (f' [ node(s): {",".join(v_entry.nodes)} ]' if v_entry.nodes else '')
 
@@ -58,6 +167,7 @@ def log_failure(
       more_data: typing.Optional[str] = None) -> None:
 
   import netsim.cli.validate as _validate
+  record_result(f_status,msg)
   if _validate.TEST_HEADER:
     print(file=sys.stderr)
     p_status(_validate.TEST_HEADER['name'],'red',topology,stderr=True)
@@ -71,10 +181,19 @@ def log_failure(
     p_status('MORE','bright_black',topology,stderr=_validate.ERROR_ONLY)
     print(more_data,file=o_file)
 
+# Log a failure that stops the validation process
+#
+def log_abort(msg: str, topology: Box) -> None:
+  import netsim.cli.validate as _validate
+  _validate.RESULTS['reason'] = msg
+  _validate.CURRENT.clear()                   # Not a test result
+  log_failure(msg,topology)
+
 # Print generic "making progress" message
 #
 def log_progress(msg: str, topology: Box, f_status: str = 'PASS') -> None:
   from . import ERROR_ONLY
+  record_result(f_status,msg)
   if ERROR_ONLY:
     return
 
@@ -85,6 +204,7 @@ def log_progress(msg: str, topology: Box, f_status: str = 'PASS') -> None:
 #
 def log_info(msg: str, topology: Box, f_status: str = 'INFO', f_color: str = 'bright_cyan') -> None:
   from . import ERROR_ONLY
+  record_result(f_status,msg)
   if ERROR_ONLY:
     return
 

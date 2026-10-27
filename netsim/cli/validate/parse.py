@@ -53,6 +53,12 @@ def validate_parse(args: typing.List[str]) -> argparse.Namespace:
     default=[],
     help='Dump additional information during the validation process')
   parser.add_argument(
+    '--format',
+    dest='format', action='store',
+    choices=['text','json'],
+    default='text',
+    help='Output format (json: print only the JSON results on stdout)')
+  parser.add_argument(
     dest='tests', action='store',
     nargs='*',
     help='Validation test(s) to execute (default: all)')
