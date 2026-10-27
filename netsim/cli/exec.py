@@ -48,7 +48,7 @@ def run(cli_args: typing.List[str]) -> None:
 
   rest = quote_list(rest)    
   topology = load_snapshot(args)
-  node_list = _nodeset.parse_nodeset(args.node,topology)
+  node_list = _nodeset.from_args(args,topology)
   p_header = args.header
 
   args = argparse.Namespace(show=None,verbose=False,quiet=True,Output=True)

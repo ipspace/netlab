@@ -89,7 +89,7 @@ def run(cli_args: typing.List[str]) -> None:
   log.init_log_system(False)
 
   if args.node:
-    node_list = _nodeset.parse_nodeset(args.node,topology)
+    node_list = _nodeset.from_args(args,topology)
     inspect_node(topology,node_list,args)
   else:
     inspect_value(topology,args)

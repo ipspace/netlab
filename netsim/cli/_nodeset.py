@@ -7,13 +7,17 @@ multiple elements separated by commas. Each element could be a
 node name or a glob.
 '''
 
+import argparse
 import fnmatch
+import sys
 
 from box import Box
 
 from .. import data
 from ..augment import groups
 from ..utils import log
+from . import error_and_exit
+from .initial import utils as i_utils
 
 
 # Is a string a glob expression?
@@ -74,7 +78,8 @@ def parse_nodeset(ns: str, topology: Box) -> list:
     else:
       log.error(f'{n_element} is not a glob or a valid node, group, or device name',module='-',skip_header=True)
 
-  log.exit_on_error()
+  if log.get_error_count():
+    sys.exit(2)
   return n_list
 
 """
@@ -87,3 +92,28 @@ def get_nodeset(topology: Box, node_list: list) -> Box:
       pruned_box.nodes.pop(node,None)
 
   return pruned_box
+
+def from_args(args: argparse.Namespace, topology : Box, skip_unprovisioned: bool = False) -> list:
+  """
+  Create a nodeset from '--limit' argument or '--node, optionally excluding unprovisioned nodes
+  """
+  if hasattr(args,'node'):
+    pattern = ','.join(args.node) if isinstance(args.node,list) else args.node
+  elif hasattr(args,'limit'):
+    pattern = args.limit
+  else:
+    error_and_exit('Internal error: the command does not have --limit or --node argument')
+
+  cli_nodeset = parse_nodeset(pattern,topology) if pattern is not None else list(topology.nodes.keys())
+
+  if skip_unprovisioned:
+    nodeset = i_utils.filter_unprovisioned(cli_nodeset,topology)
+  else:
+    nodeset = cli_nodeset
+  if not nodeset:
+    if not cli_nodeset:
+      error_and_exit('The specified nodeset is empty, there are no nodes to configure')
+    else:
+      error_and_exit('The specified nodeset contains only unprovisioned nodes')
+
+  return nodeset
