@@ -26,6 +26,7 @@ from netsim.data import append_to_list, get_box, get_empty_box
 from netsim.utils import read as _read
 
 SETTINGS: Box
+DEVICE_DATA: dict = {}                            # Merged device (and device/provider) data used in expressions
 DIRECTIVE: SphinxDirective
 TABLE_COUNT: int = 0
 
@@ -40,7 +41,6 @@ def safer_eval(xpr: str, locals: Box) -> typing.Any:
   """
   global BUILTINS
 
-  locals = Box(locals)                            # Have to disable auto-created objects for builtins to work
   return eval(xpr,{ '__builtins__': BUILTINS },locals)
 
 def debug_active(flag: str) -> bool:
@@ -170,6 +170,34 @@ def get_feature_row(device_data: Box, dname: str, table_def: Box) -> typing.Opti
     print(f'DF_ROW: {dname} {df_row}')
   return df_row if f_valid else None
 
+def device_providers(ddata: Box, settings: Box) -> list:
+  """
+  Return the list of providers that could have provider-specific device data
+  (only clab provider is checked for daemons)
+  """
+  return ['clab'] if ddata.get('daemon',False) else list(settings.providers)
+
+def merge_device_data(settings: Box) -> dict:
+  """
+  Merge device data with device features and provider-specific data/features.
+  The merged data does not depend on the feature table, so we do it once (it's expensive).
+
+  The results are plain Box objects (no auto-created objects) as needed by builtins
+  in expressions. The dictionary keys are (device,) or (device,provider) tuples.
+  """
+  dev_data: dict = {}
+  for dname,ddata in settings.devices.items():
+    f_data = ddata + ddata.features
+    dev_data[(dname,)] = Box(f_data)
+    for p_name in device_providers(ddata,settings):
+      p_data = ddata.get(p_name,{})
+      if not p_data:                              # No provider-specific data, no need to store anything
+        continue
+      pf_data = ddata.get(f'{p_name}.features',{})
+      dev_data[(dname,p_name)] = Box(f_data + p_data + pf_data)
+
+  return dev_data
+
 def get_device_features(settings: Box, table_def: Box) -> Box:
   """
   Build the per-device lists of features displayed in the table from the device
@@ -178,20 +206,16 @@ def get_device_features(settings: Box, table_def: Box) -> Box:
   df_data = get_empty_box()
 
   for dname,ddata in settings.devices.items():    # Iterate over all devices
-    f_data = ddata + ddata.features
-    df_row = get_feature_row(f_data,dname,table_def)
+    df_row = get_feature_row(DEVICE_DATA[(dname,)],dname,table_def)
     if df_row:                                    # Does the device supports the specified feature set?
       df_data[dname].features = df_row            # ... go and store its data
-    is_daemon = ddata.get('daemon',False)         # Only clab provider is checked for daemons
-    p_list = ['clab'] if is_daemon else list(settings.providers) 
-    for p_name in p_list:                         # Next, check for provider-specific data and features
-      p_data = ddata.get(p_name,{})
-      pf_data = ddata.get(f'{p_name}.features',{})
-      if not p_data:                              # Not there? Cool, move on
+    is_daemon = ddata.get('daemon',False)         # Next, check for provider-specific data and features
+    for p_name in device_providers(ddata,settings):
+      if (dname,p_name) not in DEVICE_DATA:       # No provider-specific data? Cool, move on
         continue
       if debug_active('df_data'):
         print(f'Checking provider-specific data: {dname} {p_name}')
-      dpf_row = get_feature_row(f_data + p_data + pf_data,dname,table_def)
+      dpf_row = get_feature_row(DEVICE_DATA[(dname,p_name)],dname,table_def)
       if dpf_row and dpf_row != df_row:           # Are the per-provider features different from device ones?
         dpf_name = dname if is_daemon else f'{dname}/{p_name}'
         df_data[dpf_name].features = dpf_row      # Store as device for daemons, device/provider otherwise
@@ -374,14 +398,15 @@ class Features(SphinxDirective):
 def setup(app: typing.Any) -> dict[str, object]:
   """
   Directive setup: read system defaults, move daemons into "devices" dictionary,
-  process child device inheritances, and register the directive.
+  process child device inheritances, merge device data, and register the directive.
   """
-  global SETTINGS
+  global SETTINGS,DEVICE_DATA
   topology = _read.load("package:cli/empty.yml",user_defaults=[])
   devices.merge_daemons(topology)
   devices.process_device_inheritance(topology)
 
   SETTINGS = topology.defaults
+  DEVICE_DATA = merge_device_data(SETTINGS)
 
   app.add_directive("features", Features)
   return {
