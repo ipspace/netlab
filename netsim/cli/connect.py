@@ -86,7 +86,10 @@ def docker_connect(
   sys.stderr.flush()
 
   need_output = 'output' in p_args and p_args.output
-  return run_command(c_args,check_result=need_output,return_stdout=need_output,ignore_errors=True)
+  status = run_command(c_args,check_result=need_output,return_stdout=need_output,ignore_errors=True)
+  if not need_output or status is False:
+    return status
+  return get_combined_output()
 
 def ssh_connect(
       data: Box,
