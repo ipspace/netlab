@@ -91,12 +91,20 @@ def get_nodeset(topology: Box, node_list: list) -> Box:
 
   return pruned_box
 
-def from_args(args: argparse.Namespace, topology : Box, no_unprovisioned: bool = True) -> list:
+def from_args(args: argparse.Namespace, topology : Box, skip_unprovisioned: bool = False) -> list:
   """
-  Create a nodeset from '--limit' argument, excluding unprovisioned nodes by default
+  Create a nodeset from '--limit' argument or '--node, optionally excluding unprovisioned nodes
   """
-  cli_nodeset = parse_nodeset(args.limit,topology) if args.limit else list(topology.nodes.keys())
-  if no_unprovisioned:
+  if hasattr(args,'node'):
+    pattern = ','.join(args.node) if isinstance(args.node,list) else args.node
+  elif hasattr(args,'limit'):
+    pattern = args.limit
+  else:
+    error_and_exit('Internal error: the command does not have --limit or --node argument')
+
+  cli_nodeset = parse_nodeset(pattern,topology) if pattern is not None else list(topology.nodes.keys())
+  log.exit_on_error()
+  if skip_unprovisioned:
     nodeset = i_utils.filter_unprovisioned(cli_nodeset,topology)
   else:
     nodeset = cli_nodeset

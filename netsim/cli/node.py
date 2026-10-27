@@ -68,9 +68,7 @@ def run(cli_args: typing.List[str]) -> None:
     log.fatal('Cannot combine --reload-config and --no-config')
 
   topology = load_snapshot(args,ghosts=False)
-  args.limit = ','.join(args.node)
   node_list = _nodeset.from_args(args,topology)
-  log.exit_on_error()
 
   for node in node_list:
     status = execute_node('control_node',node=topology.nodes[node],topology=topology,action=args.action)

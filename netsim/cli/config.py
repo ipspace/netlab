@@ -287,7 +287,7 @@ def run_config(cli_args: typing.List[str]) -> None:
   set_dry_run(args)
   topology = load_snapshot(args)
 
-  nodeset = _nodeset.from_args(args,topology)
+  nodeset = _nodeset.from_args(args,topology,not bool(args.limit))
   set_initial_args(args,initial=False)
 
   if args.reload:

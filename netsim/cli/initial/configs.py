@@ -176,7 +176,10 @@ relative to the original cwd)
 def run(topology: Box, args: argparse.Namespace, cwd: str) -> None:
   # Find the subset of nodes we should work on
   #
-  nodeset = _nodeset.from_args(args,topology)
+  nodeset = _nodeset.from_args(args,topology,skip_unprovisioned=True)
+  if not nodeset:
+    error_and_exit('The specified nodeset is empty, there are no nodes to configure')
+
   abs_path = Path(cwd,args.output).resolve()                # Output directory is relative to starting directory
   if args.clean:                                            # Try to clean it up if asked to do so
     cleanup_config_dir(abs_path, args)
