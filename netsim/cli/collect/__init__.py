@@ -87,6 +87,7 @@ def run(cli_args: typing.List[str]) -> None:
   (nodeset,skip_list) = c_utils.collectable(_nodeset.from_args(args,topology,skip_unprovisioned=True),topology)
   c_utils.create_output(output_path)
 
+  args.limit = ','.join(nodeset)
   ansible_args = i_utils.min_ansible_args(args,"dense")
   ansible_args += ['-e',f"target='{output_path}'"]
   if args.suffix:
