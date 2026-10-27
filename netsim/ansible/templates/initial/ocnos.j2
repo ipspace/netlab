@@ -1,5 +1,11 @@
 hostname {{ inventory_hostname.replace("_","-") }}
 !
+{% if vrfs is defined %}
+{%   include 'ocnos.vrf.j2' +%}
+{% endif %}
+{% if vlans is defined %}
+{%   include 'ocnos.vlan.j2' +%}
+{% endif %}
 {% for l in netlab_interfaces %}
 interface {{ l.ifname }}
 {%   if l.name is defined %}
@@ -7,8 +13,12 @@ interface {{ l.ifname }}
 {%   elif l.type|default("") == "stub" %}
  description Stub interface
 {%   endif %}
-{%   if l.mtu is defined and l.type|default("") != "loopback" %}
+{%   if l.mtu is defined and l.type|default("") != "loopback" and not l.virtual_interface|default(False) %}
  mtu {{ l.mtu }}
+{%   endif %}
+{#   VRF membership has to be configured before the IP addresses #}
+{%   if l.vrf is defined %}
+ ip vrf forwarding {{ l.vrf }}
 {%   endif %}
 {%   if 'ipv4' in l and l.ipv4 is string %}
 {#     "lo" already has 127.0.0.1/8 as its primary address #}
@@ -17,7 +27,7 @@ interface {{ l.ifname }}
 {%   if 'ipv6' in l and l.ipv6 is string %}
  ipv6 address {{ l.ipv6 }}
 {%   endif %}
-{%   if l.type|default("") != "loopback" %}
+{%   if l.type|default("") != "loopback" and not l.virtual_interface|default(False) %}
  {{ "shutdown" if l.shutdown|default(False) else "no shutdown" }}
 {%   endif %}
 !

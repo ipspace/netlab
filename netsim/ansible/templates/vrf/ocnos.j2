@@ -1,0 +1,83 @@
+{#
+  VRFs and interface VRF membership are configured in the initial configuration.
+  OcNOS uses a positional VRF name in the per-VRF OSPF process ("router ospf <pid> <vrf>")
+#}
+{% for vname,vdata in vrfs.items() if vdata.ospf.af.ipv4 is defined %}
+router ospf {{ vdata.vrfidx }} {{ vname }}
+{%   if vdata.ospf.router_id is defined %}
+ ospf router-id {{ vdata.ospf.router_id }}
+{%   endif %}
+{%   for l in vdata.ospf.interfaces|default([]) if l.ipv4 is string %}
+ network {{ l.ipv4 }} area {{ l.ospf.area|default(vdata.ospf.area) }}
+{%   endfor %}
+{%   for l in vdata.ospf.interfaces|default([]) if l.ospf.passive|default(False) %}
+ passive-interface {{ l.ifname }} enable
+{%   endfor %}
+!
+{%   for l in vdata.ospf.interfaces|default([]) if l.ospf.network_type is defined %}
+interface {{ l.ifname }}
+ ip ospf network {{ l.ospf.network_type }}
+!
+{%   endfor %}
+{% endfor %}
+{#
+  The VRF OSPFv3 process uses the VRF name as its process tag ("router ipv6 vrf ospf <vrf>");
+  interfaces join it with "ipv6 router ospf area <area> tag <vrf>"
+#}
+{% for vname,vdata in vrfs.items() if vdata.ospf.af.ipv6 is defined %}
+router ipv6 vrf ospf {{ vname }}
+{%   if vdata.ospf.router_id is defined %}
+ router-id {{ vdata.ospf.router_id }}
+{%   endif %}
+{%   for l in vdata.ospf.interfaces|default([]) if l.ospf.passive|default(False) and 'ipv6' in l %}
+ passive-interface {{ l.ifname }} enable
+{%   endfor %}
+!
+{%   for l in vdata.ospf.interfaces|default([]) if 'ipv6' in l %}
+interface {{ l.ifname }}
+ ipv6 router ospf area {{ l.ospf.area|default(vdata.ospf.area) }} tag {{ vname }}
+{%     if l.ospf.network_type is defined %}
+ ipv6 ospf network {{ l.ospf.network_type }}
+{%     endif %}
+!
+{%   endfor %}
+{% endfor %}
+{#
+  VRF routes are exchanged through per-VRF BGP address families. The (empty) VPNv4/VPNv6
+  address families enable the import/export of VRF routes based on route targets.
+  VRF BGP neighbors are configured within the VRF address family
+#}
+{% if bgp.as is defined %}
+router bgp {{ bgp.as }}
+ address-family vpnv4
+ exit-address-family
+ address-family vpnv6
+ exit-address-family
+{%   for vname,vdata in vrfs.items() %}
+{%     for af in ['ipv4','ipv6'] if af in vdata.af %}
+ address-family {{ af }} vrf {{ vname }}
+{#       The VRF OSPFv2 process is identified by its process ID, the VRF OSPFv3 process by its tag (VRF name) #}
+{%       for s_proto in vdata.bgp.import|default({}) if s_proto != 'ospf' or af in vdata.ospf.af|default({}) %}
+  redistribute {{ s_proto }}{{ ' ' ~ (vdata.vrfidx if af == 'ipv4' else vname) if s_proto == 'ospf' else '' }}
+{%       endfor %}
+{%       for pfx in vdata.bgp.advertise|default([]) if af in pfx %}
+  network {{ pfx[af] }}
+{%       endfor %}
+{%       for n in vdata.bgp.neighbors|default([]) if n[af] is defined %}
+  neighbor {{ n[af] }} remote-as {{ n.as }}
+{%         if n.local_as is defined %}
+  neighbor {{ n[af] }} local-as {{ n.local_as }}{{ ' no-prepend replace-as' if n.replace_global_as|default(True) else '' }}
+{%         endif %}
+  neighbor {{ n[af] }} description {{ n.name }}
+  neighbor {{ n[af] }} advertisement-interval 0
+  neighbor {{ n[af] }} activate
+{%         set c_list = bgp.community[n.type]|default([]) %}
+{%         for c_type in ['standard','extended'] if c_type not in c_list %}
+  no neighbor {{ n[af] }} send-community {{ c_type }}
+{%         endfor %}
+{%       endfor %}
+ exit-address-family
+{%     endfor %}
+{%   endfor %}
+!
+{% endif %}

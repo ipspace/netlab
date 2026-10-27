@@ -1,0 +1,20 @@
+{#
+  The STP protocol is set when the VLAN-aware bridge is created in the initial configuration.
+  STP is disabled on individual bridge ports (all of them when STP is disabled on the node).
+  The bridge port priority takes 0-240 in increments of 16 (netlab port_priority x 16)
+#}
+{% if stp.priority is defined %}
+bridge 1 priority {{ stp.priority }}
+!
+{% endif %}
+{% for l in interfaces if l.vlan.trunk_id is defined or l.vlan.access_id is defined %}
+{%   if not stp.enable|default(True) or not l.stp.enable|default(True) %}
+interface {{ l.ifname }}
+ bridge-group 1 spanning-tree disable
+!
+{%   elif l.stp.port_priority is defined %}
+interface {{ l.ifname }}
+ bridge-group 1 priority {{ l.stp.port_priority * 16 }}
+!
+{%   endif %}
+{% endfor %}

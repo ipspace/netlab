@@ -533,6 +533,9 @@ ansible_httpapi_port: 80
 * OcNOS BFD timers are limited to 999 msec.
 * OcNOS OSPF area ranges have no cost option; the **ospf.areas** plugin configures area ranges without the **cost** parameter.
 * OcNOS static routes with a next hop that is not on a connected subnet are configured with the **recursive** keyword. With OcNOS 7.0.0-262, an IPv4 recursive static route whose next hop resolves over more than one equal-cost path is in the routing table, but the router reports its destination as unreachable. IPv6 recursive static routes work in the same scenario.
+* OcNOS VLANs use a VLAN-aware bridge (bridge 1) with VLAN interfaces named `vlan1.<vlan-id>`. _netlab_ does not support routed VLAN subinterfaces on OcNOS.
+* With OcNOS 7.0.0-262, routes imported into a VRF from another VRF on the same router are in the VRF routing table, but the router reports their destinations as unreachable, so it does not forward traffic between the VRFs.
+* OcNOS is a strict ABR. It does not originate inter-area summaries in a VRF OSPF instance when the VRF has no active area-0 adjacency.
 
 (caveats-junos)=
 ## Common Junos caveats

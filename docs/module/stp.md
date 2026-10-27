@@ -20,6 +20,7 @@ The following table describes per-platform support of individual STP features:
 | Cumulus 5.x (NVUE)[^CL] | ✅  |  ❌  | ✅  | ❌   |  ✅ |
 | Dell OS10[^OS10]   | ✅  | ✅  | ✅  | ❗ |  ✅ |
 | FRR[^FRR]          | ✅  |  ❌  |  ❌  |  ❌ | ❌   |
+| IP Infusion OcNOS[^OCNOS] | ✅  | ✅  | ✅  |  ❌ | ✅   |
 
 
 [^EOS]: MSTP is enabled by default
@@ -28,6 +29,7 @@ The following table describes per-platform support of individual STP features:
 [^CL]: STP is enabled by default
 [^OS10]: PVRST is enabled by default, STP does not work on virtual networks (which are used for VXLAN)
 [^FRR]: STP is disabled by default; STP is not supported on VLAN trunks as FRR sends BPDUs tagged, you could use Cumulus instead
+[^OCNOS]: STP is disabled on individual bridge ports when you disable it on a node; the STP port type cannot be configured
 [^IOLL2]: PVRST is enabled by default. STP,RSTP are emulated with MSTP. All algorithms use the "long" stp pathcost method.
 
 ```{tip}

@@ -41,6 +41,7 @@ VLANs are supported on these platforms:
 | Dell OS10             | ✅  | ✅  | ❌   | ✅ | ✅ |
 | Extreme Networks EXOS |  ✅ | ✅  | ❌   | ✅ | ✅ |
 | FRR [❗](caveats-frr) | ✅  | ✅  | ✅  | ✅ | ✅ |
+| IP Infusion OcNOS     | ✅  | ✅  | ❌   | ✅ | ✅ |
 | Juniper vMX           | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Juniper vPTX          | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Juniper vSRX 3.0      | ❌   | ❌   | ✅  |  ❌ |  ❌ |
