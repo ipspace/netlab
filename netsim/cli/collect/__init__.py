@@ -71,11 +71,6 @@ def collect_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, ty
 
   return parser.parse_known_args(args)
 
-def get_tarball_file(tarball: str) -> str:
-  if not '.tar' in tarball:
-    tarball = tarball + '.tar.gz'
-  return tarball
-
 def run(cli_args: typing.List[str]) -> None:
   run_dir = os.getcwd()
   (args,rest) = collect_parse(cli_args)
@@ -97,8 +92,8 @@ def run(cli_args: typing.List[str]) -> None:
   if args.verbose:
     print("Ansible playbook args: %s" % rest)
 
-  if args.tar and not args.quiet:
-    external_commands.print_step(1,"Collecting device configurations")
+  if not args.quiet:
+    log.section_header('Collect','Collecting device configurations')
 
   OK = False
   try:
@@ -111,23 +106,6 @@ def run(cli_args: typing.List[str]) -> None:
     sys.exit(1)
 
   if args.tar:
-    if os.getcwd() != run_dir:
-      log.status_green('CHANGED','')
-      print(f'Changing current directory back to {run_dir}')
-      os.chdir(run_dir)
-
-    tarball = get_tarball_file(args.tar)
-    if not args.quiet:
-      external_commands.print_step(2,f"Creating tarball {args.tar}",spacing = True)
-    try:
-      subprocess.check_call(['tar','cfz' if args.quiet else 'cvfz',tarball,args.output])
-    except Exception as ex:
-      log.fatal(f"Cannot start tar: {ex}")
-
-    if args.cleanup:
-      if not args.quiet:
-        external_commands.print_step(3,"Cleanup config directory",spacing = True)
-      fs_cleanup([ args.output ],args.verbose)
-      print("... done")
+    c_utils.create_tar(args,run_dir)
 
   log.repeat_warnings('netlab collect')

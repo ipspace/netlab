@@ -14,6 +14,7 @@ from ...utils import files as _files
 from ...utils import log, strings
 from ...utils import read as _read
 from .. import collect, external_commands, fs_cleanup
+from ..collect import utils as c_utils
 
 
 def tarball_parser(parser: argparse.ArgumentParser) -> None:
@@ -94,7 +95,7 @@ def clab_tarball(args: argparse.Namespace, settings: Box) -> None:
   clab_config_adjust(infile='clab.yml',outfile='clab.config.yml',configs=args.output)
 
   external_commands.print_step(3,"Creating tarball",spacing = True)
-  tarball = collect.get_tarball_file(args.tarball.name)
+  tarball = c_utils.get_tarball_file(args.tarball.name)
 
   try:
     subprocess.check_call(['tar','cfz' if args.quiet else 'cvfz',tarball,'clab.config.yml',args.output])
