@@ -9,7 +9,19 @@ import subprocess
 import typing
 
 from ...utils import log
-from .. import ansible, external_commands, fs_cleanup, parser_add_verbose, parser_lab_location, set_dry_run
+from .. import (
+  _nodeset,
+  ansible,
+  error_and_exit,
+  external_commands,
+  fs_cleanup,
+  load_snapshot,
+  parser_add_verbose,
+  parser_lab_location,
+  set_dry_run,
+)
+from ..initial import utils as i_utils
+from . import utils as c_utils
 
 
 #
@@ -49,6 +61,10 @@ def collect_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, ty
     dest='cleanup',
     action='store_true',
     help='Clean up config directory and modified configuration file after creating tarball')
+  parser.add_argument(
+    '--fast',
+    dest='fast', action='store_true',
+    help=argparse.SUPPRESS)
   parser_lab_location(parser,instance=True,action='collect configuration from')
 
   return parser.parse_known_args(args)
@@ -63,32 +79,26 @@ def run(cli_args: typing.List[str]) -> None:
   (args,rest) = collect_parse(cli_args)
   log.set_logging_flags(args)
   set_dry_run(args)
+  topology = load_snapshot(args)
 
-  fs_cleanup([ args.output ])
-  try:
-    os.mkdir(args.output)
-  except Exception as ex:
-    log.fatal(f"Cannot create output directory {args.output}: {ex}")
+  (nodeset,skip_list) = c_utils.collectable(_nodeset.from_args(args,topology,skip_unprovisioned=True),topology)
+  c_utils.create_output(args.output)
 
-  print(f"cwd: {os.getcwd()} output: {args.output}")
-  if args.verbose:
-    rest = ['-' + 'v' * args.verbose ] + rest
-
-  rest = ['-e','target='+args.output ] + rest
-
+  ansible_args = i_utils.min_ansible_args(args,"dense")
+  ansible_args += ['-e','target='+args.output ]
   if args.suffix:
-    rest += ['-e','suffix='+args.suffix]
+    ansible_args += ['-e','suffix='+args.suffix]
+
+  rest = ansible_args + rest
+  if args.verbose:
+    print("Ansible playbook args: %s" % rest)
 
   if args.tar and not args.quiet:
     external_commands.print_step(1,"Collecting device configurations")
 
-  if args.verbose:
-    print("Ansible playbook args: %s" % rest)
-
-  if args.quiet:
-    os.environ["ANSIBLE_STDOUT_CALLBACK"] = "dense"
-
+  i_utils.ansible_skip_group(skip_list)
   ansible.playbook('collect-configs.ansible',rest)
+  i_utils.ansible_skip_group([])
 
   if args.tar:
     if os.getcwd() != run_dir:
