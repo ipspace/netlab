@@ -90,21 +90,21 @@ def initial_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namesp
 
   return parser.parse_known_args(args)
 
-def common_ansible_args() -> list:
+def common_ansible_args(quiet_callback: str = "selective") -> list:
   rest = []
   if log.VERBOSE:
     rest += ['-' + 'v' * log.VERBOSE]
 
   if log.QUIET:
-    os.environ["ANSIBLE_STDOUT_CALLBACK"] = "selective"
+    os.environ["ANSIBLE_STDOUT_CALLBACK"] = quiet_callback
 
   return rest
 
 """
 Build Ansible arguments based on 'netlab initial' parameters
 """
-def min_ansible_args(args: argparse.Namespace) -> list:
-  rest = common_ansible_args()
+def min_ansible_args(args: argparse.Namespace,quiet_callback: str = "selective") -> list:
+  rest = common_ansible_args(quiet_callback)
   if args.limit:
     rest = ['--limit',args.limit] + rest
   if args.fast or os.environ.get('NETLAB_FAST_CONFIG',None):
