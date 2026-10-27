@@ -3,7 +3,6 @@
 #
 
 import os
-import pathlib
 import typing
 
 from box import Box
@@ -55,4 +54,4 @@ def create_output(path: str) -> None:
     log.fatal(f"Cannot create output directory {path}: {ex}")
 
   if not log.QUIET:
-    log.info(f"Collecting configs into {str(pathlib.Path(path).absolute())}")
+    log.info(f"Collecting configs into {path}")

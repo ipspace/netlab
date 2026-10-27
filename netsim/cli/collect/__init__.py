@@ -5,7 +5,9 @@
 #
 import argparse
 import os
+import pathlib
 import subprocess
+import sys
 import typing
 
 from ...utils import log
@@ -79,13 +81,14 @@ def run(cli_args: typing.List[str]) -> None:
   (args,rest) = collect_parse(cli_args)
   log.set_logging_flags(args)
   set_dry_run(args)
+  output_path = str(pathlib.Path(args.output).absolute())
   topology = load_snapshot(args)
 
   (nodeset,skip_list) = c_utils.collectable(_nodeset.from_args(args,topology,skip_unprovisioned=True),topology)
-  c_utils.create_output(args.output)
+  c_utils.create_output(output_path)
 
   ansible_args = i_utils.min_ansible_args(args,"dense")
-  ansible_args += ['-e','target='+args.output ]
+  ansible_args += ['-e','target='+output_path ]
   if args.suffix:
     ansible_args += ['-e','suffix='+args.suffix]
 
@@ -96,9 +99,15 @@ def run(cli_args: typing.List[str]) -> None:
   if args.tar and not args.quiet:
     external_commands.print_step(1,"Collecting device configurations")
 
-  i_utils.ansible_skip_group(skip_list)
-  ansible.playbook('collect-configs.ansible',rest)
-  i_utils.ansible_skip_group([])
+  OK = False
+  try:
+    i_utils.ansible_skip_group(skip_list)
+    OK = ansible.playbook('collect-configs.ansible',rest)
+  finally:
+    i_utils.ansible_skip_group([])
+
+  if not OK:
+    sys.exit(1)
 
   if args.tar:
     if os.getcwd() != run_dir:
