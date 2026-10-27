@@ -1,0 +1,48 @@
+{#
+  OSPFv3: interfaces join an area with "ipv6 router ospf area <area> tag <tag>".
+  The process tag is the OSPF process ID for the global process and the VRF name
+  for the VRF process ("router ipv6 vrf ospf <vrf>")
+#}
+{% import "templates/routing/_default.ios.j2" as ospf_default %}
+{% macro config(ospf_pid,ospf_vrf,ospf_data,intf_data) %}
+{% set ospf_tag = ospf_vrf or ospf_pid %}
+{% if ospf_vrf %}
+router ipv6 vrf ospf {{ ospf_vrf }}
+{% else %}
+router ipv6 ospf {{ ospf_pid }}
+{% endif %}
+{% if ospf_data.router_id is defined %}
+ router-id {{ ospf_data.router_id }}
+{% endif %}
+{% if ospf_data.reference_bandwidth is defined %}
+ auto-cost reference-bandwidth {{ ospf_data.reference_bandwidth }}
+{% endif %}
+{{ ospf_default.config(ospf_data,'ipv6') }}
+{% for l in intf_data if l.ospf.passive|default(False) and 'ipv6' in l %}
+ passive-interface {{ l.ifname }} enable
+{% endfor %}
+!
+{% for l in intf_data if 'ospf' in l and 'ipv6' in l %}
+interface {{ l.ifname }}
+ ipv6 router ospf area {{ l.ospf.area }} tag {{ ospf_tag }}
+{%   if l.ospf.network_type is defined %}
+ ipv6 ospf network {{ l.ospf.network_type }}
+{%   endif %}
+{%   if l.ospf.cost is defined %}
+ ipv6 ospf cost {{ l.ospf.cost }}
+{%   endif %}
+{%   if l.ospf.timers.hello is defined %}
+ ipv6 ospf hello-interval {{ l.ospf.timers.hello }}
+{%   endif %}
+{%   if l.ospf.timers.dead is defined %}
+ ipv6 ospf dead-interval {{ l.ospf.timers.dead }}
+{%   endif %}
+{%   if l.ospf.priority is defined %}
+ ipv6 ospf priority {{ l.ospf.priority }}
+{%   endif %}
+{%   if l.ospf.bfd|default(False) and l.type|default('') != 'loopback' %}
+ ipv6 ospf bfd
+{%   endif %}
+!
+{% endfor %}
+{% endmacro %}
