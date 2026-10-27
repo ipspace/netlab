@@ -9,6 +9,7 @@ node name or a glob.
 
 import argparse
 import fnmatch
+import sys
 
 from box import Box
 
@@ -77,7 +78,8 @@ def parse_nodeset(ns: str, topology: Box) -> list:
     else:
       log.error(f'{n_element} is not a glob or a valid node, group, or device name',module='-',skip_header=True)
 
-  log.exit_on_error()
+  if log.get_error_count():
+    sys.exit(2)
   return n_list
 
 """
@@ -103,7 +105,7 @@ def from_args(args: argparse.Namespace, topology : Box, skip_unprovisioned: bool
     error_and_exit('Internal error: the command does not have --limit or --node argument')
 
   cli_nodeset = parse_nodeset(pattern,topology) if pattern is not None else list(topology.nodes.keys())
-  log.exit_on_error()
+
   if skip_unprovisioned:
     nodeset = i_utils.filter_unprovisioned(cli_nodeset,topology)
   else:
