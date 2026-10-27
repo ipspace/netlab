@@ -10,9 +10,6 @@ router isis {{ isis.instance }}
  net {{ isis.net }}
  metric-style wide
  dynamic-hostname
-{% if isis.bfd.ipv4|default(False) or isis.bfd.ipv6|default(False) or isis.bfd|default(False) is true %}
- bfd all-interfaces
-{% endif %}
 {% for l in netlab_interfaces if l.isis.passive|default(False) and 'vrf' not in l %}
  passive-interface {{ l.ifname }}
 {% endfor %}
@@ -38,6 +35,9 @@ interface {{ l.ifname }}
 {%   endif %}
 {%   if l.isis.metric is defined %}
  isis wide-metric {{ l.isis.metric }}
+{%   endif %}
+{%   if (l.isis.bfd.ipv4|default(False) or l.isis.bfd.ipv6|default(False)) and l.type|default('') != 'loopback' %}
+ isis bfd
 {%   endif %}
 !
 {% endfor %}

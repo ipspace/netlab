@@ -13,9 +13,6 @@ router ospf {{ ospf_pid }}
 {%   if ospf.reference_bandwidth is defined %}
  auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
 {%   endif %}
-{%   if ospf.bfd|default(False) %}
- bfd all-interfaces
-{%   endif %}
 {{ ospf_default.config(ospf,'ipv4') }}
 {%   for l in netlab_interfaces if 'ospf' in l and l.ipv4 is string and 'vrf' not in l %}
  network {{ l.ipv4 }} area {{ l.ospf.area }}
@@ -45,6 +42,9 @@ interface {{ l.ifname }}
  ip ospf authentication
  ip ospf authentication-key {{ l.ospf.password }}
 {%     endif %}
+{%     if l.ospf.bfd|default(False) and l.type|default('') != 'loopback' %}
+ ip ospf bfd
+{%     endif %}
 !
 {%   endfor %}
 {% endif %}
@@ -59,9 +59,6 @@ router ipv6 ospf {{ ospf_pid }}
 {%   endif %}
 {%   if ospf.reference_bandwidth is defined %}
  auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
-{%   endif %}
-{%   if ospf.bfd|default(False) %}
- bfd all-interfaces
 {%   endif %}
 {{ ospf_default.config(ospf,'ipv6') }}
 {%   for l in netlab_interfaces if l.ospf.passive|default(False) and 'ipv6' in l and 'vrf' not in l %}
@@ -85,6 +82,9 @@ interface {{ l.ifname }}
 {%     endif %}
 {%     if l.ospf.priority is defined %}
  ipv6 ospf priority {{ l.ospf.priority }}
+{%     endif %}
+{%     if l.ospf.bfd|default(False) and l.type|default('') != 'loopback' %}
+ ipv6 ospf bfd
 {%     endif %}
 !
 {%   endfor %}
