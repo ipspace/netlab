@@ -287,14 +287,7 @@ def run_config(cli_args: typing.List[str]) -> None:
   set_dry_run(args)
   topology = load_snapshot(args)
 
-  cli_nodeset = _nodeset.parse_nodeset(args.limit,topology) if args.limit else list(topology.nodes.keys())
-  nodeset = i_utils.filter_unprovisioned(cli_nodeset,topology)
-  if not nodeset:
-    if not cli_nodeset:
-      error_and_exit('The specified nodeset is empty, there are no nodes to configure')
-    else:
-      error_and_exit('The specified nodeset contains only unprovisioned nodes')
-
+  nodeset = _nodeset.from_args(args,topology)
   set_initial_args(args,initial=False)
 
   if args.reload:

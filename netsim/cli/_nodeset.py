@@ -7,6 +7,7 @@ multiple elements separated by commas. Each element could be a
 node name or a glob.
 '''
 
+import argparse
 import fnmatch
 
 from box import Box
@@ -14,6 +15,8 @@ from box import Box
 from .. import data
 from ..augment import groups
 from ..utils import log
+from . import error_and_exit
+from .initial import utils as i_utils
 
 
 # Is a string a glob expression?
@@ -87,3 +90,20 @@ def get_nodeset(topology: Box, node_list: list) -> Box:
       pruned_box.nodes.pop(node,None)
 
   return pruned_box
+
+def from_args(args: argparse.Namespace, topology : Box, no_unprovisioned: bool = True) -> list:
+  """
+  Create a nodeset from '--limit' argument, excluding unprovisioned nodes by default
+  """
+  cli_nodeset = parse_nodeset(args.limit,topology) if args.limit else list(topology.nodes.keys())
+  if no_unprovisioned:
+    nodeset = i_utils.filter_unprovisioned(cli_nodeset,topology)
+  else:
+    nodeset = cli_nodeset
+  if not nodeset:
+    if not cli_nodeset:
+      error_and_exit('The specified nodeset is empty, there are no nodes to configure')
+    else:
+      error_and_exit('The specified nodeset contains only unprovisioned nodes')
+
+  return nodeset

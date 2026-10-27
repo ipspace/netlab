@@ -24,7 +24,7 @@ def inspect_parse(args: typing.List[str]) -> argparse.Namespace:
     description='Inspect data structures in a lab topology')
   parser.add_argument(
     '--node',
-    dest='node', action='store',
+    dest='limit', action='store',
     help='Display data for selected node(s)')
   parser.add_argument(
     '--all',
@@ -88,8 +88,8 @@ def run(cli_args: typing.List[str]) -> None:
   topology = load_data_source(args)
   log.init_log_system(False)
 
-  if args.node:
-    node_list = _nodeset.parse_nodeset(args.node,topology)
+  if args.limit:
+    node_list = _nodeset.from_args(args,topology)
     inspect_node(topology,node_list,args)
   else:
     inspect_value(topology,args)

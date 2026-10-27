@@ -31,7 +31,7 @@ def exec_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, typin
       action='store_true',
       help='Add node headers before command printouts')
   parser.add_argument(
-      dest='node', action='store',
+      dest='limit', action='store',
       help='Node(s) to run command on')
   parser_lab_location(parser,instance=True,action='execute commands in')
 
@@ -48,7 +48,7 @@ def run(cli_args: typing.List[str]) -> None:
 
   rest = quote_list(rest)    
   topology = load_snapshot(args)
-  node_list = _nodeset.parse_nodeset(args.node,topology)
+  node_list = _nodeset.from_args(args,topology,no_unprovisioned=False)
   p_header = args.header
 
   args = argparse.Namespace(show=None,verbose=False,quiet=True,Output=True)
