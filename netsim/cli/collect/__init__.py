@@ -8,8 +8,8 @@ import os
 import subprocess
 import typing
 
-from ..utils import log
-from . import ansible, external_commands, fs_cleanup, parser_add_verbose, parser_lab_location
+from ...utils import log
+from .. import ansible, external_commands, fs_cleanup, parser_add_verbose, parser_lab_location, set_dry_run
 
 
 #
@@ -29,6 +29,10 @@ def collect_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, ty
     nargs='?',
     default='config',
     help='Output directory (default: config)')
+  parser.add_argument(
+    '-l','--limit',
+    dest='limit', action='store',
+    help='Limit the operation to a subset of nodes')
   parser.add_argument(
     '--suffix',
     dest='suffix',
@@ -58,6 +62,7 @@ def run(cli_args: typing.List[str]) -> None:
   run_dir = os.getcwd()
   (args,rest) = collect_parse(cli_args)
   log.set_logging_flags(args)
+  set_dry_run(args)
 
   fs_cleanup([ args.output ])
   try:
