@@ -15,60 +15,40 @@ This configuration module implements the VRF planning and configuration logic an
 (module-vrf-platform-support)=
 VRFs are supported on these platforms:
 
-| Operating system      | VRF<br />config | Route<br />leaking |  VRF-aware<br />Loopback |
-| --------------------- | :-: | :-: | :-: |
-| Arista EOS            | ✅  | ✅  | ✅  |
-| Aruba AOS-CX          | ✅  | ✅  | ✅  |
-| BIRD                  | ✅  | ✅  | ✅  |
-| Cisco IOS             | ✅  | ✅  | ✅  |
-| Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  |
-| Cisco IOS XR[^XR]     | ✅  | ✅  | ✅  |
-| Cisco Nexus OS        | ✅  | ✅  | ✅  |
-| Cumulus Linux 4.x     | ✅  | ✅  | ✅  |
-| Cumulus 5.x (NVUE)    | ✅  |  ✅ [❗](caveats-cumulus-nvue) |  ✅  |
-| Dell OS10             | ✅  | ✅  | ✅  |
-| FRR [❗](caveats-frr) | ✅  | ✅  | ✅  |
-| IP Infusion OcNOS     | ✅  |  ❌ [❗](caveats-ocnos) | ✅  |
-| Junos[^Junos]         | ✅  | ✅ [❗](caveats-crpd) | ✅  |
-| Mikrotik RouterOS 6   | ✅  | ✅  |  ❌  |
-| Mikrotik RouterOS 7   | ✅  | ✅  | ✅  |
-| Nokia SR Linux        | ✅  | ✅ [❗](caveats-srlinux) | ✅  |
-| Nokia SR OS[^SROS]    | ✅  |  ❌[^SRRL]  | ✅  |
-| VyOS                  | ✅  | ✅  | ✅  |
-
-[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL) and IOL Layer-2 image
-
-[^Junos]: Includes cRPD, vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
-
-[^SRRL]: Nokia SR OS supports inter-VRF route leaking, but it's not yet implemented in _netlab_
-
-[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
-
-[^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
+```{features}
+- title: VRF<br />config
+  enabled: vrf
+- title: Route<br />leaking
+  enabled: vrf and vrf.get('leaking',True)
+  caveats: vrf.leaking_caveats
+- title: VRF-aware<br />Loopback
+  enabled: vrf and vrf.get('loopback',True)
+  caveats: vrf.loopback_caveats
+```
 
 (module-vrf-platform-routing-support)=
 These platforms support routing protocols in VRFs:
 
-| Operating system      | OSPFv2 | OSPFv3 | EBGP | RIPv2 | RIPng | IS-IS |
-| --------------------- | :-: | :-: | :-: | :-: | :-: | :-: |
-| Arista EOS            | ✅  | ✅  | ✅  | ❌  | ❌  | ✅ |
-| Aruba AOS-CX          | ✅  | ✅  | ✅  | ❌  | ❌  | ❌  |
-| BIRD                  | ✅  | ✅  | ✅  | ❌  | ❌  | ❌  |
-| Cisco IOS/IOSvL2      | ✅ [❗](caveats-iosv) | ✅  | ✅  | ✅  | ✅  | ❌  |
-| Cisco IOS XE[^18v]    | ✅ [❗](caveats-csr) | ✅  | ✅  | ✅  | ✅  | ❌  |
-| Cisco IOS XR[^XR]     | ✅ | ✅  | ✅  | ❌  | ❌  | ✅  |
-| Cisco Nexus OS        | ✅  |  ❌  | ✅  | ❌  | ❌  | ❌  |
-| Cumulus Linux 4.x     | ✅  |  ❌  | ✅  | ✅  | ✅  | ❌  |
-| Cumulus 5.x (NVUE)    | ✅  |  ❌  | ✅  | ❌  | ❌  | ❌  |
-| Dell OS10             | ✅  |  ❌  | ✅  | ❌  | ❌  | ❌  |
-| FRR [❗](caveats-frr) | ✅  | ✅  | ✅  | ✅ | ✅ | ✅ |
-| IP Infusion OcNOS     | ✅  | ✅  | ✅  | ❌  | ❌  | ❌  |
-| Junos[^Junos]         | ✅  | ✅  | ✅  | ❌  | ❌  | ❌  |
-| Mikrotik RouterOS 6   | ✅  [❗](caveats-routeros6) |  ❌  | ✅  | ❌  | ❌  | ❌  |
-| Mikrotik RouterOS 7   | ✅  | ✅  | ✅  | ❌  | ❌  | ❌  |
-| Nokia SR Linux        | ✅  | ✅  | ✅  | ❌  | ❌  | ✅ |
-| Nokia SR OS[^SROS]    | ✅  | ✅  | ✅  | ❌  | ❌  | ✅ |
-| VyOS                  | ✅  | ✅  | ✅  | ❌  | ❌  | ❌  |
+```{features}
+- title: OSPFv2
+  enabled: vrf.ospfv2
+  caveats: vrf.ospfv2_caveats
+- title: OSPFv3
+  enabled: vrf.ospfv3
+  caveats: vrf.ospfv3_caveats
+- title: EBGP
+  enabled: vrf.bgp
+  caveats: vrf.bgp_caveats
+- title: RIPv2
+  enabled: vrf.ripv2
+  caveats: vrf.ripv2_caveats
+- title: RIPng
+  enabled: vrf.ripng
+  caveats: vrf.ripng_caveats
+- title: IS-IS
+  enabled: vrf.isis
+  caveats: vrf.isis_caveats
+```
 
 ```{note}
 * You cannot run EIGRP within a VRF, but the configuration module is VRF-aware -- it will not try to configure EIGRP routing on VRF interfaces
