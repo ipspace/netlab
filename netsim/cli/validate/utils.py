@@ -58,6 +58,7 @@ def get_entry_value(v_entry: Box, action: str, node: Box, topology: Box) -> typi
         module='validate',
         more_hints=[ f'device: {node.device}, action: {action}', f'plugin expression: {action}_{v_entry.plugin}'],
         indent=indent)
+      report.record_result('ERROR',str(ex))
       return None
 
   if not isinstance(value,str):

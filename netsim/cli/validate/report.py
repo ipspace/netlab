@@ -7,6 +7,7 @@ import typing
 
 from box import Box
 
+from ... import __version__
 from ...data import global_vars
 from ...utils import log, strings
 
@@ -41,35 +42,39 @@ def set_node(n_name: typing.Optional[str]) -> None:
     _validate.CURRENT['node'] = n_name
 
 def record_result(f_status: str, msg: typing.Optional[str] = None) -> None:
+  '''
+  Log result into JSON data structure, optionally adding an error message
+  '''
   import netsim.cli.validate as _validate
   ctx = _validate.CURRENT
-  result = JSON_STATUS.get(f_status,None)
+  result = JSON_STATUS.get(f_status,None)         # Map uppercase log text into JSON result
   if result is None or not ctx.get('test'):
     return
 
+  # Fetch the test results from the current test
   t_result = _validate.RESULTS['results'][ctx['test']]
   elapsed = round(time.time() - ctx['start'],1)
-  t_result['elapsed'] = elapsed
-  n_name = ctx['node']
-  if n_name:                                  # Node result, remove node name from the message
-    topology = global_vars.get_topology()
+  t_result['elapsed'] = elapsed                   # Log maximum test-wide elapsed time
+  n_name = ctx['node']                            # Is the result within the context of a node?
+  if n_name:                                      # Node result, remove node name from the message
+    topology = global_vars.get_topology()         # Fetch the device type (while dealing with imaginary edge cases)
     n_device = topology.nodes[n_name].device if topology is not None else None
     entry = t_result['nodes'].setdefault(n_name,{ 'device': n_device, 'result': None, 'message': None })
     if msg:
       msg = msg.removeprefix(f'Node {n_name}: ').removeprefix(f'{n_name}: ')
-  else:                                       # Test-level result
+  else:                                           # Test-level result
     entry = t_result
 
-  if entry['result'] != 'error':
+  if entry['result'] != 'error':                  # Do not overwrite previous error result
     entry['result'] = result
-  if msg is not None:
+  if msg is not None:                             # But always store message (when avaialble)
     entry['message'] = msg
-  entry['elapsed'] = elapsed
+  entry['elapsed'] = elapsed                      # ... and the elapsed time (which makes it max elapsed time)
 
-'''
-json_results: build the JSON results document
-'''
 def json_results(exit_code: int) -> dict:
+  '''
+  Build the JSON results document
+  '''
   import netsim.cli.validate as _validate
   TC = _validate.TEST_COUNT
   summary = {
@@ -94,7 +99,8 @@ def json_results(exit_code: int) -> dict:
 
   completed = _validate.RESULTS.get('completed',False)
   doc: dict = {
-    'version': JSON_VERSION, 'started': _validate.RESULTS.get('started',None),
+    'version': JSON_VERSION, 'netlab_version': __version__,
+    'started': _validate.RESULTS.get('started',None),
     'exit_code': exit_code, 'aborted': not completed }
   if not completed:
     reason = _validate.RESULTS.get('reason',None)
