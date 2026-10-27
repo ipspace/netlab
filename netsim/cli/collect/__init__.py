@@ -88,9 +88,9 @@ def run(cli_args: typing.List[str]) -> None:
   c_utils.create_output(output_path)
 
   ansible_args = i_utils.min_ansible_args(args,"dense")
-  ansible_args += ['-e','target='+output_path ]
+  ansible_args += ['-e',f"target='{output_path}'"]
   if args.suffix:
-    ansible_args += ['-e','suffix='+args.suffix]
+    ansible_args += ['-e',f"suffix='{args.suffix}'"]
 
   rest = ansible_args + rest
   if args.verbose:
