@@ -112,6 +112,13 @@ def device_ssh_ready(waitset: list, topology: Box) -> None:
         end='\n' if log.debug_active('ssh') else '\r',flush=True)
       time.sleep(1)
 
+  def check_sshpass() -> None:
+    if not external_commands.has_command('sshpass'):
+      error_and_exit(
+        f'sshpass command is not installed',
+        more_hints=['netlab initial needs "sshpass" to check SSH readiness of lab devices'],
+        category=log.MissingDependency)
+
   def probe_ssh(n_name: str, n_data: Box, r_data: Box) -> bool:
     if log.debug_active('ssh'):
       print(f'SSH: starting check on {n_name}, timeout={r_data.delay}',flush=True)
@@ -180,14 +187,13 @@ def device_ssh_ready(waitset: list, topology: Box) -> None:
     return False
 
   # Start of device_ssh_ready main code
-  if not external_commands.has_command('sshpass'):
-    error_and_exit(
-      f'sshpass command is not installed',
-      more_hints=['netlab initial needs "sshpass" to check SSH readiness of lab devices'],
-      category=log.MissingDependency)
-
   setup_ssh_ready_parameters(waitset,topology)
   log.exit_on_error()
+
+  # If at least one node cannot use netmiko, we must check for sshpass command
+  if any('netmiko_command' not in topology.nodes[n_name]._ready for n_name in waitset):
+    check_sshpass()
+
   start_time = time.time()
   log.info(text=f'Checking SSH server(s) on {",".join(waitset)}')
 
