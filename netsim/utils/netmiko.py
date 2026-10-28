@@ -50,7 +50,7 @@ NETMIKO_GROUP_VARS: dict = {
 
 NETMIKO_PARAM_FEATURES: list = ['device_type']
 
-def prepare_params(n_data: Box, topology: Box) -> typing.Optional[dict]:
+def prepare_params(n_data: Box, topology: Box, quiet: bool = False) -> typing.Optional[dict]:
   """
   Prepare netmiko connection parameters
   """
@@ -81,11 +81,12 @@ def prepare_params(n_data: Box, topology: Box) -> typing.Optional[dict]:
     netmiko_params['host'] = netmiko_host
 
   if config_err_list:                             # Any errors so far?
-    log.error(
-      f'Cannot use netmiko to configure {n_data.name} (device {n_data.device})',
-      more_hints=config_err_list,
-      category=log.MissingValue,
-      module='netmiko')
+    if not quiet:
+      log.error(
+        f'Cannot use netmiko to configure {n_data.name} (device {n_data.device})',
+        more_hints=config_err_list,
+        category=log.MissingValue,
+        module='netmiko')
     return None
 
   # Cool, we're good to go. Just the final detail: add session log file
@@ -97,7 +98,7 @@ def prepare_params(n_data: Box, topology: Box) -> typing.Optional[dict]:
 
 PARAMIKO_LOGGER: typing.Optional[logging.Logger] = None
 
-def connect(n_data: Box, netmiko_params: dict) -> 'typing.Optional[_netmiko.BaseConnection]':
+def connect(n_data: Box, netmiko_params: dict, quiet: bool = False) -> 'typing.Optional[_netmiko.BaseConnection]':
   """
   Use netmiko to open a SSH session to a lab device
   """
@@ -117,11 +118,12 @@ def connect(n_data: Box, netmiko_params: dict) -> 'typing.Optional[_netmiko.Base
     net_connect.enable()
   except Exception as ex:
     err = str(ex).strip("\n")
-    log.error(
-      f'netmiko cannot connect to {n_data.name}',
-      more_data=[ err ],
-      category=log.FatalError,
-      module='netmiko')
+    if not quiet:
+      log.error(
+        f'netmiko cannot connect to {n_data.name}',
+        more_data=[ err ],
+        category=log.FatalError,
+        module='netmiko')
     return None
 
   return net_connect
