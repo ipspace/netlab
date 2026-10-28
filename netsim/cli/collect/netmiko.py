@@ -33,6 +33,8 @@ def collect(node: str, output: str, suffix: str, topology: Box) -> typing.Option
   Try to collect device configuration with netmiko. Return None on errors or
   if the device does not support netmiko-based config collection
   """
+  if netmiko.NETMIKO_IS_MISSING:                  # Don't even try if netmiko is not installed
+    return None
   n_data = topology.nodes[node]
   features = a_devices.get_device_features(n_data,topology.defaults)
   nm_collect = features.get('netmiko.collect',None)

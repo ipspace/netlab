@@ -103,7 +103,7 @@ def run_internal(args: argparse.Namespace, topology: Box, output_path: str, node
 
   suffix = '.' + (args.suffix or 'cfg')
   with concurrent.futures.ThreadPoolExecutor() as executor:
-    executor.map(collect_node, nodeset)
+    executor.map(collect_node, list(nodeset))
 
   return int_count
 
@@ -147,6 +147,7 @@ def run(cli_args: typing.List[str]) -> None:
     used_ansible = True
 
   if args.tar:
+    log.exit_on_error()
     c_utils.create_tar(args,run_dir)
 
   if args.tar or used_ansible:
