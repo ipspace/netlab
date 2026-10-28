@@ -1,46 +1,16 @@
 {#
   VRFs and interface VRF membership are configured in the initial configuration.
-  OcNOS uses a positional VRF name in the per-VRF OSPF process ("router ospf <pid> <vrf>")
+  VRF OSPF instances are configured with the global OSPFv2/OSPFv3 macros
 #}
-{% for vname,vdata in vrfs.items() if vdata.ospf.af.ipv4 is defined %}
-router ospf {{ vdata.vrfidx }} {{ vname }}
-{%   if vdata.ospf.router_id is defined %}
- ospf router-id {{ vdata.ospf.router_id }}
+{% import "templates/ospf/ocnos.ospfv2.j2" as ospfv2 %}
+{% import "templates/ospf/ocnos.ospfv3.j2" as ospfv3 %}
+{% for vname,vdata in vrfs.items() if 'ospf' in vdata %}
+{%   if vdata.ospf.af.ipv4 is defined %}
+{{     ospfv2.config(vdata.vrfidx,vname,vdata.ospf,vdata.ospf.interfaces|default([])) }}
 {%   endif %}
-{%   for l in vdata.ospf.interfaces|default([]) if l.ipv4 is string %}
- network {{ l.ipv4 }} area {{ l.ospf.area|default(vdata.ospf.area) }}
-{%   endfor %}
-{%   for l in vdata.ospf.interfaces|default([]) if l.ospf.passive|default(False) %}
- passive-interface {{ l.ifname }} enable
-{%   endfor %}
-!
-{%   for l in vdata.ospf.interfaces|default([]) if l.ospf.network_type is defined %}
-interface {{ l.ifname }}
- ip ospf network {{ l.ospf.network_type }}
-!
-{%   endfor %}
-{% endfor %}
-{#
-  The VRF OSPFv3 process uses the VRF name as its process tag ("router ipv6 vrf ospf <vrf>");
-  interfaces join it with "ipv6 router ospf area <area> tag <vrf>"
-#}
-{% for vname,vdata in vrfs.items() if vdata.ospf.af.ipv6 is defined %}
-router ipv6 vrf ospf {{ vname }}
-{%   if vdata.ospf.router_id is defined %}
- router-id {{ vdata.ospf.router_id }}
+{%   if vdata.ospf.af.ipv6 is defined %}
+{{     ospfv3.config(vdata.vrfidx,vname,vdata.ospf,vdata.ospf.interfaces|default([])) }}
 {%   endif %}
-{%   for l in vdata.ospf.interfaces|default([]) if l.ospf.passive|default(False) and 'ipv6' in l %}
- passive-interface {{ l.ifname }} enable
-{%   endfor %}
-!
-{%   for l in vdata.ospf.interfaces|default([]) if 'ipv6' in l %}
-interface {{ l.ifname }}
- ipv6 router ospf area {{ l.ospf.area|default(vdata.ospf.area) }} tag {{ vname }}
-{%     if l.ospf.network_type is defined %}
- ipv6 ospf network {{ l.ospf.network_type }}
-{%     endif %}
-!
-{%   endfor %}
 {% endfor %}
 {#
   VRF routes are exchanged through per-VRF BGP address families. The (empty) VPNv4/VPNv6

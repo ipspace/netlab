@@ -1,0 +1,51 @@
+{#
+  OcNOS assigns OSPF areas with "network" statements in the router configuration,
+  not with interface commands. A host prefix (interface address) is accepted and
+  normalized to the subnet.
+
+  The VRF OSPF process uses a positional VRF name ("router ospf <pid> <vrf>")
+#}
+{% import "templates/routing/_default.ios.j2" as ospf_default %}
+{% macro config(ospf_pid,ospf_vrf,ospf_data,intf_data) %}
+router ospf {{ ospf_pid }}{{ (' ' ~ ospf_vrf) if ospf_vrf else '' }}
+{% if ospf_data.router_id is defined %}
+ ospf router-id {{ ospf_data.router_id }}
+{% endif %}
+{% if ospf_data.reference_bandwidth is defined %}
+ auto-cost reference-bandwidth {{ ospf_data.reference_bandwidth }}
+{% endif %}
+{{ ospf_default.config(ospf_data,'ipv4') }}
+{% for l in intf_data if 'ospf' in l and l.ipv4 is string %}
+ network {{ l.ipv4 }} area {{ l.ospf.area }}
+{% endfor %}
+{% for l in intf_data if l.ospf.passive|default(False) %}
+ passive-interface {{ l.ifname }} enable
+{% endfor %}
+!
+{% for l in intf_data if 'ospf' in l and l.ipv4 is string %}
+interface {{ l.ifname }}
+{%   if l.ospf.network_type is defined %}
+ ip ospf network {{ l.ospf.network_type }}
+{%   endif %}
+{%   if l.ospf.cost is defined %}
+ ip ospf cost {{ l.ospf.cost }}
+{%   endif %}
+{%   if l.ospf.timers.hello is defined %}
+ ip ospf hello-interval {{ l.ospf.timers.hello }}
+{%   endif %}
+{%   if l.ospf.timers.dead is defined %}
+ ip ospf dead-interval {{ l.ospf.timers.dead }}
+{%   endif %}
+{%   if l.ospf.priority is defined %}
+ ip ospf priority {{ l.ospf.priority }}
+{%   endif %}
+{%   if l.ospf.password is defined %}
+ ip ospf authentication
+ ip ospf authentication-key {{ l.ospf.password }}
+{%   endif %}
+{%   if l.ospf.bfd|default(False) and l.type|default('') != 'loopback' %}
+ ip ospf bfd
+{%   endif %}
+!
+{% endfor %}
+{% endmacro %}
