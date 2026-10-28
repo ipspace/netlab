@@ -12,7 +12,7 @@ from box import Box
 from ... import providers
 from ...augment import devices as a_devices
 from ...data import append_to_list, get_empty_box
-from ...utils import log, strings
+from ...utils import log, netmiko, strings
 from .. import ansible, error_and_exit, external_commands, is_dry_run, lab_status_change
 from . import utils
 
@@ -29,6 +29,9 @@ def setup_ssh_ready_parameters(nodeset: list, topology: Box) -> None:
   def get_int_var_value(n_data: Box, var: str, def_val: int) -> int:
     result = a_devices.get_node_group_var(n_data,var,defaults)
     return result if isinstance(result,int) else def_val
+
+  def get_show_command(n_data: Box) -> str:
+    return a_devices.get_node_group_var(n_data,'netlab_check_command',defaults) or "show version"
 
   # Build SSH command
   #
@@ -49,7 +52,7 @@ def setup_ssh_ready_parameters(nodeset: list, topology: Box) -> None:
       return None
     ssh_dest = a_devices.get_node_group_var(n_data,'ansible_user',defaults) + "@" + str(ssh_host)
     ssh_exec.append(ssh_dest)
-    ssh_cmd = a_devices.get_node_group_var(n_data,'netlab_check_command',defaults) or "show version"
+    ssh_cmd = get_show_command(n_data)
     ssh_exec.append(ssh_cmd)
     if log.debug_active('ssh'):
       print(f'SSH cmd for {n_data.name}: {" ".join(ssh_exec)}')
@@ -64,6 +67,7 @@ def setup_ssh_ready_parameters(nodeset: list, topology: Box) -> None:
     r_data.delay   = get_int_var_value(n_data,'netlab_check_delay',5)     # ... and delay values
     r_data.wait    = r_data.retries * r_data.delay                        # ... and calculate total wait time
     n_provider = a_devices.get_provider(n_data,defaults)
+    features = a_devices.get_device_features(n_data,defaults)
     p_wait = defaults.providers[n_provider].get('ssh_timeout',r_data.wait)
     if p_wait > r_data.wait:
       r_data.wait = p_wait
@@ -73,6 +77,14 @@ def setup_ssh_ready_parameters(nodeset: list, topology: Box) -> None:
 
     if log.debug_active('ssh'):
       print(f'SSH wait times for {n_data.name}: delay={r_data.delay}, retries={r_data.retries}')
+
+    if not netmiko.NETMIKO_IS_MISSING and features.get('netmiko.device_type',None):
+      params = netmiko.prepare_params(n_data,topology,quiet=True)
+      if params:                                            # Check whether we have all netmiko parameters we need
+        for kw in ('conn_timeout','banner_timeout','auth_timeout','read_timeout_override'):
+          params[kw] = r_data.delay                         # Adjust all known netmiko timeouts
+        r_data.netmiko_params = params
+        r_data.netmiko_command = get_show_command(n_data)   # ... use netmiko only if we know it will work
     r_data.ssh_exec = build_ssh_command(n_data)             # Get the SSH command to execute
     r_data.ssh_ready = False                                # ... and assume the device is not ready
     r_data.ssh_failed = False                               # ... but also hasn't failed yet
@@ -100,21 +112,57 @@ def device_ssh_ready(waitset: list, topology: Box) -> None:
         end='\n' if log.debug_active('ssh') else '\r',flush=True)
       time.sleep(1)
 
+  def check_sshpass() -> None:
+    if not external_commands.has_command('sshpass'):
+      error_and_exit(
+        f'sshpass command is not installed',
+        more_hints=['netlab initial needs "sshpass" to check SSH readiness of lab devices'],
+        category=log.MissingDependency)
+
+  def probe_ssh(n_name: str, n_data: Box, r_data: Box) -> bool:
+    if log.debug_active('ssh'):
+      print(f'SSH: starting check on {n_name}, timeout={r_data.delay}',flush=True)
+    subprocess.run(args=r_data.ssh_exec,capture_output=True,check=True,timeout=r_data.delay)
+    r_data.ssh_ready = True                               # No errors, we're ready to roll
+    now = time.time()
+    if now > start_time + 5 or log.VERBOSE:               # Report progress only if it's worth reporting
+      strings.print_colored_text('[SSH]     ','green')
+      print(f'SSH server on node {n_name} (device {n_data.device}) ' +\
+            f'is ready after {round(now - start_time,1)} seconds',flush=True)
+    return True
+
+  def probe_netmiko(n_name: str, n_data: Box, r_data: Box) -> bool:
+    """
+    netmiko-based SSH probe
+    """
+    if log.debug_active('ssh'):
+      print(f'netmiko: starting check on {n_name}, timeout={r_data.delay}',flush=True)
+    conn = netmiko.connect(n_data,r_data.netmiko_params,quiet=True)
+    if not conn:
+      return False
+    with conn:
+      if not conn.send_command(r_data.netmiko_command):
+        return False
+
+    r_data.ssh_ready = True                               # No errors, we're ready to roll
+    now = time.time()
+    if now > start_time + 5 or log.VERBOSE:               # Report progress only if it's worth reporting
+      strings.print_colored_text('[SSH]     ','green')
+      print(f'netmiko reports node {n_name} (device {n_data.device}) is ready for SSH ' +\
+            f'after {round(now - start_time,1)} seconds',flush=True)
+    return True
+
   def wait_for_ssh(n_name: str) -> bool:                    # Try out SSH server on the device
     n_data = topology.nodes[n_name]
     r_data = n_data._ready                                  # Get device ready data
     result = ''
     try:                                                    # Try the SSH command
-      if log.debug_active('ssh'):
-        print(f'SSH: starting check on {n_name}, timeout={r_data.delay}',flush=True)
-      subprocess.run(args=r_data.ssh_exec,capture_output=True,check=True,timeout=r_data.delay)
-      r_data.ssh_ready = True                               # No errors, we're ready to roll
-      now = time.time()
-      if now > start_time + 5 or log.VERBOSE:               # Report progress only if it's worth reporting
-        strings.print_colored_text('[SSH]     ','green')
-        print(f'SSH server on node {n_name} (device {n_data.device}) ' +\
-              f'is ready after {round(now - start_time,1)} seconds',flush=True)
-      return True
+      if 'netmiko_command' in r_data:
+        if probe_netmiko(n_name,n_data,r_data):
+          return True
+      else:
+        if probe_ssh(n_name,n_data,r_data):
+          return True
     except subprocess.CalledProcessError as ex:             # SSH reported an error
       result = str(ex)
     except subprocess.TimeoutExpired as ex:                 # SSH got stuck
@@ -139,14 +187,13 @@ def device_ssh_ready(waitset: list, topology: Box) -> None:
     return False
 
   # Start of device_ssh_ready main code
-  if not external_commands.has_command('sshpass'):
-    error_and_exit(
-      f'sshpass command is not installed',
-      more_hints=['netlab initial needs "sshpass" to check SSH readiness of lab devices'],
-      category=log.MissingDependency)
-
   setup_ssh_ready_parameters(waitset,topology)
   log.exit_on_error()
+
+  # If at least one node cannot use netmiko, we must check for sshpass command
+  if any('netmiko_command' not in topology.nodes[n_name]._ready for n_name in waitset):
+    check_sshpass()
+
   start_time = time.time()
   log.info(text=f'Checking SSH server(s) on {",".join(waitset)}')
 
