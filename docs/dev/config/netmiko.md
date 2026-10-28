@@ -3,16 +3,18 @@
 
 _netlab_ can use the [netmiko](https://github.com/ktbyers/netmiko) library instead of Ansible playbooks to deploy device configurations. The *netmiko* configuration method opens an SSH session to the device, enters the configuration mode, and sends the rendered configuration snippets to the device line-by-line. It's much faster than an Ansible playbook, as it does not have to start a separate Ansible process (and a separate SSH session) for every configuration snippet.
 
+The **netlab collect** command can also use *netmiko* to collect device configurations (see [](dev-config-netmiko-collect)).
+
 This document describes how the *netmiko* configuration method works and which device settings you have to define to use it. The *netmiko* configuration method is currently available on these platforms:
 
 {.table-wrap}
-| Device | Device<br>settings | *netmiko*<br>device type | Default configuration method |
-|--------|--------------------|------------------------|------------------------------|
-| Arista EOS | `eos.yml` | `arista_eos` | Ansible |
-| Cisco IOS/IOS XE[^IOS] | `ios.yml` | `cisco_ios` | Ansible |
-| Cisco Nexus OS | `nxos.yml` | `cisco_nxos` | **netmiko** |
-| Cisco IOS XR[^XR] | `xr.yml` | `cisco_xr` | **netmiko** |
-| IP Infusion OcNOS | `ocnos.yml` | `ipinfusion_ocnos` | **netmiko** |
+| Device | Device<br>settings | *netmiko*<br>device type | Default configuration method | Collect configuration<br>with *netmiko* |
+|--------|--------------------|------------------------|------------------------------|:--:|
+| Arista EOS | `eos.yml` | `arista_eos` | Ansible | ✅ |
+| Cisco IOS/IOS XE[^IOS] | `ios.yml` | `cisco_ios` | Ansible | ✅ |
+| Cisco Nexus OS | `nxos.yml` | `cisco_nxos` | **netmiko** | ✅ |
+| Cisco IOS XR[^XR] | `xr.yml` | `cisco_xr` | **netmiko** | ✅ |
+| IP Infusion OcNOS | `ocnos.yml` | `ipinfusion_ocnos` | **netmiko** | ❌ |
 
 [^IOS]: Including all devices using **ios** as their parent device: Cisco IOSv, IOSvL2, CSR 1000v, Catalyst 8000v, IOL, and IOL L2 image.
 
@@ -70,57 +72,7 @@ The *netmiko* configuration method uses the following device features (specified
 | **error_regexp** | string or list | Regular expression(s) used to detect errors in the device responses to configuration commands. A list of regular expressions is combined into a single regular expression matching any of them |
 | **delay** | int | Delay (in seconds) between establishing the SSH session and sending the first configuration snippet |
 | **step_config** | bool | Exit the configuration mode after every configuration snippet |
-
-These are the *netmiko* features used by the devices supporting the *netmiko* configuration method:
-
-**Arista EOS** (`eos.yml`):
-
-```
-netmiko:
-  device_type: arista_eos
-  error_regexp: "^%.*"
-```
-
-**Cisco IOS** (`ios.yml`):
-
-```
-netmiko:
-  device_type: cisco_ios
-  error_regexp:
-  - (?i:invalid|incomplete|ambiguous|error|overlap|enabled|bad).*
-```
-
-**Cisco Nexus OS** (`nxos.yml`):
-
-```
-netmiko:
-  device_type: cisco_nxos
-  error_regexp: [ "^%(?!INFO).*", "(?i:invalid|error).*" ]
-```
-
-**Cisco IOS XR** (`xr.yml`):
-
-```
-netmiko:
-  device_type: cisco_xr
-  delay: 2                    # Wait two seconds before trying to configure the device
-  error_regexp: "^%.*"
-  step_config: True
-```
-
-**IP Infusion OcNOS** (`ocnos.yml`):
-
-```
-netmiko:
-  device_type: ipinfusion_ocnos
-  error_regexp:                 # OcNOS errors start with '%'; '% Warning' lines are informational
-  - "^%(?! Warning).*"
-  step_config: true
-```
-
-```{tip}
-The **error_regexp** regular expression should match the whole error message, not just its first few characters. The matched text is included in the error message _netlab_ displays when the configuration deployment fails.
-```
+| **collect** | dict | Commands used to collect device configuration(s) with the **netlab collect** command (see [](dev-config-netmiko-collect)) |
 
 The *netmiko* connection parameters are derived from these Ansible group variables (they could be set as device **group_vars** or as node parameters):
 
@@ -131,6 +83,39 @@ The *netmiko* connection parameters are derived from these Ansible group variabl
 | **ansible_become_password** | **secret** (used by the **enable** command) | ❌ |
 
 The SSH session is established with the node's management IPv4 address (**mgmt.ipv4**) or IPv6 address (**mgmt.ipv6**) when the node has no IPv4 management address. _netlab_ cannot use *netmiko* to configure nodes without a management IP address.
+
+### Examples
+
+Arista EOS uses a simple error-detecting regular expression (anything starting with a percentage sign) and has to clean up LLDP configuration on interfaces:
+
+**Arista EOS** (`eos.yml`):
+
+```
+netmiko:
+  device_type: arista_eos
+  error_regexp: "^%.*"
+  collect:
+    config: show running
+    _config_clean: ^\s+no lldp (transmit|receive)$
+```
+
+The error-detecting regular expression for Cisco IOS is significantly more complex (we have to catch the keywords that could indicate an error), but the cleanup of the collected configuration is easier -- the first few lines have to be removed.
+
+**Cisco IOS** (`ios.yml`):
+
+```
+netmiko:
+  device_type: cisco_ios
+  collect:
+    config: show running-config
+    _config_skip: 3
+  error_regexp:
+  - (?i:invalid|incomplete|ambiguous|error|overlap|enabled|bad).*
+```
+
+```{tip}
+The **error_regexp** regular expression should match the whole error message, not just its first few characters. The matched text is included in the error message _netlab_ displays when the configuration deployment fails.
+```
 
 ## Creating the Configuration Snippets
 
@@ -179,6 +164,42 @@ After the configuration deployment threads (and the Ansible playbook) complete, 
 
 The **netlab config** command uses the same deployment process for custom configuration templates when the node uses the *netmiko* configuration method. The **netlab config --reload** command always uses the Ansible playbook to reload the saved device configurations.
 
+(dev-config-netmiko-collect)=
+## Collecting Device Configurations
+
+The **netlab collect** command tries to collect device configurations with internal collection methods (currently only *netmiko*) before falling back to the **collect-configs.ansible** Ansible playbook. The internal collection is implemented in the **netsim.cli.collect** module (the *netmiko*-specific code is in the **netsim.cli.collect.netmiko** module) and works like this:
+
+* **netlab collect** starts a separate collection thread for every collectable node and tries all internal collection methods (listed in the **INTERNAL_DISPATCH** dictionary) for that node.
+* A collection method returns `None` when it cannot be used with the node, `True` when it collected the device configuration, and `False` when the collection failed.
+* Nodes for which an internal collection method returned `True` or `False` are added to the Ansible skip list and are not processed by the **collect-configs.ansible** playbook.
+* The Ansible playbook is executed only when there are nodes left whose configurations have not been collected with an internal method. If some configurations were already collected with an internal method, **netlab collect** displays an extra section header before starting the Ansible playbook.
+
+The *netmiko* collection method is used for devices that have the **features.netmiko.collect** dictionary. It does not depend on the **netlab_config_mode** setting; _netlab_ uses *netmiko* to collect the configuration of a supported device even when the device was configured with Ansible playbooks.
+
+The keys of the **features.netmiko.collect** dictionary are configuration names, and the values are the commands used to display the configuration. The keys starting with an underscore are cleanup parameters for the configuration with the same name (`<name>` is the configuration name):
+
+{.table-wrap}
+| Key | Type | Meaning |
+|-----|------|---------|
+| `<name>` | string | Command used to collect the *name* configuration |
+| `_<name>_skip` | int | Number of lines to skip at the beginning of the command printout (for example, the *Building configuration* and *Current configuration* lines on Cisco IOS) |
+| `_<name>_clean` | string | Regular expression used to remove lines from the command printout. All lines matching the regular expression are removed |
+
+The configuration collected with the **config** command is saved into the `<node>.<suffix>` file in the output directory (the default suffix is `cfg`). All other configurations are saved into the `<node>-<name>` files. 
+
+_netlab_ uses this procedure to collect the device configurations with *netmiko*:
+
+* Prepares the *netmiko* connection parameters and opens an SSH session to the device using the same functions (and the same Ansible group variables) as the *netmiko* configuration method.
+* Executes the **send_command** function for every configuration name, skips the configurations that returned empty printouts, cleans up the printout using the `_<name>_skip` and `_<name>_clean` parameters, and saves the results into the output directory.
+
+The collection method returns `None` (allowing _netlab_ to use the Ansible playbook for that node) when it cannot prepare the *netmiko* connection parameters or when **send_command** returns a value that is not a string. It returns `False` (and reports an error) when it cannot connect to the device or when an exception is raised during the collection.
+
+To add *netmiko*-based configuration collection to a device that already supports the *netmiko* configuration method:
+
+* Add the **features.netmiko.collect** dictionary to the device settings
+* Run the `tests/integration/initial/x-91-collect.yml` integration test, and compare the collected configuration (in the `config` directory) with the configuration collected with the Ansible playbook. Add the `_config_skip` and `_config_clean` parameters to remove the unwanted lines.
+* Make sure the collected configuration can be used with the **netlab up --reload-config** command.
+
 ## Troubleshooting
 
 * *netmiko* writes the log of all SSH session interactions to `node_files/_nodename_/netmiko.log`
@@ -198,3 +219,5 @@ The `tests/config` directory contains topologies that can be used to test the er
 
 * Start the lab with `netlab up ios-netmiko.yml`
 * Execute `netlab config invalid` to deploy an invalid configuration command; the configuration deployment should fail.
+
+The `tests/integration/initial/x-91-collect.yml` integration test executes the **netlab collect** command instead of the validation step. Use it to test the *netmiko*-based configuration collection.

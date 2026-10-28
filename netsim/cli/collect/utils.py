@@ -4,6 +4,7 @@
 
 import argparse
 import os
+import pathlib
 import subprocess
 import typing
 
@@ -67,6 +68,9 @@ def get_tarball_file(tarball: str) -> str:
   return tarball
 
 def create_tar(args: argparse.Namespace, run_dir: str) -> None:
+  """
+  Create tarball from the collected configurations
+  """
   tarball = get_tarball_file(args.tar)
   if not args.quiet:
     log.section_header('Create',f'Creating tar archive {tarball}')
@@ -96,3 +100,15 @@ def create_tar(args: argparse.Namespace, run_dir: str) -> None:
       log.section_header('Cleanup','Removing temporary configuration directory')
     fs_cleanup([ args.output ],args.verbose)
     log.info(f'Config directory {args.output} removed')
+
+def save_config(filename: str, directory: str, contents: str) -> None:
+  if not contents.endswith('\n'):
+    contents += '\n'
+  try:
+    o_file = pathlib.Path(directory) / filename
+    o_file.write_text(contents)
+    log.info(f'Collected {filename}: {len(contents)} bytes')
+  except KeyboardInterrupt as ex:
+    raise KeyboardInterrupt from ex
+  except Exception as ex:
+    log.error(f'Cannot create {filename}: {ex}',module='collect')
