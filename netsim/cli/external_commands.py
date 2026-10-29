@@ -96,7 +96,8 @@ def run_command(
     ignore_errors: bool = False,
     return_stdout: bool = False,
     return_exitcode: bool = False,
-    run_always: bool = False) -> typing.Union[bool,int,str]:
+    run_always: bool = False,
+    timeout: typing.Optional[float] = None) -> typing.Union[bool,int,str]:
 
   set_captured_output()
 
@@ -130,7 +131,8 @@ def run_command(
                 cmd,
                 capture_output=check_result,
                 check=not return_exitcode,
-                text=True)
+                text=True,
+                timeout=timeout)
     if log.debug_active('external') or log.VERBOSE >= 3:
       print(f'... run result: {result}',flush=True)
     if check_result:
@@ -147,6 +149,13 @@ def run_command(
 
     log_command(cmd,'OK' if result.stdout != "" else 'FAIL')
     return result.stdout != ""
+  except subprocess.TimeoutExpired:
+    if log.debug_active('external') or log.VERBOSE >= 3:
+      print(f'... timeout after {timeout} seconds',flush=True)
+    log_command(cmd,'TIMEOUT')
+    if not log.QUIET and not ignore_errors:
+      print(f"Timeout executing {stringify(cmd)} ({timeout} seconds)",flush=True)
+    return 1 if return_exitcode else False
   except subprocess.CalledProcessError as ex:
     if log.debug_active('external') or log.VERBOSE >= 3:
       print(f'... called process error: {ex}',flush=True)
@@ -160,7 +169,7 @@ def run_command(
       print(f'... other process exception: {ex}',flush=True)
     log_command(cmd,'ERROR')
     print(f"Error executing {stringify(cmd)}:\n  {ex}",flush=True)
-    return False
+    return 1 if return_exitcode else False
 
 def test_probe(p : typing.Union[str,list,Box],quiet : bool = False) -> bool:
   if isinstance(p,str):

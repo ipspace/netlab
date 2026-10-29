@@ -86,7 +86,8 @@ def docker_connect(
   sys.stderr.flush()
 
   need_output = 'output' in p_args and p_args.output
-  status = run_command(c_args,check_result=need_output,return_stdout=need_output,ignore_errors=True)
+  timeout = p_args.timeout if 'timeout' in p_args else None
+  status = run_command(c_args,check_result=need_output,return_stdout=need_output,ignore_errors=True,timeout=timeout)
   if not need_output or status is False:
     return status
   return get_combined_output()
@@ -104,6 +105,10 @@ def ssh_connect(
 
   if data.netlab_ssh_args:
     c_args.extend(data.netlab_ssh_args.split(' '))
+
+  timeout = p_args.timeout if 'timeout' in p_args else None
+  if timeout:                                               # Limit the SSH connection setup time as well
+    c_args.extend(['-o',f'ConnectTimeout={max(1,int(timeout))}'])
 
   if data.ansible_ssh_pass:
     c_args = ['sshpass','-p',data.ansible_ssh_pass ] + c_args
@@ -134,7 +139,7 @@ def ssh_connect(
 
   sys.stderr.flush()
   need_output = 'output' in p_args and p_args.output
-  status = run_command(c_args,check_result=need_output,return_stdout=need_output,ignore_errors=True)
+  status = run_command(c_args,check_result=need_output,return_stdout=need_output,ignore_errors=True,timeout=timeout)
   if not need_output or status is False:
     return status
   return get_combined_output()
