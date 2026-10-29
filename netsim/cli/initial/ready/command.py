@@ -4,6 +4,7 @@
 import argparse
 import concurrent.futures
 import re
+import threading
 import time
 
 from box import Box
@@ -12,7 +13,7 @@ from ....augment import devices as a_devices
 from ....utils import log, strings
 from ... import error_and_exit
 from ...connect import LogLevel, connect_to_node
-from .utils import PRINT_LOCK, check_sshpass, set_timeouts
+from .utils import PRINT_LOCK, check_sshpass, set_timeouts, status_display
 
 
 def setup_command_parameters(nodeset: list, topology: Box) -> None:
@@ -60,20 +61,6 @@ def device_command_ready(waitset: list, topology: Box) -> None:
       if 'command.status' not in n_data._ready:
         wait_list.append(n_name)                            # Device is still not ready (but has not failed yet)
     return wait_list
-
-  def status_display() -> None:                             # Display status every second
-    while True:                                             # Iterate until everything is done
-      wait_list = devices_not_ready()                       # Get the list of not-ready devices
-      if not wait_list:                                     # All done?
-        return                                              # ... let's get out of here
-
-      with PRINT_LOCK:
-        strings.print_colored_text('[READY]   ','green')
-        w_time = round(time.time() - start_time,1)
-        print(
-          f'Waiting for {len(wait_list)} devices ({w_time} seconds)',
-          end='\n' if log.debug_active('ready') else '\r',flush=True)
-      time.sleep(1)
 
   def wait_for_command(n_name: str) -> bool:
     """
@@ -127,18 +114,22 @@ def device_command_ready(waitset: list, topology: Box) -> None:
     check_sshpass()
 
   start_time = time.time()
+  stop_display = threading.Event()
   log.info(text=f'Verifying the lab devices are ready: {",".join(waitset)}')
 
   with concurrent.futures.ThreadPoolExecutor() as executor:
     if strings.rich_color:
-      executor.submit(status_display)
-    while True:
-      check_list = devices_not_ready()
-      if not check_list:
-        break
-      for _ in executor.map(wait_for_command, check_list):
-        pass
-      time.sleep(1)                               # Wait a bit before running another iteration
+      executor.submit(status_display,devices_not_ready,'[READY]   ','ready',start_time,stop_display)
+    try:
+      while True:
+        check_list = devices_not_ready()
+        if not check_list:
+          break
+        for _ in executor.map(wait_for_command, check_list):
+          pass
+        time.sleep(1)                             # Wait a bit before running another iteration
+    finally:
+      stop_display.set()                          # Stop the status display even when we're bailing out
 
   failed_list = [ n_name for n_name in waitset if topology.nodes[n_name]._ready.get('command.status',None) is False ]
   if failed_list:

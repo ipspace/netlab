@@ -2,7 +2,6 @@
 # netlab initial -- implement standard device readiness checks
 #
 import argparse
-import threading
 import typing
 
 from box import Box

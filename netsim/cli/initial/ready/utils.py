@@ -3,11 +3,13 @@
 #
 
 import threading
+import time
+import typing
 
 from box import Box
 
 from ....augment import devices as a_devices
-from ....utils import log
+from ....utils import log, strings
 from ... import error_and_exit, external_commands
 
 PRINT_LOCK = threading.Lock()
@@ -38,3 +40,26 @@ def check_sshpass() -> None:
       'sshpass command is not installed',
       more_hints=['netlab initial needs "sshpass" to check SSH readiness of lab devices'],
       category=log.MissingDependency)
+
+def status_display(
+      devices_not_ready: typing.Callable[[],list],
+      label: str,
+      debug_flag: str,
+      start_time: float,
+      stop_display: threading.Event) -> None:
+  """
+  Display the readiness check status every second until all devices are done or
+  until the caller tells us to stop (needed to exit cleanly on errors)
+  """
+  while not stop_display.is_set():                          # Iterate until everything is done (or we're told to stop)
+    wait_list = devices_not_ready()                         # Get the list of not-ready devices
+    if not wait_list:                                       # All done?
+      return                                                # ... let's get out of here
+
+    with PRINT_LOCK:
+      strings.print_colored_text(label,'green')
+      w_time = round(time.time() - start_time,1)
+      print(
+        f'Waiting for {len(wait_list)} devices ({w_time} seconds)',
+        end='\n' if log.debug_active(debug_flag) else '\r',flush=True)
+    stop_display.wait(1)                                    # Sleep for a second, wake up immediately when stopped

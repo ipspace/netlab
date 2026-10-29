@@ -3,6 +3,7 @@
 #
 import concurrent.futures
 import subprocess
+import threading
 import time
 import typing
 
@@ -11,7 +12,7 @@ from box import Box
 from ....augment import devices as a_devices
 from ....utils import log, netmiko, strings
 from ... import error_and_exit
-from .utils import PRINT_LOCK, check_sshpass, set_timeouts
+from .utils import PRINT_LOCK, check_sshpass, set_timeouts, status_display
 
 """
 Prepare for SSH readiness check -- copy timeouts and retry counters, check for "sshpass", set up the SSH command
@@ -88,20 +89,6 @@ def device_ssh_ready(waitset: list, topology: Box) -> None:
       if n_data._ready.ssh_exec and not n_data._ready.ssh_ready and not n_data._ready.ssh_failed:
         wait_list.append(n_name)                            # Device is still not ready (but has not failed yet)
     return wait_list  
-
-  def status_display() -> None:                             # Display status every second
-    while True:                                             # Iterate until everything is done
-      wait_list = devices_not_ready()                       # Get the list of not-ready devices
-      if not wait_list:                                     # All done?
-        return                                              # ... let's get out of here
-
-      with PRINT_LOCK:
-        strings.print_colored_text('[SSH] ','green')
-        w_time = round(time.time() - start_time,1)
-        print(
-          f'Waiting for {len(wait_list)} devices ({w_time} seconds)',
-          end='\n' if log.debug_active('ssh') else '\r',flush=True)
-      time.sleep(1)
 
   def probe_ssh(n_name: str, n_data: Box, r_data: Box) -> bool:
     if log.debug_active('ssh'):
@@ -182,18 +169,22 @@ def device_ssh_ready(waitset: list, topology: Box) -> None:
     check_sshpass()
 
   start_time = time.time()
+  stop_display = threading.Event()
   log.info(text=f'Checking SSH server(s) on {",".join(waitset)}')
 
   with concurrent.futures.ThreadPoolExecutor() as executor:
     if strings.rich_color:
-      executor.submit(status_display)
-    while True:
-      check_list = devices_not_ready()
-      if not check_list:
-        break
-      for result in executor.map(wait_for_ssh, check_list):
-        pass
-      time.sleep(1)                               # Wait a bit before running another iteration
+      executor.submit(status_display,devices_not_ready,'[SSH] ','ssh',start_time,stop_display)
+    try:
+      while True:
+        check_list = devices_not_ready()
+        if not check_list:
+          break
+        for result in executor.map(wait_for_ssh, check_list):
+          pass
+        time.sleep(1)                             # Wait a bit before running another iteration
+    finally:
+      stop_display.set()                          # Stop the status display even when we're bailing out
 
   failed_list = [ n_name for n_name in waitset if topology.nodes[n_name]._ready.ssh_failed ]
   if failed_list:
