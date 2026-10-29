@@ -25,12 +25,28 @@
 {%     endfor %}
 {%   endif %}
 {% endmacro %}
-{% if ospf.areas is defined %}
-{%   for af in ['ipv4','ipv6'] if ospf.af[af] is defined %}
-router {{ 'ipv6 ' if af == 'ipv6' else '' }}ospf {{ ospf.process|default(1) }}
-{%     for adata in ospf.areas %}
-{{       area_config(adata,af,ospf._abr|default(false)) -}}
+{#
+  The VRF OSPFv2 process uses a positional VRF name ("router ospf <pid> <vrf>"),
+  the VRF OSPFv3 process is identified by the VRF name ("router ipv6 vrf ospf <vrf>")
+#}
+{% macro ospf_area_config(odata,ospf_vrf='',ospf_pid=1) %}
+{%   for af in ['ipv4','ipv6'] if odata.af[af] is defined %}
+{%     if af == 'ipv4' %}
+router ospf {{ ospf_pid }}{{ (' ' ~ ospf_vrf) if ospf_vrf else '' }}
+{%     elif ospf_vrf %}
+router ipv6 vrf ospf {{ ospf_vrf }}
+{%     else %}
+router ipv6 ospf {{ ospf_pid }}
+{%     endif %}
+{%     for adata in odata.areas %}
+{{       area_config(adata,af,odata._abr|default(false)) -}}
 {%     endfor %}
 !
 {%   endfor %}
+{% endmacro %}
+{% if ospf.areas is defined %}
+{{   ospf_area_config(ospf,ospf_pid=ospf.process|default(1)) }}
 {% endif %}
+{% for vname,vdata in vrfs|default({})|dictsort if vdata.ospf.areas is defined %}
+{{   ospf_area_config(vdata.ospf,vname,vdata.vrfidx) }}
+{% endfor %}
