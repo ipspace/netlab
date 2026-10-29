@@ -1,6 +1,18 @@
 Release Notes
 =============
 
+**Release 26.11 (2026-11-xx)**
+
+The highlights of release 26.11 include:
+
+* Support for IP Infusion OcNOS by [@victorkhgith](https://github.com/victorkhgith) and Extreme VOSS by [@sdargoeuves](https://github.com/sdargoeuves)
+* The new **[netlab node](netlab-node)** command starts, stops, restarts, or pauses individual *containerlab* nodes (by [@Muddyblack](https://github.com/Muddyblack))
+* **netlab validate** can print [JSON results](netlab-validate-json)
+* *Netmiko* is the default configuration method for Cisco IOS XR and Nexus OS, and is used by **netlab config** and **netlab collect**
+* OSPFv3, IBGP, static routes, and route redistribution on Cisco ASAv
+
+[More details](release-26.11), new [device features](release-26.11-device-features), and [breaking changes](release-26.11-breaking)
+
 **Release 26.10 (2026-10-02)**
 
 The highlights of release 26.10 include:
@@ -213,6 +225,7 @@ For older releases, check the [release notes archive](release-archive.md).
    :caption: Individual release notes
    :maxdepth: 1
 
+   release/26.11.md
    release/26.10.md
    release/26.09.md
    release/26.08.md
