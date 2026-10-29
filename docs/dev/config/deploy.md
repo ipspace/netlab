@@ -46,7 +46,7 @@ The [*clab* provider](lab-clab) maps some files in the **node_files/_nodename_**
 (dev-config-deploy-paths)=
 ## Configuration Deployment Search Paths
 
-Before starting the configuration deployment process, the **netlab initial** Ansible playbook attempts to find an Ansible task list to check the readiness of a lab device. If that task list is found, it's executed before the initial device configuration deployment starts. You can use that task list to check the device's SSH server (Arista cEOS) or interface initialization state (Cisco Nexus OS). **netlab initial** uses these default parameters to find the device readiness task list ([more details](change-search-paths)):
+Before starting the configuration deployment process, **netlab initial** executes the [device readiness checks](dev-ready) specified in the **netlab_ready** group variable. When that list includes the **ansible** step, the readiness Ansible playbook attempts to find a device-specific Ansible task list (for example, to wait for a device-specific service) and executes it before the initial device configuration deployment starts. **netlab initial** uses these default parameters to find the device readiness task list ([more details](change-search-paths)):
 
 | Parameter | Usage |
 |-----------|-------|
@@ -301,7 +301,7 @@ netlab_config_wrapper: |
 The Linux scripts are executed before **netlab initial** executes the Ansible playbook.
 
 ```{tip}
-Some devices cannot be configured as soon as *‌containerlab* claims the container has started. You can use the **‌netlab_config_exec** group variable to specify a list of commands that have to be executed after the container has started (FRR containers use `[ sleep 1 ]` to ensure FRR daemons are ready) or the **‌netlab_ready** group variable to specify that the device should have a working SSH server before it can be configured.
+Some devices cannot be configured as soon as *‌containerlab* claims the container has started. You can use the **‌netlab_config_exec** group variable to specify a list of commands that have to be executed after the container has started (FRR containers use `[ sleep 1 ]` to ensure FRR daemons are ready) or the **‌netlab_ready** group variable to specify the [readiness checks](dev-ready) (for example, a working SSH server) that must succeed before the device can be configured.
 ```
 
 (change-search-paths)=

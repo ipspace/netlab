@@ -166,6 +166,10 @@ When you don't have to change the code for other reasons:
 
 ## Documentation
 
+* The documentation files are in `docs`
+* The table cells in the ReadTheDocs CSS do not wrap by default. Add `{.table-wrap}` at the top of tables that contain large cells.
+* Pygments Jinja2 lexer is called `jinja`, not `jinja2`.
+ 
 ### Writing Configuration Template Development Documentation
 
 * The documentation files must be in `docs/dev/config`
@@ -175,5 +179,4 @@ When you don't have to change the code for other reasons:
 * The documentation must describe all relevant **node** attributes, followed by all relevant **interface** attributes. When needed, add VLAN- or VRF attributes.
 * Do not explain the lab topology attributes; they have their own documentation.
 * Find the relevant tests in the `tests/integration` directory tree and mention them
-* Pygments Jinja2 lexer is called `jinja`, not `jinja2`.
 * Mention where the configuration templates should be stored, and how the platform name is calculated (based on `netlab_device_type` or `ansible_network_os` variable)

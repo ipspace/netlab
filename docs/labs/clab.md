@@ -278,7 +278,7 @@ The *vrnetlab* containers usually report their *health state*, changing from `st
 
 [^CSSH]: For containers that run the SSH server
 
-However, having the *vrnetlab* containers in *healthy* state (the VMs have initial configuration) does not guarantee their SSH servers are ready. _netlab_ thus performs an additional "*is the device ready*" check during the initial configuration process: it attempts to establish an SSH session with the device and run a command[^NLCC]. The SSH session is retried up to **netlab_check_retries** times (default: 20), with a delay of **netlab_check_delay** (default: 5), for a total of over 100 seconds. Each retry takes up to 10 seconds in case the TCP session is stuck in the SYN state.
+However, having the *vrnetlab* containers in *healthy* state (the VMs have initial configuration) does not guarantee their SSH servers are ready. _netlab_ thus performs an additional "*is the device ready*" check during the initial configuration process: it attempts to establish an SSH session with the device and run a command[^NLCC]. The SSH session is retried until it succeeds or until **netlab_check_retries** (default: 20) times **netlab_check_delay** (default: 5) seconds expire (100 seconds with the default values). Each attempt takes up to **netlab_check_delay** seconds in case the TCP session is stuck in the SYN state.
 
 [^NLCC]: Specified in the **netlab_check_command** variable; usually `show version`
 

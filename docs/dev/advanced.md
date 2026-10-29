@@ -20,6 +20,7 @@ Want to know how _netlab_ works behind the scenes? These documents might give yo
    versioning.md
    validation.md
    cli-hooks.md
+   ready.md
    config/netmiko.md
    error-doc-url.md
    module-attributes.md
