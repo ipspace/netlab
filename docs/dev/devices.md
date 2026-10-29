@@ -270,6 +270,10 @@ clab:
     ansible_become_method: enable
 ```
 
+## Waiting for the Device to Become Ready
+
+Some devices cannot be configured as soon as the virtualization provider reports they have started. If your device needs extra time to start its SSH server or detect its interfaces, add the [device readiness checks](dev-ready) (container health check, SSH server check, CLI command check, or an Ansible task list) to the device parameters file. [More details...](ready.md)
+
 (dev-new-devices-configure)=
 ## Configuring the Device
 
@@ -329,6 +333,7 @@ To add a device that is already supported by *netlab* to a new virtualization en
 * Add the [image/box/container name](device-box.md#adding-new-device-settings) for the new virtualization provider to device parameters file.
 * Add device-specific virtualization provider configuration template to provider-specific subdirectory of `netsim/templates/provider` directory. Use existing templates to figure out what exactly needs to be done.
 * You might need to add provider-specific device settings to device parameters file. See the above Arista cEOS examples for more details.
+* You might have to add provider-specific [device readiness checks](dev-ready) (for example, the container health check and the SSH server check for *vrnetlab* containers).
 
 **Notes**
 * The **node** dictionary within provider-specific device settings is copied directly into node data under provider key. For example, **clab.node**  Arista cEOS setting (from `netsim/devices/eos.yml`) is copied into **nodes.s1.clab** assuming S1 is an EOS device and you're using *clab* provider.

@@ -45,7 +45,7 @@ You can define external programs to be executed at these points in the *start th
 * **post_start_lab** -- executed after the virtual machines and containers are running. You can use this command to add licenses to your virtual machines.
 
 ```{tip}
-*‌containerlab* does not always check whether the containers are ready. If your script needs *‌operational* network devices, execute the `netlab initial --ready` command to ensure they are ready to be configured.
+*‌containerlab* does not always check whether the containers are ready. If your script needs *‌operational* network devices, execute the `netlab initial --ready` command to ensure they are ready to be configured (see [](dev-ready) for details).
 ```
 
 * **pre_initial_config** and **post_initial_config** are executed before and after the initial device configuration

@@ -82,7 +82,7 @@ All other arguments are passed directly to ansible-playbook
 There are several reasons a device might not be ready when the virtualization providers finish their job:
 
 * A virtualization provider might prematurely report that the devices are ready. For example, *containerlab*  does not wait for VMs running in containers to complete their boot process (see [](clab-vrnetlab) for more details).[^vssh] _netlab_ checks the reachability of SSH servers for all containers that are configured via SSH.
-* Some devices are not ready even after their SSH servers start accepting incoming sessions. For example, Cisco Nexus OS or Juniper vPTX can take about a minute to detect data-plane interfaces. In such cases, _netlab_ uses a device-specific Ansible task list to verify that the devices are ready for configuration.
+* Some devices are not ready even after their SSH servers start accepting incoming sessions. For example, Cisco Nexus OS or Juniper vPTX can take about a minute to detect data-plane interfaces. In such cases, _netlab_ executes a device-specific CLI command (or an Ansible task list) to verify that the devices are ready for configuration.
 
 [^vssh]: Vagrant waits for all devices to become reachable via SSH before reporting them ready.
 
