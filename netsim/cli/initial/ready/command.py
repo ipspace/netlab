@@ -3,7 +3,6 @@
 #
 import argparse
 import concurrent.futures
-import re
 import threading
 import time
 
@@ -33,7 +32,7 @@ def setup_command_parameters(nodeset: list, topology: Box) -> None:
     c_vars['phy_interfaces'] = [ intf for intf in n_data.interfaces if 'virtual_interface' not in intf ]
 
     if 'when' in c_ready:
-      need_check = eval(c_ready.when,{},c_vars)
+      need_check = eval(c_ready.when,c_vars)                # Use c_vars as globals (visible in comprehensions)
       if not need_check:
         continue
 
@@ -70,13 +69,15 @@ def device_command_ready(waitset: list, topology: Box) -> None:
     r_data = n_data._ready                                  # Get device ready data
     args = argparse.Namespace(quiet=True,output=True,show=None,verbose=False,timeout=r_data.delay)
     now = time.time()
+    wait_limit = r_data.wait                                # Device not ready yet: wait for the whole wait period
     try:                                                    # Try the SSH command
       log_level = LogLevel.INFO if log.debug_active('ready') else LogLevel.NONE
       result = connect_to_node(node=n_name,args=args,rest=[ r_data.command.execute ],topology=topology,log_level=log_level)
 
       if log.debug_active('ready'):
-        print(f'Expecting {r_data.command.expect}, result: {result}')
-      if isinstance(result,str) and re.search(r_data.command.expect,result):
+        with PRINT_LOCK:
+          print(f'Expecting {r_data.command.expect}, result: {result}')
+      if isinstance(result,str) and r_data.command.expect in result:
         r_data.command.status = True
         if now > start_time + 5 or log.VERBOSE:               # Report progress only if it's worth reporting
           with PRINT_LOCK:
@@ -85,22 +86,26 @@ def device_command_ready(waitset: list, topology: Box) -> None:
                   f'is ready after {round(now - start_time,1)} seconds',flush=True)
         return True
     except Exception as ex:                                 # Catch all exceptions
-      r_data.command.status = False
       result = str(ex)
+      wait_limit = r_data.wait / 4                          # Unexpected error: retry, but not for the whole wait period
 
     try:
-      if now > start_time + r_data.wait:                    # Have we exceeded the wait period?
+      if now > start_time + wait_limit:                     # Have we exceeded the wait period?
         r_data.command.status = False
         with PRINT_LOCK:
           strings.print_colored_text('[READY]   ','red')
           print(f'Node {n_name} (device {n_data.device}) ' +\
                 f'is not ready after {round(now - start_time,1)} seconds',flush=True)
+          if wait_limit < r_data.wait:                      # Report the error that made us give up early
+            print(f'          Last error: {result}',flush=True)
       if log.debug_active('ready'):                         # Do we need to report SSH status periodically?
         if now > r_data.get('debug_time',start_time) + 5:   # Report errors only every five seconds
-          print(f'READY: {n_data.name} ({n_data.device}): {result}')
+          with PRINT_LOCK:
+            print(f'READY: {n_data.name} ({n_data.device}): {result}')
           r_data.debug_time = now                           # Remember the last time we reported an error
     except Exception as ex:
-      print(f'ERROR in wait_for_command: {str(ex)}')
+      with PRINT_LOCK:
+        print(f'ERROR in wait_for_command: {str(ex)}')
 
     return False
 
@@ -112,6 +117,7 @@ def device_command_ready(waitset: list, topology: Box) -> None:
   if any(topology.nodes[n_name]._ready.command.sshpass for n_name in waitset):
     check_sshpass()
 
+  poll_delay = min(topology.nodes[n_name]._ready.delay for n_name in waitset)
   start_time = time.time()
   stop_display = threading.Event()
   log.info(text=f'Verifying the lab devices are ready: {",".join(waitset)}')
@@ -120,13 +126,14 @@ def device_command_ready(waitset: list, topology: Box) -> None:
     if strings.rich_color:
       executor.submit(status_display,devices_not_ready,'[READY]   ','ready',start_time,stop_display)
     try:
-      while True:
-        check_list = devices_not_ready()
-        if not check_list:
-          break
+      check_list = devices_not_ready()
+      while check_list:
+        round_start = time.time()
         for _ in executor.map(wait_for_command, check_list):
           pass
-        time.sleep(1)                             # Wait a bit before running another iteration
+        check_list = devices_not_ready()
+        if check_list:                            # Wait for the polling interval (but at least a second)
+          time.sleep(max(1,round_start + poll_delay - time.time()))
     finally:
       stop_display.set()                          # Stop the status display even when we're bailing out
 
