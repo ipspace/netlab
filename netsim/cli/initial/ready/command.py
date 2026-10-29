@@ -71,13 +71,12 @@ def device_command_ready(waitset: list, topology: Box) -> None:
     args = argparse.Namespace(quiet=True,output=True,show=None,verbose=False,timeout=r_data.delay)
     now = time.time()
     try:                                                    # Try the SSH command
-      expect = strings.eval_format(r_data.command.expect,n_data)
       log_level = LogLevel.INFO if log.debug_active('ready') else LogLevel.NONE
       result = connect_to_node(node=n_name,args=args,rest=[ r_data.command.execute ],topology=topology,log_level=log_level)
 
       if log.debug_active('ready'):
-        print(f'Expecting {expect}, result: {result}')
-      if isinstance(result,str) and re.search(expect,result):
+        print(f'Expecting {r_data.command.expect}, result: {result}')
+      if isinstance(result,str) and re.search(r_data.command.expect,result):
         r_data.command.status = True
         if now > start_time + 5 or log.VERBOSE:               # Report progress only if it's worth reporting
           with PRINT_LOCK:
