@@ -5,6 +5,7 @@ import os
 import shlex
 import subprocess
 import sys
+import threading
 import typing
 
 from box import Box
@@ -74,13 +75,20 @@ def log_command(cmd: typing.Union[str,list], status: str) -> None:
   cmd_text = cmd if isinstance(cmd,str) else ' '.join(cmd)
   lab_status_log(topology,f'{status}: {cmd_text}')
 
-CAPTURED_STDOUT: str = ''
-CAPTURED_STDERR: str = ''
+_CAPTURED = threading.local()                             # Per-thread captured output (run_command can run in parallel threads)
+
+def set_captured_output(stdout: str = '', stderr: str = '') -> None:
+  _CAPTURED.stdout = stdout
+  _CAPTURED.stderr = stderr
 
 def get_combined_output() -> str:
-  global CAPTURED_STDOUT, CAPTURED_STDERR
-  stderr = CAPTURED_STDERR.strip() + "\n" if CAPTURED_STDERR else ""
-  return stderr + CAPTURED_STDOUT
+  """
+  Return the output captured by the last run_command call executed in the current thread
+  """
+  stdout = getattr(_CAPTURED,'stdout','')
+  stderr = getattr(_CAPTURED,'stderr','')
+  stderr = stderr.strip() + "\n" if stderr else ""
+  return stderr + stdout
 
 def run_command(
     cmd : typing.Union[str,list],
@@ -90,9 +98,7 @@ def run_command(
     return_exitcode: bool = False,
     run_always: bool = False) -> typing.Union[bool,int,str]:
 
-  global CAPTURED_STDOUT, CAPTURED_STDERR
-  CAPTURED_STDOUT = ''
-  CAPTURED_STDERR = ''
+  set_captured_output()
 
   if log.debug_active('cli'):
     print(f"Not running: {cmd}")
@@ -128,8 +134,7 @@ def run_command(
     if log.debug_active('external') or log.VERBOSE >= 3:
       print(f'... run result: {result}',flush=True)
     if check_result:
-      CAPTURED_STDOUT = result.stdout
-      CAPTURED_STDERR = result.stderr
+      set_captured_output(result.stdout,result.stderr)
     if return_exitcode:
       log_command(cmd,f'FAIL(result.returncode)' if result.returncode else 'OK')
       return result.returncode
@@ -148,8 +153,7 @@ def run_command(
     log_command(cmd,'ERROR')
     if not log.QUIET and not ignore_errors:
       print(f"Error executing {stringify(cmd)}:\n  {ex}",flush=True)
-    CAPTURED_STDERR=ex.stderr or ''               # Make sure they are both strings even when we're not capturing outputs
-    CAPTURED_STDOUT=ex.stdout or ''
+    set_captured_output(ex.stdout or '',ex.stderr or '')  # Make sure they are both strings even when we're not capturing outputs
     return False
   except Exception as ex:
     if log.debug_active('external') or log.VERBOSE >= 3:
