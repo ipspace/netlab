@@ -253,6 +253,8 @@ def check_netmiko_config_mode(topology: Box) -> None:
   if netmiko_miss_list:
     log.warning(
       text=f'Netmiko is not installed, devices {",".join(netmiko_miss_list)} will be configured with Ansible',
+      flag='installed',
+      module='netmiko',
       more_hints='use "netlab install netmiko" to install Netmiko and Paramiko libraries')
 
 """
