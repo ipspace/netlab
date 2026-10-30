@@ -220,6 +220,9 @@ def netmiko_fallback_config_mode(ddata: Box, provider_list: list) -> bool:
       ddata.pop(gv_key)                           # ... remove that variable
       removed = True                              # ... and remember what you did
 
+  if 'libvirt' not in provider_list:
+    return removed
+
   # Special case: libvirt uses netmiko to implement sh/cp_sh
   if ddata.get('libvirt.group_vars.netlab_config_mode',None) in ['sh','cp_sh']:
     ddata.pop('libvirt.group_vars.netlab_config_mode')
@@ -238,24 +241,38 @@ def check_netmiko_config_mode(topology: Box) -> None:
 
   checked_devices = set()
   netmiko_miss_list = []
-  provider_list = list(defaults.providers) + [ None ]
+  netmiko_rq_list = []
 
   for n_data in topology.nodes.values():
     n_device = n_data.device
-    if n_device in checked_devices:               # Did we already check this device?
+    n_provider = devices.get_provider(n_data,defaults)
+    ck_key = f'{n_device}/{n_provider}'
+    if ck_key in checked_devices:                 # Did we already check this device?
       continue                                    # Cool, move on
 
     checked_devices.add(n_device)
     d_data = defaults.devices[n_device]
-    if netmiko_fallback_config_mode(d_data,provider_list):
-      netmiko_miss_list.append(n_device)
+    if netmiko_fallback_config_mode(d_data,[ n_provider, None ]):
+      features = devices.get_device_features(n_data,defaults)
+      if features.get('netmiko.required',False):
+        netmiko_rq_list.append(n_device)
+      else:
+        netmiko_miss_list.append(n_device)
+
+  nm_hints = 'use "netlab install netmiko" to install Netmiko and Paramiko libraries'
+  if netmiko_rq_list:
+    log.error(
+      f'netlab needs Netmiko library to work with device(s) {",".join(netmiko_rq_list)}',
+      category=log.MissingDependency,
+      module='netmiko',
+      more_hints=nm_hints)
 
   if netmiko_miss_list:
     log.warning(
-      text=f'Netmiko is not installed, devices {",".join(netmiko_miss_list)} will be configured with Ansible',
+      text=f'Netmiko is not installed, device(s) {",".join(netmiko_miss_list)} will be configured with Ansible',
       flag='installed',
       module='netmiko',
-      more_hints='use "netlab install netmiko" to install Netmiko and Paramiko libraries')
+      more_hints=nm_hints)
 
 """
 Set up the default loopback interface
