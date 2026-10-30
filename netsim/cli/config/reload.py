@@ -4,13 +4,17 @@
 # Reload saved device configurations
 #
 import argparse
+import concurrent.futures
+import re
+import sys
 from pathlib import Path
 
 from box import Box
 
 from ...augment import devices as a_devices
-from ...utils import log
-from .. import ansible, error_and_exit
+from ...data import get_a_list
+from ...utils import log, netmiko
+from .. import ansible, error_and_exit, is_dry_run
 from ..initial import deploy as i_deploy
 from ..initial import ready as i_ready
 from ..initial import utils as i_utils
@@ -106,6 +110,108 @@ def create_reload_configs(topology: Box,nodeset: list,args: argparse.Namespace,c
 
   create_node_files(topology,nodeset,args,str(cfg_path.name),initial=True,cfg_suffix='.cfg')
 
+def get_netmiko_nodes(nodeset: list, topology: Box, cfg_path: Path) -> dict:
+  """
+  Get a dictionary of nodes using netmiko for their configuration replace operation
+  """
+  defaults = topology.defaults
+  nm_nodes: dict = {}
+
+  for n_name in nodeset:
+    n_data = topology.nodes[n_name]
+    features = a_devices.get_device_features(n_data,defaults)
+    nm_cmd = features.get('netmiko.reload.command')
+    if not nm_cmd:
+      continue
+
+    nm_params = netmiko.prepare_params(n_data,topology)
+    if not nm_params:
+      continue
+
+    nm_nodes[n_name] = {
+      'src': str(next(cfg_path.glob(f'{n_name}.*'))),
+      'dst': features.get('netmiko.reload.config','replace-config'),
+      'cmd': nm_cmd,
+      'ok':  features.get('netmiko.reload.success',None),
+      'err': '|'.join(get_a_list(features.get('netmiko.error_regexp'))),
+      'ft':  features.get('netmiko.reload.file_transfer',False),
+      'cfg': features.get('netmiko.reload.configure',None),
+      'params': nm_params }
+
+  return nm_nodes
+
+def reload_with_netmiko(cfg_path: Path, nodeset: list, topology: Box) -> list:
+  if netmiko.NETMIKO_IS_MISSING:
+    return nodeset
+
+  nm_nodes = get_netmiko_nodes(nodeset,topology,cfg_path)
+  if not nm_nodes:
+    return nodeset
+
+  def netmiko_scp_replace(n_name: str) -> None:
+    try:
+      n_data = topology.nodes[n_name]
+      nm_data = nm_nodes[n_name]
+      if is_dry_run():
+        log.info(
+          f'I would use netmiko to reload configuration on {n_name}/{n_data.device} but you asked me not to',
+          module='reload')
+        return
+
+      conn = netmiko.connect(n_data,nm_data['params'])
+      if not conn:
+        return
+
+      with conn:                                  # Use this to auto-close the connection
+        conn.enable()
+        if nm_data['cfg']:                        # Extra configuration required?
+          conn.send_config_set(nm_data['cfg'])
+
+        if nm_data['ft']:                         # Use netmiko file_transfer function?
+          status = netmiko.file_transfer(conn,n_name,nm_data['src'],nm_data['dst'])
+        else:
+          status = netmiko.scp(conn,n_name,nm_data['src'],nm_data['dst'])
+        if not status:
+          return
+
+        # Execute the "replace config" command, check its results against known error pattern
+        result = conn.send_command(nm_data['cmd'])
+        if isinstance(result,list):
+          result = '\n'.join(result)
+        if not isinstance(result,str):
+          raise Exception(f'netmiko send_command returned unexpected results: {type(result)}')
+        if nm_data['ok']:
+          OK = bool(re.search(nm_data['ok'],result))
+        elif nm_data['err']:
+          OK = not bool(re.search(nm_data['err'],result))
+        else:
+          OK = True
+
+        if OK:
+          log.info(f'Uploaded and replaced configuration on {n_name}',module='netmiko')
+        else:
+          log.error(
+            f'Failed to replace configuration on {n_name}',
+            more_data=result,
+            module='netmiko',
+            category=log.ErrorAbort,
+            skip_header=True)
+
+    except Exception as ex:
+      log.error(
+        f'Failed to copy/replace configuration for node {n_name}: {ex}',
+        more_hints=f'Examine the session log in node_files/{n_name}/netmiko.log',
+        category=log.FatalError,
+        module='netmiko',
+        skip_header=True)
+
+    return
+
+  with concurrent.futures.ThreadPoolExecutor() as executor:
+    executor.map(netmiko_scp_replace, list(nm_nodes))
+
+  return [ n_name for n_name in nodeset if n_name not in nm_nodes ]
+
 def run_reload_playbook(topology: Box,nodeset: list,cfg_path: Path,rest: list) -> None:
   """
   Run the reload-config.ansible playbook with modified path variables and an adjusted nodeset
@@ -123,5 +229,11 @@ def reload_node_configs(topology: Box,nodeset: list,args: argparse.Namespace, re
   nodeset = skip_no_reload_nodes(topology,nodeset)
   nodeset = skip_nodes_without_configs(cfg_path,nodeset)
   prepare_devices(topology,nodeset)
+
   create_reload_configs(topology,nodeset,args,cfg_path)
-  run_reload_playbook(topology,nodeset,cfg_path,rest)
+  nodeset = reload_with_netmiko(cfg_path,nodeset,topology)
+  if nodeset:
+    run_reload_playbook(topology,nodeset,cfg_path,rest)
+
+  if log.get_error_count():
+    sys.exit(1)
