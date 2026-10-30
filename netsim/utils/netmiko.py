@@ -147,7 +147,6 @@ def scp(conn: '_netmiko.BaseConnection', n_name: str, src: str, dst: str) -> boo
     scp_conn = scp.SCPClient(conn.remote_conn_pre.get_transport())
     with scp_conn:
       scp_conn.put(src,dst)
-      scp_conn.close()
     return True
   except Exception as ex:
     log.error(
@@ -169,7 +168,8 @@ def file_transfer(conn: '_netmiko.BaseConnection', n_name: str, src: str, dst: s
                 ssh_conn = conn,
                 source_file=src,
                 dest_file=dst,
-                file_system=file_system)
+                file_system=file_system,
+                overwrite_file=True)
     return status['file_exists'] or status['file_transferred']
   except Exception as ex:
     log.error(

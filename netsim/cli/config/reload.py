@@ -6,6 +6,7 @@
 import argparse
 import concurrent.futures
 import re
+import sys
 from pathlib import Path
 
 from box import Box
@@ -175,19 +176,17 @@ def reload_with_netmiko(cfg_path: Path, nodeset: list, topology: Box) -> list:
           raise Exception(f'netmiko send_command returned unexpected results: {type(result)}')
         if nm_data['ok']:
           OK = bool(re.search(nm_data['ok'],result))
-          fail_text = result
+        elif nm_data['err']:
+          OK = not bool(re.search(nm_data['err'],result))
         else:
-          fail_match = re.search(nm_data['err'],result)
-          OK = not bool(fail_match)
-          if not OK:
-            fail_text = str(fail_match)
+          OK = True
 
         if OK:
           log.info(f'Uploaded and replaced configuration on {n_name}',module='netmiko')
         else:
           log.error(
             f'Failed to replace configuration on {n_name}',
-            more_data=fail_text,
+            more_data=result,
             module='netmiko',
             category=log.ErrorAbort,
             skip_header=True)
@@ -203,7 +202,7 @@ def reload_with_netmiko(cfg_path: Path, nodeset: list, topology: Box) -> list:
     return
 
   with concurrent.futures.ThreadPoolExecutor() as executor:
-    executor.map(netmiko_scp_replace, nodeset)
+    executor.map(netmiko_scp_replace, list(nm_nodes))
 
   return [ n_name for n_name in nodeset if n_name not in nm_nodes ]
 
@@ -223,11 +222,12 @@ def reload_node_configs(topology: Box,nodeset: list,args: argparse.Namespace, re
   cfg_path = check_reload_args(args)
   nodeset = skip_no_reload_nodes(topology,nodeset)
   nodeset = skip_nodes_without_configs(cfg_path,nodeset)
-  if not nodeset:
-    error_and_exit('There are no devices on which I could reload the configuration')
-
   prepare_devices(topology,nodeset)
+
   nodeset = reload_with_netmiko(cfg_path,nodeset,topology)
   if nodeset:
     create_reload_configs(topology,nodeset,args,cfg_path)
     run_reload_playbook(topology,nodeset,cfg_path,rest)
+
+  if log.get_error_count():
+    sys.exit(1)
