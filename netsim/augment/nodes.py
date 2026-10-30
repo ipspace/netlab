@@ -250,7 +250,7 @@ def check_netmiko_config_mode(topology: Box) -> None:
     if ck_key in checked_devices:                 # Did we already check this device?
       continue                                    # Cool, move on
 
-    checked_devices.add(n_device)
+    checked_devices.add(ck_key)
     d_data = defaults.devices[n_device]
     if netmiko_fallback_config_mode(d_data,[ n_provider, None ]):
       features = devices.get_device_features(n_data,defaults)

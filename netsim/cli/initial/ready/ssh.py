@@ -74,7 +74,14 @@ def setup_ssh_ready_parameters(nodeset: list, topology: Box) -> None:
     if log.debug_active('ssh'):
       print(f'SSH wait times for {n_data.name}: delay={r_data.delay}, retries={r_data.retries}')
 
-    if not netmiko.NETMIKO_IS_MISSING and features.get('netmiko.device_type',None):
+    if netmiko.NETMIKO_IS_MISSING:
+      if features.get('netmiko.required',False):
+        log.error(
+          f'Node {n_name}/device {n_data} needs Netmiko to check its SSH server',
+          category=log.MissingDependency,
+          module='initial',
+          more_hints='use "netlab install netmiko" to install Netmiko and Paramiko libraries')
+    elif features.get('netmiko.device_type',None):
       params = netmiko.prepare_params(n_data,topology,quiet=True)
       if params:                                            # Use netmiko only if we know it works
         for kw in ('conn_timeout','banner_timeout','auth_timeout','read_timeout_override'):
