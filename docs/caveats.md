@@ -173,6 +173,7 @@ and validation. Configuration is deployed with a bash script executed within the
 * ASAv releases before 9.18(2) do not support loopback interfaces; *netlab* does not configure them by default. Set `loopback: true` on ASAv nodes running release 9.18(2) or later.
 * *netlab* uses loopback interfaces for IBGP sessions. IBGP sessions with ASAv nodes that have no loopback interface do not work; use EBGP sessions instead.
 * OSPF routes are not imported into the IPv6 BGP address family (OSPFv3 is not implemented). Routing policies cannot be used with route import.
+* You can also configure ASAv VMs with the *netmiko* library. To use this configuration method, set the **defaults.devices.asav.group_vars.netlab_config_mode** [topology default](topo-defaults) or **netlab_config_mode** node variable to **netmiko**.
 
 (caveats-cat8000v)=
 ## Cisco Catalyst 8000v
