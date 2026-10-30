@@ -77,7 +77,7 @@ def setup_ssh_ready_parameters(nodeset: list, topology: Box) -> None:
     if netmiko.NETMIKO_IS_MISSING:
       if features.get('netmiko.required',False):
         log.error(
-          f'Node {n_name}/device {n_data} needs Netmiko to check its SSH server',
+          f'Node {n_name}/device {n_data.device} needs Netmiko to check its SSH server',
           category=log.MissingDependency,
           module='initial',
           more_hints='use "netlab install netmiko" to install Netmiko and Paramiko libraries')
