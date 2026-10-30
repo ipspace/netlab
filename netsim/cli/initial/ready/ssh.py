@@ -121,8 +121,6 @@ def device_ssh_ready(waitset: list, topology: Box) -> None:
       if r_data.netmiko_command:
         if not conn.send_command(r_data.netmiko_command):
           return False
-      else:
-        return True
 
     r_data.ssh_ready = True                               # No errors, we're ready to roll
     now = time.time()
