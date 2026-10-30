@@ -24,6 +24,7 @@ if [[ $# -eq 0 ]]; then
     set -- "*"
 fi
 
+export NETLAB_NETMIKO_INSTALLED=True
 for arg in "$@"; do
   for file in ${ERR_PATH}/${arg}.yml; do
     echo Generating error outputs for $file into ${file%.yml}.log

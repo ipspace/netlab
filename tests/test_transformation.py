@@ -29,6 +29,7 @@ def run_test(fname: str) -> Box:
   topology = _read.load(fname,relative_topo_name=True,user_defaults=[])
   if utils.HAS_RUAMEL:
     topology = get_box(utils.clean_ruamel(topology))
+  topology.defaults.netmiko.installed = True
   log.exit_on_error()
   augment.main.transform(topology)
   log.exit_on_error()

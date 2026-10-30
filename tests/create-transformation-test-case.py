@@ -43,6 +43,7 @@ def main() -> None:
     )
   print(f"Reading {args.topology}")
   topology = _read.load(args.topology,user_defaults=[],relative_topo_name=True)
+  topology.defaults.netmiko.installed = True
   if utils.HAS_RUAMEL:
     topology = get_box(utils.clean_ruamel(topology))
   log.exit_on_error()
