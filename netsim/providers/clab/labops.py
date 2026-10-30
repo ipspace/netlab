@@ -174,7 +174,7 @@ def health_ready_setup(topology: Box) -> None:
   defaults = topology.defaults
 
   for n_data in topology.nodes.values():
-    n_device = n_data.get('device',defaults.device)
+    n_device = n_data.get('device',defaults.get('device',None))
     if n_device in dev_done:
       continue
     n_provider = devices.get_provider(n_data,defaults)
