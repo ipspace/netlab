@@ -224,9 +224,9 @@ def reload_node_configs(topology: Box,nodeset: list,args: argparse.Namespace, re
   nodeset = skip_nodes_without_configs(cfg_path,nodeset)
   prepare_devices(topology,nodeset)
 
+  create_reload_configs(topology,nodeset,args,cfg_path)
   nodeset = reload_with_netmiko(cfg_path,nodeset,topology)
   if nodeset:
-    create_reload_configs(topology,nodeset,args,cfg_path)
     run_reload_playbook(topology,nodeset,cfg_path,rest)
 
   if log.get_error_count():
