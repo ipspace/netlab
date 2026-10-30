@@ -209,26 +209,25 @@ def check_duplicate_mgmt_addr(topology: Box) -> None:
       else:
         used_addr[af][n_addr] = nname
 
-def netmiko_fallback_config_mode(ddata: Box, provider_list: list) -> bool:
+def netmiko_fallback_config_mode(ddata: Box, pname: str) -> bool:
   """
   When netmiko is missing, remove netlab_config_mode group variable(s) depending on it
   """
+  gv_path = 'group_vars.netlab_config_mode'       # Setup: the path to the relevant group var
+  nm_values = ['netmiko']                         # ... and the netmiko-based config methods
+  if pname == 'libvirt':
+    nm_values += ['sh','cp_sh']                   # ... which include sh/cp_sh under libvirt
+
   removed = False
-  for pname in provider_list:                     # For all providers (including no provider)
-    gv_key = (pname + '.' if pname else '') + 'group_vars.netlab_config_mode'
-    if ddata.get(gv_key,None) == 'netmiko':       # ... if the netlab_config_mode is set to netmiko
-      ddata.pop(gv_key)                           # ... remove that variable
-      removed = True                              # ... and remember what you did
+  for gv_key in (f'{pname}.{gv_path}',gv_path):   # Now try provider-specific and generic group var
+    if gv_key not in ddata:                       # No opinion on config mode, check the less-specific value
+      continue
+    if ddata.get(gv_key,None) not in nm_values:   # No problem with the most-specific value, return
+      return removed                              # ... reporting what we found so far
+    ddata.pop(gv_key)                             # The group variable is present and netmiko-based
+    removed = True                                # ... remove it, but also check the less-specific value
 
-  if 'libvirt' not in provider_list:
-    return removed
-
-  # Special case: libvirt uses netmiko to implement sh/cp_sh
-  if ddata.get('libvirt.group_vars.netlab_config_mode',None) in ['sh','cp_sh']:
-    ddata.pop('libvirt.group_vars.netlab_config_mode')
-    removed = True
-
-  return removed
+  return removed                                  # Report what we found
 
 def check_netmiko_config_mode(topology: Box) -> None:
   """
@@ -252,7 +251,7 @@ def check_netmiko_config_mode(topology: Box) -> None:
 
     checked_devices.add(ck_key)
     d_data = defaults.devices[n_device]
-    if netmiko_fallback_config_mode(d_data,[ n_provider, None ]):
+    if netmiko_fallback_config_mode(d_data,n_provider):
       features = devices.get_device_features(n_data,defaults)
       if features.get('netmiko.required',False):
         netmiko_rq_list.append(n_device)
