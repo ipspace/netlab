@@ -14,7 +14,7 @@ from box import Box
 from ...augment import devices as a_devices
 from ...data import get_a_list
 from ...utils import log, netmiko
-from .. import ansible, error_and_exit
+from .. import ansible, error_and_exit, is_dry_run
 from ..initial import deploy as i_deploy
 from ..initial import ready as i_ready
 from ..initial import utils as i_utils
@@ -129,7 +129,7 @@ def get_netmiko_nodes(nodeset: list, topology: Box, cfg_path: Path) -> dict:
       continue
 
     nm_nodes[n_name] = {
-      'src': str(cfg_path / f'{n_name}.cfg'),
+      'src': str(next(cfg_path.glob(f'{n_name}.*'))),
       'dst': features.get('netmiko.reload.config','replace-config'),
       'cmd': nm_cmd,
       'ok':  features.get('netmiko.reload.success',None),
@@ -152,6 +152,12 @@ def reload_with_netmiko(cfg_path: Path, nodeset: list, topology: Box) -> list:
     try:
       n_data = topology.nodes[n_name]
       nm_data = nm_nodes[n_name]
+      if is_dry_run():
+        log.info(
+          f'I would use netmiko to reload configuration on {n_name}/{n_data.device} but you asked me not to',
+          module='reload')
+        return
+
       conn = netmiko.connect(n_data,nm_data['params'])
       if not conn:
         return
