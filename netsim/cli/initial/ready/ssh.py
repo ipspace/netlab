@@ -22,8 +22,13 @@ SSH_PROVIDER_TIMEOUT_INFO: dict = {}
 def setup_ssh_ready_parameters(nodeset: list, topology: Box) -> None:
   global SSH_PROVIDER_TIMEOUT_INFO
 
-  def get_show_command(n_data: Box) -> str:
-    return a_devices.get_node_group_var(n_data,'netlab_check_command',defaults) or "show version"
+  def get_show_command(n_data: Box, netmiko: bool = False) -> str:
+    if netmiko:
+      features = a_devices.get_device_features(n_data,defaults)
+      if 'netmiko.ssh_ready.command' in features:
+        return features.netmiko.ssh_ready.command
+
+    return a_devices.get_node_group_var(n_data,'netlab_check_command',defaults) or 'show version'
 
   # Build SSH command
   #
@@ -71,11 +76,11 @@ def setup_ssh_ready_parameters(nodeset: list, topology: Box) -> None:
 
     if not netmiko.NETMIKO_IS_MISSING and features.get('netmiko.device_type',None):
       params = netmiko.prepare_params(n_data,topology,quiet=True)
-      if params:                                            # Check whether we have all netmiko parameters we need
+      if params:                                            # Use netmiko only if we know it works
         for kw in ('conn_timeout','banner_timeout','auth_timeout','read_timeout_override'):
           params[kw] = r_data.delay                         # Adjust all known netmiko timeouts
         r_data.netmiko_params = params
-        r_data.netmiko_command = get_show_command(n_data)   # ... use netmiko only if we know it will work
+        r_data.netmiko_command = get_show_command(n_data,netmiko=True)
     r_data.ssh_exec = build_ssh_command(n_data)             # Get the SSH command to execute
     r_data.ssh_ready = False                                # ... and assume the device is not ready
     r_data.ssh_failed = False                               # ... but also hasn't failed yet
@@ -108,13 +113,16 @@ def device_ssh_ready(waitset: list, topology: Box) -> None:
     netmiko-based SSH probe
     """
     if log.debug_active('ssh'):
-      print(f'netmiko: starting check on {n_name}, timeout={r_data.delay}',flush=True)
+      print(f'netmiko: starting check on {n_name}, command={r_data.netmiko_command}, timeout={r_data.delay}',flush=True)
     conn = netmiko.connect(n_data,r_data.netmiko_params,quiet=True)
     if not conn:
       return False
     with conn:
-      if not conn.send_command(r_data.netmiko_command):
-        return False
+      if r_data.netmiko_command:
+        if not conn.send_command(r_data.netmiko_command):
+          return False
+      else:
+        return True
 
     r_data.ssh_ready = True                               # No errors, we're ready to roll
     now = time.time()
