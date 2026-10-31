@@ -75,7 +75,9 @@ After saving the above template into `bgp_default.j2`, you can use `netlab confi
 
 **netlab config --reload** implements the *reload saved device configurations* part of the **netlab initial -r** command. It waits for devices to become ready (since it's used immediately after a lab has been started) and starts the initial configuration process on devices that need more than a replay of saved configuration ([more details](netlab-up-reload)).
 
-After that, it treats the saved device configurations as custom templates (using the same process as the regular **netlab config** command), allowing you to use Jinja2 expressions in saved device configurations.
+After that, it uses *netmiko* to copy the saved configurations to the devices and replace their running configurations on [supported devices](dev-config-netmiko-reload) (Arista EOS, Cisco IOS/IOS XE) when the *netmiko* library is installed.
+
+On all other devices, it treats the saved device configurations as custom templates (using the same process as the regular **netlab config** command), allowing you to use Jinja2 expressions in saved device configurations.
 
 ## Debugging Device Configurations
 
@@ -88,4 +90,3 @@ For example:
 - `netlab config my_template.j2 --debug all -vv` - Enable all debugging with verbose output
 
 See [](dev-debug-flag) for complete documentation of all debugging options and which commands support them.
-

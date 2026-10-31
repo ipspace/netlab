@@ -249,9 +249,15 @@ _netlab_ uses Ansible playbooks and device-specific task lists to deploy device 
 |--------|----------|---------------------------------|
 | BIRD   | clab     | Daemon configuration files and **bash** scripts[^BBS] |
 | dnsmasq | clab    | Daemon configuration files and **bash** scripts[^DBS] |
+| Arista EOS | all | **netmiko** |
+| Cisco ASAv | clab | **netmiko** |
+| Cisco IOS/IOS XE | all | **netmiko** |
 | Cisco IOS XR | all | **netmiko** |
 | Cisco Nexus OS | all | **netmiko** |
+| Extreme EXOS | all | **netmiko** |
+| Extreme VOSS | all | **netmiko** |
 | FRRouting    | clab     | **bash** and **vtysh** scripts[^FRRBV] |
+| IP Infusion OcNOS | all | **netmiko** |
 | Junos cRPD | clab | **bash** scripts[^cRBS] |
 | KinD   | clab     | **bash** scripts copied into and executed in containers |
 | Linux  | clab     | host- or container-side scripts[^LBS] |
@@ -279,13 +285,12 @@ Several other devices can use configuration methods faster than Ansible playbook
     [ x for x in initial.config_mode if x != group_vars.get('netlab_config_mode','') ]
 ```
 
-
 **Notes:**
-* Use the **[netlab install netmiko](netlab-install)** command to install the *netmiko* library and enable netmiko-based configuration on supported devices.
+* Use the **[netlab install netmiko](netlab-install)** command to install the *netmiko* library and enable netmiko-based configuration on supported devices. When the *netmiko* library is not installed, _netlab_ uses Ansible playbooks to configure devices that use *netmiko* by default (some devices, for example, Extreme VOSS, require *netmiko*).
 * When using the **sh** method on Arista cEOS containers, _netlab_ converts the device configurations into FastCli scripts and executes them as Linux scripts within the cEOS container. This method works on EOS software releases that have the **‌platform tfa phy control-frame disabled** interface configuration command (probably starting with EOS release 4.30)
 * The Cisco IOS XRd **sh** deployment method uses a custom **bash** script that calls the **xrapply** ZTP command to load and commit a configuration file. The custom script is used as the *shebang* interpreter for the configuration snippets. This deployment method *does not work* on XRd vRouter or XRv virtual machines packaged into *vrnetlab* containers.
 
-[^NCMGV]: For example, set the **defaults.devices.iol.clab.group_vars.netlab_config_mode** [topology default](topo-defaults) to **startup** to use startup configuration with Cisco IOL nodes, or **defaults.devices.ios.group_vars.netlab_config_mode** to **netmiko** to use *netmiko* to configure Cisco IOS-based devices.
+[^NCMGV]: For example, set the **defaults.devices.iol.clab.group_vars.netlab_config_mode** [topology default](topo-defaults) to **startup** to use startup configuration with Cisco IOL nodes, or **defaults.devices.asav.group_vars.netlab_config_mode** to **netmiko** to use *netmiko* to configure Cisco ASAv virtual machines.
 
 ## Initial Device Configurations
 
@@ -321,7 +326,7 @@ The following system-wide features are configured on supported network operating
 | Sonic (containerlab)     | ✅  | ✅  |  ❌  | ✅  | ✅  |
 | VyOS                     | ✅  | ✅  | ✅  | ✅  | ✅  |
 
-[^HIF]: Some Linux-based devices can also use interface names in host names. See [/etc/hosts file on Linux](linux-hosts) for more details.
+[^HIF]: Some Linux-based devices can also use interface names in hostnames. See [/etc/hosts file on Linux](linux-hosts) for more details.
 
 (platform-initial-interfaces)=
 The following interface parameters are configured on supported network operating systems as part of the initial device configuration:

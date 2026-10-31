@@ -1,14 +1,14 @@
 (netlab-collect)=
 # Collecting Device Configurations
 
-The **netlab collect** command collects device configurations using Ansible *device facts* modules (or an equivalent list of Ansible tasks). The configurations are stored in the specified output directory (default: *config*).
+The **netlab collect** command collects device configurations using *netmiko* (on [supported devices](dev-config-netmiko-collect) when the *netmiko* library is installed) or Ansible *device facts* modules (or an equivalent list of Ansible tasks). The configurations are stored in the specified output directory (default: *config*).
 
 A single configuration file in the output directory is created for most network devices; multiple files are collected from FRR and Cumulus VX. The configuration files have a `.cfg` suffix unless you specify a different suffix (without the leading dot) with the `--suffix` parameter.
 
 After collecting the device configurations, you can save them in a tar archive with the `--tar` option and clean up the working directory with the `--cleanup` option.
 
 ```{tip}
-* The **netlab collect** command is just a thin wrapper around an Ansible playbook which uses the Ansible inventory created by the **netlab create** or **netlab up** command.
+* Apart from the *netmiko*-based configuration collection, the **netlab collect** command is just a thin wrapper around an Ansible playbook which uses the Ansible inventory created by the **netlab create** or **netlab up** command.
 * When executed with the `-i` option, **‌netlab collect** switches to the lab directory to execute the Ansible playbook, but stores the results within the directory from which it was executed.
 ```
 
