@@ -14,6 +14,7 @@ The following settings can be displayed:
 * **[outputs](netlab-show-outputs)** -- Output modules used by the **[netlab create](create.md)** command
 * **[reports](netlab-show-reports)** -- Report templates shipped with _netlab_
 * **[providers](netlab-show-providers)** -- Virtualization providers
+* **[tools](netlab-show-tools)** -- [External tools](../extools.md) that can be started with the lab
 
 The system settings can be displayed as a table, as raw text that is easy to parse in automation scripts, and as YAML data that can be used by third-party utilities. See usage guidelines  and examples in individual command descriptions for more details.
 
@@ -914,4 +915,59 @@ Error executing containerlab version:
   [Errno 2] No such file or directory: 'containerlab'
 
 Status: N/A
+```
+
+(netlab-show-tools)=
+## Display External Tools
+
+The **netlab show tools** command displays the [external tools](../extools.md) that can be started together with a lab, their default runtime environment, and whether they are [enabled in user defaults](tools-enable-default).
+
+```text
+$ netlab show tools -h
+usage: netlab show tools [-h] [--system] [--format {table,text,yaml}] [-t TOOL]
+
+Display external tools that can be started with the lab
+
+options:
+  -h, --help            show this help message and exit
+  --system              Display system information (without user defaults)
+  --format {table,text,yaml}
+                        Output format (table, text, yaml)
+  -t, --tool TOOL       Display information for a single tool
+```
+
+**Examples:**
+
+* Display all external tools (Graphite was enabled with the `NETLAB_TOOLS_GRAPHITE_ENABLED` environment variable):
+
+```text
+$ netlab show tools
+External tools supported by netlab
+
++--------------+-----------------------------------------------------+---------+---------+
+| tool         | description                                         | runtime | enabled |
++==============+=====================================================+=========+=========+
+| edgeshark    | Container network discovery and live packet capture | docker  |         |
+| graphite     | Web-based lab topology visualizer                   | docker  | yes     |
+| network_xray | Lab topology and routing state visualizer           | docker  |         |
+| nso          | Cisco Network Services Orchestrator                 | docker  |         |
+| nuts         | Network Unit Testing System                         | docker  |         |
+| suzieq       | Multi-vendor network observability platform         | docker  |         |
++--------------+-----------------------------------------------------+---------+---------+
+```
+
+* Display a single tool in YAML format:
+
+```text
+$ netlab show tools -t suzieq --format yaml
+suzieq:
+  description: Multi-vendor network observability platform
+  enabled: false
+  runtime: docker
+  runtimes:
+  - docker
+```
+
+```{tip}
+Use **netlab show defaults tools._name_** to display the complete tool definition.
 ```

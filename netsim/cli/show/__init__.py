@@ -21,6 +21,7 @@ from . import modules as _modules
 from . import outputs as _outputs
 from . import providers as _providers
 from . import reports as _reports
+from . import tools as _tools
 from .utils import DEVICES_TO_SKIP, show_common_parser
 
 show_dispatch: dict = {
@@ -63,6 +64,10 @@ show_dispatch: dict = {
   'defaults': {
     'exec':  _defaults.show,
     'parse': _defaults.parse
+  },
+  'tools': {
+    'exec':  _tools.show,
+    'parse': _tools.parse
   }
 }
 
