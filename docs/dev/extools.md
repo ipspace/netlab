@@ -12,6 +12,10 @@ Each tool definition must contain the following parameters:
 * **config**: a list of actions needed to create configuration files
 * For every runtime environment, commands used to start and stop the tool.
 
+A tool definition can also contain:
+
+* **plugin**: a plugin name or a list of plugins that have to be loaded whenever the tool is active ([more details](extools-plugin)).
+
 A tool definition could contain any number of extra parameters used in the tool configuration templates or tool management commands.
 
 ## Configuration files
@@ -128,3 +132,25 @@ _netlab_ prepares the `--network=_name_` parameter that you have to include with
 **netlab down --cleanup** removes the tool configuration directories, but fails to do so if the container creates additional files in that directory -- containers are often run as user **root**, and a regular user cannot remove files created by another user.
 
 If your tool creates additional files in the tool configuration directory, add **sudo rm -fr *toolname*** as one of the **cleanup** commands.
+
+(extools-plugin)=
+## Tool Plugins
+
+A tool definition can specify one or more [plugins](../plugins.md) in its **plugin** attribute (a string or a list of strings). _netlab_ adds these plugins to the list of lab plugins whenever the tool is active (specified in the **tools** dictionary of the lab topology or enabled with the **enabled** attribute). The plugins are found through the usual plugin search path and can modify any part of the lab topology, including the tool parameters and the tool management commands.
+
+For example, the following tool definition loads the `my_tool` plugin:
+
+```
+plugin: my_tool
+runtime: docker
+docker:
+  up: docker run ...
+```
+
+**Notes:**
+
+* The tool management commands are built from the **defaults.tools._toolname_** dictionary merged with the **tools._toolname_** dictionary. A plugin should modify the tool parameters (for example, **tools._toolname_.docker.up**) in the **tools._toolname_** dictionary.
+* The tools enabled by default are copied into the **tools** dictionary after the plugin **init** hook has been executed. Use the **pre_transform** or later hooks to modify tool parameters.
+* The **plugin** attribute is evaluated before the plugins are loaded. A tool added to the lab topology by a plugin cannot load additional plugins.
+* The users can disable the tool plugins with **tools._toolname_.plugin: []**.
+* The tool plugins are executed during the lab topology transformation, even when the tools are not started (for example, with **netlab up --no-tools**).
