@@ -41,7 +41,9 @@ append_to_list: Given a box, a list name, and an item:
 
 * Return if the box is None
 * Create an empty list if it does not exist
-* Append the item to the list
+* Convert a scalar value into a one-element list
+* Append the item to the list if it's not already there
+* With 'flatten' set, append the list elements that are not already in the list
 """
 def append_to_list(BX: typing.Optional[Box], list_name: str, item: typing.Any, flatten: bool = False) -> list:
   if BX is None:
@@ -49,12 +51,12 @@ def append_to_list(BX: typing.Optional[Box], list_name: str, item: typing.Any, f
 
   if not list_name in BX:
     BX[list_name] = []
+  elif not isinstance(BX[list_name],list):
+    BX[list_name] = [ BX[list_name] ]
 
-  if not item in BX[list_name]:
-    if flatten and isinstance(item,list):
-      BX[list_name].extend(item)
-    else:
-      BX[list_name].append(item)
+  for element in item if flatten and isinstance(item,list) else [ item ]:
+    if not element in BX[list_name]:
+      BX[list_name].append(element)
 
   return BX[list_name]
 
