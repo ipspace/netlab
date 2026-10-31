@@ -68,6 +68,7 @@ The plugin implements BGP routing policies and individual BGP policy attributes 
 | Cumulus Linux       |✅ |✅ |✅ |✅|✅ |✅| ❌ | ❌ |
 | Dell OS10           |✅ |✅ |✅ |✅| ❌ | ❌ |✅| ❌ |
 | FRR                 |✅ |✅ |✅ |✅|✅ |✅| ✅| ✅ |
+| IP Infusion OcNOS   |✅ |✅ |✅ |✅|✅ | ❌ | ❌ | ❌ |
 | Junos               |✅ |✅ |✅ |✅|✅ | ❌ | ❌ | ❌ |
 | Nokia SR Linux      |✅ |✅ |✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Nokia SR OS         |✅ |✅ |✅ | ❌ | ❌ | ✅| ❌ | ❌ |
