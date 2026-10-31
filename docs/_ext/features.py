@@ -82,7 +82,7 @@ def create_features_table(features: dict) -> typing.Tuple[nodes.table,nodes.tgro
   Create the scaffolding for the features table -- a table object with
   a table group with column definitions
   """
-  table = nodes.table()
+  table = nodes.table(classes=['table-wrap'])
   tgroup = nodes.tgroup(cols=len(features) + 1)
   table += tgroup
   features_columns(tgroup,features)
