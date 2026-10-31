@@ -66,7 +66,7 @@ attributes are validated. It ignores invalid data; the errors are reported later
 def add_tool_plugins(topology: Box) -> None:
   try:
     for tname in active_tools(topology):
-      p_list = (topology.defaults.tools[tname] + (topology.tools[tname] or {})).plugin
+      p_list = (topology.defaults.tools[tname] + (topology.tools.get(tname,{}) or {})).plugin
       if p_list:
         data.append_to_list(topology,'plugin',p_list,flatten=True)
   except Exception:                                         # Invalid data structures are reported later
