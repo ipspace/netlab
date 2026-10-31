@@ -183,7 +183,7 @@ def reload_with_netmiko(cfg_path: Path, nodeset: list, topology: Box) -> list:
         if nm_data['ok']:
           OK = bool(re.search(nm_data['ok'],result))
         elif nm_data['err']:
-          OK = not bool(re.search(nm_data['err'],result))
+          OK = not bool(re.search(nm_data['err'],result,flags=re.MULTILINE))
         else:
           OK = True
 
