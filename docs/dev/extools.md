@@ -10,6 +10,7 @@ Each tool definition must contain the following parameters:
 
 * **runtime**: default runtime environment (example: *docker*) 
 * **config**: a list of actions needed to create configuration files
+* **description**: a short description that is displayed by the **[netlab show tools](netlab-show-tools)** command.
 * For every runtime environment, commands used to start and stop the tool.
 
 A tool definition can also contain:
