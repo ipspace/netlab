@@ -14,7 +14,7 @@
 ### Arista vEOS VM Caveats
 
 * Use **libvirt.uuid** node property to ensure a vEOS VM does not change its serial number every time you start the lab.
-* You can also configure Arista vEOS VMs with the *netmiko* library. To use this configuration method, set the **defaults.devices.eos.libvirt.group_vars.netlab_config_mode** [topology default](topo-defaults) or **netlab_config_mode** node variable to **netmiko**.
+* Arista vEOS VMs are configured with the *netmiko* library. To use Ansible playbooks, set the **defaults.devices.eos.libvirt.group_vars.netlab_config_mode** [topology default](topo-defaults) or **netlab_config_mode** node variable to an empty value.
 * Using *netmiko* to configure Arista vEOS VMs disables Arista's proprietary linkdown emulation.
 
 (caveats-ceos)=
@@ -22,9 +22,8 @@
 
 Device configuration:
 
-* With no additional settings, Arista cEOS containers are configured through an Ansible playbook, using an SSH session with the **arista.eos.eos_config** Ansible modules.
+* With no additional settings, Arista cEOS containers are configured with the *netmiko* library. To use an Ansible playbook (using an SSH session with the **arista.eos.eos_config** Ansible modules), set the **netlab_config_mode** node variable to an empty value.
 * To configure cEOS containers with Linux scripts using FastCLI, set the **defaults.devices.eos.clab.group_vars.netlab_config_mode** [topology default](topo-defaults) to **sh**. You can also set the **netlab_config_mode** node variable to **sh** to experiment with this feature.
-* You can also configure Arista cEOS containers with the *netmiko* library. Set the **netlab_config_mode** parameter to **netmiko** to try out this experimental feature.
 * Using Linux scripts or *netmiko* to configure Arista cEOS containers disables Arista's proprietary linkdown emulation.
 
 Other caveats:
@@ -173,7 +172,7 @@ and validation. Configuration is deployed with a bash script executed within the
 * ASAv releases before 9.18(2) do not support loopback interfaces; *netlab* does not configure them by default. Set `loopback: true` on ASAv nodes running release 9.18(2) or later.
 * *netlab* uses loopback interfaces for IBGP sessions. IBGP sessions with ASAv nodes that have no loopback interface do not work; use EBGP sessions instead.
 * OSPF routes are not imported into the IPv6 BGP address family (OSPFv3 is not implemented). Routing policies cannot be used with route import.
-* You can also configure ASAv VMs with the *netmiko* library. To use this configuration method, set the **defaults.devices.asav.group_vars.netlab_config_mode** [topology default](topo-defaults) or **netlab_config_mode** node variable to **netmiko**.
+* ASAv containers are configured with the *netmiko* library. You can also configure ASAv VMs with *netmiko*. To use this configuration method, set the **defaults.devices.asav.group_vars.netlab_config_mode** [topology default](topo-defaults) or **netlab_config_mode** node variable to **netmiko**.
 
 (caveats-cat8000v)=
 ## Cisco Catalyst 8000v
@@ -408,7 +407,7 @@ You have to build the *dnsmasq* container image with the **netlab clab build dns
 (caveats-exos)=
 ## Extreme Networks EXOS
 
-* The only way to configure EXOS devices with Ansible is the now-deprecated **community.network.exos_config** Ansible module. This collection is no longer actively maintained. To install it, you can still run:
+* _netlab_ configures EXOS devices with the *netmiko* library. The only way to configure EXOS devices with Ansible is the now-deprecated **community.network.exos_config** Ansible module. This collection is no longer actively maintained. To install it, you can still run:
 
 ```shell
 ansible-galaxy collection install community.network
@@ -420,6 +419,7 @@ ansible-galaxy collection install community.network
 (caveats-voss)=
 ## Extreme Networks VOSS
 
+* _netlab_ needs the *netmiko* library to check whether the VOSS SSH server is ready and to configure VOSS devices. Install it with the **netlab install netmiko** command.
 * The only way to configure VOSS devices with Ansible is the now-deprecated **community.network.voss_config** Ansible module. This collection is no longer actively maintained. To install it, you can still run:
 
 ```shell
