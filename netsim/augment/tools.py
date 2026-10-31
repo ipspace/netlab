@@ -4,6 +4,7 @@ Tool-related topology transformation functions
 
 from box import Box
 
+from .. import data
 from ..utils import log
 
 """
@@ -38,17 +39,38 @@ def merge_tool_defaults(topology: Box) -> None:
         'topology')
 
 """
+Get the list of active tools: tools specified in the lab topology and tools enabled by default
+"""
+def active_tools(topology: Box) -> list:
+  t_list = list(topology.get('tools',{}).keys())            # Do not create an empty 'tools' dictionary
+  t_list += [ t for t,t_data in topology.defaults.tools.items()
+                if t not in t_list and t_data.get('enabled',False) is True ]
+  return t_list
+
+"""
 Copy entries from default.tools dictionary that have 'enabled' attribute set to True into topology.tools dictionary
 """
 def copy_default_tools(topology: Box) -> None:
-  for tname,tdata in topology.defaults.tools.items():
-    if not tdata.get('enabled',False) is True:
-      continue
-
+  for tname in active_tools(topology):
     if tname in topology.tools:
       continue
 
     topology.tools[tname] = topology.defaults.tools[tname]
+
+"""
+Add plugins specified in the 'plugin' attribute of active tools to the list of topology plugins
+
+This function is called before the plugins are loaded, and thus before the topology
+attributes are validated. It ignores invalid data; the errors are reported later.
+"""
+def add_tool_plugins(topology: Box) -> None:
+  try:
+    for tname in active_tools(topology):
+      p_list = (topology.defaults.tools[tname] + (topology.tools.get(tname,{}) or {})).plugin
+      if p_list:
+        data.append_to_list(topology,'plugin',p_list,flatten=True)
+  except Exception:                                         # Invalid data structures are reported later
+    pass
 
 """
 Process topology tools:

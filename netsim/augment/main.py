@@ -16,6 +16,7 @@ Initializing the topology transformation:
 * The global variables (stored in topology defaults) are initialized
 * The attribute lists are adjusted
 * The search paths are expanded into absolute paths and pruned
+* Plugins required by active tools are added to the plugin list
 * Plugins are loaded
 * Device settings are initialized, including daemon- and child device
   inheritance
@@ -27,6 +28,7 @@ def topology_init(topology: Box) -> None:
   global_vars.init(topology)
   augment.config.attributes(topology)
   augment.config.paths(topology)
+  augment.tools.add_tool_plugins(topology)
   augment.plugin.init(topology)
   augment.devices.augment_device_settings(topology)
 

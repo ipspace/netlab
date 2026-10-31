@@ -24,6 +24,7 @@ tools:
 You can configure individual tools using parameters in the tool-specific dictionary. Some of these parameters are system-defined, others are defined by the tool creator. System-defined parameters include:
 
 * **runtime** -- execution environment. The only supported value is *docker* (Docker container dynamically pulled from a container repository). If you want to start the tools on the Linux host, define *local* execution environment ([details](dev/extools.md)).
+* **plugin** -- plugin(s) loaded whenever the tool is active ([details](extools-plugin)). Set it to an empty list to disable the plugins specified in the tool definition.
 
 For the list of tool-specific parameters see the individual tool description.
 
