@@ -10,6 +10,7 @@ from netsim.extra.tunnel import _p2p
 from netsim.modules import _dataplane
 from netsim.utils import log
 
+_description = 'Point-to-point WireGuard tunnels'
 _config_name = 'tunnel.wireguard'
 
 def public_key_from_private(private_key: str) -> str:

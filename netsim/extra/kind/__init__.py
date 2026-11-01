@@ -4,6 +4,7 @@ from box import Box
 from netsim.augment import links
 from netsim.data import get_new_box
 
+_description = 'Kubernetes-in-Docker (KinD) clusters in containerlab'
 _config_name = 'kind'
 _execute_after = ['node.clone', 'fabric']
 

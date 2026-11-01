@@ -6,6 +6,7 @@ from netsim import data
 from netsim.augment.links import adjust_link_list
 from netsim.utils import strings
 
+_description = 'Build a leaf-and-spine fabric'
 _config_name = 'fabric'
 
 

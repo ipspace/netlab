@@ -9,6 +9,7 @@ from netsim.modules import evpn, vrf
 from netsim.utils import log
 from netsim.utils import routing as _bgp
 
+_description = 'Multihop EBGP sessions between loopback interfaces'
 _config_name = 'ebgp.multihop'
 _execute_after = [ 'ebgp.utils', 'bgp.session' ]
 _requires    = [ 'bgp' ]

@@ -9,6 +9,7 @@ from netsim.augment import addressing, devices, links
 from netsim.utils import log
 from netsim.utils import routing as _rp_utils
 
+_description = 'Shared VXLAN VTEP on MLAG pairs'
 _config_name = 'mlag.vtep'
 _requires    = [ 'vxlan', 'lag' ]
 

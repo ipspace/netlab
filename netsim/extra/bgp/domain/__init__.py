@@ -2,6 +2,7 @@ from box import Box
 
 from netsim.utils import log
 
+_description = 'Multiple independent copies of the same BGP autonomous system'
 _requires    = [ 'bgp' ]
 
 '''

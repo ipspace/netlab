@@ -6,6 +6,7 @@ from netsim import api, data
 from netsim.augment import devices
 from netsim.utils import log, strings
 
+_description = 'Linux bonding modes that do not require LACP'
 _config_name = 'bonding'
 
 ATTS_TO_MOVE = ['ipv4','ipv6','vlan','_vlan_mode','vlan_name','gateway']

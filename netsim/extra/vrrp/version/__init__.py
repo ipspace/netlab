@@ -4,6 +4,7 @@ from netsim import api
 from netsim.augment import devices
 from netsim.utils import log
 
+_description = 'Configure VRRP protocol version'
 _config_name = 'vrrp.version'
 _requires    = [ 'gateway' ]
 

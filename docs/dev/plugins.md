@@ -59,10 +59,12 @@ A plugin can also be called during the **[netlab up](netlab-up)**/**[netlab down
 
 [^SC]: The post-shell hook is obviously not called if the CLI command fails.
 
+(dev-plugin-metadata)=
 ## Plugin Metadata
 
 A plugin can specify global variables that are used to influence the plugin's behavior or order of execution:
 
+* `_description`: A short description of the plugin displayed by the **[netlab show plugins](netlab-show-plugins)** command. Plugins without a description are considered internal plugins and are not listed in the **netlab show plugins** printout.
 * `_requires`: A list of prerequisite modules and plugins. _netlab_ will abort if any prerequisite plugins are not listed in the **topology.plugin** list, or if any of the prerequisite modules are not used by at least one node.
 * `_execute_after`: A list of plugins that should execute before the current plugin. For example, the **ebgp.multihop** plugin has to be executed after **ebgp.utils** plugin, and therefore defines `_execute_after = [ 'ebgp.utils' ]`
 * `_config_name`: The name of extra configuration templates to add to the node **config** attribute when a node using the plugin functionality requires additional device configuration. This variable is set during the plugin initialization process, but it's still recommended to define it in the plugin and set its value to a string to prevent **mypy** complaints.

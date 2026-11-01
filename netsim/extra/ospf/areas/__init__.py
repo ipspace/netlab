@@ -8,6 +8,7 @@ from netsim.data import merge_with_removed_attributes
 from netsim.utils import log
 from netsim.utils import routing as _ospf
 
+_description = 'OSPF stub/NSSA areas and area ranges'
 _config_name = 'ospf.areas'
 _requires    = [ 'ospf' ]
 

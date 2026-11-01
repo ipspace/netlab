@@ -6,6 +6,7 @@ from netsim import data
 from netsim.utils import files as _files
 from netsim.utils import log, strings
 
+_description      = 'Check that custom configuration templates exist for lab devices'
 _execute_after    = [ 'files' ]
 
 def post_quirks(topology: Box) -> None:
