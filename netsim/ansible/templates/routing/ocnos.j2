@@ -1,4 +1,30 @@
 {#
+  OcNOS uses IOS-like prefix lists, AS-path lists, community lists, and route maps.
+  The filters are configured before the route maps that reference them.
+#}
+{% import '_route_map_ios.j2' as routemap with context %}
+{% if routing.prefix|default({}) %}
+{%   include '_prefix_list_ios.j2' %}
+{% endif %}
+{% for asp_name,asp_list in routing.aspath|default({})|dictsort %}
+!
+{%   for asp_line in asp_list %}
+ip as-path access-list {{ asp_name }} {{ asp_line.action }} {{ asp_line.path }}
+{%   endfor %}
+{% endfor %}
+{% for c_name,c_value in routing.community|default({})|dictsort %}
+!
+{%   for c_line in c_value.value %}
+ip community-list {{ c_value.cl_type }} {{ c_name }} {{ c_line.action }} {{ c_line._value }}
+{%   endfor %}
+{% endfor %}
+{% if routing.policy|default({}) %}
+{%   call(p_entry,af_list) routemap.create_route_maps(routing.policy) -%}
+{{     routemap.common_route_map_entry(p_entry,af_list) }}
+{%-  endcall %}
+{% endif %}
+!
+{#
   OcNOS static routes use slash prefixes; "null" is the discard next hop. A next hop
   that is not on a connected subnet (no next-hop interface) needs the "recursive"
   keyword, or OcNOS keeps the route inactive

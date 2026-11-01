@@ -1,0 +1,34 @@
+{#
+  OcNOS applies route maps and weights to BGP neighbors within address families. VRF
+  neighbors are configured within the VRF address families. The address families have
+  to be closed with "exit-address-family" ("!" is a comment).
+#}
+{% import '_route_map_ios.j2' as routemap with context %}
+{% macro bgp_neighbor(n,af) -%}
+{%   if 'weight' in n %}
+  neighbor {{ n[af] }} weight {{ n.weight }}
+{%   endif %}
+{{   routemap.apply_route_map(n,af,True) }}
+{%- endmacro %}
+!
+router bgp {{ bgp.as }}
+{% if 'locpref' in bgp %}
+ bgp default local-preference {{ bgp.locpref }}
+{% endif %}
+{% for af in ['ipv4','ipv6'] if af in bgp %}
+ address-family {{ af }} unicast
+{%   for n in bgp.neighbors if n[af] is string %}
+{{     bgp_neighbor(n,af) }}
+{%   endfor %}
+ exit-address-family
+{% endfor %}
+{% for vname,vdata in vrfs|default({})|dictsort if vdata.bgp.neighbors is defined %}
+{%   for af in ['ipv4','ipv6'] if af in vdata.af|default({}) %}
+ address-family {{ af }} vrf {{ vname }}
+{%     for n in vdata.bgp.neighbors if n[af] is string %}
+{{       bgp_neighbor(n,af) }}
+{%     endfor %}
+ exit-address-family
+{%   endfor %}
+{% endfor %}
+!

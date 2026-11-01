@@ -538,6 +538,7 @@ ansible_httpapi_port: 80
 * OcNOS creates VLAN 1 together with the VLAN-aware bridge and does not allow you to use it as an access VLAN, a native VLAN, or a VLAN in a trunk. _netlab_ reports an error when a VLAN with VLAN ID 1 is used on an OcNOS node.
 * With OcNOS 7.0.0-262, routes imported into a VRF from another VRF on the same router are in the VRF routing table, but the router reports their destinations as unreachable, so it does not forward traffic between the VRFs.
 * OcNOS is a strict ABR. It does not originate inter-area summaries in a VRF OSPF instance when the VRF has no active area-0 adjacency.
+* OcNOS applies routing policies to BGP sessions that are already established only after a session reset. To apply them after `bgp.policy` plugin configures them, use `clear ip bgp * soft in` and `clear ip bgp * soft out`, `clear bgp ipv6 * soft in` and `clear bgp ipv6 * soft out`, and `clear ip bgp * vrf <vrf> soft in` and `clear ip bgp * vrf <vrf> soft out` for IPv4 VRF sessions. IPv6 VRF sessions need a hard reset (`clear bgp ipv6 unicast * vrf <vrf>`).
 
 (caveats-junos)=
 ## Common Junos caveats
