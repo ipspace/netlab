@@ -203,7 +203,7 @@ def reload_with_netmiko(cfg_path: Path, nodeset: list, topology: Box) -> list:
         return
 
       with conn:                                  # Use this to auto-close the connection
-        if q_devices.exec_device_hook(n_data,topology,'netmiko_reload',conn=conn,nm_data=nm_data):
+        if q_devices.exec_device_hook(n_data,topology,'netmiko_reload',conn=conn,nm_data=nm_data) is not None:
           return
 
         netmiko_scp_replace(conn,n_name,nm_data)
