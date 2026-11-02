@@ -39,7 +39,7 @@ _netlab_ loads the device module the first time it needs it and caches the devic
 
 ## Device Quirks
 
-The **device_quirks** method is called for every node at the very end of the data transformation (after the provider **post_transform** hook). When a quirks function modifies node data, the modified data will be used to generate provider configuration files or Ansible inventory.
+The **device_quirks** method is called near the end of the data transformation, after module and plugin post-transform processing but before the provider **post_transform** hook. When a quirks function modifies node data, the modified data will be used to generate provider configuration files or Ansible inventory.
 
 You should define a new function for every quirk you want to handle, and call those functions from the `device_quirks` method. It probably makes sense to use the **node.module** attribute when deciding which functions to call, for example:
 
