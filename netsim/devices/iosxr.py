@@ -132,15 +132,16 @@ class IOSXR(_Quirks):
     """
     pwd_output = conn.send_command("pwd")
     if not isinstance(pwd_output,str):
-      log.error(f'netmiko returned unexpected result for IOS XR pwd command',more_data=str(pwd_output))
-      return True
+      raise RuntimeError(f'netmiko returned unexpected result for IOS XR pwd command: {str(pwd_output)}')
     
     pwd = pwd_output.split('\n')[-1]
     if log.debug_active('netmiko'):
       print(f'IOS XR working directory on {node.name}: {pwd}')
 
     r_path = f'{pwd}/replace-config'
-    netmiko.scp(conn,node.name,nm_data['src'],r_path)
+    if not netmiko.scp(conn,node.name,nm_data['src'],r_path):
+      return False
+
     if log.debug_active('netmiko'):
       print(f'... copied replacement config to {node.name} {r_path}')
 
@@ -149,4 +150,6 @@ class IOSXR(_Quirks):
     result += conn.exit_config_mode()
     if log.debug_active('netmiko'):
       print(f'IOS XR configuration replace for {node.name}:\n{result}')
+
+    log.info(f'Uploaded and commited-with-replace configuration on {node.name}')
     return True
