@@ -38,15 +38,14 @@ class _Quirks(Callback):
   def check_config_sw(self, node: Box, topology: Box) -> None:
     pass
 
-"""
-Get the quirks module for the specified device
-
-Note: DEVICE_MODULE is a global cache of loaded modules
-"""
-
 DEVICE_MODULE: typing.Dict = {}
 
 def get_device_module(device: str, topology: Box) -> typing.Optional[typing.Any]:
+  """
+  Get the quirks module for the specified device
+
+  Note: DEVICE_MODULE is a global cache of loaded modules
+  """
   global DEVICE_MODULE
 
   if device in DEVICE_MODULE:
@@ -60,17 +59,29 @@ def get_device_module(device: str, topology: Box) -> typing.Optional[typing.Any]
 
   return DEVICE_MODULE[device]
 
-"""
-Execute a device quirk callback
-"""
-def exec_device_quirk(node: Box, topology: Box, method: str = 'device_quirks') -> None:
-
-  if log.debug_active('quirks'):
-    print(f'Processing device quirks: method {method}, node {node.name}/{node.device}')
-
+def exec_device_hook(node: Box, topology: Box, method: str, *, debug_flag: str = 'hooks', **kwargs: typing.Any) -> typing.Any:
+  """
+  Execute a generic device hook and returns its value (None for no hook). Checks for presence
+  of hook method, so the methods don't have to be inherited from the _Quirks object.
+  """
   q_module = get_device_module(node.device,topology)
-  if q_module is not None:
-    q_module.call(method,node,topology)
+  q_exists = q_module and hasattr(q_module,method)
+  if log.debug_active(debug_flag):
+      print(
+        f'Processing device {debug_flag}: method {method}, node {node.name}/{node.device}'
+        f' MOD: {"OK" + (" HOOK: " +( "OK" if q_exists else "NO")) if q_module else "NO"}'
+      )
+
+  if q_module and q_exists:
+    return q_module.call(method,node,topology,**kwargs)
+  else:
+    return None
+
+def exec_device_quirk(node: Box, topology: Box, method: str = 'device_quirks') -> None:
+  """
+  Execute a device quirk callback. A wrapper for exec_device_hook
+  """
+  exec_device_hook(node,topology,method,debug_flag='quirks')
 
 """
 Process device quirks at the end of the topology transformation
