@@ -6,7 +6,7 @@ import typing
 from box import Box
 
 from ..data import get_new_box
-from ..utils import log
+from ..utils import log, netmiko
 from . import _Quirks, report_quirk
 
 
@@ -125,3 +125,28 @@ class IOSXR(_Quirks):
       if 'community' in node.routing:
         clist_check(node)
         rp_set(node,'community','value')
+
+  def netmiko_reload(self, node: Box, topology: Box, conn: 'netmiko._netmiko.BaseConnection', nm_data: dict) -> bool:
+    """
+    Implements configuration reload functionality for IOS XR. Always returns True as in "I did something"
+    """
+    pwd_output = conn.send_command("pwd")
+    if not isinstance(pwd_output,str):
+      log.error(f'netmiko returned unexpected result for IOS XR pwd command',more_data=str(pwd_output))
+      return True
+    
+    pwd = pwd_output.split('\n')[-1]
+    if log.debug_active('netmiko'):
+      print(f'IOS XR working directory on {node.name}: {pwd}')
+
+    r_path = f'{pwd}/replace-config'
+    netmiko.scp(conn,node.name,nm_data['src'],r_path)
+    if log.debug_active('netmiko'):
+      print(f'... copied replacement config to {node.name} {r_path}')
+
+    result = conn.send_config_set(f'load {r_path}',error_pattern=nm_data['err'])
+    result += conn.commit(replace=True) # type: ignore[call-arg]      # Exists in CiscoXrBase, too much hassle to type-check
+    result += conn.exit_config_mode()
+    if log.debug_active('netmiko'):
+      print(f'IOS XR configuration replace for {node.name}:\n{result}')
+    return True
