@@ -10,6 +10,7 @@ from netsim.augment import devices
 from netsim.modules import _dataplane
 from netsim.utils import log
 
+_description = 'EVPN Ethernet Segments (EVPN multihoming)'
 _config_name = 'evpn.multihoming'
 _requires = [ 'evpn' ]
 _execute_after = [ 'evpn', 'lag' ]

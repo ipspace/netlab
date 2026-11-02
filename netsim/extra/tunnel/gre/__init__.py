@@ -6,6 +6,7 @@ from netsim.utils import log
 from ... import tunnel as _tunnel
 from .. import _p2p
 
+_description = 'Point-to-point GRE tunnels'
 _config_name = 'tunnel.gre'
 
 def pre_transform(topology: Box) -> None:

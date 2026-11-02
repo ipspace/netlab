@@ -4,6 +4,7 @@ from netsim.augment import devices, links
 from netsim.data import get_box
 from netsim.utils import log
 
+_description = 'Originate IPv4 and IPv6 BGP prefixes from loopback interfaces'
 _requires    = [ 'bgp' ]
 
 """

@@ -6,6 +6,8 @@ from netsim import data
 from netsim.augment import devices
 from netsim.utils import log, strings
 
+_description = 'Run multiple labs on the same Linux server'
+
 """
 Depth-first evaluation of changed parameters:
 

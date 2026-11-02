@@ -6,6 +6,8 @@ from netsim.data import append_to_list, filemaps
 from netsim.data.types import must_be_dict
 from netsim.utils import log
 
+_description = 'Embed files and configuration templates in lab topology'
+
 """
 Restructure 'files' dictionary into a list of files to avoid Box-dotting
 problems

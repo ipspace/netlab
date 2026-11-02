@@ -10,6 +10,7 @@ from netsim.modules.routing.policy import check_routing_policy, import_routing_p
 from netsim.utils import log
 from netsim.utils import routing as _bgp
 
+_description = 'Simple BGP routing policies'
 _config_name = 'bgp.policy'
 
 _requires        = [ 'bgp' ]

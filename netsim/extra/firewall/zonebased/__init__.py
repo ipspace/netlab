@@ -7,6 +7,7 @@ from netsim import api
 from netsim.augment import devices
 from netsim.utils import log
 
+_description = 'Zone-based firewall'
 _config_name = 'firewall.zonebased'
 
 def post_transform(topology: Box) -> None:

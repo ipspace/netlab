@@ -7,6 +7,7 @@ from netsim.data import append_to_list, get_box
 from netsim.utils import log
 from netsim.utils import routing as _bgp
 
+_description = 'BGP session attributes (authentication, AS path, timers...)'
 _config_name = 'bgp.session'
 _requires    = [ 'bgp' ]
 

@@ -19,6 +19,7 @@ from . import images as _images
 from . import module_support as _mod_support
 from . import modules as _modules
 from . import outputs as _outputs
+from . import plugins as _plugins
 from . import providers as _providers
 from . import reports as _reports
 from . import tools as _tools
@@ -48,6 +49,10 @@ show_dispatch: dict = {
   'outputs': {
     'exec':  _outputs.show,
     'parse': _outputs.parse
+  },
+  'plugins': {
+    'exec':  _plugins.show,
+    'parse': _plugins.parse
   },
   'reports': {
     'exec':  _reports.show,

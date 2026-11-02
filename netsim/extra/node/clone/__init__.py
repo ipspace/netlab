@@ -6,6 +6,8 @@ from netsim import data
 from netsim.augment import links
 from netsim.utils import log, strings
 
+_description = 'Create multiple copies of a node'
+
 """
 clone_link - makes a copy of the given link for each clone, updating its node
 """

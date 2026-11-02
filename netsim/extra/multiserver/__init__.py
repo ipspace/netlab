@@ -23,6 +23,7 @@ from netsim.outputs import _TopologyOutput
 from netsim.utils import files as _files
 from netsim.utils import log, templates
 
+_description   = 'Split a lab topology across multiple workers'
 _execute_after = ["fabric", "node.clone"]
 
 
