@@ -245,7 +245,7 @@ The **netmiko_reload** hook is called with these parameters:
 |-----------|---------|
 | **node** | Node data |
 | **topology** | Lab topology |
-| **conn** | The *netmiko* connection object (the SSH session is already established, but the **enable** command has not been executed) |
+| **conn** | The *netmiko* connection object (the SSH session is already established and the **enable** command has already been executed) |
 | **nm_data** | A dictionary of reload parameters. The device hook will probably need the **src** (local file containing the saved configuration), **dst** (**reload.config** feature), and **err** (combined **error_regexp** regular expression) values |
 
 The hook should return `True` when the configuration reload succeeded and `False` when it failed. It must report the failure with **log.error** (using the `log.ErrorAbort` category); the *netmiko* utility functions (for example, **netmiko.scp**) already do that. The exceptions raised by the device hook are caught and reported by the *netmiko* reload code, and the session log is closed when the hook returns.
