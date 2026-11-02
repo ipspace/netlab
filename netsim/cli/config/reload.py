@@ -11,6 +11,7 @@ from pathlib import Path
 
 from box import Box
 
+from ... import devices as q_devices
 from ...augment import devices as a_devices
 from ...data import get_a_list
 from ...utils import log, netmiko
@@ -148,7 +149,46 @@ def reload_with_netmiko(cfg_path: Path, nodeset: list, topology: Box) -> list:
   if not nm_nodes:
     return nodeset
 
-  def netmiko_scp_replace(n_name: str) -> None:
+  def netmiko_scp_replace(
+        conn: netmiko._netmiko.BaseConnection,
+        n_name: str,
+        nm_data: dict) -> bool:
+    conn.enable()
+    if nm_data['cfg']:                        # Extra configuration required?
+      conn.send_config_set(nm_data['cfg'])
+
+    if nm_data['ft']:                         # Use netmiko file_transfer function?
+      status = netmiko.file_transfer(conn,n_name,nm_data['src'],nm_data['dst'])
+    else:
+      status = netmiko.scp(conn,n_name,nm_data['src'],nm_data['dst'])
+    if not status:
+      return False
+
+    # Execute the "replace config" command, check its results against known error pattern
+    result = conn.send_command(nm_data['cmd'])
+    if isinstance(result,list):
+      result = '\n'.join(result)
+    if not isinstance(result,str):
+      raise Exception(f'netmiko send_command returned unexpected results: {type(result)}')
+    if nm_data['ok']:
+      OK = bool(re.search(nm_data['ok'],result))
+    elif nm_data['err']:
+      OK = not bool(re.search(nm_data['err'],result,flags=re.MULTILINE))
+    else:
+      OK = True
+
+    if OK:
+      log.info(f'Uploaded and replaced configuration on {n_name}',module='netmiko')
+    else:
+      log.error(
+        f'Failed to replace configuration on {n_name}',
+        more_data=result,
+        module='netmiko',
+        category=log.ErrorAbort,
+        skip_header=True)
+    return OK
+
+  def netmiko_reload(n_name: str) -> None:
     try:
       n_data = topology.nodes[n_name]
       nm_data = nm_nodes[n_name]
@@ -163,39 +203,10 @@ def reload_with_netmiko(cfg_path: Path, nodeset: list, topology: Box) -> list:
         return
 
       with conn:                                  # Use this to auto-close the connection
-        conn.enable()
-        if nm_data['cfg']:                        # Extra configuration required?
-          conn.send_config_set(nm_data['cfg'])
-
-        if nm_data['ft']:                         # Use netmiko file_transfer function?
-          status = netmiko.file_transfer(conn,n_name,nm_data['src'],nm_data['dst'])
-        else:
-          status = netmiko.scp(conn,n_name,nm_data['src'],nm_data['dst'])
-        if not status:
+        if q_devices.exec_device_hook(n_data,topology,'netmiko_reload',conn=conn,nm_data=nm_data) is not None:
           return
 
-        # Execute the "replace config" command, check its results against known error pattern
-        result = conn.send_command(nm_data['cmd'])
-        if isinstance(result,list):
-          result = '\n'.join(result)
-        if not isinstance(result,str):
-          raise Exception(f'netmiko send_command returned unexpected results: {type(result)}')
-        if nm_data['ok']:
-          OK = bool(re.search(nm_data['ok'],result))
-        elif nm_data['err']:
-          OK = not bool(re.search(nm_data['err'],result,flags=re.MULTILINE))
-        else:
-          OK = True
-
-        if OK:
-          log.info(f'Uploaded and replaced configuration on {n_name}',module='netmiko')
-        else:
-          log.error(
-            f'Failed to replace configuration on {n_name}',
-            more_data=result,
-            module='netmiko',
-            category=log.ErrorAbort,
-            skip_header=True)
+        netmiko_scp_replace(conn,n_name,nm_data)
 
     except Exception as ex:
       log.error(
@@ -208,7 +219,7 @@ def reload_with_netmiko(cfg_path: Path, nodeset: list, topology: Box) -> list:
     return
 
   with concurrent.futures.ThreadPoolExecutor() as executor:
-    executor.map(netmiko_scp_replace, list(nm_nodes))
+    executor.map(netmiko_reload, list(nm_nodes))
 
   return [ n_name for n_name in nodeset if n_name not in nm_nodes ]
 
