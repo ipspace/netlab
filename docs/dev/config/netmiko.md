@@ -230,6 +230,41 @@ _netlab_ uses this procedure to reload a saved configuration with *netmiko*:
 
 **netlab config --reload** exits with an error status if the configuration reload failed on any device.
 
+(dev-config-netmiko-reload-hook)=
+### Device-Specific Reload Procedure
+
+Some devices cannot use the *copy file, execute replace command* procedure. For example, Cisco IOS XR has to load the saved configuration in configuration mode and commit it with the **replace** option. These devices implement the configuration reload in the **netmiko_reload** [device hook](dev-device-hooks):
+
+* The *netmiko* reload code opens the SSH session to the device and calls the **netmiko_reload** device hook before executing the regular reload procedure. The regular procedure is skipped when the hook returns a value other than `None`.
+* The **features.netmiko.reload.command** feature must still be set (it selects the nodes that use the *netmiko*-based reload), but its value is not used when the device hook exists. Use `hook` as the value to make it clear that the reload is implemented in the device hook.
+
+The **netmiko_reload** hook is called with these parameters:
+
+{.table-wrap}
+| Parameter | Meaning |
+|-----------|---------|
+| **node** | Node data |
+| **topology** | Lab topology |
+| **conn** | The *netmiko* connection object (the SSH session is already established, but the **enable** command has not been executed) |
+| **nm_data** | A dictionary of reload parameters. The device hook will probably need the **src** (local file containing the saved configuration), **dst** (**reload.config** feature), and **err** (combined **error_regexp** regular expression) values |
+
+The hook should return `True` when the configuration reload succeeded and `False` when it failed. It must report the failure with **log.error** (using the `log.ErrorAbort` category); the *netmiko* utility functions (for example, **netmiko.scp**) already do that. The exceptions raised by the device hook are caught and reported by the *netmiko* reload code, and the session log is closed when the hook returns.
+
+The IOS XR implementation (**netmiko_reload** method in `netsim/devices/iosxr.py`) is a good starting point. It:
+
+* Executes the **pwd** command to find the current working directory
+* Copies the saved configuration into the working directory with the **netmiko.scp** function
+* Executes the **load** command in configuration mode (using the **error_regexp** regular expression to detect errors), commits the configuration with the **replace** option, and exits the configuration mode
+
+The IOS XR device settings (in `xr.yml`) contain just the placeholder **reload.command**:
+
+```
+netmiko:
+  device_type: cisco_xr
+  reload:
+    command: hook
+```
+
 (dev-config-netmiko-ssh-ready)=
 ## SSH Readiness Check
 
@@ -279,6 +314,7 @@ To add *netmiko*-based configuration collection to a device that already support
 
 * *netmiko* writes the log of all SSH session interactions to `node_files/_nodename_/netmiko.log`
 * Use the **netlab initial --debug netmiko** command to display the *netmiko* connection parameters, the error-detection regular expression, and the device responses to the configuration commands
+* Use the **netlab config --reload --debug hooks** command to check whether _netlab_ found the **netmiko_reload** device hook
 * Use the **netlab initial -o** command to create the configuration snippets in the `config` directory without deploying them
 * Use the **netlab initial --dry-run** command to display the configuration snippets that would be deployed
 

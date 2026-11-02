@@ -48,6 +48,8 @@ You can specify these categories with the `--debug` flag (most categories are re
 | `clab` | Debug containerlab provider |
 | `status` | Debug the 'lab status' code |
 | `quirks` | Debug device quirks code |
+| `hooks` | Debug device hooks calls (see [](dev-device-hooks)) |
+| `netmiko` | Debug *netmiko* connections and configuration deployment |
 | `paths` | Debug search paths (helps troubleshoot custom templates) |
 | `loadable` | Debug loadable modules |
 | `lag` | Debug LAG (Link Aggregation) functionality |
