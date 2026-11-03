@@ -10,7 +10,7 @@ message: |
 
 defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
 defaults.paths.prepend.plugin: [ "topology:../plugin" ]
-plugin: [ files, adjust_test ]
+plugin: [ adjust_test ]
 
 module: [ bgp, ospf ]
 
@@ -38,8 +38,18 @@ nodes:
     role: router
   rc:
     id: 10
-    bgp.originate: 172.0.42.0/24
-    config: [ frr-community ]
+    module: [ bgp, ospf, routing ]
+    bgp.import.static.policy: setcomm
+    routing:
+      static:
+      - ipv4: 172.0.42.0/24
+        nexthop.discard: True
+      policy:
+        setcomm:
+          set.community:
+            standard: [ '65000:1' ]
+            extended: [ 'bandwidth 100' ]
+            large: [ '65000:0:1' ]
   r2:
   x1:
     module: [ bgp ]
@@ -91,18 +101,3 @@ validate:
         community={
           'extendedCommunity': 'LB:65000:12500000'},
         state='missing')
-
-configlets:
-  frr-community: |
-    route-map setcomm permit 10
-    set community 65000:1 additive
-    set extcommunity bandwidth 100
-    set large-community 65000:0:1 additive
-    exit
-    !
-    router bgp {{ bgp.as }}
-    !
-    address-family ipv4 unicast
-    {% for n in bgp.neighbors %}
-      neighbor {{ n.ipv4 }} route-map setcomm out
-    {% endfor %}
