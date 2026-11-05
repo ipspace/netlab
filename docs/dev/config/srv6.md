@@ -179,7 +179,7 @@ router bgp {{ bgp.as }}
 {% set srv6_interfaces = interfaces | selectattr('isis','defined') | list %}
 updates:
 - path: configure/router[router-name=Base]/segment-routing/segment-routing-v6
-  val:
+  value:
    locator:
    - locator-name: JvB
      prefix:
@@ -190,7 +190,7 @@ updates:
 
 {% if 'isis' in srv6.igp %}
 - path: configure/router[router-name=Base]/isis[isis-instance=0]
-  val:
+  value:
    segment-routing-v6:
     admin-state: enable
     locator:

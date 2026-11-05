@@ -34,7 +34,7 @@
 {# Minimal service config must exist #}
 {%  if not in_base and vrf_config %}
 - path: configure/{{ base_path }}
-  val:
+  value:
    customer: "1"
    admin-state: enable
    service-id: {{ vrfs[i.vrf].vrfidx if i.vrf is defined else 1 }}
@@ -81,7 +81,7 @@
 
 {% macro interface(name,desc,ip_v4,ip_v6,port,l,vlan=0) -%}
 {{ declare_interface(l,name) }}
-  val:
+  value:
    admin-state: {{ "disable" if l.shutdown|default(False) else "enable" }}
    description: "{{ desc }}{{ 'vlan= '+vlan|string if vlan else '' }}"
 {% if l.mtu is defined %}
@@ -115,7 +115,7 @@
 {% endif %}
 {% if ip_v6 and l.type != 'loopback' and role|default('router') == 'router' %}
 {{ declare_router(l) }}
-  val:
+  value:
     ipv6:
       router-advertisement:
         interface:
@@ -153,14 +153,14 @@
 {%  if l.type in ['p2p','lan','vlan_member','stub'] %}
 {%   if 'c' in portname %}
 - path: configure/port[port-id={{portname}}]
-  val:
+  value:
    admin-state: enable
    connector:
     breakout: "c1-100g"
 {%    set portname = portname + '/1' %}
 {%   endif %}
 - path: configure/port[port-id={{ portname }}]
-  val:
+  value:
    admin-state: enable
    ethernet:
 {%   set eth_header = 14 + (4 if tagged else 0) %}
@@ -188,7 +188,7 @@
 updates:
 {% if 'ixr' in clab.type %}
 - path: configure/system/resource
-  val:
+  value:
    ecmp-profile:
    - profile-id: 1
      type: ip # or mpls
@@ -206,15 +206,15 @@ updates:
   want to use a different hardware configuration
 #}
 {% if 'srsim' in clab.kind %}
-{%   for card in netlab_srsim_hw %}
+{%   for card in netlab_srsim_hw | default([], true) %}
 - path: configure/card[slot-number={{ card['slot-number'] }}]
-  val:
+  value:
 {{     card|to_nice_yaml(indent=2)|indent(4,first=True) }}
 {%   endfor %}
 {% endif %}
 {# Enable ECMP=64 by default #}
 - path: configure/router[router-name=Base]
-  val:
+  value:
    ecmp: {{ 1 if 'ixr' in clab.type else 64 }}
 
 {% for l in netlab_interfaces if l.vlan is not defined and l.subif_index is not defined %}

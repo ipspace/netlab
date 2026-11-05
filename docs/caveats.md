@@ -703,20 +703,7 @@ Other caveats you might encounter:
 
 Other caveats (shared with Nokia SR-SIM):
 
-* We use the `nokia.grpc` Ansible Galaxy collection to configure SR-OS. The latest version of that collection has to be installed from the git repo:
-
-  ```
-  ansible-galaxy collection install git+https://github.com/nokia/ansible-networking-collections.git#/grpc/
-  python3 -m pip install grpcio protobuf==3.20.1
-  ```
-
-  You can also use the **netlab install grpc** command to install the `nokia.grpc` collection and prerequisite Python modules.
-* As of May 2024, the `nokia.grpc` collection crashes Ansible versions between 4.10.0 and 9.5.1. We recommend upgrading to Ansible release 9.5.1 or later (also included as part of the **netlab install grpc** script):
-
-```
-sudo pip3 install --upgrade 'ansible>=9.5.1'
-```
-
+* We use the `nokia.openconfig` Ansible Galaxy collection (`>= 2.0.2`) to configure SR-OS via gNMI (`nokia.openconfig.grpc`). Use the **netlab install grpc** command to install the `nokia.openconfig` collection and prerequisite Python gRPC modules (`grpcio` and `protobuf`).
 * We implemented inter-VRF route leaking only for MPLS/VPN deployments.
 * The SR OS configuration templates do not support additional routing policies on routing protocol route imports
 * An SR OS interface cannot use an unnumbered IPv4 address in combination with IPv6 GUA
