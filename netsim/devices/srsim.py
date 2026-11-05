@@ -14,4 +14,4 @@ class SRSIM(_Quirks):
     return SROS.device_quirks(node,topology)
 
   def check_config_sw(self, node: Box, topology: Box) -> None:
-    need_ansible_collection(node,'nokia.grpc',version='1.0.2')
+    need_ansible_collection(node,'nokia.openconfig',version='2.0.0',install='netlab install grpc')

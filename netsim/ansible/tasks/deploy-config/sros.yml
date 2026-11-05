@@ -1,19 +1,22 @@
 ---
 - name: Generate gNMI YAML configuration
-  set_fact: yaml_config={{ lookup('template',config_template) }}
+  set_fact:
+    yaml_config: "{{ lookup('template',config_template) }}"
 
 - name: Update {{ netsim_action }} node configuration from gNMI template {{ config_template  }}
-  when: d|default([],True) != [] or u|default([],True) != [] or r|default([],True) != []
+  when: d != [] or u != [] or r != []
   vars:
-    cfg: "{{ yaml_config | from_yaml }}"
-    d: "{{ cfg.delete if 'delete' in cfg and cfg.delete is not string else [] }}"
-    u: "{{ cfg.updates if 'updates' in cfg and cfg.updates is not string else [] }}"
-    r: "{{ cfg.replace if 'replace' in cfg and cfg.replace is not string else [] }}"
-    ansible_connection: nokia.grpc.gnmi
+    raw_cfg: "{{ yaml_config | from_yaml }}"
+    cfg: "{{ raw_cfg if raw_cfg is mapping else {} }}"
+    d: "{{ (cfg.get('delete') or cfg.get('deletes')) | default([], true) }}"
+    u: "{{ (cfg.get('updates') or cfg.get('update')) | default([], true) }}"
+    r: "{{ (cfg.get('replace') or cfg.get('replaces')) | default([], true) }}"
+    ansible_connection: nokia.openconfig.grpc
     ansible_gnmi_encoding: JSON
     ansible_port: "{{ sros_grpc_port }}"
-  nokia.grpc.gnmi_config:
-    # prefix: configure
+  nokia.openconfig.gnmi_set:
+    prefix: "{{ cfg.get('prefix') | default(omit, true) }}"
+    origin: "{{ cfg.get('origin') if cfg.get('origin') is not none else omit }}"
     delete: "{{ d }}"
     replace: "{{ r }}"
     update: "{{ u }}"
