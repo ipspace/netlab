@@ -1,6 +1,8 @@
 #
 # Arista EOS quirks
 #
+import re
+
 from box import Box
 
 from ..augment import devices
@@ -31,7 +33,8 @@ def check_mpls_clab(node: Box, topology: Box) -> None:
     except:
       ceos_version = ''
 
-    if ceos_version < '4.32.1F':
+    v_match = re.match(r'(\d+)\.(\d+)',ceos_version)                   # 4.32.1F was the first 4.32 release
+    if not ceos_version or (v_match and tuple(map(int,v_match.groups())) < (4,32)):
       report_quirk(
         text=f'Arista cEOS ({node.name}) versions earlier than 4.32.1F do not support MPLS data plane',
         more_hints = 'To use MPLS with older EOS versions, use vEOS VM with libvirt provider',
