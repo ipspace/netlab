@@ -34,10 +34,10 @@ Bringing machine 'dut' up with 'libvirt' provider...
 ==> dut: Creating shared folders metadata...
 ==> dut: Starting domain.
 ==> dut: Domain launching with graphics connection settings...
-==> dut:  -- Graphics Port:      5900
+==> dut:  -- Graphics Port:      5901
 ==> dut:  -- Graphics IP:        127.0.0.1
 ==> dut:  -- Graphics Password:  Not defined
-==> dut:  -- Graphics Websocket: 5700
+==> dut:  -- Graphics Websocket: 5701
 ==> dut: Waiting for domain to get an IP address...
 ==> dut: Waiting for machine to boot. This may take a few minutes...
     dut: SSH address: 192.168.17.101:22
@@ -62,16 +62,21 @@ Recreating clab-augment.yml configuration file for clab provider
 Created provider configuration file: clab-augment.yml
  [INFO] Setting containerlab runtime to docker
 provider clab: executing flock -E 42 /tmp/netlab.lock containerlab deploy --reconfigure -t clab-augment.yml
-07:32:29 INFO Containerlab started version=0.79.0
-07:32:29 INFO Parsing & checking topology file=clab-augment.yml
-07:32:29 INFO Removing directory path=/work/netlab_cicd/clab-ml-17
-07:32:29 INFO Creating docker network name=nl_mgmt_17 IPv4 subnet=192.168.17.0/24 IPv6 subnet=fd00:df:1ab:17::/64 MTU=0
-07:32:29 INFO Creating lab directory path=/work/netlab_cicd/clab-ml-17
-07:32:29 INFO Creating container name=x1
-07:32:29 INFO Created link: x1:eth1 ▪┄┄▪ virbr1:bni17n2i1
-07:32:30 INFO Executed command node=x1 command="sleep 1" stdout=""
-07:32:30 INFO Adding host entries path=/etc/hosts
-07:32:30 INFO Adding SSH config for nodes path=/etc/ssh/ssh_config.d/clab-ml-17.conf
+18:00:47 INFO Containerlab started version=0.81.1
+18:00:47 INFO Parsing & checking topology file=clab-augment.yml
+18:00:47 INFO Removing directory path=/work/netlab_cicd/clab-ml-17
+18:00:47 INFO Creating docker network name=nl_mgmt_17 IPv4 subnet=192.168.17.0/24 IPv6 subnet=fd00:df:1ab:17::/64 MTU=0
+18:00:47 INFO Creating lab directory path=/work/netlab_cicd/clab-ml-17
+18:00:47 INFO Creating container name=x1
+18:00:48 INFO Created link: x1:eth1 ▪┄┄▪ virbr4:bni17n2i1
+18:00:49 INFO Executed command node=x1 command="sleep 1" stdout=""
+18:00:49 INFO Adding host entries path=/etc/hosts
+18:00:49 INFO Adding SSH config for nodes path=/etc/ssh/ssh_config.d/clab-ml-17.conf
+18:00:49 INFO containerlab version
+  🎉=
+  │ A newer containerlab version (0.83.0) is available!
+  │ Release notes: https://containerlab.dev/rn/0.83/
+  │ Run 'clab version upgrade' or see https://containerlab.dev/install/ for other installation options.
 [1m╭[0m[1m───────────────[0m[1m┬[0m[1m──────────────────────────────[0m[1m┬[0m[1m─────────[0m[1m┬[0m[1m───────────────────[0m[1m╮[0m
 [1m│[0m[1m      Name     [0m[1m│[0m[1m          Kind/Image          [0m[1m│[0m[1m  State  [0m[1m│[0m[1m   IPv4/6 Address  [0m[1m│[0m
 [1m├[0m[1m───────────────[0m[1m┼[0m[1m──────────────────────────────[0m[1m┼[0m[1m─────────[0m[1m┼[0m[1m───────────────────[0m[1m┤[0m
@@ -113,7 +118,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "initial configuration for dut\n=========================================\n#!/bin/bash\n#\nset -e\nset -x\n#\n# Create bash profile script\n#\ncat <<'SCRIPT' >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)# \"\necho\necho \"Use vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)\n#\n# FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands\n#\nsysctl -w net.ipv4.ip_forward=1\nsysctl -w net.ipv6.conf.all.forwarding=0\n#\ncat <<SCRIPT >.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)$ \"\nexport PATH=$PATH:/usr/sbin\necho \necho \"Use sudo vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# Build hosts file\n#\n#\ncat <<'SCRIPT' >/tmp/hosts\n#\n# Created by netlab initial\n#\n10.0.0.1 dut\n10.1.0.1 eth1.dut\n10.0.0.2 x1\n10.1.0.2 eth1.x1\nSCRIPT\ngrep \"Created by netlab\" /etc/hosts || uniq /tmp/hosts >>/etc/hosts\n#\n# Configure system defaults on Ubuntu\n#\nhostnamectl set-hostname dut\nPKG_INSTALL=\n#\nif which gpg; then\n  echo \"Package gnupg already installed\"\nelse\n  PKG_INSTALL=\"$PKG_INSTALL gnupg\"\nfi\n#\nif which curl; then\n  echo \"Package curl already installed\"\nelse\n  PKG_INSTALL=\"$PKG_INSTALL curl\"\nfi\n#\nif which bridge; then\n  echo \"Package iproute2 already installed\"\nelse\n  PKG_INSTALL=\"$PKG_INSTALL iproute2\"\nfi\n#\n# PKG_INSTALL always starts with a blank, so we can't just check if it's empty\n# The following hack turns a string that contains only whitespaces into\n# an empty string and removes leading whitespaces\n#\nPKG_INSTALL=`echo $PKG_INSTALL`\nif [ -n \"$PKG_INSTALL\" ]; then\n  echo \"Installing packages $PKG_INSTALL\"\n  if command -v apk >/dev/null; then\n    apk add --no-cache $PKG_INSTALL\n  elif command -v apt-get >/dev/null; then\n    apt-get update -qq && apt-get install -qq $PKG_INSTALL\n  else\n    echo \"Cannot install packages (no supported package manager found)\" >&2\n    exit 1\n  fi\nfi\n#\n# Install FRR on a Ubuntu VM if needed\n#\nif which /usr/lib/frr/frrinit.sh; then\n  echo \"FRR already installed, skipping installation\"\nelse\n  curl -s https://deb.frrouting.org/frr/keys.asc >/etc/apt/trusted.gpg.d/frr.asc\n  FRRVER=\"frr-stable\"\n  echo deb https://deb.frrouting.org/frr $(lsb_release -s -c) $FRRVER > /etc/apt/sources.list.d/frr.list\n  apt-get update -qq && apt-get install -qq frr frr-pythontools bridge-utils ethtool\nfi\n#\n# Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)\n#\n#\n# Enable FRR daemons\n#\necho \"ospfd=yes\" >>/etc/frr/daemons\necho \"ospf6d=yes\" >>/etc/frr/daemons\n\n/usr/lib/frr/frrinit.sh restart\n\n# Set system defaults\n#\n# Send ARP requests from a sane source IP address\n#\nsysctl -w net.ipv4.conf.all.arp_announce=2\n\n#\n# Create loopbacks, stub and lag/bond devices\n#\nif [ ! -e /sys/class/net/lo ]; then\n  if [ ! -e /sys/devices/virtual/net/lo ]; then\n    ip link add lo type dummy\n    ip link set dev lo up\n  fi\nfi\n\n# Set Linux interface sysctl parameters: Disable IPv6 (for IPv4-only interfaces)\n# or SLAAC (if the device is a router)\n#\nip link set eth1 down\n# Linux interface parameters for eth1\n#\nsysctl -qw net/ipv6/conf/eth1/disable_ipv6=1\nip link set dev eth1 mtu 1500\nip link set eth1 up\n\n\n#\n# Add vtysh.conf file\necho \"service integrated-vtysh-config\" >/etc/frr/vtysh.conf\n\n\n!\nexit 0\n"
+    "msg": "initial configuration for dut\n=========================================\n#!/bin/bash\n#\nset -e\nset -x\n#\n# Create bash profile script\n#\ncat <<'SCRIPT' >/root/.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)# \"\necho\necho \"Use vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)\n#\n# FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands\n#\nsysctl -w net.ipv4.ip_forward=1\nsysctl -w net.ipv6.conf.all.forwarding=0\n#\ncat <<SCRIPT >.bash_profile\n#!/bin/bash\n#\nexport PS1=\"\\h(bash)$ \"\nexport PATH=$PATH:/usr/sbin\necho \necho \"Use sudo vtysh to connect to FRR daemon\"\necho\nSCRIPT\n#\n# Build hosts file\n#\n#\ncat <<'SCRIPT' >/tmp/hosts\n#\n# Created by netlab initial\n#\n10.0.0.1 dut\n10.1.0.1 eth1.dut\n10.0.0.2 x1\n10.1.0.2 eth1.x1\nSCRIPT\ngrep \"Created by netlab\" /etc/hosts || uniq /tmp/hosts >>/etc/hosts\n#\n# Configure system defaults on Ubuntu\n#\nhostnamectl set-hostname dut\nPKG_INSTALL=\n#\nif which gpg; then\n  echo \"Package gnupg already installed\"\nelse\n  PKG_INSTALL=\"$PKG_INSTALL gnupg\"\nfi\n#\nif which curl; then\n  echo \"Package curl already installed\"\nelse\n  PKG_INSTALL=\"$PKG_INSTALL curl\"\nfi\n#\nif which bridge; then\n  echo \"Package iproute2 already installed\"\nelse\n  PKG_INSTALL=\"$PKG_INSTALL iproute2\"\nfi\n#\n# PKG_INSTALL always starts with a blank, so we can't just check if it's empty\n# The following hack turns a string that contains only whitespaces into\n# an empty string and removes leading whitespaces\n#\nPKG_INSTALL=`echo $PKG_INSTALL`\nif [ -n \"$PKG_INSTALL\" ]; then\n  echo \"Installing packages $PKG_INSTALL\"\n  if command -v apk >/dev/null; then\n    apk add --no-cache $PKG_INSTALL\n  elif command -v apt-get >/dev/null; then\n    apt-get update -qq && apt-get install -qq $PKG_INSTALL\n  else\n    echo \"Cannot install packages (no supported package manager found)\" >&2\n    exit 1\n  fi\nfi\n#\n# Install FRR on a Ubuntu VM if needed\n#\nif which /usr/lib/frr/frrinit.sh; then\n  echo \"FRR already installed, skipping installation\"\nelse\n  curl -s https://deb.frrouting.org/frr/keys.asc >/etc/apt/trusted.gpg.d/frr.asc\n  FRRVER=\"frr-stable\"\n  echo deb https://deb.frrouting.org/frr $(lsb_release -s -c) $FRRVER > /etc/apt/sources.list.d/frr.list\n  apt-get update -qq && apt-get install -qq frr frr-pythontools bridge-utils ethtool\nfi\n#\n# Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)\n#\n#\n# Enable FRR daemons\n#\necho \"ospfd=yes\" >>/etc/frr/daemons\necho \"ospf6d=yes\" >>/etc/frr/daemons\n\n/usr/lib/frr/frrinit.sh restart\n\n# Set system defaults\n#\n# Send ARP requests from a sane source IP address\n#\nsysctl -w net.ipv4.conf.all.arp_announce=2\nsysctl -w net.ipv4.fib_multipath_hash_policy=1\n\n#\n# Create loopbacks, stub and lag/bond devices\n#\nif [ ! -e /sys/class/net/lo ]; then\n  if [ ! -e /sys/devices/virtual/net/lo ]; then\n    ip link add lo type dummy\n    ip link set dev lo up\n  fi\nfi\n\n# Set Linux interface sysctl parameters: Disable IPv6 (for IPv4-only interfaces)\n# or SLAAC (if the device is a router)\n#\nip link set eth1 down\n# Linux interface parameters for eth1\n#\nsysctl -qw net/ipv6/conf/eth1/disable_ipv6=1\nip link set dev eth1 mtu 1500\nip link set eth1 up\n\n\n#\n# Add vtysh.conf file\necho \"service integrated-vtysh-config\" >/etc/frr/vtysh.conf\n\n\n!\nexit 0\n"
 }
 
 TASK [Deploy initial configuration] ********************************************
@@ -183,8 +188,8 @@ Config Deploying device configurations
  [INFO] Executing initial configuration for node x1
  [INFO] Executing ospf configuration for node x1
 
-Results of configuration script deployments
+Results of non-Ansible configuration deployments
 ================================================================================
-x1               Script:  initial,ospf
+x1               Script:   initial,ospf
 
 
