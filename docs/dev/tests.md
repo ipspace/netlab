@@ -66,6 +66,7 @@ The **test_transformation.py** test harness runs three types of transformation t
 
 The `tests/` directory contains several shell scripts to run subsets of the test suite:
 
+{.table-wrap}
 | Script | Command | Purpose |
 |---|---|---|
 | `run-tests.sh` | `pytest -v -k 'xform_ or error_cases'` + `mypy` + `yamllint` | Main local pre-PR suite (excludes `tests/coverage` fixtures). Accepts `ci` argument for fail-fast mode (`set -e`). |
@@ -226,12 +227,13 @@ On every pull request, the CI/CD pipeline runs `check-integration-tests.sh`, whi
 
 The CI/CD pipeline consists of the following workflows in `.github/workflows/`:
 
+{.table-wrap}
 | Workflow | Trigger | Purpose |
 |---|---|---|
-| `t-push.yml` | Push to any branch (except `devc`) when `**.py` or `**.yml` change | Runs **mypy** and full **pytest** suite across Python 3.10, 3.13, and 3.14 |
+| `t-push.yml` | Push to any branch (except `devc`) when `**.py` or `**.yml` change | Runs **mypy** and full **pytest** suite across the oldest supported Python version (3.10 as of November 2026) and two most recent versions (3.14 and 3.15 as of November 2026) |
 | `t-pull.yml` | Pull request touching `**.py` or `**.yml` | Runs mypy + pytest (forks only), then **integration-test topology validation** (`check-integration-tests.sh`) for all PRs |
 | `t-yamllint.yml` | Push (non-`devc`) / PR on `**.yml` | Runs `yamllint --no-warnings` on all YAML in `netsim/` and `tests/` |
-| `ruff.yml` | Push (non-`devc`) / PR on `**.py`, `ruff.toml`, or the workflow file | Runs `ruff check --output-format=github .` on Python 3.14 |
+| `ruff.yml` | Push (non-`devc`) / PR on `**.py`, `ruff.toml`, or the workflow file | Runs `ruff check --output-format=github .` on the most recent Python version |
 | `integration.yml` | GitHub issue comment containing `/integration` | Runs real integration tests on a **self-hosted runner** with vendor boxes/containers |
 | `pages.yml` | Push to `master` or manual dispatch | Builds Sphinx docs and deploys to GitHub Pages |
 | `pypi.yml` | Push of `release_*` tag | Builds and publishes package to PyPI |
@@ -249,6 +251,5 @@ The CI/CD pipeline consists of the following workflows in `.github/workflows/`:
 3. **`ruff.yml`** lints all Python files
 
 ```{tip}
-The push and pull-request workflows run on a matrix of Python 3.10, 3.13, and 3.14. The ruff workflow runs on Python 3.14 only.
+The push and pull-request workflows run on a matrix of three Python versions (oldest supported and two most recent releases). The ruff workflow runs on the most recent Python release only.
 ```
-
