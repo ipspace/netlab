@@ -293,7 +293,7 @@ The *netmiko* SSH session used by **netlab connect** does not execute the **enab
 * The *netmiko* **send_command** function. Use this method for devices with SSH implementations that do not support remote command execution.
 * SSH remote command execution (the **execute** function in the **netsim.utils.netmiko** module) when the **features.netmiko.execute** device feature is set to `rce`. This method opens a new SSH channel within the *netmiko* SSH session and executes the command with the *paramiko* **exec_command** function. It returns separate stdout and stderr printouts and the command exit status; **netlab connect** returns an error when the exit status is not zero. Arista EOS uses this method.
 
-The **timeout** parameter of the **netlab connect** command sets all *netmiko* timeouts (the **set_param_timeout** function in the **netsim.utils.netmiko** module). Use the **--debug netmiko** CLI parameter to display the *netmiko* connection parameters.
+When an internal caller supplies a **timeout** to the **netlab connect** code, it sets all *netmiko* timeouts (the **set_param_timeout** function in the **netsim.utils.netmiko** module).
 
 The **netlab connect** code is also used by the [command readiness check](dev-ready-command) and the [command-based configuration collection](dev-config-collect-command). These callers request the command printout instead of displaying it, and can request just the stdout part of the printout (the **stdout** parameter of the **connect_to_node** function).
 
