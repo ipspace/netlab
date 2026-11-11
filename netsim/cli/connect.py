@@ -163,6 +163,7 @@ def ssh_netmiko(
   from ..utils import netmiko
   timeout = p_args.timeout if 'timeout' in p_args else None
   nm_args = netmiko.prepare_params(data,topology,log_level < LogLevel.INFO)
+  quiet = log_level < LogLevel.INFO
   if not nm_args:
     return False
 
@@ -182,13 +183,13 @@ def ssh_netmiko(
   if log_level != LogLevel.NONE:
     exec_args = f', executing {cmd}'
     sys.stderr.write(f"Connecting to {nm_args['host']} using SSH port {data.ansible_port or 22}{exec_args}\n")
-  conn = netmiko.connect(data,nm_args,log_level < LogLevel.INFO,enable=False)
+  conn = netmiko.connect(data,nm_args,quiet,enable=False)
   if not conn:
     return False
 
   try:
     if features.get('netmiko.execute') == 'rce':
-      result = netmiko.execute(conn,data.name,cmd)
+      result = netmiko.execute(conn,data.name,cmd,quiet)
       if result:
         (stdout,stderr,rc) = result
         output = (stderr.strip() + "\n" if stderr else "") + stdout.strip()
@@ -206,7 +207,7 @@ def ssh_netmiko(
         print(result)
         return True
   except Exception as ex:
-    if log_level >= LogLevel.INFO:
+    if not quiet:
       log.error(f'Cannot execute command on {data.name}: {str(ex)}',module='netmiko')
     return False
   finally:

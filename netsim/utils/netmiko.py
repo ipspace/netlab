@@ -203,18 +203,19 @@ def execute(
       cmd: str,
       quiet: bool = False) -> typing.Optional[typing.Tuple]:
   """
-  Executes a single command over a new SSH (RCE) channel. Returns stdout/stderr/rc
-  if None (after an error)
+  Executes a single command over a new SSH (RCE) channel. Returns (stdout,stderr,rc)
+  after successful command execution and None after a netmiko error
   """
   if not conn.remote_conn_pre:
     raise Exception("netmiko connection data is missing")
   try:
     stdin, stdout, stderr = conn.remote_conn_pre.exec_command(cmd)
   except Exception as ex:
-    log.error(
-      f'Cannot execute a SSH command on {n_name}: {str(ex)}',
-      module='netmiko',
-      skip_header=True)
+    if not quiet:
+      log.error(
+        f'Cannot execute a SSH command on {n_name}: {str(ex)}',
+        module='netmiko',
+        skip_header=True)
     return None
 
   try:
