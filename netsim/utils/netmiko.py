@@ -45,7 +45,8 @@ def check_netmiko(n_data: Box) -> bool:
 NETMIKO_GROUP_VARS: dict = {
   'ansible_user': 'username',
   'ansible_ssh_pass': 'password',
-  'ansible_become_password': '*secret'
+  'ansible_become_password': '*secret',
+  'ansible_port': '*port'
 }
 
 NETMIKO_PARAM_FEATURES: list = ['device_type']
@@ -96,6 +97,13 @@ def prepare_params(n_data: Box, topology: Box, quiet: bool = False) -> typing.Op
     print(f'Netmiko params for {n_data.name}: {netmiko_params}')
   return netmiko_params
 
+def set_param_timeout(params: dict, timeout: int) -> None:
+  """
+  Sets all known netmiko timeouts in the netmiko parameters dictionary
+  """
+  for kw in ('conn_timeout','banner_timeout','auth_timeout','read_timeout_override'):
+    params[kw] = timeout
+
 PARAMIKO_LOGGER: typing.Optional[logging.Logger] = None
 
 def connect(n_data: Box, netmiko_params: dict, quiet: bool = False) -> 'typing.Optional[_netmiko.BaseConnection]':
@@ -138,6 +146,10 @@ def has_commit(conn: '_netmiko.BaseConnection') -> bool:
   return inspect.getattr_static(conn,'commit') is not _netmiko.BaseConnection.commit
 
 def scp(conn: '_netmiko.BaseConnection', n_name: str, src: str, dst: str) -> bool:
+  """
+  Use SCP to copy a file to a lab device. The SCP connection is a separate channel
+  established off an existing netmiko connection.
+  """
   import scp  # type: ignore
   if log.VERBOSE:
     print(f"netmiko SCP: {src} -> {n_name}:{dst}")
@@ -156,6 +168,9 @@ def scp(conn: '_netmiko.BaseConnection', n_name: str, src: str, dst: str) -> boo
   return False
 
 def file_transfer(conn: '_netmiko.BaseConnection', n_name: str, src: str, dst: str) -> bool:
+  """
+  Use netmiko file_transfer function to copy a file to a lab device
+  """
   if log.VERBOSE:
     print(f"netmiko file_transfer: {src} -> {n_name}:{dst}")
   if ':' in dst:
@@ -177,3 +192,32 @@ def file_transfer(conn: '_netmiko.BaseConnection', n_name: str, src: str, dst: s
       more_data=str(ex),module='netmiko',skip_header=True,category=log.ErrorAbort)
 
   return False
+
+def execute(conn: '_netmiko.BaseConnection', n_name: str, cmd: str) -> typing.Optional[typing.Tuple]:
+  if not conn.remote_conn_pre:
+    raise Exception("netmiko connection data is missing")
+  try:
+    stdin, stdout, stderr = conn.remote_conn_pre.exec_command(cmd)
+  except Exception as ex:
+    log.error(
+      f'Cannot execute a SSH command on {n_name}: {str(ex)}',
+      module='netmiko',
+      skip_header=True)
+    return None
+  
+  try:
+    output = stdout.read().decode()
+    errors = stderr.read().decode()
+    rc = stdout.channel.recv_exit_status()
+    return (output, errors, rc)
+  except Exception as ex:
+    log.error(
+      f'Cannot fetch results of a SSH command on {n_name}: {str(ex)}',
+      module='netmiko',
+      skip_header=True)
+    return None
+  finally:
+    stdout.channel.close()
+    stdin.close()
+    stdout.close()
+    stderr.close()
