@@ -7,6 +7,7 @@ import argparse
 import csv
 import importlib
 import os
+import shutil
 import sysconfig
 import typing
 from pathlib import Path
@@ -170,7 +171,7 @@ def set_sudo_flag() -> None:
   if os.getuid() == 0:
     return
 
-  if external_commands.has_command('sudo'):
+  if shutil.which('sudo'):
     os.environ['SUDO'] = "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a"
     return
 
@@ -217,7 +218,7 @@ def check_script(script: str, setup: Box, args: argparse.Namespace) -> None:
   if 'distro' in s_data:
     select_distro(script,setup,args)
   if 'apt' in s_data.uses:
-    if not external_commands.has_command('apt-get'):
+    if not shutil.which('apt-get'):
       error_and_exit(
         'This script uses apt-get command that is not available on your system',
         more_hints='Most netlab installation scripts work on Ubuntu and Debian)',
@@ -227,7 +228,7 @@ def check_script(script: str, setup: Box, args: argparse.Namespace) -> None:
   if 'pip' not in s_data.uses:
     return
 
-  if not external_commands.has_command('pip3'):
+  if not shutil.which('pip3'):
     error_and_exit(
       'This script uses pip3 command that is not available on your system',
       more_hints="Install pip3 (for example, with 'sudo apt-get install python-pip3')",
