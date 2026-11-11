@@ -75,11 +75,13 @@ def set_captured_output(stdout: str = '', stderr: str = '') -> None:
   _CAPTURED.stdout = stdout
   _CAPTURED.stderr = stderr
 
-def get_combined_output() -> str:
+def get_combined_output(stdout_only: bool = False) -> str:
   """
   Return the output captured by the last run_command call executed in the current thread
   """
   stdout = getattr(_CAPTURED,'stdout','')
+  if stdout_only:
+    return stdout.strip()
   stderr = getattr(_CAPTURED,'stderr','')
   stderr = stderr.strip() + "\n" if stderr else ""
   return stderr + stdout
