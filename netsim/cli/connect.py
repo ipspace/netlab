@@ -60,9 +60,9 @@ def docker_connect(
       log_level: LogLevel = LogLevel.INFO) -> typing.Union[bool,int,str]:
   host = data.ansible_host or data.host
 
-  shell = data.get('docker_shell','bash' if rest else 'bash -il')
   need_output = 'output' in p_args and p_args.output
   stdout_only = 'stdout' in p_args and p_args.stdout
+  shell = data.get('docker_shell','bash' if rest else 'bash -il')
   if not isinstance(shell,list):
     shell = str(shell).split(' ')
 
@@ -109,7 +109,7 @@ def ssh_command(
   clean = log_level == LogLevel.NONE or need_output
   ssh_log_level = 'ERROR' if log.VERBOSE < 2 or clean else 'INFO'
   c_args = ['ssh','-o','UserKnownHostsFile=/dev/null','-o','StrictHostKeyChecking=no','-o',f'LogLevel={ssh_log_level}']
-  if log.VERBOSE >= 2:
+  if log.VERBOSE >= 2 and not clean:
     c_args.append('-' + 'v' * log.VERBOSE)
 
   if data.netlab_ssh_args:
