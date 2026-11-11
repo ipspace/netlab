@@ -129,4 +129,4 @@ class SROS(_Quirks):
     vxlan_vtep(node)
   
   def check_config_sw(self, node: Box, topology: Box) -> None:
-    need_ansible_collection(node,'nokia.grpc',version='1.0.2')
+    need_ansible_collection(node,'nokia.openconfig',version='2.0.2',install='netlab install grpc')
