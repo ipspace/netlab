@@ -1,5 +1,5 @@
 #
-# Collect device configuration(s) with netmiko
+# Collect device configuration(s) with 'netlab connect' commands
 #
 
 import typing
@@ -20,18 +20,18 @@ def collect(node: str, output: str, suffix: str, topology: Box) -> typing.Option
   """
   n_data = topology.nodes[node]
   features = a_devices.get_device_features(n_data,topology.defaults)
-  nm_collect = features.get('command.collect',None)
-  if not nm_collect:                              # No netmiko-based config collection?
+  cm_collect = features.get('command.collect',None)
+  if not cm_collect:                              # No command-based config collection?
     return None                                   # ... move on
 
   try:
-    for action,cmd in nm_collect.items():         # Collect all requested configs
+    for action,cmd in cm_collect.items():         # Collect all requested configs
       if action.startswith('_'):                  # ... elements starting with underscore are cleanup parameters
         continue
 
       result = connect.connect_to_node(
                   node=node,
-                  args=Namespace(quiet=True,output=True,show=None,verbose=False,stdout=True),
+                  args=Namespace(quiet=True,output=True,show=None,verbose=False,stdout=True,timeout=60),
                   rest=[cmd],
                   topology=topology,
                   log_level=connect.LogLevel.NONE)
@@ -49,7 +49,7 @@ def collect(node: str, output: str, suffix: str, topology: Box) -> typing.Option
       if not isinstance(result,str):              # If we got back anything but a string, we have no idea what to do
         return None
 
-      stdout = c_utils.cleanup(result,action,nm_collect)
+      stdout = c_utils.cleanup(result,action,cm_collect)
       c_utils.save_config(                        # ... and save the collected string
         filename=node + suffix if action == 'config' else f'{node}-{action}',
         directory=output,
@@ -58,5 +58,9 @@ def collect(node: str, output: str, suffix: str, topology: Box) -> typing.Option
     return True
 
   except Exception as ex:
-    log.error(f'Failed to collect device configuration from {node}: {ex}',skip_header=True)
+    log.error(
+      f'Failed to collect device configuration from {node}: {ex}',
+      category=log.ErrorAbort,
+      skip_header=True,
+      module='collect')
     return False
