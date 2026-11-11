@@ -59,7 +59,6 @@ def docker_connect(
       rest: typing.List[str],
       log_level: LogLevel = LogLevel.INFO) -> typing.Union[bool,int,str]:
   host = data.ansible_host or data.host
-
   need_output = 'output' in p_args and p_args.output
   stdout_only = 'stdout' in p_args and p_args.stdout
   shell = data.get('docker_shell','bash' if rest else 'bash -il')
@@ -150,7 +149,6 @@ def ssh_command(
     sys.stderr.write(f'Executing: {" ".join(c_args)}\n')
 
   sys.stderr.flush()
-  need_output = 'output' in p_args and p_args.output
   status = run_command(c_args,check_result=need_output,return_stdout=need_output,ignore_errors=True,timeout=timeout)
   if not need_output or status is False:
     return status
@@ -185,7 +183,7 @@ def ssh_netmiko(
   if log.debug_active('netmiko'):
     print(f'Netmiko arguments: {nm_args}')
 
-  if log_level != LogLevel.NONE:
+  if not quiet:
     exec_args = f', executing {cmd}'
     sys.stderr.write(f"Connecting to {nm_args['host']} using SSH port {data.ansible_port or 22}{exec_args}\n")
   conn = netmiko.connect(data,nm_args,quiet,enable=False)

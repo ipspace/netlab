@@ -26,7 +26,7 @@ from .. import (
   set_dry_run,
 )
 from ..initial import utils as i_utils
-from . import netmiko
+from . import command, netmiko
 from . import utils as c_utils
 
 
@@ -76,7 +76,8 @@ def collect_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, ty
   return parser.parse_known_args(args)
 
 INTERNAL_DISPATCH: dict = {
-  'netmiko': netmiko.collect
+  'netmiko': netmiko.collect,
+  'command': command.collect,
 }
 
 def run_internal(args: argparse.Namespace, topology: Box, output_path: str, nodeset: list, skip_list: list) -> int:
