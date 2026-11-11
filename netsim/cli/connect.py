@@ -162,8 +162,8 @@ def ssh_netmiko(
 
   from ..utils import netmiko
   timeout = p_args.timeout if 'timeout' in p_args else None
-  nm_args = netmiko.prepare_params(data,topology,log_level < LogLevel.INFO)
   quiet = log_level < LogLevel.INFO
+  nm_args = netmiko.prepare_params(data,topology,quiet)
   if not nm_args:
     return False
 
