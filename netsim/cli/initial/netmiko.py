@@ -34,7 +34,7 @@ def deploy(n_data: Box,topology: Box,n_deploy: list) -> None:
   session_log = netmiko_params["session_log"]
   features = a_devices.get_device_features(n_data,topology.defaults)
 
-  netmiko_delay = features.get('netmiko.delay',None)
+  netmiko_delay = features.get('netmiko.config.delay',None)
   if netmiko_delay:
     time.sleep(netmiko_delay)
 
@@ -55,7 +55,7 @@ def deploy(n_data: Box,topology: Box,n_deploy: list) -> None:
       log.info(f'Sent {cfg_item} configuration to {n_data.name}',module='netmiko')
       if _netmiko.has_commit(net_connect):
         cfg_result += net_connect.commit()
-      if features.get('netmiko.step_config',False):
+      if features.get('netmiko.config.always_exit',False):
         cfg_result += net_connect.exit_config_mode()
       if log.debug_active('netmiko'):
         print(f'Config {cfg_item} on {n_data.name}:\n{cfg_result}')

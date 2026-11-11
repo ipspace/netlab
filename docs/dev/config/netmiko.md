@@ -95,8 +95,8 @@ The *netmiko* configuration method uses the following device features (specified
 |---------|------|---------|
 | **device_type** | string | *netmiko* device type (mandatory). See [netmiko documentation](https://github.com/ktbyers/netmiko/blob/develop/PLATFORMS.md) for the list of supported values |
 | **error_regexp** | string or list | Regular expression(s) used to detect errors in the device responses to configuration commands. A list of regular expressions is combined into a single regular expression matching any of them |
-| **delay** | int | Delay (in seconds) between establishing the SSH session and sending the first configuration snippet |
-| **step_config** | bool | Exit the configuration mode after every configuration snippet |
+| **config.delay** | int | Delay (in seconds) between establishing the SSH session and sending the first configuration snippet |
+| **config.always_exit** | bool | Exit the configuration mode after every configuration snippet |
 | **collect** | dict | Commands used to collect device configuration(s) with the **netlab collect** command (see [](dev-config-netmiko-collect)) |
 | **reload** | dict | Parameters used to reload saved device configurations with the **netlab config --reload** command (see [](dev-config-netmiko-reload)) |
 | **ssh_ready.command** | string | Command used in the *netmiko*-based SSH readiness check (see [](dev-config-netmiko-ssh-ready)) |
@@ -187,10 +187,10 @@ The configuration deployment process is implemented in the **netsim.cli.initial.
 _netlab_ uses this procedure to deploy configuration snippets with *netmiko*:
 
 * Opens an SSH session to the device using **netmiko.ConnectHandler** and executes the **enable** command (using **ansible_become_password** as the *enable secret*)
-* Waits for the **features.netmiko.delay** seconds (when specified)
+* Waits for the **features.netmiko.config.delay** seconds (when specified)
 * Executes the **send_config_from_file** function for every configuration snippet, using the **features.netmiko.error_regexp** regular expression to detect configuration errors.
 * Executes the **commit** command when the *netmiko* device driver supports it (for example, on Cisco IOS XR)
-* Exits the configuration mode when the **features.netmiko.step_config** device feature is set.
+* Exits the configuration mode when the **features.netmiko.config.always_exit** device feature is set.
 * Resets the base prompt after the **normalize** or **initial** configuration (the initial device configuration usually changes the device hostname)
 
 The configuration deployment stops on the first configuration error, and the remaining configuration snippets are not deployed. _netlab_ displays the error message (including the text matched by the **error_regexp** expression) and the name of the session log file.
