@@ -61,11 +61,13 @@ def docker_connect(
   host = data.ansible_host or data.host
 
   shell = data.get('docker_shell','bash' if rest else 'bash -il')
+  need_output = 'output' in p_args and p_args.output
+  stdout_only = 'stdout' in p_args and p_args.stdout
   if not isinstance(shell,list):
     shell = str(shell).split(' ')
 
   c_args = [ 'docker','exec' ]
-  if sys.__stdin__ is not None and sys.__stdin__.isatty():
+  if sys.__stdin__ is not None and sys.__stdin__.isatty() and not need_output:
     c_args += [ '-it']
   c_args += [ host ] + shell
 
@@ -87,12 +89,11 @@ def docker_connect(
   sys.stdout.flush()
   sys.stderr.flush()
 
-  need_output = 'output' in p_args and p_args.output
   timeout = p_args.timeout if 'timeout' in p_args else None
   status = run_command(c_args,check_result=need_output,return_stdout=need_output,ignore_errors=True,timeout=timeout)
   if not need_output or status is False:
     return status
-  return get_combined_output()
+  return get_combined_output(stdout_only)
 
 def ssh_command(
       data: Box,
@@ -103,7 +104,10 @@ def ssh_command(
   Runs "ssh" to execute a single command or connect to a lab device
   """
   host = data.ansible_host or data.host
-  ssh_log_level = 'ERROR' if log.VERBOSE < 2 else 'INFO'
+  need_output = 'output' in p_args and p_args.output
+  stdout_only = 'stdout' in p_args and p_args.stdout
+  clean = log_level == LogLevel.NONE or need_output
+  ssh_log_level = 'ERROR' if log.VERBOSE < 2 or clean else 'INFO'
   c_args = ['ssh','-o','UserKnownHostsFile=/dev/null','-o','StrictHostKeyChecking=no','-o',f'LogLevel={ssh_log_level}']
   if log.VERBOSE >= 2:
     c_args.append('-' + 'v' * log.VERBOSE)
@@ -150,7 +154,7 @@ def ssh_command(
   status = run_command(c_args,check_result=need_output,return_stdout=need_output,ignore_errors=True,timeout=timeout)
   if not need_output or status is False:
     return status
-  return get_combined_output()
+  return get_combined_output(stdout_only)
 
 def ssh_netmiko(
       data: Box,
@@ -172,6 +176,7 @@ def ssh_netmiko(
 
   cmd = ' '.join(rest)
   need_output = 'output' in p_args and p_args.output
+  stdout_only = 'stdout' in p_args and p_args.stdout
 
   if log_level == LogLevel.DRY_RUN:
     print(f"DRY RUN: netmiko would execute {cmd}")
@@ -194,7 +199,7 @@ def ssh_netmiko(
         (stdout,stderr,rc) = result
         output = (stderr.strip() + "\n" if stderr else "") + stdout.strip()
         if need_output:
-          return output if not rc else False
+          return False if rc else stdout.strip() if stdout_only else output
         print(output)
         if log.VERBOSE and rc:
           log.info(f'Command returned error code {rc}')
