@@ -8,6 +8,8 @@ import sys
 import typing
 from enum import IntEnum
 
+from ..augment import devices as a_devices
+from ..data.global_vars import get_topology
 from .external_commands import get_combined_output, run_command
 
 
@@ -92,11 +94,14 @@ def docker_connect(
     return status
   return get_combined_output()
 
-def ssh_connect(
+def ssh_command(
       data: Box,
       p_args: argparse.Namespace,
       rest: typing.List[str],
       log_level: LogLevel = LogLevel.INFO) -> typing.Union[bool,int,str]:
+  """
+  Runs "ssh" to execute a single command or connect to a lab device
+  """
   host = data.ansible_host or data.host
   ssh_log_level = 'ERROR' if log.VERBOSE < 2 else 'INFO'
   c_args = ['ssh','-o','UserKnownHostsFile=/dev/null','-o','StrictHostKeyChecking=no','-o',f'LogLevel={ssh_log_level}']
@@ -147,6 +152,88 @@ def ssh_connect(
     return status
   return get_combined_output()
 
+def ssh_netmiko(
+      data: Box,
+      p_args: argparse.Namespace,
+      rest: typing.List[str],
+      log_level: LogLevel,
+      features: Box,
+      topology: Box) -> typing.Union[bool,int,str]:
+
+  from ..utils import netmiko
+  timeout = p_args.timeout if 'timeout' in p_args else None
+  quiet = log_level < LogLevel.INFO
+  nm_args = netmiko.prepare_params(data,topology,quiet)
+  if not nm_args:
+    return False
+
+  if timeout:
+    netmiko.set_param_timeout(nm_args,timeout)
+
+  cmd = ' '.join(rest)
+  need_output = 'output' in p_args and p_args.output
+
+  if log_level == LogLevel.DRY_RUN:
+    print(f"DRY RUN: netmiko would execute {cmd}")
+    return True
+
+  if log.debug_active('netmiko'):
+    print(f'Netmiko arguments: {nm_args}')
+
+  if log_level != LogLevel.NONE:
+    exec_args = f', executing {cmd}'
+    sys.stderr.write(f"Connecting to {nm_args['host']} using SSH port {data.ansible_port or 22}{exec_args}\n")
+  conn = netmiko.connect(data,nm_args,quiet,enable=False)
+  if not conn:
+    return False
+
+  try:
+    if features.get('netmiko.execute') == 'rce':
+      result = netmiko.execute(conn,data.name,cmd,quiet)
+      if result:
+        (stdout,stderr,rc) = result
+        output = (stderr.strip() + "\n" if stderr else "") + stdout.strip()
+        if need_output:
+          return output if not rc else False
+        print(output)
+        if log.VERBOSE and rc:
+          log.info(f'Command returned error code {rc}')
+        return rc or True
+    else:
+      result = conn.send_command(cmd)
+      if need_output:
+        return result
+      else:
+        print(result)
+        return True
+  except Exception as ex:
+    if not quiet:
+      log.error(f'Cannot execute command on {data.name}: {str(ex)}',module='netmiko')
+    return False
+  finally:
+    conn.disconnect()
+
+  return False
+
+def ssh_connect(
+      data: Box,
+      p_args: argparse.Namespace,
+      rest: typing.List[str],
+      log_level: LogLevel = LogLevel.INFO) -> typing.Union[bool,int,str]:
+  """
+  Connect to a lab device via SSH. Can use SSH command or netmiko
+  """
+  topology = get_topology()
+  if topology is not None and rest:
+    n_data = data + { 'name': data.host }
+    features = a_devices.get_device_features(n_data,topology.defaults)
+    if 'netmiko' in features and 'ansible_ssh_private_key_file' not in n_data:
+      from ..utils import netmiko
+      if not netmiko.NETMIKO_IS_MISSING:
+        return ssh_netmiko(n_data,p_args,rest,log_level,features,topology)
+
+  return ssh_command(data,p_args,rest,log_level)
+
 def quote_list(args: list) -> list:
   return [ f'"{arg}"' if " " in arg else arg for arg in args ]
 
@@ -186,12 +273,14 @@ def connect_to_node(
       rest: list,
       topology: Box,
       log_level: LogLevel = LogLevel.INFO) -> typing.Union[bool,int,str]:
-  
+
+  node_data = topology.nodes[node]
   host_data = outputs_common.adjust_inventory_host(
-                node=topology.nodes[node],
+                node=node_data,
                 defaults=topology.defaults,
                 group_vars=True)
   host_data.host = node
+  host_data.device = node_data.device
   connection = host_data.netlab_console_connection or host_data.ansible_connection
 
   rest = create_command_list(host_data,args,rest)

@@ -96,9 +96,20 @@ def prepare_params(n_data: Box, topology: Box, quiet: bool = False) -> typing.Op
     print(f'Netmiko params for {n_data.name}: {netmiko_params}')
   return netmiko_params
 
+def set_param_timeout(params: dict, timeout: int) -> None:
+  """
+  Sets all known netmiko timeouts in the netmiko parameters dictionary
+  """
+  for kw in ('conn_timeout','banner_timeout','auth_timeout','read_timeout_override'):
+    params[kw] = timeout
+
 PARAMIKO_LOGGER: typing.Optional[logging.Logger] = None
 
-def connect(n_data: Box, netmiko_params: dict, quiet: bool = False) -> 'typing.Optional[_netmiko.BaseConnection]':
+def connect(
+      n_data: Box,
+      netmiko_params: dict,
+      quiet: bool = False,
+      enable: bool = True) -> 'typing.Optional[_netmiko.BaseConnection]':
   """
   Use netmiko to open a SSH session to a lab device
   """
@@ -115,7 +126,8 @@ def connect(n_data: Box, netmiko_params: dict, quiet: bool = False) -> 'typing.O
     net_connect = _netmiko.ConnectHandler(**netmiko_params)
     if log.VERBOSE:
       log.info(f'Connected to {n_data.name}',module='netmiko')
-    net_connect.enable()
+    if enable:
+      net_connect.enable()
   except Exception as ex:
     err = str(ex).strip("\n")
     if not quiet:
@@ -138,6 +150,10 @@ def has_commit(conn: '_netmiko.BaseConnection') -> bool:
   return inspect.getattr_static(conn,'commit') is not _netmiko.BaseConnection.commit
 
 def scp(conn: '_netmiko.BaseConnection', n_name: str, src: str, dst: str) -> bool:
+  """
+  Use SCP to copy a file to a lab device. The SCP connection is a separate channel
+  established off an existing netmiko connection.
+  """
   import scp  # type: ignore
   if log.VERBOSE:
     print(f"netmiko SCP: {src} -> {n_name}:{dst}")
@@ -156,6 +172,9 @@ def scp(conn: '_netmiko.BaseConnection', n_name: str, src: str, dst: str) -> boo
   return False
 
 def file_transfer(conn: '_netmiko.BaseConnection', n_name: str, src: str, dst: str) -> bool:
+  """
+  Use netmiko file_transfer function to copy a file to a lab device
+  """
   if log.VERBOSE:
     print(f"netmiko file_transfer: {src} -> {n_name}:{dst}")
   if ':' in dst:
@@ -177,3 +196,42 @@ def file_transfer(conn: '_netmiko.BaseConnection', n_name: str, src: str, dst: s
       more_data=str(ex),module='netmiko',skip_header=True,category=log.ErrorAbort)
 
   return False
+
+def execute(
+      conn: '_netmiko.BaseConnection',
+      n_name: str,
+      cmd: str,
+      quiet: bool = False) -> typing.Optional[typing.Tuple]:
+  """
+  Executes a single command over a new SSH (RCE) channel. Returns (stdout,stderr,rc)
+  after successful command execution and None after a netmiko error
+  """
+  if not conn.remote_conn_pre:
+    raise Exception("netmiko connection data is missing")
+  try:
+    stdin, stdout, stderr = conn.remote_conn_pre.exec_command(cmd)
+  except Exception as ex:
+    if not quiet:
+      log.error(
+        f'Cannot execute a SSH command on {n_name}: {str(ex)}',
+        module='netmiko',
+        skip_header=True)
+    return None
+
+  try:
+    output = stdout.read().decode()
+    errors = stderr.read().decode()
+    rc = stdout.channel.recv_exit_status()
+    return (output, errors, rc)
+  except Exception as ex:
+    if not quiet:
+      log.error(
+        f'Cannot fetch results of a SSH command on {n_name}: {str(ex)}',
+        module='netmiko',
+        skip_header=True)
+    return None
+  finally:
+    stdout.channel.close()
+    stdin.close()
+    stdout.close()
+    stderr.close()

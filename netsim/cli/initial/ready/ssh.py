@@ -85,8 +85,7 @@ def setup_ssh_ready_parameters(nodeset: list, topology: Box) -> None:
     elif features.get('netmiko.device_type',None):
       params = netmiko.prepare_params(n_data,topology,quiet=True)
       if params:                                            # Use netmiko only if we know it works
-        for kw in ('conn_timeout','banner_timeout','auth_timeout','read_timeout_override'):
-          params[kw] = r_data.delay                         # Adjust all known netmiko timeouts
+        netmiko.set_param_timeout(params,r_data.delay)      # Adjust all known netmiko timeouts
         r_data.netmiko_params = params
         r_data.netmiko_command = get_show_command(n_data,netmiko=True)
     r_data.ssh_exec = build_ssh_command(n_data)             # Get the SSH command to execute
