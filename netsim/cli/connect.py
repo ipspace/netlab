@@ -182,17 +182,18 @@ def ssh_netmiko(
   if log_level != LogLevel.NONE:
     exec_args = f', executing {cmd}'
     sys.stderr.write(f"Connecting to {nm_args['host']} using SSH port {data.ansible_port or 22}{exec_args}\n")
+  conn = netmiko.connect(data,nm_args,log_level < LogLevel.INFO)
+  if not conn:
+    return False
+
   try:
-    conn = netmiko.connect(data,nm_args,log_level < LogLevel.INFO)
-    if not conn:
-      return False
     if features.get('netmiko.execute') == 'rce':
       result = netmiko.execute(conn,data.name,cmd)
       if result:
         (stdout,stderr,rc) = result
         output = (stderr.strip() + "\n" if stderr else "") + stdout.strip()
         if need_output:
-          return output
+          return output if not rc else False
         print(output)
         if log.VERBOSE and rc:
           log.info(f'Command returned error code {rc}')
@@ -208,6 +209,8 @@ def ssh_netmiko(
     if log_level >= LogLevel.INFO:
       log.error(f'Cannot execute command on {data.name}: {str(ex)}',module='netmiko')
     return False
+  finally:
+    conn.disconnect()
 
   return False
 
@@ -223,8 +226,10 @@ def ssh_connect(
   if topology is not None and rest:
     n_data = data + { 'name': data.host }
     features = a_devices.get_device_features(n_data,topology.defaults)
-    if 'netmiko' in features:
-      return ssh_netmiko(n_data,p_args,rest,log_level,features,topology)
+    if 'netmiko' in features and 'ansible_ssh_private_key_file' not in n_data:
+      from ..utils import netmiko
+      if not netmiko.NETMIKO_IS_MISSING:
+        return ssh_netmiko(n_data,p_args,rest,log_level,features,topology)
 
   return ssh_command(data,p_args,rest,log_level)
 

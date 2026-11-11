@@ -45,8 +45,7 @@ def check_netmiko(n_data: Box) -> bool:
 NETMIKO_GROUP_VARS: dict = {
   'ansible_user': 'username',
   'ansible_ssh_pass': 'password',
-  'ansible_become_password': '*secret',
-  'ansible_port': '*port'
+  'ansible_become_password': '*secret'
 }
 
 NETMIKO_PARAM_FEATURES: list = ['device_type']
