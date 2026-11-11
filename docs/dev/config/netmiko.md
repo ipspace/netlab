@@ -286,7 +286,7 @@ The **netlab connect** command (implemented in the **netsim.cli.connect** module
 * The node does not use SSH key authentication (the **ansible_ssh_private_key_file** variable is not set)
 * The *netmiko* library is installed, and _netlab_ can prepare the *netmiko* connection parameters
 
-In all other cases (including interactive SSH sessions started with **netlab connect** without a command), _netlab_ executes the `ssh` command, prefixed with `sshpass` when the node uses password authentication (the **ansible_ssh_pass** variable is set). **netlab connect** checks whether `sshpass` is installed before executing the `ssh` command and aborts with a *missing dependency* error if it's not (the check is implemented in the **check_sshpass** function in the **netsim.utils.ssh** module).
+In all other SSH cases (including interactive SSH sessions started with **netlab connect** without a command), _netlab_ executes the `ssh` command, prefixed with `sshpass` when the node uses password authentication (the **ansible_ssh_pass** variable is set). Nodes using **docker exec** are handled by the `docker_connect` function instead. **netlab connect** checks whether `sshpass` is installed before executing the `ssh` command and aborts with a *missing dependency* error if it's not (the check is implemented in the **check_sshpass** function in the **netsim.utils.ssh** module).
 
 The *netmiko* SSH session used by **netlab connect** does not execute the **enable** command. The command is executed with:
 
