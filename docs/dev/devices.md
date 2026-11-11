@@ -291,7 +291,7 @@ _netlab_ assumes you're using Jinja2-based device configuration templates. Add e
 * **Daemon configuration files** (Linux-based containers): you'll have to create Jinja2 templates that will generate configuration files for your Linux-based daemon. Those files will be mapped into the target container and available when the container starts. [More details...](dev-config-daemon)
 * **Linux configuration scripts** (Linux-based containers): you'll have to create Jinja2 templates that will generate `sh` scripts that will configure your device. Those files will be mapped into the target container and executed during the **netlab initial** process. [More details...](dev-config-script)
 
-You might also want to implement configuration download to allow the lab users to save final device configurations with **collect-configs.ansible** playbook used by **[netlab collect](../netlab/collect.md)** command -- add a task list collecting the device configuration into the `netsim/ansible/tasks/fetch-config` directory.
+You might also want to implement configuration download to allow the lab users to save final device configurations with **collect-configs.ansible** playbook used by **[netlab collect](../netlab/collect.md)** command -- add a task list collecting the device configuration into the `netsim/ansible/tasks/fetch-config` directory. Alternatively, use the **features.netmiko.collect** or **features.command.collect** device feature to collect the device configuration without an Ansible playbook ([more details](dev-config-netmiko-collect)).
 
 ## Initial Device Configuration
 

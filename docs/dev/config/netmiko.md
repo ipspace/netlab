@@ -8,6 +8,7 @@ _netlab_ can also use *netmiko* to:
 * Check whether the device SSH server is ready (see [](dev-ready-ssh) and [](dev-config-netmiko-ssh-ready))
 * Collect device configurations with the **netlab collect** command (see [](dev-config-netmiko-collect))
 * Reload saved device configurations with the **netlab config --reload** command (see [](dev-config-netmiko-reload))
+* Execute single commands with the **netlab connect** command (see [](dev-config-netmiko-connect))
 
 This document describes how the *netmiko* configuration method works and which device settings you have to define to use it. The *netmiko* configuration method is currently available on these platforms:
 
@@ -101,6 +102,7 @@ The *netmiko* configuration method uses the following device features (specified
 | **reload** | dict | Parameters used to reload saved device configurations with the **netlab config --reload** command (see [](dev-config-netmiko-reload)) |
 | **ssh_ready.command** | string | Command used in the *netmiko*-based SSH readiness check (see [](dev-config-netmiko-ssh-ready)) |
 | **required** | bool | The device cannot be used without the *netmiko* library (see [](dev-config-netmiko-missing)) |
+| **execute** | string | Method used to execute single commands with **netlab connect**. Set it to `rce` to use SSH remote command execution instead of the *netmiko* **send_command** function (see [](dev-config-netmiko-connect)) |
 
 The *netmiko* connection parameters are derived from these Ansible group variables (they could be set as device **group_vars** or as node parameters):
 
@@ -274,12 +276,33 @@ The *netmiko*-based SSH check executes the **features.netmiko.ssh_ready.command*
 
 If the *netmiko* library is missing and the device has the **features.netmiko.required** feature, the SSH readiness check reports an error.
 
+(dev-config-netmiko-connect)=
+## Executing Commands with netlab connect
+
+The **netlab connect** command (implemented in the **netsim.cli.connect** module) uses *netmiko* to execute a single command on a lab device (for example, `netlab connect r1 show version`) when:
+
+* The node uses an SSH connection (not **docker exec**)
+* The device settings contain the **features.netmiko** dictionary
+* The node does not use SSH key authentication (the **ansible_ssh_private_key_file** variable is not set)
+* The *netmiko* library is installed, and _netlab_ can prepare the *netmiko* connection parameters
+
+In all other cases (including interactive SSH sessions started with **netlab connect** without a command), _netlab_ executes the `ssh` command, prefixed with `sshpass` when the node uses password authentication (the **ansible_ssh_pass** variable is set). **netlab connect** checks whether `sshpass` is installed before executing the `ssh` command and aborts with a *missing dependency* error if it's not (the check is implemented in the **check_sshpass** function in the **netsim.utils.ssh** module).
+
+The *netmiko* SSH session used by **netlab connect** does not execute the **enable** command. The command is executed with:
+
+* The *netmiko* **send_command** function. Use this method for devices with SSH implementations that do not support remote command execution.
+* SSH remote command execution (the **execute** function in the **netsim.utils.netmiko** module) when the **features.netmiko.execute** device feature is set to `rce`. This method opens a new SSH channel within the *netmiko* SSH session and executes the command with the *paramiko* **exec_command** function. It returns separate stdout and stderr printouts and the command exit status; **netlab connect** returns an error when the exit status is not zero. Arista EOS uses this method.
+
+The **timeout** parameter of the **netlab connect** command sets all *netmiko* timeouts (the **set_param_timeout** function in the **netsim.utils.netmiko** module). Use the **--debug netmiko** CLI parameter to display the *netmiko* connection parameters.
+
+The **netlab connect** code is also used by the [command readiness check](dev-ready-command) and the [command-based configuration collection](dev-config-collect-command). These callers request the command printout instead of displaying it, and can request just the stdout part of the printout (the **stdout** parameter of the **connect_to_node** function).
+
 (dev-config-netmiko-collect)=
 ## Collecting Device Configurations
 
-The **netlab collect** command tries to collect device configurations with internal collection methods (currently only *netmiko*) before falling back to the **collect-configs.ansible** Ansible playbook. The internal collection is implemented in the **netsim.cli.collect** module (the *netmiko*-specific code is in the **netsim.cli.collect.netmiko** module) and works like this:
+The **netlab collect** command tries to collect device configurations with internal collection methods (*netmiko* and **netlab connect** commands) before falling back to the **collect-configs.ansible** Ansible playbook. The internal collection is implemented in the **netsim.cli.collect** module (the *netmiko*-specific code is in the **netsim.cli.collect.netmiko** module, and the command-based code is in the **netsim.cli.collect.command** module) and works like this:
 
-* **netlab collect** starts a separate collection thread for every collectable node and tries all internal collection methods (listed in the **INTERNAL_DISPATCH** dictionary) for that node.
+* **netlab collect** starts a separate collection thread for every collectable node and tries the internal collection methods (listed in the **INTERNAL_DISPATCH** dictionary) for that node in sequence (*netmiko* first, then **netlab connect** commands), until one of them returns a value other than `None`.
 * A collection method returns `None` when it cannot be used with the node, `True` when it collected the device configuration, and `False` when the collection failed.
 * Nodes for which an internal collection method returned `True` or `False` are added to the Ansible skip list and are not processed by the **collect-configs.ansible** playbook.
 * The Ansible playbook is executed only when there are nodes left whose configurations have not been collected with an internal method. If some configurations were already collected with an internal method, **netlab collect** displays an extra section header before starting the Ansible playbook.
@@ -310,6 +333,36 @@ To add *netmiko*-based configuration collection to a device that already support
 * Run the `tests/integration/initial/x-91-collect.yml` integration test, and compare the collected configuration (in the `config` directory) with the configuration collected with the Ansible playbook. Add the `_config_skip` and `_config_clean` parameters to remove the unwanted lines.
 * Make sure the collected configuration can be used with the **netlab up --reload-config** command.
 
+(dev-config-collect-command)=
+### Collecting Configurations with netlab connect Commands
+
+Some devices (for example, FRR containers or virtual machines) do not need *netmiko* or an Ansible playbook to collect their configuration; it's enough to execute a few commands over their regular **docker exec** or SSH connection. These devices use the **features.command.collect** dictionary, which has the same structure as the **features.netmiko.collect** dictionary (including the `_<name>_skip` and `_<name>_clean` cleanup parameters).
+
+The command-based collection method:
+
+* Is used only when the *netmiko* collection method returns `None` (for example, when the device has no **features.netmiko.collect** dictionary)
+* Executes every command with the **netlab connect** code (see [](dev-config-netmiko-connect)) and a 60-second timeout. The connection method (**docker exec** or SSH) is selected with the **netlab_console_connection** or **ansible_connection** group variable, and only the command stdout is used.
+* Reports an error (and returns `None`) when a command fails, skips the configurations with empty printouts, and saves the cleaned-up printouts into the output directory using the same file names as the *netmiko* collection method.
+
+As the commands are executed with **netlab connect**, you might have to use different commands (or cleanup parameters) for different virtualization providers. For example, FRR uses the **vtysh** command in containers, and has to use **sudo** (and skip the first few lines of the printout) in virtual machines:
+
+**FRR** (`frr.yml`):
+
+```
+clab:
+  features:
+    command:
+      collect:
+        config: vtysh -c "show running"
+        daemons: cat /etc/frr/daemons
+features:
+  command:
+    collect:
+      config: sudo vtysh -c "show running"
+      _config_skip: 4
+      daemons: sudo cat /etc/frr/daemons
+```
+
 ## Troubleshooting
 
 * *netmiko* writes the log of all SSH session interactions to `node_files/_nodename_/netmiko.log`
@@ -331,6 +384,6 @@ The `tests/config` directory contains topologies that can be used to test the er
 * Start the lab with `netlab up ios-netmiko.yml`
 * Execute `netlab config invalid` to deploy an invalid configuration command; the configuration deployment should fail.
 
-The `tests/integration/initial/x-91-collect.yml` integration test executes the **netlab collect** command instead of the validation step. Use it to test the *netmiko*-based configuration collection.
+The `tests/integration/initial/x-91-collect.yml` integration test executes the **netlab collect** command instead of the validation step. Use it to test the *netmiko*-based and command-based configuration collection.
 
 The `tests/integration/initial/10-reload.yml` integration test saves the device configurations, restarts the lab, and reloads the saved configurations. Use it to test the *netmiko*-based configuration reload.

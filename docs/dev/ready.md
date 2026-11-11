@@ -126,7 +126,7 @@ The **ssh** step waits until *netlab* can log into the device using SSH and exec
 
 * *netlab* uses *netmiko* to connect to the device and execute the command when the *netmiko* library is installed and the device has the **netmiko.device_type** feature (see [](dev-config-netmiko-ssh-ready) for details). All *netmiko* timeouts are set to **netlab_check_delay**. The command executed with *netmiko* can be changed with the **netmiko.ssh_ready.command** device feature.
 * Devices that cannot be checked with the `ssh` command (for example, Extreme VOSS) set the **netmiko.required** device feature; the SSH check reports an error on those devices when the *netmiko* library is missing.
-* Otherwise, *netlab* executes the `ssh` command (prefixed with `sshpass` when the **ansible_ssh_pass** variable is set) with a **netlab_check_delay** timeout.
+* Otherwise, *netlab* executes the `ssh` command (prefixed with `sshpass` when the **ansible_ssh_pass** variable is set) with a **netlab_check_delay** timeout. *netlab* checks whether `sshpass` is installed (using the **check_sshpass** function from the **netsim.utils.ssh** module) and aborts with a *missing dependency* error if it's not.
 * Both methods connect to the node management IPv4 address (or IPv6 address if the node has no IPv4 management address) using the **ansible_user** username. The SSH check fails if the node has no management IP address.
 * The check is retried (once per second) until it succeeds or the [maximum wait time](dev-ready-timing) expires.
 * The maximum wait time is increased to **defaults.providers._provider_.ssh_timeout** if that value is set and larger than the computed wait time.
