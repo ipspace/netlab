@@ -8,6 +8,7 @@ import os
 import typing
 
 from box import Box
+from packaging import version as _pv
 
 from ..data.global_vars import get_topology
 from ..utils import log
@@ -132,8 +133,11 @@ def need_ansible_collection(
   if cdata is not None:
     if version is None:
       return True
-    if cdata.get('version','0') >= version:
-      return True
+    try:                                      # Use semantic version comparison (2.0.10 > 2.0.2)
+      if _pv.Version(str(cdata.get('version','0'))) >= _pv.Version(version):
+        return True
+    except _pv.InvalidVersion:                # Unparseable version (for example, '*') => report missing collection
+      pass
   
   if node.device in COLLECTION_WARNING:
     return False
