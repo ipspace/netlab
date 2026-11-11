@@ -20,7 +20,7 @@ class LogLevel(IntEnum):
 from box import Box
 
 from ..outputs import common as outputs_common
-from ..utils import log, strings, templates
+from ..utils import log, ssh, strings, templates
 from . import error_and_exit, external_commands, load_snapshot, parser_add_verbose, parser_lab_location, set_dry_run
 
 
@@ -129,6 +129,9 @@ def ssh_connect(
   if log_level == LogLevel.DRY_RUN:
     print(f"DRY RUN: {c_args}")
     return True
+
+  if data.ansible_ssh_pass:
+    ssh.check_sshpass(f'netlab connect needs "sshpass" to connect to {host} with a password')
 
   if log_level != LogLevel.NONE:
     exec_args = ', executing ' + ' '.join(rest) if rest else ''

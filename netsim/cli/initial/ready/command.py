@@ -10,9 +10,10 @@ from box import Box
 
 from ....augment import devices as a_devices
 from ....utils import log, strings
+from ....utils.ssh import check_sshpass
 from ... import error_and_exit
 from ...connect import LogLevel, connect_to_node
-from .utils import PRINT_LOCK, check_sshpass, set_timeouts, status_display
+from .utils import PRINT_LOCK, set_timeouts, status_display
 
 
 def setup_command_parameters(nodeset: list, topology: Box) -> None:
@@ -115,7 +116,7 @@ def device_command_ready(waitset: list, topology: Box) -> None:
     return
 
   if any(topology.nodes[n_name]._ready.command.sshpass for n_name in waitset):
-    check_sshpass()
+    check_sshpass('netlab initial needs "sshpass" to check SSH readiness of lab devices')
 
   poll_delay = min(topology.nodes[n_name]._ready.delay for n_name in waitset)
   start_time = time.time()

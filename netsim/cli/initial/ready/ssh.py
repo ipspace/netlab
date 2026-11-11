@@ -11,8 +11,9 @@ from box import Box
 
 from ....augment import devices as a_devices
 from ....utils import log, netmiko, strings
+from ....utils.ssh import check_sshpass
 from ... import error_and_exit
-from .utils import PRINT_LOCK, check_sshpass, set_timeouts, status_display
+from .utils import PRINT_LOCK, set_timeouts, status_display
 
 """
 Prepare for SSH readiness check -- copy timeouts and retry counters, check for "sshpass", set up the SSH command
@@ -179,7 +180,7 @@ def device_ssh_ready(waitset: list, topology: Box) -> None:
 
   # If at least one node cannot use netmiko, we must check for sshpass command
   if any('netmiko_command' not in topology.nodes[n_name]._ready for n_name in waitset):
-    check_sshpass()
+    check_sshpass('netlab initial needs "sshpass" to check SSH readiness of lab devices')
 
   start_time = time.time()
   stop_display = threading.Event()
