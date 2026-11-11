@@ -10,7 +10,6 @@ from box import Box
 
 from ....augment import devices as a_devices
 from ....utils import log, strings
-from ... import error_and_exit, external_commands
 
 PRINT_LOCK = threading.Lock()
 
@@ -30,16 +29,6 @@ def set_timeouts(n_data: Box, defaults: Box) -> Box:
   r_data.delay   = get_int_var_value(n_data,'netlab_check_delay',5,defaults)
   r_data.wait    = r_data.retries * r_data.delay
   return r_data
-
-def check_sshpass() -> None:
-  """
-  Check whether the "sshpass" command is available and abort otherwise
-  """
-  if not external_commands.has_command('sshpass'):
-    error_and_exit(
-      'sshpass command is not installed',
-      more_hints=['netlab initial needs "sshpass" to check SSH readiness of lab devices'],
-      category=log.MissingDependency)
 
 def status_display(
       devices_not_ready: typing.Callable[[],list],
