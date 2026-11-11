@@ -180,7 +180,7 @@ def device_ssh_ready(waitset: list, topology: Box) -> None:
 
   # If at least one node cannot use netmiko, we must check for sshpass command
   if any('netmiko_command' not in topology.nodes[n_name]._ready for n_name in waitset):
-    check_sshpass('netlab initial needs "sshpass" to check SSH readiness of lab devices',module='initial')
+    check_sshpass('netlab initial needs "sshpass" to check SSH readiness of lab devices')
 
   start_time = time.time()
   stop_display = threading.Event()

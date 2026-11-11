@@ -131,7 +131,7 @@ def ssh_connect(
     return True
 
   if data.ansible_ssh_pass:
-    ssh.check_sshpass(f'netlab connect needs "sshpass" to connect to {host} with a password',module='connect')
+    ssh.check_sshpass(f'netlab connect needs "sshpass" to connect to {host} with a password')
 
   if log_level != LogLevel.NONE:
     exec_args = ', executing ' + ' '.join(rest) if rest else ''

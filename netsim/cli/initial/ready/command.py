@@ -116,7 +116,7 @@ def device_command_ready(waitset: list, topology: Box) -> None:
     return
 
   if any(topology.nodes[n_name]._ready.command.sshpass for n_name in waitset):
-    check_sshpass('netlab initial needs "sshpass" to check SSH readiness of lab devices',module='initial')
+    check_sshpass('netlab initial needs "sshpass" to check SSH readiness of lab devices')
 
   poll_delay = min(topology.nodes[n_name]._ready.delay for n_name in waitset)
   start_time = time.time()
