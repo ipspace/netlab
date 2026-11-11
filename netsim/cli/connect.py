@@ -182,7 +182,7 @@ def ssh_netmiko(
   if log_level != LogLevel.NONE:
     exec_args = f', executing {cmd}'
     sys.stderr.write(f"Connecting to {nm_args['host']} using SSH port {data.ansible_port or 22}{exec_args}\n")
-  conn = netmiko.connect(data,nm_args,log_level < LogLevel.INFO)
+  conn = netmiko.connect(data,nm_args,log_level < LogLevel.INFO,enable=False)
   if not conn:
     return False
 

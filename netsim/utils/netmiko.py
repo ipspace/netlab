@@ -105,7 +105,11 @@ def set_param_timeout(params: dict, timeout: int) -> None:
 
 PARAMIKO_LOGGER: typing.Optional[logging.Logger] = None
 
-def connect(n_data: Box, netmiko_params: dict, quiet: bool = False) -> 'typing.Optional[_netmiko.BaseConnection]':
+def connect(
+      n_data: Box,
+      netmiko_params: dict,
+      quiet: bool = False,
+      enable: bool = True) -> 'typing.Optional[_netmiko.BaseConnection]':
   """
   Use netmiko to open a SSH session to a lab device
   """
@@ -122,7 +126,8 @@ def connect(n_data: Box, netmiko_params: dict, quiet: bool = False) -> 'typing.O
     net_connect = _netmiko.ConnectHandler(**netmiko_params)
     if log.VERBOSE:
       log.info(f'Connected to {n_data.name}',module='netmiko')
-    net_connect.enable()
+    if enable:
+      net_connect.enable()
   except Exception as ex:
     err = str(ex).strip("\n")
     if not quiet:
@@ -192,7 +197,15 @@ def file_transfer(conn: '_netmiko.BaseConnection', n_name: str, src: str, dst: s
 
   return False
 
-def execute(conn: '_netmiko.BaseConnection', n_name: str, cmd: str) -> typing.Optional[typing.Tuple]:
+def execute(
+      conn: '_netmiko.BaseConnection',
+      n_name: str,
+      cmd: str,
+      quiet: bool = False) -> typing.Optional[typing.Tuple]:
+  """
+  Executes a single command over a new SSH (RCE) channel. Returns stdout/stderr/rc
+  if None (after an error)
+  """
   if not conn.remote_conn_pre:
     raise Exception("netmiko connection data is missing")
   try:
@@ -203,17 +216,18 @@ def execute(conn: '_netmiko.BaseConnection', n_name: str, cmd: str) -> typing.Op
       module='netmiko',
       skip_header=True)
     return None
-  
+
   try:
     output = stdout.read().decode()
     errors = stderr.read().decode()
     rc = stdout.channel.recv_exit_status()
     return (output, errors, rc)
   except Exception as ex:
-    log.error(
-      f'Cannot fetch results of a SSH command on {n_name}: {str(ex)}',
-      module='netmiko',
-      skip_header=True)
+    if not quiet:
+      log.error(
+        f'Cannot fetch results of a SSH command on {n_name}: {str(ex)}',
+        module='netmiko',
+        skip_header=True)
     return None
   finally:
     stdout.channel.close()
