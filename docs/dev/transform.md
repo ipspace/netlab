@@ -20,11 +20,18 @@ The data transformation has three major steps:
 
 * Read topology file
 * Read customer and system [default settings](../defaults.md) (`topology-defaults.yml`) and [merge them](../defaults.md#deep-merging) with the topology file (`netsim.read_topology.load`)
+* Initialize the topology transformation (`netsim.augment.main.topology_init`):
+
+  * Check minimum _netlab_ version (`netsim.utils.versioning.check_topology_version`)
+  * Initialize global variables, adjust attribute lists, and expand search paths
+  * Adjust the nodes data structure: transform [list of strings](nodes-list-of-strings) into a dictionary with empty values (`netsim.augment.nodes.create_node_dict`)
+  * Validate component names and transform component nodes into dictionaries (`netsim.augment.components.normalize_components`)
+  * Add plugins required by active [external tools](extools-plugin) to the **plugin** list (`netsim.augment.tools.add_tool_plugins`)
+  * Initialize [plugin system](../plugins.md): load all plugins listed in the **plugin** top-level element (`netsim.augment.plugin.init`)
+  * Initialize device settings, including daemon- and child device inheritance (`netsim.augment.devices.augment_device_settings`)
+
 * Perform the basic sanity checks (`netsim.augment.topology.topology_sanity_check`)
-* Check minimum _netlab_ version (`netsim.utils.versioning.check_topology_version`)
-* Adjust the nodes data structure: transform [list of strings](nodes-list-of-strings) into a dictionary with empty values (`netsim.augment.nodes.create_node_dict`)
 * Check basic group data structures and auto-create nodes from group members (`augment.groups.precheck_groups`)
-* Initialize [plugin system](../plugins.md): load all plugins listed in the **plugin** top-level element (`netsim.augment.plugin.init`)
 * Initialize [node roles](node-router-host) subsystem
 * Execute plugin **topology_expand** hook (`netsim.augment.plugin.execute`) for plugins that augment lab topology structures (example: [](../plugins/fabric.md))
 

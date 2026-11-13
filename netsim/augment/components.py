@@ -15,14 +15,16 @@ from ..utils import log
 from . import links, nodes
 
 '''
-Validate topology components:
+Normalize topology components (called from topology_init before the plugins are loaded):
 
 * Component name must be an identifier
 * Component must be a dictionary
-* nodes element must be a valid node specification
-* links element must be a valid link list
+* nodes element must be a valid node specification (transformed into a dictionary)
 '''
-def validate_components(topology: Box) -> None:
+def normalize_components(topology: Box) -> None:
+  if not 'components' in topology:
+    return
+
   for cname in topology.components.keys():
     must_be_id(
       parent=None,
@@ -39,6 +41,16 @@ def validate_components(topology: Box) -> None:
 
     if 'nodes' in cdata:
       cdata.nodes = nodes.create_node_dict(cdata.nodes)
+
+  log.exit_on_error()
+
+'''
+Validate topology components:
+
+* links element must be a valid link list
+'''
+def validate_components(topology: Box) -> None:
+  for cname,cdata in topology.components.items():
     if 'links' in cdata:
       cdata.links = links.adjust_link_list(cdata.links,cdata.nodes,linkname_format=f'components.{cname}.links[{{link_cnt}}]')
 

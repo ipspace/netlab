@@ -13,9 +13,12 @@ from . import addressing
 """
 Initializing the topology transformation:
 
+* The topology/netlab version mismatch is checked
 * The global variables (stored in topology defaults) are initialized
 * The attribute lists are adjusted
 * The search paths are expanded into absolute paths and pruned
+* The nodes data structures (topology nodes and component nodes) are
+  transformed into dictionaries
 * Plugins required by active tools are added to the plugin list
 * Plugins are loaded
 * Device settings are initialized, including daemon- and child device
@@ -23,11 +26,19 @@ Initializing the topology transformation:
 
 Note that the plugins have to be loaded before the device settings are
 inherited, or we cannot specify the new features for generic devices.
+
+The version check has to be done first (a topology written for a newer
+netlab release might use an unsupported data structure), and the nodes
+(including component nodes) have to be in a dictionary before we start
+looking for plugins required by the lab topology.
 """
 def topology_init(topology: Box) -> None:
+  versioning.check_topology_version(topology)
   global_vars.init(topology)
   augment.config.attributes(topology)
   augment.config.paths(topology)
+  topology.nodes = augment.nodes.create_node_dict(topology.nodes)
+  augment.components.normalize_components(topology)
   augment.tools.add_tool_plugins(topology)
   augment.plugin.init(topology)
   augment.devices.augment_device_settings(topology)
@@ -35,8 +46,6 @@ def topology_init(topology: Box) -> None:
 def transform_setup(topology: Box) -> None:
   topology_init(topology)                                   # Initialize variables, load plugins
   augment.topology.topology_sanity_check(topology)          # Do the basic sanity check
-  versioning.check_topology_version(topology)               # Check topology/netlab version mismatch
-  topology.nodes = augment.nodes.create_node_dict(topology.nodes)
   augment.groups.precheck_groups(topology)                  # Do basic sanity checks on groups
   roles.init(topology)                                      # Initialize node roles
   augment.plugin.execute('topology_expand',topology)        # Topology-expanding plugins must be called before link checks
