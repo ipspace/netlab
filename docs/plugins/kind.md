@@ -12,15 +12,13 @@ The *kind* plugin implements a Kubernetes-in-Docker (KinD) cluster for *containe
 
 ## Using the Plugin
 
-* Add `plugin: [ kind ]` to lab topology.
-* Add a node with **device: kind** to the lab topology. The *kind* plugin will automatically create control-plane and worker nodes using the *kind-node* device.
+* Add a node with **device: kind** to the lab topology. _netlab_ loads the *kind* plugin, which will automatically create control-plane and worker nodes using the *kind-node* device.
 * Set the number of worker nodes in the cluster with the **kind.workers** node parameter. Without this parameter, the plugin deploys a single-node Kubernetes cluster
 
 For example, the following topology deploys a 3-node cluster with no external connectivity (the cluster is connected to the *kind* Docker network created by *containerlab*):
 
 ```
 provider: clab
-plugin: [ kind ]
 
 nodes:
   kc:

@@ -213,6 +213,26 @@ features:
   vxlan: true
 ```
 
+(dev-device-plugin)=
+### Device Plugins
+
+A device definition can specify one or more [plugins](../plugins.md) in its **plugin** attribute (a string or a list of strings). _netlab_ adds these plugins to the list of lab plugins whenever a lab topology uses the device. The plugins are found through the usual plugin search path and can modify any part of the lab topology.
+
+For example, the [KinD cluster](plugin-kind) device uses the following definition to load the `kind` plugin:
+
+```yaml
+description: Kubernetes in Docker (KinD) cluster
+parent: linux
+plugin: [ kind ]
+```
+
+**Notes:**
+
+* The **plugin** attribute is evaluated before the plugins are loaded and before the group parameters are copied into nodes. _netlab_ loads the plugins of devices specified in nodes, groups, and topology components, and the plugins of the default device (**defaults.device**) if at least one node does not have a **device** attribute.
+* The **plugin** attribute is inherited from the parent device. Set it to an empty list to disable the plugins specified in the parent device.
+* A device used by a node added to the lab topology by a plugin cannot load additional plugins. _netlab_ reports an error if a node uses a device whose plugins were not loaded.
+* Lab users can disable the device plugins with **defaults.devices._device_.plugin: []**.
+
 ## Vagrant Template File
 
 If you'll use a Vagrant box to start the network device as a VM, you have to add a template that will generate the part of *Vagrantfile* (or *containerlab* configuration file) describing your virtual machine. See `netsim/templates/provider/...` directories for more details.

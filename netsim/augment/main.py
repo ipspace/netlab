@@ -19,7 +19,7 @@ Initializing the topology transformation:
 * The search paths are expanded into absolute paths and pruned
 * The nodes data structures (topology nodes and component nodes) are
   transformed into dictionaries
-* Plugins required by active tools are added to the plugin list
+* Plugins required by active tools and used devices are added to the plugin list
 * Plugins are loaded
 * Device settings are initialized, including daemon- and child device
   inheritance
@@ -40,6 +40,7 @@ def topology_init(topology: Box) -> None:
   topology.nodes = augment.nodes.create_node_dict(topology.nodes)
   augment.components.normalize_components(topology)
   augment.tools.add_tool_plugins(topology)
+  augment.devices.add_device_plugins(topology)
   augment.plugin.init(topology)
   augment.devices.augment_device_settings(topology)
 
