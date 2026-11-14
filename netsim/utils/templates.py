@@ -113,18 +113,18 @@ def write_template(
         data: typing.Dict,
         out_folder: str,
         filename: str,
-        extra_path: typing.Optional[list] = None) -> None:
+        extra_path: typing.Optional[list] = None,
+        script: bool = False) -> None:
   if log.debug_active('template'):
     print(f"write_template {in_folder}/{j2} -> {out_folder}/{filename}")
   # Make sure we fail before creating any file(s)
   r_text = render_template(data=data,j2_file=j2,path=in_folder,extra_path=extra_path)
-  cfg_mode = data.get('netlab_config_mode','')
   cfg_shebang = data.get('netlab_default_shebang','').strip(" \n")
 
-  # Prepend default shebang to the text if the config mode is a shell script
+  # Prepend default shebang to the text if the output file is a shell script
   # and the config text doesn't start with a shebang
   #
-  need_shebang = cfg_mode in ('sh','cp_sh') and not r_text.startswith('#!')
+  need_shebang = script and not r_text.startswith('#!')
   if need_shebang and cfg_shebang:
     r_text = cfg_shebang + "\n" + r_text
   #
@@ -141,6 +141,8 @@ def write_template(
   pathlib.Path(out_folder).mkdir(parents=True, exist_ok=True)
   out_file = f"{out_folder}/{filename}"
   create_file_from_text(out_file,r_text)
+  if script:                                                # Scripts have to be executable
+    pathlib.Path(out_file).chmod(0o755)
 
 
 def template_short_path(p: str) -> str:
@@ -324,7 +326,8 @@ def render_config_template(
       output_file: str,
       provider_path: str,
       topology: Box,
-      config_mode: typing.Optional[str] = None) -> bool:
+      config_mode: typing.Optional[str] = None,
+      script: bool = False) -> bool:
 
   if node_dict is None:
     node_dict = template_node_data(node,topology)
@@ -342,7 +345,8 @@ def render_config_template(
       data=node_dict,
       out_folder=os.path.dirname(output_file),
       filename=os.path.basename(output_file),
-      extra_path=node_paths)
+      extra_path=node_paths,
+      script=script)
     node_dict.pop('netlab_config_mode',None)
     return True
   except Exception as ex:                               # Gee, we failed
@@ -354,6 +358,13 @@ def render_config_template(
       category=log.IncorrectValue)
     node_dict.pop('netlab_config_mode',None)
     return False
+
+"""
+config_is_script: the single decision point for "is the configuration file
+a shell script" (needs shebang, has to be executable, uses .sh suffix)
+"""
+def config_is_script(config_mode: typing.Optional[str]) -> bool:
+  return config_mode in ('sh','cp_sh')
 
 """
 Given the node data and module/template name, create a node config file
@@ -389,8 +400,9 @@ def create_config_file(
           output_file=str(output_path / output_file),
           provider_path=provider_path,
           topology=topology,
-          config_mode=config_mode)
-  
+          config_mode=config_mode,
+          script=config_is_script(config_mode))
+
   if OK and log.VERBOSE:
     log.info(f"Rendered {module} template for {node.name} into {output_file}")
 
