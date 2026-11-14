@@ -228,7 +228,7 @@ plugin: [ kind ]
 
 **Notes:**
 
-* The **plugin** attribute is evaluated before the plugins are loaded and before the group parameters are copied into nodes. _netlab_ loads the plugins of devices specified in nodes, groups, and topology components, and the plugins of the default device (**defaults.device**) if at least one node does not have a **device** attribute.
+* The **plugin** attribute is evaluated before the plugins are loaded and before the group parameters are copied into nodes. _netlab_ loads the plugins of devices specified in nodes, [groups](topo-groups), default groups (**defaults.groups**), [topology components](../components.md), component nodes, and include requests, and the plugins of the default device (**defaults.device**) if at least one node does not have a **device** attribute. _netlab_ might thus load plugins of devices that are not used in the lab topology (for example, devices specified in unused components or default groups).
 * The **plugin** attribute is inherited from the parent device. Set it to an empty list to disable the plugins specified in the parent device.
 * A device used by a node added to the lab topology by a plugin cannot load additional plugins. _netlab_ reports an error if a node uses a device whose plugins were not loaded.
 * Lab users can disable the device plugins with **defaults.devices._device_.plugin: []**.

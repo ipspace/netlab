@@ -320,12 +320,16 @@ def add_device_attributes(topology: Box) -> None:
 """
 Get the list of devices used in the lab topology before the topology transformation starts:
 
-* Devices specified in nodes and in topology components (included components are skipped)
-* Devices specified in groups
+* Devices specified in nodes, include requests, components, and component nodes
+* Devices specified in groups and default groups
 * Default device (when at least one node does not have a device attribute)
 
 The nodes (including component nodes) have already been transformed into dictionaries,
-but the group data has not been copied into the nodes yet.
+but the group data (including the default groups) has not been copied into the nodes yet.
+
+The function might return devices that are not used in the lab topology (for example,
+devices specified in unused components or default groups). Loading an extra plugin in
+those rare cases is better than replicating the group and component logic.
 
 The list of devices determines the order of device plugins, and thus the order in which
 the plugin hooks are executed. We cannot use a set to remove the duplicates: the order of
@@ -334,18 +338,21 @@ would result in nondeterministic transformation results.
 """
 def used_devices(topology: Box) -> list:
   n_list = list(topology.nodes.values())                    # Topology nodes
-  for c_data in topology.get('components',{}).values():     # ... and nodes in topology components
+  c_list = list(topology.get('components',{}).values())
+  for c_data in c_list:                                     # ... and nodes in topology components
     n_list += list(c_data.get('nodes',{}).values())
+  g_list = list(topology.get('groups',{}).values())         # Groups and default groups
+  g_list += list(topology.get('defaults.groups',{}).values())
 
   d_default = topology.defaults.get('device',None)
-  d_list = [ n_data.get('device',None) or d_default         # Node devices or the default device
-               for n_data in n_list if 'include' not in n_data ]
-  d_list += [ g_data.get('device',None)                     # Group devices
-                for g_data in topology.get('groups',{}).values() if isinstance(g_data,dict) ]
+  d_list = [ n_data.get('device',None) or                   # Node devices, include request devices,
+              (None if 'include' in n_data else d_default)  # ... or the default device for regular nodes
+                for n_data in n_list ]
+  d_list += [ x_data.get('device',None)                     # Component and group devices
+                for x_data in c_list + g_list if isinstance(x_data,dict) ]
 
   return list(dict.fromkeys(                                # Remove duplicates, preserve order (see above)
            d_name for d_name in d_list if isinstance(d_name,str)))
-
 """
 Get the device plugins. Device plugins could be inherited from the parent device, and
 the daemons use 'linux' as the parent device unless specified otherwise.

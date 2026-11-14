@@ -45,7 +45,6 @@ For example, _netlab_ creates three links when given this topology:
 
 ```
 provider: clab
-plugin: [ kind ]
 
 nodes:
   kc:
@@ -67,7 +66,6 @@ On the other hand, the following topology using a LAN link results in all three 
 
 ```
 provider: clab
-plugin: [ kind ]
 
 nodes:
   kc:
@@ -94,7 +92,6 @@ links:
 
 ```
 provider: clab
-plugin: [ kind ]
 
 nodes:
   kc:
@@ -127,7 +124,6 @@ Example:
 
 ```
 provider: clab
-plugin: [ kind ]
 
 nodes:
   kc:
