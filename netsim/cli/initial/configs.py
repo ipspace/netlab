@@ -48,8 +48,10 @@ def config_file_suffix(sfx: typing.Optional[str], cfg_mode: typing.Optional[str]
     return '.cfg'
 
   # No explicit suffix request, use configuration mode to select .sh or .cfg prefix
+  # 'ns' files are shell scripts executed with 'sh file' on the host, so they get the
+  # .sh suffix, but not the shebang or the executable bit (see config_is_script)
   #
-  return '.sh' if (cfg_mode in ('ns','sh','cp_sh')) else '.cfg'
+  return '.sh' if (cfg_mode == 'ns' or u_templates.config_is_script(cfg_mode)) else '.cfg'
 
 def create_node_configs(
       topology: Box,
@@ -142,14 +144,6 @@ def create_node_configs(
             output_file=o_fname,
             config_mode='cfg' if flatten_output_fname else config_mode):
         created_list.append(module)
-      if config_mode in ('sh','cp_sh'):
-        try:
-          (abs_path / o_fname).chmod(0o755)
-        except Exception as ex:
-          log.error(
-            f'Cannot change permissions of {o_fname}',
-            category=log.FatalError,
-            more_data=[str(ex)])
     if not log.VERBOSE and created_list:
       strings.print_colored_text(strings.pad_err_code('CREATED',10),'green')
       print(f"{n_name}: {','.join(created_list)}")

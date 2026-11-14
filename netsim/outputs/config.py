@@ -79,8 +79,6 @@ class ConfigurationFiles(_TopologyOutput):
           if not do_config(cfg_source,cfg_path,cfg_mode):
             continue
           create_list.append(cfg_source)
-          if cfg_mode in ('sh','cp_sh'):
-            (node_files / cfg_path).chmod(0o755)
 
       if n_name in unprovisioned:
         continue
