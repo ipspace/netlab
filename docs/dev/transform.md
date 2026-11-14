@@ -27,6 +27,7 @@ The data transformation has three major steps:
   * Adjust the nodes data structure: transform [list of strings](nodes-list-of-strings) into a dictionary with empty values (`netsim.augment.nodes.create_node_dict`)
   * Validate component names and transform component nodes into dictionaries (`netsim.augment.components.normalize_components`)
   * Add plugins required by active [external tools](extools-plugin) to the **plugin** list (`netsim.augment.tools.add_tool_plugins`)
+  * Add plugins required by [devices](dev-device-plugin) used in the lab topology to the **plugin** list (`netsim.augment.devices.add_device_plugins`)
   * Initialize [plugin system](../plugins.md): load all plugins listed in the **plugin** top-level element (`netsim.augment.plugin.init`)
   * Initialize device settings, including daemon- and child device inheritance (`netsim.augment.devices.augment_device_settings`)
 

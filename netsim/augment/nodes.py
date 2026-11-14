@@ -379,7 +379,8 @@ def find_node_device(n: Box, topology: Box) -> bool:
   for group in dev_def.features.get('group',[]):
     groups.add_node_to_group(n.name,group,topology)
 
-  for plugin in dev_def.get('plugin',[]):                   # Check the required plugins
+  p_list = dev_def.get('plugin',None) or []                 # Check the required plugins
+  for plugin in [ p_list ] if isinstance(p_list,str) else p_list:
     requires_plugin(n,plugin,topology)
 
   return True

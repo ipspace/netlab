@@ -318,6 +318,75 @@ def add_device_attributes(topology: Box) -> None:
       topology.defaults.attributes = topology.defaults.attributes + dev_def.attributes
 
 """
+Get the list of devices used in the lab topology before the topology transformation starts:
+
+* Devices specified in nodes, include requests, components, and component nodes
+* Devices specified in groups and default groups
+* Default device (when at least one node does not have a device attribute)
+
+The nodes (including component nodes) have already been transformed into dictionaries,
+but the group data (including the default groups) has not been copied into the nodes yet.
+
+The function might return devices that are not used in the lab topology (for example,
+devices specified in unused components or default groups). Loading an extra plugin in
+those rare cases is better than replicating the group and component logic.
+
+The list of devices determines the order of device plugins, and thus the order in which
+the plugin hooks are executed. We cannot use a set to remove the duplicates: the order of
+set elements depends on string hashes that are randomized in every Python process, which
+would result in nondeterministic transformation results.
+"""
+def used_devices(topology: Box) -> list:
+  n_list = list(topology.nodes.values())                    # Topology nodes
+  c_list = list(topology.get('components',{}).values())
+  for c_data in c_list:                                     # ... and nodes in topology components
+    n_list += list(c_data.get('nodes',{}).values())
+  g_list = list(topology.get('groups',{}).values())         # Groups and default groups
+  g_list += list(topology.get('defaults.groups',{}).values())
+
+  d_default = topology.defaults.get('device',None)
+  d_list = [ n_data.get('device',None) or                   # Node devices, include request devices,
+              (None if 'include' in n_data else d_default)  # ... or the default device for regular nodes
+                for n_data in n_list ]
+  d_list += [ x_data.get('device',None)                     # Component and group devices
+                for x_data in c_list + g_list if isinstance(x_data,dict) ]
+
+  return list(dict.fromkeys(                                # Remove duplicates, preserve order (see above)
+           d_name for d_name in d_list if isinstance(d_name,str)))
+"""
+Get the device plugins. Device plugins could be inherited from the parent device, and
+the daemons use 'linux' as the parent device unless specified otherwise.
+"""
+def get_device_plugins(d_name: typing.Optional[str], defaults: Box) -> typing.Any:
+  visited: list = []
+  while d_name and d_name not in visited:                   # Walk up the parent chain, avoid loops
+    visited.append(d_name)
+    dm_data = defaults.get(f'daemons.{d_name}',None)        # Daemons are not merged into devices yet
+    d_data = defaults.devices.get(d_name,None) or dm_data   # ... so we have to check both dictionaries
+    if not isinstance(d_data,Box):                          # Unknown device or invalid device data
+      return None                                           # ... errors are reported later
+    if 'plugin' in d_data:                                  # Device plugins found, no need to check the parents
+      return d_data.plugin
+    d_name = d_data.get('parent','linux' if dm_data else None)
+
+  return None
+
+"""
+Add plugins specified in the 'plugin' attribute of used devices to the list of topology plugins
+
+This function is called before the plugins are loaded and before the device settings
+inheritance is processed. It ignores invalid data; the errors are reported later.
+"""
+def add_device_plugins(topology: Box) -> None:
+  try:
+    for d_name in used_devices(topology):
+      p_list = get_device_plugins(d_name,topology.defaults)
+      if p_list:
+        data.append_to_list(topology,'plugin',p_list,flatten=True)
+  except Exception:                                         # Invalid data structures are reported later
+    pass
+
+"""
 Initial device setting augmentation:
 
 * Build supported_on module lists
