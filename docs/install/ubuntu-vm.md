@@ -91,7 +91,7 @@ Remove the **‌pip3** and **‌netlab** commands from the Vagrantfile and [foll
 (ubuntu-vm-manual)=
 ## Manual Virtual Machine Provisioning
 
-* Create an Ubuntu 22.04 or Ubuntu 24.04 virtual machine within your virtualization environment (you'll find plenty of online tutorials). If needed, enable nested virtualization.
+* Create an Ubuntu 24.04 or Ubuntu 26.04 virtual machine within your virtualization environment (you'll find plenty of online tutorials). If needed, enable nested virtualization.
 * Log into the virtual machine
 * Execute these commands to download Python3 and install *netlab*, Ansible, vagrant, libvirt, KVM, containerlab, and Docker, or [follow these steps](install-ubuntu-venv) if you want to install _netlab_ in a Python virtual environment
 

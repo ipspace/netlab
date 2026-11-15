@@ -1,8 +1,13 @@
+(install)=
 # Installation
 
 *netlab* is a Python3 package[^NSL] that uses Python 3.10[^P310] or later. It runs on Linux[^NLE] (we're doing all our tests on Ubuntu), including Windows Subsystem for Linux or [Multipass on macOS](https://blog.ipspace.net/2024/03/netlab-bgp-apple-silicon/).
 
-[^P310]: Python 3.10 is the minimum supported version because it's the default Python distribution on Ubuntu 22.04.
+```{warning}
+Ubuntu 22.04 and Python 3.10 are deprecated and will not be supported in an upcoming _netlab_ release. Please use Python 3.11 or later (for example, Ubuntu 24.04 or later). **netlab up** and **netlab version** display a warning when running on Python 3.10.
+```
+
+[^P310]: Python 3.10 is the minimum supported version because it's the default Python distribution on Ubuntu 22.04. It's deprecated and will be replaced with Python 3.11 in an upcoming release.
 
 [^NSL]: For legacy reasons, the *netlab* Python code resides in *netsim.\** modules.
 
