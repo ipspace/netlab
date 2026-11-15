@@ -26,6 +26,9 @@ You can use the following **features.ripv2** [device features](dev-device-featur
 * **ipv6** -- The template configures RIPng
 * **import** -- The list of routing protocols that can be redistributed into RIPv2/RIPng (add `vrf` to the list if you implemented the redistribution in VRFs)
 * **passive** -- The template can configure passive interfaces
+* **unnumbered** -- RIPv2 can run over unnumbered IPv4 interfaces. The **ripv2** module reports an error when a device without this feature runs RIPv2 over an unnumbered interface.
+* **timers** -- The template configures RIP timers (see [](dev-rip-global))
+* **caveats.passive**, **caveats.import** -- The anchor of the [caveats](platform-caveats) section describing the limitations of passive interfaces or route import (used only to add caveat links to the [supported features tables](dev-features-tables))
 
 (dev-rip-af)=
 ## Supporting Multiple Address Families
@@ -51,6 +54,7 @@ ipv6 router rip default
 {%   endif %}
 ```
 
+(dev-rip-global)=
 ## Global Configuration
 
 **ripv2** configuration module sets these parameters in the node/VRF **ripv2** dictionary:
