@@ -109,8 +109,11 @@ The *netmiko* connection parameters are derived from these Ansible group variabl
 | Ansible variable | *netmiko* parameter | Mandatory |
 |------------------|---------------------|:---------:|
 | **ansible_user** | **username** | ✅ |
-| **ansible_ssh_pass** | **password** | ✅ |
+| **ansible_ssh_pass** | **password** | ✅ (unless the SSH key file is available) |
+| **ansible_ssh_private_key_file** | **key_file** (also sets **use_keys**) | ❌ |
 | **ansible_become_password** | **secret** (used by the **enable** command) | ❌ |
+
+The **ansible_ssh_private_key_file** value is rendered as a Jinja2 template (using node data with group variables and **inventory_hostname** set to the node name) to support per-node key files like the ones created by Vagrant. _netlab_ uses the SSH key file only when the file exists; when it does not, the node must have a password (**ansible_ssh_pass**) to use *netmiko*. When the node has both a password and an existing SSH key file, *paramiko* tries the key file first.
 
 The SSH session is established with the node's management IPv4 address (**mgmt.ipv4**) or IPv6 address (**mgmt.ipv6**) when the node has no IPv4 management address. _netlab_ cannot use *netmiko* to configure nodes without a management IP address.
 
@@ -283,7 +286,6 @@ The **netlab connect** command (implemented in the **netsim.cli.connect** module
 
 * The node uses an SSH connection (not **docker exec**)
 * The device settings contain the **features.netmiko** dictionary
-* The node does not use SSH key authentication (the **ansible_ssh_private_key_file** variable is not set)
 * The *netmiko* library is installed, and _netlab_ can prepare the *netmiko* connection parameters
 
 In all other SSH cases (including interactive SSH sessions started with **netlab connect** without a command), _netlab_ executes the `ssh` command, prefixed with `sshpass` when the node uses password authentication (the **ansible_ssh_pass** variable is set). Nodes using **docker exec** are handled by the `docker_connect` function instead. **netlab connect** checks whether `sshpass` is installed before executing the `ssh` command and aborts with a *missing dependency* error if it's not (the check is implemented in the **check_sshpass** function in the **netsim.utils.ssh** module).
