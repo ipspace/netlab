@@ -71,7 +71,7 @@ On devices where *netmiko* is supported but not the default configuration method
 * Use the **netlab install netmiko** command to install the *netmiko* library and set the **netlab_config_mode** in the [user defaults](defaults-user-file) of all devices that list `netmiko` in their **features.initial.config_mode** device feature.
 
 ```{tip}
-The *libvirt* provider supports only the configuration methods specified in the **defaults.providers.libvirt.config_mode** list (`netmiko`, `sh`, and `cp_sh`).
+The *libvirt* provider supports only the configuration methods specified in the **defaults.providers.libvirt.config_mode** list (`netmiko`). The deprecated `sh` and `cp_sh` configuration modes (previously used to deploy configuration scripts on Linux virtual machines) are replaced with `netmiko` on devices that support it.
 ```
 
 (dev-config-netmiko-missing)=
@@ -79,7 +79,7 @@ The *libvirt* provider supports only the configuration methods specified in the 
 
 The *netmiko* library is not a _netlab_ dependency; the users have to install it with the **netlab install netmiko** or **netlab install ansible** command. The node transformation code (**check_netmiko_config_mode** function in the **netsim.augment.nodes** module) checks whether the *netmiko* library is installed, and if it's missing:
 
-* Removes the device-level **netlab_config_mode** group variable from all devices (and providers) used in the lab when its value is `netmiko` (or `sh`/`cp_sh` with the *libvirt* provider, which uses *netmiko* to copy and execute the configuration scripts). The provider-specific group variable is checked first, followed by the generic one.
+* Removes the device-level **netlab_config_mode** group variable from all devices (and providers) used in the lab when its value is `netmiko` (or the deprecated `sh`/`cp_sh` with the *libvirt* provider). The provider-specific group variable is checked first, followed by the generic one.
 * Displays a warning saying that the affected devices will be configured with Ansible playbooks.
 * Reports a fatal error (missing dependency) for devices that have the **features.netmiko.required** feature set. Use that feature when the device cannot be used without *netmiko* (for example, Extreme VOSS cannot execute commands specified in the `ssh` command line, so the [SSH readiness check](dev-ready-ssh) has to use *netmiko*).
 
@@ -98,6 +98,9 @@ The *netmiko* configuration method uses the following device features (specified
 | **error_regexp** | string or list | Regular expression(s) used to detect errors in the device responses to configuration commands. A list of regular expressions is combined into a single regular expression matching any of them |
 | **config.delay** | int | Delay (in seconds) between establishing the SSH session and sending the first configuration snippet |
 | **config.always_exit** | bool | Exit the configuration mode after every configuration snippet |
+| **config.method** | string | Set to `script` to copy configuration snippets to the device and execute them as scripts (see [](dev-config-netmiko-script)) |
+| **config.directory** | string | Directory on the device into which the configuration scripts are copied (default: `/tmp`) |
+| **config.become** | bool or string | Execute configuration scripts with elevated privileges. `True` prepends **sudo** to the script name; a string value is prepended verbatim |
 | **collect** | dict | Commands used to collect device configuration(s) with the **netlab collect** command (see [](dev-config-netmiko-collect)) |
 | **reload** | dict | Parameters used to reload saved device configurations with the **netlab config --reload** command (see [](dev-config-netmiko-reload)) |
 | **ssh_ready.command** | string | Command used in the *netmiko*-based SSH readiness check (see [](dev-config-netmiko-ssh-ready)) |
@@ -198,6 +201,17 @@ _netlab_ uses this procedure to deploy configuration snippets with *netmiko*:
 The configuration deployment stops on the first configuration error, and the remaining configuration snippets are not deployed. _netlab_ displays the error message (including the text matched by the **error_regexp** expression) and the name of the session log file.
 
 After the configuration deployment threads (and the Ansible playbook) complete, **netlab initial** displays the summary of *netmiko*-deployed configuration snippets.
+
+(dev-config-netmiko-script)=
+### Deploying Configuration Scripts
+
+Linux-based devices (for example, FRR or Linux virtual machines) are configured with shell scripts. When the **features.netmiko.config.method** device feature is set to `script`:
+
+* The configuration snippets are rendered as scripts: _netlab_ prepends the **netlab_default_shebang** (or applies the **netlab_config_wrapper**) as described in [](dev-config-deploy) and makes the files executable
+* Every configuration snippet is copied to the **features.netmiko.config.directory** directory on the device (default: `/tmp`) using SCP over the existing SSH session. The remote file name is `netlab-<snippet>.sh`
+* The script is executed in a PTY over a separate SSH (remote command execution) channel, prefixed with **sudo** (or another string) as specified in the **features.netmiko.config.become** device feature. Like with Ansible, the PTY ensures the SSH channel is closed when the script exits even when the script starts daemons (for example, FRR daemons)
+* A non-zero exit code is treated as a configuration error; _netlab_ displays the script output (stdout and stderr) and stops the deployment
+* The script output is displayed in verbose mode or with the `--debug netmiko` CLI option
 
 ### Deploying Custom Configuration Templates
 

@@ -201,15 +201,18 @@ def execute(
       conn: '_netmiko.BaseConnection',
       n_name: str,
       cmd: str,
-      quiet: bool = False) -> typing.Optional[typing.Tuple]:
+      quiet: bool = False,
+      get_pty: bool = False) -> typing.Optional[typing.Tuple]:
   """
   Executes a single command over a new SSH (RCE) channel. Returns (stdout,stderr,rc)
-  after successful command execution and None after a netmiko error
+  after successful command execution and None after a netmiko error.
+
+  Use get_pty to execute the command in a PTY (stderr is merged into stdout)
   """
   if not conn.remote_conn_pre:
     raise Exception("netmiko connection data is missing")
   try:
-    stdin, stdout, stderr = conn.remote_conn_pre.exec_command(cmd)
+    stdin, stdout, stderr = conn.remote_conn_pre.exec_command(cmd,get_pty=get_pty)
   except Exception as ex:
     if not quiet:
       log.error(
