@@ -1,9 +1,10 @@
 {#
   VRFs and interface VRF membership are configured in the initial configuration.
-  VRF OSPF instances are configured with the global OSPFv2/OSPFv3 macros
+  VRF OSPF and IS-IS instances are configured with the global OSPFv2/OSPFv3/IS-IS macros
 #}
 {% import "templates/ospf/ocnos.ospfv2.j2" as ospfv2 %}
 {% import "templates/ospf/ocnos.ospfv3.j2" as ospfv3 %}
+{% import "templates/isis/ocnos.macro.j2" as isis_config %}
 {% for vname,vdata in vrfs.items() if 'ospf' in vdata %}
 {%   if vdata.ospf.af.ipv4 is defined %}
 {{     ospfv2.config(vdata.vrfidx,vname,vdata.ospf,vdata.ospf.interfaces|default([])) }}
@@ -11,6 +12,9 @@
 {%   if vdata.ospf.af.ipv6 is defined %}
 {{     ospfv3.config(vdata.vrfidx,vname,vdata.ospf,vdata.ospf.interfaces|default([])) }}
 {%   endif %}
+{% endfor %}
+{% for vname,vdata in vrfs.items() if 'isis' in vdata %}
+{{   isis_config.config(vdata.isis,vdata.isis.interfaces|default([]),vname) }}
 {% endfor %}
 {#
   VRF routes are exchanged through per-VRF BGP address families. The (empty) VPNv4/VPNv6
