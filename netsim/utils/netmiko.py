@@ -7,12 +7,14 @@ netmiko utility functions
 """
 import inspect
 import logging
+import os
 import typing
 
 from box import Box
 
 from ..augment import devices as a_devices
-from . import log
+from ..outputs import common as outputs_common
+from . import log, templates
 
 NETMIKO_IS_MISSING: bool = False
 NETMIKO_LOAD_ERROR: str = ''
@@ -44,7 +46,7 @@ def check_netmiko(n_data: Box) -> bool:
 
 NETMIKO_GROUP_VARS: dict = {
   'ansible_user': 'username',
-  'ansible_ssh_pass': 'password',
+  'ansible_ssh_pass': '*password',
   'ansible_become_password': '*secret'
 }
 
@@ -73,6 +75,20 @@ def prepare_params(n_data: Box, topology: Box, quiet: bool = False) -> typing.Op
       netmiko_params[np.replace('*','')] = gv_value
     elif '*' not in np:                           # Are we missing a value for a non-optional target?
       config_err_list.append(f'{gv} node/group variable is not set')
+
+  host = outputs_common.adjust_inventory_host(n_data,defaults,group_vars=True)
+  key_file = host.get('ansible_ssh_private_key_file',None)
+  if key_file:                                    # Key file could be a Jinja2 template (example: Vagrant boxes)
+    host.inventory_hostname = n_data.name         # template_vars=True would modify node data
+    key_file = templates.render_template(host,j2_text=key_file)
+    if os.path.isfile(key_file):                  # paramiko crashes on a missing key file, so we skip it
+      netmiko_params['use_keys'] = True
+      netmiko_params['key_file'] = key_file
+
+  if 'password' not in netmiko_params and 'key_file' not in netmiko_params:
+    config_err_list.append(
+      'ansible_ssh_pass node/group variable is not set' +
+      (f' and SSH key file {key_file} does not exist' if key_file else ''))
 
   netmiko_host = n_data.mgmt.get('ipv4',None) or n_data.mgmt.get('ipv6',None)
   if not netmiko_host:                            # Finally, try to add management IP address
