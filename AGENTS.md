@@ -96,6 +96,7 @@ IMPORTANT -- the Box objects must have the default_box and box_dots flags set to
 
 * When creating a new Box object from a dictionary, use data.get_box function
 * When creating an empty Box object, use data.get_empty_box function
+* Before writing generic Box/list manipulation code, check `netsim/data/__init__.py` and `netsim/data/types.py` for an existing helper. For example, use `data.append_to_list(box, 'key', item)` to append an item to a list that might not exist yet (it also skips duplicates)
 
 ### Using Jinja2 templates
 
@@ -111,6 +112,8 @@ IMPORTANT -- the Box objects must have the default_box and box_dots flags set to
 - Validation tests in `tests/validation/`
 - Coverage tests in `tests/coverage/`
 - Error case tests in `tests/errors/`
+- Do not add CI test cases (for example, `tests/errors/*.yml`) for individual device quirks (`netsim/devices/*.py`). They are covered by integration tests; verify them with a scratch topology and `netlab create -o none`
+- _netlab_ caches the compiled system defaults (including `netsim/devices/*.yml`) in `~/.netlab/topology-defaults.pickle` and uses file modification times to check whether the cache is still valid. If you restore files with their old timestamps (`tar`, `cp -p`), `touch` them or delete the cache before running `netlab create`
 
 ### Configuration and Data
 - Use `Box` objects for hierarchical configuration
@@ -169,6 +172,9 @@ When you don't have to change the code for other reasons:
 * The documentation files are in `docs`
 * The table cells in the ReadTheDocs CSS do not wrap by default. Add `{.table-wrap}` at the top of tables that contain large cells.
 * Pygments Jinja2 lexer is called `jinja`, not `jinja2`.
+* Link to MyST anchors (`[text](anchor-name)`) instead of relative file paths (`../caveats.md`). If the target page has no `(anchor-name)=` label, add one at its top (developer documentation uses the `dev-` prefix) and make sure it's unique within `docs`. Ask for the anchor name when in doubt.
+* The expressions in `{features}` tables (`docs/_ext/features.py`) evaluate to False when they raise an exception. Use simple expressions like `netmiko.reload.command` instead of defensive `.get()` chains.
+* When adding a device feature flag (`features.<module>.<flag>` in `netsim/devices/*.yml`), describe it in the *Device Features* section of `docs/dev/config/<module>.md` and in the `features` dictionary of `netsim/modules/<module>.yml` (displayed by `netlab show modules`).
  
 ### Writing Configuration Template Development Documentation
 
