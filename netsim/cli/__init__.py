@@ -15,7 +15,7 @@ from pathlib import Path
 
 from box import Box
 
-from .. import __version__, augment
+from .. import PYTHON_DEPRECATED, __version__, augment
 from ..data import global_vars
 from ..utils import log, stats, strings
 from ..utils import read as _read
@@ -161,6 +161,20 @@ def set_dry_run(args: argparse.Namespace) -> None:
 def is_dry_run() -> bool:
   global DRY_RUN
   return DRY_RUN
+
+"""
+Warn the user that their Python release will not be supported in an upcoming netlab release
+"""
+def check_python_version() -> None:
+  if sys.version_info[:2] > PYTHON_DEPRECATED:
+    return
+
+  py_version = f'{sys.version_info.major}.{sys.version_info.minor}'
+  min_version = f'{PYTHON_DEPRECATED[0]}.{PYTHON_DEPRECATED[1]+1}'
+  log.warning(
+    text=f'Python {py_version} will not be supported in an upcoming netlab release',
+    more_hints=f'Upgrade to Python {min_version} or later to keep receiving netlab updates',
+    module='python')
 
 def set_env_args(args: argparse.Namespace, topology: typing.Optional[Box] = None) -> None:
   """
