@@ -81,7 +81,7 @@ def prepare_params(n_data: Box, topology: Box, quiet: bool = False) -> typing.Op
   if key_file:                                    # Key file could be a Jinja2 template (example: Vagrant boxes)
     host.inventory_hostname = n_data.name         # template_vars=True would modify node data
     key_file = templates.render_template(host,j2_text=key_file)
-    if os.path.exists(key_file):                  # paramiko crashes on a missing key file, so we skip it
+    if os.path.isfile(key_file):                  # paramiko crashes on a missing key file, so we skip it
       netmiko_params['use_keys'] = True
       netmiko_params['key_file'] = key_file
 
