@@ -10,7 +10,7 @@ Juniper vSRX 3.0 is supported by the **netlab libvirt package** command. To buil
 ```{warning}
 _netlab_ uses `pc-i440fx-6.2` QEMU machine type to run vSRX VMs due to vSRX [PR 1819545](https://prsearch.juniper.net/PR1819545) ([public information](https://supportportal.juniper.net/s/article/22-4R3-S4-SRN)) that has been fixed in vSRX release 24.2R1.
 
-We tested the Vagrant box on Ubuntu 22.04 and 24.04. If the vSRX Vagrant box doesn't build or doesn't work on your Linux distribution, please try out the vSRX [*‌vrnetlab* container](clab-vrnetlab).
+We tested the Vagrant box on Ubuntu 24.04. If the vSRX Vagrant box doesn't build or doesn't work on your Linux distribution, please try out the vSRX [*‌vrnetlab* container](clab-vrnetlab).
 ```
 
 ## Preparing the Box Configuration

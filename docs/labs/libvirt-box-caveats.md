@@ -6,4 +6,4 @@ The Vagrant box-building process relies on numerous Linux tools whose behavior h
 * *‌virt-install* might report a fatal error on Ubuntu 22.04 (and later). Execute `export VIRTINSTALL_OSINFO_DISABLE_REQUIRE=1` in your shell and restart the build process. Starting with release 1.8.1, the **netlab libvirt package** script sets this parameter.
 * If you downloaded an OVA file, you have to unpack it with the **tar xvf _ova_filename_** command. Starting with release 1.8.2, the **netlab libvirt package** script automatically unpacks the OVA files.
 
-Finally, we tested the box-building scripts on Ubuntu 22.04. The **netlab libvirt package** might not work correctly on other Linux distributions.
+Finally, the **netlab libvirt package** might not work correctly on Linux distributions other than Ubuntu.
