@@ -1,3 +1,4 @@
+(dev-features-tables)=
 # Auto-Generated "Supported Features" Tables
 
 The `features` Sphinx directive generates the _supported features_ tables for the [](supported-platforms) document and the module/plugin descriptions.

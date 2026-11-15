@@ -4,6 +4,7 @@
 This configuration module configures the RIPv2 and RIPng. The module supports the following RIP features:
 
 * IPv4 and IPv6
+* Unnumbered IPv4 interfaces
 * Passive interfaces
 * VRF RIPv2/RIPng instances
 
@@ -18,24 +19,36 @@ This configuration module configures the RIPv2 and RIPng. The module supports th
 
 The following table describes per-platform support of individual RIPv2/RIPng features:
 
-| Operating system      | IPv4<br>(RIPv2) | IPv6<br>(RIPng) | Passive<br>interfaces | Route<br>import | VRF<br>instances | RIP<br>timers |
-| ------------------ | :-: | :-: | :-: | :-: | :-: | :-: |
-| Arista EOS         | ✅  |  ❌  |  ❌  |  ❌  |  ❌  | ✅ |
-| Cisco IOS/IOS XE[^18v]  | ✅  | ✅  | ✅ [❗](caveats-ios) | ✅  [❗](caveats-ios) | ✅ | ✅ |
-| Cumulus Linux      | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ |
-| FRR                | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ |
-| Nokia SR OS[^SROS] | ✅  | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
-| OpenBSD            | ✅  | ✅  |  ❌  | ✅ [❗](caveats-openbsd)  |  ❌  |  ❌  |
-| VyOS               | ✅  | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
+```{features}
+- title: IPv4<br>(RIPv2)
+  enabled: ripv2.ipv4
+- title: IPv6<br>(RIPng)
+  enabled: ripv2.ipv6
+- title: Unnumbered<br>interfaces
+  enabled: ripv2.unnumbered
+- title: Passive<br>interfaces
+  enabled: ripv2.passive
+  caveats: ripv2.caveats.passive
+```
+
+These devices also support additional RIPv2/RIPng features:
+
+```{features}
+- title: Route<br>import
+  enabled: |
+    ripv2['import']
+  caveats: |
+    ripv2.caveats['import']
+- title: VRF<br>instances
+  enabled: vrf.ripv2 or vrf.ripng
+- title: RIP<br>timers
+  enabled: ripv2.timers
+```
 
 ```{tip}
 * See [RIP Integration Tests Results](https://release.netlab.tools/_html/coverage.ripv2) for more details.
 * Use the `netlab show modules -m ripv2` command to display the route types that can be imported into RIPv2/RIPng.
 ```
-
-[^18v]: Includes Cisco IOSv, Cisco IOSv Layer-2 image, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
-
-[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
 (rip-params)=
 ## Lab Topology Parameters
