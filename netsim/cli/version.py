@@ -9,7 +9,7 @@ import typing
 import netsim
 
 from ..utils import read as _read
-from . import NETLAB_SCRIPT
+from . import NETLAB_SCRIPT, check_python_version
 
 MODULES: dict = {
   'box': 'python-box',
@@ -83,3 +83,5 @@ def run(args: typing.List[str]) -> None:
   print("\nAnsible components:")
   for package in ANSIBLE_PACKAGES:
     package_version(package)
+
+  check_python_version()

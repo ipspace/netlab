@@ -3,6 +3,7 @@
 import sys
 
 __version__ = "26.10"
+PYTHON_DEPRECATED = (3, 10)                   # Warn users running this (or older) Python release
 
 abort = False
 

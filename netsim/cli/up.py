@@ -20,6 +20,7 @@ from ..utils import log, stats, strings
 from ..utils import status as _status
 from . import (
   _hooks,
+  check_python_version,
   common_parse_args,
   create,
   external_commands,
@@ -192,6 +193,7 @@ def provider_probes(topology: Box) -> None:
   defaults = topology.defaults
 
   log.section_header('Checking','virtualization provider installation')
+  check_python_version()
   external_commands.run_probes(defaults,p_provider)
   for s_provider in topology[p_provider].providers:
     external_commands.run_probes(defaults,s_provider)
