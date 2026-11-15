@@ -35,7 +35,7 @@ def try_intf_address(addr: str) -> str:
   except:
     return addr
 
-# Return all global and optionaly VRF neighbors of selected session types (default: all types,
+# Return all global and optionally VRF neighbors of selected session types (default: all types,
 # including localas_ibgp and confed_ebgp)
 #
 def neighbors(node: Box, vrf: bool = True, select: list = ['*']) -> typing.Generator:
