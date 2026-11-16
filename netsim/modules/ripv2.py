@@ -55,6 +55,21 @@ def adjust_rip_timers(rip_data: Box) -> None:
   if 'garbage' not in rip_data.timers:            # ... and the default GC value is 4 times the update timer
     rip_data.timers.garbage = rip_data.timers['update'] * 4
 
+"""
+check_rip_timers: Warn the user when the RIP timers are set on a device that cannot
+configure them (the device will use its default timers)
+"""
+def check_rip_timers(node: Box, features: Box) -> None:
+  if features.ripv2.get('timers',False):
+    return
+
+  if any('timers' in rip_data for rip_data in _routing.routing_protocol_data(node,'ripv2')):
+    log.warning(
+      text=f'Device {node.device} used on node {node.name} cannot configure RIP timers',
+      more_hints='The device will use the default RIP timers',
+      flag='timers',
+      module='ripv2')
+
 class RIPv2(_Module):
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
@@ -76,5 +91,6 @@ class RIPv2(_Module):
     _routing.igp_post_transform(node,topology,proto='ripv2',vrf_aware=True)
     _routing.check_vrf_protocol_support(node,proto='ripv2',af='ipv4',feature='ripv2',topology=topology)
     _routing.check_vrf_protocol_support(node,proto='ripv2',af='ipv6',feature='ripng',topology=topology)
+    check_rip_timers(node,features)
     for rip_data in _routing.routing_protocol_data(node,'ripv2'):
       adjust_rip_timers(rip_data)
