@@ -100,7 +100,8 @@ The *netmiko* configuration method uses the following device features (specified
 | **config.always_exit** | bool | Exit the configuration mode after every configuration snippet |
 | **config.method** | string | Set to `script` to copy configuration snippets to the device and execute them as scripts (see [](dev-config-netmiko-script)) |
 | **config.directory** | string | Directory on the device into which the configuration scripts are copied (default: `/tmp`) |
-| **config.become** | bool or string | Execute configuration scripts with elevated privileges. `True` prepends **sudo** to the script name; a string value is prepended verbatim |
+| **config.become** | bool or string | Execute configuration scripts with elevated privileges. `True` prepends **sudo -n** to the script name (or uses the root shell, see [](dev-config-netmiko-script)); a string value is prepended verbatim |
+| **config.timeout** | int | Maximum configuration script execution time in seconds (default: 30) |
 | **collect** | dict | Commands used to collect device configuration(s) with the **netlab collect** command (see [](dev-config-netmiko-collect)) |
 | **reload** | dict | Parameters used to reload saved device configurations with the **netlab config --reload** command (see [](dev-config-netmiko-reload)) |
 | **ssh_ready.command** | string | Command used in the *netmiko*-based SSH readiness check (see [](dev-config-netmiko-ssh-ready)) |
@@ -209,7 +210,9 @@ Linux-based devices (for example, FRR or Linux virtual machines) are configured 
 
 * The configuration snippets are rendered as scripts: _netlab_ prepends the **netlab_default_shebang** (or applies the **netlab_config_wrapper**) as described in [](dev-config-deploy) and makes the files executable
 * Every configuration snippet is copied to the **features.netmiko.config.directory** directory on the device (default: `/tmp`) using SCP over the existing SSH session. The remote file name is `netlab-<snippet>.sh`
-* The script is executed in a PTY over a separate SSH (remote command execution) channel, prefixed with **sudo** (or another string) as specified in the **features.netmiko.config.become** device feature. Like with Ansible, the PTY ensures the SSH channel is closed when the script exits even when the script starts daemons (for example, FRR daemons)
+* Without the **ansible_become_password** node/group variable, the script is executed in a PTY over a separate SSH (remote command execution) channel, prefixed with **sudo -n** (or another string) as specified in the **features.netmiko.config.become** device feature. Like with Ansible, the PTY ensures the SSH channel is closed when the script exits even when the script starts daemons (for example, FRR daemons). The `-n` flag makes **sudo** fail instead of waiting for a password
+* When the **ansible_become_password** node/group variable is set, *netmiko* uses it to get a root shell (the **enable** call) in the interactive SSH session, and _netlab_ executes the script in that session without **sudo** (a string value of the **features.netmiko.config.become** device feature is still prepended to the script name)
+* The script execution time is limited to **features.netmiko.config.timeout** seconds (default: 30)
 * A non-zero exit code is treated as a configuration error; _netlab_ displays the script output (stdout and stderr) and stops the deployment
 * The script output is displayed in verbose mode or with the `--debug netmiko` CLI option
 

@@ -56,14 +56,29 @@ def send_script(
     return False
 
   become = features.get('netmiko.config.become',False)      # Mirror Ansible: True => sudo, string => verbatim
-  pfx = 'sudo ' if become is True else f'{become} ' if become else ''
+  timeout = features.get('netmiko.config.timeout',30)
+  use_session = bool(net_connect.secret)
+  if use_session:
+    # We have the sudo password (ansible_become_password), and netmiko used it to get a root
+    # shell (enable) in the interactive session. Execute the script in that session; we cannot
+    # respond to the sudo password prompt on a separate SSH channel
+    #
+    pfx = f'{become} ' if isinstance(become,str) else ''
+  else:
+    # Use 'sudo -n' to fail instead of hanging on a sudo password prompt
+    #
+    pfx = 'sudo -n ' if become is True else f'{become} ' if become else ''
 
-  # Execute the script in a PTY (like Ansible does). Without it, daemons started by the
-  # script (for example, FRR daemons) keep the SSH channel open after the script exits
-  #
   cmd = f'chmod a+x {dst_file}; {pfx}{dst_file}'
-  result = _netmiko.execute(net_connect,n_data.name,cmd,get_pty=True)
-  if result is None:                                        # SSH error, already reported
+  if use_session:
+    result = _netmiko.command(net_connect,n_data.name,cmd,timeout=timeout)
+  else:
+    # Execute the script in a PTY (like Ansible does). Without it, daemons started by the
+    # script (for example, FRR daemons) keep the SSH channel open after the script exits
+    #
+    result = _netmiko.execute(net_connect,n_data.name,cmd,get_pty=True,timeout=timeout)
+
+  if result is None:                                        # SSH error or timeout, already reported
     return False
 
   (output,errors,rc) = result
