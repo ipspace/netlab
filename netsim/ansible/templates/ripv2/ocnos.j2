@@ -1,0 +1,36 @@
+{#
+  OcNOS enables RIPv2 on interfaces with "network" statements in the router configuration.
+  A host prefix (interface address) is accepted and normalized to the subnet.
+
+  RIPng is enabled with an interface command ("ipv6 router rip")
+#}
+{% macro common(ripv2,af) %}
+{%   if ripv2.timers is defined %}
+ timers basic {{ ripv2.timers['update'] }} {{ ripv2.timers.timeout }} {{ ripv2.timers.garbage }}
+{%   endif %}
+{%   for s_proto in ripv2.import|default({}) %}
+ redistribute {{ s_proto }}
+{%   endfor %}
+{%   for l in netlab_interfaces if l.ripv2.passive|default(False) and af in l %}
+ passive-interface {{ l.ifname }}
+{%   endfor %}
+{% endmacro %}
+{% if ripv2.af.ipv4|default(False) %}
+router rip
+ version 2
+{%   for l in netlab_interfaces if 'ripv2' in l and l.ipv4 is string %}
+ network {{ l.ipv4 }}
+{%   endfor %}
+{{   common(ripv2,'ipv4') -}}
+!
+{% endif %}
+{% if ripv2.af.ipv6|default(False) %}
+router ipv6 rip
+{{   common(ripv2,'ipv6') -}}
+!
+{%   for l in netlab_interfaces if 'ripv2' in l and 'ipv6' in l %}
+interface {{ l.ifname }}
+ ipv6 router rip
+!
+{%   endfor %}
+{% endif %}
