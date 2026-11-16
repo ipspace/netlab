@@ -27,7 +27,7 @@ You can use the following **features.ripv2** [device features](dev-device-featur
 * **import** -- The list of routing protocols that can be redistributed into RIPv2/RIPng (add `vrf` to the list if you implemented the redistribution in VRFs)
 * **passive** -- The template can configure passive interfaces
 * **unnumbered** -- RIPv2 can run over unnumbered IPv4 interfaces. The **ripv2** module reports an error when a device without this feature runs RIPv2 over an unnumbered interface.
-* **timers** -- The template configures RIP timers (see [](dev-rip-global))
+* **timers** -- The template configures RIP timers (see [](dev-rip-global)). The **ripv2** module warns the user when the RIP timers are set on a device without this feature.
 * **caveats.passive**, **caveats.import** -- The anchor of the [caveats](platform-caveats) section describing the limitations of passive interfaces or route import (used only to add caveat links to the [supported features tables](dev-features-tables))
 
 (dev-rip-af)=
