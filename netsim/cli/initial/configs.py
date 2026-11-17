@@ -36,7 +36,7 @@ def cleanup_config_dir(output_path: Path, args: argparse.Namespace) -> None:
   except ValueError:
     log.info(f'Cannot clean a directory outside of the lab directory')
 
-def config_file_suffix(sfx: typing.Optional[str], cfg_mode: typing.Optional[str]) -> str:
+def config_file_suffix(sfx: typing.Optional[str], cfg_mode: typing.Optional[str], node: Box, defaults: Box) -> str:
   """
   Figure out the correct suffix for the generated configuration files. Honors
   explicit suffix requests ('none' or '.cfg'), otherwise derives '.sh' or '.cfg'
@@ -51,7 +51,7 @@ def config_file_suffix(sfx: typing.Optional[str], cfg_mode: typing.Optional[str]
   # 'ns' files are shell scripts executed with 'sh file' on the host, so they get the
   # .sh suffix, but not the shebang or the executable bit (see config_is_script)
   #
-  return '.sh' if (cfg_mode == 'ns' or u_templates.config_is_script(cfg_mode)) else '.cfg'
+  return '.sh' if (cfg_mode == 'ns' or u_templates.config_is_script(cfg_mode,node,defaults)) else '.cfg'
 
 def create_node_configs(
       topology: Box,
@@ -127,7 +127,7 @@ def create_node_configs(
 
     for module in item_list:
       config_mode = template_mode.get(module,default_suffix)
-      o_suffix = config_file_suffix(default_suffix,config_mode)
+      o_suffix = config_file_suffix(default_suffix,config_mode,n_data,topology.defaults)
       if flatten_output_fname:                          # Create all output files in the same directory?
         o_fname = f'{n_name}.{module}{o_suffix}'        # ... we need node name in file name
         o_fname = o_fname.replace('/','.')              # ... and remove the paths

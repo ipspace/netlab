@@ -231,9 +231,9 @@ _netlab_ can use a variety of device configuration deployment mechanisms:
 | daemon<br>configurations | Daemon configuration files are generated on the host and mapped into the containers running [daemons](platform-daemons) like *dnsmasq* or *bird* |
 | **ansible** | Starts an Ansible playbook that uses device-specific task lists executing Ansible device modules. Use **netlab install ansible** to install Ansible and the prerequisite Python libraries. |
 | **sh** | Uses **docker exec** command to execute shell scripts *mapped* into containers[^CMSH] |
-| **cp_sh** | Copies shell scripts into containers (using **docker cp**) or virtual machines (using *netmiko* implementation of **scp**) and executes them with **docker exec** or **netmiko.send_command()**. |
+| **cp_sh** | Copies shell scripts into containers (using **docker cp**) and executes them with **docker exec** |
 | **ns** | Uses **ip netns exec** to execute shell scripts on the host within the container namespace[^CMNS] |
-| **netmiko** | Uses the *netmiko* library to send configuration commands over an SSH session. Use **netlab install netmiko** to install it. |
+| **netmiko** | Uses the *netmiko* library to send configuration commands over an SSH session, or to copy configuration scripts to Linux-based virtual machines (for example, FRR) and execute them. Use **netlab install netmiko** to install it. |
 | **startup** | Configuration files are merged into a partial startup configuration that is passed to the *containerlab* `startup-config` parameter. This experimental method works only for containers and [won't report device configuration errors](https://blog.ipspace.net/2026/02/netlab-startup-config-caveats/). |
 
 [^CMSH]: This method can be used in most native containers, but not in [containers running virtual machines](clab-vrnetlab).
