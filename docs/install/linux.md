@@ -15,7 +15,7 @@ We test _netlab_ on Ubuntu to provide a reasonably hassle-free experience for ne
 
 To build a Linux environment needed to run network devices as virtual machines or containers:
 
-* Install Python 3.10 or later (use the latest Python version supported by your Linux distribution)
+* Install Python 3.11 or later (use the latest Python version supported by your Linux distribution). Python 3.10 still works but is [deprecated](install).
 
 If you want to run network devices as virtual machines with KVM:
 

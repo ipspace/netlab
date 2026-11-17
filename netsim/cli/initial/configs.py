@@ -189,7 +189,6 @@ def run(topology: Box, args: argparse.Namespace, cwd: str) -> None:
       remove_extra_templates(topology,nodeset)              # ... comparable with Ansible?
     create_node_configs(topology,nodeset,abs_path,args,flatten_output_fname=True)
   else:
-    ansible.check_version()
     rest = utils.ansible_args(args)
     rest += ['-e',f'config_dir="{abs_path}"' ]              # Add output directory path to Ansible variables
     ansible.playbook('create-config.ansible',rest)

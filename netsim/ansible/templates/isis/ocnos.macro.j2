@@ -1,0 +1,55 @@
+{#
+  OcNOS uses "level-2-only" where netlab uses "level-2". netlab IS-IS uses wide metrics, and
+  OcNOS sets them with "isis wide-metric" ("isis metric" takes narrow metrics only, 1-63).
+
+  The VRF IS-IS instance uses a positional VRF name ("router isis <tag> <vrf>")
+#}
+{% macro config(isis,interfaces,vrf='') %}
+{%   set lvl = { 'level-1': 'level-1', 'level-2': 'level-2-only', 'level-1-2': 'level-1-2' } %}
+{%   set mt_lvl = { 'level-1': 'level-1', 'level-2': 'level-2', 'level-1-2': 'level-1-2' } %}
+!
+router isis {{ isis.instance }}{{ (' ' ~ vrf) if vrf else '' }}
+ is-type {{ lvl[isis.type]|default(isis.type) }}
+ net {{ isis.net }}
+ metric-style wide
+ dynamic-hostname
+{%   if isis.af.ipv4 is defined %}
+{%     for s_proto in isis.import|default({}) %}
+ redistribute {{ s_proto }} {{ mt_lvl[isis.type]|default('level-1-2') }}
+{%     endfor %}
+{%   endif %}
+{%   for l in interfaces if l.isis.passive|default(False) %}
+ passive-interface {{ l.ifname }}
+{%   endfor %}
+{%   if isis.af.ipv6 is defined %}
+ address-family ipv6 unicast
+  multi-topology {{ mt_lvl[isis.type]|default('level-1-2') }}
+{%     for s_proto in isis.import|default({}) %}
+  redistribute {{ s_proto }} {{ mt_lvl[isis.type]|default('level-1-2') }}
+{%     endfor %}
+ exit-address-family
+{%   endif %}
+!
+{%   for l in interfaces if 'isis' in l %}
+interface {{ l.ifname }}
+{%     if 'ipv4' in l and isis.af.ipv4 is defined %}
+ ip router isis {{ isis.instance }}
+{%     endif %}
+{%     if 'ipv6' in l and isis.af.ipv6 is defined %}
+ ipv6 router isis {{ isis.instance }}
+{%     endif %}
+{%     if l.isis.network_type is defined %}
+ isis network {{ l.isis.network_type }}
+{%     endif %}
+{%     if l.isis.type is defined %}
+ isis circuit-type {{ lvl[l.isis.type]|default(l.isis.type) }}
+{%     endif %}
+{%     if l.isis.metric is defined %}
+ isis wide-metric {{ l.isis.metric }}
+{%     endif %}
+{%     if (l.isis.bfd.ipv4|default(False) or l.isis.bfd.ipv6|default(False)) and l.type|default('') != 'loopback' %}
+ isis bfd
+{%     endif %}
+!
+{%   endfor %}
+{% endmacro %}

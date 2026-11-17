@@ -175,7 +175,7 @@ links:
 
 [^IFNAME]: Use **ip addr** or **ifconfig** find the interface name.
 
-[^U22]: Example: Ubuntu 22.04 uses weird interface names based on the underlying NIC type.
+[^U22]: Example: Ubuntu 22.04 and later use weird interface names based on the underlying NIC type.
 
 Finally, if you want to connect the management network to the outside world, create the management network [based on an existing Linux bridge](libvirt-mgmt) that is already connected to the outside world or enable port forwarding.
 

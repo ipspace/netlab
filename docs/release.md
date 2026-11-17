@@ -11,6 +11,8 @@ The highlights of release 26.11 include:
 * *Netmiko* is the default configuration method for Cisco IOS XR and Nexus OS, and is used by **netlab config** and **netlab collect**
 * OSPFv3, IBGP, static routes, and route redistribution on Cisco ASAv
 
+We also decided to [deprecate Ubuntu 22.04 and Python 3.10](install).
+
 [More details](release-26.11), new [device features](release-26.11-device-features), and [breaking changes](release-26.11-breaking)
 
 **Release 26.10 (2026-10-02)**

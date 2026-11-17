@@ -88,7 +88,6 @@ def run(
   ansible_waits = internal_device_ready(node_waits,topology)
   if ansible_waits:
     log.info(text='Checking lab devices with an Ansible playbook')
-    ansible.check_version()
     ansible_limit = ['--tag',','.join(['ready_'+wl for wl in ansible_waits.keys()])]
     ansible.playbook('device-ready.ansible',rest + min_ansible_args(args) + ansible_limit)
 

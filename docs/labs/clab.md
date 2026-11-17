@@ -21,7 +21,7 @@ You have to be a member of the `clab_admins` group to start a _containerlab_ lab
 
 ## Supported Versions
 
-The latest _netlab_ release was tested with _containerlab_ version 0.80.0. That's also the version the **netlab install containerlab** command installs.
+The latest _netlab_ release was tested with _containerlab_ version 0.83.0. That's also the version the **netlab install containerlab** command installs.
 
 If needed, use ```sudo containerlab version upgrade``` to upgrade to the latest _containerlab_ version.
 
@@ -334,28 +334,27 @@ You don't have to worry about dots in filenames: _netlab_ knows that the keys of
 (clab-config-template)=
 ### Generating and Binding Custom Configuration Files
 
-In addition to binding pre-existing files, _netlab_ can generate custom config files on the fly based on Jinja2 templates. For example, this is used internally to create the list of daemons for the **frr** container image:
+In addition to binding pre-existing files, _netlab_ can generate custom config files on the fly based on Jinja2 templates. For example, this is used internally to create the `/etc/hosts` file for the **frr** container image:
 
 ```
 frr:
  clab:
-  image: frrouting/frr:v8.3.1
-  mtu: 1500
+  image: quay.io/frrouting/frr:10.7.1
   node:
-    kind: linux
+    kind: frr
     config_templates:
-      daemons: /etc/frr/daemons
+      hosts: /etc/hosts:shared
 ```
 
-In the above example, the `daemons.j2` Jinja2 template from the configuration file templates search path[^CFSP] is rendered into the `daemons` file within the `clab_files/node-name` subdirectory of the current directory. That file is then mapped into the `/etc/frr/daemons` file within the container.
+In the above example, the `hosts.j2` Jinja2 template from the configuration file templates search path[^CFSP] is rendered into a file that is shared between all nodes (`shared` mode) and mapped into the `/etc/hosts` file within the container.
 
 [^CFSP]: See [](dev-config-deploy-paths) for more details.
 
-_netlab_ tries to locate the Jinja2 templates in the device-specific **paths.templates.dirs** directories[^CFTD]; the template file name is the dictionary key (for example, `daemons`) with the `.j2` suffix.
+_netlab_ tries to locate the Jinja2 templates in the device-specific **paths.templates.dirs** directories[^CFTD]; the template file name is the dictionary key (for example, `hosts`) with the `.j2` suffix.
 
 [^CFTD]: See [](change-search-paths) for more details.
 
-For example, with the default path settings, the user-specified `daemons.j2` template could be in the `templates/frr` subdirectory of:
+For example, with the default path settings, the user-specified `hosts.j2` template could be in the `templates/frr` subdirectory of:
 
 * The lab topology directory
 * The current directory

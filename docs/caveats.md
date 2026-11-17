@@ -492,14 +492,14 @@ ansible_httpapi_port: 80
 * Many FRR configuration templates are not idempotent -- you cannot run **netlab initial** multiple times. Non-idempotent templates include VLAN and VRF configurations.
 * You can change the FRR default profile with the **netlab_frr_defaults** node parameter (`traditional` or `datacenter`, default is `datacenter`).
 * **netlab collect** downloads FRR configuration but not Linux interface configuration.
-* FRR has no default logging destinations. The initial device configuration adds file logging to `/var/log/frr/frr.log`.
+* The initial device configuration adds file logging to `/var/log/frr/frr.log`.
 * _netlab_ automatically enables FRR daemons required by the _netlab_ modules you use on individual nodes in the `/etc/frr/daemons` FRRouting configuration file. Use the **frr.daemons** node attribute to enable additional FRRouting daemons.
 
 **FRR-Specific Node Attributes:**
 
-* The **frr.debug** global- or node attribute [enables debugging](node-debug-attribute) during the initial device configuration. On FRR containers, it also relays log file output to container *stdout* so you can inspect it with **docker logs** (see below).
+* The **frr.debug** global- or node attribute [enables debugging](node-debug-attribute) during the initial device configuration.
 * The **frr.logfile** attribute specifies the path to the FRR logging file (default: `/var/log/frr/frr.log`)
-* You can specify a list of additional FRRouting daemons you want to have enabled in the **frr.daemons** node attribute.
+* You can specify a list of additional FRRouting daemons you want to have enabled in the **frr.daemons** node attribute. Set **frr.daemons** to *True* to enable all FRRouting daemons.
 
 **FRR VM Caveats:**
 
@@ -508,7 +508,8 @@ ansible_httpapi_port: 80
 
 **FRR Container Features and Caveats:**
 
-* FRR logging messages are written to the log file (default: `/var/log/frr/frr.log`; see **frr.logfile**). When **frr.debug** is enabled, they are also copied to the container *stdout* so you can inspect them with **docker logs _containername_** (which you can find with the **netlab status** command). The log relay can trigger SELinux denials on the host and is therefore disabled by default.
+* FRR containers use the *containerlab* **frr** kind. _netlab_ uses the **frr.daemons** node attribute and the _netlab_ modules used by the node to generate the list of FRR daemons (*containerlab* **daemons** node attribute).
+* FRR logging messages are written to the log file (default: `/var/log/frr/frr.log`; see **frr.logfile**) and the container *stdout*. You can inspect them with **docker logs _containername_** (which you can find with the **netlab status** command).
 * FRR containers need host kernel modules (drivers) to implement the data-plane functionality of *vrf*, *mpls*, and *vxlan* netlab modules. The kernel modules are automatically loaded (when available) during the **netlab up** processing.
 * VRF and VXLAN kernel modules are usually bundled with a Linux distribution. If your Ubuntu distribution does not include the MPLS drivers, try installing them with `sudo apt install linux-generic`.
 * You cannot load kernel modules in GitHub Codespaces and thus cannot use *vrf*, *mpls*, or *vxlan* modules on FRRouting nodes in that environment.
@@ -738,6 +739,7 @@ See also [](caveats-sros) caveats for further details.
 * OSPF reference bandwidth is not implemented
 * OpenBSD OSPFv3 implementation does not support ABR functionality. It also advertises passive interfaces with a very high cost.
 * _netlab_ RIPv2/RIPng template implements route redistribution, but only for static and connected prefixes
+* OpenBSD RIPv2/RIPng daemons cannot change RIP timers.
 * The device role on nodes with a loopback interface is automatically changed to **router** (contrary to most other network devices, OpenBSD does not allow you to reach non-connected IP addresses unless the IPv4/IPv6 forwarding is enabled).
 
 (caveats-sonic-vm)=
