@@ -81,9 +81,7 @@ Its printout looks similar to this one:
 │ CREATING configuration files                                                     │
 └──────────────────────────────────────────────────────────────────────────────────┘
 [CREATED] provider configuration file: clab.yml
-[MAPPED]  clab_files/r1/daemons to r1:/etc/frr/daemons (from templates/provider/clab/frr/daemons.j2)
 [MAPPED]  clab_files/r1/hosts to r1:/etc/hosts (from templates/provider/clab/frr/hosts.j2)
-[MAPPED]  clab_files/r2/daemons to r2:/etc/frr/daemons (from templates/provider/clab/frr/daemons.j2)
 [MAPPED]  clab_files/r2/hosts to r2:/etc/hosts (from templates/provider/clab/frr/hosts.j2)
 [CREATED] transformed topology dump in YAML format in netlab.snapshot.yml
 [GROUPS]  group_vars for all

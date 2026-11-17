@@ -80,9 +80,9 @@ fi
 {%   endif %}
 {% endif %}
 #
-# Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+# Enable FRR modules (containerlab generates /etc/frr/daemons from clab.daemons)
 #
-{% if clab is not defined or clab.binds|default({})=={} %}
+{% if clab is not defined %}
 {%   include 'frr/daemons.j2' +%}
 /usr/lib/frr/frrinit.sh restart
 {% endif %}
@@ -118,9 +118,11 @@ ip link set {{ i.ifname }} down
 {{ linux_intf_sysctl(i,role) }}
 {% endfor %}
 
+{% if clab is not defined %}
 #
-# Add vtysh.conf file
+# Add vtysh.conf file (containerlab frr kind creates it)
 echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+{% endif %}
 
 {% set frr_log_path = frr.logfile|default('/var/log/frr/frr.log') %}
 {% if not netlab_initial_reload|default(False) %}
@@ -222,14 +224,5 @@ do write
 CONFIG
 vtysh -f /tmp/config
 {% endif %}{# not netlab_initial_reload #}
-
-{% if clab is defined and frr.debug|default([]) %}
-#
-# Redirect FRR's log to the container's stdout so 'docker logs' works
-# Note that this may trigger SELinux denials on the host.
-#
-DOCKER_LOGS_STDOUT="/proc/1/fd/1"
-tail -n 0 -F {{ frr_log_path }} >${DOCKER_LOGS_STDOUT} 2>&1 &
-{% endif %}
 !
 exit 0
