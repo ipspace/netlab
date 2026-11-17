@@ -3,6 +3,8 @@
 
 **netlab config** is used to deploy custom device configuration templates to lab devices. It reads lab parameters from the _netlab_ snapshot file created by the **[netlab create](netlab-create)** or **[netlab up](netlab-up)** command, renders the supplied Jinja2 template ([limitations](dev-templates)), and uses the [device-specific configuration method](platform-config-mode) or the internal `config.ansible` Ansible playbook to deploy the rendered configuration snippets.
 
+Containers using the **sh** [configuration method](platform-config-mode) cannot get new configuration scripts mapped into them after they have been started. **netlab config** copies the custom configuration scripts into containers that support the **cp_sh** configuration method (for example, FRRouting) and uses the Ansible playbook to configure other containers.
+
 You have to use **netlab config** on a running lab. If you want to try out the configuration templates without starting the lab,  add the [**config** attribute](custom-config) to node data and run **netlab create** to create the configuration files.
 
 ## Usage
@@ -75,7 +77,7 @@ After saving the above template into `bgp_default.j2`, you can use `netlab confi
 
 **netlab config --reload** implements the *reload saved device configurations* part of the **netlab initial -r** command. It waits for devices to become ready (since it's used immediately after a lab has been started) and starts the initial configuration process on devices that need more than a replay of saved configuration ([more details](netlab-up-reload)).
 
-After that, it uses *netmiko* to copy the saved configurations to the devices and replace their running configurations on [supported devices](dev-config-netmiko-reload) (Arista EOS, Cisco IOS/IOS XE) when the *netmiko* library is installed.
+After that, it uses *netmiko* to copy the saved configurations to the devices and replace their running configurations on [supported devices](dev-config-netmiko-reload) (Arista EOS, Cisco IOS/IOS XE, FRRouting virtual machines) when the *netmiko* library is installed.
 
 On all other devices, it treats the saved device configurations as custom templates (using the same process as the regular **netlab config** command), allowing you to use Jinja2 expressions in saved device configurations.
 
