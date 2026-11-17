@@ -1,4 +1,4 @@
-(install)=
+(install-netlab)=
 # Installation
 
 *netlab* is a Python3 package[^NSL] that uses Python 3.10[^P310] or later. It runs on Linux[^NLE] (we're doing all our tests on Ubuntu), including Windows Subsystem for Linux or [Multipass on macOS](https://blog.ipspace.net/2024/03/netlab-bgp-apple-silicon/).
