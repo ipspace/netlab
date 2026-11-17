@@ -3,6 +3,7 @@
 #
 from box import Box
 
+from ..augment import devices as a_devices
 from ..utils import log
 from . import _Quirks, report_quirk
 from .linux import etc_resolv_mapping
@@ -25,11 +26,34 @@ def check_stp_on_trunks(node: Box, topology: Box) -> None:
       more_data=err_data,
       node=node)
 
+"""
+Containerlab 'frr' kind enables all FRR daemons unless the node has a 'daemons' list. Build
+that list from the daemons needed by netlab modules and the frr.daemons node attribute.
+
+'zebra' is always in the list: it's always started anyway, and an empty list would enable all
+daemons. frr.daemons set to True enables all daemons (no 'daemons' list)
+"""
+def set_clab_daemons(node: Box, topology: Box) -> None:
+  if node.get('clab.kind',None) != 'frr':
+    return
+  extra = node.get('frr.daemons',[])
+  if extra is True:
+    return
+
+  mod_daemons = a_devices.get_device_attribute(node,'group_vars.netlab_frr_daemons',topology.defaults) or {}
+  daemons = ['zebra']
+  for m in node.get('module',[]):
+    daemons.extend(mod_daemons.get(m,[]))
+  if isinstance(extra,list):
+    daemons.extend(extra)
+  node.clab.daemons = list(dict.fromkeys(daemons))
+
 class FRR(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
     etc_resolv_mapping(node,topology)
+    set_clab_daemons(node,topology)
     mods = node.get('module',[])
     if 'stp' in mods and node.get('stp.enable',True):
       if log.debug_active('quirks'):
