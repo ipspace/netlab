@@ -31,7 +31,10 @@ If possible, [use containerlab](lab-clab) and package the virtual machines you n
 
 [^CSV]: Please check the [libvirt installation script](https://github.com/ipspace/netlab/blob/dev/netsim/install/libvirt.sh) for the recommended Vagrant release.
 
-Finally, install Ansible 2.9.1 or later and any Ansible networking dependencies (example: paramiko). We recommend using the latest Ansible 11.x release. You _might_ be able to use the **netlab install ansible** command (after [installing netlab](install-linux-netlab)) instead of manual installation.
+Finally, install Netmiko or Ansible depending on [which devices you want to use](platform-config-mode):
+
+* Netmiko is a Python package, use **pip3 install netmiko[par4]** (or similar) with whatever extra parameters your Python installation process requires.
+* Install Ansible 2.9.1 or later and any Ansible networking dependencies (example: paramiko). We recommend using the latest Ansible 11.x release. You _might_ be able to use the **netlab install ansible** command (after [installing netlab](install-linux-netlab)) instead of manual installation.
 
 (linux-commands-mandatory)=
 *netlab* also needs (at least) these Linux commands to provide its full functionality:

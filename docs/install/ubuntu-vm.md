@@ -99,15 +99,14 @@ Remove the **‌pip3** and **‌netlab** commands from the Vagrantfile and [foll
 sudo apt-get update
 sudo apt-get install -y python3-pip
 sudo pip3 install --ignore-installed networklab
-netlab install -y ubuntu ansible libvirt containerlab
 ```
 
 ```{tip}
 * Installing Python packages as root is not the recommended best practice. We're using this approach because we're setting up a single-purpose VM.
 * Ubuntu 24.04 and later want you to install Python packages in a virtual environment. To stop the complaints, add the `--break-system-packages` option to the **pip3 install** command.
-* Running multiple installation scripts with **‌netlab install** might fail on some Ubuntu distributions. If you experience that problem, execute multiple **‌netlab install** commands (one per installation script).
 ```
 
+* After installing *netlab*, [install additional software](install-ubuntu-additional) netlab needs to start and configure the labs.
 * After completing the software installation, log out, log back in (to get new group memberships), and test your installation with the **[netlab test](netlab-test)** command. If those tests fail, you might have to use **sudo usermod** to add your user to the *libvirt* and *docker* groups.
 
 ## Next Steps

@@ -18,10 +18,17 @@ The simplest way to install *netlab* and the whole low-level toolchain on an exi
 * [Read this section](install-ubuntu-venv) if you want to install _netlab_ in a Python virtual environment
 ```
 
-* Install additional software with `netlab install ubuntu ansible libvirt containerlab` command ([more details](netlab-install)).
+(install-ubuntu-additional)=
+* Install additional software with `netlab install` command ([more details](netlab-install)):
+
+  * ⁣**netlab install ubuntu** installs additional Ubuntu utilities
+  * Use ⁣**netlab install libvirt** to install libvirt, KVM, and Vagrant
+  * Use ⁣**netlab install containerlab** to install containerlab and Docker. If you want to use Podman instead of Docker, use **netlab install podman** instead.
+  * **netlab install netmiko** installs netmiko and paramiko. Use it when netlab [doesn't use Ansible](platform-config-mode) to configure the devices you want to use. Otherwise, use **netlab install ansible**, which installs Ansible and its dependencies, including netmiko and paramiko.
+  * Finally, if you plan to use Nokia devices, install gRPC libraries and Nokia collections with **netlab install grpc**
 
 ```{tip}
-Running multiple installation scripts with **‌netlab install** might fail on some Ubuntu distributions. If you experience that problem, execute multiple **‌netlab install** commands (one per installation script).
+While you can list several installation scripts in the **netlab install** command, such installations might fail on some Ubuntu distributions. If you experience that problem, execute one **‌netlab install** command per installation script.
 ```
 
 * After completing the software installation, log out, log back in (to get new group memberships), and test your installation with the **[netlab test](netlab-test)** command ([other options](install-linux-server-test)). If those tests fail, you might have to use **sudo usermod** to add your user to the *libvirt* and *docker* groups.

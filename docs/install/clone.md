@@ -8,7 +8,7 @@ If you want to change the *netlab* source code, need the latest development vers
 * Within the **netlab** directory, install prerequisite Python packages with `python3 -m pip install -r requirements.txt`[^BSP].
 * If you want to contribute to the project, install additional Python packages with `python3 -m pip install -r requirements-dev.txt`.
 * Add the **netlab** directory to your PATH with `source setup.sh` command executed within the **netlab** directory. Alternatively, you could install the `networklab` package from the local source (and create the `netlab` command in the `~/.local/bin` directory) with the `pip3 install -e .` command.
-* (Optional) Use the **[netlab install](netlab-install)** command to install Ubuntu utilities, containerlab, libvirt/KVM, or Ansible.
+* (Optional) Use the **[netlab install](netlab-install)** command to install Ubuntu utilities, containerlab, libvirt/KVM, Netmiko, or Ansible.
 
 Next step: [create the lab environment](lab)
 
