@@ -26,7 +26,7 @@ import sys
 
 from box import Box
 
-from netsim import data
+from netsim import cli, data
 from netsim.utils import log
 
 TOOL = "network_xray"
@@ -39,7 +39,7 @@ LOOP = os.path.join(os.path.dirname(os.path.abspath(__file__)), "validate_loop.p
 
 
 def tool_settings(topology: Box) -> Box:
-  return topology.get("tools", {}).get(TOOL, None) or Box({})
+  return topology.get(f"tools.{TOOL}", {})
 
 
 def loop_wanted(topology: Box) -> bool:
@@ -80,11 +80,7 @@ def post_shell_post_tools_start(topology: Box) -> None:
   settings = tool_settings(topology)
   interval = settings.get("validate_interval", 30)
   max_hours = settings.get("validate_max_hours", 12)
-  netlab_cmd = [
-    sys.executable,
-    "-c",
-    'import sys; from netsim.cli import main; sys.argv[0] = "netlab"; sys.exit(main())',
-  ]
+  netlab_cmd = [cli.NETLAB_SCRIPT or "netlab"]  # The netlab command that started this lab
   with open(LOG_FILE, "a") as logf:
     p = subprocess.Popen(
       [sys.executable, LOOP, str(interval), str(max_hours), OUT_FILE, PID_FILE] + netlab_cmd,
