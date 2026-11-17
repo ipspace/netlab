@@ -362,8 +362,14 @@ def render_config_template(
 """
 config_is_script: the single decision point for "is the configuration file
 a shell script" (needs shebang, has to be executable, uses .sh suffix)
+
+netmiko configuration mode results in scripts when the device uses the 'script'
+netmiko configuration method (copy the script to the device and execute it)
 """
-def config_is_script(config_mode: typing.Optional[str]) -> bool:
+def config_is_script(config_mode: typing.Optional[str], node: Box, defaults: Box) -> bool:
+  if config_mode == 'netmiko':
+    return devices.get_device_features(node,defaults).get('netmiko.config.method',None) == 'script'
+
   return config_mode in ('sh','cp_sh')
 
 """
@@ -401,7 +407,7 @@ def create_config_file(
           provider_path=provider_path,
           topology=topology,
           config_mode=config_mode,
-          script=config_is_script(config_mode))
+          script=config_is_script(config_mode,node,topology.defaults))
 
   if OK and log.VERBOSE:
     log.info(f"Rendered {module} template for {node.name} into {output_file}")

@@ -215,8 +215,8 @@ def netmiko_fallback_config_mode(ddata: Box, pname: str) -> bool:
   """
   gv_path = 'group_vars.netlab_config_mode'       # Setup: the path to the relevant group var
   nm_values = ['netmiko']                         # ... and the netmiko-based config methods
-  if pname == 'libvirt':
-    nm_values += ['sh','cp_sh']                   # ... which include sh/cp_sh under libvirt
+  if pname == 'libvirt':                          # ... which include deprecated sh/cp_sh under libvirt
+    nm_values += ['sh','cp_sh']                   # TODO: remove together with the libvirt compatibility shim
 
   removed = False
   for gv_key in (f'{pname}.{gv_path}',gv_path):   # Now try provider-specific and generic group var

@@ -12,7 +12,9 @@ When adding a new device type, you'll have to create either:
 
 You can also mix and match the approaches. For example, several devices have a generic *deploy configuration* task list, but use a separate list of tasks for the initial configuration.
 
-You could also use Linux scripts for some configuration modules, Daemon configuration files for other tasks, and an Ansible task list + template for the rest of the tasks (or custom templates). For example, BIRD daemon uses configuration files to configure BGP and OSPF, shell scripts (inherited from the Linux device) to configure interfaces, VLANs, and link aggregation groups, and an Ansible task list (also inherited from the Linux device) to deploy custom configuration templates.
+You could also use Linux scripts for some configuration modules, Daemon configuration files for other tasks, and an Ansible task list + template for the rest of the tasks (or custom templates).  You can also use Netmiko instead of Ansible to deploy the rendered device configurations.
+
+For example, the BIRD daemon uses configuration files to configure BGP and OSPF, shell scripts (inherited from the Linux device) to configure interfaces, VLANs, and link aggregation groups, and an Ansible task list (also inherited from the Linux device) to deploy custom configuration templates.
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -232,9 +234,11 @@ _netlab_ assumes that the modules specified in the **clab.node_config** dictiona
 The scripts specified in the **clab.node_config** dictionary are executed in the order in which they're defined. This order must match the sequence in which the configuration modules must be configured.
 ```
 
-### Default Device Configuration Mode
+### Scripts as Default Container Configuration Mode
 
-You can also use the **netlab_config_mode** device group variable to specify the execution mode (`sh`/`cp_sh`/`ns`) that applies to all configuration scripts. When a device has that parameter set, the **clab** provider module automatically populates the **node_config** dictionary with all modules and custom templates used on the node that are not already specified in **daemon_config** or **node_config** dictionary.
+You can also use the **netlab_config_mode** device group variable to specify the execution mode (`sh`/`cp_sh`/`ns`) that applies to all configuration scripts[^CLO]. When a device has that parameter set, the **clab** provider module automatically populates the **node_config** dictionary with all modules and custom templates used on the node that are not already specified in **daemon_config** or **node_config** dictionary.
+
+[^CLO]: These execution modes work only with the **clab** provider; Linux-based virtual machines use the *netmiko* configuration mode to [deploy configuration scripts](dev-config-netmiko-script).
 
 For example, the following definition was used in the `linux` device in release 25.12 to configure Linux containers with host-side scripts executed in the container network namespace:
 
@@ -255,15 +259,15 @@ clab:
     netlab_config_mode: ns
 ```
 
-### Rendering Linux Configuration Scripts
+### Rendering Linux Container Configuration Scripts
 
 The **clab.node_config** dictionary is copied into the **clab.config_templates** dictionary (**daemon_config** dictionary takes precedence). The templates specified in the **node_config** dictionary are thus rendered into `clab_files` during the **netlab up**/**netlab create** process (using the standard template search process) and mapped into the container file system through **clab.binds**.
 
 Some devices (for example, FRRouting) use a mixture of **bash** scripts and device configurations. Some others (for example, cEOS containers) use traditional device configurations that can be deployed through Linux scripts. In both cases, the device configurations converted to Linux scripts require an *[interpreter directive](https://en.wikipedia.org/wiki/Shebang_(Unix))* as the first line of the script.
 
-The easy cases (adding shebang in front of a device configuration) can be handled with the **netlab_default_shebang** group variable. The contents of that variable are prepended to the rendered configuration template when:
+The easy cases (adding a shebang in front of a device configuration) can be handled with the **netlab_default_shebang** group variable. The contents of that variable are prepended to the rendered configuration template when:
 
-* The **netlab_config_mode** is set to `sh` or `cp_sh`
+* The **netlab_config_mode** is set to `sh` or `cp_sh`, or to `netmiko` on devices that [deploy configuration scripts with netmiko](dev-config-netmiko-script)
 * The rendered configuration text does not start with `#!`
 
 Alternatively, you can use the **netlab_config_wrapper** group variable to specify a Jinja2 template that converts device configuration into a Linux script. The script can use three extra variables:
@@ -289,7 +293,7 @@ netlab_config_wrapper: |
   {{ netlab_config_text }}
 ```
 
-### Deploying Linux Configuration Scripts
+### Deploying Linux Container Configuration Scripts
 
 **netlab initial** (also invoked as the last step in the **netlab up** process) executes scripts specified in the **clab.node_config** dictionary:
 

@@ -217,15 +217,19 @@ def execute(
       conn: '_netmiko.BaseConnection',
       n_name: str,
       cmd: str,
-      quiet: bool = False) -> typing.Optional[typing.Tuple]:
+      quiet: bool = False,
+      get_pty: bool = False,
+      timeout: typing.Optional[float] = None) -> typing.Optional[typing.Tuple]:
   """
   Executes a single command over a new SSH (RCE) channel. Returns (stdout,stderr,rc)
-  after successful command execution and None after a netmiko error
+  after successful command execution and None after a netmiko error or timeout.
+
+  Use get_pty to execute the command in a PTY (stderr is merged into stdout)
   """
   if not conn.remote_conn_pre:
     raise Exception("netmiko connection data is missing")
   try:
-    stdin, stdout, stderr = conn.remote_conn_pre.exec_command(cmd)
+    stdin, stdout, stderr = conn.remote_conn_pre.exec_command(cmd,get_pty=get_pty,timeout=timeout)
   except Exception as ex:
     if not quiet:
       log.error(
@@ -239,6 +243,13 @@ def execute(
     errors = stderr.read().decode()
     rc = stdout.channel.recv_exit_status()
     return (output, errors, rc)
+  except TimeoutError:
+    if not quiet:
+      log.error(
+        f'SSH command on {n_name} timed out after {timeout} seconds',
+        module='netmiko',
+        skip_header=True)
+    return None
   except Exception as ex:
     if not quiet:
       log.error(
@@ -251,3 +262,43 @@ def execute(
     stdin.close()
     stdout.close()
     stderr.close()
+
+def command(
+      conn: '_netmiko.BaseConnection',
+      n_name: str,
+      cmd: str,
+      quiet: bool = False,
+      timeout: typing.Optional[float] = None) -> typing.Optional[typing.Tuple]:
+  """
+  Executes a shell command over the interactive netmiko session. Returns (output,'',rc)
+  after successful command execution (stderr is merged into output) and None after a
+  netmiko error. Use on Linux-like devices that do not support RCE channels or when you
+  need the interactive session context (for example, a root shell)
+  """
+  # ChatGPT-inspired hack. Ugly, but it works
+  #
+  cmd_marker = "__NETMIKO_RC:"                                # Use a marker to get back the return code
+  try:
+    output = str(conn.send_command(
+                   f'{cmd}; rc=$?; echo {cmd_marker}$rc',
+                   read_timeout=timeout or 10.0))             # 10 seconds is the netmiko default
+  except Exception as ex:
+    if not quiet:
+      log.error(
+        f'Cannot execute a command on {n_name}: {str(ex)}',
+        module='netmiko',
+        skip_header=True)
+    return None
+
+  if cmd_marker not in output:
+    if not quiet:
+      log.error(
+        f'Cannot get the return code of a command executed on {n_name}',
+        more_data=output,
+        module='netmiko',
+        skip_header=True)
+    return None
+
+  (result,rc) = output.rsplit(cmd_marker,1)                   # Get the command printout and the exit code
+  rc = rc.split('\n')[0].strip()                              # Extract the return code from the clutter
+  return (result, '', int(rc) if rc.isdigit() else -1)
