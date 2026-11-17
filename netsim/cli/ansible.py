@@ -15,11 +15,22 @@ from ..data import get_box
 from ..utils import log
 from . import external_commands
 
+_VERSION_MISMATCH: typing.Optional[bool] = None   # Cached result of the Ansible version check
 
-def check_version(fatal: bool = False) -> None:
+"""
+Check whether the installed Ansible version might be incompatible with netlab. The check is
+performed (and the warning displayed) only once; the result is cached and returned on subsequent calls.
+"""
+def check_version(fatal: bool = False) -> bool:
+  global _VERSION_MISMATCH
+  if _VERSION_MISMATCH is not None:
+    return _VERSION_MISMATCH
+
+  _VERSION_MISMATCH = False
   try:
     import ansible  # type: ignore
     if ansible.__version__ >= '2.19':           # Ansible core 2.19 contains significant templating changes
+      _VERSION_MISMATCH = True
       log.warning(
         text="You're using Ansible version 12.x or higher; netlab might not work correctly",
         more_hints = [
@@ -31,6 +42,8 @@ def check_version(fatal: bool = False) -> None:
         category=log.FatalError if fatal else Warning)
   except Exception as ex:
     log.warning(text=f"Cannot determine Ansible version: {str(ex)}",module='ansible')
+
+  return _VERSION_MISMATCH
 
 def find_playbook(name: str) -> typing.Union[str,None]:
   cwd = Path(os.getcwd()).resolve()
@@ -67,10 +80,20 @@ def playbook(name: str, args: typing.List[str], abort_on_error: bool = True) -> 
   if log.VERBOSE:
     print("Running Ansible playbook %s" % pbname)
 
+  check_version()
   cmd = ['ansible-playbook',pbname]
   cmd.extend(args)
 
   OK = external_commands.run_command(cmd,ignore_errors=not abort_on_error and not log.VERBOSE)
+  if not OK and _VERSION_MISMATCH:              # Remind the user the playbook failure might be caused by Ansible version
+    log.warning(
+      text=f"Ansible playbook {name} failed, possibly due to the unsupported Ansible version",
+      more_hints = [
+        "Ansible core version 2.19 introduced breaking changes in templates and playbooks.",
+        "Consider downgrading Ansible to version 11.10 or lower." ],
+      module='ansible',
+      flag='ver12')
+
   if not OK and abort_on_error:
     log.fatal(f"Executing Ansible playbook {pbname} failed")
 
