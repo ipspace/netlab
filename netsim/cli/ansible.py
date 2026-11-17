@@ -21,7 +21,7 @@ _VERSION_MISMATCH: typing.Optional[bool] = None   # Cached result of the Ansible
 Check whether the installed Ansible version might be incompatible with netlab. The check is
 performed (and the warning displayed) only once; the result is cached and returned on subsequent calls.
 """
-def check_version(fatal: bool = False) -> bool:
+def check_version() -> bool:
   global _VERSION_MISMATCH
   if _VERSION_MISMATCH is not None:
     return _VERSION_MISMATCH
@@ -38,8 +38,7 @@ def check_version(fatal: bool = False) -> bool:
           "We tested netlab core with Ansible version 13.x but some rarely-used devices might",
           "not work properly. You might want to downgrade Ansible to version 11.10 or lower." ],
         module='ansible',
-        flag='ver12',
-        category=log.FatalError if fatal else Warning)
+        flag='ver12')
   except Exception as ex:
     log.warning(text=f"Cannot determine Ansible version: {str(ex)}",module='ansible')
 

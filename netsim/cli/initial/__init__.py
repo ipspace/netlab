@@ -8,7 +8,7 @@ import typing
 
 from ...utils import log
 from ...utils import status as _status
-from .. import ansible, error_and_exit, external_commands, load_snapshot, set_dry_run
+from .. import error_and_exit, external_commands, load_snapshot, set_dry_run
 from . import configs, deploy, ready, utils
 
 
