@@ -8,7 +8,7 @@ import typing
 
 from ...utils import log
 from ...utils import status as _status
-from .. import ansible, error_and_exit, external_commands, load_snapshot, set_dry_run
+from .. import error_and_exit, external_commands, load_snapshot, set_dry_run
 from . import configs, deploy, ready, utils
 
 
@@ -32,7 +32,6 @@ def run_initial(cli_args: typing.List[str]) -> None:
   elif args.ready:
     ready.run(topology,args,rest)
   else:
-    ansible.check_version()
     deploy.run(topology,args,rest)
 
   if _status.is_directory_locked():                   # If we're using the lock file, touch it after we're done
