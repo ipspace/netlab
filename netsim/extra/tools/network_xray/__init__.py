@@ -17,8 +17,11 @@ Use 'tools.network_xray.plugin: []' to remove the plugin.
 The plugin uses the plugin CLI hooks; it does not change the user CLI hooks. The background process
 also stops when the lab snapshot disappears, after 'tools.network_xray.validate_max_hours' hours
 (default: 12), or after 20 failed 'netlab validate' runs in a row.
+
+The plugin does nothing when 'netlab up' or 'netlab down' is started with '--dry-run'.
 """
 
+import math
 import os
 import signal
 import subprocess
@@ -46,6 +49,14 @@ def loop_wanted(topology: Box) -> bool:
   return tool_settings(topology).get("validate", False) is True
 
 
+def positive_number(settings: Box, name: str, default: float) -> float:
+  value = settings.get(name, default)
+  if isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) and value > 0:
+    return value
+  log.warning(text=f"tools.{TOOL}.{name} must be a positive number, using the default value ({default})", module=TOOL)
+  return default
+
+
 """
 Register the plugin for the 'netlab up' and 'netlab down' plugin CLI hooks when the user asked for the
 validation loop
@@ -65,6 +76,10 @@ def running_pid() -> int:
     with open(PID_FILE) as f:
       pid = int(f.read().strip())
     os.kill(pid, 0)
+    if os.path.isdir("/proc"):  # Make sure the process is still our loop (process IDs get reused)
+      with open(f"/proc/{pid}/cmdline", "rb") as f:
+        if LOOP.encode() not in f.read():
+          return 0
     return pid
   except (OSError, ValueError):
     return 0
@@ -73,13 +88,16 @@ def running_pid() -> int:
 def post_shell_post_tools_start(topology: Box) -> None:
   if not loop_wanted(topology):
     return
+  if cli.is_dry_run():
+    print(f"DRY RUN: start the {TOOL} 'netlab validate' loop")
+    return
   if running_pid():  # The loop is already running (for example, 'netlab up' after a failed start)
     return
 
   os.makedirs(OUT_DIR, exist_ok=True)
   settings = tool_settings(topology)
-  interval = settings.get("validate_interval", 30)
-  max_hours = settings.get("validate_max_hours", 12)
+  interval = positive_number(settings, "validate_interval", 30)
+  max_hours = positive_number(settings, "validate_max_hours", 12)
   netlab_cmd = [cli.NETLAB_SCRIPT or "netlab"]  # The netlab command that started this lab
   with open(LOG_FILE, "a") as logf:
     p = subprocess.Popen(
@@ -95,6 +113,9 @@ def post_shell_post_tools_start(topology: Box) -> None:
 
 
 def pre_shell_pre_stop_lab(topology: Box) -> None:
+  if cli.is_dry_run():
+    print(f"DRY RUN: stop the {TOOL} 'netlab validate' loop")
+    return
   pid = running_pid()
   if pid:
     try:
@@ -106,6 +127,9 @@ def pre_shell_pre_stop_lab(topology: Box) -> None:
 
 
 def post_shell_post_cleanup(topology: Box) -> None:
+  if cli.is_dry_run():
+    print(f"DRY RUN: remove the {TOOL} validation files")
+    return
   for fname in (OUT_FILE, OUT_FILE + ".tmp", LOG_FILE, PID_FILE):
     if os.path.exists(fname):
       os.remove(fname)

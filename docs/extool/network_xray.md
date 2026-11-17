@@ -41,6 +41,7 @@ tools:
 * The background process is started after the tools have been started by **netlab up** and stopped by **netlab down**. **netlab down --cleanup** removes the files it created. The process is not started when you use **netlab up --no-tools**.
 * Each run executes all validation tests on the lab devices. Set the interval to match your devices; running the tests often can be slow and noisy on VM-based devices.
 * The background process also stops when the lab snapshot disappears, after 12 hours, or after 20 failed **netlab validate** runs in a row.
+* The plugin does nothing when you use **netlab up --dry-run** or **netlab down --dry-run**.
 
 You can change the plugin behavior with these **tools.network_xray** parameters:
 
@@ -49,3 +50,5 @@ You can change the plugin behavior with these **tools.network_xray** parameters:
 | validate | Run the validation loop | False |
 | validate_interval | Time (in seconds) between **netlab validate** runs | 30 |
 | validate_max_hours | Stop the background process after this many hours | 12 |
+
+Invalid **validate_interval** or **validate_max_hours** values (not a positive number) are replaced with the default values, and the plugin prints a warning.

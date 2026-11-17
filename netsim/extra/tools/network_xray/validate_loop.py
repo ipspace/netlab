@@ -8,7 +8,8 @@ and writes the results to <out.json> (through <out.json>.tmp and a rename, so a 
 partially written file).
 
 Stops when netlab.snapshot.pickle disappears (the lab is gone), after <max_hours> hours, after 20 failed
-runs in a row, or when the pid file no longer contains its process ID.
+runs in a row, or when the pid file no longer contains its process ID. Removes the pid file when it
+stops (if the file still contains its process ID).
 """
 
 import json
@@ -26,7 +27,7 @@ def owner_ok(pid_file: str) -> bool:
     return False
 
 
-def main() -> None:
+def run() -> None:
   interval, max_hours = float(sys.argv[1]), float(sys.argv[2])
   out_file, pid_file = sys.argv[3], sys.argv[4]
   netlab = sys.argv[5:]
@@ -68,7 +69,15 @@ def main() -> None:
       fails = 0
     time.sleep(max(0.0, interval - (time.time() - start)))
 
-  print(time.strftime("%H:%M:%S"), "stopped", flush=True)
+
+def main() -> None:
+  pid_file = sys.argv[4]
+  try:
+    run()
+  finally:
+    if owner_ok(pid_file):  # Do not remove the pid file of another loop
+      os.remove(pid_file)
+    print(time.strftime("%H:%M:%S"), "stopped", flush=True)
 
 
 if __name__ == "__main__":
