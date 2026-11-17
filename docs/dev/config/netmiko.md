@@ -242,6 +242,7 @@ The *netmiko* configuration reload uses these features (specified in the **featu
 | **configure** | string or list | Configuration commands to execute before copying the file (for example, to enable the SCP server) |
 | **file_transfer** | bool | Use the *netmiko* **file_transfer** function instead of the generic SCP client to copy the configuration file (default: `False`). The file system prefix in the **config** value is passed to the **file_transfer** function as the **file_system** parameter |
 | **success** | string | Regular expression matching a successful *replace configuration* printout |
+| **timeout** | int | Maximum execution time of the *replace configuration* command (default: 30 seconds) |
 
 _netlab_ uses this procedure to reload a saved configuration with *netmiko*:
 
@@ -250,7 +251,24 @@ _netlab_ uses this procedure to reload a saved configuration with *netmiko*:
 * Copies the saved configuration (`<node>.<suffix>` file in the configuration directory) to the device using the generic SCP client (based on the SSH session established by *netmiko*) or the *netmiko* **file_transfer** function.
 * Executes the **reload.command** command and checks its printout. The reload is successful when the printout matches the **reload.success** regular expression (when specified) or when it does not match the **features.netmiko.error_regexp** regular expression.
 
+When the **features.netmiko.execute** device feature is set to `rce` (the device supports SSH remote command execution; see [](dev-config-netmiko-connect)), _netlab_ executes the **reload.command** command over a separate SSH channel (unless *netmiko* used the **ansible_become_password** to get a root shell in the interactive SSH session) and treats a non-zero exit code as a configuration reload failure (displaying the command output). The output of a successful command is then checked with the **reload.success** and **error_regexp** regular expressions.
+
 **netlab config --reload** exits with an error status if the configuration reload failed on any device.
+
+Like the **reload-config.ansible** playbook, _netlab_ deploys the initial device configuration (rendered with the **netlab_initial_reload** flag set) before reloading the saved configuration on nodes that have the **netlab_initial** group variable set to `always`. The initial configuration is deployed with the **netlab initial** building blocks (functions in the **netsim.cli.initial.deploy** module) and uses an internal configuration method when the node **netlab_config_mode** allows it, or the **initial-config.ansible** playbook otherwise.
+
+The *replace configuration* command does not have to be a native device command. For example, FRR virtual machines (FRR containers have no SSH server) feed the saved configuration into **vtysh** executed over a separate SSH channel:
+
+**FRR** (`frr.yml`):
+
+```
+libvirt:
+  features:
+    netmiko:
+      execute: rce
+      reload:
+        command: sudo vtysh -f replace-config
+```
 
 (dev-config-netmiko-reload-hook)=
 ### Device-Specific Reload Procedure
@@ -310,7 +328,7 @@ In all other SSH cases (including interactive SSH sessions started with **netlab
 The *netmiko* SSH session used by **netlab connect** does not execute the **enable** command. The command is executed with:
 
 * The *netmiko* **send_command** function. Use this method for devices with SSH implementations that do not support remote command execution.
-* SSH remote command execution (the **execute** function in the **netsim.utils.netmiko** module) when the **features.netmiko.execute** device feature is set to `rce`. This method opens a new SSH channel within the *netmiko* SSH session and executes the command with the *paramiko* **exec_command** function. It returns separate stdout and stderr printouts and the command exit status; the **connect_to_node** function returns an error when the exit status is not zero. Arista EOS uses this method.
+* SSH remote command execution (the **execute** function in the **netsim.utils.netmiko** module) when the **features.netmiko.execute** device feature is set to `rce`. This method opens a new SSH channel within the *netmiko* SSH session and executes the command with the *paramiko* **exec_command** function. It returns separate stdout and stderr printouts and the command exit status; the **connect_to_node** function returns an error when the exit status is not zero. Arista EOS and FRR virtual machines use this method.
 
 When an internal caller supplies a **timeout** to the **netlab connect** code, it sets all *netmiko* timeouts (the **set_param_timeout** function in the **netsim.utils.netmiko** module).
 
