@@ -93,21 +93,20 @@ Remove the **‌pip3** and **‌netlab** commands from the Vagrantfile and [foll
 
 * Create an Ubuntu 24.04 or Ubuntu 26.04 virtual machine within your virtualization environment (you'll find plenty of online tutorials). If needed, enable nested virtualization.
 * Log into the virtual machine
-* Execute these commands to download Python3 and install *netlab*, Ansible, vagrant, libvirt, KVM, containerlab, and Docker, or [follow these steps](install-ubuntu-venv) if you want to install _netlab_ in a Python virtual environment
+* Execute these commands to download Python3 and install *netlab*, or [follow these steps](install-ubuntu-venv) if you want to install _netlab_ in a Python virtual environment
 
 ```
 sudo apt-get update
 sudo apt-get install -y python3-pip
-sudo pip3 install --ignore-installed networklab
-netlab install -y ubuntu ansible libvirt containerlab
+sudo pip3 install --ignore-installed --break-system-packages networklab
 ```
 
 ```{tip}
 * Installing Python packages as root is not the recommended best practice. We're using this approach because we're setting up a single-purpose VM.
-* Ubuntu 24.04 and later want you to install Python packages in a virtual environment. To stop the complaints, add the `--break-system-packages` option to the **pip3 install** command.
-* Running multiple installation scripts with **‌netlab install** might fail on some Ubuntu distributions. If you experience that problem, execute multiple **‌netlab install** commands (one per installation script).
+* Ubuntu 24.04 and later want you to install Python packages in a virtual environment. To stop the complaints, you have to add the `--break-system-packages` option to the **pip3 install** command.
 ```
 
+* After installing *netlab*, [install additional software](install-ubuntu-additional) netlab needs to start and configure the labs.
 * After completing the software installation, log out, log back in (to get new group memberships), and test your installation with the **[netlab test](netlab-test)** command. If those tests fail, you might have to use **sudo usermod** to add your user to the *libvirt* and *docker* groups.
 
 ## Next Steps

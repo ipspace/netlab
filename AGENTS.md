@@ -172,7 +172,7 @@ When you don't have to change the code for other reasons:
 * The documentation files are in `docs`
 * The table cells in the ReadTheDocs CSS do not wrap by default. Add `{.table-wrap}` at the top of tables that contain large cells.
 * Pygments Jinja2 lexer is called `jinja`, not `jinja2`.
-* Link to MyST anchors (`[text](anchor-name)`) instead of relative file paths (`../caveats.md`). If the target page has no `(anchor-name)=` label, add one at its top (developer documentation uses the `dev-` prefix) and make sure it's unique within `docs`. Ask for the anchor name when in doubt.
+* Link to MyST anchors (`[text](anchor-name)`) instead of relative file paths (`../caveats.md`). If the target page has no `(anchor-name)=` label, add one at its top (developer documentation uses the `dev-` prefix) and make sure it's unique within `docs` and is not equal to a file name. Ask for the anchor name when in doubt.
 * The expressions in `{features}` tables (`docs/_ext/features.py`) evaluate to False when they raise an exception. Use simple expressions like `netmiko.reload.command` instead of defensive `.get()` chains.
 * When adding a device feature flag (`features.<module>.<flag>` in `netsim/devices/*.yml`), describe it in the *Device Features* section of `docs/dev/config/<module>.md` and in the `features` dictionary of `netsim/modules/<module>.yml` (displayed by `netlab show modules`).
  
