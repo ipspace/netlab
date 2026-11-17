@@ -203,11 +203,19 @@ def ssh_netmiko(
           log.info(f'Command returned error code {rc}')
         return rc or True
     else:
-      result = conn.send_command(cmd)
+      cmd_result = conn.send_command(cmd)
+      if isinstance(cmd_result,list):
+        cmd_result = "\n".join(str(line) for line in cmd_result)
+      if not isinstance(cmd_result,str):
+        if not quiet:
+          log.error(
+            f'Unexpected netmiko result type {type(cmd_result).__name__} for "{cmd}" on {data.name}',
+            module='netmiko')
+        return False
       if need_output:
-        return result
+        return cmd_result
       else:
-        print(result)
+        print(cmd_result)
         return True
   except Exception as ex:
     if not quiet:
