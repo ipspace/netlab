@@ -105,6 +105,10 @@ def set_custom_config(
       cfg_file += f'custom-{cfg_name}.sh'         # Add file name in the device config directory
 
     n_data._node_config = { cfg_name.replace('.','@'): cfg_file+':'+cfg_mode }
+    if cfg_mode == 'cp_sh':                       # Container deployment uses provider config templates
+      n_provider = a_devices.get_provider(n_data,defaults)
+      n_data[n_provider].config_templates = [     # ... so we have to replace them with the custom config template
+        { 'source': cfg_name, 'target': cfg_file, 'mode': cfg_mode } ]
 
 def get_ansible_args(ans_vars: Box,nodeset: list,cfg_name: str) -> list:
   """
