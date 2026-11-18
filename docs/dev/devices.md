@@ -213,6 +213,21 @@ features:
   vxlan: true
 ```
 
+### Provider Setting Inheritance
+
+A virtualization provider that uses the devices of another provider (for example, a provider that runs containerlab labs in a different environment) can inherit their device settings with the **parent: _provider_** setting in its YAML file. The device settings for the child provider are the device settings for the parent provider merged with the device settings for the child provider, so a device can override the inherited settings in the _child-provider_ dictionary. For example, a device could use a different container image with a child provider:
+
+```yaml
+clab:
+  image: quay.io/frrouting/frr:10.7.1
+  node:
+    kind: linux
+child_provider:
+  image: registry.example.com/frr:10.7.1
+```
+
+_netlab_ processes the provider setting inheritance after the device setting inheritance; the device settings for the parent provider already include the settings inherited from the parent device.
+
 (dev-device-plugin)=
 ### Device Plugins
 

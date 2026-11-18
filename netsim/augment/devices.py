@@ -229,6 +229,46 @@ def process_device_inheritance(topology: Box) -> None:
     process_child_device(dname,devices)
 
 """
+process_provider_inheritance: for providers with 'parent' attribute merge the device settings for
+the parent provider with the device settings for the child provider.
+
+The child provider thus uses the device settings of the parent provider (for example, container
+images or interface names) unless the device overrides them with settings for the child provider.
+The provider inheritance is processed after the device inheritance, so the device settings for
+the parent provider already include the settings inherited from the parent device.
+
+The main work is done in the process_child_provider function that is called recursively to process
+multi-level inheritance. Circular references are broken at a random place in the ring because the
+provider is marked as processed before the recursive call
+"""
+def process_child_provider(pname: str, topology: Box, processed: list) -> None:
+  if pname in processed:                                    # Provider already processed, nothing to do
+    return
+  processed.append(pname)
+
+  providers = topology.defaults.providers
+  p_parent = providers[pname].get('parent',None)
+  if not p_parent:                                          # This provider is not a child provider
+    return
+
+  if p_parent not in providers:
+    log.error(
+      f'Provider {pname} uses an unknown provider {p_parent} as its parent',
+      log.IncorrectValue,
+      'providers')
+    return
+
+  process_child_provider(p_parent,topology,processed)      # Process inheritance in parent provider
+  for ddata in topology.defaults.devices.values():
+    if isinstance(ddata.get(p_parent,None),Box):            # Merge a copy of parent provider settings
+      ddata[pname] = data.get_box(ddata[p_parent].to_dict()) + ddata.get(pname,{})
+
+def process_provider_inheritance(topology: Box) -> None:
+  processed: list = []
+  for pname in list(topology.defaults.providers.keys()):
+    process_child_provider(pname,topology,processed)
+
+"""
 Add device features (optionally provider-limited) to module support list
 """
 def add_device_module_support(
@@ -256,11 +296,11 @@ def add_device_module_support(
       features.pop(m)                               # Remove the feature so it won't crash the transformation
       continue                                      # ... and skip it
 
-    if not dname in mdata.supported_on:             # Append device to module support list if needed
-      if provider:
-        mdata.supported_on[dname][provider] = True
-      else:
-        mdata.supported_on[dname] = True
+    if provider:                                    # Append device to module support list if needed
+      if mdata.supported_on.get(dname,None) is not True:
+        mdata.supported_on[dname][provider] = True  # ... unless the device supports the module with all providers
+    elif not dname in mdata.supported_on:
+      mdata.supported_on[dname] = True
 
     if provider:
       features[m]._provider = provider              # Remember we're dealing with provider-specific features
@@ -389,8 +429,8 @@ def add_device_plugins(topology: Box) -> None:
 """
 Initial device setting augmentation:
 
+* Inherit device data from parent devices and parent providers
 * Build supported_on module lists
-* Future: Inherit device data from parent devices
 """
 def augment_device_settings(topology: Box) -> None:
   devices = topology.defaults.devices
@@ -405,6 +445,7 @@ def augment_device_settings(topology: Box) -> None:
   merge_daemons(topology)
   add_device_attributes(topology)
   process_device_inheritance(topology)
+  process_provider_inheritance(topology)
   build_module_support_lists(topology)
 
   for dname in list(devices.keys()):              # After completing device transformation, do a few sanity checks
