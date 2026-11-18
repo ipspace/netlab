@@ -99,6 +99,9 @@ html_theme_options = {
 html_static_path = ['_static']
 html_css_files = [ 'css/custom.css' ]
 
+# Files copied into the root of the documentation (for example, the lab topology JSON schema)
+html_extra_path = ['_extra']
+
 sys.path.insert(0, os.path.abspath('netlab'))
 
 def setup(app):
