@@ -15,7 +15,7 @@ from box import Box
 from ... import devices as q_devices
 from ...augment import devices as a_devices
 from ...data import get_a_list
-from ...utils import log, netmiko
+from ...utils import log, netmiko, strings
 from .. import ansible, error_and_exit, is_dry_run
 from ..initial import deploy as i_deploy
 from ..initial import ready as i_ready
@@ -148,6 +148,8 @@ def get_netmiko_nodes(nodeset: list, topology: Box, cfg_path: Path) -> dict:
     if not nm_params:
       continue
 
+    cfg = features.get('netmiko.reload.configure',None)
+
     nm_nodes[n_name] = {
       'src': str(next(cfg_path.glob(f'{n_name}.*'))),
       'dst': features.get('netmiko.reload.config','replace-config'),
@@ -155,10 +157,13 @@ def get_netmiko_nodes(nodeset: list, topology: Box, cfg_path: Path) -> dict:
       'ok':  features.get('netmiko.reload.success',None),
       'err': '|'.join(get_a_list(features.get('netmiko.error_regexp',[]))),
       'ft':  features.get('netmiko.reload.file_transfer',False),
-      'cfg': features.get('netmiko.reload.configure',None),
+      'cfg': strings.eval_format(cfg,n_data) if isinstance(cfg,str) else cfg,
       'rce': features.get('netmiko.execute',None) == 'rce',
       'timeout': features.get('netmiko.reload.timeout',30),
       'params': nm_params }
+
+    if log.debug_active('netmiko'):
+      print(f'netmiko reload parameters for {n_name}: {nm_nodes[n_name]}')
 
   return nm_nodes
 
@@ -196,7 +201,7 @@ def reload_with_netmiko(nm_nodes: dict, nodeset: list, topology: Box) -> list:
         nm_data: dict) -> bool:
     conn.enable()
     if nm_data['cfg']:                        # Extra configuration required?
-      conn.send_config_set(nm_data['cfg'])
+      conn.send_config_set(nm_data['cfg'].split('\n'))
 
     if nm_data['ft']:                         # Use netmiko file_transfer function?
       status = netmiko.file_transfer(conn,n_name,nm_data['src'],nm_data['dst'])
