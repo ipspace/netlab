@@ -60,9 +60,10 @@ def node_adjust_ldp(node: Box, topology: Box, features: Box) -> None:
         continue
 
     if not intf_ldp is None and 'mpls' in intf:
-      data.bool_to_defaults(intf.mpls,'ldp')
-      if 'ldp' in intf.mpls:
-        intf.ldp = intf.mpls.ldp
+      data.bool_to_defaults(intf.mpls,'ldp',{})
+      if 'ldp' not in intf.mpls:                                  # LDP is disabled on this interface
+        continue
+      intf.ldp = intf.mpls.ldp
 
     if not _routing.external(intf,'ldp'):
       _routing.passive(intf,'ldp',topology)

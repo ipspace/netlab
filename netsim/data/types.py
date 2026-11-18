@@ -204,7 +204,7 @@ def check_valid_values(
     f = list(filter(lambda x: x not in expected,value)) # ... find all values not in expected values
     if not f:
       return True                                       # ... no unexpected values, cool, get out of here
-    value = ','.join(f)                                 # ... otherwise create something to display
+    value = ','.join(map(str,f))                        # ... otherwise create something to display
   else:
     if value in expected:                               # Not a list? Just check if the value matches one of expected values
       return True
@@ -214,7 +214,7 @@ def check_valid_values(
     log.error(
       text=f'attribute {path} has invalid value(s): {value}',
       more_hints=[
-        f'valid values are: {", ".join(expected)}',
+        f'valid values are: {", ".join(map(str,expected))}',
         attr_help(module,data_name)],
       category=log.IncorrectValue,
       module=module or 'topology')

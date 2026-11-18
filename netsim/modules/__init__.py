@@ -154,7 +154,7 @@ def propagate_global_modules(n: Box, topology: Box) -> bool:
 
     n = n + {'device': topology.defaults.device}            # Assume default device
 
-  if n.device not in topology.defaults.devices:             # Have to do one more check for valid device type
+  if not isinstance(n.device,str) or n.device not in topology.defaults.devices:   # Have to do one more check for valid device type
     return False                                            # ... because we cannot assume it has been checked
 
   daemon   = devices.get_device_attribute(n,'daemon',topology.defaults) or False

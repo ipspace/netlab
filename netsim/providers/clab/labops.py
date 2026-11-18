@@ -176,7 +176,7 @@ def health_ready_setup(topology: Box) -> None:
 
   for n_data in topology.nodes.values():
     n_device = n_data.get('device',defaults.get('device',None))
-    if n_device in dev_done:
+    if not isinstance(n_device,str) or n_device in dev_done:   # Invalid devices are reported by node validation
       continue
     n_provider = devices.get_provider(n_data,defaults)
     if n_provider != 'clab':

@@ -13,7 +13,7 @@ from box import Box
 
 from .. import data, modules
 from ..data import get_box
-from ..data.types import must_be_dict, must_be_id, must_be_list, transform_asdot
+from ..data.types import must_be_dict, must_be_id, must_be_list, must_be_string, transform_asdot
 from ..data.validate import get_object_attributes, validate_attributes
 from ..modules import bgp, propagate_global_modules
 from ..utils import log
@@ -338,7 +338,7 @@ def validate_group_data(
         extra_attributes=extra)              # Allow provider- and tool-specific settings (not checked at the moment)
 
       for k in ('module','device'):          # Check that the 'module' or 'device' attributes are not in node_data
-        if k in gdata.node_data:
+        if isinstance(gdata.node_data,Box) and k in gdata.node_data:
           log.error(
             f'Cannot use attribute {k} in node_data in {grp_namespace}group {grp}, set it as a group attribute',
             log.IncorrectValue,
@@ -420,7 +420,8 @@ def add_node_level_groups(topology: Box) -> None:
 
     if must_be_list(n,'group',f'nodes.{name}'):
       for grpname in n.group:
-        add_node_to_group(name,grpname,topology)
+        if must_be_string(parent=None,key=grpname,path=f'NOATTR:group name {grpname} in nodes.{name}.group',module='groups'):
+          add_node_to_group(name,grpname,topology)
 
 '''
 Check recursive group definitions
@@ -798,6 +799,8 @@ def node_config_templates(topology: Box) -> None:
 
     config_list: typing.List[str] = []
     for c in node.config:
+      if not must_be_string(parent=None,key=c,path=f'NOATTR:config template {c} in nodes.{name}.config',module='groups'):
+        continue
       if c == '-':                 # Remove all prior templates
         config_list = []
       elif c[0] == '-':
