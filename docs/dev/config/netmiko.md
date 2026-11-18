@@ -255,7 +255,7 @@ When the **features.netmiko.execute** device feature is set to `rce` (the device
 
 **netlab config --reload** exits with an error status if the configuration reload failed on any device.
 
-Like the **reload-config.ansible** playbook, _netlab_ deploys the initial device configuration (rendered with the **netlab_initial_reload** flag set) before reloading the saved configuration on nodes that have the **netlab_initial** group variable set to `always`. The initial configuration is deployed with the **netlab initial** building blocks (functions in the **netsim.cli.initial.deploy** module) and uses an internal configuration method when the node **netlab_config_mode** allows it, or the **initial-config.ansible** playbook otherwise.
+Before reloading the saved configurations (with netmiko or the **reload-config.ansible** playbook), **netlab config --reload** deploys the initial device configuration (rendered with the **netlab_initial_reload** flag set) on nodes that have the **netlab_initial** group variable set to `always`. The initial configuration is deployed with the **netlab initial** code (the **netsim.cli.initial.deploy.run** function) and uses an internal configuration method when the node **netlab_config_mode** allows it, or the **initial-config.ansible** playbook otherwise.
 
 The *replace configuration* command does not have to be a native device command. For example, FRR virtual machines (FRR containers have no SSH server) feed the saved configuration into **vtysh** executed over a separate SSH channel:
 
