@@ -155,6 +155,7 @@ netmiko:
     config: nvram:replace-config
     command: configure replace nvram:replace-config force
     configure: |
+      hostname { name }
       ip scp server enable
     file_transfer: true
 ```

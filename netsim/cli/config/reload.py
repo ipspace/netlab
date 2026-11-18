@@ -202,6 +202,7 @@ def reload_with_netmiko(nm_nodes: dict, nodeset: list, topology: Box) -> list:
     conn.enable()
     if nm_data['cfg']:                        # Extra configuration required?
       conn.send_config_set(nm_data['cfg'].split('\n'))
+      conn.set_base_prompt()
 
     if nm_data['ft']:                         # Use netmiko file_transfer function?
       status = netmiko.file_transfer(conn,n_name,nm_data['src'],nm_data['dst'])
