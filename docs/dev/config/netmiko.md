@@ -230,7 +230,8 @@ The **netlab config --reload** command (also used by **netlab up --reload-config
 
 * *netmiko* is used for nodes whose device settings include the **features.netmiko.reload.command** feature, provided the *netmiko* library is installed and _netlab_ can prepare the *netmiko* connection parameters. The *netmiko*-based reload does not depend on the **netlab_config_mode** setting.
 * The configuration reload is executed in a separate thread for every node.
-* The remaining nodes are processed with the **reload-config.ansible** Ansible playbook.
+* The remaining nodes with the **features.initial.reload** feature set to `custom` (devices with a custom `reload-config` task list) are processed with the **reload-config.ansible** Ansible playbook.
+* The saved configurations of all other nodes are deployed like custom configuration templates (see above).
 
 The *netmiko* configuration reload uses these features (specified in the **features.netmiko.reload** dictionary):
 

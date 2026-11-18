@@ -79,7 +79,7 @@ After saving the above template into `bgp_default.j2`, you can use `netlab confi
 
 After that, it uses *netmiko* to copy the saved configurations to the devices and replace their running configurations on [supported devices](dev-config-netmiko-reload) (Arista EOS, Cisco IOS/IOS XE, FRRouting virtual machines) when the *netmiko* library is installed.
 
-On all other devices, it treats the saved device configurations as custom templates (using the same process as the regular **netlab config** command), allowing you to use Jinja2 expressions in saved device configurations.
+On all other devices, it treats the saved device configurations as custom templates, allowing you to use Jinja2 expressions in saved device configurations. Most devices use the same process as the regular **netlab config** command (including the non-Ansible [configuration methods](platform-config-mode)); devices that need a special reload procedure use the internal `reload-config.ansible` Ansible playbook.
 
 ## Debugging Device Configurations
 
