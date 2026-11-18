@@ -250,13 +250,14 @@ _netlab_ uses Ansible playbooks and device-specific task lists to deploy device 
 | BIRD   | clab     | Daemon configuration files and **bash** scripts[^BBS] |
 | dnsmasq | clab    | Daemon configuration files and **bash** scripts[^DBS] |
 | Arista EOS | all | **netmiko** |
-| Cisco ASAv | clab | **netmiko** |
+| Cisco ASAv | all | **netmiko** |
 | Cisco IOS/IOS XE | all | **netmiko** |
 | Cisco IOS XR | all | **netmiko** |
 | Cisco Nexus OS | all | **netmiko** |
 | Extreme EXOS | all | **netmiko** |
 | Extreme VOSS | all | **netmiko** |
 | FRRouting    | clab     | **bash** and **vtysh** scripts[^FRRBV] |
+| FRRouting    | libvirt  | **bash** and **vtysh** scripts deployed with **netmiko**[^FRRBV] |
 | IP Infusion OcNOS | all | **netmiko** |
 | Junos cRPD | clab | **bash** scripts[^cRBS] |
 | KinD   | clab     | **bash** scripts copied into and executed in containers |
@@ -290,7 +291,7 @@ Several other devices can use configuration methods faster than Ansible playbook
 * When using the **sh** method on Arista cEOS containers, _netlab_ converts the device configurations into FastCli scripts and executes them as Linux scripts within the cEOS container. This method works on EOS software releases that have the **‌platform tfa phy control-frame disabled** interface configuration command (probably starting with EOS release 4.30)
 * The Cisco IOS XRd **sh** deployment method uses a custom **bash** script that calls the **xrapply** ZTP command to load and commit a configuration file. The custom script is used as the *shebang* interpreter for the configuration snippets. This deployment method *does not work* on XRd vRouter or XRv virtual machines packaged into *vrnetlab* containers.
 
-[^NCMGV]: For example, set the **defaults.devices.iol.clab.group_vars.netlab_config_mode** [topology default](topo-defaults) to **startup** to use startup configuration with Cisco IOL nodes, or **defaults.devices.asav.group_vars.netlab_config_mode** to **netmiko** to use *netmiko* to configure Cisco ASAv virtual machines.
+[^NCMGV]: For example, set the **defaults.devices.iol.clab.group_vars.netlab_config_mode** [topology default](topo-defaults) to **startup** to use startup configuration with Cisco IOL nodes.
 
 ## Initial Device Configurations
 
