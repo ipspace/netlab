@@ -84,33 +84,48 @@ def skip_nodes_without_configs(cfg_path: Path,nodeset: list) -> list:
 
 def prepare_devices(topology: Box,nodeset: list) -> None:
   """
-  Check that the devices are ready and normalize their configuration (when needed)
-  before trying to reload the config
+  Check that the devices are ready and prepare them for the config reload:
+
+  * Deploy the initial configuration (rendered with the 'netlab_initial_reload' flag set)
+    on devices with 'netlab_initial' set to 'always'. 'netlab initial' also normalizes the
+    configuration of these devices (when needed).
+  * Normalize the configuration on the other devices (when needed)
   """
   (ready_args,_) = i_utils.initial_config_parse(['--ready'])
   i_ready.run(topology,ready_args,rest=[],nodeset=nodeset)
 
-  (norm_args,_) = i_utils.initial_config_parse(['--normalize','--deploy','--skip-ready'])
-  i_deploy.run(topology,norm_args,rest=[],nodeset=nodeset)
+  defaults = topology.defaults
+  init_nodes = [ n_name for n_name in nodeset
+                   if a_devices.get_node_group_var(topology.nodes[n_name],'netlab_initial',defaults) == 'always' ]
+  norm_nodes = [ n_name for n_name in nodeset if n_name not in init_nodes ]
+
+  if norm_nodes:
+    (norm_args,_) = i_utils.initial_config_parse(['--normalize','--deploy','--skip-ready'])
+    i_deploy.run(topology,norm_args,rest=[],nodeset=norm_nodes)
+
+  if init_nodes:
+    for n_name in init_nodes:                         # Set "we're reloading configuration" flag
+      topology.nodes[n_name].netlab_initial_reload = True
+    (init_args,_) = i_utils.initial_config_parse(
+                      ['--initial','--skip-ready','--no-message','--limit',','.join(init_nodes)])
+    i_deploy.run(topology,init_args,rest=[],nodeset=init_nodes)
 
 def create_reload_configs(topology: Box,nodeset: list,args: argparse.Namespace,cfg_path: Path) -> None:
   """
   Prepare the environment for the "netlab initial" processing
 
-  * Set the "we're doing initial configuration for reload" node flag
   * Limit the custom template search path to the config directory
-  * Create initial- and custom config files
+  * Create custom config files
   * Change the node "config" parameter to request configuration reload
   """
   topology.defaults.paths.custom.dirs = [ str(cfg_path.parent) ]
   for n in nodeset:                                   # Change the node parameters for 'create_node_files'
     ndata = topology.nodes[n]
     n_provider = a_devices.get_provider(ndata,topology.defaults)
-    ndata.netlab_initial_reload = True                # Set "we're reloading configuration" flag
     ndata.netlab_config_mode = None                   # Fall back to Ansible config mode (we're using Ansible playbook to reload config)
     ndata.pop(f'{n_provider}.config_templates',None)  # And do not generate fancy container configuration files
 
-  create_node_files(topology,nodeset,args,str(cfg_path.name),initial=True,cfg_suffix='.cfg')
+  create_node_files(topology,nodeset,args,str(cfg_path.name),cfg_suffix='.cfg')
 
 def get_netmiko_nodes(nodeset: list, topology: Box, cfg_path: Path) -> dict:
   """
@@ -145,33 +160,6 @@ def get_netmiko_nodes(nodeset: list, topology: Box, cfg_path: Path) -> dict:
       'params': nm_params }
 
   return nm_nodes
-
-def deploy_initial_config(topology: Box, nm_nodes: dict) -> None:
-  """
-  The reload-config.ansible playbook deploys the initial configuration on devices with
-  'netlab_initial' set to 'always'. Do the same for nodes using netmiko to reload their
-  configuration (with internal deployment methods when possible).
-
-  This function has to be called before 'create_reload_configs' changes the node config mode
-  """
-  defaults = topology.defaults
-  init_nodes = [ n_name for n_name in nm_nodes
-                   if a_devices.get_node_group_var(topology.nodes[n_name],'netlab_initial',defaults) == 'always' ]
-  if not init_nodes:
-    return
-
-  for n_name in init_nodes:                           # Set "we're reloading configuration" flag
-    topology.nodes[n_name].netlab_initial_reload = True
-
-  (init_args,_) = i_utils.initial_config_parse(['--initial','--limit',','.join(init_nodes)])
-  i_deploy.recreate_configs(topology,init_args,init_nodes)
-  log.section_header('Config','Deploying initial device configurations')
-  (used_internal,status_internal) = i_deploy.deploy_internal_config(init_nodes,topology,init_args)
-  (used_ansible,status_ansible) = i_deploy.deploy_ansible_playbook(
-                                    topology,init_args,init_nodes,[],'deploy' if used_internal else '')
-  i_deploy.print_internal_stats(topology,not used_ansible)
-  if not status_internal or not status_ansible:
-    error_and_exit('Cannot deploy initial device configurations')
 
 def reload_with_netmiko(nm_nodes: dict, nodeset: list, topology: Box) -> list:
   if not nm_nodes:
@@ -305,8 +293,6 @@ def reload_node_configs(topology: Box,nodeset: list,args: argparse.Namespace, re
   prepare_devices(topology,nodeset)
 
   nm_nodes = get_netmiko_nodes(nodeset,topology,cfg_path)
-  deploy_initial_config(topology,nm_nodes)
-
   create_reload_configs(topology,nodeset,args,cfg_path)
   nodeset = reload_with_netmiko(nm_nodes,nodeset,topology)
   if nodeset:

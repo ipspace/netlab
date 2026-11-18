@@ -99,13 +99,12 @@ When started with the `--reload-config` flag, **netlab up** tries to load device
 
 The process should work (relatively) flawlessly on traditional network devices that use a single configuration file. However, do keep in mind these caveats:
 
-* Saved device configurations don't replace startup device configurations; they are merged with them.
+* Depending on the device's reload method, a saved device configuration either replaces the configuration the device had after the lab start (for example, Cisco IOS **configure replace**) or is merged with it.
 * IP addresses (including management IP addresses) are hardcoded in the saved device configurations. Any change to the topology file, user defaults, system defaults, or **netlab up** CLI parameters can change device configurations. Restoring saved configurations after such a change will probably break the lab.
 
 There are also numerous device-specific caveats:
 
 * Only the FRRouting configuration is restored on Cumulus Linux and FRR. **netlab** executes initial device configuration on these devices to set up interfaces and enable FRRouting daemons.
-* The initial state of Cisco IOS interfaces is **shutdown**, but the saved configuration does not include the **no shutdown** command. **netlab** executes the initial configuration on Cisco IOS/IOS-XE devices to enable the interfaces.
 
 (netlab-up-restart)=
 ## Restarting a Lab after a Server Reboot
