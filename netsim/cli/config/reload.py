@@ -157,7 +157,7 @@ def get_netmiko_nodes(nodeset: list, topology: Box, cfg_path: Path) -> dict:
       'ok':  features.get('netmiko.reload.success',None),
       'err': '|'.join(get_a_list(features.get('netmiko.error_regexp',[]))),
       'ft':  features.get('netmiko.reload.file_transfer',False),
-      'cfg': strings.eval_format(cfg,n_data) if isinstance(cfg,str) else str,
+      'cfg': strings.eval_format(cfg,n_data) if isinstance(cfg,str) else cfg,
       'rce': features.get('netmiko.execute',None) == 'rce',
       'timeout': features.get('netmiko.reload.timeout',30),
       'params': nm_params }
