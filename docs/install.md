@@ -36,7 +36,7 @@ You can also run *netlab* in a [Linux virtual machine](install-ubuntu-vm) or a [
 
 When selecting the virtualization environment, consider the following:
 
-* Ubuntu-based _netlab_ is the easiest to set up; the **[netlab install](netlab-install)** command does all the heavy lifting for you and installs all the prerequisite software (KVM, libvirt, Vagrant, Docker, containerlab, Ansible).
+* Ubuntu-based _netlab_ is the easiest to set up; the **[netlab install](netlab-install)** command does all the heavy lifting for you and installs all the prerequisite software (KVM, libvirt, Vagrant, Docker, containerlab, netmiko or Ansible).
 * **Containers** provisioned with containerlab start much faster than virtual machines, but you can get only a few network devices in native container format (Arista cEOS, Cisco IOS XRd, FRR, Juniper cRPD, Nokia SR Linux and SR-SIM, VyOS). The [**vrnetlab** fork by Roman Dodin](https://github.com/srl-labs/vrnetlab) can build containers that run virtual machines for many network devices, but those containers might take longer to start than Vagrant boxes.
 * **Vagrant provider for libvirt**[^VBR] supports parallel VM provisioning, resulting in pretty fast lab creation. Unfortunately, you'll have to build the libvirt Vagrant boxes manually, but the **[netlab libvirt package](netlab-libvirt-package)** usually does 90% of the work for you. However, we're [no longer developing new Vagrant functionality](libvirt-sunset), so you might be better off focusing on [containerlab](lab-clab).
 
