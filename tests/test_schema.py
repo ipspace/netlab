@@ -68,6 +68,22 @@ def test_schema_accepts_topology(test_case: str) -> None:
     pytest.fail(f'{test_case}: {error.json_path}: {error.message}',pytrace=False)
 
 @pytest.mark.parametrize('topology',[
+  'links: [ { r1: {}, r2: {}, unnumbered: "true" } ]',
+  'links: [ { interfaces: r1 } ]',
+  'nodes: { r1: { loopback: "true" } }',
+  'addressing: { loopback: 10.99.0.0/24, lan: false }',
+  'routing: { policy: { p: { set: { locpref: 100 } } } }',
+  'routing: { policy: { p: [ { set: { prepend: 65000 } }, { prepend: "65000 65000" } ] } }',
+  'routing: { policy: { p: [ { match: { community: c } }, { delete: { community: { list: c } } } ] } }',
+  'routing: { community: { c: { type: large, value: [ "65000:1:1" ] } } }',
+  'routing: { aspath: { a: 65000 } }',
+])
+def test_schema_accepts_input_shortcut(topology: str) -> None:
+  error = jsonschema.exceptions.best_match(schema_validator().iter_errors(yaml.safe_load(topology)))
+  if error is not None:
+    pytest.fail(f'{topology}: {error.json_path}: {error.message}',pytrace=False)
+
+@pytest.mark.parametrize('topology',[
   'nodes: { r1: { devce: eos } }',
   'nodes: { r1: { device: no_such_device } }',
   'module: [ ospff ]',
@@ -76,6 +92,11 @@ def test_schema_accepts_topology(test_case: str) -> None:
   'vlans: { red: { id: 5000 } }',
   'provider: no_such_provider',
   'nodess: [ r1 ]',
+  'links: [ { r1: {}, r2: {}, unnumbered: "yes" } ]',
+  'routing: { policy: { p: { set: { locpreff: 100 } } } }',
+  'routing: { prefix: { p: { ipv44: 10.0.0.0/8 } } }',
+  'routing: { community: { c: { type: huge, value: [ "65000:1" ] } } }',
+  'routing: { community: { c: { value: "65000:1" } } }',
 ])
 def test_schema_rejects_topology(topology: str) -> None:
   if schema_validator().is_valid(yaml.safe_load(topology)):

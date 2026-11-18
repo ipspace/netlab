@@ -34,6 +34,12 @@ ALT_PYTHON_TYPES: typing.Final[dict] = {
   'Box': 'object',
 }
 
+# Strings accepted as boolean values (see must_be_bool)
+BOOL_STRINGS: typing.Final[list] = [ 'true', 'True', 'false', 'False' ]
+
+# Alternate data types that are also checked with their validation functions, which accept strings
+ALT_VALIDATED_TYPES: typing.Final[list] = [ 'bool', 'int', 'float' ]
+
 # Data types that are validated with a False value instead of removing the attribute
 FALSE_IS_VALIDATED: typing.Final[list] = [ 'bool', 'bool_false', 'ipv4', 'ipv6', 'error' ]
 
@@ -42,12 +48,13 @@ IP_INT_USE: typing.Final[dict] = { 'ipv4': [ 'interface', 'id' ], 'ipv6': [ 'int
 IP_BOOL_USE: typing.Final[list] = [ 'interface', 'subnet_prefix' ]
 
 # Routing objects that are normalized before validation (see modules/routing/__init__.py):
-# a single entry or a list of entries, AS paths and communities can be specified as values
+# a single entry or a list of entries, AS paths and communities can be specified as values,
+# and communities can be a dictionary with the list of entries in the 'value' attribute
 ROUTING_OBJECTS: typing.Final[dict] = {
   'policy': { 'entry': 'rp_entry' },
   'prefix': { 'entry': 'pfx_entry' },
   'aspath': { 'entry': 'aspath_entry', 'value': True },
-  'community': { 'entry': 'community_entry', 'value': True },
+  'community': { 'entry': 'community_entry', 'value': True, 'list_attr': 'value' },
   'acl': { 'entry': 'acl_entry' },
 }
 
@@ -161,7 +168,7 @@ class SchemaBuilder:
           schema[s_kw] = value
       return schema
     if dt_name == 'bool':
-      return { 'type': 'boolean' }
+      return one_of_schemas([ { 'type': 'boolean' }, { 'enum': BOOL_STRINGS } ])
     if dt_name == 'bool_false':
       return { 'const': False }
     if dt_name == 'time':
@@ -329,6 +336,8 @@ class SchemaBuilder:
     An alternate data type is checked with its validation function only (see validate_alt_type)
     """
     if isinstance(alt,str) and alt in ALT_PYTHON_TYPES and alt not in ('list','dict'):
+      if alt in ALT_VALIDATED_TYPES:                        # The validation function also accepts strings
+        return self.simple_type(get_box({ 'type': alt }))
       return { 'type': ALT_PYTHON_TYPES[alt] }                # 'list' and 'dict' also have validation functions
     dt = get_box(_validate.transform_validation_shortcuts(alt))
     if dt.get('type',None) == 'dict':
@@ -406,7 +415,7 @@ class SchemaBuilder:
       extra=self.extra_attributes(self.attributes.node_extra_ns),
       ignored=[ '_', 'netlab_', 'ansible_' ])
     node = self.definitions['node']
-    node['properties']['loopback'] = one_of_schemas([ self.object_type([ 'loopback' ]), { 'type': 'boolean' } ])
+    node['properties']['loopback'] = one_of_schemas([ self.object_type([ 'loopback' ]), self.alt_type('bool') ])
     node['properties']['module'] = self.module_list()
     node['properties']['include'] = {
       'type': 'string', 'pattern': id_pattern(),
@@ -438,8 +447,9 @@ class SchemaBuilder:
     link_ref = self.object_type([ 'link' ],extra=extra)
 
     link = self.definitions['link']                         # Node names can be used as keys in a link dictionary
-    link['properties']['interfaces'] = {
-      'type': 'array', 'items': { 'anyOf': [ self.node_name(), intf_ref ] } }
+    link['properties']['interfaces'] = one_of_schemas([     # A single node name becomes a list (adjust_link_object)
+      { 'type': 'array', 'items': { 'anyOf': [ self.node_name(), intf_ref ] } },
+      self.node_name() ])
     link['additionalProperties'] = one_of_schemas([ intf_ref, { 'type': 'null' } ])
     link['patternProperties'][r'\.'] = {}                   # ... including dotted keys (r1.ospf.cost)
 
@@ -509,7 +519,14 @@ class SchemaBuilder:
           entry = self.policy_shortcuts(entry,shortcuts)
         items = [ entry, { 'type': [ 'string', 'number', 'array' ] } ] if o_def.get('value',False) else [ entry ]
         o_list = { 'type': 'array', 'items': one_of_schemas(items) }
-        o_value = one_of_schemas([ o_list, *items, { 'type': 'object' }, { 'type': 'null' } ])
+        alternatives = [ o_list, *items ]
+        if 'list_attr' in o_def:                            # A dictionary with the list of entries
+          o_dict = object_schema(d_value['properties'][o_type])['additionalProperties']
+          o_dict = copy.deepcopy(object_schema(o_dict))
+          o_dict['properties'][o_def['list_attr']] = o_list
+          o_dict['required'] = [ o_def['list_attr'] ]
+          alternatives.append(o_dict)
+        o_value = one_of_schemas([ *alternatives, { 'type': 'null' } ])
         d_value['properties'][o_type] = one_of_schemas([
           { 'type': 'object',
             'patternProperties': { r'\.': {} },
@@ -522,12 +539,26 @@ class SchemaBuilder:
     if name not in self.definitions:
       p_entry = copy.deepcopy(self.definitions[entry['$ref'].split('/')[-1]])
       p_props = object_schema(p_entry)['properties']
+      self.policy_values(p_props)
       for kw in ('set','match'):
         for k in shortcuts.get(kw,[]):
           p_props[k] = object_schema(p_props[kw])['properties'][k]
       object_schema(p_entry)['patternProperties'] = dotted_keys(p_props.keys())
       self.definitions[name] = p_entry
     return self.ref(name)
+
+  def policy_values(self, p_props: dict) -> None:
+    """
+    Policy entry values that normalize_policy_entry turns into dictionaries: AS path prepending
+    and community lists
+    """
+    def add_value(o_props: dict, key: str, value: dict) -> None:
+      o_props[key] = one_of_schemas([ *o_props[key].get('anyOf',[ o_props[key] ]), value ])
+
+    add_value(object_schema(p_props['set'])['properties'],'prepend',{ 'type': [ 'integer', 'string' ] })
+    add_value(object_schema(p_props['match'])['properties'],'community',{ 'type': 'string' })
+    d_community = object_schema(object_schema(p_props['delete'])['properties']['community'])
+    add_value(d_community['properties'],'list',{ 'type': 'string' })
 
   def topology(self) -> dict:
     node_ref = self.node_type()                             # Nodes and links first, other objects could refer to them
@@ -545,7 +576,10 @@ class SchemaBuilder:
     properties['components'] = self.components(node_ref,links)
     properties['module'] = self.module_list()
     properties['provider'] = { 'enum': sorted(self.defaults.providers.keys()) }
-    properties['addressing']['additionalProperties'] = self.object_type([ 'pool' ])
+    properties['addressing']['additionalProperties'] = one_of_schemas([
+      self.object_type([ 'pool' ]),
+      { 'type': 'string' },                                 # An IPv4 prefix (setup_pools)
+      { 'const': False } ])
     properties['addressing']['patternProperties'] = { r'\.': {} }
     pool = self.definitions['pool']['properties']
     for k in pool:                                          # An empty value removes a default pool setting
