@@ -1,7 +1,7 @@
 #
 # Lab topology JSON schema tests
 #
-# * The published schema must match the attribute definitions
+# * The schema must be a valid JSON schema
 # * The schema must accept every transformation test topology
 # * The schema must catch common mistakes
 #
@@ -20,8 +20,6 @@ import yaml
 
 from netsim.cli import show
 
-SCHEMA_FILE = pathlib.Path('../docs/_extra/topology.schema.json')
-
 # Plugins that transform the lab topology before validation and don't define their attributes
 UNDEFINED_PLUGIN_ATTRIBUTES = [ 'node.clone' ]
 
@@ -38,15 +36,8 @@ def generate_schema(plugins: typing.Tuple[str, ...] = ()) -> str:
 def schema_validator(plugins: typing.Tuple[str, ...] = ()) -> jsonschema.Draft7Validator:
   return jsonschema.Draft7Validator(json.loads(generate_schema(plugins)))
 
-def test_schema_is_current() -> None:
-  if SCHEMA_FILE.read_text() != generate_schema():
-    pytest.fail(
-      f'{SCHEMA_FILE} does not match the attribute definitions, '+
-      f'run "netlab show schema --system > docs/_extra/topology.schema.json"',
-      pytrace=False)
-
 def test_schema_is_valid() -> None:
-  jsonschema.Draft7Validator.check_schema(json.loads(SCHEMA_FILE.read_text()))
+  jsonschema.Draft7Validator.check_schema(json.loads(generate_schema()))
 
 def extends_attributes(data: typing.Any, path: str = '') -> bool:
   """

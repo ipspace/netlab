@@ -30,7 +30,6 @@ If your PR includes modifications to Python code:
 * Run the `run-tests.sh` script in the `tests` directory to run the [automated tests](dev-testing-auto) that will be run as part of the CI/CD pipeline (see also [](dev-testing-runners))
 * If the tests fail, your code modifications changed the data transformation logic or error messages.
 * If you're absolutely sure your changes are correct, run the `create-transformation-tests.sh` and `create-error-tests.sh` scripts in the `tests` directory to recreate the expected test results.
-* If you changed attribute definitions, recreate the [lab topology JSON schema](topology-schema) with `netlab show schema --system > docs/_extra/topology.schema.json` (executed in the top-level directory).
 * Check the differences between previous and new expected test results.
 * Add modified test results to your commit.
 
