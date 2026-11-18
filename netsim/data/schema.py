@@ -29,7 +29,9 @@ ALT_PYTHON_TYPES: typing.Final[dict] = {
   'int': 'integer',
   'float': 'number',
   'list': 'array',
+  'BoxList': 'array',
   'dict': 'object',
+  'Box': 'object',
 }
 
 # Data types that are validated with a False value instead of removing the attribute
@@ -246,7 +248,11 @@ class SchemaBuilder:
       return schema
     if data_type.get('make_list',False):
       return one_of_schemas([ schema, {} ])
-    scalar = item or { 'type': [ 'string', 'number', 'boolean' ] }
+    scalar: dict = { 'type': [ 'string', 'number', 'boolean' ] }   # Only scalars become single-element lists
+    if item.get('enum',None):
+      scalar = item
+    elif item:
+      scalar = { 'allOf': [ item, scalar ] }
     return one_of_schemas([ schema, scalar ])
 
   def data_type(self, data_type: typing.Any, keys_only: bool = False) -> dict:
@@ -281,11 +287,13 @@ class SchemaBuilder:
     alternatives = [ schema ]
     for alt in get_a_list(dt.get('_alt_types',[])):
       alternatives.append(self.alt_type(alt))
-    if '_list_to_dict' in dt:
+    if '_list_to_dict' in dt:                               # List elements become dictionary keys
       keys = list(dt.get('_keys',{}).keys())
-      alternatives.append({ 'type': 'array', 'items': { 'enum': keys } if keys else { 'type': 'string' } })
+      item = { 'enum': keys } if keys else \
+             self.data_type(dt._keytype,keys_only=True) if '_keytype' in dt else { 'type': 'string' }
+      alternatives.append({ 'type': 'array', 'items': item })
     if '_value_to_dict' in dt:
-      alternatives.append({ 'not': { 'type': 'object' } })
+      alternatives.append(self.value_to_dict(dt))
     if dt.get('create_empty',False):
       alternatives.append({ 'type': 'null' })
     if 'true_value' in dt:
@@ -304,12 +312,24 @@ class SchemaBuilder:
                           dt._default.to_list() if isinstance(dt._default,BoxList) else dt._default
     return result
 
+  def value_to_dict(self, data_type: Box) -> dict:
+    """
+    A non-dictionary value is copied into the keys of the _value_to_dict template that are
+    set to '{value}' (see transform_value_to_dict), so it must be valid for all of them
+    """
+    keys = data_type.get('_keys',{})
+    value_keys = [ k for k,v in data_type._value_to_dict.items() if v == '{value}' and k in keys ]
+    schema: dict = { 'not': { 'type': 'object' } }
+    if value_keys:
+      schema = { 'allOf': [ schema ] + [ self.data_type(keys[k]) for k in value_keys ] }
+    return schema
+
   def alt_type(self, alt: typing.Any) -> dict:
     """
     An alternate data type is checked with its validation function only (see validate_alt_type)
     """
     if isinstance(alt,str) and alt in ALT_PYTHON_TYPES and alt not in ('list','dict'):
-      return { 'type': ALT_PYTHON_TYPES[alt] }
+      return { 'type': ALT_PYTHON_TYPES[alt] }                # 'list' and 'dict' also have validation functions
     dt = get_box(_validate.transform_validation_shortcuts(alt))
     if dt.get('type',None) == 'dict':
       return { 'type': 'object' }
@@ -392,6 +412,9 @@ class SchemaBuilder:
       'type': 'string', 'pattern': id_pattern(),
       'description': 'Topology component to include in place of this node' }
     node['properties']['image'] = { 'type': 'string', 'description': 'Container image or VM box' }
+    node['properties']['group'] = self.list_type(get_box({ 'type': 'list', '_subtype': 'str' }))
+    for k in ('box','group'):                               # An empty value selects the default box or no groups
+      node['properties'][k] = nullable(node['properties'][k])
     return node_ref
 
   def node_name(self) -> dict:
@@ -487,10 +510,11 @@ class SchemaBuilder:
         items = [ entry, { 'type': [ 'string', 'number', 'array' ] } ] if o_def.get('value',False) else [ entry ]
         o_list = { 'type': 'array', 'items': one_of_schemas(items) }
         o_value = one_of_schemas([ o_list, *items, { 'type': 'object' }, { 'type': 'null' } ])
-        d_value['properties'][o_type] = {
-          'type': [ 'object', 'null' ],
-          'patternProperties': { r'\.': {} },
-          'additionalProperties': o_value }
+        d_value['properties'][o_type] = one_of_schemas([
+          { 'type': 'object',
+            'patternProperties': { r'\.': {} },
+            'additionalProperties': o_value },
+          { 'const': False } ])
     self.context.pop()
 
   def policy_shortcuts(self, entry: dict, shortcuts: Box) -> dict:
