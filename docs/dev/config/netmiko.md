@@ -240,7 +240,7 @@ The *netmiko* configuration reload uses these features (specified in the **featu
 |---------|------|---------|
 | **command** | string | The *replace configuration* command executed after the saved configuration has been copied to the device (mandatory) |
 | **config** | string | Destination file name (default: `replace-config`). It can include a file system prefix (for example, `nvram:replace-config`) |
-| **configure** | string or list | Configuration commands to execute before copying the file (for example, to enable the SCP server) |
+| **configure** | string | Configuration commands to execute before copying the file (for example, to enable the SCP server). The parameter is evaluated as an f-string and can include node attributes (for example, **name** for node name). |
 | **file_transfer** | bool | Use the *netmiko* **file_transfer** function instead of the generic SCP client to copy the configuration file (default: `False`). The file system prefix in the **config** value is passed to the **file_transfer** function as the **file_system** parameter |
 | **success** | string | Regular expression matching a successful *replace configuration* printout |
 | **timeout** | int | Maximum execution time of the *replace configuration* command (default: 30 seconds) |
