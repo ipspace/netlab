@@ -1,15 +1,16 @@
 Release Notes
 =============
 
-**Release 26.11 (2026-11-xx)**
+**Release 26.11 (2026-11-19)**
 
 The highlights of release 26.11 include:
 
-* Support for IP Infusion OcNOS by [@victorkhgith](https://github.com/victorkhgith) and Extreme VOSS by [@sdargoeuves](https://github.com/sdargoeuves)
+* Support for IP Infusion OcNOS by [@victorkhgith](https://github.com/victorkhgith) and including previous work by [@roc-ops](https://github.com/roc-ops), and Extreme VOSS by [@sdargoeuves](https://github.com/sdargoeuves)
 * The new **[netlab node](netlab-node)** command starts, stops, restarts, or pauses individual *containerlab* nodes (by [@Muddyblack](https://github.com/Muddyblack))
 * **netlab validate** can print [JSON results](netlab-validate-json)
-* *Netmiko* is the default configuration method for Cisco IOS XR and Nexus OS, and is used by **netlab config** and **netlab collect**
-* OSPFv3, IBGP, static routes, and route redistribution on Cisco ASAv
+* *Netmiko* is the default configuration method for most Arista, Cisco, and Extreme devices. It is also used by **netlab config**, **netlab config --reload**, and **netlab collect**
+* The [JSON schema of lab topologies](topology-schema) by [@kiangribi](https://github.com/kiangribi) enables attribute completion and validation in YAML editors
+* OSPFv3, IBGP, static routes, and route redistribution on Cisco ASAv by [@sdargoeuves](https://github.com/sdargoeuves)
 
 We also decided to [deprecate Ubuntu 22.04 and Python 3.10](install-netlab).
 
