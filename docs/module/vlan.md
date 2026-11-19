@@ -40,6 +40,7 @@ VLANs are supported on these platforms:
 | Cumulus 5.x (NVUE)    | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Dell OS10             | ✅  | ✅  | ❌   | ✅ | ✅ |
 | Extreme Networks EXOS |  ✅ | ✅  | ❌   | ✅ | ✅ |
+| Extreme Networks VOSS |  ✅ | ✅  | ❌   | ✅ | ✅ |
 | FRR [❗](caveats-frr) | ✅  | ✅  | ✅  | ✅ | ✅ |
 | IP Infusion OcNOS     | ✅  | ✅  | ❌   | ✅ | ✅ |
 | Juniper vMX           | ✅  | ✅  | ✅  | ✅ | ✅ |
