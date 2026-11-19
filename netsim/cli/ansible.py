@@ -19,7 +19,8 @@ _VERSION_MISMATCH: typing.Optional[bool] = None   # Cached result of the Ansible
 
 """
 Check whether the installed Ansible version might be incompatible with netlab. The check is
-performed (and the warning displayed) only once; the result is cached and returned on subsequent calls.
+performed only once; the result is cached and returned on subsequent calls. The warning is
+displayed only when a playbook fails (see 'playbook' function)
 """
 def check_version() -> bool:
   global _VERSION_MISMATCH
@@ -31,14 +32,6 @@ def check_version() -> bool:
     import ansible  # type: ignore
     if ansible.__version__ >= '2.19':           # Ansible core 2.19 contains significant templating changes
       _VERSION_MISMATCH = True
-      log.warning(
-        text="You're using Ansible version 12.x or higher; netlab might not work correctly",
-        more_hints = [
-          "Ansible core version 2.19 introduced breaking changes in templates and playbooks",
-          "We tested netlab core with Ansible version 13.x but some rarely-used devices might",
-          "not work properly. You might want to downgrade Ansible to version 11.10 or lower." ],
-        module='ansible',
-        flag='ver12')
   except Exception as ex:
     log.warning(text=f"Cannot determine Ansible version: {str(ex)}",module='ansible')
 
@@ -89,7 +82,8 @@ def playbook(name: str, args: typing.List[str], abort_on_error: bool = True) -> 
       text=f"Ansible playbook {name} failed, possibly due to the unsupported Ansible version",
       more_hints = [
         "Ansible core version 2.19 introduced breaking changes in templates and playbooks.",
-        "Consider downgrading Ansible to version 11.10 or lower." ],
+        "We tested netlab core with Ansible version 14.x but some rarely-used devices might",
+        "not work properly. Consider downgrading Ansible to version 11.10 or lower." ],
       module='ansible',
       flag='ver12')
 
