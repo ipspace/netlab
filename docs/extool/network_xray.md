@@ -48,7 +48,7 @@ You can change the plugin behavior with these **tools.network_xray** parameters:
 | Parameter | Meaning | Default |
 |---|---|---|
 | validate | Run the validation loop | False |
-| validate_interval | Time (in seconds) between **netlab validate** runs | 30 |
-| validate_max_hours | Stop the background process after this many hours | 12 |
+| validate_interval | Time (in seconds) between **netlab validate** runs (an integer, at least 30) | 30 |
+| validate_max_hours | Stop the background process after this many hours (at least 1) | 12 |
 
-Invalid **validate_interval** or **validate_max_hours** values (not a positive number) are replaced with the default values, and the plugin prints a warning.
+_netlab_ reports an error when **validate_interval** or **validate_max_hours** has an invalid value.

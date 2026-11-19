@@ -10,7 +10,7 @@ Use 'tools.network_xray.plugin: []' to remove the plugin.
 
 * 'netlab up' (after the tools have been started): start a background process that runs
   'netlab validate --format json' in the lab directory every 'tools.network_xray.validate_interval'
-  seconds (default: 30) and writes the results into network_xray/validate.json
+  seconds (default and minimum: 30) and writes the results into network_xray/validate.json
 * 'netlab down' (before the lab is stopped): stop the background process
 * 'netlab down --cleanup': remove the files created by the plugin
 
@@ -21,7 +21,6 @@ also stops when the lab snapshot disappears, after 'tools.network_xray.validate_
 The plugin does nothing when 'netlab up' or 'netlab down' is started with '--dry-run'.
 """
 
-import math
 import os
 import signal
 import subprocess
@@ -39,6 +38,8 @@ PID_FILE = os.path.join(OUT_DIR, "validate.pid")
 OUT_FILE = os.path.join(OUT_DIR, "validate.json")
 LOG_FILE = os.path.join(OUT_DIR, "validate.log")
 LOOP = os.path.join(os.path.dirname(os.path.abspath(__file__)), "validate_loop.py")
+MIN_INTERVAL = 30  # Each run executes all validation tests; failing tests (for example, ping) take a while
+MIN_MAX_HOURS = 1
 
 
 def tool_settings(topology: Box) -> Box:
@@ -49,23 +50,30 @@ def loop_wanted(topology: Box) -> bool:
   return tool_settings(topology).get("validate", False) is True
 
 
-def positive_number(settings: Box, name: str, default: float) -> float:
-  value = settings.get(name, default)
-  if isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) and value > 0:
-    return value
-  log.warning(text=f"tools.{TOOL}.{name} must be a positive number, using the default value ({default})", module=TOOL)
-  return default
-
-
 """
-Register the plugin for the 'netlab up' and 'netlab down' plugin CLI hooks when the user asked for the
-validation loop
+Check the validation loop settings and register the plugin for the 'netlab up' and 'netlab down'
+plugin CLI hooks when the user asked for the validation loop
 """
 
 
 def post_transform(topology: Box) -> None:
   if not loop_wanted(topology):
     return
+  settings = tool_settings(topology)
+  data.types.must_be_int(
+    parent=settings,
+    key="validate_interval",
+    path=f"tools.{TOOL}",
+    module=TOOL,
+    min_value=MIN_INTERVAL,
+  )
+  data.types.must_be_float(
+    parent=settings,
+    key="validate_max_hours",
+    path=f"tools.{TOOL}",
+    module=TOOL,
+    min_value=MIN_MAX_HOURS,
+  )
   for cmd in ("up", "down"):
     if PLUGIN not in topology.defaults.netlab[cmd].get("plugin", []):
       data.append_to_list(topology.defaults.netlab[cmd], "plugin", PLUGIN)
@@ -96,8 +104,8 @@ def post_shell_post_tools_start(topology: Box) -> None:
 
   os.makedirs(OUT_DIR, exist_ok=True)
   settings = tool_settings(topology)
-  interval = positive_number(settings, "validate_interval", 30)
-  max_hours = positive_number(settings, "validate_max_hours", 12)
+  interval = settings.get("validate_interval", 30)  # Checked in post_transform
+  max_hours = settings.get("validate_max_hours", 12)
   netlab_cmd = [cli.NETLAB_SCRIPT or "netlab"]  # The netlab command that started this lab
   with open(LOG_FILE, "a") as logf:
     p = subprocess.Popen(
