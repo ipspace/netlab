@@ -4,30 +4,25 @@ OK: clab installed and working correctly
 Starting clab nodes
  [INFO] Setting containerlab runtime to docker
 provider clab: executing flock -E 42 /tmp/netlab.lock containerlab deploy --reconfigure -t clab.yml
-18:52:38 INFO Containerlab started version=0.75.0
-18:52:38 INFO Parsing & checking topology file=clab.yml
-18:52:38 INFO Removing directory path=/work/netlab_cicd/clab-ml-17
-18:52:38 INFO Creating docker network name=nl_mgmt_17 IPv4 subnet=192.168.17.0/24 IPv6 subnet=fd00:df:1ab:17::/64 MTU=0
-18:52:38 INFO Creating lab directory path=/work/netlab_cicd/clab-ml-17
-18:52:38 INFO Creating container name=dut
-18:52:38 INFO Creating container name=x1
-18:52:38 INFO Created link: dut:eth1 ▪┄┄▪ x1:eth1
-18:52:39 INFO Executed command node=x1 command="sleep 1" stdout=""
-18:52:39 INFO Adding host entries path=/etc/hosts
-18:52:39 INFO Adding SSH config for nodes path=/etc/ssh/ssh_config.d/clab-ml-17.conf
-18:52:39 INFO containerlab version
-  🎉=
-  │ A newer containerlab version (0.78.0) is available!
-  │ Release notes: https://containerlab.dev/rn/0.78/
-  │ Run 'clab version upgrade' or see https://containerlab.dev/install/ for other installation options.
+08:04:16 INFO Containerlab started version=0.83.0
+08:04:16 INFO Parsing & checking topology file=clab.yml
+08:04:16 INFO Removing directory path=/work/netlab_cicd/clab-ml-17
+08:04:16 INFO Creating docker network name=nl_mgmt_17 IPv4 subnet=192.168.17.0/24 IPv6 subnet=fd00:df:1ab:17::/64 MTU=0
+08:04:16 INFO Creating lab directory path=/work/netlab_cicd/clab-ml-17
+08:04:16 INFO Creating container name=dut
+08:04:16 INFO Creating container name=x1
+08:04:16 INFO Created link: dut:eth1 ▪┄┄▪ x1:eth1
+08:04:17 INFO Executed command node=x1 command="sleep 1" stdout=""
+08:04:17 INFO Adding host entries path=/etc/hosts
+08:04:17 INFO Adding SSH config for nodes path=/etc/ssh/ssh_config.d/clab-ml-17.conf
 [1m╭[0m[1m────────────────[0m[1m┬[0m[1m────────────────────────────────[0m[1m┬[0m[1m─────────[0m[1m┬[0m[1m───────────────────[0m[1m╮[0m
 [1m│[0m[1m      Name      [0m[1m│[0m[1m           Kind/Image           [0m[1m│[0m[1m  State  [0m[1m│[0m[1m   IPv4/6 Address  [0m[1m│[0m
 [1m├[0m[1m────────────────[0m[1m┼[0m[1m────────────────────────────────[0m[1m┼[0m[1m─────────[0m[1m┼[0m[1m───────────────────[0m[1m┤[0m
 │ clab-ml-17-dut │ linux                          │ running │ 192.168.17.101    │
 │                │ ghcr.io/sysoleg/vyos-container │         │ fd00:df:1ab:17::2 │
 ├────────────────┼────────────────────────────────┼─────────┼───────────────────┤
-│ clab-ml-17-x1  │ linux                          │ running │ 192.168.17.102    │
-│                │ quay.io/frrouting/frr:10.6.1   │         │ fd00:df:1ab:17::3 │
+│ clab-ml-17-x1  │ frr                            │ running │ 192.168.17.102    │
+│                │ quay.io/frrouting/frr:10.7.1   │         │ fd00:df:1ab:17::3 │
 ╰────────────────┴────────────────────────────────┴─────────┴───────────────────╯
 Deploying initial device configurations
 Creating Device configuration snippets
@@ -90,7 +85,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "initial configuration for dut\n=========================================\nset system host-name 'dut'\n\n\n\n\n\nset interfaces dummy dum0 address 10.0.0.1/32\n\n\n\nset interfaces ethernet eth1 description 'dut -> x1'\n\nset interfaces ethernet eth1 mtu 1500\n\nset interfaces ethernet eth1 address 10.1.0.1/30\n\n\n\n\nset service lldp interface all\n>/dev/null 2>/dev/null set service lldp interface eth0 disable\n>/dev/null 2>/dev/null set service lldp interface eth0 mode disable\n\n\nset service ssh\n\ncommit\n\n# Restart FRR to pick up the new hostname\nsudo service frr restart\n"
+    "msg": "initial configuration for dut\n=========================================\nset system host-name 'dut'\n\n\n\n\n\nset interfaces dummy dum0 address 10.0.0.1/32\n\nset system static-host-mapping host-name x1 inet 10.0.0.2\n\n\n\nset interfaces ethernet eth1 description 'dut -> x1'\n\nset interfaces ethernet eth1 mtu 1500\n\nset interfaces ethernet eth1 address 10.1.0.1/30\n\n\n\n\nset service lldp interface all\n>/dev/null 2>/dev/null set service lldp interface eth0 disable\n>/dev/null 2>/dev/null set service lldp interface eth0 mode disable\n\n\nset service ssh\n\ncommit\n\n# Restart FRR to pick up the new hostname\nsudo service frr restart\n"
 }
 
 TASK [Deploy initial configuration] ********************************************
@@ -148,9 +143,9 @@ skipping: no hosts matched
 PLAY RECAP *********************************************************************
 dut                        : ok=20   changed=4    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
 
-Results of configuration script deployments
+Results of non-Ansible configuration deployments
 ================================================================================
-x1               Script:  initial,ospf
+x1               Script:   initial,ospf
 
 
 OK: Lab devices configured
@@ -165,15 +160,14 @@ You should:
 * Restart the lab with "netlab up --snapshot --reload-config saved"
 * Validate the results with "netlab validate"
 
+Collect Collecting device configurations
+ [INFO] Collecting configs into /work/netlab_cicd/saved
 [WARNING]: Found variable using reserved name: hosts
 
 PLAY [Collect device configurations] *******************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
-
-TASK [Create '/work/netlab_cicd/saved' directory] ******************************
-ok: [dut -> localhost]
 
 TASK [Find configuration collection script] ************************************
 ok: [dut]
@@ -191,18 +185,17 @@ TASK [Copy collected configuration to '/work/netlab_cicd/saved' directory] *****
 changed: [dut -> localhost]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=7    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+dut                        : ok=6    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 
-cwd: /work/netlab_cicd output: saved
 Checking virtualization provider installation
 OK: clab installed and working correctly
 Stopping clab nodes
  [INFO] Setting containerlab runtime to docker
 provider clab: executing flock -E 42 /tmp/netlab.lock containerlab destroy --cleanup -t clab.yml
-18:52:56 INFO Parsing & checking topology file=clab.yml
-18:52:56 INFO Parsing & checking topology file=clab.yml
-18:52:56 INFO Destroying lab name=ml-17
-18:52:56 INFO Removed container name=clab-ml-17-x1
-18:52:56 INFO Removed container name=clab-ml-17-dut
-18:52:56 INFO Removing host entries path=/etc/hosts
-18:52:56 INFO Removing SSH config path=/etc/ssh/ssh_config.d/clab-ml-17.conf
+08:04:36 INFO Parsing & checking topology file=clab.yml
+08:04:36 INFO Parsing & checking topology file=clab.yml
+08:04:36 INFO Destroying lab name=ml-17
+08:04:36 INFO Removed container name=clab-ml-17-x1
+08:04:36 INFO Removed container name=clab-ml-17-dut
+08:04:36 INFO Removing host entries path=/etc/hosts
+08:04:36 INFO Removing SSH config path=/etc/ssh/ssh_config.d/clab-ml-17.conf
