@@ -38,6 +38,7 @@ sys.path.insert(0, os.path.abspath('_ext'))
 
 extensions = [
   'features',
+  'schema',
   'myst_parser',
   'sphinxcontrib.jquery',
   'sphinx_rtd_dark_mode'
