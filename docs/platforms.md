@@ -31,6 +31,7 @@
 | Cumulus Linux 5.x (NVUE) [❗](caveats-cumulus-nvue) | cumulus_nvue | minimal |
 | Dell OS10 [❗](caveats-os10) | dellos10     | full          |
 | Extreme Networks EXOS [❗](caveats-exos) | exos | minimal  |
+| Extreme Networks VOSS [❗](caveats-voss) | voss | minimal  |
 | Fortinet FortiOS [❗](caveats-fortios) | fortios | minimal  |
 | FRRouting (FRR) [❗](caveats-frr) | frr     | full          |
 | [Generic Linux host](generic-linux-devices) | linux | full          |
@@ -136,6 +137,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Cumulus Linux 5.x (NVUE) |  ✅  |  ✅[❗](caveats-cumulus)  |
 | Dell OS10          |  [✅](build-dellos10)  |  ✅  |
 | Extreme Networks EXOS |  [✅](build-exos)  |  ✅[❗](clab-vrnetlab)  |
+| Extreme Networks VOSS |  ❌  |  ✅[❗](clab-vrnetlab)  |
 | Fortinet FortiOS   |  [✅](build-fortios)  |  ✅  |
 | FRR |  [✅](build-frr)[❗](caveats-frr)  |  ✅  |
 | Generic Linux (Ubuntu/Alpine)  |  [❗](labs/linux.md)  |  ✅  |
@@ -311,6 +313,7 @@ The following system-wide features are configured on supported network operating
 | Cumulus Linux 5.x (NVUE) | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Dell OS10                | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Extreme Networks EXOS    | ✅  |  ❌  | ✅  | ✅  | ✅  |
+| Extreme Networks VOSS    | ✅  |  ❌  |  ❌  |  ❌  |  ❌  |
 | Fortinet FortiOS         | ✅  |  ❌  | ✅  | ✅  | ✅  |
 | FRR                      | ✅  | ✅[^HIF]  |  ❌  | ✅  | ✅  |
 | Generic Linux            | ✅  | ✅[^HIF]  |  ✅[❗](linux-lldp) | ✅  | ✅  |
@@ -346,6 +349,7 @@ The following interface parameters are configured on supported network operating
 | Cumulus Linux 5.x (NVUE) | ✅ | ❌ | ✅  | ✅  |
 | Dell OS10             | ✅  |  ❌  | ✅  | ✅  |
 | Extreme Networks EXOS | ✅  | ❌  |  ✅  |  ❌  |
+| Extreme Networks VOSS | ✅  | ❌  |  ❌  |  ❌  |
 | Fortinet FortiOS      | ✅  | ✅  |  ✅[❗](caveats-fortios)  |  ❌  |
 | FRR                   | ✅  | ✅  | ✅  | ✅  |
 | Generic Linux         |  ❌  |  ❌  | ✅  |  ❌  |
@@ -378,6 +382,7 @@ The following interface addresses are supported on various platforms; most daemo
 | Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ✅ |  ❌  |
 | Dell OS10             | ✅  | ✅  |  ❌  |  ❌  |
 | Extreme Networks EXOS | ✅  | ✅  |  ❌  | ✅  |
+| Extreme Networks VOSS | ✅[❗](caveats-voss) | ❌  |  ❌  |  ❌  |
 | Fortinet FortiOS      | ✅  | ✅  |  ❌  |  ❌  |
 | FRR                   | ✅  | ✅  | ✅  | ✅  |
 | Generic Linux         | ✅  | ✅  |  ❌  |  ❌  |
@@ -514,6 +519,7 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | Cumulus Linux 5.x (NVUE) | ✅ |[❗](module-vrf-platform-support)| ❌ | ❌ | ❌ | ❌ |
 | Dell OS10             | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
 | Extreme Networks EXOS | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Extreme Networks VOSS | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | FRR                   | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | IP Infusion OcNOS     | ✅ | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
 | Juniper cRPD          |  ❌ |  ❌ |   ❌ | ✅ | ✅ |  ❌ |

@@ -426,6 +426,8 @@ ansible-galaxy collection install community.network
 ansible-galaxy collection install community.network
 ```
 
+* _netlab_ configures IPv4 addresses only on VLAN interfaces. Physical and loopback interfaces have no IP addresses.
+
 (caveats-fortios)=
 ## Fortinet FortiOS
 
