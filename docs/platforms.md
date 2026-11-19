@@ -421,62 +421,38 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 
 [^NSM]: Use **[netlab show module-support](netlab/show.md)** command to display the current system settings
 
-| Operating system      | [OSPF](module/ospf.md) | [IS-IS](module/isis.md) | [EIGRP](module/eigrp.md) | [BGP](module/bgp.md) | [RIPv2/ng](module/ripv2.md)
-| --------------------- | :--: | :--: | :--: | :--: | :--: |
-| Arista EOS            | ✅   |  ✅  |   ❌  |  ✅  |  ✅  |
-| Arrcus ArcOS [❗](caveats-arcos) | ✅ | ✅ | ❌ | ✅ | ❌ |
-| Aruba AOS-CX          | ✅   |  ❌   |   ❌  |  ✅  |   ❌  |
-| BIRD Internet Routing Daemon | ✅ [❗](caveats-bird) | ❌ | ❌ | ✅ [❗](caveats-bird) | ❌ |
-| Cisco ASAv            | ✅ [❗](caveats-asav) | ✅ [❗](caveats-asav) | ❌ | ✅ [❗](caveats-asav) | ❌ |
-| Cisco IOS/IOS XE[^18v]| ✅   |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cisco IOS XR[^XR]     | ✅   |  ✅  |   ❌  |  ✅  |   ❌  |
-| Cisco Nexus OS        | ✅   |  ✅  |  ✅  |  ✅  |   ❌  |
-| Cumulus Linux         | ✅   |   ❌  |   ❌  |  ✅  |  ✅  |
-| Cumulus Linux 5.x (NVUE) | ✅ |  ❌  |   ❌   | ✅ [❗](caveats-cumulus-nvue)  |  ❌  |
-| Dell OS10             | ✅ [❗](caveats-os10) |   ❌   |   ❌   | ✅  |  ❌  |
-| Extreme Networks EXOS | ✅   |   ❌   |   ❌   |   ❌   |  ❌  |
-| Fortinet FortiOS      | ✅ [❗](caveats-fortios) |   ❌   |   ❌   |  ✅  |  ❌  |
-| FRR                   | ✅   |  ✅   |   ❌  | ✅  |  ✅  |
-| IP Infusion OcNOS     | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
-| Junos[^Junos]         | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
-| Mikrotik RouterOS 6   | ✅   |   ❌   |   ❌  | ✅  |   ❌  |
-| Mikrotik RouterOS 7   | ✅   |   ❌   |   ❌  | ✅  |   ❌  |
-| Nokia SR Linux        | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
-| Nokia SR OS[^SROS]    | ✅   |  ✅   |   ❌  | ✅  | ✅  |
-| OpenBSD               | ✅   |   ❌   |   ❌  | ✅   | ✅   |
-| Sonic                 |  ❌   |   ❌   |   ❌  | ✅  |   ❌  |
-| Sonic (containerlab)  | ✅   |  ✅   |   ❌  | ✅  |  ✅  |
-| VyOS                  | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
+```{features}
+- title: '[OSPF](module/ospf.md)'
+  enabled: ospf
+  caveats: ospf.caveats.core
+- title: '[IS-IS](module/isis.md)'
+  enabled: isis
+  caveats: isis.caveats
+- title: '[EIGRP](module/eigrp.md)'
+  enabled: eigrp
+- title: '[BGP](module/bgp.md)'
+  enabled: bgp
+  caveats: bgp.caveats.core
+- title: '[RIPv2/ng](module/ripv2.md)'
+  enabled: ripv2
+  caveats: ripv2.caveats.core
+```
 
 These devices support additional control-plane protocols or BGP address families:
 
-| Operating system | [BFD](module/bfd.md) | [EVPN](module/evpn.md) | [MPLS/VPN](module/mpls.md) | [FHRP](module/gateway.md) |
-| --------------------- | :-: | :-: | :-: | :-: |
-| Arista EOS            | ✅  | ✅  | ✅  | ✅  |
-| Arrcus ArcOS [❗](caveats-arcos) | ✅  | ✅  | ✅  | ✅  |
-| Aruba AOS-CX          | ✅  | ✅  | ✅  | ✅  |
-| BIRD                  |  ❌  | ✅  |  ❌  | ✅  |
-| Cisco IOS XE[^XE]     | ✅  | ✅  | ✅  | ✅  |
-| Cisco IOSv/IOSvL2     | ✅  |  ❌  | ✅  | ✅  |
-| Cisco IOS XR[^XR]     |  ❌  | ✅  | ✅  | ✅  |
-| Cisco Nexus OS        | ✅  | ✅  |  ❌  | ✅  |
-| Cumulus Linux         | ✅  | ✅  |  ❌  | ✅  |
-| Dell OS10             | ✅  | ✅  |  ❌  |  ❌  |
-| Extreme Networks EXOS |  ❌  |  ❌  |  ❌  | ✅  |
-| FRR                   | ✅  | ✅  | ✅  |  ❌  |
-| IP Infusion OcNOS     | ✅  |  ❌  |  ❌  |  ❌  |
-| Juniper cRPD          | ✅  |  ❌  | ✅  |  ❌  |
-| Juniper vMX           | ✅  |  ❌  | ✅  | ✅  |
-| Juniper vPTX          | ✅  | ✅  | ✅  | ✅  |
-| Juniper vSRX 3.0      | ✅  |  ❌  | ✅  | ✅  |
-| vJunos-switch         | ✅  |  ✅ | ✅  | ✅  |
-| vJunos-router         | ✅  |  ❌  | ✅  | ✅  |
-| Mikrotik RouterOS 6   | ✅  |  ❌  | ✅  |  ❌  |
-| Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  |  ❌  |
-| Nokia SR Linux        | ✅  | ✅  | ✅  | ✅  |
-| Nokia SR OS[^SROS]    | ✅  | ✅  | ✅  | ✅  |
-| Sonic (containerlab)  | ✅  | ✅  | ✅  | ✅  |
-| VyOS                  | ✅  | ✅  | ✅  |  ❌  |
+```{features}
+- title: '[BFD](module/bfd.md)'
+  enabled: bfd
+  caveats: bfd.caveats
+- title: '[EVPN](module/evpn.md)'
+  enabled: evpn
+  caveats: evpn.caveats.core
+- title: '[MPLS/VPN](module/mpls.md)'
+  enabled: mpls.vpn
+- title: '[FHRP](module/gateway.md)'
+  enabled: gateway
+  caveats: gateway.caveats.core
+```
 
 **Notes:**
 * FRHP = First-Hop Redundancy Protocol (anycast gateway or VRRP)
@@ -484,68 +460,50 @@ These devices support additional control-plane protocols or BGP address families
 (platform-layer-2-support)=
 The layer-2 control plane [configuration modules](module-reference.md) are supported on these devices[^NSM]:
 
-| Operating system          | [Spanning<br>Tree Protocol](module/stp.md) | [Link Aggregation<br>Groups](module/lag.md) |
-| ------------------------- |:--:|:--:|
-| Arista EOS                | ✅ | ✅ |
-| Arrcus ArcOS [❗](caveats-arcos) | ✅[❗](caveats-arcos) | ✅ |
-| Aruba CX                  | ✅ | ✅ |
-| BIRD                      | ❌  | ✅ |
-| Cumulus Linux             | ✅ | ✅ |
-| Cumulus Linux 5.x (NVUE)  | ✅ | ✅ |
-| Dell OS10                 | ✅ | ✅ |
-| dnsmasq                   | ❌  | ✅ |
-| FRR                       | ✅ | ✅ |
-| IP Infusion OcNOS         | ✅ | ❌  |
-| Linux                     | ❌  | ✅ |
-| Sonic (containerlab)      | ❌  | ✅ |
+```{features}
+- title: '[STP](module/stp.md)'
+  enabled: stp
+  caveats: stp.caveats.core
+- title: '[LAG](module/lag.md)'
+  enabled: lag
+  caveats: lag.caveats.core
+```
 
 (platform-dataplane-support)=
 The data plane [configuration modules](module-reference.md) are supported on these devices[^NSM]:
 
-| Operating system      | [VLAN](module/vlan.md) | [VRF](module/vrf.md) | [VXLAN](module/vxlan.md) | [MPLS](module/mpls.md) | [SR-MPLS](module/sr-mpls.md) | [SRv6](module/srv6.md) |
-| --------------------- |:--:|:--:|:--:|:--:|:--:|:--:|
-| Arista EOS            | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
-| Arrcus ArcOS [❗](caveats-arcos) | ✅ | ✅ | ✅[❗](caveats-arcos) | ✅[❗](caveats-arcos) | ✅[❗](caveats-arcos) | ✅[❗](caveats-arcos) |
-| Aruba AOS-CX          | ✅ | ✅ |  ✅[❗](caveats-aruba) | [❗](caveats-aruba) | ❌ | ❌ |
-| BIRD                  | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
-| Cisco 8000v (IOS XR)  | ✅ | ✅ |  ❌ | ✅ | ✅ | ✅ |
-| Cisco Catalyst 8000v  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Cisco CSR 1000v       | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
-| Cisco IOL/IOLL2       | ✅ | ✅ | ✅[❗](caveats-iol) | ✅ | ✅ | ✅ |
-| Cisco IOSv/IOSvL2     | ✅ | ✅ |  ❌ | ✅ |  ❌ |  ❌ |
-| Cisco IOS XR          |  ❌ | ✅ |  ❌ | ✅ | ✅ | ✅ |
-| Cisco Nexus OS        | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
-| Cumulus Linux         | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
-| Cumulus Linux 5.x (NVUE) | ✅ |[❗](module-vrf-platform-support)| ❌ | ❌ | ❌ | ❌ |
-| Dell OS10             | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
-| Extreme Networks EXOS | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Extreme Networks VOSS | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| FRR                   | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| IP Infusion OcNOS     | ✅ | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
-| Juniper cRPD          |  ❌ |  ❌ |   ❌ | ✅ | ✅ |  ❌ |
-| Juniper vMX           | ✅ | ✅ |  ❌ | ✅ | ✅ |  ❌ |
-| Juniper vPTX          | ✅ | ✅ | ✅ [❗](caveats-vptx) | ✅ | ✅ |  ❌ |
-| Juniper vSRX 3.0      | ❌  | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
-| vJunos-switch         | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
-| vJunos-router         | ❌  | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
-| Mikrotik RouterOS 6   | ✅ | ✅ |  ❌ | ✅ |  ❌ |  ❌ |
-| Mikrotik RouterOS 7   | ✅ | ✅ | ✅ | ✅ |  ❌ |  ❌ |
-| Nokia SR Linux        | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |
-| Nokia SR OS[^SROS]    | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| OpenBSD               | ✅ | ❌ | ✅ | ❌  | ❌ |
-| Sonic (containerlab)  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅[❗](caveats-sonic-clab) |
-| VyOS                  | ✅ | ✅ | ✅ | ✅ |  ❌ |  ❌ |
+```{features}
+- title: '[VLAN](module/vlan.md)'
+  enabled: vlan
+  caveats: vlan.caveats.core
+- title: '[VRF](module/vrf.md)'
+  enabled: vrf
+  caveats: vrf.caveats.core
+- title: '[VXLAN](module/vxlan.md)'
+  enabled: vxlan
+  caveats: vxlan.caveats.core
+- title: '[MPLS](module/mpls.md)'
+  enabled: mpls
+  caveats: mpls.caveats.core
+- title: '[SR-MPLS](module/sr-mpls.md)'
+  enabled: sr
+  caveats: sr.caveats.core
+- title: '[SRv6](module/srv6.md)'
+  enabled: srv6
+  caveats: srv6.caveats.core
+```
 
 (platform-services-support)=
 Network services [configuration modules](module-reference.md) are supported on these devices[^NSM]
 
-| Operating system      | [DHCP](module/dhcp.md) | [DHCPv6](module/dhcp.md) |
-| --------------------- | :--: | :--: |
-| Arista EOS            | ✅   |  ✅  |
-| dnsmasq               | ✅   |  ✅  |
-| Cisco CSR 1000v       | ✅   |  ✅  |
-| Cisco IOSv/IOSvL2     | ✅   |  ✅  |
-| Cumulus Linux         | ✅   |  ✅  |
+```{features}
+- title: '[DHCP](module/dhcp.md)'
+  enabled: dhcp
+  caveats: dhcp.caveats.core
+- title: '[DHCPv6](module/dhcp.md)'
+  enabled: >-
+    dhcp.get('server') or dhcp.get('client',{}).get('ipv6') or dhcp.get('relay') is True or dhcp.get('relay',{}).get('ipv6')
+```
 
 ```{tip}
 See [integration test results](https://release.netlab.tools/) for more details.

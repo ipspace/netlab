@@ -9,28 +9,29 @@ Many platforms already support and enable STP by default; this module provides e
 
 The following table describes per-platform support of individual STP features:
 
-| Operating system   | STP | MSTP | RSTP | Per-VLAN<br>RSTP | Enable<br>per port |
-| ------------------ |:---:|:---:|:---:|:---:|:---:|
-| Arista EOS[^EOS]   | ✅  | ✅  | ✅  | ✅ |  ✅ |
-| Arrcus ArcOS[^ARCOS] | ❌  |  ❌  |  ❌  | ✅ | ❌   |
-| Cisco IOL L2[^IOLL2]   | ✅  | ✅  | ✅  | ✅ |  ✅ |
-| Cisco IOSv L2[^IOLL2]   | ✅  | ✅  | ✅  | ✅ |  ✅ |
-| Aruba AOS-CX[^AOSCX] | ❗  | ✅  | ❌  | ✅ |  ✅ |
-| Cumulus Linux 4.x[^CL] | ✅  |  ❌  | ✅  | ❌   |  ✅ |
-| Cumulus 5.x (NVUE)[^CL] | ✅  |  ❌  | ✅  | ❌   |  ✅ |
-| Dell OS10[^OS10]   | ✅  | ✅  | ✅  | ❗ |  ✅ |
-| FRR[^FRR]          | ✅  |  ❌  |  ❌  |  ❌ | ❌   |
-| IP Infusion OcNOS[^OCNOS] | ✅  | ✅  | ✅  |  ❌ | ✅   |
+```{features}
+- title: STP
+  enabled: "'stp' in stp.supported_protocols"
+- title: MSTP
+  enabled: "'mstp' in stp.supported_protocols"
+- title: RSTP
+  enabled: "'rstp' in stp.supported_protocols"
+- title: Per-VLAN<br>RSTP
+  enabled: "'pvrst' in stp.supported_protocols"
+- title: Enable<br>per port
+  enabled: stp.enable_per_port
+```
 
+**Notes:**
 
-[^EOS]: MSTP is enabled by default
-[^ARCOS]: Rapid PVST is the only flavor and is enabled by default; the only off switch is global -- there is no per-port and no per-VLAN disable
-[^AOSCX]: MSTP is enabled by default; STP is stated as not supported, but it is configured as MSTP (see tip below).
-[^CL]: STP is enabled by default
-[^OS10]: PVRST is enabled by default, STP does not work on virtual networks (which are used for VXLAN)
-[^FRR]: STP is disabled by default; STP is not supported on VLAN trunks as FRR sends BPDUs tagged, you could use Cumulus instead
-[^OCNOS]: STP is disabled on individual bridge ports when you disable it on a node; the STP port type cannot be configured
-[^IOLL2]: PVRST is enabled by default. STP,RSTP are emulated with MSTP. All algorithms use the "long" stp pathcost method.
+* Arista EOS: MSTP is enabled by default
+* Arrcus ArcOS: Rapid PVST is the only flavor and is enabled by default; the only off switch is global -- there is no per-port and no per-VLAN disable
+* Aruba AOS-CX: MSTP is enabled by default; STP is stated as not supported, but it is configured as MSTP (see tip below).
+* Cisco IOL L2 and IOSv L2: PVRST is enabled by default. STP,RSTP are emulated with MSTP. All algorithms use the "long" stp pathcost method.
+* Cumulus Linux: STP is enabled by default
+* Dell OS10: PVRST is enabled by default, STP does not work on virtual networks (which are used for VXLAN)
+* FRR: STP is disabled by default; STP is not supported on VLAN trunks as FRR sends BPDUs tagged, you could use Cumulus instead
+* IP Infusion OcNOS: STP is disabled on individual bridge ports when you disable it on a node; the STP port type cannot be configured
 
 ```{tip}
 MSTP/RSTP ports fall back to regular STP upon receiving a plain STP BPDU.

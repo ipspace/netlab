@@ -63,6 +63,16 @@ For example, to display the list of non-default configuration deployment methods
 
 The **caveats** parameter links a cell to an explanation of feature limitations. A truthy caveat value generates a link to an anchor with ID `caveats-_device_` (usually defined in `caveats.md`). A string value is used as the link target. A caveat value of `yes` generates a warning emoji with no link (for caveats explained below the table).
 
+The module-level caveats (displayed in the module support tables in [](supported-platforms)) are stored in the **_module_.caveats.core** device feature, for example:
+
+```yaml
+features:
+  vxlan:
+    caveats.core: caveats-arcos
+```
+
+Use an explicit anchor ID instead of **true** in parent devices (for example, `iol`); the child devices inherit the feature, and **true** would generate a link to a nonexistent `caveats-_child_` anchor.
+
 ### Built-in Functions
 
 The `enabled` and `text` expressions can use the `len()` built-in function. For example:

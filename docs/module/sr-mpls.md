@@ -26,23 +26,21 @@ The module depends on the [IS-IS](module-isis) or [OSPF](module-ospf) configurat
 
 SR-MPLS is implemented on the following platforms:
 
-| Operating system      | IPv4  | IPv6 | IS-IS | OSPFv2 |
-| ----------------------| :---: | :--: | :---: | :----: |
-| Arista EOS            |   ✅  |  ✅  |  ✅   |  ✅   |
-| Cisco IOS XE[^xe]     |   ✅  |  ❌   |  ✅   |  ✅   |
-| Cisco IOS XR[^XR]     |   ✅  |  ✅  |  ✅   |  ✅   |
-| FRRouting             |   ✅  |  ✅  |  ✅   |  ✅   |
-| Junos[^Junos]         |   ✅  |  ✅  |  ✅   |  ❌   |
-| Nokia SR Linux [❗](caveats-srlinux) | ✅ | ✅ | ✅ | ❌ |
-| Nokia SR OS[^SROS]    |   ✅  |  ✅  |  ✅   |  ❌   |
+```{features}
+- title: IPv4
+  enabled: "'ipv4' in sr.af"
+  caveats: sr.caveats.core
+- title: IPv6
+  enabled: "'ipv6' in sr.af"
+- title: IS-IS
+  enabled: "'isis' in sr.protocol"
+- title: OSPFv2
+  enabled: "'ospfv2' in sr.protocol"
+```
 
-[^xe]: Catalyst 8000v, Cisco CSR 1000v, Cisco IOS on Linux (IOL) and IOL layer-2 image.
+**Notes:**
 
-[^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
-
-[^Junos]: Includes cRPD, vPTX, vJunos-switch, vJunos-router, vMX, and vSRX. vMX and vSRX are not tested.
-
-[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
+* Juniper vMX and vSRX are not tested
 
 ## Global Parameters
 
