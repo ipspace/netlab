@@ -5,7 +5,8 @@ so the network-xray web page can show the results of the lab validation tests as
 The plugin is loaded whenever the network_xray tool is active (see the 'plugin' attribute in
 netsim/tools/network_xray.yml and docs/dev/extools.md).
 
-The validation loop is opt-in: it runs only when 'tools.network_xray.validate' is set to True.
+The validation loop is opt-in: it runs only when 'tools.network_xray.validate' is set to True
+and the lab topology has validation tests.
 Use 'tools.network_xray.plugin: []' to remove the plugin.
 
 * 'netlab up' (after the tools have been started): start a background process that runs
@@ -74,6 +75,12 @@ def post_transform(topology: Box) -> None:
     module=TOOL,
     min_value=MIN_MAX_HOURS,
   )
+  if not topology.get("validate"):  # 'netlab validate' would only report that there are no tests
+    log.warning(
+      text=f"tools.{TOOL}.validate is set, but the lab topology has no validation tests; the validation loop is not started",
+      module=TOOL,
+    )
+    return
   for cmd in ("up", "down"):
     if PLUGIN not in topology.defaults.netlab[cmd].get("plugin", []):
       data.append_to_list(topology.defaults.netlab[cmd], "plugin", PLUGIN)
