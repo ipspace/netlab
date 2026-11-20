@@ -242,45 +242,28 @@ _netlab_ can use a variety of device configuration deployment mechanisms:
 
 [^CMNS]: Used to configure networking parameters for containers that do not have the **ip** command
 
-_netlab_ uses Ansible playbooks and device-specific task lists to deploy device configuration snippets onto most devices, with these notable exceptions:
+_netlab_ uses Ansible playbooks and device-specific task lists to deploy device configuration snippets onto most devices. These devices use a different default deployment method:
 
-:::{table}
-:class: table-wrap
+```{features}
+- title: Default deployment method
+  text: >-
+    "**"+group_vars.netlab_config_mode+"**" if group_vars.netlab_config_mode else False
+```
 
-| Device | Provider | Default configuration deployment method |
-|--------|----------|---------------------------------|
-| BIRD   | clab     | Daemon configuration files and **bash** scripts[^BBS] |
-| dnsmasq | clab    | Daemon configuration files and **bash** scripts[^DBS] |
-| Arista EOS | all | **netmiko** |
-| Cisco ASAv | all | **netmiko** |
-| Cisco IOS/IOS XE | all | **netmiko** |
-| Cisco IOS XR | all | **netmiko** |
-| Cisco Nexus OS | all | **netmiko** |
-| Extreme EXOS | all | **netmiko** |
-| Extreme VOSS | all | **netmiko** |
-| FRRouting    | clab     | **bash** and **vtysh** scripts[^FRRBV] |
-| FRRouting    | libvirt  | **bash** and **vtysh** scripts deployed with **netmiko**[^FRRBV] |
-| IP Infusion OcNOS | all | **netmiko** |
-| Junos cRPD | clab | **bash** scripts[^cRBS] |
-| KinD   | clab     | **bash** scripts copied into and executed in containers |
-| Linux  | clab     | host- or container-side scripts[^LBS] |
-| Sonic  | clab | inherits FRRouting configuration methods |
-| VPP    | clab     | **bash** scripts, node configuration files, and VPP CLI configuration files[^VPPC] |
-:::
+Other exceptions:
 
-[^BBS]: Initial device configurations, VLANs, and link aggregation are configured with **bash** scripts. All other features are configured with the BIRD configuration files.
+{.table-wrap}
+| Device | Configuration deployment details |
+|--------|----------------------------------|
+| BIRD | Initial device configurations, VLANs, and link aggregation are configured with **bash** scripts. All other features are configured with the BIRD configuration files. |
+| dnsmasq | Initial device configurations, VLANs, static routes, and link aggregation are configured with **bash** scripts. All other features are configured with the dnsmasq configuration files. |
+| FRRouting | Configurations starting with a *shebang* are assumed to be Linux scripts; all other configurations are assumed to be **vtysh** scripts and get a `#!/usr/bin/vtysh -f` shebang prepended to them. On virtual machines, the scripts are deployed with **netmiko**. SONiC containers inherit the FRRouting configuration methods. |
+| Juniper cRPD | The configuration deployment uses a custom **bash** script that calls **cli** command to execute **load merge** followed by **commit**. The custom script is used as the *shebang* interpreter for the configuration snippets. |
+| KinD | **bash** scripts are copied into and executed in the containers. |
+| Linux | Initial device configurations, static routes, VLANs, and interface bonding are configured with host-side scripts executed in the container namespace. Custom configuration templates are assumed to be Linux scripts executed within the container ([more details](generic-linux-devices)). |
+| VPP | Initial device configuration is deployed with **bash** scripts executed within the container. VPP **startup.conf** is deployed as a node configuration file. The VPP startup configuration loads `/etc/vpp/config/setup.vpp`, a generated VPP CLI configuration file; the initial script creates `/etc/vpp/config/clab-interfaces.vpp`. The container waits for **netlab initial** to finish before starting VPP. |
 
-[^DBS]: Initial device configurations, VLANs, static routes, and link aggregation are configured with **bash** scripts. All other features are configured with the dnsmasq configuration files.
-
-[^FRRBV]: Configurations starting with a *shebang* are assumed to be Linux scripts; all other configurations are assumed to be **vtysh** scripts and get a `#!/usr/bin/vtysh -f` shebang prepended to them.
-
-[^cRBS]: The configuration deployment uses a custom **bash** script that calls **cli** command to execute **load merge** followed by **commit**. The custom script is used as the *shebang* interpreter for the configuration snippets.
-
-[^LBS]: Initial device configurations, static routes, VLANs, and interface bonding are configured with host-side scripts executed in the container namespace. Custom configuration templates are assumed to be Linux scripts executed within the container ([more details](generic-linux-devices)).
-
-[^VPPC]: Initial device configuration is deployed with **bash** scripts executed within the container. VPP **startup.conf** is deployed as a node configuration file. The VPP startup configuration loads `/etc/vpp/config/setup.vpp`, a generated VPP CLI configuration file; the initial script creates `/etc/vpp/config/clab-interfaces.vpp`. The container waits for **netlab initial** to finish before starting VPP.
-
-Several other devices can use configuration methods faster than Ansible playbooks. These configuration methods are not enabled by default; you have to set the **netlab_config_mode** device group variable[^NCMGV] or node parameter to use them:
+Several other devices can use configuration methods that might be faster than the device defaults. You have to set the **netlab_config_mode** device group variable[^NCMGV] or node parameter to use them:
 
 ```{features}
 - title: Alternate<br>deployment method
