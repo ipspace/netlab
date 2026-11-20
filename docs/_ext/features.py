@@ -134,7 +134,9 @@ def features_body(tgroup: nodes.tgroup, device_data: typing.List[typing.List]) -
 def doc_link(url: str) -> str:
   """
   Convert links to netlab documentation into root-relative MyST links, so
-  they work in local and versioned builds
+  they work in local and versioned builds. MyST resolves '/path/doc.md' into
+  a document reference (a relative HTML link in the generated documentation)
+  and reports missing documents as 'myst.xref_missing' warnings.
   """
   if not url.startswith(NETLAB_DOCS_URL):
     return url
