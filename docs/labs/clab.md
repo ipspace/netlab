@@ -39,6 +39,7 @@ features:
 - title: Build<br>recipe
   enabled: clab.get('build')
   link: clab.get('build_recipe') or clab.get('build')
+  present: 🔗
   missing: ''
 ```
 

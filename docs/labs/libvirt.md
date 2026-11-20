@@ -52,6 +52,7 @@ features:
 - title: Build<br>recipe
   enabled: libvirt.get('build')
   link: libvirt.get('build_recipe') or libvirt.get('build')
+  present: 🔗
   missing: ''
 ```
 
@@ -68,8 +69,10 @@ These are the default values; you can change them with [node parameters](node-at
 ```{features}
 - title: CPUs
   text: libvirt.image and libvirt.node.cpu
+  align: right
 - title: Memory<br>(MB)
   text: libvirt.image and libvirt.node.memory
+  align: right
 - title: libvirt<br>NIC model
   text: libvirt.image and libvirt.node.get('nic_model_type','virtio')
 ```
