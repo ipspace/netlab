@@ -120,13 +120,12 @@ def features_body(tgroup: nodes.tgroup, device_data: typing.List[typing.List]) -
       if 'text' in d_data:                        # ... verbatim text?
         trow += table_cell(d_data['text'],fn=d_data.get('fn',''))
       elif 'status' in d_data:                    # ... or status (OK/MISSING)
-        txt = '✅' if d_data['status'] else '❌'
+        txt = '✅' if d_data['status'] else d_data.get('missing','❌')
         if 'link' in d_data:                      # Do we have to turn the checkmark into a link?
           txt = f'[{txt}]({d_data["link"]})'
         if 'caveat' in d_data:                    # Do we have to add a caveat?
-          caveat_ptr = d_data["caveat"]           # Get the caveat pointer
           # Use Markdown link to point to the caveat (MyST will resolve ref IDs)
-          txt += '❗' if caveat_ptr == 'yes' else f'[❗]({caveat_ptr})'
+          txt += caveat_marker(d_data["caveat"])
         trow += table_cell(txt,align='center')
       else:
         trow += table_cell('🤦‍♂️')                  # None of the above, we failed miserably :()
@@ -151,6 +150,25 @@ def feature_to_text(v: typing.Any) -> str:
     return '✅' if v else '❌'
   return str(v)
 
+def get_caveat(xpr: str, device_data: Box, dname: str) -> typing.Optional[str]:
+  """
+  Evaluate the caveat expression and return the caveat pointer: 'caveats-<device>'
+  for True, the expression value for other truthy values, None otherwise
+  """
+  try:
+    caveat = safer_eval(xpr,locals=device_data)
+  except Exception:                               # Failed? Looks like there's nothing to mention ;)
+    return None
+  if not caveat:
+    return None
+  return 'caveats-'+dname if caveat is True else caveat
+
+def caveat_marker(caveat_ptr: str) -> str:
+  """
+  Return the Markdown caveat marker: a warning emoji for 'yes', a link to caveat otherwise
+  """
+  return '❗' if caveat_ptr == 'yes' else f'[❗]({caveat_ptr})'
+
 def get_feature_row(device_data: Box, dname: str, table_def: Box) -> typing.Optional[list]:
   df_row = []                                   # ... starting with an empty row for each device
   f_valid = False                               # ... assuming the device is not relevant and should not be included
@@ -173,13 +191,13 @@ def get_feature_row(device_data: Box, dname: str, table_def: Box) -> typing.Opti
       dt_value['exception'] = str(ex)
       dt_value['status'] = False
 
+    if not f_OK and 'missing' in f_def:         # Custom text for missing features (instead of a red cross)?
+      dt_value['missing'] = f_def.missing
+
     if f_OK and 'caveats' in f_def:             # ... but wait, there's more. Do we need to check for caveats?
-      try:                                      # Let's do it. Try to evaluate caveat data
-        f_caveat = safer_eval(f_def.caveats,locals=device_data)
-        if f_caveat:
-          dt_value['caveat'] = 'caveats-'+dname if f_caveat is True else f_caveat
-      except Exception:                         # Failed? Looks like there's nothing to mentio ;)
-        pass
+      f_caveat = get_caveat(f_def.caveats,device_data,dname)
+      if f_caveat:
+        dt_value['caveat'] = f_caveat
 
     if f_OK and 'link' in f_def and 'status' in dt_value:
       try:                                      # Same for links, but the expression must evaluate to a string
@@ -223,6 +241,19 @@ def merge_device_data(settings: Box) -> dict:
 
   return dev_data
 
+def get_device_caveat(device_data: Box, dname: str, table_def: Box) -> typing.Optional[str]:
+  """
+  Evaluate the device caveat expression (device.caveats in table definition)
+  """
+  xpr = table_def.get('device',{}).get('caveats',None)
+  return get_caveat(xpr,device_data,dname) if xpr else None
+
+def device_entry(features: list, caveat: typing.Optional[str]) -> dict:
+  """
+  Build the per-device table data: list of features and an optional device caveat
+  """
+  return { 'features': features, 'caveat': caveat } if caveat else { 'features': features }
+
 def get_device_features(settings: Box, table_def: Box) -> Box:
   """
   Build the per-device lists of features displayed in the table from the device
@@ -232,8 +263,9 @@ def get_device_features(settings: Box, table_def: Box) -> Box:
 
   for dname,ddata in settings.devices.items():    # Iterate over all devices
     df_row = get_feature_row(DEVICE_DATA[(dname,)],dname,table_def)
+    d_caveat = get_device_caveat(DEVICE_DATA[(dname,)],dname,table_def)
     if df_row:                                    # Does the device supports the specified feature set?
-      df_data[dname].features = df_row            # ... go and store its data
+      df_data[dname] = device_entry(df_row,d_caveat)
     is_daemon = ddata.get('daemon',False)         # Next, check for provider-specific data and features
     for p_name in device_providers(ddata,settings):
       if (dname,p_name) not in DEVICE_DATA:       # No provider-specific data? Cool, move on
@@ -241,9 +273,13 @@ def get_device_features(settings: Box, table_def: Box) -> Box:
       if debug_active('df_data'):
         print(f'Checking provider-specific data: {dname} {p_name}')
       dpf_row = get_feature_row(DEVICE_DATA[(dname,p_name)],dname,table_def)
-      if dpf_row and dpf_row != df_row:           # Are the per-provider features different from device ones?
+      dp_caveat = get_device_caveat(DEVICE_DATA[(dname,p_name)],dname,table_def)
+      # Are the per-provider features (or device caveat) different from device ones?
+      # Store them as device for daemons, device/provider otherwise
+      #
+      if dpf_row and (dpf_row != df_row or dp_caveat != d_caveat):
         dpf_name = dname if is_daemon else f'{dname}/{p_name}'
-        df_data[dpf_name].features = dpf_row      # Store as device for daemons, device/provider otherwise
+        df_data[dpf_name] = device_entry(dpf_row,dp_caveat)
 
   return df_data
 
@@ -272,7 +308,8 @@ def remove_duplicate_features(settings: Box, df_data: Box) -> None:
       parent += '/' + pname
     if parent not in df_data:                     # But it wasn't relevant? No worries, move on
       continue
-    if df_data[fd_name].features == df_data[parent].features:
+    if df_data[fd_name].features == df_data[parent].features and \
+        df_data[fd_name].get('caveat') == df_data[parent].get('caveat'):
       df_data.pop(fd_name)                        # Child and (grand?)parent have identical features? Remove the child
       append_to_list(df_data[parent],'ch_match',dname)
     else:                                         # Otherwise mark that a (grand)child has diverted from the parent
@@ -333,6 +370,8 @@ def build_device_feature_matrix(
     if not df_results:
       continue
     dc_name = get_box({'text': devices[dname] })  # First cell is the device short name
+    if df_data[dname].get('caveat'):              # ... potentially followed by a caveat marker
+      dc_name.text += ' ' + caveat_marker(df_data[dname].caveat)
     ch_match = df_data[dname].get('ch_match',[])  # Is this a parent device?
     if ch_match:                                  # ... then we need a footnote saying "this includes these other devices"
       label_count += 1
