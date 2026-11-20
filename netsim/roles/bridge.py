@@ -104,7 +104,7 @@ def expand_multiaccess_links(topology: Box) -> None:
     if not b_name:                                          # Is this one of the relevant links?
       continue                                              # No, move on
 
-    if b_name not in topology.nodes:                        # Is the bridge name equal to a node name?
+    if not isinstance(b_name,str) or b_name not in topology.nodes:   # Is the bridge name equal to a node name?
       continue                                              # No, it's a name of a Linux bridge
 
     if topology.nodes[b_name].get('role','') != 'bridge':
