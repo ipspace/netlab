@@ -29,6 +29,7 @@ SETTINGS: Box
 DEVICE_DATA: dict = {}                            # Merged device (and device/provider) data used in expressions
 DIRECTIVE: SphinxDirective
 TABLE_COUNT: int = 0
+NETLAB_DOCS_URL: str = 'https://netlab.tools/'
 
 BUILTINS: dict = {                                # Allowed built-in functions. Extend as needed ;)
   'len': len
@@ -106,7 +107,8 @@ def features_body(tgroup: nodes.tgroup, device_data: typing.List[typing.List]) -
   Create the body of the features table passed as a row-list-of-column-data-lists.
   The column data are dicts that could have 'text' key (for verbatim text) or
   'status' key (for device has/does-not-have a feature). The elements with 'status'
-  key could include 'caveat' key -- a refid to the device caveats.
+  key could include 'caveat' key -- a refid to the device caveats -- and 'link' key
+  -- the link target for the checkmark.
   """
   tbody = nodes.tbody()                           # Create TBODY structure
   tgroup += tbody                                 # ... and append it to table group
@@ -119,6 +121,8 @@ def features_body(tgroup: nodes.tgroup, device_data: typing.List[typing.List]) -
         trow += table_cell(d_data['text'],fn=d_data.get('fn',''))
       elif 'status' in d_data:                    # ... or status (OK/MISSING)
         txt = '✅' if d_data['status'] else '❌'
+        if 'link' in d_data:                      # Do we have to turn the checkmark into a link?
+          txt = f'[{txt}]({d_data["link"]})'
         if 'caveat' in d_data:                    # Do we have to add a caveat?
           caveat_ptr = d_data["caveat"]           # Get the caveat pointer
           # Use Markdown link to point to the caveat (MyST will resolve ref IDs)
@@ -126,6 +130,17 @@ def features_body(tgroup: nodes.tgroup, device_data: typing.List[typing.List]) -
         trow += table_cell(txt,align='center')
       else:
         trow += table_cell('🤦‍♂️')                  # None of the above, we failed miserably :()
+
+def doc_link(url: str) -> str:
+  """
+  Convert links to netlab documentation into root-relative MyST links, so
+  they work in local and versioned builds
+  """
+  if not url.startswith(NETLAB_DOCS_URL):
+    return url
+  if '#' in url:                                  # Anchors in netlab documentation are MyST labels
+    return url.split('#',1)[1]
+  return '/' + url[len(NETLAB_DOCS_URL):].strip('/') + '.md'
 
 def feature_to_text(v: typing.Any) -> str:
   if isinstance(v,list):
@@ -162,6 +177,14 @@ def get_feature_row(device_data: Box, dname: str, table_def: Box) -> typing.Opti
         if f_caveat:
           dt_value['caveat'] = 'caveats-'+dname if f_caveat is True else f_caveat
       except Exception:                         # Failed? Looks like there's nothing to mentio ;)
+        pass
+
+    if f_OK and 'link' in f_def and 'status' in dt_value:
+      try:                                      # Same for links, but the expression must evaluate to a string
+        f_link = safer_eval(f_def.link,locals=device_data)
+        if isinstance(f_link,str) and f_link:
+          dt_value['link'] = doc_link(f_link)
+      except Exception:
         pass
     df_row.append(dt_value)                     # OK, the "feature status" is ready, append it to the device features row
     f_valid = f_valid or f_OK                   # ... and remember if the device is relevant (at least one feature is implemented)
