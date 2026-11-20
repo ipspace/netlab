@@ -78,6 +78,22 @@ The following Vagrant boxes are automatically downloaded from Vagrant Cloud when
 * Even if a new box version is available from Vagrant Cloud, Vagrant will only output a warning to let the user know an update is available. You can ignore that warning or update the box with `vagrant box update`. 
 * Vagrant does not automatically download the updated boxes because boxes can be relatively large (See [Vagrant box versioning](https://developer.hashicorp.com/vagrant/docs/boxes/versioning) for details).
 
+(platform-provider-vm-resources)=
+Device definitions for the **libvirt** provider specify the number of virtual CPUs, the amount of memory allocated to each network device, and the default VM NIC type when it's not *virtio*.
+
+These are the default values; you can change them with [node parameters](node-attributes) or [device defaults](libvirt-vm-settings).
+
+```{features}
+- title: CPUs
+  text: libvirt.image and libvirt.node.cpu
+- title: Memory<br>(MB)
+  text: libvirt.image and libvirt.node.memory
+- title: libvirt<br>NIC model
+  text: libvirt.image and libvirt.node.get('nic_model_type','virtio')
+```
+
+Recent Nexus OS releases need more memory than the default value ([more details](caveats-nxos)).
+
 (libvirt-build-boxes)=
 ### Building Vagrant Boxes
 

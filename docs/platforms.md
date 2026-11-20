@@ -127,27 +127,10 @@ You cannot use all supported network devices with all virtualization providers. 
   link: clab.get('build_recipe') or clab.get('build')
 ```
 
-**Note:**
+**Notes:**
 
 * *external* provider can be used with all devices supported by *netlab*.
-
-(platform-provider-vm-resources)=
-Vagrant configuration files for KVM/libvirt environments specify the number of virtual CPUs and the amount of memory allocated to each network device. These are the default values; you can change them with [node parameters](nodes.md#node-attributes) or [device defaults](libvirt-vm-settings).
-
-```{features}
-- title: CPUs
-  text: libvirt.image and libvirt.node.cpu
-- title: Memory<br>(MB)
-  text: libvirt.image and libvirt.node.memory
-- title: libvirt<br>NIC model
-  text: libvirt.image and libvirt.node.get('nic_model_type','virtio')
-```
-
-Recent Nexus OS releases need more memory than the default value ([more details](caveats-nxos)).
-
-```{tip}
-**‌virtio** is the default KVM/libvirt NIC model.
-```
+* See [libvirt provider documentation](platform-provider-vm-resources) for default memory/CPU/NIC VM settings.
 
 (platform-config-support)=
 ## Configuration Deployments
