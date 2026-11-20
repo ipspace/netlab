@@ -48,12 +48,12 @@ The `{features}` directive content can also be a dictionary with the list of col
 
 * **caveats** (optional) -- the Python expression that checks whether the device name should be followed by a link to caveats. The expression value is interpreted like the column **caveats** value (see below).
 
-For example, the following table has empty cells for the devices without a build recipe, and adds the caveat links to the devices with the **clab.caveats_link** device parameter (a hypothetical parameter used in this example):
+For example, the following table has empty cells for the devices without a build recipe, and adds the caveat links to the devices with the **clab.docs_caveats** device parameter:
 
 ````md
 ```{features}
 device:
-  caveats: clab.get('caveats_link')
+  caveats: clab.get('docs_caveats')
 features:
 - title: Container image
   text: clab.image
