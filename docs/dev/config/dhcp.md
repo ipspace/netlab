@@ -54,7 +54,7 @@ ip dhcp relay information option
 
 The **dhcp** module builds the DHCP pools from the subnets (links or VLANs) with at least one DHCP client and copies them into the **dhcp.pools** list of every DHCP server. Each pool has these attributes:
 
-* **name** -- The link or VLAN name
+* **name** -- The link name, or `vlan_<vlan-name>` (converted into an identifier) for VLAN subnets
 * **clean_name** -- The pool name that can be used as an identifier in device configurations
 * **ipv4** and **ipv6** -- The IPv4/IPv6 subnet prefix (optional)
 * **gateway.ipv4** and **gateway.ipv6** -- The default gateway IPv4/IPv6 address (optional)
