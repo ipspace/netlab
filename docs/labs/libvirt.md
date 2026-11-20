@@ -51,7 +51,7 @@ features:
   text: libvirt.image
 - title: Build<br>recipe
   enabled: libvirt.get('build')
-  link: libvirt.get('build')
+  link: libvirt.get('build_recipe') or libvirt.get('build')
   missing: ''
 ```
 
