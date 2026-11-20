@@ -13,6 +13,7 @@ The following implementation notes for configuration deployment, initial device 
    bfd.md
    bgp.md
    bgp.session.md
+   dhcp.md
    ebgp.multihop.md
    gateway.md
    mpls.md
