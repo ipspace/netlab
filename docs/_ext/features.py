@@ -58,7 +58,7 @@ def table_cell(
   (specified as label/refid dict) can be added to the text.
   """
   entry = nodes.entry()                                     # Create a new cell
-  if align:                                                 # If needed, assign a CSS class to it
+  if align and align != 'left':                             # If needed, assign a CSS class to it (left is the default)
     entry['classes'].append('text-'+align)
   para_list = []
   for line in text.split('<br>'):                           # Iterate over lines of text
@@ -118,15 +118,15 @@ def features_body(tgroup: nodes.tgroup, device_data: typing.List[typing.List]) -
     tbody += trow
     for d_data in d_row:                          # Finally, iterate over device data
       if 'text' in d_data:                        # ... verbatim text?
-        trow += table_cell(d_data['text'],fn=d_data.get('fn',''))
+        trow += table_cell(d_data['text'],align=d_data.get('align',''),fn=d_data.get('fn',''))
       elif 'status' in d_data:                    # ... or status (OK/MISSING)
-        txt = '✅' if d_data['status'] else d_data.get('missing','❌')
+        txt = d_data.get('present','✅') if d_data['status'] else d_data.get('missing','❌')
         if 'link' in d_data:                      # Do we have to turn the checkmark into a link?
           txt = f'[{txt}]({d_data["link"]})'
         if 'caveat' in d_data:                    # Do we have to add a caveat?
           # Use Markdown link to point to the caveat (MyST will resolve ref IDs)
           txt += caveat_marker(d_data["caveat"])
-        trow += table_cell(txt,align='center')
+        trow += table_cell(txt,align=d_data.get('align','center'))
       else:
         trow += table_cell('🤦‍♂️')                  # None of the above, we failed miserably :()
 
@@ -193,6 +193,10 @@ def get_feature_row(device_data: Box, dname: str, table_def: Box) -> typing.Opti
 
     if not f_OK and 'missing' in f_def:         # Custom text for missing features (instead of a red cross)?
       dt_value['missing'] = f_def.missing
+    if f_OK and 'present' in f_def:             # Custom text for supported features (instead of a checkmark)?
+      dt_value['present'] = f_def.present
+    if 'align' in f_def:                        # Custom cell alignment?
+      dt_value['align'] = f_def.align
 
     if f_OK and 'caveats' in f_def:             # ... but wait, there's more. Do we need to check for caveats?
       f_caveat = get_caveat(f_def.caveats,device_data,dname)
@@ -424,6 +428,7 @@ class Features(SphinxDirective):
     DIRECTIVE = self
 
     table_def = self._parse_features()
+    self._check_features(table_def)
     (table,footnotes) = self._build_table(table_def)
 #    for fn in footnotes:
 #      print(fn)
@@ -446,6 +451,14 @@ class Features(SphinxDirective):
       error = ex
 
     raise self.error(f"Cannot parse feature table definition as YAML: {error}")
+
+  def _check_features(self, table_def: Box) -> None:
+    """
+    Check the column parameters that would otherwise silently produce a wrong table
+    """
+    for f_def in table_def.features:
+      if f_def.get('align','left') not in ('left','center','right'):
+        raise self.error(f"Invalid alignment '{f_def.align}' in column '{f_def.get('title','???')}' (use left, center, or right)")
 
   def _build_table(self, table_def: Box) -> typing.Tuple:
     """

@@ -43,6 +43,8 @@ Each column definition (feature) can have these parameters:
 * **caveats** (optional) -- the Python expression that checks whether the device/feature entry should include a link to caveats. The value of the specified device feature could be **true**, in which case the link pointing to the caveat is `caveats-_device_`, or a documentation anchor ID.
 * **link** (optional, **enabled** columns only) -- the Python expression that evaluates to the link target for the checkmark, for example, `clab.get('build_recipe') or clab.get('build')`. Non-string values (for example, `build: True`) produce no link. Links to _netlab_ documentation (`https://netlab.tools/...`) are converted into internal links; when they include an anchor (`#build-sonic-box`), the anchor is used as the MyST label.
 * **missing** (optional) -- the text displayed instead of the red cross when the feature is not supported (the **enabled** expression or the **text** expression is falsy). Use `missing: ''` to leave the table cell empty.
+* **present** (optional, **enabled** columns only) -- the text displayed instead of the green checkmark when the feature is supported, for example, `present: 🔗` in a column with links to build instructions.
+* **align** (optional) -- the alignment of the table cells in the column: **left**, **center**, or **right**. The default is **left** for **text** columns and **center** for **enabled** columns. For example, use `align: right` in columns displaying numbers.
 
 The `{features}` directive content can also be a dictionary with the list of columns in the **features** key and the device column parameters in the **device** key:
 
