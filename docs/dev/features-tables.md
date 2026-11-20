@@ -41,6 +41,7 @@ Each column definition (feature) can have these parameters:
 * **title** (required) -- the column header. Use `<br>` to create multi-line headers.
 * **enabled** or **text** (exactly one required) -- see below
 * **caveats** (optional) -- the Python expression that checks whether the device/feature entry should include a link to caveats. The value of the specified device feature could be **true**, in which case the link pointing to the caveat is `caveats-_device_`, or a documentation anchor ID.
+* **link** (optional, **enabled** columns only) -- the Python expression that evaluates to the link target for the checkmark, for example, `clab.get('build_recipe') or clab.get('build')`. Non-string values (for example, `build: True`) produce no link. Links to _netlab_ documentation (`https://netlab.tools/...`) are converted into internal links; when they include an anchor (`#build-sonic-box`), the anchor is used as the MyST label.
 
 ### Feature Display Modes
 
