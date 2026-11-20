@@ -237,6 +237,7 @@ plugin: [ kind ]
 
 If you'll use a Vagrant box to start the network device as a VM, you have to add a template that will generate the part of *Vagrantfile* (or *containerlab* configuration file) describing your virtual machine. See `netsim/templates/provider/...` directories for more details.
 
+(dev-devices-ansible-vars)=
 ## Using Your Device with Ansible Playbooks
 
 If you want to configure your device with **[netlab initial](../netlab/initial.md)** or **[netlab config](../netlab/config.md)**, or connect to your device with **[netlab connect](../netlab/connect.md)**, you'll have to add Ansible variables that will be copied into **group_vars** part of the Ansible inventory. Add those variables into the **group_vars** part of your device parameter file.
