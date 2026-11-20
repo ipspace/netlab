@@ -115,10 +115,22 @@ The following node parameters influence the VM configuration created by *vagrant
 
 * **cpu** -- number of virtual CPUs allocated to the VM
 * **memory** -- VM memory (in MB)
-* **libvirt.nic_model_type** -- VM NIC model (example: e1000). The default _netlab_ settings usually work fine.
+* **libvirt.cpu** -- the default number of virtual CPUs allocated to the VM (see below)
+* **libvirt.memory** -- the default VM memory in MB (see below)
+* **libvirt.nic_model_type** -- VM NIC model (example: e1000). The default _netlab_ settings usually work fine (see below).
 * **libvirt.nic_adapter_count** -- maximum number of VM NICs (default: 8)
 * **libvirt.uuid** -- sets the libvirt VM UUID (some devices use the UUID to create their serial numbers). The value of this parameter is not checked[^UUID].
 * **libvirt.machine_type** -- QEMU machine type passed to *vagrant-libvirt* (example: `pc-i440fx-6.2`, `q35`). Useful when a Vagrant box requires a specific machine type to boot (for example, older guest kernels that fail on the QEMU 8.x default on Ubuntu 24.04). Overrides any value set by the device template. The value of this parameter is not checked[^MACHTYPE].
+
+The default **libvirt.cpu**, **libvirt.memory**, and **libvirt.nic_model_type** values are defined in the **libvirt.node** dictionary of the device settings ([platform defaults](platform-provider-vm-resources)). The default NIC model is **virtio**. _netlab_ uses them in the Vagrantfile before including the [device provisioning template](customize-templates), which means:
+
+* The **cpu** and **memory** node parameters override any other CPU/memory settings
+* A [custom device provisioning template](customize-templates) can set the VM CPU, memory, and NIC model (**domain.cpus**, **domain.memory**, and **domain.nic_model_type**), overriding the device defaults and the **libvirt** node parameters
+* You can change the device defaults with **defaults.devices._device_.libvirt.node.cpu**, **defaults.devices._device_.libvirt.node.memory**, and **defaults.devices._device_.libvirt.node.nic_model_type** settings. For example, use the following setting in the [lab topology](defaults-topology) or one of the [defaults files](defaults-user-file) to allocate 8 GB of RAM to Nexus OS VMs:
+
+```
+defaults.devices.nxos.libvirt.node.memory: 8192
+```
 
 [^UUID]: In other words, you're on your own. After starting a lab, you can get a valid VM UUID with the **virsh dumpxml _vm_name_|grep uuid** command (use **netlab status** to display the VM name).
 

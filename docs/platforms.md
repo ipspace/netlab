@@ -131,33 +131,19 @@ You cannot use all supported network devices with all virtualization providers. 
 
 * *external* provider can be used with all devices supported by *netlab*.
 
-Vagrant configuration files for KVM/libvirt environments specify the number of virtual CPUs and the amount of memory allocated to each network device. These are the default values; you can change them with [node parameters](nodes.md#node-attributes).
+(platform-provider-vm-resources)=
+Vagrant configuration files for KVM/libvirt environments specify the number of virtual CPUs and the amount of memory allocated to each network device. These are the default values; you can change them with [node parameters](nodes.md#node-attributes) or [device defaults](libvirt-vm-settings).
 
-| Virtual network device     | netlab<br>device type | CPUs | memory | libvirt NIC model          |
-| -------------------------- | ------------------ | ---: | -----: | -------------------------: |
-| Arista vEOS                | eos                |    2 |   4096 | virtio |
-| Aruba AOS-CX               | arubacx            |    2 |   4096 | virtio |
-| Cisco ASAv                 | asav               |    1 |   2048 | virtio |
-| Cisco Catalyst 8000v       | cat8000v           |    2 |   4096 | virtio |
-| Cisco CSR 1000v            | csr                |    2 |   4096 | virtio |
-| Cisco IOSv                 | iosv               |    1 |    512 | e1000  |
-| Cisco IOSvL2               | iosvl2             |    1 |    1024 | e1000 |
-| Cisco IOS XRv              | iosxr              |    2 |    8192 | e1000 |
-| Cisco Nexus 9300v          | nxos               |    2 |   6144 [❗](caveats-nxos)| e1000 |
-| Cumulus Linux              | cumulus            |    2 |   1024 | virtio |
-| Cumulus Linux 5.x (NVUE)   | cumulus_nvue       |    2 |   1024 | virtio |
-| Dell OS10                  | dellos10           |    2 |   2048 | e1000  |
-| Extreme Networks EXOS      | exos               |    1 |   1024 | rtl8139 |
-| Fortinet FortiOS           | fortios            |    1 |   2048 | virtio |
-| FRR                        | frr                |    1 |   1024 | virtio |
-| Generic Linux host         | linux              |    1 |   1024 | virtio |
-| Juniper vSRX 3.0           | vsrx               |    2 |   4096 | virtio |
-| Juniper vPTX               | vptx               |    4 |   8192 | virtio |
-| Mikrotik RouterOS 6        | routeros           |    1 |    256 | virtio |
-| Mikrotik RouterOS 7        | routeros7          |    2 |    256 | e1000  |
-| OpenBSD                    | openbsd            |    1 | 1024 | virtio |
-| Sonic                      | sonic              |    2 | 4096 | virtio |
-| VyOS                       | vyos               |    2 |   1024 | virtio |
+```{features}
+- title: CPUs
+  text: libvirt.image and libvirt.node.cpu
+- title: Memory<br>(MB)
+  text: libvirt.image and libvirt.node.memory
+- title: libvirt<br>NIC model
+  text: libvirt.image and libvirt.node.get('nic_model_type','virtio')
+```
+
+Recent Nexus OS releases need more memory than the default value ([more details](caveats-nxos)).
 
 ```{tip}
 **‌virtio** is the default KVM/libvirt NIC model.

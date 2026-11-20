@@ -352,6 +352,7 @@ To add a device that is already supported by *netlab* to a new virtualization en
 * Get or build a Vagrant box or container image.
 * Add the [image/box/container name](device-box.md#adding-new-device-settings) for the new virtualization provider to device parameters file.
 * Add device-specific virtualization provider configuration template to provider-specific subdirectory of `netsim/templates/provider` directory. Use existing templates to figure out what exactly needs to be done.
+* When adding a *libvirt* device, specify the default number of virtual CPUs and VM memory (in MB) in the **libvirt.node.cpu** and **libvirt.node.memory** device parameters, and the NIC model (when it's not **virtio**) in the **libvirt.node.nic_model_type** device parameter. Do not set them in the device provisioning template.
 * You might need to add provider-specific device settings to device parameters file. See the above Arista cEOS examples for more details.
 * You might have to add provider-specific [device readiness checks](dev-ready) (for example, the container health check and the SSH server check for *vrnetlab* containers).
 
