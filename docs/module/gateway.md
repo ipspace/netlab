@@ -15,34 +15,16 @@ The module supports statically configured anycast gateway IPv4 address and VRRPv
 (gateway-support)=
 ## Platform Support
 
-The module is supported on these platforms:
+The module is supported on these platforms. All platforms that support VRRPv3 support it for IPv4 and IPv6:
 
-| Operating system      | Anycast | VRRPv3 | VRRPv3<br>IPv6 |
-| --------------------- | :-: | :-: | :-: |
-| Arista EOS            | ✅  | ✅  | ✅  |
-| Aruba AOS-CX          | ✅  | ✅  | ✅  |
-| BIRD                  | ✅  |  ❌  |  ❌  |
-| Cisco IOS XE[^18v]    |  ❌  | ✅  | ✅  |
-| Cisco IOS XR[^XR]     |  ❌  | ✅  | ✅  |
-| Cisco Nexus OS        |  ❌  | ✅  | ✅  |
-| Cumulus Linux 4.x     | ✅  | ✅  | ✅  |
-| Cumulus 5.x (NVUE)    | ✅ | ✅ |  ✅ |
-| Dell OS10             | ✅ [❗](caveats-os10) | ✅ [❗](caveats-os10) | ✅ [❗](caveats-os10)  |
-| Extreme Networks EXOS |  ❌  | ✅ [❗](caveats-exos)  | ✅ [❗](caveats-exos)  | 
-| FRRouting             | ✅  | ✅  | ✅  |
-| Junos[^Junos]         | ✅ [❗](caveats-junos)  | ✅  | ✅  |
-| Juniper cRPD          |  ❌ [❗](caveats-crpd) | ✅  | ✅  |
-| Nokia SR OS[^SROS]    | ✅  | ✅  | ✅  |
-| Nokia SR Linux        | ✅  | ❌  | ❌  |
-| VyOS                  | ❌  | ✅  | ✅  |
-
-[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOSv, Cisco IOSv Layer-2 image, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
-
-[^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
-
-[^Junos]: Includes vMX, vSRX, vPTX, vJunos-switch, and vJunos-router, but not cRPD
-
-[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
+```{features}
+- title: Anycast
+  enabled: "'anycast' in gateway.protocol"
+  caveats: gateway.caveats.anycast
+- title: VRRPv3
+  enabled: "'vrrp' in gateway.protocol"
+  caveats: gateway.caveats.vrrp
+```
 
 (gateway-global)=
 ## Global Parameters
