@@ -5,7 +5,6 @@ from box import Box
 
 from ..augment import devices
 from ..utils import log
-from ..utils import routing as _rp_utils
 from . import _Quirks, report_quirk
 
 # from .cumulus import Cumulus  # This causes Cumulus_Nvue to get skipped
@@ -161,21 +160,6 @@ def nvue_mlag_vxlan_require_plugin(node: Box, topology: Box) -> None:
       more_data="Without this plugin, VXLAN interfaces will remain DOWN due to missing anycast IP",
       node=node)
 
-def nvue_check_nssa_summarize(node: Box) -> None:
-  for (odata,_,_) in _rp_utils.rp_data(node,'ospf'):
-    if 'areas' not in odata:
-      continue
-    for area in odata.areas:
-      if area.kind != 'nssa':
-        continue
-      if 'external_range' in area or 'external_filter' in area:
-        report_quirk(
-          f'{node.name} cannot summarize type-7 NSSA routes (area {area.area})',
-          more_hints = [ 'Cumulus cannot configure NSSA type-7 ranges, FRR version too old' ],
-          node=node,
-          category=Warning,
-          quirk='ospf_nssa_range')
-
 class Cumulus_Nvue(_Quirks):
 
   @classmethod
@@ -188,7 +172,6 @@ class Cumulus_Nvue(_Quirks):
         nvue_check_ospf_passive_in_vrf(node)
         nvue_check_ospf_vrf_loopbacks(node)
       nvue_check_ospfv3(node)
-      nvue_check_nssa_summarize(node)
       nvue_merge_ospf_loopbacks(node)
 
     if 'stp' in mods:
