@@ -118,47 +118,14 @@ You cannot use all supported network devices with all virtualization providers. 
 
 (platform-provider-support)=
 
-| Virtual network device | Vagrant<br />[Libvirt](labs/libvirt.md) | [Containerlab](labs/clab.md) |
-| ------------------ | :-: | :-: |
-| Arista vEOS        |  [✅](build-eos)  |  [✅](build-ceos)  |
-| Arrcus ArcOS       |  ❌  |  [✅](build-arcos)  |
-| Aruba AOS-CX       |  [✅](build-arubacx)  |  ✅[❗](clab-vrnetlab)  |
-| Cisco 8000v        |  ❌  |  ✅   |
-| Cisco ASAv         |  [✅](build-asav)  |  ✅ [❗](clab-vrnetlab)  |
-| Cisco Catalyst 8000v  |  [✅](build-cat8000v)  |  ✅[❗](clab-vrnetlab)  |
-| Cisco CSR 1000v    |  [✅](build-csr)  |  ✅[❗](clab-vrnetlab)  |
-| Cisco IOL          |  ❌  |  ✅[❗](clab-vrnetlab)  |
-| Cisco IOL L2       |  ❌  |  ✅[❗](clab-vrnetlab)  |
-| Cisco IOSv         |  [✅](build-iosv)  |  ✅[❗](clab-vrnetlab)  |
-| Cisco IOSvL2       | [✅](build-iosvl2) | ✅[❗](clab-vrnetlab) |
-| Cisco IOS XRv/XRd  | [✅](build-iosxr) | ✅[❗](build-iosxr-clab) |
-| Cisco Nexus 9300v  |  [✅](build-nxos) [❗](caveats-nxos) |  ✅[❗](clab-vrnetlab) |
-| Cumulus Linux      |  ✅  |  ✅[❗](caveats-cumulus)  |
-| Cumulus Linux 5.x (NVUE) |  ✅  |  ✅[❗](caveats-cumulus)  |
-| Dell OS10          |  [✅](build-dellos10)  |  ✅  |
-| Extreme Networks EXOS |  [✅](build-exos)  |  ✅[❗](clab-vrnetlab)  |
-| Extreme Networks VOSS |  ❌  |  ✅[❗](clab-vrnetlab)  |
-| Fortinet FortiOS   |  [✅](build-fortios)  |  ✅  |
-| FRR |  [✅](build-frr)[❗](caveats-frr)  |  ✅  |
-| Generic Linux (Ubuntu/Alpine)  |  [❗](labs/linux.md)  |  ✅  |
-| IP Infusion OcNOS  |  ❌  |  ✅[❗](caveats-ocnos)  |
-| Juniper cRPD       |  ❌  |  ✅   |
-| Juniper cSRX       |  ❌  |  ✅   |
-| Juniper vMX        |  ❌  |  ✅[❗](clab-vrnetlab)   |
-| Juniper vPTX       |  [✅](build-vptx)  |  ✅[❗](clab-vrnetlab)  |
-| Juniper vSRX 3.0   |  [✅](build-vsrx)  |  ✅[❗](caveats-vsrx)  |
-| vJunos-switch       |  ❌  |  ✅[❗](clab-vrnetlab)  |
-| vJunos-router       |  ❌  |  ✅[❗](clab-vrnetlab)  |
-| Mikrotik RouterOS 6 |  ✅  |  ❌  |
-| Mikrotik RouterOS 7 |  [✅](build-chr7)  |  ❌  |
-| Netscaler CPX       |  ❌  |  ✅  |
-| Nokia SR Linux      |  ❌  |  ✅  |
-| Nokia SR OS         |  ❌  |  ✅  |
-| Nokia SR-SIM        |  ❌  |  ✅  |
-| OpenBSD             |  [✅](build-openbsd)  |  [✅](clab-vrnetlab)  |
-| SONiC               | [✅](build-sonic-box) | [✅](build-sonic-container) |
-| VPP                 |  ❌  |  ✅  |
-| VyOS                |  [✅](build-vyos)  |  ✅[❗](caveats-vyos)  |
+```{features}
+- title: Vagrant<br>[Libvirt](labs/libvirt.md)
+  enabled: libvirt.image
+  link: libvirt.get('build_recipe') or libvirt.get('build')
+- title: '[Containerlab](labs/clab.md)'
+  enabled: clab.image
+  link: clab.get('build_recipe') or clab.get('build')
+```
 
 **Note:**
 
