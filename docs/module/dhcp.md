@@ -15,35 +15,41 @@ The DHCP configuration module implements DHCP clients, servers, and relays for I
 
 DHCP clients are supported on these platforms:
 
-| Operating system      | IPv4 | IPv6 | Default<br>route | Routing over<br>DHCP interfaces |
-| --------------------- | :-: | :-: | :-: | :-: |
-| Arista EOS            | ✅ [❗](caveats-eos) |  ❌  | ✅  |  ❌ [❗](caveats-eos) |
-| Cisco IOSv/IOSvL2     | ✅  | ✅  | ✅  | ✅  |
-| Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  | ✅  |
-| Cumulus Linux         | ✅  | ✅  |  ❌  | ✅  |
-| Linux (Ubuntu VM only)| ✅  | ✅  |  ❌  |  ❌  |
+```{features}
+- title: IPv4
+  enabled: dhcp.client.ipv4
+  caveats: dhcp.caveats.client
+- title: IPv6
+  enabled: dhcp.client.ipv6
+- title: Default<br>route
+  enabled: dhcp.client.default
+- title: Routing over<br>DHCP interfaces
+  enabled: dhcp.client.routing
+```
 
-[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
+DHCP servers are supported on these platforms:
 
-DHCP servers are supported on these platforms: 
+```{features}
+- title: IPv4
+  enabled: dhcp.server
+- title: IPv6
+  enabled: dhcp.server
+- title: VRF-aware
+  enabled: dhcp.server_vrf
+```
 
-| Operating system      | IPv4 | IPv6 | VRF-aware |
-| --------------------- | :-: | :-: | :-: |
-| Arista EOS            | ✅  | ✅  |  ❌  |
-| Cisco IOSv/IOSvL2     | ✅  | ✅  |  ❌  |
-| Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  |
-| dnsmasq               | ✅  | ✅  |  ❌  |
-| Linux (Ubuntu VM only)| ✅  | ✅  |  ❌  |
+DHCP relays are supported on these platforms:
 
-DHCP relays are supported on these platforms: 
-
-| Operating system      | IPv4 | IPv6 | VRF-aware |
-| --------------------- | :-: | :-: | :-: 
-| Arista EOS            | ✅  | ✅  | ✅ [❗](caveats-eos) |
-| Cisco IOSv/IOSvL2     | ✅  | ✅  | ✅  |
-| Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  |
-| Cumulus Linux         | ✅ [❗](linux-dhcp-relay) |  ❌  |  ❌  |
-| Linux (Ubuntu VM only)| ✅ [❗](linux-dhcp-relay)  |  ❌  |  ❌  |
+```{features}
+- title: IPv4
+  enabled: dhcp.relay is True or 'ipv4' in dhcp.relay
+  caveats: dhcp.caveats.relay
+- title: IPv6
+  enabled: dhcp.relay is True or 'ipv6' in dhcp.relay
+- title: VRF-aware
+  enabled: dhcp.vrf
+  caveats: dhcp.caveats.vrf
+```
 
 ```{tip}
 * VRF-aware DHCP relays use DHCP options specified in RFC 6607.
