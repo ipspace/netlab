@@ -495,6 +495,10 @@ class LAG(_Module):
           log.error(f'Node {node.name}({node.device}) does not support passive LACP configured on interface {i.ifname}',
             category=log.IncorrectAttr,
             module='lag')
+        if i.lag.get('lacp',None) == 'off' and 'mode' not in i.lag and not features.lag.get('static',False):
+          log.error(f'Node {node.name}({node.device}) does not support static LAG (lacp: off) configured on interface {i.ifname}',
+            category=log.IncorrectAttr,
+            module='lag')
         if i.lag.get('_mlag',False) is True:
           uses_mlag = True
           if 'ipv4' in i or 'ipv6' in i:
