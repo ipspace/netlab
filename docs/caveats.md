@@ -191,6 +191,7 @@ and validation. Configuration is deployed with a bash script executed within the
 
 * Cisco IOS/XE does not accept VXLAN VNI values below 4096
 
+(caveats-cat8000v-clab)=
 **Container caveats:**
 
 You should use the latest *vrnetlab* code to build (or rebuild) the Catalyst 8000v containers:
@@ -290,6 +291,7 @@ See also [common Cisco IOS](caveats-ios) caveats.
 * _netlab_ translates **match.community** routing policy entry into IOS XR `community matches-any` test, and the **community-set** object cannot match two (or more) communities in a single entry. You cannot use the current _netlab_ IOS XR implementation of BGP community lists to match two (or more) communities being attached to the route *at the same time*.
 * The **remove-private-as** option **all** or **replace** is not accepted when the local BGP AS number is private.
 
+(caveats-iosxrv)=
 ### Cisco IOS XRv
 
 * netlab was tested with IOS XR release 7.4. Earlier releases might use a different management interface name. In that case, you must set the **defaults.devices.iosxr.mgmt_if** parameter to the name of the management interface
@@ -303,6 +305,7 @@ See also [common Cisco IOS](caveats-ios) caveats.
 
 [^MAS]: Hint: you have plenty of time to make coffee and a snack.
 
+(caveats-xrd)=
 ### Cisco XRd
 
 * Older versions of the `cisco.iosxr` Ansible Galaxy collection did not work with XRd because they tried to execute the `show inventory` command. If you experience that error, upgrade the collection with:
@@ -483,6 +486,7 @@ ansible_httpapi_use_ssl: false
 ansible_httpapi_port: 80
 ```
 
+(caveats-fortios-74)=
 ### Fortinet FortiOS 7.4.x/7.6.x
 
 * Starting from FortiOS 7.2, FortiGate devices do not come with a license out of the box. Users can link *one* device with a permanent evaluation license to an account on the Fortinet support portal.
@@ -507,11 +511,13 @@ ansible_httpapi_port: 80
 * The **frr.logfile** attribute specifies the path to the FRR logging file (default: `/var/log/frr/frr.log`)
 * You can specify a list of additional FRRouting daemons you want to have enabled in the **frr.daemons** node attribute. Set **frr.daemons** to *True* to enable all FRRouting daemons.
 
+(caveats-frr-vm)=
 **FRR VM Caveats:**
 
 * The VM version of FRR is a Debian VM. The FRR package is downloaded and installed during **vagrant up** processing in the libvirt environment. To postpone the FRR installation to the initial configuration process, set the node variable **netlab_quick_start** to `true`.
 * You can [build a custom FRR VM](build-frr) with a preinstalled **frr** package to speed up the **vagrant up** processing.
 
+(caveats-frr-clab)=
 **FRR Container Features and Caveats:**
 
 * FRR containers use the *containerlab* **frr** kind. _netlab_ uses the **frr.daemons** node attribute and the _netlab_ modules used by the node to generate the list of FRR daemons (*containerlab* **daemons** node attribute).

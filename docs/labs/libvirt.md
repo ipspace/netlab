@@ -41,37 +41,19 @@ We tested _netlab_ with Vagrant version 2.4.9 and vagrant-libvirt plugin version
 
 Vagrant starts virtual machines from prepackaged VM images called *boxes*. While it's possible to download some network device images from Vagrant Cloud, you'll have to build most of the boxes you'd want to use in your lab.
 
-You have to use the following box names when installing or building the Vagrant boxes (see [supported platforms](../platforms.md) and **[netlab show images](../netlab/show.md)** for more details):
+You have to use the following box names when installing or building the Vagrant boxes (see [supported platforms](supported-platforms) and **[netlab show images](netlab-show-images)** for more details). Vagrant automatically downloads the boxes without a build recipe from Vagrant Cloud when you're using them for the first time in your lab topology.
 
-| Virtual network device | Vagrant box name            |
-| ---------------------- | --------------------------- |
-| Arista vEOS            | arista/veos                 |
-| Aruba CX               | aruba/cx                    |
-| Cisco ASAv             | cisco/asav                  |
-| Cisco Catalyst 8000v   | cisco/cat8000v              |
-| Cisco CRS 1000v        | cisco/csr1000v              |
-| Cisco IOSv             | cisco/iosv                  |
-| Cisco IOSvL2           | cisco/iosvl2                |
-| Cisco IOS XR           | cisco/iosxr                 |
-| Cisco Nexus 9300v      | cisco/nexus9300v            |
-| Cumulus VX 5.0 (NVUE)  | CumulusCommunity/cumulus-vx |
-| Dell OS10              | dell/os10                   |
-| Fortinet FortiOS       | fortinet/fortios            |
-| Juniper vPTX (vJunos EVO) | juniper/vptx             |
-| Juniper vSRX 3.0       | juniper/vsrx3               |
-| [Linux](linux.md)      | generic/ubuntu2004          |
-| Mikrotik RouterOS 6    | mikrotik/chr                |
-| Mikrotik RouterOS 7    | mikrotik/chr7               |
-| OpenBSD                | netlab/openbsd              |
-| Sonic                  | netlab/sonic                |
-| VyOS                   | netlab/vyos                 |
-
-The following Vagrant boxes are automatically downloaded from Vagrant Cloud when you're using them for the first time in your lab topology:
-
-| Virtual network device | Vagrant box name   |
-|------------------------|--------------------|
-| Cumulus VX             | CumulusCommunity/cumulus-vx:4.4.0 |
-| Generic Linux          | generic/ubuntu2004 |
+```{features}
+device:
+  caveats: libvirt.get('docs_caveats')
+features:
+- title: Vagrant box name
+  text: libvirt.image
+- title: Build<br>recipe
+  enabled: libvirt.get('build')
+  link: libvirt.get('build_recipe') or libvirt.get('build')
+  missing: ''
+```
 
 **NOTES**:
 

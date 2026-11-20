@@ -17,6 +17,10 @@ Here's what you have to do:
 
 * Every device parameter file must have a **description** -- a short string describing the device
 * For every supported virtualization provider, define device box (or container) to use with **image** parameter within the **_provider_** dictionary (example **libvirt.image**).
+* The following **_provider_** parameters are used in the [box](libvirt-vagrant-boxes) and [container](clab-images) tables in the documentation:
+  * **build** -- the URL of the image build instructions, or *True* when the image has to be built and the instructions are specified in **build_recipe**. The images without the **build** parameter are downloaded automatically.
+  * **build_recipe** -- the URL of the build instructions for an image that can be downloaded (for example, the instructions to build a custom FRR box). Overrides **build** when linking to the build instructions.
+  * **docs_caveats** -- the documentation anchor of the caveats describing the limitations of the box or container image (for example, licensing, image availability, or startup issues). Use *false* to remove the caveats inherited from the parent device.
 * Define interface names as used by the new device with **interface_name**, **mgmt_if** and optionally **ifindex_offset** ([more details](dev-device-parameters))
 * Add **group_vars** dictionary with Ansible variables specific to the new device. Set at least the **ansible_connection** and **ansible_network_os** variables. **ansible_user** and **ansible_ssh_pass** are highly recommended unless you're using *docker* connection type. The group variables are required even if you don't plan to implement a configurable device; they are used by **netlab connect** command to figure out how to connect to a device.
 
