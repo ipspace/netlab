@@ -9,22 +9,20 @@ The plugin also supports suppressing inter-area routes in stub/NSSA areas, resul
 
 The plugin includes Jinja2 templates for the following platforms:
 
-| Operating system    | Stub/NSSA<br>areas | Totally<br>stubby areas | Area ranges | NSSA area<br>ranges |
-|--------------|:-:|:-:|:-:|:-:|
-| Arista EOS   |✅ [❗](caveats-eos) |✅|✅| ❌ |
-| Aruba CX     |✅|✅|✅|✅|
-| BIRD Internet Routing Daemon |✅|✅|✅|✅|
-| Cisco IOS/XE[^18v] |✅|✅|✅| ❌ |
-| Cumulus NVUE |✅|✅|✅ [❗](caveats-cumulus-nvue) | ❌ |
-| Dell OS10    |✅|✅|✅ [❗](caveats-os10) | ❌ |
-| FRR          |✅|✅|✅ [❗](caveats-frr) |✅|
-| IP Infusion OcNOS |✅|✅|✅ [❗](caveats-ocnos) | ❌ |
-| Junos[^Junos]|✅|✅|✅|✅|
-| SR Linux     |✅|✅|✅ [❗](caveats-srlinux) |✅|
-
-[^18v]: Includes Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
-
-[^Junos]: Includes vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
+```{features}
+- title: Stub/NSSA<br>areas
+  enabled: ospf.areas
+  caveats: ospf.areas.caveats.stub
+- title: Totally<br>stubby areas
+  enabled: ospf.areas
+- title: Area ranges
+  enabled: ospf.areas
+  caveats: ospf.areas.caveats.range
+- title: NSSA area<br>ranges
+  enabled: >-
+    ospf.areas is True or 'external_range' not in ospf.areas
+  caveats: ospf.areas.caveats.external_range
+```
 
 ## Specifying OSPF Area Parameters
 
