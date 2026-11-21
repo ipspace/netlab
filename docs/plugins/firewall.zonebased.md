@@ -9,11 +9,10 @@ For now, the plugin supports only default *zone to zone* rules, with `permit` or
 
 The plugin includes Jinja2 templates for the following platforms:
 
-| Operating system    | Default Policies |
-| ------------------- | :--: |
-| Fortinet FortiOS    |  ✅  |
-| Juniper vSRX        |  ✅  |
-| VyOS                |  ✅  |
+```{features}
+- title: Default<br>policies
+  enabled: firewall.zonebased
+```
 
 ## Using the Plugin
 

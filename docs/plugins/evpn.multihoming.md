@@ -12,11 +12,14 @@ For now, the plugin supports:
 
 The plugin includes Jinja2 templates for the following platforms:
 
-| Operating system    | ES on LAG (ESI-LAG) | ES on other interfaces | Auto ESI |
-| ------------------- | :--: | :--: | :--: |
-| Arista EOS          |  ✅  |  ✅  |  ✅  |
-| Cumulus NVUE        |  ✅  |  ❌  |  ❌  |
-| vJunos Switch       |  ✅  |  ✅  |  ✅  |
+```{features}
+- title: ES on LAG<br>(ESI-LAG)
+  enabled: evpn.multihoming.lag
+- title: ES on other<br>interfaces
+  enabled: evpn.multihoming.interface
+- title: Auto ESI
+  enabled: evpn.multihoming.esi_auto
+```
 
 
 ## Using the Plugin (auto mode)
