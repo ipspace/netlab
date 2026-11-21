@@ -31,7 +31,15 @@ configure vlan {{ vlan_name }} add ports {{ l.ifname }} untagged
 {%   endif %}
 {%   if not is_loopback and not is_svi %}
 {%     if l.name is defined %}
-configure ports {{ l.ifname }} display-string {{ (l.name + ("-"+l.role if l.role is defined else "")) | replace('->','to') | replace(' ','_') }}
+{#       EXOS rejects strings starting with [ or (, and any " #}
+{#       if_short: display-string (max 20 chars), name without the "[...] " prefix #}
+{#       if_name: description-string, full name without [ ] ( ) " #}
+{%       set if_name = (l.name + ("-"+l.role if l.role is defined else ""))
+           | replace('"','') | replace('(','') | replace(')','') %}
+{%       set if_short = if_name.split('] ')[-1] | replace('->','to') | replace(' ','_') %}
+{%       set if_name = if_name | replace('[','') | replace(']','') %}
+configure ports {{ l.ifname }} display-string {{ if_short }}
+configure ports {{ l.ifname }} description-string "{{ if_name }}"
 {%     elif l.type == "stub" %}
 configure ports {{ l.ifname }} display-string Stub
 {%     endif %}
