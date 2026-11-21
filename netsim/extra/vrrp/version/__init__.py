@@ -31,7 +31,7 @@ def post_transform(topology: Box) -> None:
       continue
 
     features = devices.get_device_features(node,topology.defaults)
-    if 'gateway.vrrp.version' in features:
+    if features.get('gateway.vrrp.version',False):
       api.node_config(node,_config_name)               # Remember that we have to do extra configuration
     else:
       log.error( f'node {node.name} does not support the vrrp.version plugin.',
