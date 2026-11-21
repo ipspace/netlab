@@ -40,17 +40,6 @@ def nvue_check_stp_features(node: Box, topology: Box) -> None:
       node=node)
 
 """
-Checks for OSPFv3 which is not supported by NVUE configuration command
-"""
-def nvue_check_ospfv3(node: Box) -> None:
-  if node.get('ospf.af.ipv6',False):
-    report_quirk(
-      text=f"Node '{node.name}' uses OSPFv3 which cannot be configured through Cumulus NVUE",
-      more_hints=[ "Use a regular 'cumulus' node instead" ],
-      node=node,
-      category=log.IncorrectType)
-
-"""
 Checks for mixed trunk interfaces with native routed vlan. That doesn't work because the parent interface gets added
 to the VLAN-aware bridge
 """
@@ -171,7 +160,6 @@ class Cumulus_Nvue(_Quirks):
         check_ospf_vrf_default(node)
         nvue_check_ospf_passive_in_vrf(node)
         nvue_check_ospf_vrf_loopbacks(node)
-      nvue_check_ospfv3(node)
       nvue_merge_ospf_loopbacks(node)
 
     if 'stp' in mods:
