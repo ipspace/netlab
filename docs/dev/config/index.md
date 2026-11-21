@@ -15,6 +15,7 @@ The following implementation notes for configuration deployment, initial device 
    bgp.session.md
    dhcp.md
    ebgp.multihop.md
+   evpn.md
    gateway.md
    mpls.md
    ospf.md
