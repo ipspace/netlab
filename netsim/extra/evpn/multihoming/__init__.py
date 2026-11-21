@@ -181,7 +181,7 @@ def post_transform(topology: Box) -> None:
     for node in topology.nodes.values():
         if not 'evpn' in node.module: continue
         features = devices.get_device_features(node,topology.defaults)
-        es_supported = 'evpn.multihoming' in features
+        es_supported = features.get('evpn.multihoming',False)
         if not es_supported:
             _unsupported_device_checks(node)
             continue
