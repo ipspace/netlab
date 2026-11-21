@@ -7,7 +7,7 @@ from box import Box
 
 from .. import data
 from ..augment import devices
-from ..data.types import must_be_bool, must_be_list
+from ..data.types import must_be_list
 from ..utils import log
 from . import _Module, _routing
 
@@ -31,6 +31,11 @@ FEATURE_NAME: typing.Final[dict] = {
   'bgp': 'BGP Labeled Unicast',
   'vpn': 'MPLS/VPN',
   '6pe': '6PE (IPv6 transport over LDP)'
+}
+
+OPTIONAL_ATTR: typing.Final[dict] = {
+  'ldp': [ 'explicit_null', 'igp_sync' ],
+  'bgp': [ 'explicit_null', 'disable_unlabeled' ]
 }
 
 def node_adjust_ldp(node: Box, topology: Box, features: Box) -> None:
@@ -232,6 +237,22 @@ def check_node_features(node: Box, topology: Box, features: Box) -> None:
             log.IncorrectValue,
             'mpls')
 
+'''
+check_attribute_features: Check if a node supports the optional LDP/BGP-LU attributes
+it uses (features.mpls.<feature>.<attribute> device flags)
+'''
+def check_attribute_features(node: Box, features: Box) -> None:
+  for fn,attr_list in OPTIONAL_ATTR.items():
+    if not isinstance(node.mpls.get(fn,None),Box):
+      continue
+    f_data = features.mpls.get(fn,None)
+    for attr in attr_list:
+      if node.mpls[fn].get(attr,False) and not (isinstance(f_data,Box) and f_data.get(attr,False)):
+        log.error(
+          f'Device {node.device} used by {node.name} does not support mpls.{fn}.{attr}',
+          log.IncorrectAttr,
+          'mpls')
+
 class MPLS(_Module):
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
@@ -241,7 +262,6 @@ class MPLS(_Module):
 
     data.bool_to_defaults(node.mpls,'ldp',{})
     if 'ldp' in node.mpls:
-      must_be_bool(node.mpls.ldp,'disable_unlabeled',f'nodes.{node.name}.mpls.ldp')
       if not any(m in ['ospf','isis','eigrp'] for m in node.module):
         log.error(
           f'You cannot enable LDP on node {node.name} without an IGP',
@@ -265,6 +285,7 @@ class MPLS(_Module):
       return
 
     features = devices.get_device_features(node,topology.defaults)
+    check_attribute_features(node,features)
     if 'ldp' in node.mpls:
       node_adjust_ldp(node,topology,features)
 

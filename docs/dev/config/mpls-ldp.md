@@ -25,7 +25,8 @@ The following variables are available in LDP configuration templates:
 | Variable | Type | Description |
 |----------|------|-------------|
 | `ldp.router_id` | string | LDP router ID (IPv4 address) |
-| `ldp.explicit_null` | bool | Enable explicit null labels (default: False) |
+| `ldp.explicit_null` | bool | Enable explicit null labels (default: False). Requires the `mpls.ldp.explicit_null` device feature |
+| `ldp.igp_sync` | bool | Enable or disable LDP/IGP synchronization (device-specific default). Requires the `mpls.ldp.igp_sync` device feature |
 | `ldp.af.ipv4` | bool | Enable LDP |
 | `ldp.af.ipv6` | bool | Enable LDPv6 (optional, not tested) |
 
