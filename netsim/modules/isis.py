@@ -7,6 +7,7 @@ from box import Box
 
 from ..augment import devices
 from ..utils import log
+from ..utils import routing as _rp_utils
 from . import _Module, _routing, bfd
 
 """
@@ -63,6 +64,29 @@ def isis_unnumbered(node: Box, features: Box) -> bool:
 
   return OK
 
+"""
+Report IPv6 IS-IS on devices that cannot run multi-topology IS-IS (isis.mt feature set to False).
+All other devices are configured with multi-topology IS-IS, so the IPv6 routes would not
+be exchanged between them and the devices without MT support.
+"""
+def isis_mt(node: Box, features: Box) -> None:
+  if features.get('isis.mt',None) is not False:
+    return
+
+  v6_inst = [ f'VRF {vname}' if vname else 'global instance'
+              for (isis_data,_,vname) in _rp_utils.rp_data(node,'isis') if 'ipv6' in isis_data.get('af',{}) ]
+  if not v6_inst:
+    return
+
+  log.warning(
+    text=f'Device {node.device} (node {node.name}) cannot run multi-topology IS-IS',
+    more_data=[
+      f'IPv6 IS-IS is used in: {", ".join(v6_inst)}',
+      'IPv6 IS-IS on this device cannot interoperate with other IS-IS devices'],
+    flag='mt',
+    category=log.IncorrectValue,
+    module='isis')
+
 class ISIS(_Module):
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
@@ -114,6 +138,7 @@ class ISIS(_Module):
     bfd.multiprotocol_bfd_link_state(node,'isis')
     _routing.check_vrf_protocol_support(node,'isis','ipv4','isis',topology)
     _routing.check_vrf_protocol_support(node,'isis','ipv6','isis',topology)
+    isis_mt(node,features)
 
     # Finally, change the VRF IS-IS instance name to the VRF name to make it unique
     #
