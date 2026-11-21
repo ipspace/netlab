@@ -60,6 +60,17 @@ The `<platform>.j2` template (e.g., `eos.j2`) includes templates for MPLS sub-fe
 The `<platform>` is the value of the `netlab_device_type` or `ansible_network_os` variable.
 ```
 
+## Testing
+
+The MPLS integration tests are in the `tests/integration/mpls` directory:
+
+* `01-ldp-p` and `02-ldp-pe` -- LDP on P- and PE-devices ([more details](dev-mpls-ldp))
+* `10-vpn-connected` to `15-vpnv4-rr` -- VPNv4 MPLS/VPN ([more details](dev-mpls-vpn))
+* `20-vpnv6-connected` and `25-vpnv6-rr` -- VPNv6 MPLS/VPN
+* `30-6pe-connected` and `31-6pe-rr` -- 6PE ([more details](dev-mpls-6pe))
+
+The `tests/coverage/errors/mpls-optional-attr.yml` coverage test checks the error messages generated when a node uses optional LDP/BGP-LU attributes its device does not support.
+
 ```eval_rst
 .. toctree::
    :maxdepth: 1
