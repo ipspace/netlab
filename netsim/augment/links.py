@@ -1161,7 +1161,9 @@ def interface_fc_ipv4(ifdata: Box, ndata: Box, features: Box, more_data: str) ->
 def interface_fc_ipv6(ifdata: Box, ndata: Box, features: Box, more_data: str) -> None:
   if 'ipv6' not in ifdata:
     return
-  if ifdata.ipv6 is True and not features.initial.ipv6.lla:
+  if features.get('initial.ipv6',None) is False:      # Device cannot have IPv6 addresses
+    return                                            # ... reported once per node in nodes.cleanup
+  if ifdata.ipv6 is True and not features.get('initial.ipv6.lla',False):
     log.error(
       f'Device {ndata.device} (node {ndata.name}) does not support LLA-only IPv6 interfaces',
       category=log.IncorrectValue,

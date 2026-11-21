@@ -112,6 +112,7 @@ Device parameters file can also include numerous *features*. The following featu
 * **features.initial.min_phy_mtu** -- The minimum physical MTU that can be configured on your device (many devices won't accept the physical MTU lower than 1500 bytes).
 * **features.initial.mgmt_vrf** -- The device uses a management VRF and can have [two default routes](node-router-host) (management and global) when [running as a host](node-attributes).
 * **features.initial.ipv4.unnumbered** -- The device supports unnumbered IPv4 interfaces. The IP address of the primary loopback interface should be used as the IPv4 address of those interfaces.
+* **features.initial.ipv6** -- Set this feature to **false** if your device (or its initial configuration template) cannot configure IPv6 interface addresses. _netlab_ reports an error (that can be disabled with the **defaults.warnings.nodes.ipv6** setting) when such a device has IPv6 addresses on the loopback or any other interface. A device without this feature or with **features.initial.ipv6** dictionary (see below) is assumed to support IPv6 addresses.
 * **features.initial.ipv6.lla** -- The device supports IPv6 interfaces using just link-local addresses.
 * **features.initial.ipv6.use_ra** -- The device (when running as a host) listens to IPv6 RA messages to generate a default route
 * **features.initial.roles** -- The list of roles a device can have (default: `[ router ]`)
