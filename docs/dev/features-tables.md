@@ -101,7 +101,7 @@ The device caveats (**device.caveats** expression) are displayed next to the dev
 
 ### Built-in Functions
 
-The `enabled` and `text` expressions can use the `len()` built-in function. For example:
+The `enabled` and `text` expressions can use the `len()` and `isinstance()` built-in functions and the `dict` type (for example, `isinstance(evpn.transport,dict)`). For example:
 
 ````md
 ```{features}

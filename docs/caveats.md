@@ -560,6 +560,7 @@ ansible_httpapi_port: 80
 * Junos cannot have more than one loopback interface per routing instance. Using **loopback** links on Junos devices will result in configuration errors.
 * Junos configuration template configures BFD timers within routing protocol configuration, not on individual interfaces
 * Junos does not disable the default BGP address family on a BGP neighbor until another AF is configured.
+* Junos cannot use the EVPN address family on EBGP sessions together with other address families. Use EVPN-only multihop EBGP sessions between loopback interfaces ([more details](evpn-weird-designs)).
 * IS-IS NSAP is configured on the loopback interface for the global IS-IS instance and with the protocol **net** parameter in VRF IS-IS instances.
 * OSPFv3 over a GRE tunnel signals interface MTU value of `0` on *DBD* packets. If you need to interoperate with other devices/vendors, you need to ignore the MTU mismatch on the peer device.
 
