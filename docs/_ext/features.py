@@ -32,7 +32,9 @@ TABLE_COUNT: int = 0
 NETLAB_DOCS_URL: str = 'https://netlab.tools/'
 
 BUILTINS: dict = {                                # Allowed built-in functions. Extend as needed ;)
-  'len': len
+  'len': len,
+  'isinstance': isinstance,
+  'dict': dict
 }
 
 def safer_eval(xpr: str, locals: Box) -> typing.Any:
