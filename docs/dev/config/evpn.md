@@ -8,6 +8,7 @@ This document describes the device data model parameters used in EVPN device con
 * The device configuration template (in Jinja2 format) should be stored in `netsim/ansible/templates/evpn/<nos>.j2` with **nos** being the value of **netlab_device_type** or **ansible_network_os** variable (see [Using Your Devices with Ansible Playbooks](dev-devices-ansible-vars) for more details).
 * The EVPN configuration is applied after the VLAN, VXLAN, and VRF configuration. The EVPN template has to configure only the EVPN address family on BGP sessions, the MAC-VRF (VLAN) and IP-VRF EVPN instances, and the symmetric IRB transit VNIs.
 * The VXLAN VNIs (**vni** VLAN attribute) and the list of VXLAN-enabled VLANs and VRFs (**vxlan.vlans** and **vxlan.l3vnis** node attributes) are set by the [**vxlan** module](module-vxlan) and should be configured in the VXLAN template.
+* The nodes without VLANs or VRFs (for example, EVPN route reflectors) have no **vlans** or **vrfs** dictionaries. Use `vlans|default({})` or `vrfs|default({})` in your loops (as in the examples below), or put the whole loop inside an `{% if vlans is defined %}` or `{% if vrfs is defined %}` block.
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -76,7 +77,7 @@ The **evpn** module sets these parameters in the **evpn** dictionary of EVPN-ena
 This is how the Arista EOS template configures VLAN-based EVPN services:
 
 ```jinja
-{% for v in vlans.values() if v.evpn.evi is defined and v.evpn.bundle is not defined %}
+{% for v in (vlans|default({})).values() if v.evpn.evi is defined and v.evpn.bundle is not defined %}
  vlan {{ v.id }}
   rd {{ v.evpn.rd }}
 {%   for irt in v.evpn.import|default([]) %}
@@ -105,7 +106,7 @@ Use the **af** VRF attribute to check whether the VRF needs an IP-VRF EVPN insta
 This is how the Arista EOS template configures the IP-VRF EVPN instances and the symmetric IRB transit VNIs:
 
 ```jinja
-{% for n,v in vrfs.items() if v.af is defined %}
+{% for n,v in vrfs|default({})|dictsort if v.af is defined %}
  vrf {{ n }}
   rd {{ v.rd }}
 {%   for irt in v.import|default([]) %}
@@ -116,7 +117,7 @@ This is how the Arista EOS template configures the IP-VRF EVPN instances and the
 {%   endfor %}
   redistribute connected
 {% endfor %}
-{% for n,v in vrfs.items() if v.evpn.transit_vni is defined %}
+{% for n,v in vrfs|default({})|dictsort if v.evpn.transit_vni is defined %}
 {%   if loop.first %}
 !
 interface vxlan 1
