@@ -276,7 +276,7 @@ VRF BGP instances contain most BGP parameters (for example, **router_id**) in th
 
 At the very minimum, the VRF **bgp** data structure contains only the **neighbors** list.
 
-Use templates similar to the ones above when configuring VRF BGP instances. The neighbor/prefix configuration is almost identical to the global BGP configuration, so it might make sense to define configuration macros to configure BGP neighbors, per-AF BGP neighbor parameters, and prefix origination. See [](dev-rip-vrf) for a very simple example, or [](dev-vrf-bgp) and [](dev-vrf-bgp-neighbor).
+Use templates similar to the ones above when configuring VRF BGP instances. The neighbor/prefix configuration is almost identical to the global BGP configuration, so it might make sense to define configuration macros to configure BGP neighbors, per-AF BGP neighbor parameters, and prefix origination. See [](dev-rip-vrf) for a very simple example, or [](dev-vrf-bgp).
 
 This is how Cisco IOS configures VRFs within the BGP routing process:
 

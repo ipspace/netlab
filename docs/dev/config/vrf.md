@@ -1,13 +1,14 @@
 (dev-config-vrf)=
 # Configuring VRFs
 
-This document describes the device data model parameters one should consider when creating a VRF configuration template. For a wider picture, please see [](dev-device-features) or [](../devices.md).
+This document describes the device data model parameters one should consider when creating a VRF configuration template. For a wider picture, please see the [contributing new devices](dev-new-devices) document.
 
 This document assumes you're using an Ansible task list that is able to deploy device configuration from a template. If you plan to use Ansible modules to build device configuration, you'll find some guidance in the [Using Ansible Configuration Modules](dev-ospf-ansible-config) section of the OSPF implementation guide.
 
 **Notes:**
 
-* The device configuration template (in Jinja2 format) should be stored in `netsim/ansible/templates/vrf/<nos>.j2` with **nos** being the value of **netlab_device_type** or **ansible_network_os** variable (see [Using Your Devices with Ansible Playbooks](../devices.md#using-your-device-with-ansible-playbooks) for more details.
+* The VRFs and the interface VRF membership are configured in the initial device configuration (see [](dev-vrf-principles)). The routing protocols running in VRFs are configured in the VRF configuration template stored in `netsim/ansible/templates/vrf/<nos>.j2` with **nos** being the value of **netlab_device_type** or **ansible_network_os** variable (see [Using Your Devices with Ansible Playbooks](dev-devices-ansible-vars) for more details).
+* The VRF configuration template is applied after the VLAN, OSPF, IS-IS, BGP, and MPLS configuration templates.
 * Most of the data model attributes are optional. Use `if sth is defined`, `sth|default(value)` or `if 'sth' in ifdata` in your Jinja2 templates to check for presence of optional attributes. Try to be consistent ;)
 
 ```eval_rst
@@ -17,35 +18,54 @@ This document assumes you're using an Ansible task list that is able to deploy d
    :backlinks: none
 ```
 
-## Data Model
-
-VRFs used on a device are defined in the **vrfs** dictionary. Dictionary keys are VRF names, dictionary values are dictionaries of VRF parameters, which can contain these elements:
-
-* **rd** -- VRF route distinguisher
-* **import** -- list of import route targets
-* **export** -- list of export route targets
-* **af** -- list of address families (`ipv4` and/or `ipv6`) used by the VRF
-* **ospf** (optional) -- VRF OSPF parameters when there's an OSPF routing process running in the VRF
-* **bgp** (optional) -- VRF BGP parameters when the lab topology requires a VRF BGP instance.
-
-Other parameters:
-
-* VRF interfaces have **vrf** interface parameter that contains the VRF name.
-* IGP (OSPF, RIP, IS-IS, EIGRP)  parameters within the **vrfs._vrf-name_._igp_** dictionaries are (mostly) identical to the global IGP parameters
-* BGP parameters within the **vrfs._vrf-name_.bgp** dictionary are a subset of global BGP parameters ([more details](dev-bgp-vrf)).
-
+(dev-vrf-features)=
 ## Device Features
 
-The only configurable VRF-related feature is the name of in-VRF loopback interface -- you can specify it in `devices.<device>.loopback_interface_name`. Use **ifindex** variable to create unique loopback interfaces (**ifindex** will be set to VRF index when creating VRF loopback interfaces).
+You can use the following **features.vrf** [device features](dev-device-features) to specify which VRF features your configuration templates implement.
 
-Cisco IOS example:
+* **ospfv2**, **ospfv3** -- The templates configure OSPFv2 or OSPFv3 instances in VRFs. The **ospf** module reports an error when a device without the corresponding feature runs OSPF in a VRF with IPv4 or IPv6 addresses.
+* **isis** -- The templates configure IS-IS instances in VRFs. The **isis** module reports an error when a device without this feature runs IS-IS in a VRF.
+* **ripv2**, **ripng** -- The templates configure RIPv2 or RIPng instances in VRFs. The **ripv2** module reports an error when a device without the corresponding feature runs RIP in a VRF with IPv4 or IPv6 addresses.
+* **bgp** -- The templates configure BGP neighbors in VRF BGP instances. The **bgp** module reports an error when a device without this feature has a BGP neighbor in a VRF. The VRF BGP address families (used to advertise VRF prefixes and to import routes from other VRFs) have to be configured on all devices that support VRFs and BGP.
+* **leaking** -- Set this feature to **false** if your device (or your template) cannot implement inter-VRF route leaking (see [](dev-vrf-leaking)). This feature is not checked by the **vrf** module; it is used only in the [supported features tables](dev-features-tables).
+* **loopback** -- Set this feature to **false** if your device cannot have VRF loopback interfaces. This feature is not checked by the **vrf** module; it is used only in the [supported features tables](dev-features-tables).
+* **keep_module** -- Do not remove the **vrf** module from nodes that have no VRF interfaces or VRF loopbacks. Use this feature if your device needs the VRF configuration template for other purposes.
+* **caveats.core**, **leaking_caveats**, **loopback_caveats**, **ospfv2_caveats**, **ospfv3_caveats**, **bgp_caveats**, **ripv2_caveats**, **ripng_caveats**, **isis_caveats** -- **true** or the anchor of the [caveats](platform-caveats) section describing the limitations of the VRF implementation or the specified VRF feature (used only to add caveat links to the [supported features tables](dev-features-tables))
+
+The VRF loopback interface names are created from the **loopback_interface_name** device attribute (see [](dev-vrf-loopback)).
+
+(dev-vrf-data)=
+## VRF Parameters
+
+VRFs used on a device are defined in the node **vrfs** dictionary. Dictionary keys are VRF names, dictionary values are dictionaries of VRF parameters:
+
+* **id** (integer) -- The VRF ID
+* **vrfidx** (integer) -- A unique VRF index (starting with 100). Use it when your device needs a numeric identifier for a VRF-specific object (for example, the OSPF process ID of a VRF OSPF instance).
+* **rd** (string) -- The VRF route distinguisher
+* **import** and **export** (list) -- The import and export route targets
+* **af** (dictionary) -- The address families (**ipv4** and/or **ipv6**) used in the VRF. Use it to enable IPv4 and IPv6 routing in the VRF.
+* **_leaked_routes** (boolean, optional) -- The VRF uses inter-VRF route leaking (see [](dev-vrf-leaking))
+* **loopback_address** (dictionary, optional) -- The IPv4 and IPv6 addresses of the VRF loopback interface (see [](dev-vrf-loopback))
+* **networks** (list, optional) -- The prefixes of the VRF loopback interfaces
+* **ospf**, **isis**, **ripv2** (dictionary, optional) -- The parameters of the IGP instances running in the VRF (see [](dev-vrf-igp))
+* **bgp** (dictionary, optional) -- The parameters of the VRF BGP instance (see [](dev-vrf-bgp))
+
+The VRF interfaces (including VRF loopback interfaces) are in the node **interfaces** list and have the **vrf** interface parameter that contains the VRF name. The interfaces running an IGP in a VRF are also in the **vrfs._vrf-name_._igp_.interfaces** list.
+
+(dev-vrf-loopback)=
+## VRF Loopback Interfaces
+
+The **vrf** module creates VRF loopback interfaces (see [VRF loopbacks](vrf-loopback)) and adds them to the node **interfaces** list. The VRF loopback interfaces have the **type** parameter set to **loopback** and the **vrf** parameter set to the VRF name. The **vrf** module also sets the **loopback_address** and **networks** VRF parameters.
+
+The VRF loopback interface name is created from the **loopback_interface_name** device attribute. Use the `{ifindex}` placeholder to create unique interface names; the loopback interface number (shared with other additional loopback interfaces, starting with 1 or with the **loopback_offset** device attribute) is inserted in its place. For example, Cisco IOS uses:
 
 ```
-devices:
-  iosv:
-    loopback_interface_name: Loopback{ifindex}
+loopback_interface_name: Loopback{ifindex}
 ```
 
+When a VRF has a loopback interface, the VRF unnumbered IPv4 interfaces use the VRF loopback interface (not the global loopback interface) as their parent interface (**_parent_intf** and **_parent_ipv4** interface parameters).
+
+(dev-vrf-principles)=
 ## VRF Configuration Principles
 
 Many network devices lose interface IP addresses when you configure a VRF on the interface. Interface VRF membership should therefore be configured before interface IP addresses -- in the **initial** phase of device configuration.
@@ -55,15 +75,15 @@ In most cases, you have to create VRFs before you can use them in interface conf
 * Create VRFs in `netsim/ansible/templates/initial/<nos>.vrf.j2` template.
 * Invoke that template in `netsim/ansible/templates/initial/<nos>.j2` template whenever the device data contains **vrfs** dictionary.
 * Configure interface VRF membership as part of the standard interface configuration
-* Configure other VRF features (OSPF, BGP) in `netsim/ansible/templates/vrf/<nos>.j2` template
+* Configure VRF routing protocols (OSPF, IS-IS, RIP, BGP) in `netsim/ansible/templates/vrf/<nos>.j2` template
 
 ## Create VRFs
 
 In the _create VRF_ template (stored in `netsim/ansible/templates/initial/<nos>.vrf.j2`) iterate over the **vrfs** dictionary and configure VRFs.
 
-Cisco IOS configures most VRF parameters (RD, RT) in the VRF definition, and uses address families within VRF definition to enable IPv6 and/or IPv6 in the VRF:
+Cisco IOS configures most VRF parameters (RD, RT) in the VRF definition, and uses address families within VRF definition to enable IPv4 and/or IPv6 in the VRF:
 
-```
+```jinja
 {% for vname,vdata in vrfs.items() %}
 vrf definition {{ vname }}
  rd {{ vdata.rd }}
@@ -74,7 +94,7 @@ vrf definition {{ vname }}
  route-target export {{ rt }}
 {%   endfor %}
 !
-{%   for af in ['ipv4','ipv6'] if af in vdata.af %}
+{%   for af in ['ipv4','ipv6'] if af in vdata.af|default({}) %}
  address-family {{ af }}
  exit-address-family
 !
@@ -82,27 +102,11 @@ vrf definition {{ vname }}
 {% endfor %}
 ```
 
-Arista EOS defines RD in the VRF definition (route targets are defined in the BGP routing process). It also requires **ip routing** enabled for individual VRFs:
-
-```
-{% for vname,vdata in vrfs.items() %}
-vrf instance {{ vname }}
- rd {{ vdata.rd }}
-!
-{% if 'ipv4' in vdata.af %}
-ip routing vrf {{ vname }}
-!
-{% endif %}
-{% if 'ipv6' in vdata.af %}
-ipv6 routing vrf {{ vname }}
-!
-{% endif %}
-{% endfor %}
-```
+Other devices might configure only the route distinguisher in the VRF definition (Arista EOS configures route targets in the VRF BGP instance), or might have to enable IPv4 and IPv6 routing in individual VRFs.
 
 Include the VRF creation template in `netsim/ansible/templates/initial/<nos>.j2` template:
 
-```
+```jinja
 {% if vrfs is defined %}
 {% include '<nos>.vrf.j2' %}
 {% endif %}
@@ -110,7 +114,7 @@ Include the VRF creation template in `netsim/ansible/templates/initial/<nos>.j2`
 
 Finally, put interfaces into VRFs based on **vrf** interface parameter within the interface configuration part of `netsim/ansible/templates/initial/<nos>.j2`. For example:
 
-```
+```jinja
 {% for l in interfaces|default([]) %}
 interface {{ l.ifname }}
  no shutdown
@@ -121,33 +125,51 @@ interface {{ l.ifname }}
 {% endfor +%}
 ```
 
-## Configuring Other VRF Features
+(dev-vrf-routing)=
+## Configuring VRF Routing Protocols
 
-Depending on the VRF-aware routing protocols supported by your platform, you might have to configure per-VRF OSPF routing processes or VRF BGP address families.
+Configure the VRF routing protocols in the `netsim/ansible/templates/vrf/<nos>.j2` template. Implement the routing protocol configuration as macros shared between the global and VRF configuration templates to ensure feature parity between global and VRF routing protocol instances (see [](dev-ospf-macro), [](dev-isis-vrf), and [](dev-rip-vrf)), and include a separate template to configure the VRF BGP instances when the device runs BGP (**bgp.as** is defined).
 
-You can configure all of these features in `netsim/ansible/templates/vrf/<nos>.j2` template, or use a more structured approach:
+This is how the Cisco IOS VRF template configures the VRF routing protocols:
 
-* Configure per-VRF OSPF routing process in `netsim/ansible/templates/vrf/<nos>.ospfv2.j2` and/or `netsim/ansible/templates/vrf/<nos>.ospfv3.j2`
-* Configure VRF BGP address families in `netsim/ansible/templates/vrf/<nos>.bgp.j2`
-* Include these templates in `netsim/ansible/templates/vrf/<nos>.j2` template based on presence of **bgp.as** attribute (the device is running BGP) or **ospf** attribute of a VRF dictionary (VRF is running OSPF)
-
-Even better, use routing protocol configuration macros (example in [](dev-ospf-macro)).
-
-Cisco IOS example:
-
-```
+```jinja
+{% import "templates/ospf/ios.ospfv2.j2" as ospfv2 with context %}
+{% import "templates/ospf/ios.ospfv3.j2" as ospfv3 with context %}
+{% import "templates/ripv2/ios.macro.j2" as rip with context %}
 {% if bgp.as is defined %}
-{% include 'ios.bgp.j2' %}
+{% include 'ios.bgp.j2' +%}
 {% endif %}
+!
 {% for vname,vdata in vrfs.items() if 'ospf' in vdata %}
-{%   include 'ios.ospfv2-vrf.j2' %}
+{%   if vdata.af.ipv4|default(False) %}
+{{     ospfv2.config(vdata.vrfidx,vname,vdata.ospf,vdata.ospf.interfaces|default([]),bgp|default({})) }}
+{%   endif %}
+{%   if vdata.af.ipv6|default(False) %}
+{{     ospfv3.config(vdata.vrfidx,vname,vdata.ospf,vdata.ospf.interfaces|default([]),bgp|default({})) }}
+{%   endif %}
+{% endfor %}
+!
+{% for vname,vdata in vrfs.items() if 'ripv2' in vdata %}
+{{   rip.config(ripv2=vdata.ripv2,vrf=vname,ospf_pid=vdata.vrfidx) }}
 {% endfor %}
 ```
 
-(dev-vrf-bgp)=
-### Configuring VRF BGP Instances
+(dev-vrf-igp)=
+### VRF IGP Instances
 
-In the BGP configuration process, configure VRF address families, OSPF-to-BGP redistribution, redistribution of connected interfaces, and advertise VRF-specific networks. Use attributes defined in the [](dev-config-bgp) document; many of them (for example, **bgp.advertise**, **bgp.import**, and **bgp.neighbors**) are available in the VRF **bgp** data.
+The parameters of an IGP instance running in a VRF (**vrfs._vrf-name_.ospf**, **vrfs._vrf-name_.isis**, or **vrfs._vrf-name_.ripv2** dictionary) are (mostly) identical to the global IGP parameters. The differences are:
+
+* **interfaces** (list) -- The VRF interfaces on which the device should run the IGP. Use this list instead of the node **interfaces** list.
+* **active** (boolean) -- The VRF IGP instance is active
+* **router_id** (string) -- The VRF OSPF router ID (it is always defined)
+* **import** (dictionary) -- The routing protocols to redistribute into the VRF IGP. When the user does not specify the VRF route import, _netlab_ creates a default import dictionary (for example, BGP and connected routes are redistributed into the VRF OSPF instance on devices running BGP). The default import entries have the **auto** parameter set to **true**.
+
+Use the **vrfidx** VRF parameter when your device needs a numeric routing process ID (for example, the OSPF process ID), and the global parameters that are not VRF-specific (for example, **ospf.reference_bandwidth**).
+
+(dev-vrf-bgp)=
+### VRF BGP Instances
+
+In the VRF BGP configuration template, configure VRF address families, route redistribution, advertise VRF-specific networks, and configure VRF BGP neighbors. Use attributes defined in the [](dev-config-bgp) document; many of them (for example, **bgp.advertise**, **bgp.import**, and **bgp.neighbors**) are available in the VRF **bgp** data ([more details](dev-bgp-vrf)).
 
 ```{warning}
 Some devices don't inherit the VRF BGP router ID from the global router ID and may fail to function correctly in IPv6-only deployments.
@@ -155,161 +177,53 @@ Some devices don't inherit the VRF BGP router ID from the global router ID and m
 As the VRF BGP router ID is not always defined, use the `vdata.bgp.router_id|default(bgp.router_id)` expression when you have to configure a VRF BGP router ID.
 ```
 
-Cisco IOS has different address families for IPv4-in-VRF and IPv6-in-VRF.
+To configure VRF BGP neighbors, use the BGP neighbor configuration macro from the global BGP configuration template (if it exists for your platform) to ensure feature parity between global and VRF BGP neighbors.
 
-```
-{% import "ios.bgp-macro.j2" as bgpcfg %}
+This is how the Cisco IOS VRF BGP template configures VRF address families, route redistribution, prefix advertisements, and VRF BGP neighbors:
+
+```jinja
+{% import "templates/bgp/ios.macro.j2" as bgpcfg %}
+{% import "templates/routing/_redistribute.ios.j2" as redistribute with context %}
 !
 router bgp {{ bgp.as }}
 {% for vname,vdata in vrfs.items() %}
-{%   for af in ('ipv4','ipv6') if af in vdata.af %}
+{%   for af in ('ipv4','ipv6') if af in vdata.af|default({}) %}
+!
  address-family {{ af }} vrf {{ vname }}
-  redistribute connected
-{%     if af == 'ipv4' and 'ospf' in vdata %}
-  redistribute ospf {{ vdata.vrfidx }}
+  bgp router-id {{ vdata.bgp.router_id|default(bgp.router_id) }}
+{%     if vdata.bgp.import is defined %}
+{{       redistribute.config(vdata.bgp,af=af,ospf_pid=vdata.vrfidx,vrf=vname)|indent(1,first=True) }}
 {%     endif %}
 !
 {%     for n in vdata.bgp.advertise|default([]) if af in n %}
 {{       bgpcfg.bgp_network(af,n[af]) }}
 {%     endfor %}
 !
-... BGP neighbors ...
-{% endfor %}
-```
-
-**Note:** Cisco IOS template uses a macro to configure BGP network advertisement. See [](dev-vrf-bgp) for more details.
-
-In the Arista EOS VRF BGP configuration, you must specify both IPv4 and IPv6 route targets. You must also enable individual address families within that configuration mode:
-
-```
-mpls ip
-!
-router bgp {{ bgp.as }}
-{% for vname,vdata in vrfs.items() %}
-!
- vrf {{ vname }}
-  redistribute connected
-  router-id {{ bgp.router_id }}
-  rd {{ vdata.rd }}
-{%   if 'ospf' in vdata %}
-  redistribute ospf
-{%   endif %}
-{%   for af in ['ipv4','ipv6'] if af in vdata.af %}
-{%     for rt in vdata.import %}
-  route-target import vpn-{{ af }} {{ rt }}
-{%     endfor %}
-{%     for rt in vdata.export %}
-  route-target export vpn-{{ af }} {{ rt }}
-{%     endfor %}
-{%   endfor %}
-{%   for af in ['ipv4','ipv6'] %}
-{%     for n in vdata.bgp.advertise|default([]) if af in n %}
-{%       if loop.index == 1 %}
-  address-family {{ af }}
-{%       endif %}
-   network {{ n[af]|ipaddr('0') }}
-{%     endfor %}
-{%   endfor %}
-... BGP neighbors ...
-{% endfor %}
-```
-
-(dev-vrf-bgp-neighbor)=
-### Configure VRF BGP Neighbors
-
-You could copy the BGP configuration template into the `vrf` directory and modify it to configure in-VRF BGP neighbors, or you could create a symbolic link to the Jinja2 template containing the BGP neighbor configuration macro (if it exists for your platform) within the `bgp` directory and use common code to configure BGP neighbors. The latter approach is recommended as it ensures feature parity between global- and in-VRF BGP neighbors.
-
-To configure BGP neighbors, iterate over the **vrfs._vname_.bgp.neighbors** dictionary and configure the neighbors. Cisco IOS configuration syntax results in a streamlined process:
-
-```
-{% import "ios.bgp-macro.j2" as bgpcfg %}
-!
-router bgp {{ bgp.as }}
-{% for vname,vdata in vrfs.items() %}
-{%   for af in ('ipv4','ipv6') if af in vdata.af %}
- address-family {{ af }} vrf {{ vname }}
-... other BGP parameters ...
 {%     for n in vdata.bgp.neighbors|default([]) if af in n %}
 {{       bgpcfg.neighbor_global(n,n[af]) }}
 {{       bgpcfg.neighbor_af(n,n[af],bgp) }}
 {%     endfor %}
+ exit-address-family
 {%   endfor %}
 {% endfor %}
 ```
 
-Arista EOS is a bit more complex: BGP neighbors are defined in the BGP VRF configuration mode and activated within the in-VRF address family:
+Some devices (for example, Arista EOS) configure the VRF route distinguisher and route targets in the VRF BGP instance; they might also need separate IPv4 and IPv6 route targets.
 
-```
-{% import "eos.bgp-macro.j2" as bgpcfg %}
-!
-router bgp {{ bgp.as }}
-{% for vname,vdata in vrfs.items() %}
-!
- vrf {{ vname }}
-... other BGP parameters ...
-{%   for n in vdata.bgp.neighbors|default([]) %}
-{%     for af in ['ipv4','ipv6'] if n[af] is defined %}
-{{       bgpcfg.neighbor(n,n[af],bgp) }}
-{%     endfor %}
-{%   endfor %}
-{%   for af in ['ipv4','ipv6'] %}
-... other AF parameters ...
-{%     for n in vdata.bgp.neighbors|default([]) if n[af] is defined %}
-{%       if loop.index == 1 %}
-  address-family {{ af }}
-{%       endif %}
-   neighbor {{ n[af] }} activate
-{%     endfor %}
-{%   endfor %}
-{% endfor %}
-```
+(dev-vrf-leaking)=
+## Inter-VRF Route Leaking
 
-### Configure OSPF
+A VRF uses inter-VRF route leaking when its import or export route targets differ from its route distinguisher. The **vrf** module sets the **_leaked_routes** VRF parameter on such VRFs.
 
-It's best to use the same _[shared macro](dev-ospf-macro)_ approach to configure VRF OSPF instances, but of course you can also copy-paste the [global OSPF configuration code](ospf.md) and change OSPF process ID (or a similar configuration construct) to refer to in-VRF OSPF process:
+Most devices implement inter-VRF route leaking with BGP (for example, with VPNv4/VPNv6 address families or VRF BGP instances importing and exporting route targets). The **vrf** module copies the **vrf.as** node parameter into **bgp.as** when a node uses inter-VRF route leaking but does not run BGP, and reports an error when neither of them is defined. Use the **_leaked_routes** VRF parameter if your device needs extra configuration (for example, a VRF BGP instance) only when the VRF uses inter-VRF route leaking.
 
-* The main VRF template uses **vdata** variable to refer to the VRF parameters -- OSPF parameters are available within **vdata.ospf** dictionary.
-* Use **vdata.vrfidx** as the OSPF process ID
-* Use **vdata.ospf.router_id** to set the router ID. Fallback to **ospf.router_id** is optional as the VRF OSPF router ID should always be defined.
-* Use the global **ospf.reference_bandwidth**
+## Integration Tests
 
-If you didn't implement configurable route redistribution:
+The VRF integration tests are in the `tests/integration/vrf` directory:
 
-* Redistribute BGP into OSPF if the **bgp.as** parameter is set (the device is running BGP)
-* Redistribute connected subnets into OSPF
+* `01-multi-vrf.yml` to `04-multi-vrf-loopback-ipv6.yml` -- Basic VRF-lite functionality (IPv4, IPv6, VRF loopbacks)
+* `11-multi-vrf-ospf.yml` to `16-vrf-bgp-community.yml` -- OSPF and BGP in VRFs, unnumbered VRF interfaces, VRF BGP communities
+* `21-multi-vrf-ospfv3.yml` to `23-multi-vrf-mixed-ipv6.yml` -- OSPFv3 and IPv6 BGP in VRFs
+* `31-vrf-common-hosts.yml` to `35-vrf-asymmetric-leaking.yml` -- Inter-VRF route leaking (common services VRF, asymmetric route leaking)
 
-The list of OSPF-enabled VRF interfaces is in **vdata.ospf.interfaces** list. Use that list in the same way you'd use the global **ospf.interfaces** list.
-
-Cisco IOS example (prior to the route redistribution support):
-
-```
-!
-router ospf {{ vdata.vrfidx }} vrf {{ vname }}
- router-id {{ vdata.ospf.router_id|default(ospf.router_id) }}
-{% if ospf.reference_bandwidth is defined %}
- auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
-{% endif %}
-{% for l in vdata.ospf.interfaces|default([]) if l.ospf.passive|default(False) %}
- passive-interface {{ l.ifname }}
-{% endfor %}
- redistribute connected subnets
-{% if bgp.as is defined %}
- redistribute bgp {{ bgp.as }} subnets
-{% endif %}
-!
-{% for l in vdata.ospf.interfaces|default([]) if 'ospf' in l and 'ipv4' in l %}
-interface {{ l.ifname }}
-! {{ l.name|default("") }}
- ip ospf {{ vdata.vrfidx }} area {{ l.ospf.area }}
-{%   if l.ospf.network_type is defined %}
- ip ospf network {{ l.ospf.network_type }}
-{%   endif %}
-{%   if l.ospf.cost is defined %}
- ip ospf cost {{ l.ospf.cost }}
-{%   endif %}
-{%   if l.ospf.bfd|default(False) %}
- ip ospf bfd
-{%   endif %}
-!
-{% endfor %}
-```
+The IGP-specific VRF tests are in the IGP integration test directories (for example, `tests/integration/isis/30-vrf.yml`).
