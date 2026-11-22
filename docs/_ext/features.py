@@ -226,24 +226,46 @@ def device_providers(ddata: Box, settings: Box) -> list:
   """
   return ['clab'] if ddata.get('daemon',False) else list(settings.providers)
 
+def get_feature_defaults(settings: Box) -> dict:
+  """
+  Collect the module feature defaults (features that are only set to False on
+  devices that do not support them)
+  """
+  return {
+    m_name: m_data['feature_defaults']
+      for m_name,m_data in settings.items()
+        if isinstance(m_data,dict) and 'feature_defaults' in m_data }
+
+def add_feature_defaults(f_data: Box, f_defaults: dict) -> Box:
+  """
+  Add module feature defaults to device module features. Skip modules not
+  supported by the device and modules with non-dictionary features (for example, 'ospf: True')
+  """
+  for m_name,m_defaults in f_defaults.items():
+    if isinstance(f_data.get(m_name,None),dict):
+      f_data[m_name] = m_defaults + f_data[m_name]
+  return f_data
+
 def merge_device_data(settings: Box) -> dict:
   """
-  Merge device data with device features and provider-specific data/features.
-  The merged data does not depend on the feature table, so we do it once (it's expensive).
+  Merge device data with device features and provider-specific data/features,
+  and add module feature defaults. The merged data does not depend on the feature table,
+  so we do it once (it's expensive).
 
   The results are plain Box objects (no auto-created objects) as needed by builtins
   in expressions. The dictionary keys are (device,) or (device,provider) tuples.
   """
   dev_data: dict = {}
+  f_defaults = get_feature_defaults(settings)
   for dname,ddata in settings.devices.items():
     f_data = ddata + ddata.features
-    dev_data[(dname,)] = Box(f_data)
+    dev_data[(dname,)] = add_feature_defaults(Box(f_data),f_defaults)
     for p_name in device_providers(ddata,settings):
       p_data = ddata.get(p_name,{})
       if not p_data:                              # No provider-specific data, no need to store anything
         continue
       pf_data = ddata.get(f'{p_name}.features',{})
-      dev_data[(dname,p_name)] = Box(f_data + p_data + pf_data)
+      dev_data[(dname,p_name)] = add_feature_defaults(Box(f_data + p_data + pf_data),f_defaults)
 
   return dev_data
 
