@@ -17,6 +17,7 @@ The following implementation notes for configuration deployment, initial device 
    ebgp.multihop.md
    evpn.md
    gateway.md
+   isis.md
    mpls.md
    ospf.md
    ospf.areas.md
