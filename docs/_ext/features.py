@@ -221,7 +221,8 @@ def get_feature_row(device_data: Box, dname: str, table_def: Box) -> typing.Opti
 
   if debug_active('df_row'):
     print(f'DF_ROW: {dname} {df_row}')
-  return df_row if f_valid else None
+  # Devices supporting none of the features are irrelevant unless we're displaying exceptions or all devices
+  return df_row if f_valid or table_def.get('show','supported') != 'supported' else None
 
 def device_providers(ddata: Box, settings: Box) -> list:
   """
@@ -351,6 +352,15 @@ def remove_duplicate_features(settings: Box, df_data: Box) -> None:
     else:                                         # Otherwise mark that a (grand)child has diverted from the parent
       append_to_list(df_data[parent],'ch_mismatch',dname)
 
+def remove_full_support(df_data: Box) -> None:
+  """
+  Remove devices that fully support all features (all cells are checkmarks or text without caveats)
+  when displaying only the exceptions
+  """
+  for dname in list(df_data.keys()):
+    if all((f.get('status',False) or 'text' in f) and 'caveat' not in f for f in df_data[dname].features):
+      df_data.pop(dname)
+
 def remove_meta_devices(settings: Box,df_data: Box) -> None:
   """
   Remove meta-devices (generic parents, "none" and "unknown") that have no relevant children.
@@ -433,6 +443,7 @@ def device_features(settings: Box, table_def: Box) -> typing.Tuple[typing.List[t
 
   * Get the device data (which device supports which feature)
   * Remove child devices that inherited features from their parents
+  * Remove devices that fully support all features when displaying exceptions
   * Remove meta devices that have no children
   * Return the list-of-lists table data structure and footnotes
   """
@@ -440,6 +451,8 @@ def device_features(settings: Box, table_def: Box) -> typing.Tuple[typing.List[t
 #  for dk,dv in df_data.items():
 #    print(f'{dk}: {dv}')
   remove_duplicate_features(settings,df_data)
+  if table_def.get('show',None) == 'exceptions':
+    remove_full_support(df_data)
   remove_meta_devices(settings,df_data)
   return build_device_feature_matrix(settings,df_data)
 
@@ -488,6 +501,8 @@ class Features(SphinxDirective):
     """
     Check the column parameters that would otherwise silently produce a wrong table
     """
+    if table_def.get('show','supported') not in ('supported','exceptions','all'):
+      raise self.error(f"Invalid 'show' value '{table_def.show}' (use supported, exceptions, or all)")
     for f_def in table_def.features:
       if f_def.get('align','left') not in ('left','center','right'):
         raise self.error(f"Invalid alignment '{f_def.align}' in column '{f_def.get('title','???')}' (use left, center, or right)")
