@@ -343,7 +343,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 ```{features}
 - title: '[OSPF](module/ospf.md)'
   enabled: ospf
-  caveats: ospf.caveats.core
+  caveats: ospf.caveats.ipv4 or ospf.caveats.ipv6
 - title: '[IS-IS](module/isis.md)'
   enabled: isis
   caveats: isis.caveats

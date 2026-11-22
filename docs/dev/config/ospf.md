@@ -1,4 +1,4 @@
-(dev-config-ospf)
+(dev-config-ospf)=
 # Configuring OSPF
 
 This document describes the device data model parameters one should consider when creating an OSPF configuration template. For a wider picture, please see [contributing new devices](../devices.md) document.
@@ -32,6 +32,7 @@ You can use the following device **features.ospf** [device features](dev-device-
 * **gr** -- OSPF graceful restart. A list of supported address families (`ipv4` for OSPFv2, `ipv6` for OSPFv3).
 * **ipv4** -- Set this feature to **false** if your device (or your templates) cannot run OSPFv2; the **ospf** module reports an error when such a device uses OSPF with IPv4. A device without this feature is assumed to support OSPFv2. OSPFv2 in VRFs is controlled by the **vrf.ospfv2** feature.
 * **ipv6** -- Set this feature to **false** if your device (or your templates) cannot run OSPFv3; the **ospf** module reports an error when such a device uses OSPF with IPv6. A device without this feature is assumed to support OSPFv3. OSPFv3 in VRFs is controlled by the **vrf.ospfv3** feature.
+* **caveats.ipv4**, **caveats.ipv6**, **caveats.unnumbered**, **caveats.import**, **caveats.default**, **caveats.bfd** -- **true** or the anchor of the [caveats](platform-caveats) section describing the limitations of OSPFv2, OSPFv3, OSPF over unnumbered interfaces, route import, default route origination, or BFD with OSPF (used only to add caveat links to the [supported features tables](dev-features-tables)). The OSPFv2/OSPFv3 caveats are also displayed in the routing protocols support table in [](supported-platforms).
 
 (dev-ospf-af)=
 ## Supporting Multiple Address Families

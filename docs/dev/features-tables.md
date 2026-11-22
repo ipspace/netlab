@@ -95,6 +95,8 @@ features:
     caveats.core: caveats-arcos
 ```
 
+Some modules use more specific caveats instead of **caveats.core**; for example, the [OSPF](dev-ospf-features) module support table uses **ospf.caveats.ipv4** or **ospf.caveats.ipv6**.
+
 Use an explicit anchor ID instead of **true** in parent devices (for example, `iol`); the child devices inherit the feature, and **true** would generate a link to a nonexistent `caveats-_child_` anchor.
 
 The device caveats (**device.caveats** expression) are displayed next to the device name. A child device with a different device caveat than its parent device is not merged into the parent device row.
