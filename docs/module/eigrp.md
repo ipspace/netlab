@@ -11,6 +11,15 @@ Supported features:
 * Unnumbered point-to-point interfaces (Cisco IOS-XE only)
 * Passive interfaces
 
+The following table describes per-platform support of EIGRP address families:
+
+```{features}
+- title: IPv4
+  enabled: eigrp.ipv4
+- title: IPv6
+  enabled: eigrp.ipv6
+```
+
 ## Global Parameters
 
 * **eigrp.as** sets the network-wide EIGRP AS number (default: 1)
