@@ -210,6 +210,8 @@ def get_feature_row(device_data: Box, dname: str, table_def: Box) -> typing.Opti
       dt_value['present'] = f_def.present
     if 'align' in f_def:                        # Custom cell alignment?
       dt_value['align'] = f_def.align
+    elif 'text' in f_def:                       # Text columns are left-aligned, including the missing values
+      dt_value['align'] = 'left'
 
     if 'caveats' in f_def:                      # ... but wait, there's more. Do we need to check for caveats?
       f_caveat = get_caveat(f_def.caveats,device_data,dname)

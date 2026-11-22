@@ -43,6 +43,7 @@ After you decided what *device name* to use, create `<device-name>.yml` file in 
 The device parameters will have to include ([more details](device-box.md#adding-new-device-settings)):
 
 * Device **description** -- a short string describing the device
+* Device caveats (**device_caveats**) -- **true** or the anchor of the [device caveats](platform-caveats) section (when it's not `caveats-<device-name>`). The [list of supported devices](platform-devices) displays a link to the caveats next to the device name. If the VM and container versions of your device need separate rows in that list (for example, Arista vEOS and cEOS), set the **docname** and **device_caveats** parameters in the **libvirt** and **clab** dictionaries.
 * Interface name template (**interface_name**), including `{ifindex}` to insert interface number.
 * The number of the first interface (**ifindex_offset**) if it's different from 1. Sometimes the data plane interfaces start with zero, sometimes they start with 2 because the management interface is interface 1.
 * Name of the management interface (**mgmt_if**) if it cannot be generated from the interface name template (some devices use `mgmt0` or similar). This is the interface Vagrant uses to connect to the device via SSH.

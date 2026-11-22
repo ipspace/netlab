@@ -344,7 +344,7 @@ See also [common IOS XR caveats](caveats-iosxr)
 ## Cumulus Linux
 
 ```{warning}
-Cumulus Linux 4.x is retired. While there are no plans to remove it from _netlab_, we will not add new features or run integration tests.
+Cumulus Linux 4.x is retired (the last Cumulus 4.x image was released in September 2022). While there are no plans to remove it from _netlab_, we will not add new features or run integration tests.
 ```
 
 * The Cumulus VX 4.x uses Python version 3.7, which recent versions of Ansible refuse to work with. We have to use the **raw** module to communicate with Cumulus VX 4.x virtual machines.
@@ -367,6 +367,8 @@ See also [other FRRouting caveats](caveats-frr).
 
 (caveats-cumulus-nvue)=
 ## Cumulus 5.x with NVUE
+
+The new Cumulus 5.x releases run only on NVIDIA Air. The last public release was 5.10.0 from September 2024.
 
 You could configure Cumulus Linux 5.x with configuration templates developed for Cumulus Linux 4.4 (use device type **cumulus** and specify desired device image), or with NVUE.
 
@@ -589,6 +591,7 @@ Implementation limitations in import/export route filters (reported as errors th
 (caveats-vmx)=
 ## Juniper vMX
 
+* vMX gets all new Junos features, but we don't test them on vMX.
 * vMX can run only as a [_vrnetlab_ container](clab-vrnetlab)
 * vMX requires a license file. By default, _netlab_ downloads the evaluation license for Junos 18.2 from the Juniper website.
 
@@ -622,6 +625,8 @@ See also [](caveats-junos).
 
 (caveats-vsrx)=
 ## Juniper vSRX in Containerlab
+
+vSRX gets all new Junos features, but we don't test them on vSRX.
 
 You can run Juniper vSRX as a container packaged by *vrnetlab*. See [_containerlab_ documentation](https://containerlab.dev/manual/kinds/vr-vsrx/) for further details.
 
