@@ -148,8 +148,6 @@ _netlab_ can deploy configuration on all supported devices. It can also collect 
 Use the **netlab initial -o** command to create configuration files in a custom directory.
 ```
 
-[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOSv, Cisco IOSv layer-2 image, Cisco IOS-on-Linux (IOL) and IOL Layer-2 image
-
 [^XE]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL) and IOL Layer-2 image
 
 [^Junos]: Includes cRPD, vMX, vSRX, vPTX, vJunos-switch, and vJunos-router, but not cSRX
@@ -294,12 +292,13 @@ All platforms support IPv4 interface addresses. The support for other interface 
 (platform-initial-extra)=
 Some platforms can enable additional functionality during the initial device configuration:
 
-| Operating system | [Debugging<br>attribute](node-debug-attribute)[^GNDA] |
-|------------------|:-:|
-| Cisco IOS/IOS XE[^18v]| **ios.debug** |
-| FRRouting             | **frr.debug** |
+```{features}
+- title: Debugging<br>attribute
+  text: |
+    [ f'**{k}.debug**' for k,v in attributes.node.items() if 'debug' in v ]
+```
 
-[^GNDA]: The debugging attribute can be specified for a single node or globally, in which case the debugging is activated on all nodes using the specified device.
+The [debugging attribute](node-debug-attribute) can be specified for a single node or globally, in which case the debugging is activated on all nodes using the specified device.
 
 ## Supported Configuration Modules
 
