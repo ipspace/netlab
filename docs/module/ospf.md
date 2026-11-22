@@ -55,6 +55,10 @@ We implemented OSPFv2, OSPFv3, OSPF areas, reference bandwidth, passive interfac
 - title: Core OSPF<br>features
   enabled: ospf
   caveats: ospf.caveats.core
+- title: OSPFv2
+  enabled: ospf.get('ipv4', True)
+- title: OSPFv3
+  enabled: ospf.get('ipv6', True)
 - title: Unnumbered<br>IPv4 interfaces
   enabled: ospf.unnumbered
   caveats: ospf.caveats.unnumbered
