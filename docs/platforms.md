@@ -12,67 +12,43 @@
 
 *netlab* supports these virtual network devices or their physical equivalents (when using *external* [virtualization provider](providers.md)).
 
-| Virtual network device | netlab device type | support level |
-| -----------------------| ------------------ | ------------- |
-| Arista vEOS[❗](caveats-veos)/cEOS[❗](caveats-ceos)  | eos    | full          |
-| Arrcus ArcOS [❗](caveats-arcos) | arcos  | best effort   |
-| Aruba AOS-CX [❗](caveats-aruba) | arubacx  | full          |
-| Cisco 8000v [❗](caveats-cisco8000v) | cisco8000v | minimal |
-| Cisco ASAv [❗](caveats-asav)    | asav     | minimal       |
-| Cisco Catalyst 8000v [❗](caveats-cat8000v) | cat8000v | full |
-| Cisco CSR 1000v [❗](caveats-csr) | csr     | full          |
-| Cisco IOS-on-Linux (IOL) [❗](caveats-iol) | iol | full     |
-| Cisco IOS-on-Linux L2 image (IOL L2)[❗](caveats-iol) | ioll2               | full |
-| Cisco IOSv [❗](caveats-iosv)      | iosv   | full          |
-| [Cisco IOSvL2](https://developer.cisco.com/docs/modeling-labs/iosvl2/#iosvl2) [❗](caveats-iosv)   | iosvl2 | full |
-| Cisco IOS XRv/XRd [❗](caveats-iosxr) | iosxr  | full (XRd only) |
-| Cisco Nexus 9300v [❗](caveats-nxos) | nxos | best effort   |
-| Cumulus Linux 4.x/5.x [❗](caveats-cumulus) | cumulus | end of life |
-| Cumulus Linux 5.x (NVUE) [❗](caveats-cumulus-nvue) | cumulus_nvue | minimal |
-| Dell OS10 [❗](caveats-os10) | dellos10     | full          |
-| Extreme Networks EXOS [❗](caveats-exos) | exos | minimal  |
-| Extreme Networks VOSS [❗](caveats-voss) | voss | minimal  |
-| Fortinet FortiOS [❗](caveats-fortios) | fortios | minimal  |
-| FRRouting (FRR) [❗](caveats-frr) | frr     | full          |
-| [Generic Linux host](generic-linux-devices) | linux | full          |
-| IP Infusion OcNOS [❗](caveats-ocnos) | ocnos | minimal |
-| Juniper cRPD | crpd | full |
-| Juniper cSRX [❗](caveats-csrx) | csrx | minimal |
-| Juniper vMX [❗](caveats-vmx) | vmx         | best effort   |
-| Juniper vPTX (vJunos EVO) [❗](caveats-vptx) | vptx | full  |
-| Juniper vSRX 3.0 [❗](caveats-vsrx) | vsrx  | best effort   |
-| vJunos-switch [❗](caveats-vjunos-switch) | vjunos-switch | full |
-| vJunos-router [❗](caveats-vjunos-router) | vjunos-router | full |
-| Mikrotik RouterOS 6 (CHR) [❗](caveats-routeros6) | routeros           | end of life |
-| Mikrotik RouterOS 7 (CHR) [❗](caveats-routeros7) | routeros7           | minimal |
-| Netscaler CPX | netscaler | minimal |
-| Nokia SR Linux [❗](caveats-srlinux) | srlinux | full       |
-| Nokia SR OS [❗](caveats-sros)    | sros    | best effort[^SROSBE]   |
-| Nokia SR-SIM [❗](caveats-srsim)  | srsim   | full          |
-| OpenBSD [❗](caveats-openbsd)     | openbsd | best effort   |
-| SONiC [❗](caveats-sonic-vm) | sonic   | minimal       |
-| VPP (fd.io) [❗](caveats-vpp) | vpp | minimal |
-| VyOS 1.4 [❗](caveats-vyos)       | vyos    | full          |
-
-[^SROSBE]: With the launch of the Nokia SR SIM, we stopped running integration tests for the SR-OS VM, assuming the behavior of the two products would be nearly identical.
+```{features}
+show: all
+filter: not daemon
+device:
+  caveats: device_caveats
+features:
+- title: netlab<br>device type
+  text: _name
+- title: Support<br>level
+  text: support.level
+  missing: full
+```
 
 (platform-daemons)=
 *netlab* also supports the following daemons (control-plane software running in containers):
 
-| Daemon          | netlab device type | support level |
-| --------------- | ------------------ | ------------- |
-| BIRD Internet Routing Daemon [❗](caveats-bird) | bird               | full |
-| dnsmasq DHCP server [❗](caveats-dnsmasq) | dnsmasq | full |
-| [Kubernetes in Docker](plugin-kind) | kind | best effort |
+```{features}
+show: all
+filter: daemon
+device:
+  caveats: device_caveats
+features:
+- title: netlab<br>device type
+  text: _name
+- title: Support<br>level
+  text: support.level
+  missing: full
+```
 
 You can also run network management software and even some network services products (for example, NetScaler) as [custom Linux containers](tutorial-linux-custom).
 
 The support level of a platform is defined as:
 
 * **full** -- a core contributor is regularly implementing new features. We run a [full suite of integration tests](https://release.netlab.tools/) for every release that could impact the device behavior (for example, due to changes in configuration templates).
-* **best effort** -- while a core contributor might still work on the platform, we don't run integration tests (usually due to limited availability of the VM/container image). YMMV.
+* **best-effort** -- while a core contributor might still work on the platform, we don't run integration tests (usually due to limited availability of the VM/container image). YMMV.
 * **minimal** -- don't expect too much[^WTLTB]. What you see is pretty much what you'll get (and in many cases, it did not go through integration tests).
-* **end-of-life** -- these platforms are still part of _netlab_ package because the storage prices keep falling.
+* **obsolete** -- these platforms are still part of _netlab_ package because the storage prices keep falling.
 
 [^WTLTB]: Particularly on platforms that take way too long to boot, like Cisco IOS XR. We're all forced to deal with a limited lifespan.
 
