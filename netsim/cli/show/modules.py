@@ -56,6 +56,13 @@ def get_module_flat_features(features: Box, prefix: str = '', path: str = '', f_
 
   return f_dict
 
+# Get the state of a device feature, using the module feature defaults for features
+# that are not set on the device (for example, features that are only set to 'false'
+# on devices that do not support them)
+#
+def get_feature_state(m_features: Box, feature: str, f_defaults: dict) -> typing.Any:
+  return m_features[feature] if feature in m_features else f_defaults.get(feature,None)
+
 def device_module_feature_row(
       settings: Box, *,
       rows: list,
@@ -80,10 +87,11 @@ def device_module_feature_row(
   if module not in features:
     return True
 
+  f_defaults = settings[module].get('feature_defaults',{})
   row = [ f'{device}/{provider}' if provider else device ]
   has_feature = False
   for f in heading[1:]:
-    value = features[module].get(f,None)
+    value = get_feature_state(features[module],f,f_defaults)
     if value is None:
       value = ""
     elif isinstance(value,bool):
@@ -268,16 +276,19 @@ def show(settings: Box, args: argparse.Namespace) -> None:
         subsequent_indent="  ").fill(", ".join(dev_list)))
     else:
       if args.module and settings[args.module].features:
+        f_defaults = settings[m].get('feature_defaults',{})
         for d in dev_list:
-          result[d] = settings.devices[d].features[m]
+          d_features = settings.devices[d].features[m]
 
-          # Remove all non-relevant features from device results
+          # Display just the selected feature or all device features plus feature defaults
           #
           if args.feature:
-            if args.feature in result[d]:
-              result[d] = { args.feature: result[d][args.feature] }
-            else:
-              result[d] = {}
+            value = get_feature_state(d_features,args.feature,f_defaults)
+            result[d] = {} if value is None else { args.feature: value }
+          else:
+            result[d] = data.get_new_box(d_features)
+            for f in f_defaults.keys():
+              result[d][f] = get_feature_state(d_features,f,f_defaults)
       else:
         result[m] = settings[m].dev_list
 
