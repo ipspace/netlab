@@ -430,34 +430,23 @@ See [integration test results](https://release.netlab.tools/) for more details.
 
 ## IPv6 Support
 
-Core *netlab* functionality and all multi-protocol routing protocol configuration modules fully support IPv6. However, you might not be able to configure IPv6 versions of some routing protocols on all platforms.
+Core *netlab* functionality and all multi-protocol routing protocol configuration modules fully support IPv6. However, you might not be able to configure IPv6 versions of some routing protocols (or assign SR-MPLS SIDs to IPv6 prefixes) on all platforms.
 
-| Operating system      | OSPFv3 | IS-IS MT | EIGRP<br />IPv6 AF | BGP<br />IPv6 AF | SR-MPLS |
-| --------------------- |:--:|:--:|:--:|:--:|:--:|
-| Arista EOS            | ✅ | ✅ | ❌ | ✅ | ✅ |
-| Arrcus ArcOS          | ✅ | ❌[❗](caveats-arcos) | ❌ | ✅ | ❌ |
-| Aruba AOS-CX          | ✅ | ❌ | ❌ | ✅ | ❌ |
-| BIRD                  | ✅ | ❌ | ❌ | ✅ | ❌ |
-| Cisco ASAv            | ✅ [❗](caveats-asav) | ✅ | ❌ | ✅ | ❌ |
-| Cisco IOS/IOS XE[^18v]| ✅ | ✅ | ✅ | ✅ | ❌ |
-| Cisco IOS XR[^XR]     | ✅ | ✅ | ❌ | ✅ | ✅ |
-| Cisco Nexus OS        | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Cumulus Linux 4.x     | ✅ | ❌ | ❌ | ✅ | ❌ |
-| Cumulus Linux NVUE    |  ❌ | ❌ | ❌ | ✅ | ❌ |
-| Dell OS10             | ✅ | ❌ | ❌ | ✅ | ❌ |
-| Extreme Networks EXOS | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Fortinet FortiOS      | ✅ | ❌ | ❌ | ✅ | ❌ |
-| FRR                   | ✅ | ✅ | ❌ | ✅ | ❌ |
-| IP Infusion OcNOS     | ✅ | ✅ | ❌ | ✅ | ❌ |
-| Junos[^Junos]         | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
-| Mikrotik RouterOS 6   |  ❌ | ❌ | ❌ | ✅ | ❌ |
-| Mikrotik RouterOS 7   | ✅ | ❌ | ❌ | ✅ | ❌ |
-| Nokia SR Linux        | ✅ | ✅ | ❌ | ✅ | ✅ |
-| Nokia SR OS[^SROS]    | ✅ | ✅ | ❌ | ✅ | ✅ |
-| OpenBSD               | ✅ | ❌ | ❌ | ✅ | ❌ |
-| Sonic                 |  ❌ | ❌ | ❌ | ✅ | ❌ |
-| Sonic (containerlab)  | ✅ | ✅ | ❌ | ✅ | ✅ |
-| VyOS                  | ✅ | ✅ | ❌ | ✅ | ❌ |
+```{features}
+- title: '[OSPFv3](module/ospf.md)'
+  enabled: ospf.ipv6
+  caveats: ospf.caveats.ipv6
+- title: '[IS-IS](module/isis.md)<br>MT'
+  enabled: isis.mt
+- title: '[EIGRP](module/eigrp.md)<br>IPv6 AF'
+  enabled: eigrp.ipv6
+- title: '[BGP](module/bgp.md)<br>IPv6 AF'
+  enabled: bgp.ipv6
+- title: '[RIPng](module/ripv2.md)'
+  enabled: ripv2.ipv6
+- title: '[SR-MPLS](module/sr-mpls.md)<br>IPv6 SID'
+  enabled: "'ipv6' in sr.af"
+```
 
 (platform-unknown)=
 ## Unknown Devices
