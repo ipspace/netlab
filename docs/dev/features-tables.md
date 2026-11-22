@@ -87,6 +87,8 @@ For example, to display the list of non-default configuration deployment methods
 
 The **caveats** parameter links a cell to an explanation of feature limitations. A truthy caveat value generates a link to an anchor with ID `caveats-_device_` (usually defined in `caveats.md`). A string value is used as the link target. A caveat value of `yes` generates a warning emoji with no link (for caveats explained below the table).
 
+The caveats are added to cells of supported and unsupported features. Use a caveat on an unsupported feature to point to the instructions explaining how to enable it (for example, LLDP on Linux virtual machines).
+
 The module-level caveats (displayed in the module support tables in [](supported-platforms)) are stored in the **_module_.caveats.core** device feature, for example:
 
 ```yaml
