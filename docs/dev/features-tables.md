@@ -46,7 +46,11 @@ Each column definition (feature) can have these parameters:
 * **present** (optional, **enabled** columns only) -- the text displayed instead of the green checkmark when the feature is supported, for example, `present: 🔗` in a column with links to build instructions.
 * **align** (optional) -- the alignment of the table cells in the column: **left**, **center**, or **right**. The default is **left** for **text** columns and **center** for **enabled** columns. For example, use `align: right` in columns displaying numbers.
 
-The `{features}` directive content can also be a dictionary with the list of columns in the **features** key and the device column parameters in the **device** key:
+The `{features}` directive content can also be a dictionary with the list of columns in the **features** key and the device column parameters in the **device** key. It can also have these table-level parameters:
+
+* **show** (optional) -- **supported** (default) displays the devices supporting at least one of the features. **all** displays all devices. **exceptions** displays only the devices that do not fully support all features: the devices with at least one red cross or caveat, including the devices that support none of the features. Use it in tables where most devices support all features, and change the table introduction accordingly (for example, *all devices support these features apart from*). The table columns are not changed.
+
+The **device** dictionary can have these parameters:
 
 * **caveats** (optional) -- the Python expression that checks whether the device name should be followed by a link to caveats. The expression value is interpreted like the column **caveats** value (see below).
 
@@ -63,6 +67,19 @@ features:
   enabled: clab.get('build_recipe') or clab.get('build')
   link: clab.get('build_recipe') or clab.get('build')
   missing: ''
+```
+````
+
+The following table displays only the devices that cannot collect or reload their configuration:
+
+````md
+```{features}
+show: exceptions
+features:
+- title: Collect<br>configuration
+  enabled: initial.collect
+- title: Reload<br>configuration
+  enabled: initial.reload
 ```
 ````
 
