@@ -216,40 +216,23 @@ Several other devices can use configuration methods that might be faster than th
 
 ## Initial Device Configurations
 
-The following system-wide features are configured on supported network operating systems as part of the initial device configuration; hostname and hosts table are configured on daemons.
+The initial device configuration sets the hostname on all supported devices. The following system-wide features are configured on supported network operating systems and daemons as part of the initial device configuration:
 
 (platform-initial-config)=
-| Operating system      | Hostname | IPv4/IPv6<br>hosts |           LLDP            | IPv4<br>Loopback | IPv6<br>Loopback |
-| --------------------- | :------: | :--------: | :-----------------------: | :------------------------: | :------------------------: |
-| Arista EOS               | ✅  | ✅  | ✅  | ✅  | ✅  |
-| Arrcus ArcOS             | ✅  |  ❌  |  ❌  | ✅  | ✅  |
-| Aruba AOS-CX             | ✅  |  ✅  | ✅  | ✅  | ✅  |
-| Cisco ASAv               | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
-| Cisco IOS/IOS XE[^18v]   | ✅  | ✅  | ✅  | ✅  | ✅  |
-| Cisco IOS XR[^XR]        | ✅  | ✅  | ✅  | ✅  | ✅  |
-| Cisco Nexus OS           | ✅  | ✅  | ✅  | ✅  | ✅  |
-| Cumulus Linux            | ✅  | ✅[^HIF]  | ✅  | ✅  | ✅  |
-| Cumulus Linux 5.x (NVUE) | ✅  | ✅  | ✅  | ✅  | ✅  |
-| Dell OS10                | ✅  | ✅  | ✅  | ✅  | ✅  |
-| Extreme Networks EXOS    | ✅  |  ❌  | ✅  | ✅  | ✅  |
-| Extreme Networks VOSS    | ✅  |  ❌  |  ❌  |  ❌  |  ❌  |
-| Fortinet FortiOS         | ✅  |  ❌  | ✅  | ✅  | ✅  |
-| FRR                      | ✅  | ✅[^HIF]  |  ❌  | ✅  | ✅  |
-| Generic Linux            | ✅  | ✅[^HIF]  |  ✅[❗](linux-lldp) | ✅  | ✅  |
-| IP Infusion OcNOS        | ✅  |  ❌  |  ❌  | ✅  | ✅  |
-| Juniper cSRX            | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
-| Junos[^Junos]            | ✅  |  ❌  | ✅  | ✅  | ✅  |
-| Mikrotik RouterOS 6      | ✅  | ✅  | ✅[❗](caveats-routeros6) | ✅ | ✅ |
-| Mikrotik RouterOS 7      | ✅ | ✅ | ✅[❗](caveats-routeros7) | ✅ | ✅ |
-| Netscaler CPX            | ✅  |  ❌  |  ❌  |  ❌  |  ❌  |
-| Nokia SR Linux           | ✅  | ✅  | ✅  | ✅  | ✅  |
-| Nokia SR OS[^SROS]       | ✅  | ✅  | ✅  | ✅  | ✅  |
-| OpenBSD                  | ✅  | ✅  |  ❌  | ✅  | ✅  |
-| Sonic                    | ✅  | ✅  |  ❌  | ✅  | ✅  |
-| Sonic (containerlab)     | ✅  | ✅  |  ❌  | ✅  | ✅  |
-| VyOS                     | ✅  | ✅  | ✅  | ✅  | ✅  |
+```{features}
+- title: IPv4/IPv6<br>hosts
+  enabled: initial.hosts
+- title: LLDP
+  enabled: initial.lldp
+  caveats: initial.caveats.lldp
+- title: Loopback<br>interface
+  enabled: loopback_interface_name
+  caveats: initial.caveats.loopback
+```
 
-[^HIF]: Some Linux-based devices can also use interface names in hostnames. See [/etc/hosts file on Linux](linux-hosts) for more details.
+**Notes:**
+* Some Linux-based devices also add interface names to the hosts table. See [/etc/hosts file on Linux](linux-hosts) for more details.
+* Cisco ASAv and Fortinet FortiOS nodes do not get a loopback interface unless you set the **loopback** node attribute to **true**.
 
 (platform-initial-interfaces)=
 The following interface parameters are configured on supported network operating systems as part of the initial device configuration:
