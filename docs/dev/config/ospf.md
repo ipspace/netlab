@@ -30,6 +30,7 @@ You can use the following device **features.ospf** [device features](dev-device-
 * **priority** -- DR election priority
 * **password** -- Simple OSPFv2 authentication
 * **gr** -- OSPF graceful restart. A list of supported address families (`ipv4` for OSPFv2, `ipv6` for OSPFv3).
+* **ipv4** -- Set this feature to **false** if your device (or your templates) cannot run OSPFv2; the **ospf** module reports an error when such a device uses OSPF with IPv4. A device without this feature is assumed to support OSPFv2. OSPFv2 in VRFs is controlled by the **vrf.ospfv2** feature.
 * **ipv6** -- Set this feature to **false** if your device (or your templates) cannot run OSPFv3; the **ospf** module reports an error when such a device uses OSPF with IPv6. A device without this feature is assumed to support OSPFv3. OSPFv3 in VRFs is controlled by the **vrf.ospfv3** feature.
 
 (dev-ospf-af)=
