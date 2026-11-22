@@ -49,16 +49,15 @@ Need one of those? Create a plugin and contribute it.
 (ospf-platform)=
 ## Platform Support
 
-We implemented OSPFv2, OSPFv3, OSPF areas, reference bandwidth, passive interfaces, and point-to-point circuits on almost all devices. The missing bits are documented as caveats in the *Core OSPF features* column in the following table, which includes the per-platform support of other router-level OSPF features:
+We implemented OSPFv2, OSPFv3, OSPF areas, reference bandwidth, passive interfaces, and point-to-point circuits on almost all devices. The missing bits are documented as caveats in the *OSPFv2* and *OSPFv3* columns in the following table, which includes the per-platform support of other router-level OSPF features:
 
 ```{features}
-- title: Core OSPF<br>features
-  enabled: ospf
-  caveats: ospf.caveats.core
 - title: OSPFv2
-  enabled: ospf.get('ipv4', True)
+  enabled: ospf.ipv4
+  caveats: ospf.caveats.ipv4
 - title: OSPFv3
-  enabled: ospf.get('ipv6', True)
+  enabled: ospf.ipv6
+  caveats: ospf.caveats.ipv6
 - title: Unnumbered<br>IPv4 interfaces
   enabled: ospf.unnumbered
   caveats: ospf.caveats.unnumbered
