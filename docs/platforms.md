@@ -285,38 +285,23 @@ The following interface parameters are configured on supported network operating
 | VyOS                  | ✅  |  ❌  | ✅  | ✅  |
 
 (platform-initial-addresses)=
-The following interface addresses are supported on various platforms; most daemons support only numbered IPv4 and IPv6 interfaces.
+All platforms support IPv4 interface addresses. The support for other interface address types varies:
 
-| Operating system      | IPv4<br />addresses | IPv6<br />addresses | Unnumbered<br />IPv4 interfaces | Configurable<br>IPv6 RA |
-| --------------------- | :-: | :-: | :-: | :-: |
-| Arista EOS            | ✅  | ✅  | ✅  | ✅  |
-| Arrcus ArcOS          | ✅  | ✅  |  ❌  |  ❌  |
-| Aruba AOS-CX          | ✅  | ✅  | ✅  |  ❌  |
-| Cisco ASAv            | ✅  | ✅  |  ❌  |  ❌  |
-| Cisco IOSv/IOSvL2     | ✅  | ✅  |  ❌  | ✅  |
-| Cisco IOS XE[^XE]     | ✅  | ✅  | ✅  | ✅  |
-| Cisco IOS XR[^XR]     | ✅  | ✅  | ✅  |  ❌  |
-| Cisco Nexus OS        | ✅  | ✅  | ✅  |  ❌  |
-| Cumulus Linux         | ✅  | ✅  | ✅  |  ❌  |
-| Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ✅ |  ❌  |
-| Dell OS10             | ✅  | ✅  |  ❌  |  ❌  |
-| Extreme Networks EXOS | ✅  | ✅  |  ❌  | ✅  |
-| Extreme Networks VOSS | ✅[❗](caveats-voss) | ❌  |  ❌  |  ❌  |
-| Fortinet FortiOS      | ✅  | ✅  |  ❌  |  ❌  |
-| FRR                   | ✅  | ✅  | ✅  | ✅  |
-| Generic Linux         | ✅  | ✅  |  ❌  |  ❌  |
-| IP Infusion OcNOS     | ✅  | ✅  |  ❌  |  ❌  |
-| Juniper cSRX         | ✅  | ✅  |  ❌  |  ❌  |
-| Junos[^Junos]         | ✅  | ✅  | ✅  |  ❌  |
-| Mikrotik RouterOS 6   | ✅  | ✅  |  ❌  |  ❌  |
-| Mikrotik RouterOS 7   | ✅  | ✅  |  ❌  |  ❌  |
-| Netscaler CPX         | ✅  |  ❌  |  ❌  |  ❌  |
-| Nokia SR Linux        | ✅  | ✅  |  ❌  |  ❌  |
-| Nokia SR OS[^SROS]    | ✅  | ✅  | ✅  |  ❌  |
-| OpenBSD               | ✅  | ✅  |  ❌  |  ❌  |
-| Sonic                 | ✅  | ✅  | ✅  |  ❌  |
-| VPP                   | ✅  | ✅  | ✅  | ✅  |
-| VyOS                  | ✅  | ✅  | ✅  |  ❌  |
+```{features}
+- title: IPv6<br>addresses
+  enabled: initial.ipv6
+- title: Unnumbered<br>IPv4 interfaces
+  enabled: initial.ipv4.unnumbered and not isinstance(initial.ipv4.unnumbered,list)
+- title: LLA-only<br>IPv6 interfaces
+  enabled: initial.ipv6.lla
+- title: Configurable<br>IPv6 RA
+  enabled: initial.ra
+```
+
+**Notes:**
+* Some devices (for example, Linux hosts, BIRD, or VPP) support unnumbered IPv4 interfaces only on links with a single unnumbered peer.
+* Cisco IOSv and IOSvL2 support unnumbered IPv4 interfaces only on tunnel interfaces.
+* Use **netlab show modules -m initial \-\-feature ipv4.unnumbered** to display the unnumbered IPv4 interface support of individual devices.
 
 ```{tip}
 * Use **‌netlab show modules -m initial** to display optional initial configuration features supported by individual devices

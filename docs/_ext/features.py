@@ -34,7 +34,8 @@ NETLAB_DOCS_URL: str = 'https://netlab.tools/'
 BUILTINS: dict = {                                # Allowed built-in functions. Extend as needed ;)
   'len': len,
   'isinstance': isinstance,
-  'dict': dict
+  'dict': dict,
+  'list': list
 }
 
 def safer_eval(xpr: str, locals: Box) -> typing.Any:
