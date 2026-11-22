@@ -23,12 +23,14 @@ This configuration module configures the IS-IS routing process, and supports the
 (isis-platform)=
 ## Platform Support
 
-The following table describes IS-IS support by platform. All IS-IS implementations support wide IS-IS metrics, IPv6 address family, and IS-IS circuit type. A few platforms do not support IS-IS multi-topology for the IPv6 address family or the point-to-point network type. See device caveats for details.
+The following table describes IS-IS support by platform. All IS-IS implementations support wide IS-IS metrics, IPv6 address family, and IS-IS circuit type. A few platforms do not support the point-to-point network type. See device caveats for details.
 
 ```{features}
 - title: Core<br>IS-IS
   enabled: features.isis
   caveats: isis.caveats
+- title: IPv6<br>multi-topology
+  enabled: isis.get('mt', True)
 - title: Unnumbered<br>interfaces
   enabled: isis.unnumbered
   caveats: isis.unnumbered.caveats
