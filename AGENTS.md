@@ -120,6 +120,7 @@ IMPORTANT -- the Box objects must have the default_box and box_dots flags set to
 - YAML files for configuration and topology definitions
 - Jinja2 templates for configuration generation
 - Global settings in `netsim/defaults/`
+- Device module features set to `True` (for example, `bgp: True` in `netsim/devices/*.yml`) are normalized to empty dictionaries in `netsim/augment/devices.py` before any module code runs. Module code can treat `features.<module>` as a dictionary
 
 ### Documentation
 - Docstrings follow Google style (not strictly enforced but preferred)
