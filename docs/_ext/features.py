@@ -176,6 +176,13 @@ def caveat_marker(caveat_ptr: str) -> str:
   return '❗' if caveat_ptr == 'yes' else f'[❗]({caveat_ptr})'
 
 def get_feature_row(device_data: Box, dname: str, table_def: Box) -> typing.Optional[list]:
+  if 'filter' in table_def:                     # Is the device excluded by the table filter?
+    try:
+      if not safer_eval(table_def.filter,device_data):
+        return None
+    except Exception:                           # A failed filter expression excludes the device
+      return None
+
   df_row = []                                   # ... starting with an empty row for each device
   f_valid = False                               # ... assuming the device is not relevant and should not be included
   if debug_active('df_data'):
@@ -263,11 +270,14 @@ def merge_device_data(settings: Box) -> dict:
 
   The results are plain Box objects (no auto-created objects) as needed by builtins
   in expressions. The dictionary keys are (device,) or (device,provider) tuples.
+
+  The device name is added as '_name', and the 'daemon' flag is set to False on
+  non-daemon devices, so the expressions can use them.
   """
   dev_data: dict = {}
   f_defaults = get_feature_defaults(settings)
   for dname,ddata in settings.devices.items():
-    f_data = ddata + ddata.features
+    f_data = Box({ '_name': dname, 'daemon': False }) + ddata + ddata.features
     dev_data[(dname,)] = add_feature_defaults(Box(f_data),f_defaults)
     for p_name in device_providers(ddata,settings):
       p_data = ddata.get(p_name,{})
@@ -317,6 +327,12 @@ def get_device_features(settings: Box, table_def: Box) -> Box:
       if dpf_row and (dpf_row != df_row or dp_caveat != d_caveat):
         dpf_name = dname if is_daemon else f'{dname}/{p_name}'
         df_data[dpf_name] = device_entry(dpf_row,dp_caveat)
+
+    # The provider-specific rows with their own docnames replace the device row
+    # when all of them are displayed
+    p_docnames = [ p_name for p_name in device_providers(ddata,settings) if ddata.get(f'{p_name}.docname',None) ]
+    if not is_daemon and p_docnames and all(f'{dname}/{p_name}' in df_data for p_name in p_docnames):
+      df_data.pop(dname,None)
 
   return df_data
 
@@ -403,6 +419,10 @@ def build_device_feature_matrix(
       devices[dname] = get_device_docname(dname)  # ... just store its docname
     else:                                         # Device/provider pair?
       (d_name,p_name) = dname.split('/',1)        # Extract components
+      p_docname = dev_data[d_name].get(f'{p_name}.docname',None)
+      if p_docname:                               # Provider-specific docname?
+        devices[dname] = p_docname                # ... use it as is
+        continue
       p_name = provider_object.get(p_name,p_name) # ... and map provider to provider object name
       devices[dname] = get_device_docname(d_name) + f' ({p_name})'
 
@@ -501,6 +521,8 @@ class Features(SphinxDirective):
     """
     Check the column parameters that would otherwise silently produce a wrong table
     """
+    if 'filter' in table_def and not isinstance(table_def.filter,str):
+      raise self.error("The 'filter' parameter must be a string (Python expression)")
     if table_def.get('show','supported') not in ('supported','exceptions','all'):
       raise self.error(f"Invalid 'show' value '{table_def.show}' (use supported, exceptions, or all)")
     for f_def in table_def.features:

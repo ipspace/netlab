@@ -49,6 +49,7 @@ Each column definition (feature) can have these parameters:
 The `{features}` directive content can also be a dictionary with the list of columns in the **features** key and the device column parameters in the **device** key. It can also have these table-level parameters:
 
 * **show** (optional) -- **supported** (default) displays the devices supporting at least one of the features. **all** displays all devices. **exceptions** displays only the devices that do not fully support all features: the devices with at least one red cross or caveat, including the devices that support none of the features. Use it in tables where most devices support all features, and change the table introduction accordingly (for example, *all devices support these features apart from*). The table columns are not changed.
+* **filter** (optional) -- the Python expression that selects the devices displayed in the table, for example, `daemon` (daemons only) or `not daemon` (network devices only). The devices for which the expression fails are not displayed.
 
 The **device** dictionary can have these parameters:
 
@@ -120,6 +121,13 @@ Use an explicit anchor ID instead of **true** in parent devices (for example, `i
 
 The device caveats (**device.caveats** expression) are displayed next to the device name. A child device with a different device caveat than its parent device is not merged into the parent device row.
 
+### Expression Variables
+
+The expressions can use all device data, including device features (for example, `ospf.areas`). The directive also adds these variables to the device data:
+
+* **_name** -- the device name (for example, `eos`)
+* **daemon** -- **true** for [daemons](platform-daemons), **false** for other devices
+
 ### Built-in Functions
 
 The `enabled` and `text` expressions can use the `len()` and `isinstance()` built-in functions and the `dict` type (for example, `isinstance(evpn.transport,dict)`). For example:
@@ -135,6 +143,8 @@ The `enabled` and `text` expressions can use the `len()` and `isinstance()` buil
 ### Provider-Specific Features
 
 The directive supports provider-specific features. When a device has provider-specific data or feature definitions (for example, `clab.features` or `libvirt.features`), the directive generates additional rows for that device/provider combination, displayed as "Device (containers)" or "Device (VMs)".
+
+A provider-specific **docname** (for example, `clab.docname: Arista cEOS`) is used instead of the "Device (containers)" name. When all provider-specific rows with their own docnames are displayed, they replace the device row. For example, an Arista EOS device with **docname** and **device_caveats** in its **libvirt** and **clab** dictionaries is displayed as two rows (Arista vEOS and Arista cEOS) in a table that uses `device.caveats: device_caveats`.
 
 Child device deduplication also works at the provider-specific level: if a child device's provider-specific features match its parent's, the child row is removed.
 
