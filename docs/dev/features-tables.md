@@ -200,7 +200,7 @@ Some device feature flags are set only on devices that lack a feature (for examp
 ```
 ````
 
-The feature defaults are not added to devices that do not support the module, or to devices with a non-dictionary module feature (for example, `ospf: True`).
+The feature defaults are not added to devices that do not support the module. A device that supports the module without specifying any module features (for example, `eigrp: True`) gets all the module feature defaults.
 
 ### Combining "enabled" with Caveats
 

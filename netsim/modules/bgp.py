@@ -675,7 +675,8 @@ def bgp_check_af(node: Box, topology: Box) -> None:
   for (bgp_data,_,vname) in _rp_utils.rp_data(node,'bgp'):
     n_name = f'VRF {vname} on {node.name}' if vname else f'node {node.name}'
     for af in ['ipv4','ipv6']:
-      if bgp_data.get(af,False) or any(af in n for n in bgp_data.get('neighbors',[])):
+      if bgp_data.get(af,False) or \
+         any(af in n for n in bgp_data.get('neighbors',[]) + bgp_data.get('advertise',[])):
         _routing.check_af_feature('bgp',af,n_name,features)
 
 """
