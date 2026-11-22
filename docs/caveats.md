@@ -441,6 +441,7 @@ ansible-galaxy collection install community.network
 Device-specific parameters:
 
 * A FortiGate firewall does not pass any traffic by default. If you want the firewall to behave like a router after the initial configuration, set the `netlab_default_policy` node- or group variable to `True`. To create a disabled default policy, set the `netlab_default_policy.enable` variable to `False`.
+* The FortiOS initial configuration template does not set the interface type of additional loopback interfaces (**loopback** links); their configuration might fail.
 
 [BGP graceful restart](plugin-bgp-session-gr) (**bgp.session** plugin):
 

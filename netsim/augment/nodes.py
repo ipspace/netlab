@@ -740,12 +740,30 @@ def check_ipv6_support(node: Box, topology: Box) -> None:
       module='nodes')
     return
 
+'''
+check_bandwidth_support -- warn the user when a device that cannot configure interface
+bandwidth (initial.bandwidth feature is not set) has interfaces with 'bandwidth' attribute
+'''
+def check_bandwidth_support(node: Box, topology: Box) -> None:
+  features = devices.get_device_features(node,topology.defaults)
+  if features.get('initial.bandwidth',False):
+    return
+
+  bw_list = [ f'{intf.ifname}({intf.get("name","")})' for intf in node.get('interfaces',[]) if 'bandwidth' in intf ]
+  if bw_list:
+    log.warning(
+      text=f'Device {node.device} (node {node.name}) cannot configure interface bandwidth',
+      more_data=f'Interface(s) with bandwidth attribute: {", ".join(bw_list)}',
+      flag='nodes.bandwidth',
+      module='nodes')
+
 def cleanup(topology: Box) -> None:
   plugin_config = topology.get('_plugin_config',[])
 
   for name,n in topology.nodes.items():
     check_unique_ifnames(n)
     check_ipv6_support(n,topology)
+    check_bandwidth_support(n,topology)
     cleanup_mtu(n,topology)
     cleanup_non_ansible_config(n)
 

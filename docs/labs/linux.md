@@ -104,6 +104,8 @@ vagrant@host:~$ ip addr
        valid_lft forever preferred_lft forever
 ```
 
+Additional loopback interfaces (**loopback** links) are implemented as *dummy* interfaces. They work in Linux containers but not on Ubuntu virtual machines, as *netplan* cannot create dummy interfaces.
+
 (linux-lldp)=
 ## LLDP
 
