@@ -121,7 +121,10 @@ def features_body(tgroup: nodes.tgroup, device_data: typing.List[typing.List]) -
     tbody += trow
     for d_data in d_row:                          # Finally, iterate over device data
       if 'text' in d_data:                        # ... verbatim text?
-        trow += table_cell(d_data['text'],align=d_data.get('align',''),fn=d_data.get('fn',''))
+        txt = d_data['text']
+        if 'caveat' in d_data:                    # ... potentially followed by a caveat marker
+          txt += caveat_marker(d_data["caveat"])
+        trow += table_cell(txt,align=d_data.get('align',''),fn=d_data.get('fn',''))
       elif 'status' in d_data:                    # ... or status (OK/MISSING)
         txt = d_data.get('present','✅') if d_data['status'] else d_data.get('missing','❌')
         if 'link' in d_data:                      # Do we have to turn the checkmark into a link?
