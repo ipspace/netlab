@@ -85,18 +85,29 @@ def routing_af(
           node[proto].af[af] = True                   # Found the AF - we need it in the routing protocol
           continue
 
-  p_features = features.get(proto,{}) if features else {}
-
   for af in ['ipv4','ipv6']:                          # Remove unused address families
     if not node[proto].af.get(af,False):
       node[proto].af.pop(af,False)
       continue
 
-    if af in p_features and p_features[af] is False:
-      log.error(
-        f'{n_name} cannot run {proto} on {af}',
-        log.IncorrectValue,
-        proto)
+    check_af_feature(proto,af,n_name,features)
+
+"""
+check_af_feature: report an error if the device cannot run the routing protocol
+for the address family (the <proto>.<af> device feature is set to False)
+"""
+def check_af_feature(
+      proto: str,                                     # Routing protocol
+      af: str,                                        # Address family
+      n_name: str,                                    # Name of the object (node or VRF)
+      features: typing.Optional[Box]) -> None:        # Device features
+
+  p_features = features.get(proto,{}) if features else {}
+  if af in p_features and p_features[af] is False:
+    log.error(
+      f'{n_name} cannot run {proto} on {af}',
+      log.IncorrectValue,
+      proto)
 
 # After parsing/building the IGP AF structure and offloading VRF interfaces into VRF data
 # structure, recheck the interface status. If there's no match between interface AF and IGP AF,

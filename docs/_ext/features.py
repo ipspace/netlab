@@ -239,11 +239,15 @@ def get_feature_defaults(settings: Box) -> dict:
 def add_feature_defaults(f_data: Box, f_defaults: dict) -> Box:
   """
   Add module feature defaults to device module features. Skip modules not
-  supported by the device and modules with non-dictionary features (for example, 'ospf: True')
+  supported by the device; 'module: True' (for example, 'eigrp: True') is treated
+  as an empty dictionary (like in netsim.augment.devices)
   """
   for m_name,m_defaults in f_defaults.items():
-    if isinstance(f_data.get(m_name,None),dict):
-      f_data[m_name] = m_defaults + f_data[m_name]
+    m_data = f_data.get(m_name,None)
+    if m_data is True:
+      m_data = {}
+    if isinstance(m_data,dict):
+      f_data[m_name] = m_defaults + m_data
   return f_data
 
 def merge_device_data(settings: Box) -> dict:
