@@ -148,14 +148,6 @@ _netlab_ can deploy configuration on all supported devices. It can also collect 
 Use the **netlab initial -o** command to create configuration files in a custom directory.
 ```
 
-[^XE]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL) and IOL Layer-2 image
-
-[^Junos]: Includes cRPD, vMX, vSRX, vPTX, vJunos-switch, and vJunos-router, but not cSRX
-
-[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
-
-[^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
-
 (platform-config-mode)=
 ### Configuration Deployment Mechanisms
 
@@ -233,37 +225,22 @@ The initial device configuration sets the hostname on all supported devices. The
 * Cisco ASAv and Fortinet FortiOS nodes do not get a loopback interface unless you set the **loopback** node attribute to **true**.
 
 (platform-initial-interfaces)=
-The following interface parameters are configured on supported network operating systems as part of the initial device configuration:
+Most devices configure interface descriptions as part of the initial device configuration. The support for other interface parameters varies:
 
-| Operating system      | Interface<br />description | Interface<br />bandwidth | MTU | Additional<br />loopbacks
-| --------------------- |:---:|:---:|:---:|:---:|
-| Arista EOS            | ✅  | ✅  | ✅  | ✅  |
-| Arrcus ArcOS          |  ❌  |  ❌  | ✅  | ✅  |
-| Aruba AOS-CX          | ✅  |  ❌  | ✅  | ✅  |
-| Cisco ASAv            | ✅  |  ❌  | ✅  |  ❌  |
-| Cisco IOSv/IOSvL2     | ✅  | ✅  | ✅  | ✅  |
-| Cisco IOS XE[^XE]     | ✅  | ✅  | ✅[❗](caveats-csr)[❗](caveats-iol) | ✅  |
-| Cisco IOS XR[^XR]     | ✅  | ✅ [❗](caveats-iosxr) | ✅ | ✅ |
-| Cisco Nexus OS        | ✅  | ✅  | ✅  | ✅  |
-| Cumulus Linux         | ✅  | ✅  | ✅  | ✅  |
-| Cumulus Linux 5.x (NVUE) | ✅ | ❌ | ✅  | ✅  |
-| Dell OS10             | ✅  |  ❌  | ✅  | ✅  |
-| Extreme Networks EXOS | ✅  | ❌  |  ✅  |  ❌  |
-| Extreme Networks VOSS | ✅  | ❌  |  ❌  |  ❌  |
-| Fortinet FortiOS      | ✅  | ✅  |  ✅[❗](caveats-fortios)  |  ❌  |
-| FRR                   | ✅  | ✅  | ✅  | ✅  |
-| Generic Linux         |  ❌  |  ❌  | ✅  |  ❌  |
-| IP Infusion OcNOS     | ✅  |  ❌  | ✅  | ✅  |
-| Juniper cSRX         | ✅  |  ❌  | ✅  |  ❌  |
-| Junos[^Junos]         | ✅  | ✅  | ✅  |  ❌  |
-| Mikrotik RouterOS 6   | ✅  |  ❌  | ✅  |  ❌  |
-| Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  | ✅  |
-| Nokia SR Linux        | ✅  |  ❌  | ✅  | ✅  |
-| Nokia SR OS[^SROS]    | ✅  |  ❌  | ✅  | ✅  |
-| OpenBSD               | ✅  |  ❌  | ✅  |  ❌  |
-| Sonic                 | ✅  | ✅  | ✅  | ✅  |
-| Sonic (containerlab)  | ✅  | ✅  | ✅  | ✅  |
-| VyOS                  | ✅  |  ❌  | ✅  | ✅  |
+```{features}
+- title: Interface<br>bandwidth
+  enabled: initial.bandwidth
+  caveats: initial.caveats.bandwidth
+- title: MTU
+  text: "initial.mtu and (f'{initial.min_mtu}-{initial.max_mtu}' if 'min_mtu' in initial and 'max_mtu' in initial else True)"
+  caveats: initial.caveats.mtu
+- title: Additional<br>loopbacks
+  enabled: "'ifindex' in loopback_interface_name"
+  caveats: initial.caveats.extra_loopbacks
+```
+
+**Notes:**
+* The MTU column shows the range of layer-3 MTU values accepted by _netlab_ when it knows the device limits.
 
 (platform-initial-addresses)=
 All platforms support IPv4 interface addresses. The support for other interface address types varies:
