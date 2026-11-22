@@ -187,6 +187,19 @@ Use `.get()` when a feature attribute might not exist, and you need a default va
 ```
 ````
 
+### Using Module Feature Defaults
+
+Some device feature flags are set only on devices that lack a feature (for example, `isis.mt: False`). Their default values are listed in the **feature_defaults** dictionary of the module definition (for example, `netsim/modules/isis.yml`), and the `features` directive adds them to the device module features. You can thus use simple expressions instead of `.get()` with a default value:
+
+````md
+```{features}
+- title: IPv6<br>multi-topology
+  enabled: isis.mt
+```
+````
+
+The feature defaults are not added to devices that do not support the module, or to devices with a non-dictionary module feature (for example, `ospf: True`).
+
 ### Combining "enabled" with Caveats
 
 Link cells to caveats when a feature has known limitations:

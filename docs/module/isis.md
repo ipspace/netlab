@@ -30,7 +30,7 @@ The following table describes IS-IS support by platform. All IS-IS implementatio
   enabled: features.isis
   caveats: isis.caveats
 - title: IPv6<br>multi-topology
-  enabled: isis.get('mt', True)
+  enabled: isis.mt
 - title: Unnumbered<br>interfaces
   enabled: isis.unnumbered
   caveats: isis.unnumbered.caveats
