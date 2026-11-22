@@ -32,6 +32,7 @@ You can use the following **features.bgp** [device features](dev-device-features
 * **rfc8950** -- device supports **extended next hop** functionality that can be used to implement RFC8950-style IPv6 next hops for IPv4 AF
 * **vrf_local_as** -- the **local_as** feature is supported for BGP VRF sessions
 * **import** -- the list of protocols that can be redistributed into BGP. Add **vrf** to the list if the device supports redistribution into VRF BGP instances.
+* **ipv4**, **ipv6** -- Set these features to **false** if your device (or your template) cannot run BGP for IPv4 or IPv6; the **bgp** module reports an error when such a device advertises prefixes from that address family or has BGP neighbors with addresses from that address family (in the global or a VRF BGP instance). A device without these features is assumed to support BGP for IPv4 and IPv6.
 
 (dev-bgp-af)=
 ## Supporting Multiple Address Families

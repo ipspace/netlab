@@ -1,0 +1,43 @@
+#
+# Device without BGP IPv4 or IPv6 address family support (bgp.ipv4/bgp.ipv6
+# features) cannot run BGP for that address family (global or VRF BGP instance)
+#
+module: [ bgp, vrf ]
+defaults.device: none
+addressing.p2p.ipv6: 2001:db8:1::/48
+
+vrfs:
+  red:
+
+nodes:
+  r1:                             # IPv6 in the global BGP instance
+    bgp.as: 65001
+    _features.bgp.ipv6: False
+  r2:                             # IPv6 in a VRF BGP instance
+    bgp.as: 65002
+    _features.bgp.ipv6: False
+  r3:                             # IPv4 in the global BGP instance
+    bgp.as: 65003
+    _features.bgp.ipv4: False
+  r4:                             # IPv4-only, no error
+    bgp.as: 65004
+    _features.bgp.ipv6: False
+  r5:
+    bgp.as: 65005
+  r6:                             # IPv6 prefix advertised in a VRF without VRF neighbors
+    bgp.as: 65006
+    _features.bgp.ipv6: False
+
+links:
+- r1-r5
+- interfaces: [ r2, r5 ]
+  vrf: red
+- interfaces: [ r3, r5 ]
+  prefix.ipv4: 172.16.33.0/24
+- interfaces: [ r4, r5 ]
+  prefix.ipv4: 172.16.34.0/24
+- interfaces: [ r6, r5 ]
+  prefix.ipv4: 172.16.36.0/24
+- interfaces: [ r6 ]
+  vrf: red
+  prefix.ipv6: 2001:db8:66::/64

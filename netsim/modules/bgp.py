@@ -667,6 +667,19 @@ def bgp_set_originate_af(node: Box, topology: Box) -> None:
       node.bgp[af] = True
 
 """
+bgp_check_af: report BGP address families the device cannot run (bgp.ipv4 or bgp.ipv6
+feature set to False) in global and VRF BGP instances
+"""
+def bgp_check_af(node: Box, topology: Box) -> None:
+  features = devices.get_device_features(node,topology.defaults)
+  for (bgp_data,_,vname) in _rp_utils.rp_data(node,'bgp'):
+    n_name = f'VRF {vname} on {node.name}' if vname else f'node {node.name}'
+    for af in ['ipv4','ipv6']:
+      if bgp_data.get(af,False) or \
+         any(af in n for n in bgp_data.get('neighbors',[]) + bgp_data.get('advertise',[])):
+        _routing.check_af_feature('bgp',af,n_name,features)
+
+"""
 process_as_list:
   If the global BGP parameters have as_list attribute, set node AS numbers and node
   RR flags accordingly
@@ -1000,3 +1013,4 @@ class BGP(_Module):
     sanitize_bgp_data(node)
     bgp_build_advertise_list(node)
     bgp_set_originate_af(node,topology)
+    bgp_check_af(node,topology)
