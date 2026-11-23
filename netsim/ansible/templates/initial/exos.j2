@@ -31,15 +31,15 @@ configure vlan {{ vlan_name }} add ports {{ l.ifname }} untagged
 {%   endif %}
 {%   if not is_loopback and not is_svi %}
 {%     if l.name is defined %}
-{#       EXOS rejects strings starting with [ or (, and any " #}
-{#       if_short: display-string (max 20 chars), name without the "[...] " prefix #}
-{#       if_name: description-string, full name without [ ] ( ) " #}
-{%       set if_name = (l.name + ("-"+l.role if l.role is defined else ""))
-           | replace('"','') | replace('(','') | replace(')','') %}
-{%       set if_short = if_name.split('] ')[-1] | replace('->','to') | replace(' ','_') %}
-{%       set if_name = if_name | replace('[','') | replace(']','') %}
-configure ports {{ l.ifname }} display-string {{ if_short }}
-configure ports {{ l.ifname }} description-string "{{ if_name }}"
+{#       display-string (max 20 chars): built from neighbor node names, always valid on EXOS #}
+{#       description-string (max 255 chars): link name without [ ] ( ) { } " #}
+{#       (EXOS rejects strings starting with [ ( or {, and any ") #}
+{%       set if_ngb = l.neighbors|default([])|map(attribute='node')|join(',') %}
+{%       set if_descr = (l.name + ("-"+l.role if l.role is defined else ""))
+           | replace('[','') | replace(']','') | replace('(','') | replace(')','')
+           | replace('{','') | replace('}','') | replace('"','') %}
+configure ports {{ l.ifname }} display-string {{ ('to_' + if_ngb)[:20] if if_ngb else 'Stub' }}
+configure ports {{ l.ifname }} description-string "{{ if_descr[:255] }}"
 {%     elif l.type == "stub" %}
 configure ports {{ l.ifname }} display-string Stub
 {%     endif %}
