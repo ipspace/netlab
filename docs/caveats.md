@@ -172,15 +172,18 @@ defaults.devices.capeos_bolt.group_vars.netlab_ios_commands:
 
 _netlab_ removes every configuration line that starts with a command from that dictionary (unless its value is *True*). BGP neighbor commands are matched without the neighbor address (for example, `neighbor send-community`). To remove another command, add it to the dictionary with the value set to *False*.
 
-* CapeOS Bolt container images have no *latest* tag. _netlab_ uses a specific image version; change the **defaults.devices.capeos_bolt.clab.image** [topology default](default-device-image) to use a different one.
-* CapeOS Bolt accepts only RFC 1123 hostnames. _netlab_ replaces the underscores in node names with hyphens.
+The other CapeOS Bolt caveats include:
+
+* Container images have no *latest* tag. _netlab_ uses a specific image version; change the **defaults.devices.capeos_bolt.clab.image** [topology default](default-device-image) to use a different one.
+* It accepts only RFC 1123 hostnames. _netlab_ replaces the underscores in node names with hyphens.
+* _netlab_ maps a minimal startup configuration (hostname, user, SSH, and the management interface in the **clab-mgmt** VRF) into the CapeOS Bolt containers. CapeOS Bolt records the management VRF, but keeps the management interface in the global routing table; the management default route serves only the traffic originated by the device.
 * _netlab_ does not configure IPv6 on CapeOS Bolt; you cannot use IPv6 addresses on CapeOS Bolt nodes.
-* CapeOS Bolt always performs IP routing, even when it's used as an [IP host](node-router-host).
-* CapeOS Bolt needs the **vrf** kernel module to install VRF routes (_netlab_ tries to load it). Docker Desktop does not have VRF support.
-* CapeOS Bolt always installs the default route received from a DHCP server.
-* CapeOS Bolt cannot use VRFs as the DNS transport or leak routes between VRFs.
-* CapeOS Bolt routing policies can match only IP prefixes.
-* CapeOS Bolt does not support discard static routes.
+* It always performs IP routing, even when it's used as an [IP host](node-router-host).
+* It needs the **vrf** kernel module to implement VRFs. _netlab_ tries to load it before starting the containers.
+* It always installs the default route received from a DHCP server.
+* It has minimal VRF support (forwarding tables only, no routing protocols or inter-VRF route leaking)
+* Routing policies can match only IP prefixes.
+* You cannot configure discard static routes.
 
 ### OSPF Caveats
 
@@ -190,7 +193,6 @@ _netlab_ removes every configuration line that starts with a command from that d
 
 ### BGP Caveats
 
-* CapeOS Bolt runs BGP only in the global routing table.
 * CapeOS Bolt cannot be a BGP route reflector or a passive BGP peer.
 * CapeOS Bolt always sends standard, extended, and large BGP communities to its neighbors.
 
