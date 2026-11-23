@@ -341,7 +341,8 @@ Network services [configuration modules](module-reference.md) are supported on t
   caveats: dhcp.caveats.core
 - title: '[DHCPv6](module/dhcp.md)'
   enabled: >-
-    dhcp.get('server') or dhcp.get('client',{}).get('ipv6') or dhcp.get('relay') is True or dhcp.get('relay',{}).get('ipv6')
+    initial.ipv6 and (dhcp.get('server') or dhcp.get('client',{}).get('ipv6') or
+    dhcp.get('relay') is True or dhcp.get('relay',{}).get('ipv6'))
 ```
 
 ```{tip}
