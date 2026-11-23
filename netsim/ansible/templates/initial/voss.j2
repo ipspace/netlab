@@ -16,8 +16,14 @@ exit
 {% include 'voss.vlan.j2' %}
 {% endif %}
 
-{% for l in netlab_interfaces if l.type|default('') not in ['loopback'] %}
-{%   if l.type|default('') == 'svi' %}
+{% for l in netlab_interfaces %}
+{%   if l.type|default('') == 'loopback' %}
+{%     if l.ipv4 is defined %}
+interface {{ l.ifname }}
+ip address {{ l.ipv4|ansible.utils.ipaddr('address') }} {{ l.ipv4|ansible.utils.ipaddr('netmask') }}
+exit
+{%     endif %}
+{%   elif l.type|default('') == 'svi' %}
 {%     if l.ipv4 is defined and l.ipv4 is string and l.ipv4|ansible.utils.ipv4 %}
 interface vlan {{ vlans[l.vlan.name].id }}
 ip address {{ l.ipv4|ansible.utils.ipaddr('address') }} {{ l.ipv4|ansible.utils.ipaddr('netmask') }}
