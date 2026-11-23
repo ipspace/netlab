@@ -501,7 +501,7 @@ def check_intf_support(node: Box, proto: str, topology: Box) -> bool:
     for kw in intf.get(proto,{}).keys():          # Iterate over interface protocol parameters
       if kw not in attr:                          # Not an optional attribute, move on
         continue
-      if kw not in features:                      # Optional attribute, but not supported => add error info
+      if not features.get(kw,False):              # Optional attribute, but not supported => add error info
         data.append_to_list(err_list,kw,f'interface {intf.ifname} ({intf.name})')
 
   if not err_list:                                # No errors found, we're done
