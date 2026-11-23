@@ -1,3 +1,42 @@
+{% macro enable_l3vpn_af(flags,ipv4_rfc8950=false) %}
+{%   for af in ['ipv4','ipv6'] if flags[af] is defined %}
+{%     if loop.first %}
+- path: /network-instance[name=default]/protocols/bgp
+  value:
+    afi-safi:
+{%     endif %}
+    - afi-safi-name: l3vpn-{{ af }}-unicast
+      admin-state: enable
+      l3vpn-{{ af }}-unicast:
+        rapid-update: True
+        keep-all-routes: True
+{%     if af == 'ipv4' and ipv4_rfc8950 %}
+        advertise-ipv6-next-hops: true
+        receive-ipv6-next-hops: true
+{%     endif %}
+{%   endfor %}
+{% endmacro %}
+{% macro enable_l3vpn_peer_groups(flags,transport_af='ipv4',ipv4_rfc8950=false) %}
+{%   for n_type in ['ibgp','ebgp'] %}
+{%     for af in ['ipv4','ipv6'] if n_type in flags[af]|default([]) %}
+{%       if loop.first %}
+{%         set bgp_group = 'ebgp' if n_type == 'ebgp' else n_type +'-'+transport_af %}
+- path: /network-instance[name=default]/protocols/bgp/group[group-name={{ bgp_group }}]
+  value:
+    afi-safi:
+{%       endif %}
+    - afi-safi-name: l3vpn-{{ af }}-unicast
+      admin-state: enable
+      send-community-type: [ standard, extended ]
+{%       if af == 'ipv4' and ipv4_rfc8950 %}
+      l3vpn-{{ af }}-unicast:
+        advertise-ipv6-next-hops: true
+        receive-ipv6-next-hops: true
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{% endmacro %}
+
 - path: /system/mpls/label-ranges/dynamic[name=vpn]
   value:
     start-label: 20000
@@ -8,31 +47,9 @@
     network-instance:
       dynamic-label-block: vpn
 
-{% for af in ['ipv4','ipv6'] if mpls.vpn[af] is defined %}
-{%   if loop.first %}
-- path: /network-instance[name=default]/protocols/bgp
-  value:
-    afi-safi:
-{%   endif %}
-    - afi-safi-name: l3vpn-{{ af }}-unicast
-      admin-state: enable
-      l3vpn-{{ af }}-unicast:
-        rapid-update: True
-        keep-all-routes: True
-{% endfor %}
-{% for n_type in ['ibgp','ebgp'] %}
-{%   for af in ['ipv4','ipv6'] if n_type in mpls.vpn[af]|default([]) %}
-{%     if loop.first %}
-{%       set bgp_group = 'ebgp' if n_type == 'ebgp' else n_type +'-ipv4' %}
-- path: /network-instance[name=default]/protocols/bgp/group[group-name={{ bgp_group }}]
-  value:
-    afi-safi:
-{%     endif %}
-    - afi-safi-name: l3vpn-{{ af }}-unicast
-      admin-state: enable
-      send-community-type: [ standard, extended ]
-{%   endfor %}
-{% endfor %}
+{{ enable_l3vpn_af(mpls.vpn) }}
+{{ enable_l3vpn_peer_groups(mpls.vpn) }}
+
 {% for v_name,v_data in vrfs|default({})|dictsort %}
 - path: /network-instance[name={{ v_name }}]/protocols/bgp-ipvpn
   value:
