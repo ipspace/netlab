@@ -130,7 +130,7 @@ The expressions can use all device data, including device features (for example,
 
 ### Built-in Functions
 
-The `enabled` and `text` expressions can use the `len()` and `isinstance()` built-in functions and the `dict` type (for example, `isinstance(evpn.transport,dict)`). For example:
+The `enabled` and `text` expressions can use the `len()` and `isinstance()` built-in functions and the `dict` type (for example, `isinstance(bgp.multihop,dict)`). For example:
 
 ````md
 ```{features}
