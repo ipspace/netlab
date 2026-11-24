@@ -121,7 +121,7 @@ def check_attribute_direction(ndata: Box, ngb: Box, topology: Box, attr: str, at
     return
 
   for kw in attr_value.keys():
-    if kw not in a_feature:                             # Does the device support the specified keyword?
+    if not a_feature.get(kw,False):                     # Does the device support the specified keyword?
       if _attr_error[ndata.name][attr][kw]:             # Skip multiple errors
         continue                                        # ... display a single 'wrong key' error per node
 

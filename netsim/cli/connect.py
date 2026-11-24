@@ -238,7 +238,7 @@ def ssh_connect(
   if topology is not None and rest:
     n_data = data + { 'name': data.host }
     features = a_devices.get_device_features(n_data,topology.defaults)
-    if 'netmiko' in features:
+    if features.get('netmiko',False) is not False:
       from ..utils import netmiko
       if not netmiko.NETMIKO_IS_MISSING:
         return ssh_netmiko(n_data,p_args,rest,log_level,features,topology)

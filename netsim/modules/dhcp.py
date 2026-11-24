@@ -73,7 +73,7 @@ def check_protocol_support(node: Box, topology: Box) -> bool:
 
     if isinstance(f_relay,Box):
       for af in log.AF_LIST:
-        if af in intf and not af in f_relay:
+        if af in intf and not f_relay.get(af,False):
           log.error(
             f'Node {node.name} ({device_info}) cannot be a DHCP relay for {af}',
             more_data = f'DHCP relay is used on interface {intf.ifname}/{intf.name})',

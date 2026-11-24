@@ -79,7 +79,7 @@ def post_link_transform(topology: Box) -> None:
       bond_ifindex = intf.get('bonding.ifindex',None)
       if bond_ifindex is None:
         continue
-      if not 'bonding' in features:
+      if features.get('bonding',False) is False:
         log.error( f"Node {node.name}({node.device}) does not support 'bonding.ifindex' used on {intf.name}",
                    category=log.IncorrectAttr,module=_config_name)
         continue
