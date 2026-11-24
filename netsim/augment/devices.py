@@ -17,6 +17,13 @@ def get_provider(node: Box, defaults: Box) -> str:
   return node.get('provider',defaults.provider)
 
 """
+Does the node run as a container? Providers running their nodes as containers (sharing the
+host kernel) set the 'container' attribute, so device quirks don't have to check provider names
+"""
+def is_container(node: Box, defaults: Box) -> bool:
+  return bool(defaults.providers.get(get_provider(node,defaults),{}).get('container',False))
+
+"""
 Get generic device attribute:
 
 * Use node.device to find device used by the current node
