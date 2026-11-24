@@ -9,28 +9,28 @@ ENV EULA=yes
 {% set _password = defaults.devices.netscaler.clab.group_vars.ansible_ssh_pass %}
 {% if not _user %}{{ fail('ansible_user must be defined in devices.netscaler.clab.group_vars') }}{% endif %}
 {% if not _password %}{{ fail('ansible_ssh_pass must be defined in devices.netscaler.clab.group_vars') }}{% endif %}
-RUN <<BUILD
+RUN <<'BUILD'
 # Make working directory
 #
 mkdir -p /var/nstmp && chmod 777 /var/nstmp
 #
 # Add clab user
 #
-useradd -m {{ _user }} && echo "{{ _user }}:{{ _password }}" | chpasswd
+useradd -m {{ _user }} && echo {{ (_user + ':' + _password)|quote }} | chpasswd
 #
 # Create bash scripts
 #
 cat <<'WRAPPER' >/usr/local/bin/nscli-wrapper
 #!/bin/bash
-exec nscli -U 127.0.0.1:{{ _user }}:{{ _password }}
+exec nscli -U {{ ('127.0.0.1:' + _user + ':' + _password)|quote }}
 WRAPPER
 chmod +x /usr/local/bin/nscli-wrapper
-cat >/entrypoint.sh <<ENTRYPOINT
+cat >/entrypoint.sh <<'ENTRYPOINT'
 #!/bin/bash
 /var/netscaler/bins/docker_startup.sh &
 if [ ! -f /initialized ]; then
   while true; do
-    cli_script.sh "add system user {{ _user }} {{ _password }} -promptString '%u@%h'" >/tmp/result.txt
+    cli_script.sh {{ ('add system user ' + _user + ' ' + _password + " -promptString '%u@%h'")|quote }} >/tmp/result.txt
     cat /tmp/result.txt
     if ! grep -q "ERROR: Connection failed" /tmp/result.txt; then
       echo "User configured"

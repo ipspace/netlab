@@ -11,6 +11,7 @@
 # identifies them as Jinja2 filters
 #
 
+import shlex
 import typing
 
 import netaddr
@@ -182,6 +183,12 @@ def bi_yaml(src: typing.Any, **kwargs: typing.Any) -> str:
   return yaml
 
 """
+Shell-quote a value (Ansible 'quote' filter)
+"""
+def bi_quote(src: typing.Any) -> str:
+  return shlex.quote(str(src))
+
+"""
 Merge two dictionaries
 """
 def bi_merge(d1: typing.Any, d2: typing.Any) -> dict:
@@ -195,6 +202,7 @@ BUILTIN_FILTERS: dict = {
   'combine': bi_merge,
   'difference': bi_difference,
   'flatten': bi_flatten,
+  'quote': bi_quote,
   'to_yaml': bi_yaml,
   'to_nice_yaml': bi_yaml
 }

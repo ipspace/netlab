@@ -6,6 +6,7 @@
 import argparse
 import os
 import pathlib
+import shlex
 import tempfile
 import typing
 
@@ -146,7 +147,7 @@ def build_image(
   strings.print_colored_text('[WORKING]  ','green',None)
   print(f"Trying to remove existing container image {tag}")
 
-  if external_commands.run_command(f'docker image rm {tag}',ignore_errors=True,check_result=False):
+  if external_commands.run_command(f'docker image rm {shlex.quote(tag)}',ignore_errors=True,check_result=False):
     strings.print_colored_text('[REMOVED]  ','green',None)
     print(f"Removed existing image {tag}")
   else:
@@ -170,7 +171,7 @@ def build_image(
     dockerfile_to_use = render_j2_dockerfile(df_dict[image], tmp, defaults, sw_version)
 
     status = external_commands.run_command(
-      f'docker build -t {tag} -f {dockerfile_to_use} .',
+      f'docker build -t {shlex.quote(tag)} -f {shlex.quote(dockerfile_to_use)} .',
       ignore_errors=True,
       check_result=False)
     if status:
@@ -182,7 +183,7 @@ def build_image(
 
   os.chdir(workdir)
   print()
-  external_commands.run_command(f'docker image ls {tag}',ignore_errors=True)
+  external_commands.run_command(f'docker image ls {shlex.quote(tag)}',ignore_errors=True)
 
 def list_dockerfiles() -> None:
   rows = []
