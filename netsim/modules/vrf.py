@@ -315,12 +315,19 @@ def set_import_export_rt(obj : Box, topology: Box) -> None:
 # import and export RT as we might have two VRFs with different RDs but equal RT values.
 #
 
-def validate_vrf_route_leaking(node : Box) -> None:
+def validate_vrf_route_leaking(node : Box, features: Box) -> None:
   for vname,vdata in node.vrfs.items():
     simple_rt = [ vdata.rd ]
     leaked_routes = vdata.get('import',[]) != simple_rt or vdata.get('export',[]) != simple_rt
     if not leaked_routes:                         # Simple setup, no extra work
       continue                                    # ... move on
+
+    if not features.vrf.get('leaking',True):      # Can the device do inter-VRF route leaking?
+      log.warning(
+        text=f"VRF {vname} on {node.name} uses inter-VRF route leaking, which is not supported by device {node.device}",
+        module='vrf',
+        flag='leaking',
+        category=log.IncorrectValue)
 
     vdata._leaked_routes = True                   # Set the flag for VRF configuration templates
     if node.get('bgp.as',None):                   # If we already have a valid node BGP ASN, move on
@@ -600,7 +607,7 @@ class VRF(_Module):
       v.vrfidx = vrfidx
       vrfidx = vrfidx + 1
 
-    validate_vrf_route_leaking(node)
+    validate_vrf_route_leaking(node,features)
 
     # Finally, set BGP router ID if we set BGP AS number
     #
