@@ -14,14 +14,6 @@ def check_bgp_rr(node: Box) -> None:
       node,
       quirk='bgp.rr')
 
-def check_vrf_leaking(node: Box) -> None:
-  for vname,vdata in node.get('vrfs',{}).items():
-    if set(vdata.get('import',[])) - set(vdata.get('export',[])):
-      report_quirk(
-        f'CapeOS Bolt cannot leak routes between VRFs (node {node.name}, VRF {vname})',
-        node,
-        quirk='vrf.leaking')
-
 def check_dhcp_client_default(node: Box) -> None:
   for intf in node.interfaces:
     if intf.get('dhcp.client.ipv4',False) and intf.get('dhcp.client.default',True) is False:
@@ -58,8 +50,6 @@ class CapeOSBolt(_Quirks):
     mods = node.get('module',[])
     if 'bgp' in mods:
       check_bgp_rr(node)
-    if 'vrf' in mods:
-      check_vrf_leaking(node)
     if 'dhcp' in mods:
       check_dhcp_client_default(node)
     if 'ospf' in mods:

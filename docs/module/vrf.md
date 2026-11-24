@@ -19,7 +19,7 @@ VRFs are supported on these platforms:
 - title: VRF<br />config
   enabled: vrf
 - title: Route<br />leaking
-  enabled: vrf and vrf.get('leaking',True)
+  enabled: vrf and vrf.leaking
   caveats: vrf.leaking_caveats
 - title: VRF-aware<br />Loopback
   enabled: vrf and vrf.get('loopback',True)
