@@ -277,6 +277,7 @@ def process_child_provider(pname: str, topology: Box, processed: list) -> None:
       ddata.pop(pname)                                      # Remove the invalid settings so they won't crash later
       continue
     ddata[pname] = data.get_box(ddata[p_parent].to_dict()) + ddata.get(pname,{})
+    data.remove_null_values(ddata[pname])                   # Remove the settings the child provider set to null
 
 def process_provider_inheritance(topology: Box) -> None:
   processed: list = []
