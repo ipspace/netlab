@@ -25,7 +25,8 @@ def enable_netmiko(topology: Box, ask: bool) -> None:
       g_value = d_data.get(g_name,None)           # Do we already have the device config method set?
       if g_value == 'netmiko':                    # Is it netmiko?
         enabled = True                            # ... cool, nothing to do
-      elif g_value and (p_name in ('','clab') or g_value not in ('sh','cp_sh')):
+      elif g_value and (not p_name or topology.defaults.providers[p_name].get('container',False) \
+                        or g_value not in ('sh','cp_sh')):
         log.info(f'Skipping {d_name}{p_text}: uses {g_value} configuration method')
       else:                                       # No config method or deprecated sh/cp_sh on VMs
         enable_possible += 1
