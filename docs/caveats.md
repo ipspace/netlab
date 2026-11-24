@@ -614,6 +614,7 @@ Implementation limitations in import/export route filters (reported as errors th
 ## Juniper cRPD
 
 * cRPD might require a license file to unlock additional features. You can specify the location of the license file with the **clab.license** node parameter or **defaults.devices.crpd.clab.node.license** [device default](topo-defaults).
+* cRPD might fail to start the SSH server and the management daemon (**mgd**) on hosts running Linux kernel 6.8 or later. The **mgd** error message is *fatal error - could not reserve address space*. cRPD expects 28 bits of mmap address randomization, but recent Linux distributions set **vm.mmap_rnd_bits** to 32. Use `sudo sysctl -w vm.mmap_rnd_bits=28` on the host to fix the problem (the parameter is not namespaced and cannot be set within the container).
 * Inter-VRF route leaking does not work correctly
 * VRRPv3 for IPv4 implementation uses the [checksum calculation that is incompatible with most other VRRP implementations](https://blog.ipspace.net/2025/01/sturgeon-law-vrrp-edition/). The `checksum-without-pseudoheader` configuration command does not seem to be available.
 * Anycast gateway is unsupported
