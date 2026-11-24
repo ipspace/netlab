@@ -175,10 +175,10 @@ class SchemaBuilder:
       return { 'type': [ 'number', 'string' ], 'pattern': r'^\s*[0-9]+(\.[0-9]+)?(ms|s)\s*$' }
     if dt_name == 'asn':
       return {
-        'type': [ 'integer', 'string' ], 'minimum': 0, 'maximum': 4294967295,
+        'type': [ 'integer', 'string' ], 'minimum': 1, 'maximum': 4294967295,
         'pattern': r'^[0-9]+(\.[0-9]+)?$' }
     if dt_name == 'asn2':
-      return { 'type': 'integer', 'minimum': 0, 'maximum': 65535 }
+      return { 'type': 'integer', 'minimum': 1, 'maximum': 65535 }
     if dt_name in ('ipv4','ipv6'):
       types = [ 'string' ]
       if use in IP_INT_USE[dt_name]:
