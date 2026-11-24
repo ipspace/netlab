@@ -75,9 +75,9 @@ def get_evpn_af(node: Box, topology: Box) -> typing.Optional[str]:
 """
 Get the BGP session types the current node/device supports for the selected EVPN transport
 """
-def get_bgp_neighbor_types(node: Box, topology: Box) -> list:
+def get_bgp_neighbor_types(node: Box, topology: Box, transport: str) -> list:
   features = devices.get_device_features(node,topology.defaults)
-  return features.evpn.bgp_session.get(node.evpn.transport,[])
+  return features.evpn.bgp_session.get(transport,[])
 
 def enable_evpn_af(node: Box, topology: Box) -> None:
   AF_WARNING = {}
@@ -89,6 +89,8 @@ def enable_evpn_af(node: Box, topology: Box) -> None:
   if not evpn_af:
     return
 
+  transport = topology.get('evpn.transport','vxlan')        # Node evpn.transport could be changed from 'sr' to 'mpls'
+
   # Enable EVPN AF on all BGP neighbors with the correct session type
   # that also use EVPN module
   #
@@ -97,11 +99,11 @@ def enable_evpn_af(node: Box, topology: Box) -> None:
       if evpn_af not in bn:
         continue
       if bgp_neighbor_types is None:                        # Get BGP neighbor types only when needed
-        bgp_neighbor_types = get_bgp_neighbor_types(node,topology)
+        bgp_neighbor_types = get_bgp_neighbor_types(node,topology,transport)
       if bn.type not in bgp_neighbor_types:                 # Does the device support the requested neighbor type?
         if bn.type not in bgp_error_types:                  # Did we already report this error?
           log.error(
-            f'netlab cannot configure EVPN AF for {bn.type} neighbors on {node.device} when using {node.evpn.transport} transport',
+            f'netlab cannot configure EVPN AF for {bn.type} neighbors on {node.device} when using {transport} transport',
             more_data = [ f'Found a {bn.type} session on node {node.name} with {bn.name}'],
             category=log.IncorrectType,
             module='evpn')
