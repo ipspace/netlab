@@ -13,8 +13,12 @@ The following implementation notes for configuration deployment, initial device 
    bfd.md
    bgp.md
    bgp.session.md
+   dhcp.md
    ebgp.multihop.md
+   eigrp.md
+   evpn.md
    gateway.md
+   isis.md
    mpls.md
    ospf.md
    ospf.areas.md

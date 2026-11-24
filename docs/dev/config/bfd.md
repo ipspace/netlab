@@ -1,3 +1,4 @@
+(dev-config-bfd)=
 # BFD Configuration Templates
 
 This document describes BFD configuration module implementation details:

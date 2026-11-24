@@ -2,6 +2,7 @@
 # Common routines for create-topology script
 #
 import re
+import shlex
 import sys
 import textwrap
 import typing
@@ -165,13 +166,24 @@ def string_to_list(txt: typing.Union[str,list], sep: str = ' ') -> list:
 """
 eval_format: emulate f'strings' evaluated on a data structure
 """
-def eval_format(fmt: str, data: dict) -> str:
-  fmt = fmt.replace("'","\\'")         # Escape single quotes to prevent eval crashes
-  ex = "f'"+fmt+"'"                    # String to format-evaluate
-  return str(eval(ex,dict(data)))      # An awful hack to use f-string specified in a string variable
+def eval_format(fmt_text: str, data: dict) -> str:
+  result_list = []
+  for fmt in fmt_text.split('\n'):                # Have to process the text line-by-line
+    fmt = fmt.replace("'","\\'")                  # Escape single quotes to prevent eval crashes
+    ex = "f'"+fmt+"'"                             # String to format-evaluate
+    result_list.append(str(eval(ex,dict(data))))  # An awful hack to use f-string specified in a string variable
+
+  return '\n'.join(result_list)
 
 def eval_format_args(fmt: str, **kwargs: typing.Any) -> str:
   return eval_format(fmt,kwargs)
+
+"""
+eval_command_format: eval_format for commands executed by a shell. The q() function
+shell-quotes values (for example, user-supplied strings) inserted into the command
+"""
+def eval_command_format(fmt_text: str, data: dict) -> str:
+  return eval_format(fmt_text,dict(data) | {'q': lambda v: shlex.quote(str(v))})
 
 """
 eval_format_list: execute eval_format on a list

@@ -86,3 +86,4 @@ $ source mylab/bin/activate
 
 * [](lab-clab)
 * [](lab-libvirt)
+* [](install-netlab-ui)

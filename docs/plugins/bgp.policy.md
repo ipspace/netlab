@@ -57,27 +57,31 @@ The **bgp.role** attributes can also be specified at the global (**bgp.role.stri
 
 ## Platform Support
 
-The plugin implements BGP routing policies and individual BGP policy attributes on these devices:
+The plugin implements BGP routing policies and setting of individual BGP attributes on these devices:
 
-| Operating system    | Routing<br>policies | Local<br>preference | MED | Weight | AS-path<br>prepend | Link<br>bandwidth | Address<br>Aggregation | BGP<br>Roles |
-|---------------------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-| Arista EOS          |✅ |✅ |✅ |✅|✅ |✅| ✅| ❌ |
-| Aruba AOS-CX        |✅ |✅ |✅ |✅|✅ | ❌ | ❌ | ❌ |
-| Cisco IOS/IOS XE[^18v]  |✅ |✅ |✅ |✅|✅ |✅[❗](caveats-ios) |✅| ❌ |
-| Cisco IOS XR[^XR]   |✅ |✅ |✅ |✅|✅ | ❌ |✅| ❌ |
-| Cumulus Linux       |✅ |✅ |✅ |✅|✅ |✅| ❌ | ❌ |
-| Dell OS10           |✅ |✅ |✅ |✅| ❌ | ❌ |✅| ❌ |
-| FRR                 |✅ |✅ |✅ |✅|✅ |✅| ✅| ✅ |
-| IP Infusion OcNOS   |✅ |✅ |✅ |✅|✅ | ❌ | ❌ | ❌ |
-| Junos               |✅ |✅ |✅ |✅|✅ | ❌ | ❌ | ❌ |
-| Nokia SR Linux      |✅ |✅ |✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Nokia SR OS         |✅ |✅ |✅ | ❌ | ❌ | ✅| ❌ | ❌ |
-| VyOS                |✅ |✅ |✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| BIRD                | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+```{features}
+- title: Routing<br>policies
+  enabled: routing.policy
+- title: Local<br>preference
+  enabled: "'locpref' in routing.policy.set"
+- title: MED
+  enabled: "'med' in routing.policy.set"
+- title: Weight
+  enabled: "'weight' in routing.policy.set"
+- title: Link<br>bandwidth
+  enabled: bgp.bandwidth
+```
 
-[^18v]: Includes Cisco IOSv, Cisco IOSv Layer-2 image, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
+The plugin also implements these BGP routing policy mechanisms:
 
-[^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
+```{features}
+- title: AS-path<br>prepend
+  enabled: "'prepend' in routing.policy.set"
+- title: Address<br>Aggregation
+  enabled: bgp.aggregate
+- title: BGP<br>Roles
+  enabled: bgp.role
+```
 
 ```{tip}
 See [BGP Policies Test Results](https://release.netlab.tools/_html/coverage.bgp.policy) and [Routing Policies Test Results](https://release.netlab.tools/_html/coverage.r_policy) for more details.

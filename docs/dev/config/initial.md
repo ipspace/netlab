@@ -329,9 +329,10 @@ interface {{ ifdata.ifname }}
 {% endfor %}
 ```
 
+(dev-initial-ra)=
 ### Configuring IPv6 RA Parameters
 
-If you decide to implement [IPv6 RA parameters](links-ra), you might appreciate these hints:
+If you decide to implement [IPv6 RA parameters](links-ra), set the **features.initial.ra** [device feature](dev-device-features) to *True*. You might also appreciate these hints:
 
 * RA parameters have to be processed whenever **ipv6** attribute is set (*string* or *True*) and the node **role** is **router**. RA parameters do not apply to **host** or **bridge** nodes.
 * Do not expect any parameters to be set; always work with default values.

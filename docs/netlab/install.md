@@ -47,6 +47,7 @@ Ubuntu 26.04 introduced the Hardware Enablement (`-hwe`) version of `qemu-system
 * The *graph* script installs GraphViz and D2 software needed to generate graphs from _netlab_ topologies
 * The *grpc* script installs gRPC Python libraries and Nokia Ansible collections (`nokia.srlinux` and `nokia.openconfig`) needed to configure Nokia SR Linux and Nokia SR OS.
 * The *podman* script installs *podman*, its Docker-compatible CLI, and *containerlab*.
+* The *upgrade* script upgrades the _netlab_ Python package (`networklab`) to the latest release. See [](netlab-install-upgrade) for details.
 
 [^UT]: Tested on Ubuntu 24.04 and 26.04
 
@@ -67,6 +68,7 @@ $ netlab install
 │ grpc         │ GRPC libraries and Nokia Ansible collections      │
 │ graph        │ GraphViz and D2 software                          │
 │ podman       │ Podman and containerlab                           │
+│ upgrade      │ Latest netlab release (upgrade)                   │
 └──────────────┴───────────────────────────────────────────────────┘
 ```
 
@@ -78,3 +80,14 @@ Unless you started the **netlab install** command in a Python virtual environmen
 Newer Python installations (including Ubuntu 22.04 and later) refuse to install Python packages outside a virtual environment. In these cases, **netlab install** asks the user for a confirmation and uses `--break-system-packages` **pip3** option to force user-wide or system-wide package installation:
 
 ![](install-warnings.png)
+
+(netlab-install-upgrade)=
+## Upgrading netlab
+
+**netlab install upgrade** upgrades the `networklab` Python package in the same Python environment and directory it was installed into:
+
+* It uses the Python interpreter running _netlab_, even when you start _netlab_ from a virtual environment that is not activated.
+* It upgrades the package in the virtual environment, the `~/.local` directory, or the system directories, ignoring the `-u` option.
+* It refuses to upgrade _netlab_ installed in development (editable) mode or running from a Git repository. Use **git pull** to upgrade those installations.
+
+The *upgrade* script is not executed with **netlab install --all**, and it does not upgrade Ansible, *containerlab*, or other software installed with **netlab install**. Rerun the relevant installation scripts if the new _netlab_ release needs newer versions of that software.

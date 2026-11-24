@@ -16,13 +16,7 @@ Interested? [Read the documentation](https://netlab.tools) (also available on [G
 
 ## Releases
 
-The latest release is [release 26.10](https://github.com/ipspace/netlab/releases/tag/release_26.10). It should be pretty stable, but if you encounter bugs, please report them as [GitHub issues](https://github.com/ipspace/netlab/issues/new/choose) and use [release 26.09](https://github.com/ipspace/netlab/releases/tag/release_26.09).
-
-<!--
-or [1.8.4-post2](https://github.com/ipspace/netlab/releases/tag/release_1.8.4-post2).
-
-If you encounter bugs using release 1.7.x, please downgrade to [1.6.4](https://github.com/ipspace/netlab/releases/tag/release_1.6.4) and [open a GitHub issue](https://github.com/ipspace/netlab/issues).
--->
+The latest release is [release 26.11](https://github.com/ipspace/netlab/releases/tag/release_26.11). It contains numerous breaking changes and tons of new functionality (see [release notes](https://netlab.tools/release/) for details); if you encounter bugs, please report them as [GitHub issues](https://github.com/ipspace/netlab/issues/new/choose) and use [release 26.10](https://github.com/ipspace/netlab/releases/tag/release_26.10).
 
 ## Common netlab CLI Commands
 

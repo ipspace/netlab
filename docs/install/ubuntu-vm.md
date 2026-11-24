@@ -113,3 +113,4 @@ sudo pip3 install --ignore-installed --break-system-packages networklab
 
 * [](lab-clab)
 * [](lab-libvirt)
+* [](install-netlab-ui)

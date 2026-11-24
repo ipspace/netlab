@@ -74,6 +74,9 @@ def _supports_mlag(features: Box) -> bool:
 def _supports_esi_lag(features: Box) -> bool:
   return bool(features.get('evpn.multihoming.lag',False))
 
+def _uses_esi_lag(topology: Box) -> bool:
+  return 'evpn.multihoming' in topology.get('plugin',[])
+
 """
 check_mlag_support - check if the given node supports classic MLAG (peer-link)
 """
@@ -96,11 +99,22 @@ A peer-link is MLAG-only; ESI-LAG coordinates over EVPN and must not be treated 
 def check_mside_lag_support(node: str, linkname: str, topology: Box) -> bool:
   _n = topology.nodes[node]
   features = devices.get_device_features(_n,topology.defaults)
-  if not (_supports_mlag(features) or _supports_esi_lag(features)):
+  if _supports_mlag(features):
+    return True
+
+  if not _supports_esi_lag(features):
     log.error(f'Node {_n.name} ({_n.device}) does not support MLAG or ESI-LAG, cannot be part of M-side of LAG {linkname}',
       category=log.IncorrectValue,
       module='lag')
     return False
+
+  if not _uses_esi_lag(topology):
+    log.error(f'Node {_n.name} ({_n.device}) does not support MLAG, cannot be part of M-side of LAG {linkname}',
+      more_hints='The device supports ESI-LAG. Use the evpn.multihoming plugin to configure it',
+      category=log.IncorrectValue,
+      module='lag')
+    return False
+
   return True
 
 """
@@ -495,6 +509,10 @@ class LAG(_Module):
           log.error(f'Node {node.name}({node.device}) does not support passive LACP configured on interface {i.ifname}',
             category=log.IncorrectAttr,
             module='lag')
+        if i.lag.get('lacp',None) == 'off' and 'mode' not in i.lag and not features.lag.get('static',False):
+          log.error(f'Node {node.name}({node.device}) does not support static LAG (lacp: off) configured on interface {i.ifname}',
+            category=log.IncorrectAttr,
+            module='lag')
         if i.lag.get('_mlag',False) is True:
           uses_mlag = True
           if 'ipv4' in i or 'ipv6' in i:
@@ -509,7 +527,7 @@ class LAG(_Module):
             lacp_sys_id_str = f"02{sys_id_int:0>4X}{sys_id_int:0>4X}00"
             i.lag.lacp_system_id = str(netaddr.EUI(lacp_sys_id_str, dialect = netaddr.mac_unix_expanded))
         # check for ESI-LAG support, to avoid generating errors for missing MC-LAG feature
-        if 'evpn.multihoming' in topology.get('plugin',[]) and features.get('evpn.multihoming.lag', False) and i.get('evpn.es', False):
+        if _uses_esi_lag(topology) and _supports_esi_lag(features) and i.get('evpn.es', False):
           uses_esi_lag = True
 
     if uses_mlag and not (has_peerlink or uses_esi_lag):

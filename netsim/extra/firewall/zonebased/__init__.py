@@ -14,7 +14,7 @@ def post_transform(topology: Box) -> None:
     global _config_name
     for node in topology.nodes.values():
         features = devices.get_device_features(node,topology.defaults)
-        zbf_supported = 'firewall.zonebased' in features
+        zbf_supported = features.get('firewall.zonebased',False)
         OK = True
 
         for intf in node.get('interfaces',[]):

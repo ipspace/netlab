@@ -89,6 +89,18 @@ class Libvirt(_Provider):
       labops.pad_node_interfaces(node,topology)
     validate_mgmt_ip(node,required=True,v4only=True,provider='libvirt',mgmt=topology.addressing.mgmt)
 
+    # The device defaults should include libvirt.node.cpu and libvirt.node.memory (used in define-domain.j2)
+    # unless the node is not a real VM ('none' device and its descendants use 'none' image)
+    #
+    if node.box != 'none':
+      for kw in ('cpu','memory'):
+        if kw not in node.libvirt and kw not in node:
+          log.error(
+            f'Device {node.device} used by node {node.name} does not define the default libvirt VM {kw}',
+            category=log.MissingValue,
+            module='libvirt',
+            more_hints=f'Set defaults.devices.{node.device}.libvirt.node.{kw} or nodes.{node.name}.libvirt.{kw}')
+
     # libvirt does not support provider-specific netlab_config_mode parameter (it can work with 'netmiko),
     # but we have to make it work with "none" device to pass CI/CD integration tests.
     #

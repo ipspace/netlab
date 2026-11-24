@@ -82,7 +82,7 @@ nodes:
 * **unmanaged** -- when set to *True*, the node is not managed or configured by *netlab*. Use this parameter when integrating *netlab* topologies with additional external devices, which should not be configured by *netlab* ([more details](external-unmanaged)).
 
 ```{tip}
-* The [Supported Virtualization Providers](platforms.md#supported-virtualization-providers) section of [Supported Platforms](platforms.md) lists the default **memory** and **cpu** values for all devices that can be run as virtual machines.
+* The [libvirt provider documentation](platform-provider-vm-resources) lists the default **memory** and **cpu** values for all devices that can be run as virtual machines.
 * You still have to specify the device type (either in the node or as the [default device type](default-device-type)) for unmanaged nodes. _netlab_ uses the device type to determine which features a node supports. If you want to use an unsupported unmanaged device, set **‌device** to **‌none**.
 ```
 
@@ -125,23 +125,23 @@ Some node attributes are used only with a specific *netlab* virtualization provi
 (nodes-provider-attributes-libvirt)=
 ### Libvirt Attributes
 
-* **libvirt.nic_model** -- *libvirt* virtual NIC model used by the VM lab device. See *libvirt* and *KVM* documentation for supported values; the most common settings are *virtio* (*libvirt* default) and *e1000*. Other supported values include *rtl8139*, *pcnet*, *ne2k_pci*, *i82559er*, *i82557b*, *i82551* and *ne2k_isa*.
+* **libvirt.nic_model_type** -- *libvirt* virtual NIC model used by the VM lab device. See *libvirt* and *KVM* documentation for supported values; the most common settings are *virtio* (*libvirt* default) and *e1000*. Other supported values include *rtl8139*, *pcnet*, *ne2k_pci*, *i82559er*, *i82557b*, *i82551* and *ne2k_isa*.
 
 Example:
 ```
 ---
-defaults.devices.vyos.libvirt.node.nic_model: e1000
+defaults.devices.vyos.libvirt.node.nic_model_type: e1000
 
 nodes:
   vyos1:
     device: vyos
   vyos2:
     device: vyos
-    libvirt.nic_model: virtio
+    libvirt.nic_model_type: virtio
 ```
 
 ```{tip}
-The [Supported Virtualization Providers](platforms.md#supported-virtualization-providers) section of [Supported Platforms](platforms.md) lists the default **nic_model** for all devices that can be run as virtual machines.
+The [libvirt provider documentation](platform-provider-vm-resources) lists the default **nic_model_type** for all devices that can be run as virtual machines.
 ```
 
 (nodes-provider-attributes-clab)=

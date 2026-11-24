@@ -62,6 +62,7 @@ def install_parse(args: typing.List[str], setup: Box) -> argparse.Namespace:
     action='store',
     nargs="*",
     help='Run the specified installation script')
+  parser.set_defaults(system=False)               # Set by script hooks when Python libraries must go into system directories
 
   return parser.parse_args(args)
 
@@ -104,7 +105,7 @@ def check_crazy_pip3(args: argparse.Namespace) -> None:
   """
   syspath = sysconfig.get_path("stdlib")
   if os.path.exists(f'{syspath}/EXTERNALLY-MANAGED'):
-    if not args.yes:
+    if not args.yes and not args.system:
       print()
       log.info(
         "Your Linux distribution includes a scared version of Python",
@@ -117,7 +118,7 @@ def check_crazy_pip3(args: argparse.Namespace) -> None:
 
     os.environ['FLAG_PIP'] = os.environ['FLAG_PIP'] + ' --break-system-packages'
 
-  if not args.user and not args.yes:
+  if not args.user and not args.yes and not args.system:
     print()
     log.info(
       "We will install Python libraries into system directories",
@@ -329,14 +330,16 @@ def run(cli_args: typing.List[str]) -> None:
   set_sudo_flag()
   install_path = f'{get_moddir()}/install'
   os.environ['PATH'] = install_path + ":" + os.environ['PATH']
-  for script in setup.scripts.keys():
-    if script not in args.script and not args.all:
+  for script,s_data in setup.scripts.items():
+    if script not in args.script and (not args.all or not s_data.get('all',True)):
       continue
     script_path = f'{install_path}/{script}.sh'
     if not os.path.exists(script_path):
       log.fatal(f'Installation script {script} does not exist')
 
-    log.section_header('Install',setup.scripts[script].description)
+    log.section_header('Install',s_data.description)
+    if not script_hook(script,'pre_check',topology):
+      continue
     script_confirm(script,setup,args)
     check_script(script,setup,args)
     if not args.quiet:

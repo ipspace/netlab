@@ -63,6 +63,11 @@ If you decide to run the network labs within an Ubuntu VM, [create a new VM and 
 
 Finally, you can use _netlab_ on Apple Silicon ([basics](https://blog.ipspace.net/2024/03/netlab-bgp-apple-silicon/), [using Arista cEOS](https://blog.ipspace.net/2025/02/arista-ceos-arm-apple-silicon/)), but all we managed to do was run containers (Arista EOS, FRR, SR Linux) on a Multipass-provisioned Ubuntu VM. If you're using a laptop with Apple silicon, run more complex labs on a [Ubuntu VM](ubuntu-vm-manual) running on-premises or in a [public cloud](install-cloud), or a [bare-metal server](install-ubuntu).
 
+(install-netlab-ui)=
+## Using a Web User Interface
+
+_netlab_ is a CLI tool, but you can also use [netlab-ui](https://github.com/Muddyblack/netlab-ui), an independent web interface developed outside of the _netlab_ project. It lets you build and edit lab topologies on a canvas, deploy and destroy labs, and open device shells from your browser. It can use an existing _netlab_ installation or install _netlab_ for you; see its [quick start guide](https://github.com/Muddyblack/netlab-ui#quick-start) for details.
+
 ```eval_rst
 .. toctree::
    :caption: Next Steps
@@ -80,3 +85,4 @@ Finally, you can use _netlab_ on Apple Silicon ([basics](https://blog.ipspace.ne
 
 * [](lab-clab)
 * [](lab-libvirt)
+* [](install-netlab-ui)

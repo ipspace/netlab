@@ -24,28 +24,18 @@ The module requires the VLAN module (to set up the **vlans** dictionary) and sho
 
 The following table describes the per-platform support of individual VXLAN features:
 
-| Operating system   | VXLAN<br>bridging | Per-VLAN<br>replication | IPv6 VTEP |
-| ------------------ | :-: | :-: | :-: |
-| Arista EOS         | ✅  | ✅  | ✅  |
-| Aruba AOS-CX       | ✅  | ✅  |  ❌  |
-| BIRD               | ✅  | ✅  | ✅  |
-| Cisco CSR 1000v    | ✅  | ✅  |  ❌  |
-| Cisco Catalyst 8000v | ✅ | ✅ |  ❌  |
-| Cisco IOL/IOLL2    | ✅ [❗](caveats-iol)  |  ❌  |  ❌  |
-| Cisco Nexus OS     | ✅  | ✅  |  ❌  |
-| Cumulus Linux 4.x  | ✅  | ✅  |  ❌  |
-| Cumulus 5.x (NVUE) | ✅  | ✅  |  ❌  |
-| Dell OS10          | ✅  | ✅  |  ❌  |
-| FRR                | ✅  | ✅  | ✅  |
-| Mikrotik RouterOS 7 | ✅  | ✅  | ✅ |
-| Nokia SR Linux     | ✅ [❗](caveats-srlinux)  |  ❌  |  ❌  |
-| Nokia SR OS[^SROS] | ✅  |  ❌  |  ❌  |
-| OpenBSD            | ✅  | ✅  | ✅  |
-| vJunos-switch      | ✅  | ✅  |  ❌ |
-| vJunos-router      | ✅  | ✅  |  ❌ |
-| VyOS               | ✅  | ✅  | ✅  |
+```{features}
+- title: VXLAN<br>bridging
+  enabled: vxlan
+  caveats: vxlan.caveats.core
+- title: Static<br>ingress<br>replication[^SIR]
+  enabled: >-
+    vxlan is True or 'evpn' not in vxlan.get('requires',[])
+- title: IPv6 VTEP
+  enabled: vxlan.vtep6
+```
 
-[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
+[^SIR]: Static per-VLAN ingress replication lists (**vxlan.flooding** set to **static**). Devices that do not support static ingress replication require the [EVPN control plane](module-evpn).
 
 ```{tip}
 See [VXLAN Integration Tests Results](https://release.netlab.tools/_html/coverage.vxlan) for more details.

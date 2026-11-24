@@ -7,6 +7,8 @@ Contributing to *netlab* is as easy as it can get:
 * Run tests (`tests/run-tests.sh`) just to make sure you haven't broken anything.
 * Submit a pull request *against the **dev** branch*
 
+Using AI tools? Read [](dev-ai-tools) first.
+
 The easiest way to get started is to [add support for a new platform for an existing device](device-platform.md). [Contributing a new device](device-box.md) that is not configurable is also an easy task.
 
 [Adding functionality to an existing device](device-features.md) is a bit more complex, while [contributing a new device](devices.md) (including configuration task lists and templates) might take a non-trivial amount of time.
@@ -24,4 +26,5 @@ The easiest way to get started is to [add support for a new platform for an exis
    unnumbered.md
    templates.md
    doubt.md
+   ai.md
 ```

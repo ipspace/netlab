@@ -32,6 +32,7 @@ You can use the following **features.bgp** [device features](dev-device-features
 * **rfc8950** -- device supports **extended next hop** functionality that can be used to implement RFC8950-style IPv6 next hops for IPv4 AF
 * **vrf_local_as** -- the **local_as** feature is supported for BGP VRF sessions
 * **import** -- the list of protocols that can be redistributed into BGP. Add **vrf** to the list if the device supports redistribution into VRF BGP instances.
+* **ipv4**, **ipv6** -- Set these features to **false** if your device (or your template) cannot run BGP for IPv4 or IPv6; the **bgp** module reports an error when such a device advertises prefixes from that address family or has BGP neighbors with addresses from that address family (in the global or a VRF BGP instance). A device without these features is assumed to support BGP for IPv4 and IPv6.
 
 (dev-bgp-af)=
 ## Supporting Multiple Address Families
@@ -276,7 +277,7 @@ VRF BGP instances contain most BGP parameters (for example, **router_id**) in th
 
 At the very minimum, the VRF **bgp** data structure contains only the **neighbors** list.
 
-Use templates similar to the ones above when configuring VRF BGP instances. The neighbor/prefix configuration is almost identical to the global BGP configuration, so it might make sense to define configuration macros to configure BGP neighbors, per-AF BGP neighbor parameters, and prefix origination. See [](dev-rip-vrf) for a very simple example, or [](dev-vrf-bgp) and [](dev-vrf-bgp-neighbor).
+Use templates similar to the ones above when configuring VRF BGP instances. The neighbor/prefix configuration is almost identical to the global BGP configuration, so it might make sense to define configuration macros to configure BGP neighbors, per-AF BGP neighbor parameters, and prefix origination. See [](dev-rip-vrf) for a very simple example, or [](dev-vrf-bgp).
 
 This is how Cisco IOS configures VRFs within the BGP routing process:
 

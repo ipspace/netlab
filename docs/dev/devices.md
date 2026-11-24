@@ -43,6 +43,7 @@ After you decided what *device name* to use, create `<device-name>.yml` file in 
 The device parameters will have to include ([more details](device-box.md#adding-new-device-settings)):
 
 * Device **description** -- a short string describing the device
+* Device caveats (**device_caveats**) -- **true** or the anchor of the [device caveats](platform-caveats) section (when it's not `caveats-<device-name>`). The [list of supported devices](platform-devices) displays a link to the caveats next to the device name. If the VM and container versions of your device need separate rows in that list (for example, Arista vEOS and cEOS), set the **docname** and **device_caveats** parameters in the **libvirt** and **clab** dictionaries.
 * Interface name template (**interface_name**), including `{ifindex}` to insert interface number.
 * The number of the first interface (**ifindex_offset**) if it's different from 1. Sometimes the data plane interfaces start with zero, sometimes they start with 2 because the management interface is interface 1.
 * Name of the management interface (**mgmt_if**) if it cannot be generated from the interface name template (some devices use `mgmt0` or similar). This is the interface Vagrant uses to connect to the device via SSH.
@@ -112,11 +113,18 @@ Device parameters file can also include numerous *features*. The following featu
 * **features.initial.min_phy_mtu** -- The minimum physical MTU that can be configured on your device (many devices won't accept the physical MTU lower than 1500 bytes).
 * **features.initial.mgmt_vrf** -- The device uses a management VRF and can have [two default routes](node-router-host) (management and global) when [running as a host](node-attributes).
 * **features.initial.ipv4.unnumbered** -- The device supports unnumbered IPv4 interfaces. The IP address of the primary loopback interface should be used as the IPv4 address of those interfaces.
+* **features.initial.ipv6** -- Set this feature to **false** if your device (or its initial configuration template) cannot configure IPv6 interface addresses. _netlab_ reports an error (that can be disabled with the **defaults.warnings.nodes.ipv6** setting) when such a device has IPv6 addresses on the loopback or any other interface. A device without this feature or with **features.initial.ipv6** dictionary (see below) is assumed to support IPv6 addresses.
 * **features.initial.ipv6.lla** -- The device supports IPv6 interfaces using just link-local addresses.
 * **features.initial.ipv6.use_ra** -- The device (when running as a host) listens to IPv6 RA messages to generate a default route
+* **features.initial.ra** -- The device implements [IPv6 RA parameters](links-ra) (see [](dev-initial-ra)). _netlab_ copies the link **ra** attributes only into routers with this feature, reports an error when an interface of a router without this feature has **ra** attributes, and warns the user when no router attached to a link with **ra** attributes supports them.
+* **features.initial.hosts** -- Set this feature to **false** if your initial configuration template does not configure the static hosts table (the names and addresses of other lab devices). This feature is not checked; it is used only in the [supported features tables](dev-features-tables). A device without this feature is assumed to configure the static hosts table.
+* **features.initial.lldp** -- Set this feature to **false** if your initial configuration template does not enable LLDP (and LLDP is not enabled by default on your device). This feature is not checked; it is used only in the [supported features tables](dev-features-tables). A device without this feature is assumed to run LLDP.
+* **features.initial.bandwidth** -- The device's initial configuration template configures interface bandwidth. _netlab_ warns the user (the warning can be disabled with the **defaults.warnings.nodes.bandwidth** setting) when a device without this feature has interfaces with the **bandwidth** attribute.
+* **features.initial.mtu** -- Set this feature to **false** if your initial configuration template does not configure interface MTU. This feature is not checked; it is used only in the [supported features tables](dev-features-tables). A device without this feature is assumed to configure interface MTU.
+* **features.initial.caveats.lldp**, **features.initial.caveats.loopback**, **features.initial.caveats.extra_loopbacks**, **features.initial.caveats.bandwidth**, **features.initial.caveats.mtu** -- **true** or the anchor of the [caveats](platform-caveats) section describing the limitations of the LLDP, loopback interface, additional loopbacks, interface bandwidth, or MTU configuration (used only in the [supported features tables](dev-features-tables))
 * **features.initial.roles** -- The list of roles a device can have (default: `[ router ]`)
 * **features.initial.collect** (bool) -- netlab knows how to collect device configuration (default: False). When this feature is set, the device MUST have the `fetch-config` tasklist.
-* **features.initial.reload** (bool) -- netlab can reload the complete saved device configuration after starting the lab (default: False). Device configuration reload uses the `deploy-config` tasklist to merge the saved configuration with the startup configuration. Add a `reload-config` tasklist if your device requires a different approach (for example, **configure replace** command).
+* **features.initial.reload** (bool or `custom`) -- netlab can reload the complete saved device configuration after starting the lab (default: False). When set to `True`, the saved configuration is deployed like a custom configuration template (using the [device configuration method](platform-config-mode) or the `deploy-config` tasklist) and merged with the running configuration. Set it to `custom` if your device requires a different approach (for example, **configure replace** command) implemented in the `reload-config` tasklist; the saved configuration is then deployed with the **reload-config.ansible** playbook. Devices with the **features.netmiko.reload** feature use *netmiko* to reload the configuration regardless of this setting ([more details](dev-config-netmiko-reload)).
 * **features.initial.normalize** -- The device needs the configuration normalization step before the initial configuration is applied to any devices in the lab. Usually used for devices that act as simple bridges when started (Arista cEOS, Cisco IOLL2). When this feature is set, the device MUST have the `normalize` template.
 * **features.groups** -- The groups this device belongs to. You can set this feature to [`[ unprovisioned ]`](group-special-names) for devices that _netlab_ cannot configure yet. Don't forget to remove the **unprovisioned** group once you implement the Ansible [device configuration task list](dev-new-devices-configure).
 
@@ -125,6 +133,8 @@ Please note that the MTU used by netlab is always the layer-3 MTU. If your devic
 ```
 
 All device features are optional; a lack of a feature indicates the device does not support it (there is no need to set a feature to *False* unless you're [overriding an inherited value](dev-device-inheritance)).
+
+Provider-specific features (**_provider_.features**) are merged with the device features. Set a module to *False* in provider-specific features (for example, `clab.features.vrf: False`) if the device does not support that module with the specified provider.
 
 For example, an Arista EOS device can use system-wide MTU and supports unnumbered IPv4 and LLA-only IPv6 interfaces:
 
@@ -252,6 +262,7 @@ plugin: [ kind ]
 
 If you'll use a Vagrant box to start the network device as a VM, you have to add a template that will generate the part of *Vagrantfile* (or *containerlab* configuration file) describing your virtual machine. See `netsim/templates/provider/...` directories for more details.
 
+(dev-devices-ansible-vars)=
 ## Using Your Device with Ansible Playbooks
 
 If you want to configure your device with **[netlab initial](../netlab/initial.md)** or **[netlab config](../netlab/config.md)**, or connect to your device with **[netlab connect](../netlab/connect.md)**, you'll have to add Ansible variables that will be copied into **group_vars** part of the Ansible inventory. Add those variables into the **group_vars** part of your device parameter file.
@@ -367,6 +378,7 @@ To add a device that is already supported by *netlab* to a new virtualization en
 * Get or build a Vagrant box or container image.
 * Add the [image/box/container name](device-box.md#adding-new-device-settings) for the new virtualization provider to device parameters file.
 * Add device-specific virtualization provider configuration template to provider-specific subdirectory of `netsim/templates/provider` directory. Use existing templates to figure out what exactly needs to be done.
+* When adding a *libvirt* device, specify the default number of virtual CPUs and VM memory (in MB) in the **libvirt.node.cpu** and **libvirt.node.memory** device parameters, and the NIC model (when it's not **virtio**) in the **libvirt.node.nic_model_type** device parameter. Do not set them in the device provisioning template.
 * You might need to add provider-specific device settings to device parameters file. See the above Arista cEOS examples for more details.
 * You might have to add provider-specific [device readiness checks](dev-ready) (for example, the container health check and the SSH server check for *vrnetlab* containers).
 

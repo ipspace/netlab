@@ -315,12 +315,19 @@ def set_import_export_rt(obj : Box, topology: Box) -> None:
 # import and export RT as we might have two VRFs with different RDs but equal RT values.
 #
 
-def validate_vrf_route_leaking(node : Box) -> None:
+def validate_vrf_route_leaking(node : Box, features: Box) -> None:
   for vname,vdata in node.vrfs.items():
     simple_rt = [ vdata.rd ]
     leaked_routes = vdata.get('import',[]) != simple_rt or vdata.get('export',[]) != simple_rt
     if not leaked_routes:                         # Simple setup, no extra work
       continue                                    # ... move on
+
+    if not features.vrf.get('leaking',True):      # Can the device do inter-VRF route leaking?
+      log.warning(
+        text=f"VRF {vname} on {node.name} uses inter-VRF route leaking, which is not supported by device {node.device}",
+        module='vrf',
+        flag='leaking',
+        category=log.IncorrectValue)
 
     vdata._leaked_routes = True                   # Set the flag for VRF configuration templates
     if node.get('bgp.as',None):                   # If we already have a valid node BGP ASN, move on
@@ -359,10 +366,18 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
                         path = 'vrf.loopback',
                         node = node,
                         topology = topology)
+  features = devices.get_device_features(node,topology.defaults)
   for vrfname,v in node.vrfs.items():
     vrf_loopback = v.get('loopback',None) or node_vrf_loopback        # Do we have VRF loopbacks enabled in the node or in the VRF?
     if not vrf_loopback:                                              # ... nope, move on
       continue
+
+    if not features.vrf.get('loopback',True):                         # Can the device have VRF loopbacks?
+      log.warning(
+        text=f"VRF {vrfname} on {node.name} needs a loopback interface, which is not supported by device {node.device}",
+        module='vrf',
+        flag='loopback',
+        category=log.IncorrectValue)
 
     # Note: set interface ifindex to v.vrfidx if you want to have VRF-numbered loopbacks
     #
@@ -600,7 +615,7 @@ class VRF(_Module):
       v.vrfidx = vrfidx
       vrfidx = vrfidx + 1
 
-    validate_vrf_route_leaking(node)
+    validate_vrf_route_leaking(node,features)
 
     # Finally, set BGP router ID if we set BGP AS number
     #

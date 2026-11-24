@@ -24,37 +24,25 @@ The VLAN module implements data-plane functionality but does not configure the S
 
 VLANs are supported on these platforms:
 
-| Operating system      | Access<br>VLANs | VLAN<br>interfaces | Routed<br>subinterfaces | Trunk<br>ports | Native<br>VLAN |
-| --------------------- | :-: | :-: | :-: | :-: | :-: |
-| Arista EOS            | ✅  | ✅  | ✅  | ✅ | ✅ |
-| Aruba AOS-CX          | ✅  | ✅  |  ❌  | ✅ | ✅ |
-| Cisco 8000v (IOS XR)  | ✅  | ✅  | ✅  | ✅ | ✅ |
-| Cisco IOSv            | ✅  | ✅  | ✅  | ✅ | ✅ |
-| Cisco IOSvL2 [❗](caveats-iosv) | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Cisco IOL             | ✅  | ✅  | ✅ | ✅ | ✅ |
-| Cisco IOL L2 [❗](caveats-iol) | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Cisco Catalyst 8000v  | ✅  | ✅  | ❌   | ✅ | ✅ |
-| Cisco CSR 1000v       | ✅  | ✅  | ✅  | ✅ | ✅ |
-| Cisco Nexus OS        | ✅  | ✅  | ✅  | ✅  | ✅  |
-| Cumulus Linux 4.x     | ✅  | ✅  | ❌[❗](caveats-cumulus)  | ✅ | ✅ |
-| Cumulus 5.x (NVUE)    | ✅  | ✅  | ✅  | ✅ | ✅ |
-| Dell OS10             | ✅  | ✅  | ❌   | ✅ | ✅ |
-| Extreme Networks EXOS |  ✅ | ✅  | ❌   | ✅ | ✅ |
-| FRR [❗](caveats-frr) | ✅  | ✅  | ✅  | ✅ | ✅ |
-| IP Infusion OcNOS     | ✅  | ✅  | ❌   | ✅ | ✅ |
-| Juniper vMX           | ✅  | ✅  | ✅  | ✅ | ✅ |
-| Juniper vPTX          | ✅  | ✅  | ✅  | ✅ | ✅ |
-| Juniper vSRX 3.0      | ❌   | ❌   | ✅  |  ❌ |  ❌ |
-| vJunos-switch         | ✅  | ✅   | ✅   | ✅ | ✅  |
-| vJunos-router         | ✅  | ✅   | ✅   | ✅ | ✅  |
-| Mikrotik RouterOS 6   | ✅  | ✅  | ✅  | ✅ | ✅ |
-| Mikrotik RouterOS 7   | ✅  | ✅  | ✅  | ✅ | ✅ |
-| Nokia SR Linux        | ✅  | ✅  | ✅   | ✅ | ✅ |
-| Nokia SR OS[^SROS]    | ✅  | ✅  | ✅   | ✅ | ✅ |
-| OpenBSD               | ✅  | ✅  | ✅   | ✅ | ✅ |
-| VyOS                  | ✅  | ✅  | ✅   | ✅ | ✅ |
+```{features}
+- title: VLAN<br>bridging
+  enabled: vlan.svi_interface_name
+  caveats: vlan.caveats.bridging
+- title: Routed<br>subinterfaces
+  enabled: >-
+    vlan.subif_name and vlan.model in ['router','l3-switch']
+- title: Routed<br>native VLAN
+  enabled: vlan.native_routed
+  caveats: vlan.caveats.native_routed
+- title: Mixed<br>trunks
+  enabled: vlan.mixed_trunk
+```
 
-[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
+**Notes:**
+
+* **VLAN bridging** includes access VLANs, VLAN trunks, bridged native VLANs, and VLAN (SVI) interfaces used for routing between VLANs.
+* **Routed native VLAN** is a native VLAN in **route** mode -- the IP address of the native VLAN is configured directly on the physical interface.
+* **Mixed trunks** carry bridged and routed VLANs on the same physical interface.
 
 ```{tip}
 See [VLAN Integration Tests Results](https://release.netlab.tools/_html/coverage.vlan) for more details.

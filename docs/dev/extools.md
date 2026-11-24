@@ -122,6 +122,19 @@ docker:
 * **docker exec** command specifies the full path to the **suzieq-cli** command because the default path in the SuzieQ container does not include `/usr/local/bin`.
 * **cleanup** command deletes the volume created with the **docker run** command.
 
+(dev-extools-quoting)=
+### Quoting Values in Tool Commands
+
+The tool commands are executed with **bash -c**, and _netlab_ does not escape the values inserted into the f-strings. Single quotes around a value (`'{name}_suzieq'`) are good enough for values that cannot contain special characters (for example, the lab name is always an identifier), but a value containing a single quote breaks the command or injects additional shell commands into it.
+
+Use the **q()** function to shell-quote values that could contain any character, for example, user-supplied tool parameters like passwords. **q()** adds the quotes, so do not wrap its result in another pair of quotes:
+
+```
+docker run -d
+  -e NETLAB_UI_AUTH={q(tools.netlab_ui.auth or defaults.tools.netlab_ui.auth)}
+  ...
+```
+
 ### Running External Tools with Lab Containers
 
 External tools have to be connected to the same Docker network as the management interface of the lab containers. The default name of that network is `netlab_mgmt` but it can change if you use [multilab plugin](../plugins/multilab.md).

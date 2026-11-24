@@ -41,6 +41,48 @@ Each column definition (feature) can have these parameters:
 * **title** (required) -- the column header. Use `<br>` to create multi-line headers.
 * **enabled** or **text** (exactly one required) -- see below
 * **caveats** (optional) -- the Python expression that checks whether the device/feature entry should include a link to caveats. The value of the specified device feature could be **true**, in which case the link pointing to the caveat is `caveats-_device_`, or a documentation anchor ID.
+* **link** (optional, **enabled** columns only) -- the Python expression that evaluates to the link target for the checkmark, for example, `clab.get('build_recipe') or clab.get('build')`. Non-string values (for example, `build: True`) produce no link. Links to _netlab_ documentation (`https://netlab.tools/...`) are converted into internal links; when they include an anchor (`#build-sonic-box`), the anchor is used as the MyST label.
+* **missing** (optional) -- the text displayed instead of the red cross when the feature is not supported (the **enabled** expression or the **text** expression is falsy). Use `missing: ''` to leave the table cell empty.
+* **present** (optional, **enabled** columns only) -- the text displayed instead of the green checkmark when the feature is supported, for example, `present: 🔗` in a column with links to build instructions.
+* **align** (optional) -- the alignment of the table cells in the column: **left**, **center**, or **right**. The default is **left** for **text** columns and **center** for **enabled** columns. For example, use `align: right` in columns displaying numbers.
+
+The `{features}` directive content can also be a dictionary with the list of columns in the **features** key and the device column parameters in the **device** key. It can also have these table-level parameters:
+
+* **show** (optional) -- **supported** (default) displays the devices supporting at least one of the features. **all** displays all devices. **exceptions** displays only the devices that do not fully support all features: the devices with at least one red cross or caveat, including the devices that support none of the features. Use it in tables where most devices support all features, and change the table introduction accordingly (for example, *all devices support these features apart from*). The table columns are not changed.
+* **filter** (optional) -- the Python expression that selects the devices displayed in the table, for example, `daemon` (daemons only) or `not daemon` (network devices only). The devices for which the expression fails are not displayed.
+
+The **device** dictionary can have these parameters:
+
+* **caveats** (optional) -- the Python expression that checks whether the device name should be followed by a link to caveats. The expression value is interpreted like the column **caveats** value (see below).
+
+For example, the following table has empty cells for the devices without a build recipe, and adds the caveat links to the devices with the **clab.docs_caveats** device parameter:
+
+````md
+```{features}
+device:
+  caveats: clab.get('docs_caveats')
+features:
+- title: Container image
+  text: clab.image
+- title: Build<br>recipe
+  enabled: clab.get('build_recipe') or clab.get('build')
+  link: clab.get('build_recipe') or clab.get('build')
+  missing: ''
+```
+````
+
+The following table displays only the devices that cannot collect or reload their configuration:
+
+````md
+```{features}
+show: exceptions
+features:
+- title: Collect<br>configuration
+  enabled: initial.collect
+- title: Reload<br>configuration
+  enabled: initial.reload
+```
+````
 
 ### Feature Display Modes
 
@@ -63,9 +105,32 @@ For example, to display the list of non-default configuration deployment methods
 
 The **caveats** parameter links a cell to an explanation of feature limitations. A truthy caveat value generates a link to an anchor with ID `caveats-_device_` (usually defined in `caveats.md`). A string value is used as the link target. A caveat value of `yes` generates a warning emoji with no link (for caveats explained below the table).
 
+The caveats are added to cells of supported and unsupported features, and to cells of **text** columns. Use a caveat on an unsupported feature to point to the instructions explaining how to enable it (for example, LLDP on Linux virtual machines).
+
+The module-level caveats (displayed in the module support tables in [](supported-platforms)) are stored in the **_module_.caveats.core** device feature, for example:
+
+```yaml
+features:
+  vxlan:
+    caveats.core: caveats-arcos
+```
+
+Some modules use more specific caveats instead of **caveats.core**; for example, the [OSPF](dev-ospf-features) module support table uses **ospf.caveats.ipv4** or **ospf.caveats.ipv6**.
+
+Use an explicit anchor ID instead of **true** in parent devices (for example, `iol`); the child devices inherit the feature, and **true** would generate a link to a nonexistent `caveats-_child_` anchor.
+
+The device caveats (**device.caveats** expression) are displayed next to the device name. A child device with a different device caveat than its parent device is not merged into the parent device row.
+
+### Expression Variables
+
+The expressions can use all device data, including device features (for example, `ospf.areas`). The directive also adds these variables to the device data:
+
+* **_name** -- the device name (for example, `eos`)
+* **daemon** -- **true** for [daemons](platform-daemons), **false** for other devices
+
 ### Built-in Functions
 
-The `enabled` and `text` expressions can use the `len()` built-in function. For example:
+The `enabled` and `text` expressions can use the `len()` and `isinstance()` built-in functions and the `dict` type (for example, `isinstance(evpn.transport,dict)`). For example:
 
 ````md
 ```{features}
@@ -78,6 +143,8 @@ The `enabled` and `text` expressions can use the `len()` built-in function. For 
 ### Provider-Specific Features
 
 The directive supports provider-specific features. When a device has provider-specific data or feature definitions (for example, `clab.features` or `libvirt.features`), the directive generates additional rows for that device/provider combination, displayed as "Device (containers)" or "Device (VMs)".
+
+A provider-specific **docname** (for example, `clab.docname: Arista cEOS`) is used instead of the "Device (containers)" name. When all provider-specific rows with their own docnames are displayed, they replace the device row. For example, an Arista EOS device with **docname** and **device_caveats** in its **libvirt** and **clab** dictionaries is displayed as two rows (Arista vEOS and Arista cEOS) in a table that uses `device.caveats: device_caveats`.
 
 Child device deduplication also works at the provider-specific level: if a child device's provider-specific features match its parent's, the child row is removed.
 
@@ -150,6 +217,19 @@ Use `.get()` when a feature attribute might not exist, and you need a default va
     services.dns and services.get('dns.transport_vrf',True) != False
 ```
 ````
+
+### Using Module Feature Defaults
+
+Some device feature flags are set only on devices that lack a feature (for example, `isis.mt: False`). Their default values are listed in the **feature_defaults** dictionary of the module definition (for example, `netsim/modules/isis.yml`), and the `features` directive adds them to the device module features. You can thus use simple expressions instead of `.get()` with a default value:
+
+````md
+```{features}
+- title: IPv6<br>multi-topology
+  enabled: isis.mt
+```
+````
+
+The feature defaults are not added to devices that do not support the module. A device that supports the module without specifying any module features (for example, `eigrp: True`) gets all the module feature defaults.
 
 ### Combining "enabled" with Caveats
 

@@ -2,6 +2,14 @@
 
 This document describes First-Hop Gateway configuration module implementation details.
 
+## Device Features
+
+You can use the following **features.gateway** [device features](dev-device-features) to specify which first-hop gateway features your configuration template implements:
+
+* **protocol** -- The list of supported first-hop gateway protocols (**anycast**, **vrrp**). The **gateway** module reports an error when a node uses a protocol that is not in this list.
+* **vrrp.version** -- The template implements the [**vrrp.version** plugin](plugin-vrrp-version) (configurable VRRP version). The plugin reports an error when a node using it does not have this feature.
+* **caveats.anycast**, **caveats.vrrp** -- **true** or the anchor of the [caveats](platform-caveats) section describing the limitations of anycast gateways or VRRP (used only to add caveat links to the [supported features tables](dev-features-tables))
+
 ## Configuration Template Boilerplate
 
 * If your device supports device-wide shared (anycast) MAC addresses, use node **gateway.anycast.mac** parameter to set the shared virtual router MAC address.

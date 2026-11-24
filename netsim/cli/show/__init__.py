@@ -22,6 +22,7 @@ from . import outputs as _outputs
 from . import plugins as _plugins
 from . import providers as _providers
 from . import reports as _reports
+from . import schema as _schema
 from . import tools as _tools
 from .utils import DEVICES_TO_SKIP, show_common_parser
 
@@ -61,6 +62,10 @@ show_dispatch: dict = {
   'providers': {
     'exec':  _providers.show,
     'parse': _providers.parse
+  },
+  'schema': {
+    'exec':  _schema.show,
+    'parse': _schema.parse
   },
   'attributes': {
     'exec':  _attributes.show,

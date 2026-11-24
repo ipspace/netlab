@@ -23,42 +23,31 @@ The following table describes the per-platform support of individual MPLS label 
 
 ### Label Distribution Protocol (LDP)
 
-| Operating system      | LDP   | Exp.Null | IGP sync | Advertise<br>filter | CsC |
-| ----------------------| :---: | :------: | :--: | :--: | :--: |
-| Arista EOS            |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
-| Aruba AOS-CX          |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
-| Cisco IOSv/IOS XE[^xe] |   ✅ |   ✅    |   ❌  |   ❌  |   ❌  |
-| Cisco IOS XR[^xr]     |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
-| FRR                   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
-| Junos[^Junos]         |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
-| Mikrotik RouterOS 6   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
-| Mikrotik RouterOS 7   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
-| Nokia SR Linux[❗](caveats-srlinux) | ✅ |   ❌    |  ❌  |   ❌  |   ❌  |
-| Nokia SR OS[^SROS]    |   ✅  |   ✅    |   ✅  |   ❌  |   ❌  |
-| VyOS                  |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
-
-[^xe]: Cisco Catalyst 8000v, Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco IOS on Linux (IOL) and IOL layer-2 image.
-
-[^xr]: Cisco IOS XRv, XRd, and Cisco 8000v
-
-[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
-
-[^Junos]: Includes cRPD, vPTX, vJunos-switch, vJunos-router, vMX, and vSRX. vMX and vSRX are not tested.
+```{features}
+- title: LDP
+  enabled: mpls.ldp
+  caveats: mpls.caveats.core
+- title: Explicit<br>null
+  enabled: mpls.ldp.explicit_null
+- title: IGP<br>sync
+  enabled: mpls.ldp.igp_sync
+```
 
 **Notes:**
 * LDP is enabled on all non-VRF intra-AS interfaces with IPv4 addresses.
+* No platform implements the **mpls.ldp.advertise** attribute.
 * To disable LDP on an intra-AS interface or enable it on a VRF interface, use the **ldp** link/interface parameter.
 
 ### BGP Labeled Unicast (BGP-LU)
 
-| Operating system      | BGP LU | Exp.Null | Disable<br>unlabeled |
-| ----------------------| :----: | :------: | :------: |
-| Arista EOS            |   ✅   |    ❌   |    ✅    |
-| Cisco IOSv/IOS XE[^xe] |  ✅   |    ✅   |    ❌    |
-| Mikrotik RouterOS 6   |   ❌   |    ❌   |    ❌    |
-| Mikrotik RouterOS 7   |   ❌   |    ❌   |    ❌    |
-| Nokia SR OS[^SROS]    |   ✅   |    ✅   |    ❌    |
-| VyOS                  |   ❌   |    ❌   |    ❌    |
+```{features}
+- title: BGP LU
+  enabled: mpls.bgp
+- title: Explicit<br>null
+  enabled: mpls.bgp.explicit_null
+- title: Disable<br>unlabeled
+  enabled: mpls.bgp.disable_unlabeled
+```
 
 **Notes**
 * Cisco IOS merges labeled and unlabeled BGP routes.
@@ -67,19 +56,13 @@ The following table describes the per-platform support of individual MPLS label 
 (mpls-l3vpn-supported-platforms)=
 ### BGP/MPLS L3VPN
 
-| Operating system      | VPNv4 | VPNv6 |
-| ----------------------| :---: | :---: |
-| Arista EOS            |   ✅  |   ✅  |
-| Aruba AOS-CX          |   [❗](caveats-aruba)  |   ❌  |
-| Cisco IOSv/IOS XE[^xe] |  ✅  |   ✅  |
-| Cisco IOS XR[^xr]     |   ✅  |   ✅  |
-| FRR                   |   ✅  |   ✅  |
-| Junos[^Junos]         |   ✅  |   ✅  |
-| Mikrotik RouterOS 6   |   ✅  |   ❌  |
-| Mikrotik RouterOS 7   |   ✅  |   ❌  |
-| Nokia SR OS[^SROS]    |   ✅  |   ✅  |
-| Nokia SR Linux [❗](caveats-srlinux) | ✅ | ✅ |
-| VyOS                  |   ✅  |   ✅  |
+```{features}
+- title: VPNv4
+  enabled: mpls.vpn is True or 'ipv4' in mpls.vpn
+  caveats: mpls.caveats.core
+- title: VPNv6
+  enabled: mpls.vpn is True or 'ipv6' in mpls.vpn
+```
 
 **Notes**
 * VPNv4 and VPNv6 address families are enabled on IPv4 IBGP/EBGP sessions
@@ -87,12 +70,10 @@ The following table describes the per-platform support of individual MPLS label 
 
 ### 6PE
 
-| Operating system      | 6PE | 6PE<br>RR |
-| ----------------------| :-: | :-: |
-| Arista EOS            | ✅  | ✅  |
-| Cisco IOSv/IOS XE[^xe] | ✅ | ✅  |
-| Cisco IOS XR[^xr]     | ✅  | ✅  |
-| Nokia SR OS[^SROS]    | ✅  | ✅  |
+```{features}
+- title: 6PE
+  enabled: mpls['6pe']
+```
 
 **Notes**
 

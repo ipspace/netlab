@@ -41,42 +41,43 @@ We tested _netlab_ with Vagrant version 2.4.9 and vagrant-libvirt plugin version
 
 Vagrant starts virtual machines from prepackaged VM images called *boxes*. While it's possible to download some network device images from Vagrant Cloud, you'll have to build most of the boxes you'd want to use in your lab.
 
-You have to use the following box names when installing or building the Vagrant boxes (see [supported platforms](../platforms.md) and **[netlab show images](../netlab/show.md)** for more details):
+You have to use the following box names when installing or building the Vagrant boxes (see [supported platforms](supported-platforms) and **[netlab show images](netlab-show-images)** for more details). Vagrant automatically downloads the boxes without a build recipe from Vagrant Cloud when you're using them for the first time in your lab topology.
 
-| Virtual network device | Vagrant box name            |
-| ---------------------- | --------------------------- |
-| Arista vEOS            | arista/veos                 |
-| Aruba CX               | aruba/cx                    |
-| Cisco ASAv             | cisco/asav                  |
-| Cisco Catalyst 8000v   | cisco/cat8000v              |
-| Cisco CRS 1000v        | cisco/csr1000v              |
-| Cisco IOSv             | cisco/iosv                  |
-| Cisco IOSvL2           | cisco/iosvl2                |
-| Cisco IOS XR           | cisco/iosxr                 |
-| Cisco Nexus 9300v      | cisco/nexus9300v            |
-| Cumulus VX 5.0 (NVUE)  | CumulusCommunity/cumulus-vx |
-| Dell OS10              | dell/os10                   |
-| Fortinet FortiOS       | fortinet/fortios            |
-| Juniper vPTX (vJunos EVO) | juniper/vptx             |
-| Juniper vSRX 3.0       | juniper/vsrx3               |
-| [Linux](linux.md)      | generic/ubuntu2004          |
-| Mikrotik RouterOS 6    | mikrotik/chr                |
-| Mikrotik RouterOS 7    | mikrotik/chr7               |
-| OpenBSD                | netlab/openbsd              |
-| Sonic                  | netlab/sonic                |
-| VyOS                   | netlab/vyos                 |
-
-The following Vagrant boxes are automatically downloaded from Vagrant Cloud when you're using them for the first time in your lab topology:
-
-| Virtual network device | Vagrant box name   |
-|------------------------|--------------------|
-| Cumulus VX             | CumulusCommunity/cumulus-vx:4.4.0 |
-| Generic Linux          | generic/ubuntu2004 |
+```{features}
+device:
+  caveats: libvirt.get('docs_caveats')
+features:
+- title: Vagrant box name
+  text: libvirt.image
+- title: Build<br>recipe
+  enabled: libvirt.get('build')
+  link: libvirt.get('build_recipe') or libvirt.get('build')
+  present: 🔗
+  missing: ''
+```
 
 **NOTES**:
 
 * Even if a new box version is available from Vagrant Cloud, Vagrant will only output a warning to let the user know an update is available. You can ignore that warning or update the box with `vagrant box update`. 
 * Vagrant does not automatically download the updated boxes because boxes can be relatively large (See [Vagrant box versioning](https://developer.hashicorp.com/vagrant/docs/boxes/versioning) for details).
+
+(platform-provider-vm-resources)=
+Device definitions for the **libvirt** provider specify the number of virtual CPUs, the amount of memory allocated to each network device, and the default VM NIC type when it's not *virtio*.
+
+These are the default values; you can change them with [node parameters](node-attributes) or [device defaults](libvirt-vm-settings).
+
+```{features}
+- title: CPUs
+  text: libvirt.image and libvirt.node.cpu
+  align: right
+- title: Memory<br>(MB)
+  text: libvirt.image and libvirt.node.memory
+  align: right
+- title: libvirt<br>NIC model
+  text: libvirt.image and libvirt.node.get('nic_model_type','virtio')
+```
+
+Recent Nexus OS releases need more memory than the default value ([more details](caveats-nxos)).
 
 (libvirt-build-boxes)=
 ### Building Vagrant Boxes
@@ -115,10 +116,22 @@ The following node parameters influence the VM configuration created by *vagrant
 
 * **cpu** -- number of virtual CPUs allocated to the VM
 * **memory** -- VM memory (in MB)
-* **libvirt.nic_model_type** -- VM NIC model (example: e1000). The default _netlab_ settings usually work fine.
+* **libvirt.cpu** -- the default number of virtual CPUs allocated to the VM (see below)
+* **libvirt.memory** -- the default VM memory in MB (see below)
+* **libvirt.nic_model_type** -- VM NIC model (example: e1000). The default _netlab_ settings usually work fine (see below).
 * **libvirt.nic_adapter_count** -- maximum number of VM NICs (default: 8)
 * **libvirt.uuid** -- sets the libvirt VM UUID (some devices use the UUID to create their serial numbers). The value of this parameter is not checked[^UUID].
 * **libvirt.machine_type** -- QEMU machine type passed to *vagrant-libvirt* (example: `pc-i440fx-6.2`, `q35`). Useful when a Vagrant box requires a specific machine type to boot (for example, older guest kernels that fail on the QEMU 8.x default on Ubuntu 24.04). Overrides any value set by the device template. The value of this parameter is not checked[^MACHTYPE].
+
+The default **libvirt.cpu**, **libvirt.memory**, and **libvirt.nic_model_type** values are defined in the **libvirt.node** dictionary of the device settings ([platform defaults](platform-provider-vm-resources)). The default NIC model is **virtio**. _netlab_ uses them in the Vagrantfile before including the [device provisioning template](customize-templates), which means:
+
+* The **cpu** and **memory** node parameters override any other CPU/memory settings
+* A [custom device provisioning template](customize-templates) can set the VM CPU, memory, and NIC model (**domain.cpus**, **domain.memory**, and **domain.nic_model_type**), overriding the device defaults and the **libvirt** node parameters
+* You can change the device defaults with **defaults.devices._device_.libvirt.node.cpu**, **defaults.devices._device_.libvirt.node.memory**, and **defaults.devices._device_.libvirt.node.nic_model_type** settings. For example, use the following setting in the [lab topology](defaults-topology) or one of the [defaults files](defaults-user-file) to allocate 8 GB of RAM to Nexus OS VMs:
+
+```
+defaults.devices.nxos.libvirt.node.memory: 8192
+```
 
 [^UUID]: In other words, you're on your own. After starting a lab, you can get a valid VM UUID with the **virsh dumpxml _vm_name_|grep uuid** command (use **netlab status** to display the VM name).
 

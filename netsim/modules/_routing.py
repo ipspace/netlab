@@ -85,18 +85,29 @@ def routing_af(
           node[proto].af[af] = True                   # Found the AF - we need it in the routing protocol
           continue
 
-  p_features = features.get(proto,{}) if features else {}
-
   for af in ['ipv4','ipv6']:                          # Remove unused address families
     if not node[proto].af.get(af,False):
       node[proto].af.pop(af,False)
       continue
 
-    if af in p_features and p_features[af] is False:
-      log.error(
-        f'{n_name} cannot run {proto} on {af}',
-        log.IncorrectValue,
-        proto)
+    check_af_feature(proto,af,n_name,features)
+
+"""
+check_af_feature: report an error if the device cannot run the routing protocol
+for the address family (the <proto>.<af> device feature is set to False)
+"""
+def check_af_feature(
+      proto: str,                                     # Routing protocol
+      af: str,                                        # Address family
+      n_name: str,                                    # Name of the object (node or VRF)
+      features: typing.Optional[Box]) -> None:        # Device features
+
+  p_features = features.get(proto,{}) if features else {}
+  if af in p_features and p_features[af] is False:
+    log.error(
+      f'{n_name} cannot run {proto} on {af}',
+      log.IncorrectValue,
+      proto)
 
 # After parsing/building the IGP AF structure and offloading VRF interfaces into VRF data
 # structure, recheck the interface status. If there's no match between interface AF and IGP AF,
@@ -466,7 +477,7 @@ def check_vrf_protocol_support(
     # We found the protocol to check in the current VRF, time to check device features
     d_feature = devices.get_device_features(node,topology.defaults)
     if not d_feature.get(f'vrf.{feature}',False): # Does the device support the target protocol/AF combo?
-      f_name = feature if feature != proto else f'{proto} for {af}'
+      f_name = f'{proto} for {af}' if feature == proto and af else feature
       log.error(
         f'Device {node.device} (node {node.name}) does not support {f_name} in VRFs (found in VRF {v_name})',
         category=log.IncorrectValue,
@@ -490,7 +501,7 @@ def check_intf_support(node: Box, proto: str, topology: Box) -> bool:
     for kw in intf.get(proto,{}).keys():          # Iterate over interface protocol parameters
       if kw not in attr:                          # Not an optional attribute, move on
         continue
-      if kw not in features:                      # Optional attribute, but not supported => add error info
+      if not features.get(kw,False):              # Optional attribute, but not supported => add error info
         data.append_to_list(err_list,kw,f'interface {intf.ifname} ({intf.name})')
 
   if not err_list:                                # No errors found, we're done

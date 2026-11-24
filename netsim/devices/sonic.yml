@@ -11,6 +11,7 @@
 # "<module>/<device>-<provider>.j2" before "<module>/<device>.j2", see defaults/paths.yml).
 parent: frr
 description: SONiC
+device_caveats: caveats-sonic-vm
 support:
   level: minimal
 interface_name: Ethernet{ifindex * 4}
@@ -77,17 +78,26 @@ features:
   evpn: false
 libvirt:
   image: netlab/sonic
+  docs_caveats: caveats-sonic-vm
+  node:
+    cpu: 2
+    memory: 4096
+    nic_model_type: virtio
+  build: https://netlab.tools/labs/sonic/#build-sonic-box
   mtu: 1500
   create_template: sonic.xml.j2
   group_vars:
-    ansible_connection: paramiko
+    ansible_connection: ssh
     ansible_user: admin
     ansible_ssh_pass: YourPaSsWoRd
     netlab_show_command: [ sudo, vtysh, -c, 'show $@' ]
+    netlab_config_mode: ''              # Use the Ansible task list (vtysh runs in the 'bgp' container)
 clab:
   # The generic templates/provider/clab/clab.j2 renders every clab.<key> below through its
   # key-value passthrough loop, so this device needs no provider template of its own.
   image: docker-sonic-vs:latest
+  docs_caveats: caveats-sonic-clab
+  build: https://netlab.tools/labs/sonic/#build-sonic-container
   mtu: 1500
   node:
     kind: sonic-vs
@@ -145,16 +155,10 @@ clab:
       # MLAG does not work: docker-sonic-vs has no mclagd, so the pair never forms
       # (lag/10-mlag: "X1 cannot establish a LAG with both switches in MLAG pair", then the
       # datapath is lost). Declared False rather than described in the caveats -- a feature that
-      # does not work belongs turned off. Note this does not on its own make netlab refuse an
-      # MLAG topology: netsim/modules/lag.py gates the peer-link machinery on
-      # "lag.mlag OR evpn.multihoming.lag", and evpn.multihoming.lag is still declared below.
+      # does not work belongs turned off.
 #      mlag: False
     vxlan: false                # Use SONiC commands to configure it
-    evpn:
-      transport: [ vxlan, mpls ]
-      irb: true
-      multihoming:
-        lag: true
+    evpn: false                 # Needs vxlan or mpls (both disabled until they can be configured with SONiC commands)
     initial:
       collect: true             # ansible_connection: docker unblocks this (no sshd needed)
     # Repeated from the global features above: FRR declares clab.features.services as a dict,

@@ -117,3 +117,16 @@ links:
   e2:
   bandwidth: 1000
 ```
+
+(topology-schema)=
+## Editor Support
+
+_netlab_ publishes the [JSON schema of lab topologies](https://netlab.tools/topology.schema.json). Editors that use a YAML language server (for example, VS Code with the YAML extension) use the schema to complete attribute names and to report unknown attributes or invalid values while you're editing a lab topology. Add this line to the top of a lab topology file to use it:
+
+```
+# yaml-language-server: $schema=https://netlab.tools/topology.schema.json
+```
+
+The schema is built from the attribute definitions of core _netlab_ attributes, configuration modules, virtualization providers, external tools, and output modules. It does not know the attributes added by plugins or the [custom attributes](extend-attributes.md) defined in the lab topology. Use the **[netlab show schema](netlab-show-schema)** command to create a schema that includes plugin attributes.
+
+The schema does not replace the lab topology validation done by **netlab create**. For example, it does not check the values of attributes specified with dotted keys (`bgp.as: 65000`), node names used in links, or whether a configuration module is enabled.

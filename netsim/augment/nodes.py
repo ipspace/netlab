@@ -718,11 +718,52 @@ def cleanup_mtu(node: Box, topology: Box) -> None:
 '''
 Final cleanup of node data
 '''
+'''
+check_ipv6_support -- report IPv6 addresses on devices that cannot configure them
+(initial.ipv6 feature set to False). Reports a single error per node.
+'''
+def check_ipv6_support(node: Box, topology: Box) -> None:
+  features = devices.get_device_features(node,topology.defaults)
+  if features.get('initial.ipv6',None) is not False:
+    return
+
+  lb_data = node.get('loopback',None)
+  intf_list = ([ lb_data ] if isinstance(lb_data,Box) else []) + node.get('interfaces',[])
+  for intf in intf_list:
+    if 'ipv6' not in intf:
+      continue
+    log.warning(
+      text=f'Device {node.device} (node {node.name}) cannot have IPv6 addresses',
+      more_data=f'Found an IPv6 address on {intf.get("ifname","loopback")} ({intf.get("name","loopback")})',
+      flag='nodes.ipv6',
+      category=log.IncorrectValue,
+      module='nodes')
+    return
+
+'''
+check_bandwidth_support -- warn the user when a device that cannot configure interface
+bandwidth (initial.bandwidth feature is not set) has interfaces with 'bandwidth' attribute
+'''
+def check_bandwidth_support(node: Box, topology: Box) -> None:
+  features = devices.get_device_features(node,topology.defaults)
+  if features.get('initial.bandwidth',False):
+    return
+
+  bw_list = [ f'{intf.ifname}({intf.get("name","")})' for intf in node.get('interfaces',[]) if 'bandwidth' in intf ]
+  if bw_list:
+    log.warning(
+      text=f'Device {node.device} (node {node.name}) cannot configure interface bandwidth',
+      more_data=f'Interface(s) with bandwidth attribute: {", ".join(bw_list)}',
+      flag='nodes.bandwidth',
+      module='nodes')
+
 def cleanup(topology: Box) -> None:
   plugin_config = topology.get('_plugin_config',[])
 
   for name,n in topology.nodes.items():
     check_unique_ifnames(n)
+    check_ipv6_support(n,topology)
+    check_bandwidth_support(n,topology)
     cleanup_mtu(n,topology)
     cleanup_non_ansible_config(n)
 

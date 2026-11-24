@@ -1,4 +1,5 @@
 description: Cumulus 5.x configured with NVUE
+device_caveats: caveats-cumulus-nvue
 docname: Cumulus 5.x (NVUE)
 support:
   level: minimal
@@ -17,6 +18,10 @@ libvirt:
   #
   # Latest as of November 2024, supports PVRST+ on single vlan-aware bridge
   image: CumulusCommunity/cumulus-vx:5.10.0
+  docs_caveats: cumulus-nvue-pwd-fix
+  node:
+    cpu: 2
+    memory: 2048
   caveats:
   - >-
     The Vagrant account on public Cumulus 5.x Vagrant boxes has expired password
@@ -26,11 +31,12 @@ group_vars:
   ansible_user: cumulus
   ansible_ssh_pass: GetLost1!
   ansible_network_os: cumulus_nvue
-  ansible_connection: paramiko
+  ansible_connection: ssh
   ansible_python_interpreter: auto_silent
   netlab_ready: [ ansible ]
 features:
   initial:
+    hosts: False
     system_mtu: True
     ipv4:
       unnumbered: True
@@ -39,6 +45,7 @@ features:
     collect: true
     reload: false
   bgp:
+    caveats.core: caveats-cumulus-nvue
     activate_af: True
     advertise: true
     import: [ connected, ospf, static, vrf ]
@@ -53,9 +60,15 @@ features:
     irb: True
     asymmetrical_irb: True
     transport: [ vxlan ]
+    multihoming:                # evpn.multihoming plugin
+      lag: True                 # ES on LAG interfaces (ESI-LAG)
+      interface: False
+      esi_auto: False
   gateway:
     protocol: [ anycast, vrrp ]
+    vrrp.version: True          # vrrp.version plugin
   lag:
+    static: True
     passive: False
     mlag:
       peer:
@@ -65,14 +78,16 @@ features:
         ip: linklocal             # Use this IP subnet
         backup_ip: loopback.ipv4  # Use loopback.ipv4 as a backup IP address for peerlink
   ospf:
-    caveats:
-      core: caveats-cumulus-nvue
+    ipv6: False
     default: True
     import: [ bgp, connected, static, vrf ]
     unnumbered: True
     timers: True
     priority: True
-    areas: true
+    areas:
+      caveats.range: caveats-cumulus-nvue
+      external_range: Cumulus NVUE cannot configure NSSA type-7 ranges (FRR version too old)
+      external_filter: Cumulus NVUE cannot suppress NSSA type-7 ranges (FRR version too old)
   routing:
     static:
       vrf: True
@@ -83,12 +98,14 @@ features:
     enable_per_port: True
     port_type: True
   vlan:
+    caveats.native_routed: caveats-cumulus-nvue
     model: router
     svi_interface_name: "vlan{vlan}"
     native_routed: True
     mixed_trunk: True
     subif_name: "{ifname}.{vlan.access_id}"
   vrf:
+    caveats.core: module-vrf-platform-support
     ospfv2: True
     bgp: True
     leaking_caveats: caveats-cumulus-nvue
@@ -101,6 +118,7 @@ clab:
     kind: cvx
     runtime: docker
   image: networkop/cx:5.3.0                    # Note: dated and known to have issues, unsupported
+  docs_caveats: caveats-cumulus-nvue
   caveats:
   - Cumulus 5.x containers are out-of-date and not supported
   group_vars:

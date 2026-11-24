@@ -6,22 +6,22 @@ This configuration module configures a link aggregation group (LAG) between a pa
 (lag-platform)=
 LAG is currently supported on these platforms:
 
-| Operating system      | LACP | Static | Passive<br>LACP | MLAG
-| --------------------- |:--:|:--:|:--:|:---:|
-| Arista EOS [❗](caveats-eos) | ✅ | ✅ | ✅ | ✅ |
-| Aruba AOS-CX [❗](caveats-aruba) | ✅ | ✅ | ✅ | ✅ |
-| Cisco IOL L2[^iol2] | ✅ | ✅ | ✅ | ❌ |
-| Cisco IOSV L2[^iol2]  | ✅ | ✅ | ✅ | ❌ |
-| Cumulus Linux 4.x     | ✅ | ✅ | ❌  | ❌ |
-| Cumulus 5.x (NVUE)    | ✅ | ✅ | ❌  | ✅ |
-| Dell OS10             | ✅ | ✅ | ✅  | ✅ |
-| FRR                   | ✅ | ✅ | ❌  | ❌ |
-| Generic Linux hosts   | ✅ | ✅ | ❌  | ❌ |
-| JunOS[^Junos]         | ✅ | ✅ | ✅  | ❌ |
+```{features}
+- title: LACP
+  enabled: lag
+- title: Static
+  enabled: lag.static
+- title: Passive<br>LACP
+  enabled: lag.passive
+- title: MLAG
+  enabled: lag.mlag
+  caveats: lag.caveats.mlag
+```
 
-[^Junos]: Includes vSRX, vPTX and vJunos-switch. cRPD, vJunos-router, and vMX do not support LAG.
+**Notes:**
 
-[^iol2]: Port-Channel interfaces are treated like physical interfaces. Setting LACP rate is not available.
+* Static LAG (LACP disabled) is not tested with integration tests.
+* Cisco IOL L2 and IOSv L2 treat port-channel interfaces like physical interfaces. Setting the LACP rate is not available.
 
 ## Parameters
 

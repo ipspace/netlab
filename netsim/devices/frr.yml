@@ -1,5 +1,6 @@
 ---
 description: FRR container
+device_caveats: true
 docname: FRRouting
 docparent: False                    # Do not use as a parent device in feature support tables
 interface_name: eth{ifindex}
@@ -21,6 +22,7 @@ group_vars:
   ansible_network_os: frr
   ansible_python_interpreter: auto_silent
   netlab_initial: always
+  netlab_config_mode: netmiko
   netlab_default_shebang: '#!/usr/bin/vtysh -f'
   netlab_frr_daemons:
     bfd: [ bfdd ]
@@ -53,6 +55,7 @@ clab:
         ipv6: True
         transport_vrf: False
   image: quay.io/frrouting/frr:10.7.1
+  docs_caveats: caveats-frr-clab
   kmods:
     initial: [ 'vrf?' ]
   node:
@@ -62,6 +65,11 @@ clab:
 
 libvirt:
   image: debian/bookworm64
+  docs_caveats: caveats-frr-vm
+  node:
+    cpu: 1
+    memory: 1024
+  build_recipe: https://netlab.tools/labs/frr/      # Documentation only (the box is downloadable)
   create_image: netlab/frr
   create_template: frr.xml.j2
   create_iso: frr
@@ -73,7 +81,7 @@ libvirt:
       reload:
         command: sudo vtysh -f replace-config
   group_vars:
-    ansible_connection: paramiko
+    ansible_connection: ssh
     ansible_user: vagrant
     ansible_ssh_pass: vagrant
     ansible_ssh_private_key_file: .vagrant/machines/{{ inventory_hostname }}/libvirt/private_key
@@ -87,6 +95,7 @@ external:
   image: none
 features:
   initial:
+    lldp: False
     ipv4:
       unnumbered: true
     ipv6:
@@ -95,6 +104,7 @@ features:
     ra: true
     roles: [ host, router, bridge ]
     generate_mac: [ svi ]
+    bandwidth: true
     collect: true
     reload: true
   bfd.caveats: caveats-frr
@@ -156,7 +166,8 @@ features:
   lag:
     passive: False
   mpls:
-    ldp: true
+    ldp:
+      explicit_null: true
     vpn:
       ipv4: true
   netmiko:
@@ -173,7 +184,8 @@ features:
     password: true
     priority: true
     timers: true
-    areas: true
+    areas:
+      caveats.external_range: caveats-frr
   ripv2:
     ipv4: true
     ipv6: true

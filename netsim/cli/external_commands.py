@@ -322,12 +322,14 @@ def execute_tool_commands(cmds: list, topology: Box) -> typing.Optional[str]:
 
   output = ''
   for cmd in cmds:
-    cmd = strings.eval_format(cmd,topology)
+    cmd = strings.eval_command_format(cmd,topology)
     status = run_command(
               cmd = [ 'bash', '-c', cmd + " 2>&1"],   # Redirect STDERR to STDOUT to collect it
               check_result=True,                      # I want to get the status
               ignore_errors=True,                     # ... returned but not reported
               return_stdout=True)                     # ... and we need STDOUT content to look for the warnings
+    if is_dry_run():                                  # run_command printed the command in dry-run mode
+      continue                                        # ... and there's no output to check
     if not isinstance(status,str):
       log.error(
         f'Failed to execute {cmd}',module='tools',

@@ -38,6 +38,7 @@ tools:
     validate: True
 ```
 
+* The lab topology must define [validation tests](validate-tests). Without them, the plugin prints a warning and does not start the background process.
 * The background process is started after the tools have been started by **netlab up** and stopped by **netlab down**. **netlab down --cleanup** removes the files it created. The process is not started when you use **netlab up --no-tools**.
 * Each run executes all validation tests on the lab devices. Set the interval to match your devices; running the tests often can be slow and noisy on VM-based devices.
 * The background process also stops when the lab snapshot disappears, after 12 hours, or after 20 failed **netlab validate** runs in a row.
@@ -48,7 +49,7 @@ You can change the plugin behavior with these **tools.network_xray** parameters:
 | Parameter | Meaning | Default |
 |---|---|---|
 | validate | Run the validation loop | False |
-| validate_interval | Time (in seconds) between **netlab validate** runs | 30 |
-| validate_max_hours | Stop the background process after this many hours | 12 |
+| validate_interval | Time (in seconds) between **netlab validate** runs (an integer, at least 30) | 30 |
+| validate_max_hours | Stop the background process after this many hours (at least 1) | 12 |
 
-Invalid **validate_interval** or **validate_max_hours** values (not a positive number) are replaced with the default values, and the plugin prints a warning.
+_netlab_ reports an error when **validate_interval** or **validate_max_hours** has an invalid value.

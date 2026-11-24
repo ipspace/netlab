@@ -1,5 +1,6 @@
 ---
 description: Mikrotik RouterOS version 7
+device_caveats: true
 docname: Mikrotik RouterOS 7
 support:
   level: minimal
@@ -11,6 +12,11 @@ tunnel_interface_name: tunnel{ifindex}
 ifindex_offset: 2
 libvirt:
   image: mikrotik/chr7
+  docs_caveats: caveats-routeros7
+  node:
+    cpu: 2
+    memory: 256
+    nic_model_type: e1000
   build: https://netlab.tools/labs/routeros7/
   create:
     virt-install --connect=qemu:///system --name=vm_box --arch=x86_64 --cpu host --vcpus=2 --hvm
@@ -24,6 +30,7 @@ group_vars:
   netlab_device_type: routeros7
 features:
   initial:
+    caveats.lldp: caveats-routeros7
     roles: [ router ]
     collect: true
   bgp:
@@ -35,7 +42,8 @@ features:
     remove_private_as:
       valid: [ 'on' ]
   mpls:
-    ldp: true
+    ldp:
+      explicit_null: true
     vpn: true
   ospf:
     caveats.bfd: True
@@ -52,11 +60,13 @@ features:
     dns: True
     syslog: True
   vlan:
+    caveats.bridging: caveats-routeros7
     model: l3-switch
     svi_interface_name: "vlan{vlan}"
     subif_name: "{ifname}-{vlan.access_id}"
     native_routed: true
   lag:
+    static: True
     passive: True
   vrf:
     ospfv2: True
@@ -66,6 +76,7 @@ features:
     vtep6: True
 clab:
   image: vrnetlab/mikrotik_routeros:7.21.4
+  docs_caveats: caveats-routeros7
   build: https://containerlab.dev/manual/kinds/vr-ros/
   features:
     initial:

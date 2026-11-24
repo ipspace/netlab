@@ -1,5 +1,6 @@
 ---
 description: Dell OS10
+device_caveats: caveats-os10
 interface_name: ethernet1/1/{ifindex}
 mgmt_if: mgmt1/1/1
 loopback_interface_name: loopback{ifindex}
@@ -37,12 +38,18 @@ features:
     _default_locpref: true
     multihop.vrf: true
   evpn:
+    caveats.core: caveats-os10
     asymmetrical_irb: true
     irb: true
     transport: [ vxlan ]
   gateway:
     protocol: [ anycast, vrrp ]
+    caveats:
+      anycast: caveats-os10
+      vrrp: caveats-os10
+    vrrp.version: True          # vrrp.version plugin
   lag:
+    static: True
     reserved_ifindex_range: [ 1000 ]
     mlag:
       peer:
@@ -51,13 +58,15 @@ features:
     passive: True
   ospf:
     caveats:
-      core: caveats-os10
+      ipv4: caveats-os10
+      ipv6: caveats-os10
     default: True
     import: [ bgp, connected, static, vrf ]
     timers: True
     password: True
     priority: True
     areas:
+      caveats.stub: caveats-os10
       external_range: Dell OS10 cannot configure NSSA type-7 ranges
       external_filter: Dell OS10 cannot suppress NSSA type-7 ranges
   routing:
@@ -92,6 +101,7 @@ features:
     enable_per_port: True
     port_type: True
   vlan:
+    caveats.bridging: caveats-os10
     model: switch
     svi_interface_name: vlan{vlan}
   vrf:
@@ -119,6 +129,10 @@ clab:
       healthcheck: true
 libvirt:
   image: dell/os10
+  node:
+    cpu: 2
+    memory: 4096
+    nic_model_type: e1000
   build: https://netlab.tools/labs/dellos10/
   create:
     virt-install --connect=qemu:///system --name=vm_box --arch=x86_64 --cpu host --vcpus=2 --hvm

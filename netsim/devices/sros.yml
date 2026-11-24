@@ -1,5 +1,6 @@
 ---
 description: Nokia SR OS VM in container
+device_caveats: true
 docname: Nokia SR OS
 support:
   level: minimal
@@ -13,7 +14,7 @@ group_vars:
   ansible_user: admin
   ansible_ssh_pass: admin
   ansible_network_os: sros
-  ansible_connection: paramiko_ssh
+  ansible_connection: ssh
   netlab_console_connection: ssh
   netlab_ready: [ ansible ]
   sros_use_openconfig: False
@@ -31,6 +32,7 @@ bfd:                          # Set defaults to values that will interoperate wi
   min_rx: 500
 features:
   initial:
+    hosts: False
     ipv4:
       unnumbered: True
     ipv6:
@@ -72,8 +74,13 @@ features:
       network: False          # SROS treats the interfaces as point-to-point and forms at most 1 adjacency
     import: [ ospf, bgp, connected, static, vrf, no_policy ]
   mpls:
-    ldp: True
-    bgp: True                 # BGP-LU
+    ldp:
+      explicit_null: True
+      igp_sync: True
+    bgp:                      # BGP-LU
+      ipv4: True
+      ipv6: True
+      explicit_null: True
     vpn: True
     6pe: True                 # also implies BGP-LU
   ospf:
@@ -121,6 +128,7 @@ features:
 
 clab:
   image: vrnetlab/vr-sros
+  docs_caveats: caveats-sros
   build: https://containerlab.dev/manual/kinds/vr-sros/
   mtu: 1500
   node:

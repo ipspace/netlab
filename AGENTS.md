@@ -120,6 +120,7 @@ IMPORTANT -- the Box objects must have the default_box and box_dots flags set to
 - YAML files for configuration and topology definitions
 - Jinja2 templates for configuration generation
 - Global settings in `netsim/defaults/`
+- Device module features set to `True` (for example, `bgp: True` in `netsim/devices/*.yml`) are normalized to empty dictionaries in `netsim/augment/devices.py` before any module code runs. Module code can treat `features.<module>` as a dictionary
 
 ### Documentation
 - Docstrings follow Google style (not strictly enforced but preferred)
@@ -175,6 +176,7 @@ When you don't have to change the code for other reasons:
 * Link to MyST anchors (`[text](anchor-name)`) instead of relative file paths (`../caveats.md`). If the target page has no `(anchor-name)=` label, add one at its top (developer documentation uses the `dev-` prefix) and make sure it's unique within `docs` and is not equal to a file name. Ask for the anchor name when in doubt.
 * The expressions in `{features}` tables (`docs/_ext/features.py`) evaluate to False when they raise an exception. Use simple expressions like `netmiko.reload.command` instead of defensive `.get()` chains.
 * When adding a device feature flag (`features.<module>.<flag>` in `netsim/devices/*.yml`), describe it in the *Device Features* section of `docs/dev/config/<module>.md` and in the `features` dictionary of `netsim/modules/<module>.yml` (displayed by `netlab show modules`).
+* A device feature flag that is set only on devices lacking a feature (for example, `ospf.ipv6: False`) must also be listed with its default value (`True`) in the `feature_defaults` dictionary of `netsim/modules/<module>.yml` (the `{features}` tables use these defaults, so use `<module>.<flag>` instead of `.get()` with a default value). Do not add the flag to device files that support the feature.
  
 ### Writing Configuration Template Development Documentation
 

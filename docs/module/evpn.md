@@ -22,107 +22,80 @@ This configuration module configures the BGP EVPN address family to implement L2
 
 The following table describes the per-platform support of individual EVPN/VXLAN features:
 
-| Operating system   | VLAN-based<br>service | VLAN Bundle<br>service | Asymmetric<br>IRB | Symmetric<br>IRB |
-| ------------------ | :-: | :-: | :-: | :-: |
-| Arista EOS         | ✅  |  ✅  | ✅  | ✅  |
-| Aruba AOS-CX       | ✅  |  ✅  | ✅  | ✅[❗](caveats-aruba)  |
-| BIRD               | ✅  |  ❌  |  ❌  |  ❌  |
-| Cisco IOS XE[^XEV] | ✅  |  ❌  | ✅  | ✅  |
-| Cisco Nexus OS     | ✅  |  ❌  | ✅  | ✅  |
-| Cumulus Linux 4.x  | ✅  |  ❌  | ✅  | ✅  |
-| Cumulus 5.x (NVUE) | ✅  |  ❌  | ✅  | ✅  |
-| Dell OS 10         | ✅  |  ❌  | ✅  | ✅  |
-| FRR                | ✅  |  ❌  | ✅  | ✅  |
-| Nokia SR Linux     | ✅  |  ✅  | ✅  | ✅  |
-| Nokia SR OS[^SROS] | ✅  |  ❌  | ✅  | ✅  |
-| vJunos-switch [❗](caveats-vjunos-switch) | ✅  | ✅  | ✅  | ✅  |
-| vJunos-router      | ✅  | ✅  | ✅  | ✅  |
-| Juniper vPTX [❗](caveats-vptx) | ✅  | ✅  | ✅  | ✅  |
-| VyOS               | ✅  |  ❌  | ✅  | ✅  |
-
-[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
-
-[^XEV]: Includes Catalyst 8000v, Cisco IOL, Cisco IOLL2, but **not** CSR.
+```{features}
+- title: VLAN-based<br>service
+  enabled: vxlan and 'vxlan' in evpn.transport
+  caveats: evpn.caveats.core
+- title: VLAN Bundle<br>service
+  enabled: vxlan and 'vxlan' in evpn.transport and evpn.bundle
+- title: Asymmetric<br>IRB
+  enabled: vxlan and 'vxlan' in evpn.transport and evpn.asymmetrical_irb
+- title: Symmetric<br>IRB
+  enabled: vxlan and 'vxlan' in evpn.transport and evpn.irb
+  caveats: evpn.caveats.irb
+```
 
 The following table describes the per-platform support of individual EVPN/MPLS features:
 
-| Operating system   | VLAN-based<br>service | VLAN Bundle<br>service | Asymmetric<br>IRB | Symmetric<br>IRB |
-| ------------------ | :-: | :-: | :-: | :-: |
-| Arista EOS         | ✅  | ✅  | ✅[❗](caveats-eos) | ✅  |
-| Cisco IOS XE[^XEM] | ✅  |  ❌  | ✅  | ✅  |
-| Cisco 8000v        | ✅  |  ❌  |  ❌  | ✅  |
-| Cisco IOS XR       |  ❌  |  ❌  |  ❌  | ✅  |
+```{features}
+- title: VLAN-based<br>service
+  enabled: mpls and 'mpls' in evpn.transport and vlan
+- title: VLAN Bundle<br>service
+  enabled: mpls and 'mpls' in evpn.transport and evpn.bundle
+- title: Symmetric<br>IRB
+  enabled: mpls and 'mpls' in evpn.transport
+  caveats: evpn.caveats.mpls_irb
+```
 
-[^XEM]: Includes CSR 1000v, Catalyst 8000v, Cisco IOL, and Cisco IOLL2
+**Notes:**
 
-Devices supporting [EVPN VLAN bundle services](evpn-bundle-service) implement the following bundle service types (see RFC 7432 section 6 for more details):
+* _netlab_ always uses symmetric IRB with EVPN/MPLS.
+* Devices supporting [EVPN VLAN bundle services](evpn-bundle-service) implement only the VLAN-aware bundle service (see RFC 7432 section 6 for more details).
 
-| Operating system   | VLAN<br>bundle | Port<br>service | VLAN-aware<br>bundle | Port-based<br>VLAN bundle |
-| ------------------ | :-: | :-: | :-: | :-: |
-| Arista EOS         |  ❌  |  ❌  | ✅  |  ❌  |
-| Aruba AOS-CX       |  ❌  |  ❌  | ✅  |  ❌  |
-| vJunos-switch      |  ❌  |  ❌  | ✅  |  ❌  |
-| vJunos-router      |  ❌  |  ❌  | ✅  |  ❌  |
-| Juniper vPTX       |  ❌  |  ❌  | ✅  |  ❌  |
-| Nokia SR Linux     |  ❌  |  ❌  | ✅  |  ❌  |
+The following devices can be used as control-plane-only EVPN nodes (for example, EVPN route reflectors) but do not implement the EVPN data plane for the specified transport:
 
-EVPN module supports IBGP- and EBGP-based EVPN:
+```{features}
+- title: VXLAN
+  enabled: not evpn.transport or 'cp_vxlan' in evpn.transport
+- title: MPLS
+  enabled: not evpn.transport or 'cp_mpls' in evpn.transport
+```
 
-| Operating system   | IBGP+IGP | BGP RR | EBGP-only | EBGP<br>Unnumbered |
-| ------------------ | :-: | :-: | :-: | :-: |
-| Arista EOS         | ✅  | ✅  | ✅  | ✅  |
-| Aruba AOS-CX       | ✅  | ✅  | ❌   | ❌   |
-| Cisco IOS XE[^XEM] | ✅  | ✅  | ✅  | ❌   |
-| Cisco IOS XR[^XR]  | ✅  | ✅  | ❌   | ❌   |
-| Cisco Nexus OS     | ✅  | ✅  | ✅  | ❌   |
-| Cumulus Linux 4.x  | ✅  | ✅  | ✅  | ✅  |
-| Cumulus 5.x (NVUE) | ✅  | ✅  | ✅  | ✅  |
-| Dell OS 10 [❗](caveats-os10) | ✅  | ✅  | ✅  | ✅  |
-| FRR                | ✅  | ✅  | ✅  | ✅  |
-| Junos[^JN]         | ✅  | ✅  |  ❌  |  ❌  |
-| Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  |
-| Nokia SR OS[^SROS] | ✅  | ✅  | ✅  |  ❌  |
-| VyOS               | ✅  | ✅  |  ❌  | ✅  |
+The EVPN module supports IBGP- and EBGP-based EVPN with VXLAN transport:
 
-[^JN]: Includes vJunos-switch, vJunos-router, and vPTX (vJunos-Evo)
-
-[^XR]: Includes Cisco 8000v, Cisco IOS XRd and Cisco IOS XRv
+```{features}
+- title: IBGP+IGP
+  enabled: >-
+    'ibgp' in ((evpn.transport.get('vxlan') or evpn.transport.get('cp_vxlan') or []) if isinstance(evpn.transport,dict) else ['ibgp','ebgp'] if not evpn.transport or ('vxlan' in evpn.transport and vxlan) else [])
+- title: EBGP-only
+  enabled: >-
+    'ebgp' in ((evpn.transport.get('vxlan') or evpn.transport.get('cp_vxlan') or []) if isinstance(evpn.transport,dict) else ['ibgp','ebgp'] if not evpn.transport or ('vxlan' in evpn.transport and vxlan) else [])
+  caveats: evpn.caveats.ebgp
+- title: EBGP<br>Unnumbered
+  enabled: >-
+    'ebgp' in ((evpn.transport.get('vxlan') or evpn.transport.get('cp_vxlan') or []) if isinstance(evpn.transport,dict) else ['ibgp','ebgp'] if not evpn.transport or ('vxlan' in evpn.transport and vxlan) else []) and bgp.ipv6_lla
+```
 
 With additional nerd knobs ([more details](evpn-weird-designs)), it's possible to implement the more convoluted designs, including:
 
 * IBGP EVPN AF session established between loopback interfaces, advertised with underlay EBGP IPv4 AF
 * EBGP EVPN AF session established between loopback interfaces advertised with underlay EBGP IPv4 AF (requires **ebgp.multihop** plugin)
 
-| Operating system   | IBGP over<br>EBGP | EBGP<br>over EBGP |
-| ------------------ | :-: | :-: |
-| Arista EOS         | ✅  | ✅  |
-| Aruba AOS-CX       | ✅  | ✅  |
-| Cisco IOS/XE[^XEM] | ✅  | ✅  |
-| Cisco Nexus OS     | ❌   | ❌   |
-| Cumulus Linux 4.x  | ✅  | ✅  |
-| Cumulus 5.x (NVUE) | ✅  | ✅  |
-| Dell OS 10         | ✅  | ❌   |
-| FRR                | ✅  | ✅  |
-| Junos[^JN]         | ✅  | ✅   |
-| Nokia SR Linux     | ✅  | ✅  |
-| Nokia SR OS[^SROS] | ✅  | ✅  |
-| VyOS               | ✅  | ❌   |
+```{features}
+- title: IBGP over<br>EBGP
+  enabled: >-
+    'ibgp' in ((evpn.transport.get('vxlan') or evpn.transport.get('cp_vxlan') or []) if isinstance(evpn.transport,dict) else ['ibgp','ebgp'] if not evpn.transport or ('vxlan' in evpn.transport and vxlan) else []) and bgp.local_as and bgp.activate_af
+- title: EBGP<br>over EBGP
+  enabled: >-
+    'ebgp' in ((evpn.transport.get('vxlan') or evpn.transport.get('cp_vxlan') or []) if isinstance(evpn.transport,dict) else ['ibgp','ebgp'] if not evpn.transport or ('vxlan' in evpn.transport and vxlan) else []) and bgp.multihop and bgp.activate_af
+```
 
-Most EVPN/VXLAN implementations support only IPv4 VXLAN transport; some can run VXLAN-over-IPv6:
+All devices supporting EVPN with VXLAN transport can use IPv4 VXLAN transport; some can also run VXLAN-over-IPv6:
 
-| Operating system   | IPv4 VXLAN<br>transport | IPv6 VXLAN<br>transport |
-| ------------------ | :-: | :-: |
-| Arista EOS         | ✅  | ✅  |
-| Aruba AOS-CX       | ✅  | ❌   |
-| Cisco Nexus OS     | ✅  | ❌   |
-| Cumulus Linux 4.x  | ✅  | ❌   |
-| Cumulus 5.x (NVUE) | ✅  | ❌   |
-| Dell OS 10         | ✅  | ❌   |
-| FRR                | ✅  | ✅  |
-| Junos[^JN]         | ✅  | ❌   |
-| Nokia SR Linux     | ✅  | ❌   |
-| Nokia SR OS[^SROS] | ✅  | ❌   |
-| VyOS               | ✅  | ❌ [❗](caveats-vyos) |
+```{features}
+- title: IPv6 VXLAN<br>transport
+  enabled: vxlan and 'vxlan' in evpn.transport and evpn.ipv6
+```
 
 ```{warning}
 * EVPN with VXLAN-over-IPv6 is enabled with the `defaults.vxlan.use_v6_vtep` attribute (see [](module-vxlan)). At the moment, you cannot run a control-plane-only EVPN node with IPv6 next hops.

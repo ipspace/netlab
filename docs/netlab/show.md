@@ -15,6 +15,7 @@ The following settings can be displayed:
 * **[plugins](netlab-show-plugins)** -- Plugins available on the plugin search path
 * **[reports](netlab-show-reports)** -- Report templates shipped with _netlab_
 * **[providers](netlab-show-providers)** -- Virtualization providers
+* **[schema](netlab-show-schema)** -- JSON schema of lab topologies
 * **[tools](netlab-show-tools)** -- [External tools](../extools.md) that can be started with the lab
 
 The system settings can be displayed as a table, as raw text that is easy to parse in automation scripts, and as YAML data that can be used by third-party utilities. See usage guidelines  and examples in individual command descriptions for more details.
@@ -982,6 +983,35 @@ Error executing containerlab version:
   [Errno 2] No such file or directory: 'containerlab'
 
 Status: N/A
+```
+
+(netlab-show-schema)=
+## Display the Lab Topology JSON Schema
+
+The **netlab show schema** command displays the [JSON schema of lab topologies](topology-schema) built from the attribute definitions of core _netlab_ attributes, configuration modules, virtualization providers, external tools, and output modules:
+
+```text
+$ netlab show schema -h
+usage: netlab show schema [-h] [--system] [--plugin PLUGIN [PLUGIN ...]]
+
+Display JSON schema of lab topologies
+
+options:
+  -h, --help            show this help message and exit
+  --system              Display system information (without user defaults)
+  --plugin PLUGIN [PLUGIN ...]
+                        Add plugin attributes to the system defaults
+```
+
+**Notes**
+
+* The `--plugin` argument must be the last parameter on the command line -- all tokens specified after it are added to the list of plugins
+* The schema includes devices and attributes defined in [user defaults](../defaults.md) unless you use the `--system` argument.
+
+**Example:** Create a JSON schema that includes the **bgp.session** plugin attributes
+
+```text
+$ netlab show schema --plugin bgp.session >topology.schema.json
 ```
 
 (netlab-show-tools)=
