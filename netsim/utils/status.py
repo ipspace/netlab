@@ -23,7 +23,9 @@ def get_status_filename(topology: Box) -> str:
 Get lab ID for multilab deployments (moved here to be used by more than just CLI routines)
 '''
 def get_lab_id(topology: Box) -> str:
-  return topology.get('defaults.multilab.id','default') or 'default'    # id could be set to {} due to tool f-string evals
+  return \
+    topology.get('defaults.multilab.external',None) or \
+    topology.get('defaults.multilab.id','default') or 'default'          # id could be set to {} due to tool f-string evals
 
 '''
 change_status -- change the status of a lab

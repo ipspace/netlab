@@ -11,8 +11,13 @@ class External(_Provider):
 
   def pre_transform(self,topology : Box) -> None:
     _Provider.pre_transform(self,topology)
-    if not topology.get('defaults.multilab.id',None):
-      topology.defaults.multilab.id = f'external_{topology.name}'
+    if topology.get('defaults.multilab.id',None):             # Multilab ID is set, use it as the lab ID
+      return
+    if any(n.get('provider',topology.provider) != 'external' for n in topology.nodes.values()):
+      return                                                  # Other providers need the default lab ID
+
+    # Use a unique lab ID (lab name) to allow multiple external labs to be run at once
+    topology.defaults.multilab.external = f'external_{topology.name}'
 
   def augment_node_data(self, node: Box, topology: Box) -> None:
     log.print_verbose('Augmenting node data for External')
