@@ -63,3 +63,10 @@ nodes:
     ansible_user: Vagrant
     ansible_ssh_pass: "vagrant!"
 ```
+
+(lab-external-multiple)=
+## Running Multiple External Labs
+
+You can run multiple labs using the **external** provider at the same time, as long as they have different lab names and are started in different directories.
+
+However, the [external tools](tools-intro) (for example, Graphite) started in those labs use the same TCP ports and cannot run at the same time. If you want to use external tools in multiple external labs, set a unique **defaults.multilab.id** in each lab topology (see the *static instances* scenario in [](plugin-multilab-usage)). _netlab_ adds the **multilab.id** value to the TCP ports used by the external tools. You don't have to use the *multilab* plugin; the changes it makes are relevant only for virtual labs.
