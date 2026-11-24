@@ -567,10 +567,14 @@ def must_be_int(
 
   if isinstance(value,str):                             # Try to convert STR to INT
     try:
-      transform_to_int(value)
-      return { '_valid': True, '_transform': transform_to_int }
+      n_value = transform_to_int(value)
     except:
-      pass
+      n_value = None
+    if n_value is not None:                             # Conversion worked, check the converted value
+      status = check_num_type(n_value,min_value,max_value)
+      if status.get('_valid',False):                    # ... and transform the value if it's valid
+        status['_transform'] = transform_to_int
+      return status
 
   return(check_num_type(value,min_value,max_value))
 
@@ -586,10 +590,14 @@ def must_be_float(
 
   if isinstance(value,str):                             # Try to convert STR to INT
     try:
-      transform_to_float(value)
-      return { '_valid': True, '_transform': transform_to_float }
+      n_value = transform_to_float(value)
     except:
-      pass
+      n_value = None
+    if n_value is not None:                             # Conversion worked, check the converted value
+      status = check_num_type(n_value,min_value,max_value,float,'a number')
+      if status.get('_valid',False):                    # ... and transform the value if it's valid
+        status['_transform'] = transform_to_float
+      return status
 
   return(check_num_type(value,min_value,max_value,float,'a number'))
 
