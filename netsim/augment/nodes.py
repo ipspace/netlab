@@ -743,8 +743,13 @@ def check_ipv6_support(node: Box, topology: Box) -> None:
 '''
 check_bandwidth_support -- warn the user when a device that cannot configure interface
 bandwidth (initial.bandwidth feature is not set) has interfaces with 'bandwidth' attribute
+
+The bandwidth is only relevant to routing protocols, so we don't check non-router nodes
 '''
 def check_bandwidth_support(node: Box, topology: Box) -> None:
+  if node.get('role','router') != 'router':
+    return
+
   features = devices.get_device_features(node,topology.defaults)
   if features.get('initial.bandwidth',False):
     return
