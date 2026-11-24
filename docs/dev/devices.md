@@ -134,6 +134,8 @@ Please note that the MTU used by netlab is always the layer-3 MTU. If your devic
 
 All device features are optional; a lack of a feature indicates the device does not support it (there is no need to set a feature to *False* unless you're [overriding an inherited value](dev-device-inheritance)).
 
+Provider-specific features (**_provider_.features**) are merged with the device features. Set a module to *False* in provider-specific features (for example, `clab.features.vrf: False`) if the device does not support that module with the specified provider.
+
 For example, an Arista EOS device can use system-wide MTU and supports unnumbered IPv4 and LLA-only IPv6 interfaces:
 
 ```

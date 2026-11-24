@@ -254,6 +254,10 @@ def add_device_module_support(
 
     if f_value is False:                            # Device definitely DOES NOT support the feature
       features.pop(m)                               # Remove the feature so it won't crash the transformation
+      if provider and dname in mdata.supported_on:  # Does the device support the module with other providers?
+        if mdata.supported_on[dname] is True:       # Replace device-wide support with per-provider support
+          mdata.supported_on[dname] = data.get_box({ p: True for p in sets.providers.keys() })
+        mdata.supported_on[dname][provider] = False # ... and remove support for this provider
       continue                                      # ... and skip it
 
     if not dname in mdata.supported_on:             # Append device to module support list if needed
