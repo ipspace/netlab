@@ -4,6 +4,7 @@
 # Delete a Vagrant box an the associated libvirt volume
 #
 import argparse
+import shlex
 import typing
 
 from box import Box
@@ -217,7 +218,8 @@ def remove_box(args: argparse.Namespace) -> None:
   box_remove_confirm(args)
   strings.print_colored_text('[CLEANUP] ','green',None)
   print(f'Removing vagrant box {args.box}:{args.version}')
-  abort_on_failure(f'vagrant box remove {args.box} --provider libvirt --box-version {args.version}')
+  abort_on_failure(
+    f'vagrant box remove {shlex.quote(args.box)} --provider libvirt --box-version {shlex.quote(args.version)}')
   strings.print_colored_text('[SUCCESS] ','green',None)
   print(f"Removed vagrant box {args.box}:{args.version}")
   purge_volume(args)
