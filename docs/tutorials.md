@@ -105,7 +105,7 @@ Looking for advanced examples? How about:
 
 ## Segment Routing
 
-These blog posts describe increasingly complex SR-MPLS topologies:
+These blog posts describe increasingly complex [SR-MPLS topologies](https://github.com/ipspace/sr-workshop):
 
 * [Basic IS-IS Setup](https://blog.ipspace.net/2026/05/sr-mpls-intro/)
 * [Dual-Stack SR-MPLS](https://blog.ipspace.net/2026/05/sr-mpls-dual-stack/)
