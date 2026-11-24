@@ -366,10 +366,18 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
                         path = 'vrf.loopback',
                         node = node,
                         topology = topology)
+  features = devices.get_device_features(node,topology.defaults)
   for vrfname,v in node.vrfs.items():
     vrf_loopback = v.get('loopback',None) or node_vrf_loopback        # Do we have VRF loopbacks enabled in the node or in the VRF?
     if not vrf_loopback:                                              # ... nope, move on
       continue
+
+    if not features.vrf.get('loopback',True):                         # Can the device have VRF loopbacks?
+      log.warning(
+        text=f"VRF {vrfname} on {node.name} needs a loopback interface, which is not supported by device {node.device}",
+        module='vrf',
+        flag='loopback',
+        category=log.IncorrectValue)
 
     # Note: set interface ifindex to v.vrfidx if you want to have VRF-numbered loopbacks
     #
