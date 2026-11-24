@@ -649,7 +649,7 @@ def must_be_asn2(value: typing.Any) -> dict:                          # 2-octet 
   if not isinstance(value,int) or isinstance(value,bool):             # value must be an int
     return { '_type': err }
 
-  if value < 0 or value > 65535:
+  if value < 1 or value > 65535:
     return { '_value': err }
 
   return { '_valid': True }
@@ -698,7 +698,7 @@ def must_be_asn(value: typing.Any) -> dict:
   if not isinstance(value,int) or isinstance(value,bool):             # value must be an int
     return { '_type': err, '_help': _ASN_help }
 
-  if value < 0 or value > 4294967295:
+  if value < 1 or value > 4294967295:
     return { '_value': f'{err} -- an integer between 1 and 4294967295' }
 
   return { '_valid': True }
