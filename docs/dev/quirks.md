@@ -59,7 +59,7 @@ The individual quirks functions should check the relevant node data (example: **
 
 Use the **report_quirk** function to report unsupported configurations. It reports an error (or a warning or an info message when you set the **category** parameter or the **info** flag) and tells the user how to disable the check when you specify the **quirk** parameter (the check is skipped when the **defaults.devices._device_.warnings._quirk_** setting is `False`).
 
-Some quirks apply only to containers (for example, Arista cEOS or the bonding kernel module loaded on the host). Use the **devices.is_container(node,topology.defaults)** function (from **netsim.augment.devices**) to check whether a node runs as a container instead of comparing the node provider with `clab`. The function returns the value of the **container** attribute of the node provider, so it also works with providers that use the containerlab device settings.
+Some quirks apply only to containers (for example, Arista cEOS or the bonding kernel module loaded on the host). Use the **devices.is_container(node,topology.defaults)** function (from **netsim.augment.devices**) to check whether a node runs as a container instead of comparing the node provider with `clab`. The function returns the value of the **container** attribute of the node provider (set for **clab**).
 
 The **check_config_sw** method is called before the initial device configuration is deployed (in **netlab up** and **netlab initial**). Use it to check whether the software needed to configure the device (for example, an Ansible collection) is installed. _netlab_ aborts the configuration deployment if a **check_config_sw** method reports an error.
 
