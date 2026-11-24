@@ -3,6 +3,7 @@
 #
 from box import Box
 
+from ..cli import is_dry_run
 from ..utils import log, status
 from . import _Provider
 
@@ -30,6 +31,8 @@ class External(_Provider):
       print(f.read())
     print('')
     print('*** Please make sure your physical topology reflects the above cabling.',flush=True)
+    if is_dry_run():                                    # Don't wait for the user in dry-run mode
+      return
     if input('Do you want to continue [y/n]: ').lower() != 'y':
       status.unlock_directory()
       status.remove_lab_status(topology)
