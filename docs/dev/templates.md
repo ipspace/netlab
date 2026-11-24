@@ -36,7 +36,7 @@ You don't have to check the validity of IP addresses for _netlab_ attributes; _n
 
 ## Containers
 
-Configuration templates and deployment task lists can use the **netlab_container** variable to check whether a node runs as a container. It's set to *True* on nodes using a provider with the **container** attribute (for example, **clab**) and undefined on all other nodes, so use `netlab_container|default(False)` instead of comparing **node_provider** with `clab`.
+Configuration templates and deployment task lists can use the [**netlab_container** group variable](dev-devices-ansible-vars) to check whether a node runs as a container. It's undefined on most nodes, so use `netlab_container|default(False)` instead of comparing **node_provider** with `clab`.
 
 ## Undefined Variables
 
