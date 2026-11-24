@@ -4,6 +4,7 @@
 
 import functools
 import ipaddress
+import math
 import re
 import textwrap
 import typing
@@ -537,6 +538,9 @@ def check_num_type(
 
   if isinstance(value,bool):                            # but not a bool
     return { '_value': 'a true number (not a bool)' }
+
+  if isinstance(value,float) and math.isnan(value):     # ... and not NaN
+    return { '_value': f'{dataname} (not NaN)' }
 
   if isinstance(max_value,str):
     max_value = resolve_const_value(max_value,None)
