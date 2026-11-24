@@ -22,9 +22,6 @@ def provider_inventory_settings(node: Box, defaults: Box) -> None:
     for k,v in p_data['inventory'].items():
       node[k] = v
 
-  if devices.provider_is_container(n_provider,defaults):  # Tell the configuration templates the node is a container
-    node.netlab_container = True
-
   if 'inventory_port_map' in p_data and 'forwarded' in p_data:
     for k,v in p_data['inventory_port_map'].items():
       if k in p_data['forwarded']:
