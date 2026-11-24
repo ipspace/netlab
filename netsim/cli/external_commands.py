@@ -322,7 +322,7 @@ def execute_tool_commands(cmds: list, topology: Box) -> typing.Optional[str]:
 
   output = ''
   for cmd in cmds:
-    cmd = strings.eval_format(cmd,topology)
+    cmd = strings.eval_command_format(cmd,topology)
     status = run_command(
               cmd = [ 'bash', '-c', cmd + " 2>&1"],   # Redirect STDERR to STDOUT to collect it
               check_result=True,                      # I want to get the status

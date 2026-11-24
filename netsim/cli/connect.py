@@ -327,7 +327,7 @@ def connect_to_tool(
     return None
 
   for cmd in cmds:
-    cmd = strings.eval_format(cmd,topology)
+    cmd = strings.eval_command_format(cmd,topology)
     rest_cmd = ' '.join(rest) if isinstance(rest,list) else rest
     if rest_cmd:
       rest_cmd = ' '+rest_cmd
