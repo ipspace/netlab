@@ -334,7 +334,7 @@ def start_external_tools(args: argparse.Namespace, topology: Box) -> None:
 
     if msg:
       if is_dry_run():
-        print(f"DRY_RUN: {msg}\n")
+        print(f"DRY RUN: {msg}\n")
       else:
         print(f"{msg}\n",flush=True)
 
