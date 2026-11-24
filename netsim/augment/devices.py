@@ -251,6 +251,13 @@ def process_child_provider(pname: str, topology: Box, processed: list) -> None:
   if not p_parent:                                          # This provider is not a child provider
     return
 
+  if not isinstance(p_parent,str):
+    log.error(
+      f'The parent of provider {pname} must be a provider name, found {p_parent}',
+      log.IncorrectType,
+      'providers')
+    return
+
   if p_parent not in providers:
     log.error(
       f'Provider {pname} uses an unknown provider {p_parent} as its parent',
@@ -259,9 +266,17 @@ def process_child_provider(pname: str, topology: Box, processed: list) -> None:
     return
 
   process_child_provider(p_parent,topology,processed)      # Process inheritance in parent provider
-  for ddata in topology.defaults.devices.values():
-    if isinstance(ddata.get(p_parent,None),Box):            # Merge a copy of parent provider settings
-      ddata[pname] = data.get_box(ddata[p_parent].to_dict()) + ddata.get(pname,{})
+  for dname,ddata in topology.defaults.devices.items():
+    if not isinstance(ddata.get(p_parent,None),Box):        # No parent provider settings for this device
+      continue
+    if not isinstance(ddata.get(pname,{}),dict):            # Child provider settings must be a dictionary
+      log.error(
+        f'Settings of device {dname} for provider {pname} must be a dictionary, found {ddata[pname]}',
+        log.IncorrectType,
+        'providers')
+      ddata.pop(pname)                                      # Remove the invalid settings so they won't crash later
+      continue
+    ddata[pname] = data.get_box(ddata[p_parent].to_dict()) + ddata.get(pname,{})
 
 def process_provider_inheritance(topology: Box) -> None:
   processed: list = []
