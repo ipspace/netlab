@@ -3,7 +3,7 @@
 
 **netlab libvirt** performs these *libvirt*-related functions:
 
-* **[package](netlab-libvirt-package)** -- create a Vagrant box from a VM virtual disk in `qcow2` or `vmdk` format.
+* **[package](netlab-libvirt-package)** -- create a Vagrant box from a VM virtual disk in `qcow2`, `img`, or `vmdk` format (optionally packed in an OVA or ZIP archive) or from an ISO installation image.
 * **[remove](netlab-libvirt-remove)** -- remove a Vagrant box and associated libvirt volume(s)
 * **[config](netlab-libvirt-config)** -- display box building recipe.
 
@@ -44,7 +44,7 @@ Package a virtual machine into a libvirt Vagrant box
 positional arguments:
   {arubacx,asav,csr,dellos10,eos,iosv,iosxr,nxos,routeros7,vptx,vsrx}
                         Network device you want to create
-  disk                  Virtual machine disk (vmdk or qcow2)
+  disk                  Virtual machine disk (qcow2, img, vmdk, ova, zip, or iso)
 
 options:
   -h, --help            show this help message and exit

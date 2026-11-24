@@ -49,7 +49,7 @@ def package_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
     dest='disk',
     action='store',
     type=argparse.FileType('r'),
-    help='Virtual machine disk (qcow2, vmdk, ova, zip, or iso)')
+    help='Virtual machine disk (qcow2, img, vmdk, ova, zip, or iso)')
 
   parser_add_verbose(parser)
   parser_add_debug(parser)
@@ -177,7 +177,7 @@ def abort_on_failure(cmd: str) -> None:
 
 def check_disk_type(fname: str) -> None:
   fext = fname.rsplit('.')[-1]
-  if fext not in ('qcow2','vmdk','ova','zip','iso'):
+  if fext not in ('qcow2','img','vmdk','ova','zip','iso'):
     log.fatal(f'Unknown disk image type {fext}')
 
 def lp_create_vm_disk(args: argparse.Namespace, workdir: str) -> None:
@@ -202,6 +202,10 @@ def lp_create_vm_disk(args: argparse.Namespace, workdir: str) -> None:
     strings.print_colored_text('[CONVERT] ','green',None)
     print(f"Converting {name} into qcow2 format")
     abort_on_failure(f'qemu-img convert -f vmdk -O qcow2 {name} {workdir}/vm.qcow2')
+  elif name.endswith('.img'):                       # Raw or qcow2 disk image, let qemu-img figure it out
+    strings.print_colored_text('[CONVERT] ','green',None)
+    print(f"Converting {name} into qcow2 format")
+    abort_on_failure(f'qemu-img convert -O qcow2 {name} {workdir}/vm.qcow2')
   elif name.endswith('.iso'):
     strings.print_colored_text('[COPY]    ','green',None)
     print(f"Creating {workdir}/install.iso from {name}")

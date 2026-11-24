@@ -4,7 +4,7 @@
 Cisco [IOSvL2](https://developer.cisco.com/docs/modeling-labs/iosvl2/#iosvl2) is supported by the **netlab libvirt package** command. To build an IOSvL2 box:
 
 * Create an empty directory on a Ubuntu machine with *libvirt* and *Vagrant*.
-* Copy the IOSvL2 disk image (`.vmdk` or `.qcow` file) into that directory. The image name should start with `vios_l2` or you might not have an IOSv Layer-2 image.
+* Copy the IOSvL2 disk image (`.vmdk` or `.qcow2` file) into that directory. The image name should start with `vios_l2` or you might not have an IOSv Layer-2 image.
 * Execute **netlab libvirt package iosvl2 _virtual-disk-file-name_** and follow the instructions
 
 ```{warning}
