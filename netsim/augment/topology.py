@@ -50,6 +50,8 @@ def topology_sanity_check(topology: Box) -> None:
   if must_be_id(topology,'name','',module='topology'):
     topology.defaults.name = topology.name
 
+  log.exit_on_error()
+
 """
 Check required topology elements (currently: nodes)
 """
