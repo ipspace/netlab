@@ -11,7 +11,7 @@ import os
 
 from box import Box
 
-from ..data.types import must_be_list, must_be_string
+from ..data.types import must_be_id, must_be_list, must_be_string
 from ..data.validate import get_object_attributes, validate_attributes
 from ..utils import log, strings
 
@@ -36,7 +36,7 @@ def name_from_path(topology: Box) -> str:
 Basic topology sanity check:
 
 * It should have a name (set one from lab topology directory if needed) that
-  should be a string
+  should be an identifier
 * The 'module' attribute (if present) must be a list
 """
 def topology_sanity_check(topology: Box) -> None:
@@ -47,7 +47,7 @@ def topology_sanity_check(topology: Box) -> None:
     must_be_list(topology,'module','')
     topology.defaults.module = topology.module
 
-  if must_be_string(topology,'name','',module='topology'):
+  if must_be_id(topology,'name','',module='topology'):
     topology.defaults.name = topology.name
 
 """
