@@ -22,7 +22,7 @@ VRFs are supported on these platforms:
   enabled: vrf and vrf.leaking
   caveats: vrf.leaking_caveats
 - title: VRF-aware<br />Loopback
-  enabled: vrf and vrf.get('loopback',True)
+  enabled: vrf and vrf.loopback
   caveats: vrf.loopback_caveats
 ```
 
