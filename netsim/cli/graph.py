@@ -5,6 +5,7 @@
 # (when installed) to create the final graph image
 #
 import argparse
+import shlex
 import textwrap
 import typing
 from pathlib import Path
@@ -96,11 +97,13 @@ def create_graph(o_type: str, o_name: str, args: argparse.Namespace, topology: B
     return
 
   o_stem = Path(o_name).with_suffix('')
-  cmd = strings.eval_format(cmd,{'gfile': o_name, 'gtype': o_type, 'gname': o_stem})
-  if external_commands.run_command(cmd,ignore_errors=True):
+  cmd_list = strings.eval_format_list(            # Split the command before inserting file names
+               shlex.split(cmd),                  # ... that could contain whitespace
+               {'gfile': o_name, 'gtype': o_type, 'gname': o_stem})
+  if external_commands.run_command(cmd_list,ignore_errors=True):
     log.info(text=f'Created {o_stem}.{o_type} from {o_name}')
   else:
-    error_and_exit('Failed to create graph file',more_data=f'command: {cmd}')
+    error_and_exit('Failed to create graph file',more_data=f'command: {shlex.join(cmd_list)}')
 
 def run(cli_args: typing.List[str]) -> None:
   args = graph_parse(cli_args)
