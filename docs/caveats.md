@@ -158,6 +158,44 @@ and validation. Configuration is deployed with a bash script executed within the
 
 * If the BGP next hop of a reflected IBGP route is reachable as an OSPF route, BIRD advertises a link-local address as one of the next hops of the IBGP IPv6 prefix, potentially resulting in broken IPv6 connectivity.
 
+(caveats-capeos-bolt)=
+## CapeOS Bolt
+
+[CapeOS](https://gitlab.com/networkdoodles/capeos) Bolt is an open-source lab container emulating the Cisco IOS CLI on top of FRRouting. _netlab_ configures it with the Cisco IOS configuration templates and removes the commands CapeOS Bolt does not accept (for example, `ip routing`, `ip host`, or `neighbor send-community`) from the device configurations.
+
+The removed commands are listed in the **netlab_ios_commands** dictionary (a device group variable). To send a removed command to CapeOS Bolt (for example, after a CapeOS upgrade), set its value to *True*:
+
+```yaml
+defaults.devices.capeos_bolt.group_vars.netlab_ios_commands:
+  ip host: True
+```
+
+_netlab_ removes every configuration line that starts with a command from that dictionary (unless its value is *True*). BGP neighbor commands are matched without the neighbor address (for example, `neighbor send-community`). To remove another command, add it to the dictionary with the value set to *False*.
+
+The other CapeOS Bolt caveats include:
+
+* Container images have no *latest* tag. _netlab_ uses a specific image version; change the **defaults.devices.capeos_bolt.clab.image** [topology default](default-device-image) to use a different one.
+* It accepts only RFC 1123 hostnames. _netlab_ replaces the underscores in node names with hyphens.
+* _netlab_ maps a minimal startup configuration (hostname, user, SSH, and the management interface in the **clab-mgmt** VRF) into the CapeOS Bolt containers. CapeOS Bolt records the management VRF, but keeps the management interface in the global routing table; the management default route serves only the traffic originated by the device.
+* _netlab_ does not configure IPv6 on CapeOS Bolt; you cannot use IPv6 addresses on CapeOS Bolt nodes.
+* It always performs IP routing, even when it's used as an [IP host](node-router-host).
+* It needs the **vrf** kernel module to implement VRFs. _netlab_ tries to load it before starting the containers.
+* It always installs the default route received from a DHCP server.
+* It has minimal VRF support (forwarding tables only, no routing protocols or inter-VRF route leaking)
+* Routing policies can match only IP prefixes.
+* You cannot configure discard static routes.
+
+### OSPF Caveats
+
+* CapeOS Bolt cannot use cleartext OSPF passwords.
+* CapeOS Bolt cannot set the cost, type, or routing policy of the OSPF default route.
+* CapeOS Bolt cannot set the cost of area ranges or the NSSA default route, and cannot configure *not-advertise* area ranges or NSSA type-7 ranges.
+
+### BGP Caveats
+
+* CapeOS Bolt cannot be a BGP route reflector or a passive BGP peer.
+* CapeOS Bolt always sends standard, extended, and large BGP communities to its neighbors.
+
 (caveats-asav)=
 ## Cisco ASAv Caveats
 
