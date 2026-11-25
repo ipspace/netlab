@@ -1,9 +1,9 @@
 Creating Device configuration snippets
 [CREATED] h1: initial,routing
 [CREATED] h2: initial,routing
-[CREATED] l1: initial,vlan,bgp,vxlan,evpn
+[CREATED] dut_l1: initial,vlan,bgp,vxlan,evpn
 [CREATED] l2: initial,vlan,bgp,vxlan,evpn
-[CREATED] spine: initial,bgp,evpn
+[CREATED] dut_spine: initial,bgp,evpn
 Checking Are lab devices ready to be configured?
  [INFO] Checking lab devices with an Ansible playbook
 [WARNING]: Could not match supplied host pattern, ignoring: netlab_ready_ssh
@@ -15,27 +15,27 @@ skipping: no hosts matched
 PLAY [Wait for device-specific conditions] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [spine]
-ok: [l1]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Find device readiness script] ********************************************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Wait for device to become ready] *****************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vyos-clab.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vyos-clab.yml for dut_l1, dut_spine
 
 TASK [wait_for_connection] *****************************************************
-ok: [spine]
-ok: [l1]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [wait_for] ****************************************************************
-ok: [spine]
-ok: [l1]
+ok: [dut_spine]
+ok: [dut_l1]
 
 PLAY RECAP *********************************************************************
-l1                         : ok=5    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-spine                      : ok=5    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+dut_l1                     : ok=5    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+dut_spine                  : ok=5    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 
 Config Deploying device configurations
  [INFO] Executing initial configuration for node h1 (namespace clab-
@@ -58,248 +58,248 @@ Config Deploying device configurations
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut_l1, dut_spine
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Find configuration template for initial] *********************************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [fail] ********************************************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [l1] => {
-    "msg": "initial configuration for l1\n=========================================\nset system host-name 'l1'\n\n\nset interfaces bridge br0 description 'Global Switch Bridge'\nset interfaces bridge br0 enable-vlan\n\nset interfaces bridge br0 vif 1000\n\nset interfaces dummy dum0 address 10.0.0.3/32\n\n\n\nset interfaces ethernet eth1 description 'l1 -> spine [external]'\n\nset interfaces ethernet eth1 mtu 1600\n\nset interfaces ethernet eth1 address 10.1.0.1/30\n\n\n\n\n\nset interfaces ethernet eth2 description '[Access VLAN red] l1 -> h1'\n\nset interfaces ethernet eth2 mtu 1500\n\n\n\n\n\n\nset interfaces bridge br0 vif 1000 description 'VLAN red (1000) -> [h1,h2,l2]'\n\n\n\n\n\n\nset service lldp interface all\n>/dev/null 2>/dev/null set service lldp interface eth0 disable\n>/dev/null 2>/dev/null set service lldp interface eth0 mode disable\n\n\nset service ssh\n\ncommit\n\n# Restart FRR to pick up the new hostname\nsudo service frr restart\n"
+ok: [dut_l1] => {
+    "msg": "initial configuration for dut_l1\n=========================================\nset system host-name 'dut-l1'\n\n#\n# Create VLAN bridge and VLAN interfaces as part of initial configuration\n#\nset interfaces bridge br0 description 'Global Switch Bridge'\nset interfaces bridge br0 enable-vlan\n\nset interfaces bridge br0 vif 1000\n\n\n\n\n\nset interfaces dummy dum0 address 10.0.0.3/32\n\nset system static-host-mapping host-name dut_spine inet 10.0.0.5\nset system static-host-mapping host-name h1 inet 172.31.1.1\nset system static-host-mapping host-name h2 inet 172.31.1.2\nset system static-host-mapping host-name l2 inet 10.0.0.4\n\n\n\nset interfaces ethernet eth1 description 'dut_l1 -> dut_spine [external]'\n\nset interfaces ethernet eth1 mtu 1600\n\nset interfaces ethernet eth1 address 10.1.0.1/30\n\n\n\n\n\nset interfaces ethernet eth2 description '[Access VLAN red] dut_l1 -> h1'\n\nset interfaces ethernet eth2 mtu 1500\n\n\n\n\n\n\nset interfaces bridge br0 vif 1000 description 'VLAN red (1000) -> [h1,h2,l2]'\n\n\n\n\n\n\nset service lldp interface all\n>/dev/null 2>/dev/null set service lldp interface eth0 disable\n>/dev/null 2>/dev/null set service lldp interface eth0 mode disable\n\n\nset service ssh\n\ncommit\n\n# Restart FRR to pick up the new hostname\nsudo service frr restart\n"
 }
-ok: [spine] => {
-    "msg": "initial configuration for spine\n=========================================\nset system host-name 'spine'\n\n\nset interfaces dummy dum0 address 10.0.0.5/32\n\n\n\nset interfaces ethernet eth1 description 'spine -> l1 [external]'\n\nset interfaces ethernet eth1 mtu 1600\n\nset interfaces ethernet eth1 address 10.1.0.2/30\n\n\n\n\n\nset interfaces ethernet eth2 description 'spine -> l2 [external]'\n\nset interfaces ethernet eth2 mtu 1600\n\nset interfaces ethernet eth2 address 10.1.0.6/30\n\n\n\n\nset service lldp interface all\n>/dev/null 2>/dev/null set service lldp interface eth0 disable\n>/dev/null 2>/dev/null set service lldp interface eth0 mode disable\n\n\nset service ssh\n\ncommit\n\n# Restart FRR to pick up the new hostname\nsudo service frr restart\n"
+ok: [dut_spine] => {
+    "msg": "initial configuration for dut_spine\n=========================================\nset system host-name 'dut-spine'\n\n\n\n\n\nset interfaces dummy dum0 address 10.0.0.5/32\n\nset system static-host-mapping host-name dut_l1 inet 10.0.0.3\nset system static-host-mapping host-name h1 inet 172.31.1.1\nset system static-host-mapping host-name h2 inet 172.31.1.2\nset system static-host-mapping host-name l2 inet 10.0.0.4\n\n\n\nset interfaces ethernet eth1 description 'dut_spine -> dut_l1 [external]'\n\nset interfaces ethernet eth1 mtu 1600\n\nset interfaces ethernet eth1 address 10.1.0.2/30\n\n\n\n\n\nset interfaces ethernet eth2 description 'dut_spine -> l2 [external]'\n\nset interfaces ethernet eth2 mtu 1600\n\nset interfaces ethernet eth2 address 10.1.0.5/30\n\n\n\n\nset service lldp interface all\n>/dev/null 2>/dev/null set service lldp interface eth0 disable\n>/dev/null 2>/dev/null set service lldp interface eth0 mode disable\n\n\nset service ssh\n\ncommit\n\n# Restart FRR to pick up the new hostname\nsudo service frr restart\n"
 }
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for dut_l1, dut_spine
 
 TASK [set_fact] ****************************************************************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [template] ****************************************************************
-changed: [spine]
-changed: [l1]
+changed: [dut_l1]
+changed: [dut_spine]
 
-TASK [execute config-initial.sh to deploy initial config from /work/netlab_cicd/node_files/l1/initial] ***
-changed: [spine]
-changed: [l1]
+TASK [execute config-initial.sh to deploy initial config from /work/netlab_cicd/node_files/dut_l1/initial] ***
+changed: [dut_spine]
+changed: [dut_l1]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine => (item=vlan)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine => (item=routing)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine => (item=bgp)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine => (item=vxlan)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine => (item=evpn)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut_l1, dut_spine => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut_l1, dut_spine => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut_l1, dut_spine => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut_l1, dut_spine => (item=vxlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut_l1, dut_spine => (item=evpn)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Find configuration template for vlan] ************************************
-skipping: [spine]
-ok: [l1]
+skipping: [dut_spine]
+ok: [dut_l1]
 
 TASK [fail] ********************************************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
-skipping: [spine]
-ok: [l1]
+skipping: [dut_spine]
+ok: [dut_l1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [spine]
-ok: [l1] => {
-    "msg": "vlan configuration for l1\n=========================================\nset interfaces bridge br0 member interface eth2 native-vlan 1000\n"
+skipping: [dut_spine]
+ok: [dut_l1] => {
+    "msg": "vlan configuration for dut_l1\n=========================================\nset interfaces bridge br0 member interface eth2 native-vlan 1000\n"
 }
 
 TASK [Deploy vlan configuration] ***********************************************
-skipping: [spine]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for l1
+skipping: [dut_spine]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for dut_l1
 
 TASK [set_fact] ****************************************************************
-ok: [l1]
+ok: [dut_l1]
 
 TASK [template] ****************************************************************
-changed: [l1]
+changed: [dut_l1]
 
-TASK [execute config-vlan.sh to deploy vlan config from /work/netlab_cicd/node_files/l1/vlan] ***
-changed: [l1]
+TASK [execute config-vlan.sh to deploy vlan config from /work/netlab_cicd/node_files/dut_l1/vlan] ***
+changed: [dut_l1]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Find configuration template for routing] *********************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [fail] ********************************************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Find configuration deployment deploy_script for routing] *****************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Deploy routing configuration] ********************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Find configuration template for bgp] *************************************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [fail] ********************************************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [l1] => {
-    "msg": "bgp configuration for l1\n=========================================\n\nset protocols bgp system-as 65000\n\nset protocols bgp parameters router-id 10.0.0.3\n\n\n\nset protocols bgp neighbor 10.0.0.5 remote-as 65000\nset protocols bgp neighbor 10.0.0.5 description 'spine'\n \nset protocols bgp neighbor 10.0.0.5 update-source dum0\n\n\n\n\nset protocols bgp neighbor 10.1.0.2 remote-as 65100\nset protocols bgp neighbor 10.1.0.2 description 'spine'\n \n\nset protocols bgp neighbor 10.1.0.2 local-as 65201 no-prepend replace-as\n\n\n\n# Work on Family ipv4\n\nset protocols bgp address-family ipv4-unicast network 10.0.0.3/32\n\n\n\nset protocols bgp neighbor 10.1.0.2 address-family ipv4-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.1.0.2 address-family ipv4-unicast nexthop-self\n\nset protocols bgp neighbor 10.1.0.2 address-family ipv4-unicast disable-send-community extended\n\n\n"
+ok: [dut_spine] => {
+    "msg": "bgp configuration for dut_spine\n=========================================\n\nset protocols bgp system-as 65000\n\nset protocols bgp parameters router-id 10.0.0.5\nset protocols bgp parameters cluster-id 10.0.0.5\n\n\n\n\nset protocols bgp neighbor 10.0.0.3 remote-as 65000\nset protocols bgp neighbor 10.0.0.3 description 'dut_l1'\n \nset protocols bgp neighbor 10.0.0.3 update-source dum0\n\n\n\n\nset protocols bgp neighbor 10.0.0.4 remote-as 65000\nset protocols bgp neighbor 10.0.0.4 description 'l2'\n \nset protocols bgp neighbor 10.0.0.4 update-source dum0\n\n\n\n\nset protocols bgp neighbor 10.1.0.1 remote-as 65201\nset protocols bgp neighbor 10.1.0.1 description 'dut_l1'\n \n\nset protocols bgp neighbor 10.1.0.1 local-as 65100 no-prepend replace-as\n\n\n\nset protocols bgp neighbor 10.1.0.6 remote-as 65202\nset protocols bgp neighbor 10.1.0.6 description 'l2'\n \n\nset protocols bgp neighbor 10.1.0.6 local-as 65100 no-prepend replace-as\n\n\n\n# Work on Family ipv4\n\nset protocols bgp address-family ipv4-unicast network 10.0.0.5/32\n\n\n\nset protocols bgp neighbor 10.1.0.1 address-family ipv4-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.1.0.1 address-family ipv4-unicast nexthop-self\n\nset protocols bgp neighbor 10.1.0.1 address-family ipv4-unicast disable-send-community extended\n\n\n\nset protocols bgp neighbor 10.1.0.6 address-family ipv4-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.1.0.6 address-family ipv4-unicast nexthop-self\n\nset protocols bgp neighbor 10.1.0.6 address-family ipv4-unicast disable-send-community extended\n\n\n"
 }
-ok: [spine] => {
-    "msg": "bgp configuration for spine\n=========================================\n\nset protocols bgp system-as 65000\n\nset protocols bgp parameters router-id 10.0.0.5\nset protocols bgp parameters cluster-id 10.0.0.5\n\n\n\nset protocols bgp neighbor 10.0.0.3 remote-as 65000\nset protocols bgp neighbor 10.0.0.3 description 'l1'\n \nset protocols bgp neighbor 10.0.0.3 update-source dum0\n\n\n\n\nset protocols bgp neighbor 10.0.0.4 remote-as 65000\nset protocols bgp neighbor 10.0.0.4 description 'l2'\n \nset protocols bgp neighbor 10.0.0.4 update-source dum0\n\n\n\n\nset protocols bgp neighbor 10.1.0.1 remote-as 65201\nset protocols bgp neighbor 10.1.0.1 description 'l1'\n \n\nset protocols bgp neighbor 10.1.0.1 local-as 65100 no-prepend replace-as\n\n\n\nset protocols bgp neighbor 10.1.0.5 remote-as 65202\nset protocols bgp neighbor 10.1.0.5 description 'l2'\n \n\nset protocols bgp neighbor 10.1.0.5 local-as 65100 no-prepend replace-as\n\n\n\n# Work on Family ipv4\n\nset protocols bgp address-family ipv4-unicast network 10.0.0.5/32\n\n\n\nset protocols bgp neighbor 10.1.0.1 address-family ipv4-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.1.0.1 address-family ipv4-unicast nexthop-self\n\nset protocols bgp neighbor 10.1.0.1 address-family ipv4-unicast disable-send-community extended\n\n\n\nset protocols bgp neighbor 10.1.0.5 address-family ipv4-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.1.0.5 address-family ipv4-unicast nexthop-self\n\nset protocols bgp neighbor 10.1.0.5 address-family ipv4-unicast disable-send-community extended\n\n\n"
+ok: [dut_l1] => {
+    "msg": "bgp configuration for dut_l1\n=========================================\n\nset protocols bgp system-as 65000\n\nset protocols bgp parameters router-id 10.0.0.3\n\n\n\n\nset protocols bgp neighbor 10.0.0.5 remote-as 65000\nset protocols bgp neighbor 10.0.0.5 description 'dut_spine'\n \nset protocols bgp neighbor 10.0.0.5 update-source dum0\n\n\n\n\nset protocols bgp neighbor 10.1.0.2 remote-as 65100\nset protocols bgp neighbor 10.1.0.2 description 'dut_spine'\n \n\nset protocols bgp neighbor 10.1.0.2 local-as 65201 no-prepend replace-as\n\n\n\n# Work on Family ipv4\n\nset protocols bgp address-family ipv4-unicast network 10.0.0.3/32\n\n\n\nset protocols bgp neighbor 10.1.0.2 address-family ipv4-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.1.0.2 address-family ipv4-unicast nexthop-self\n\nset protocols bgp neighbor 10.1.0.2 address-family ipv4-unicast disable-send-community extended\n\n\n"
 }
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for dut_l1, dut_spine
 
 TASK [set_fact] ****************************************************************
-ok: [l1]
-ok: [spine]
+ok: [dut_spine]
+ok: [dut_l1]
 
 TASK [template] ****************************************************************
-changed: [spine]
-changed: [l1]
+changed: [dut_spine]
+changed: [dut_l1]
 
-TASK [execute config-bgp.sh to deploy bgp config from /work/netlab_cicd/node_files/l1/bgp] ***
-changed: [l1]
-changed: [spine]
+TASK [execute config-bgp.sh to deploy bgp config from /work/netlab_cicd/node_files/dut_l1/bgp] ***
+changed: [dut_l1]
+changed: [dut_spine]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Find configuration template for vxlan] ***********************************
-skipping: [spine]
-ok: [l1]
+skipping: [dut_spine]
+ok: [dut_l1]
 
 TASK [fail] ********************************************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Find configuration deployment deploy_script for vxlan] *******************
-skipping: [spine]
-ok: [l1]
+skipping: [dut_spine]
+ok: [dut_l1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [spine]
-ok: [l1] => {
-    "msg": "vxlan configuration for l1\n=========================================\n\n# Create VXLAN interface\nset interfaces vxlan vxlan6000 vni 6000\nset interfaces vxlan vxlan6000 source-address 10.0.0.3\n# And set UDP port to 4789\nset interfaces vxlan vxlan6000 port 4789\n\n# Add it to the global bridge\n## NOTE: in the future we may want to switch to one-bridge-per-vni\n##   (still to understand if single bridge can work with EVPN controlled VXLAN)\nset interfaces bridge br0 member interface vxlan6000 native-vlan 1000\n\n# Add VTEP Flood list\n\n# If flooding is based on EVPN, set 'parameters nolearning'\nset interfaces vxlan vxlan6000 parameters nolearning\n\n"
+skipping: [dut_spine]
+ok: [dut_l1] => {
+    "msg": "vxlan configuration for dut_l1\n=========================================\n\n# Create VXLAN interface\nset interfaces vxlan vxlan6000 vni 6000\nset interfaces vxlan vxlan6000 source-address 10.0.0.3\n# And set UDP port to 4789\nset interfaces vxlan vxlan6000 port 4789\n\n# Add it to the global bridge\n## NOTE: in the future we may want to switch to one-bridge-per-vni\n##   (still to understand if single bridge can work with EVPN controlled VXLAN)\nset interfaces bridge br0 member interface vxlan6000 native-vlan 1000\n\n# Add VTEP Flood list\n\n# If flooding is based on EVPN, set 'parameters nolearning'\nset interfaces vxlan vxlan6000 parameters nolearning\n\n"
 }
 
 TASK [Deploy vxlan configuration] **********************************************
-skipping: [spine]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for l1
+skipping: [dut_spine]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for dut_l1
 
 TASK [set_fact] ****************************************************************
-ok: [l1]
+ok: [dut_l1]
 
 TASK [template] ****************************************************************
-changed: [l1]
+changed: [dut_l1]
 
-TASK [execute config-vxlan.sh to deploy vxlan config from /work/netlab_cicd/node_files/l1/vxlan] ***
-changed: [l1]
+TASK [execute config-vxlan.sh to deploy vxlan config from /work/netlab_cicd/node_files/dut_l1/vxlan] ***
+changed: [dut_l1]
 
 TASK [Figure out whether to deploy the module evpn on current device] **********
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Find configuration template for evpn] ************************************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [fail] ********************************************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Find configuration deployment deploy_script for evpn] ********************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [l1] => {
-    "msg": "evpn configuration for l1\n=========================================\n# Configure Generic EVPN Stuff\nset protocols bgp address-family l2vpn-evpn advertise-svi-ip\nset protocols bgp address-family l2vpn-evpn advertise-all-vni\n\nset protocols bgp neighbor 10.0.0.5 address-family l2vpn-evpn soft-reconfiguration inbound\n\n\n# Configure VNI params\nset protocols bgp address-family l2vpn-evpn vni 6000 rd 10.0.0.3:1000\nset protocols bgp address-family l2vpn-evpn vni 6000 route-target import \"65000:1000\"\nset protocols bgp address-family l2vpn-evpn vni 6000 route-target export \"65000:1000\"\n\n# Work on L3VNI\n\n\ncommit\nsave\n\nvtysh -c 'clear bgp *'\n"
+ok: [dut_l1] => {
+    "msg": "evpn configuration for dut_l1\n=========================================\n# Configure Generic EVPN Stuff\nset protocols bgp address-family l2vpn-evpn advertise-svi-ip\nset protocols bgp address-family l2vpn-evpn advertise-all-vni\n\nset protocols bgp neighbor 10.0.0.5 address-family l2vpn-evpn soft-reconfiguration inbound\n\n\n# Configure VNI params\nset protocols bgp address-family l2vpn-evpn vni 6000 rd 10.0.0.3:1000\nset protocols bgp address-family l2vpn-evpn vni 6000 route-target import \"65000:1000\"\nset protocols bgp address-family l2vpn-evpn vni 6000 route-target export \"65000:1000\"\n\n# Work on L3VNI\n\n\ncommit\nsave\n\nvtysh -c 'clear bgp *'\n"
 }
-ok: [spine] => {
-    "msg": "evpn configuration for spine\n=========================================\n# Configure Generic EVPN Stuff\nset protocols bgp address-family l2vpn-evpn advertise-svi-ip\nset protocols bgp address-family l2vpn-evpn advertise-all-vni\n\nset protocols bgp neighbor 10.0.0.3 address-family l2vpn-evpn soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.0.0.3 address-family l2vpn-evpn route-reflector-client\nset protocols bgp neighbor 10.0.0.4 address-family l2vpn-evpn soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.0.0.4 address-family l2vpn-evpn route-reflector-client\n\n# Configure VNI params\n\n# Work on L3VNI\n\n\ncommit\nsave\n\nvtysh -c 'clear bgp *'\n"
+ok: [dut_spine] => {
+    "msg": "evpn configuration for dut_spine\n=========================================\n# Configure Generic EVPN Stuff\nset protocols bgp address-family l2vpn-evpn advertise-svi-ip\nset protocols bgp address-family l2vpn-evpn advertise-all-vni\n\nset protocols bgp neighbor 10.0.0.3 address-family l2vpn-evpn soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.0.0.3 address-family l2vpn-evpn route-reflector-client\nset protocols bgp neighbor 10.0.0.4 address-family l2vpn-evpn soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.0.0.4 address-family l2vpn-evpn route-reflector-client\n\n# Configure VNI params\n\n# Work on L3VNI\n\n\ncommit\nsave\n\nvtysh -c 'clear bgp *'\n"
 }
 
 TASK [Deploy evpn configuration] ***********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for dut_l1, dut_spine
 
 TASK [set_fact] ****************************************************************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [template] ****************************************************************
-changed: [l1]
-changed: [spine]
+changed: [dut_l1]
+changed: [dut_spine]
 
-TASK [execute config-evpn.sh to deploy evpn config from /work/netlab_cicd/node_files/l1/evpn] ***
-changed: [spine]
-changed: [l1]
+TASK [execute config-evpn.sh to deploy evpn config from /work/netlab_cicd/node_files/dut_l1/evpn] ***
+changed: [dut_spine]
+changed: [dut_l1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-l1                         : ok=49   changed=10   unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
-spine                      : ok=35   changed=6    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
+dut_l1                     : ok=49   changed=10   unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+dut_spine                  : ok=35   changed=6    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
 
-Results of configuration script deployments
+Results of non-Ansible configuration deployments
 ================================================================================
-h1               Script:  initial,routing
-h2               Script:  initial,routing
-l2               Script:  initial,vlan,bgp,vxlan,evpn
+h1               Script:   initial,routing
+h2               Script:   initial,routing
+l2               Script:   initial,vlan,bgp,vxlan,evpn
 
 
 The devices under test are an EVPN PE-device and an EVPN route reflector. The

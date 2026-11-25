@@ -3,9 +3,9 @@ Creating Device configuration snippets
 [CREATED] h2: initial,routing
 [CREATED] h3: initial,routing
 [CREATED] h4: initial,routing
-[CREATED] l1: initial,vlan,ospf,bgp,vrf,vxlan,evpn
+[CREATED] dut_l1: initial,vlan,ospf,bgp,vrf,vxlan,evpn
 [CREATED] l2: initial,vlan,ospf,bgp,vrf,vxlan,evpn
-[CREATED] spine: initial,vlan,ospf,bgp,vrf,vxlan,evpn
+[CREATED] dut_spine: initial,vlan,ospf,bgp,vrf,vxlan,evpn
 Checking Are lab devices ready to be configured?
  [INFO] Checking lab devices with an Ansible playbook
 [WARNING]: Could not match supplied host pattern, ignoring: netlab_ready_ssh
@@ -17,63 +17,65 @@ skipping: no hosts matched
 PLAY [Wait for device-specific conditions] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [spine]
-ok: [l1]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Find device readiness script] ********************************************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Wait for device to become ready] *****************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/srsim.yml for l1, spine
+[WARNING]: Collection nokia.openconfig does not support Ansible version 2.18.20
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/srsim.yml for dut_l1, dut_spine
 
 TASK [Common SR-OS checks] *****************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/sros.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/sros.yml for dut_l1, dut_spine
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
-ok: [spine]
-ok: [l1]
+TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on 192.168.17.105] *******
+ok: [dut_l1 -> localhost]
+ok: [dut_spine -> localhost]
 
-TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on 192.168.83.105] *******
-ok: [l1 -> localhost]
-ok: [spine -> localhost]
+TASK [Verify gNMI capabilities (use 'netlab install grpc' to install required plugin)] ***
+ok: [dut_spine]
+ok: [dut_l1]
 
 TASK [Update SR-SIM hardware configuration] ************************************
-changed: [l1]
-changed: [spine]
+ok: [dut_spine]
+ok: [dut_l1]
 
 TASK [Get port 1/1/c1 status] **************************************************
-FAILED - RETRYING: [l1]: Get port 1/1/c1 status (10 retries left).
-FAILED - RETRYING: [spine]: Get port 1/1/c1 status (10 retries left).
-FAILED - RETRYING: [l1]: Get port 1/1/c1 status (9 retries left).
-FAILED - RETRYING: [spine]: Get port 1/1/c1 status (9 retries left).
-FAILED - RETRYING: [spine]: Get port 1/1/c1 status (8 retries left).
-FAILED - RETRYING: [l1]: Get port 1/1/c1 status (8 retries left).
-ok: [spine]
-ok: [l1]
+FAILED - RETRYING: [dut_l1]: Get port 1/1/c1 status (10 retries left).
+FAILED - RETRYING: [dut_spine]: Get port 1/1/c1 status (10 retries left).
+FAILED - RETRYING: [dut_l1]: Get port 1/1/c1 status (9 retries left).
+FAILED - RETRYING: [dut_spine]: Get port 1/1/c1 status (9 retries left).
+FAILED - RETRYING: [dut_l1]: Get port 1/1/c1 status (8 retries left).
+FAILED - RETRYING: [dut_spine]: Get port 1/1/c1 status (8 retries left).
+FAILED - RETRYING: [dut_l1]: Get port 1/1/c1 status (7 retries left).
+ok: [dut_spine]
+ok: [dut_l1]
 
 PLAY RECAP *********************************************************************
-l1                         : ok=8    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-spine                      : ok=8    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+dut_l1                     : ok=8    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+dut_spine                  : ok=8    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 
 Config Deploying device configurations
  [INFO] Executing initial configuration for node h1 (namespace clab-
-          ml-83-h1)
+          ml-17-h1)
  [INFO] Executing initial configuration for node h2 (namespace clab-
-          ml-83-h2)
+          ml-17-h2)
  [INFO] Executing initial configuration for node h3 (namespace clab-
-          ml-83-h3)
+          ml-17-h3)
  [INFO] Executing initial configuration for node h4 (namespace clab-
-          ml-83-h4)
+          ml-17-h4)
  [INFO] Executing initial configuration for node l2
  [INFO] Executing routing configuration for node h1 (namespace clab-
-          ml-83-h1)
- [INFO] Executing routing configuration for node h3 (namespace clab-
-          ml-83-h3)
- [INFO] Executing routing configuration for node h4 (namespace clab-
-          ml-83-h4)
+          ml-17-h1)
  [INFO] Executing routing configuration for node h2 (namespace clab-
-          ml-83-h2)
+          ml-17-h2)
+ [INFO] Executing routing configuration for node h4 (namespace clab-
+          ml-17-h4)
+ [INFO] Executing routing configuration for node h3 (namespace clab-
+          ml-17-h3)
  [INFO] Executing vlan configuration for node l2
  [INFO] Executing ospf configuration for node l2
  [INFO] Executing bgp configuration for node l2
@@ -87,365 +89,339 @@ Config Deploying device configurations
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [l1]
-ok: [spine]
-
-TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine
-
-TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [l1]
-ok: [spine]
-
-TASK [Find configuration template for normalize] *******************************
-ok: [l1]
-ok: [spine]
-
-TASK [fail] ********************************************************************
-skipping: [l1]
-skipping: [spine]
-
-TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [l1]
-ok: [spine]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [l1]
-skipping: [spine]
-
-TASK [Deploy normalize configuration] ******************************************
-skipping: [l1]
-skipping: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut_l1, dut_spine
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Find configuration template for initial] *********************************
-ok: [spine]
-ok: [l1]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [fail] ********************************************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [l1] => {
-    "msg": "initial configuration for l1\n=========================================\n\n\n\n\n\nupdates:\n- path: configure/card[slot-number=1]\n  val:\n    card-type: iom-1\n    mda:\n    - mda-slot: 1\n      mda-type: me12-100gb-qsfp28\n    - mda-slot: 2\n      mda-type: me12-100gb-qsfp28\n    slot-number: 1\n\n- path: configure/router[router-name=Base]\n  val:\n   ecmp: 64\n\n\n\n\n\n\n- path: configure/router[router-name=Base]/interface[interface-name=system]\n\n  val:\n   admin-state: enable\n   description: \"System interface\"\n   ipv4:\n    primary:\n     address: \"10.0.0.5\"\n     prefix-length: 32\n\n\n\n\n\n- path: configure/port[port-id=1/1/c1]\n  val:\n   admin-state: enable\n   connector:\n    breakout: \"c1-100g\"\n- path: configure/port[port-id=1/1/c1/1]\n  val:\n   admin-state: enable\n   ethernet:\n    mtu: 1614 # max 9800\n    mode: network\n\n\n\n- path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c1]\n\n  val:\n   admin-state: enable\n   description: \"l1 ~ spine ()\"\n   ip-mtu: 1600\n   port: \"1/1/c1/1\"\n   ipv4:\n    primary:\n     address: \"10.1.0.1\"\n     prefix-length: 30\n\n\n\n"
+ok: [dut_l1] => {
+    "msg": "initial configuration for dut_l1\n=========================================\n\n\n\n\n\nupdates:\n- path: configure/card[slot-number=1]\n  value:\n    card-type: iom-1\n    mda:\n    - mda-slot: 1\n      mda-type: me12-100gb-qsfp28\n    - mda-slot: 2\n      mda-type: me12-100gb-qsfp28\n    slot-number: 1\n\n- path: configure/router[router-name=Base]\n  value:\n   ecmp: 64\n\n\n\n\n\n\n- path: configure/router[router-name=Base]/interface[interface-name=system]\n\n  value:\n   admin-state: enable\n   description: \"System interface\"\n   ipv4:\n    primary:\n     address: \"10.0.0.5\"\n     prefix-length: 32\n\n\n\n\n\n- path: configure/port[port-id=1/1/c1]\n  value:\n   admin-state: enable\n   connector:\n    breakout: \"c1-100g\"\n- path: configure/port[port-id=1/1/c1/1]\n  value:\n   admin-state: enable\n   ethernet:\n    mtu: 1614 # max 9800\n    mode: network\n\n\n\n- path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c1]\n\n  value:\n   admin-state: enable\n   description: \"dut_l1 ~ dut_spine ()\"\n   ip-mtu: 1600\n   port: \"1/1/c1/1\"\n   ipv4:\n    primary:\n     address: \"10.1.0.1\"\n     prefix-length: 30\n\n\n\n"
 }
-ok: [spine] => {
-    "msg": "initial configuration for spine\n=========================================\n\n\n\n\n\nupdates:\n- path: configure/card[slot-number=1]\n  val:\n    card-type: iom-1\n    mda:\n    - mda-slot: 1\n      mda-type: me12-100gb-qsfp28\n    - mda-slot: 2\n      mda-type: me12-100gb-qsfp28\n    slot-number: 1\n\n- path: configure/router[router-name=Base]\n  val:\n   ecmp: 64\n\n\n\n\n\n\n- path: configure/router[router-name=Base]/interface[interface-name=system]\n\n  val:\n   admin-state: enable\n   description: \"System interface\"\n   ipv4:\n    primary:\n     address: \"10.0.0.7\"\n     prefix-length: 32\n\n\n\n\n\n- path: configure/port[port-id=1/1/c1]\n  val:\n   admin-state: enable\n   connector:\n    breakout: \"c1-100g\"\n- path: configure/port[port-id=1/1/c1/1]\n  val:\n   admin-state: enable\n   ethernet:\n    mtu: 1614 # max 9800\n    mode: network\n\n\n\n- path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c1]\n\n  val:\n   admin-state: enable\n   description: \"spine ~ l1 ()\"\n   ip-mtu: 1600\n   port: \"1/1/c1/1\"\n   ipv4:\n    primary:\n     address: \"10.1.0.2\"\n     prefix-length: 30\n\n\n\n\n\n- path: configure/port[port-id=1/1/c2]\n  val:\n   admin-state: enable\n   connector:\n    breakout: \"c1-100g\"\n- path: configure/port[port-id=1/1/c2/1]\n  val:\n   admin-state: enable\n   ethernet:\n    mtu: 1614 # max 9800\n    mode: network\n\n\n\n- path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c2]\n\n  val:\n   admin-state: enable\n   description: \"spine ~ l2 ()\"\n   ip-mtu: 1600\n   port: \"1/1/c2/1\"\n   ipv4:\n    primary:\n     address: \"10.1.0.6\"\n     prefix-length: 30\n\n\n\n"
+ok: [dut_spine] => {
+    "msg": "initial configuration for dut_spine\n=========================================\n\n\n\n\n\nupdates:\n- path: configure/card[slot-number=1]\n  value:\n    card-type: iom-1\n    mda:\n    - mda-slot: 1\n      mda-type: me12-100gb-qsfp28\n    - mda-slot: 2\n      mda-type: me12-100gb-qsfp28\n    slot-number: 1\n\n- path: configure/router[router-name=Base]\n  value:\n   ecmp: 64\n\n\n\n\n\n\n- path: configure/router[router-name=Base]/interface[interface-name=system]\n\n  value:\n   admin-state: enable\n   description: \"System interface\"\n   ipv4:\n    primary:\n     address: \"10.0.0.7\"\n     prefix-length: 32\n\n\n\n\n\n- path: configure/port[port-id=1/1/c1]\n  value:\n   admin-state: enable\n   connector:\n    breakout: \"c1-100g\"\n- path: configure/port[port-id=1/1/c1/1]\n  value:\n   admin-state: enable\n   ethernet:\n    mtu: 1614 # max 9800\n    mode: network\n\n\n\n- path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c1]\n\n  value:\n   admin-state: enable\n   description: \"dut_spine ~ dut_l1 ()\"\n   ip-mtu: 1600\n   port: \"1/1/c1/1\"\n   ipv4:\n    primary:\n     address: \"10.1.0.2\"\n     prefix-length: 30\n\n\n\n\n\n- path: configure/port[port-id=1/1/c2]\n  value:\n   admin-state: enable\n   connector:\n    breakout: \"c1-100g\"\n- path: configure/port[port-id=1/1/c2/1]\n  value:\n   admin-state: enable\n   ethernet:\n    mtu: 1614 # max 9800\n    mode: network\n\n\n\n- path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c2]\n\n  value:\n   admin-state: enable\n   description: \"dut_spine ~ l2 ()\"\n   ip-mtu: 1600\n   port: \"1/1/c2/1\"\n   ipv4:\n    primary:\n     address: \"10.1.0.5\"\n     prefix-length: 30\n\n\n\n"
 }
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for l1, spine
+[WARNING]: Collection nokia.openconfig does not support Ansible version 2.18.20
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut_spine, dut_l1
 
 TASK [Generate gNMI YAML configuration] ****************************************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
-TASK [Update initial node configuration from gNMI template /work/netlab_cicd/nokia_c/node_files/l1/initial] ***
-changed: [l1]
-changed: [spine]
+TASK [Update initial node configuration from gNMI template /work/netlab_cicd/node_files/dut_l1/initial] ***
+changed: [dut_l1]
+changed: [dut_spine]
 
 TASK [debug] *******************************************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine => (item=vlan)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine => (item=routing)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine => (item=ospf)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine => (item=bgp)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine => (item=vrf)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine => (item=vxlan)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, spine => (item=evpn)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut_l1, dut_spine => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut_l1, dut_spine => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut_l1, dut_spine => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut_l1, dut_spine => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut_l1, dut_spine => (item=vrf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut_l1, dut_spine => (item=vxlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut_l1, dut_spine => (item=evpn)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Find configuration template for vlan] ************************************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [fail] ********************************************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [l1] => {
-    "msg": "vlan configuration for l1\n=========================================\n\nupdates:\n\n\n- path: configure/port[port-id=1/1/c2]\n  val:\n   admin-state: enable\n   connector:\n    breakout: \"c1-100g\"\n- path: configure/port[port-id=1/1/c2/1]\n  val:\n   admin-state: enable\n   ethernet:\n    mtu: 1514 # max 9800\n    mode: access\n\n\n- path: configure/service/vpls[service-name=vlan1000]\n  val:\n   service-id: 11000\n   customer: \"1\"\n   description: \"[Access VLAN red] l1 -> h1\"\n   sap:\n   - sap-id: 1/1/c2/1\n   admin-state: enable\n\n\n\n- path: configure/port[port-id=1/1/c3]\n  val:\n   admin-state: enable\n   connector:\n    breakout: \"c1-100g\"\n- path: configure/port[port-id=1/1/c3/1]\n  val:\n   admin-state: enable\n   ethernet:\n    mtu: 1514 # max 9800\n    mode: access\n\n\n- path: configure/service/vpls[service-name=vlan1001]\n  val:\n   service-id: 11001\n   customer: \"1\"\n   description: \"[Access VLAN blue] l1 -> h3\"\n   sap:\n   - sap-id: 1/1/c3/1\n   admin-state: enable\n\n\n\n\n\n- path: configure/service/vpls[service-name=vlan1000]\n  val:\n   service-id: 11000\n   customer: \"1\"\n   description: \"VLAN red (1000) -> [h1,h2,l2,spine]\"\n   admin-state: enable\n\n\n\n\n\n- path: configure/service/vpls[service-name=vlan1001]\n  val:\n   service-id: 11001\n   customer: \"1\"\n   description: \"VLAN blue (1001) -> [h3,h4,l2,spine]\"\n   admin-state: enable\n\n \n"
+ok: [dut_l1] => {
+    "msg": "vlan configuration for dut_l1\n=========================================\n\nupdates:\n\n\n- path: configure/port[port-id=1/1/c2]\n  value:\n   admin-state: enable\n   connector:\n    breakout: \"c1-100g\"\n- path: configure/port[port-id=1/1/c2/1]\n  value:\n   admin-state: enable\n   ethernet:\n    mtu: 1514 # max 9800\n    mode: access\n\n\n- path: configure/service/vpls[service-name=vlan1000]\n  value:\n   service-id: 11000\n   customer: \"1\"\n   description: \"[Access VLAN red] dut_l1 -> h1\"\n   sap:\n   - sap-id: 1/1/c2/1\n   admin-state: enable\n\n\n\n- path: configure/port[port-id=1/1/c3]\n  value:\n   admin-state: enable\n   connector:\n    breakout: \"c1-100g\"\n- path: configure/port[port-id=1/1/c3/1]\n  value:\n   admin-state: enable\n   ethernet:\n    mtu: 1514 # max 9800\n    mode: access\n\n\n- path: configure/service/vpls[service-name=vlan1001]\n  value:\n   service-id: 11001\n   customer: \"1\"\n   description: \"[Access VLAN blue] dut_l1 -> h3\"\n   sap:\n   - sap-id: 1/1/c3/1\n   admin-state: enable\n\n\n\n\n\n- path: configure/service/vpls[service-name=vlan1000]\n  value:\n   service-id: 11000\n   customer: \"1\"\n   description: \"VLAN red (1000) -> [h1,h2,l2,dut_spine]\"\n   admin-state: enable\n\n\n\n\n\n- path: configure/service/vpls[service-name=vlan1001]\n  value:\n   service-id: 11001\n   customer: \"1\"\n   description: \"VLAN blue (1001) -> [h3,h4,l2,dut_spine]\"\n   admin-state: enable\n\n \n"
 }
-ok: [spine] => {
-    "msg": "vlan configuration for spine\n=========================================\n\nupdates:\n\n\n\n\n- path: configure/service/vprn[service-name=customer]\n  val:\n   customer: \"1\"\n   admin-state: enable\n   service-id: 100\n#   ecmp: 64\n\n- path: configure/service/vprn[service-name=customer]/interface[interface-name=svi.1000]\n\n  val:\n   admin-state: enable\n   description: \"VLAN red (1000) ~ [h1,l1,h2,l2] (external)\"\n   ip-mtu: 1500\n   ipv4:\n    primary:\n     address: \"172.16.0.7\"\n     prefix-length: 24\n\n\n\n- path: configure/service/vpls[service-name=vlan1000]\n  val:\n   service-id: 11000\n   customer: \"1\"\n   description: \"VLAN red (1000) -> [h1,l1,h2,l2]\"\n   admin-state: enable\n- path: configure/service/vpls[service-name=vlan1000]\n  val:\n   routed-vpls: { }\n\n- path: configure/service/vprn[service-name=customer]\n  val:\n   interface:\n   - interface-name: svi.1000\n     vpls:\n     - vpls-name: vlan1000\n\n\n\n\n\n- path: configure/service/vprn[service-name=customer]\n  val:\n   customer: \"1\"\n   admin-state: enable\n   service-id: 100\n#   ecmp: 64\n\n- path: configure/service/vprn[service-name=customer]/interface[interface-name=svi.1001]\n\n  val:\n   admin-state: enable\n   description: \"VLAN blue (1001) ~ [h3,l1,h4,l2] (external)\"\n   ip-mtu: 1500\n   ipv4:\n    primary:\n     address: \"172.16.1.7\"\n     prefix-length: 24\n\n\n\n- path: configure/service/vpls[service-name=vlan1001]\n  val:\n   service-id: 11001\n   customer: \"1\"\n   description: \"VLAN blue (1001) -> [h3,l1,h4,l2]\"\n   admin-state: enable\n- path: configure/service/vpls[service-name=vlan1001]\n  val:\n   routed-vpls: { }\n\n- path: configure/service/vprn[service-name=customer]\n  val:\n   interface:\n   - interface-name: svi.1001\n     vpls:\n     - vpls-name: vlan1001\n\n \n"
+ok: [dut_spine] => {
+    "msg": "vlan configuration for dut_spine\n=========================================\n\nupdates:\n\n\n\n\n- path: configure/service/vprn[service-name=customer]\n  value:\n   customer: \"1\"\n   admin-state: enable\n   service-id: 100\n#   ecmp: 64\n\n- path: configure/service/vprn[service-name=customer]/interface[interface-name=svi.1000]\n\n  value:\n   admin-state: enable\n   description: \"VLAN red (1000) ~ [h1,dut_l1,h2,l2] (external)\"\n   ip-mtu: 1500\n   ipv4:\n    primary:\n     address: \"172.16.0.7\"\n     prefix-length: 24\n\n\n\n- path: configure/service/vpls[service-name=vlan1000]\n  value:\n   service-id: 11000\n   customer: \"1\"\n   description: \"VLAN red (1000) -> [h1,dut_l1,h2,l2]\"\n   admin-state: enable\n- path: configure/service/vpls[service-name=vlan1000]\n  value:\n   routed-vpls: { }\n\n- path: configure/service/vprn[service-name=customer]\n  value:\n   interface:\n   - interface-name: svi.1000\n     vpls:\n     - vpls-name: vlan1000\n\n\n\n\n\n- path: configure/service/vprn[service-name=customer]\n  value:\n   customer: \"1\"\n   admin-state: enable\n   service-id: 100\n#   ecmp: 64\n\n- path: configure/service/vprn[service-name=customer]/interface[interface-name=svi.1001]\n\n  value:\n   admin-state: enable\n   description: \"VLAN blue (1001) ~ [h3,dut_l1,h4,l2] (external)\"\n   ip-mtu: 1500\n   ipv4:\n    primary:\n     address: \"172.16.1.7\"\n     prefix-length: 24\n\n\n\n- path: configure/service/vpls[service-name=vlan1001]\n  value:\n   service-id: 11001\n   customer: \"1\"\n   description: \"VLAN blue (1001) -> [h3,dut_l1,h4,l2]\"\n   admin-state: enable\n- path: configure/service/vpls[service-name=vlan1001]\n  value:\n   routed-vpls: { }\n\n- path: configure/service/vprn[service-name=customer]\n  value:\n   interface:\n   - interface-name: svi.1001\n     vpls:\n     - vpls-name: vlan1001\n\n \n"
 }
 
 TASK [Deploy vlan configuration] ***********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut_l1, dut_spine
 
 TASK [Generate gNMI YAML configuration] ****************************************
-ok: [spine]
-ok: [l1]
+ok: [dut_l1]
+ok: [dut_spine]
 
-TASK [Update vlan node configuration from gNMI template /work/netlab_cicd/nokia_c/node_files/l1/vlan] ***
-changed: [l1]
-changed: [spine]
+TASK [Update vlan node configuration from gNMI template /work/netlab_cicd/node_files/dut_l1/vlan] ***
+changed: [dut_l1]
+changed: [dut_spine]
 
 TASK [debug] *******************************************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Find configuration template for routing] *********************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [fail] ********************************************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Find configuration deployment deploy_script for routing] *****************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Deploy routing configuration] ********************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Find configuration template for ospf] ************************************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [fail] ********************************************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [l1] => {
-    "msg": "ospf configuration for l1\n=========================================\n\n\n\n\nupdates:\n\n\n- path: configure/router[router-name=Base]/ospf[ospf-instance=0]\n\n  val:\n    admin-state: enable\n    router-id: 10.0.0.5\n    area:\n    - area-id: \"0.0.0.0\"\n      interface:\n      - interface-name: \"system\"\n      - interface-name: \"eth-1/1/c1\"\n        interface-type: \"point-to-point\"\n\n"
+ok: [dut_l1] => {
+    "msg": "ospf configuration for dut_l1\n=========================================\n\n\n\n\nupdates:\n\n\n- path: configure/router[router-name=Base]/ospf[ospf-instance=0]\n\n  value:\n    admin-state: enable\n    router-id: 10.0.0.5\n    area:\n    - area-id: \"0.0.0.0\"\n      interface:\n      - interface-name: \"system\"\n      - interface-name: \"eth-1/1/c1\"\n        interface-type: \"point-to-point\"\n\n"
 }
-ok: [spine] => {
-    "msg": "ospf configuration for spine\n=========================================\n\n\n\n\nupdates:\n\n\n- path: configure/router[router-name=Base]/ospf[ospf-instance=0]\n\n  val:\n    admin-state: enable\n    router-id: 10.0.0.7\n    area:\n    - area-id: \"0.0.0.0\"\n      interface:\n      - interface-name: \"system\"\n      - interface-name: \"eth-1/1/c1\"\n        interface-type: \"point-to-point\"\n      - interface-name: \"eth-1/1/c2\"\n        interface-type: \"point-to-point\"\n\n"
+ok: [dut_spine] => {
+    "msg": "ospf configuration for dut_spine\n=========================================\n\n\n\n\nupdates:\n\n\n- path: configure/router[router-name=Base]/ospf[ospf-instance=0]\n\n  value:\n    admin-state: enable\n    router-id: 10.0.0.7\n    area:\n    - area-id: \"0.0.0.0\"\n      interface:\n      - interface-name: \"system\"\n      - interface-name: \"eth-1/1/c1\"\n        interface-type: \"point-to-point\"\n      - interface-name: \"eth-1/1/c2\"\n        interface-type: \"point-to-point\"\n\n"
 }
 
 TASK [Deploy ospf configuration] ***********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut_l1, dut_spine
 
 TASK [Generate gNMI YAML configuration] ****************************************
-ok: [spine]
-ok: [l1]
+ok: [dut_l1]
+ok: [dut_spine]
 
-TASK [Update ospf node configuration from gNMI template /work/netlab_cicd/nokia_c/node_files/l1/ospf] ***
-changed: [spine]
-changed: [l1]
+TASK [Update ospf node configuration from gNMI template /work/netlab_cicd/node_files/dut_l1/ospf] ***
+changed: [dut_spine]
+changed: [dut_l1]
 
 TASK [debug] *******************************************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Find configuration template for bgp] *************************************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [fail] ********************************************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
-ok: [l1]
-ok: [spine]
+ok: [dut_spine]
+ok: [dut_l1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [l1] => {
-    "msg": "bgp configuration for l1\n=========================================\n\nupdates:\n\n- path: configure/policy-options/policy-statement[name=accept_all]\n  val:\n    default-action:\n      action-type: accept\n\n- path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]\n  val:\n    entry:\n    - entry-id: 10\n      from:\n        path-type: ebgp\n      action:\n        action-type: accept\n        next-hop: self\n    default-action:\n      action-type: next-policy\n\n\n- path: configure/policy-options/prefix-list[name=bgp_default_advertise]\n  val:\n    prefix: [] # Make sure it exists\n\n- path: configure/policy-options/policy-statement[name=bgp_default_export]\n  val:\n    default-action:\n      action-type: reject\n    entry:\n    - entry-id: 10\n      from:\n        prefix-list: [ \"bgp_default_advertise\" ]\n      action:\n        action-type: accept\n    - entry-id: 20\n      from:\n        protocol:\n          name: [ bgp ]\n      action:\n        action-type: accept\n- path: configure/policy-options/prefix-list[name=bgp_default_advertise]\n  val:\n    prefix:\n    - ip-prefix: 10.0.0.5/32\n      type: exact\n\n\n- path: configure/router[router-name=Base]\n  val:\n    router-id: \"10.0.0.5\"\n    autonomous-system: 65000\n    bgp:\n      ebgp-default-reject-policy:\n        import: False\n        export: False\n      advertise-inactive: True\n      multipath:\n        ibgp: 64\n        ebgp: 64\n      min-route-advertisement: 1 # Be aggressive about sending updates\n      connect-retry: 5           # Retry frequently, suitable in DC context\n    # family: cannot disable this\n    # ipv4: False # Enabled by default, disable globally and set per group\n\n\n\n\n- path: configure/router[router-name=Base]/bgp/group[group-name=ibgp-ipv4]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: False\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - next-hop-self-ebgp-routes-only\n      - bgp_default_export\n    local-address: \"10.0.0.5\"\n\n\n- path: configure/router[router-name=Base]/bgp\n  val:\n    neighbor:\n    - ip-address: \"10.0.0.7\"\n      description: \"spine\"\n      peer-as: 65000\n      group: \"ibgp-ipv4\"\n      admin-state: enable\n      family:\n        ipv4: True\n        ipv6: False\n\n      client-reflect: False\n"
+ok: [dut_l1] => {
+    "msg": "bgp configuration for dut_l1\n=========================================\n\nupdates:\n\n- path: configure/policy-options/policy-statement[name=accept_all]\n  value:\n    default-action:\n      action-type: accept\n\n- path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]\n  value:\n    entry:\n    - entry-id: 10\n      from:\n        path-type: ebgp\n      action:\n        action-type: accept\n        next-hop: self\n    default-action:\n      action-type: next-policy\n\n\n- path: configure/policy-options/prefix-list[name=bgp_default_advertise]\n  value:\n    prefix: [] # Make sure it exists\n\n- path: configure/policy-options/policy-statement[name=bgp_default_export]\n  value:\n    default-action:\n      action-type: reject\n    entry:\n    - entry-id: 10\n      from:\n        prefix-list: [ \"bgp_default_advertise\" ]\n      action:\n        action-type: accept\n    - entry-id: 20\n      from:\n        protocol:\n          name: [ bgp ]\n      action:\n        action-type: accept\n- path: configure/policy-options/prefix-list[name=bgp_default_advertise]\n  value:\n    prefix:\n    - ip-prefix: 10.0.0.5/32\n      type: exact\n\n\n- path: configure/router[router-name=Base]\n  value:\n    router-id: \"10.0.0.5\"\n    autonomous-system: 65000\n    bgp:\n      ebgp-default-reject-policy:\n        import: False\n        export: False\n      advertise-inactive: True\n      multipath:\n        ibgp: 64\n        ebgp: 64\n      min-route-advertisement: 1 # Be aggressive about sending updates\n      connect-retry: 5           # Retry frequently, suitable in DC context\n    # family: cannot disable this\n    # ipv4: False # Enabled by default, disable globally and set per group\n\n\n\n\n- path: configure/router[router-name=Base]/bgp/group[group-name=ibgp-ipv4]\n  value:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: False\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - next-hop-self-ebgp-routes-only\n      - bgp_default_export\n    local-address: \"10.0.0.5\"\n\n\n- path: configure/router[router-name=Base]/bgp\n  value:\n    neighbor:\n    - ip-address: \"10.0.0.7\"\n      description: \"dut_spine\"\n      peer-as: 65000\n      group: \"ibgp-ipv4\"\n      admin-state: enable\n      family:\n        ipv4: True\n        ipv6: False\n\n      client-reflect: False\n"
 }
-ok: [spine] => {
-    "msg": "bgp configuration for spine\n=========================================\n\nupdates:\n\n- path: configure/policy-options/policy-statement[name=accept_all]\n  val:\n    default-action:\n      action-type: accept\n\n- path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]\n  val:\n    entry:\n    - entry-id: 10\n      from:\n        path-type: ebgp\n      action:\n        action-type: accept\n        next-hop: self\n    default-action:\n      action-type: next-policy\n\n\n- path: configure/policy-options/prefix-list[name=bgp_default_advertise]\n  val:\n    prefix: [] # Make sure it exists\n\n- path: configure/policy-options/policy-statement[name=bgp_default_export]\n  val:\n    default-action:\n      action-type: reject\n    entry:\n    - entry-id: 10\n      from:\n        prefix-list: [ \"bgp_default_advertise\" ]\n      action:\n        action-type: accept\n    - entry-id: 20\n      from:\n        protocol:\n          name: [ bgp ]\n      action:\n        action-type: accept\n- path: configure/policy-options/prefix-list[name=bgp_default_advertise]\n  val:\n    prefix:\n    - ip-prefix: 10.0.0.7/32\n      type: exact\n\n\n- path: configure/router[router-name=Base]\n  val:\n    router-id: \"10.0.0.7\"\n    autonomous-system: 65000\n    bgp:\n      ebgp-default-reject-policy:\n        import: False\n        export: False\n      advertise-inactive: True\n      client-reflect: True\n      multipath:\n        ibgp: 64\n        ebgp: 64\n      min-route-advertisement: 1 # Be aggressive about sending updates\n      connect-retry: 5           # Retry frequently, suitable in DC context\n    # family: cannot disable this\n    # ipv4: False # Enabled by default, disable globally and set per group\n\n\n\n\n- path: configure/router[router-name=Base]/bgp/group[group-name=ibgp-ipv4]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: False\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - next-hop-self-ebgp-routes-only\n      - bgp_default_export\n    local-address: \"10.0.0.7\"\n    cluster:\n      cluster-id: \"10.0.0.7\"\n\n\n- path: configure/router[router-name=Base]/bgp\n  val:\n    neighbor:\n    - ip-address: \"10.0.0.5\"\n      description: \"l1\"\n      peer-as: 65000\n      group: \"ibgp-ipv4\"\n      admin-state: enable\n      family:\n        ipv4: True\n        ipv6: False\n\n\n- path: configure/router[router-name=Base]/bgp/group[group-name=ibgp-ipv4]\n  val:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: False\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - next-hop-self-ebgp-routes-only\n      - bgp_default_export\n    local-address: \"10.0.0.7\"\n    cluster:\n      cluster-id: \"10.0.0.7\"\n\n\n- path: configure/router[router-name=Base]/bgp\n  val:\n    neighbor:\n    - ip-address: \"10.0.0.6\"\n      description: \"l2\"\n      peer-as: 65000\n      group: \"ibgp-ipv4\"\n      admin-state: enable\n      family:\n        ipv4: True\n        ipv6: False\n\n"
+ok: [dut_spine] => {
+    "msg": "bgp configuration for dut_spine\n=========================================\n\nupdates:\n\n- path: configure/policy-options/policy-statement[name=accept_all]\n  value:\n    default-action:\n      action-type: accept\n\n- path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]\n  value:\n    entry:\n    - entry-id: 10\n      from:\n        path-type: ebgp\n      action:\n        action-type: accept\n        next-hop: self\n    default-action:\n      action-type: next-policy\n\n\n- path: configure/policy-options/prefix-list[name=bgp_default_advertise]\n  value:\n    prefix: [] # Make sure it exists\n\n- path: configure/policy-options/policy-statement[name=bgp_default_export]\n  value:\n    default-action:\n      action-type: reject\n    entry:\n    - entry-id: 10\n      from:\n        prefix-list: [ \"bgp_default_advertise\" ]\n      action:\n        action-type: accept\n    - entry-id: 20\n      from:\n        protocol:\n          name: [ bgp ]\n      action:\n        action-type: accept\n- path: configure/policy-options/prefix-list[name=bgp_default_advertise]\n  value:\n    prefix:\n    - ip-prefix: 10.0.0.7/32\n      type: exact\n\n\n- path: configure/router[router-name=Base]\n  value:\n    router-id: \"10.0.0.7\"\n    autonomous-system: 65000\n    bgp:\n      ebgp-default-reject-policy:\n        import: False\n        export: False\n      advertise-inactive: True\n      client-reflect: True\n      multipath:\n        ibgp: 64\n        ebgp: 64\n      min-route-advertisement: 1 # Be aggressive about sending updates\n      connect-retry: 5           # Retry frequently, suitable in DC context\n    # family: cannot disable this\n    # ipv4: False # Enabled by default, disable globally and set per group\n\n\n\n\n- path: configure/router[router-name=Base]/bgp/group[group-name=ibgp-ipv4]\n  value:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: False\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - next-hop-self-ebgp-routes-only\n      - bgp_default_export\n    local-address: \"10.0.0.7\"\n    cluster:\n      cluster-id: \"10.0.0.7\"\n\n\n- path: configure/router[router-name=Base]/bgp\n  value:\n    neighbor:\n    - ip-address: \"10.0.0.5\"\n      description: \"dut_l1\"\n      peer-as: 65000\n      group: \"ibgp-ipv4\"\n      admin-state: enable\n      family:\n        ipv4: True\n        ipv6: False\n\n\n- path: configure/router[router-name=Base]/bgp/group[group-name=ibgp-ipv4]\n  value:\n    admin-state: enable\n    family:\n      ipv4: True\n      ipv6: False\n\n    import:\n      policy: [\"accept_all\"]\n    export:\n      policy:\n      - next-hop-self-ebgp-routes-only\n      - bgp_default_export\n    local-address: \"10.0.0.7\"\n    cluster:\n      cluster-id: \"10.0.0.7\"\n\n\n- path: configure/router[router-name=Base]/bgp\n  value:\n    neighbor:\n    - ip-address: \"10.0.0.6\"\n      description: \"l2\"\n      peer-as: 65000\n      group: \"ibgp-ipv4\"\n      admin-state: enable\n      family:\n        ipv4: True\n        ipv6: False\n\n"
 }
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut_spine, dut_l1
 
 TASK [Generate gNMI YAML configuration] ****************************************
-ok: [spine]
-ok: [l1]
+ok: [dut_l1]
+ok: [dut_spine]
 
-TASK [Update bgp node configuration from gNMI template /work/netlab_cicd/nokia_c/node_files/l1/bgp] ***
-changed: [spine]
-changed: [l1]
+TASK [Update bgp node configuration from gNMI template /work/netlab_cicd/node_files/dut_l1/bgp] ***
+changed: [dut_l1]
+changed: [dut_spine]
 
 TASK [debug] *******************************************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Find configuration template for vrf] *************************************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [fail] ********************************************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Find configuration deployment deploy_script for vrf] *********************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [l1] => {
-    "msg": "vrf configuration for l1\n=========================================\n\nupdates:\n- path: configure/service/vprn[service-name=customer]\n  val:\n    service-id: 100\n    customer: \"1\"\n    autonomous-system: 65000\n    router-id: 10.0.0.5\n    ecmp: 64\n    admin-state: enable\n\n"
+ok: [dut_l1] => {
+    "msg": "vrf configuration for dut_l1\n=========================================\n\nupdates:\n- path: configure/service/vprn[service-name=customer]\n  value:\n    service-id: 100\n    customer: \"1\"\n    autonomous-system: 65000\n    router-id: 10.0.0.5\n    ecmp: 64\n    admin-state: enable\n\n"
 }
-ok: [spine] => {
-    "msg": "vrf configuration for spine\n=========================================\n\nupdates:\n- path: configure/service/vprn[service-name=customer]\n  val:\n    service-id: 100\n    customer: \"1\"\n    autonomous-system: 65000\n    router-id: 10.0.0.7\n    ecmp: 64\n    admin-state: enable\n\n- path: configure/policy-options/prefix-list[name=bgp_customer_advertise]\n  val:\n    prefix: [] # Make sure it exists\n\n- path: configure/policy-options/policy-statement[name=bgp_customer_export]\n  val:\n    default-action:\n      action-type: reject\n    entry:\n    - entry-id: 10\n      from:\n        prefix-list: [ \"bgp_customer_advertise\" ]\n      action:\n        action-type: accept\n    - entry-id: 20\n      from:\n        protocol:\n          name: [ bgp ]\n      action:\n        action-type: accept\n    - entry-id: 100\n      from:\n        protocol:\n          name: [ direct ]\n      action:\n        action-type: accept\n\n\n- path: configure/service/vprn[service-name=customer]\n  val:\n    router-id: \"10.0.0.7\"\n    autonomous-system: 65000\n    bgp:\n      ebgp-default-reject-policy:\n        import: False\n        export: False\n      advertise-inactive: True\n      multipath:\n        ibgp: 64\n        ebgp: 64\n      min-route-advertisement: 1 # Be aggressive about sending updates\n      connect-retry: 5           # Retry frequently, suitable in DC context\n    # family: cannot disable this\n    # ipv4: False # Enabled by default, disable globally and set per group\n\n\n\n\n\n"
+ok: [dut_spine] => {
+    "msg": "vrf configuration for dut_spine\n=========================================\n\nupdates:\n- path: configure/service/vprn[service-name=customer]\n  value:\n    service-id: 100\n    customer: \"1\"\n    autonomous-system: 65000\n    router-id: 10.0.0.7\n    ecmp: 64\n    admin-state: enable\n\n- path: configure/policy-options/prefix-list[name=bgp_customer_advertise]\n  value:\n    prefix: [] # Make sure it exists\n\n- path: configure/policy-options/policy-statement[name=bgp_customer_export]\n  value:\n    default-action:\n      action-type: reject\n    entry:\n    - entry-id: 10\n      from:\n        prefix-list: [ \"bgp_customer_advertise\" ]\n      action:\n        action-type: accept\n    - entry-id: 20\n      from:\n        protocol:\n          name: [ bgp ]\n      action:\n        action-type: accept\n    - entry-id: 100\n      from:\n        protocol:\n          name: [ direct ]\n      action:\n        action-type: accept\n\n\n- path: configure/service/vprn[service-name=customer]\n  value:\n    router-id: \"10.0.0.7\"\n    autonomous-system: 65000\n    bgp:\n      ebgp-default-reject-policy:\n        import: False\n        export: False\n      advertise-inactive: True\n      multipath:\n        ibgp: 64\n        ebgp: 64\n      min-route-advertisement: 1 # Be aggressive about sending updates\n      connect-retry: 5           # Retry frequently, suitable in DC context\n    # family: cannot disable this\n    # ipv4: False # Enabled by default, disable globally and set per group\n\n\n\n\n\n"
 }
 
 TASK [Deploy vrf configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut_l1, dut_spine
 
 TASK [Generate gNMI YAML configuration] ****************************************
-ok: [spine]
-ok: [l1]
+ok: [dut_l1]
+ok: [dut_spine]
 
-TASK [Update vrf node configuration from gNMI template /work/netlab_cicd/nokia_c/node_files/l1/vrf] ***
-changed: [spine]
-changed: [l1]
+TASK [Update vrf node configuration from gNMI template /work/netlab_cicd/node_files/dut_l1/vrf] ***
+changed: [dut_l1]
+changed: [dut_spine]
 
 TASK [debug] *******************************************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Find configuration template for vxlan] ***********************************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [fail] ********************************************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Find configuration deployment deploy_script for vxlan] *******************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [l1] => {
-    "msg": "vxlan configuration for l1\n=========================================\n\nupdates:\n- path: configure/service/vpls[service-name=vlan1000]\n  val:\n    customer: '1'\n    admin-state: enable\n    service-id: 11000\n    vxlan:\n      instance:\n      - vxlan-instance: 1\n        vni: 6000\n\n- path: configure/service/vpls[service-name=vlan1001]\n  val:\n    customer: '1'\n    admin-state: enable\n    service-id: 11001\n    vxlan:\n      instance:\n      - vxlan-instance: 1\n        vni: 6001\n\n"
+ok: [dut_l1] => {
+    "msg": "vxlan configuration for dut_l1\n=========================================\n\nupdates:\n- path: configure/service/vpls[service-name=vlan1000]\n  value:\n    customer: '1'\n    admin-state: enable\n    service-id: 11000\n    vxlan:\n      instance:\n      - vxlan-instance: 1\n        vni: 6000\n\n- path: configure/service/vpls[service-name=vlan1001]\n  value:\n    customer: '1'\n    admin-state: enable\n    service-id: 11001\n    vxlan:\n      instance:\n      - vxlan-instance: 1\n        vni: 6001\n\n"
 }
-ok: [spine] => {
-    "msg": "vxlan configuration for spine\n=========================================\n\nupdates:\n- path: configure/service/vpls[service-name=vlan1000]\n  val:\n    customer: '1'\n    admin-state: enable\n    service-id: 11000\n    vxlan:\n      instance:\n      - vxlan-instance: 1\n        vni: 6000\n\n- path: configure/service/vpls[service-name=vlan1001]\n  val:\n    customer: '1'\n    admin-state: enable\n    service-id: 11001\n    vxlan:\n      instance:\n      - vxlan-instance: 1\n        vni: 6001\n\n"
+ok: [dut_spine] => {
+    "msg": "vxlan configuration for dut_spine\n=========================================\n\nupdates:\n- path: configure/service/vpls[service-name=vlan1000]\n  value:\n    customer: '1'\n    admin-state: enable\n    service-id: 11000\n    vxlan:\n      instance:\n      - vxlan-instance: 1\n        vni: 6000\n\n- path: configure/service/vpls[service-name=vlan1001]\n  value:\n    customer: '1'\n    admin-state: enable\n    service-id: 11001\n    vxlan:\n      instance:\n      - vxlan-instance: 1\n        vni: 6001\n\n"
 }
 
 TASK [Deploy vxlan configuration] **********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut_l1, dut_spine
 
 TASK [Generate gNMI YAML configuration] ****************************************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
-TASK [Update vxlan node configuration from gNMI template /work/netlab_cicd/nokia_c/node_files/l1/vxlan] ***
-changed: [l1]
-changed: [spine]
+TASK [Update vxlan node configuration from gNMI template /work/netlab_cicd/node_files/dut_l1/vxlan] ***
+changed: [dut_l1]
+changed: [dut_spine]
 
 TASK [debug] *******************************************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Figure out whether to deploy the module evpn on current device] **********
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Find configuration template for evpn] ************************************
-ok: [l1]
-ok: [spine]
+ok: [dut_spine]
+ok: [dut_l1]
 
 TASK [fail] ********************************************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 TASK [Find configuration deployment deploy_script for evpn] ********************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [spine] => {
-    "msg": "evpn configuration for spine\n=========================================\nupdates:\n- path: configure/router[router-name=Base]\n  val:\n    bgp:\n      rapid-withdrawal: True\n      rapid-update:\n        evpn: True\n      group:\n      - group-name: ibgp-ipv4\n        def-recv-evpn-encap: vxlan\n        next-hop-unchanged:\n          evpn: True\n      neighbor:\n      - ip-address: \"10.0.0.5\"\n        admin-state: enable\n        family:\n          evpn: True\n      - ip-address: \"10.0.0.6\"\n        admin-state: enable\n        family:\n          evpn: True\n\n\n- path: configure/service/vpls[service-name=vlan1000]\n  val:\n    routed-vpls:\n      vxlan-ipv4-tep-ecmp: True # Enable ECMP for routed VXLAN\n    bgp:\n    - bgp-instance: 1\n      route-distinguisher: \"10.0.0.7:1000\"\n      route-target:\n        export: \"target:65000:1000\"\n        import: \"target:65000:1000\"\n    bgp-evpn:\n      evi: 1000\n      routes:\n        mac-ip:\n          advertise: True\n      vxlan:\n      - vxlan-instance: 1\n        bgp-instance: 1\n        admin-state: enable\n        ecmp: 8\n- path: configure/service/vpls[service-name=vlan1001]\n  val:\n    routed-vpls:\n      vxlan-ipv4-tep-ecmp: True # Enable ECMP for routed VXLAN\n    bgp:\n    - bgp-instance: 1\n      route-distinguisher: \"10.0.0.7:1001\"\n      route-target:\n        export: \"target:65000:1001\"\n        import: \"target:65000:1001\"\n    bgp-evpn:\n      evi: 1001\n      routes:\n        mac-ip:\n          advertise: True\n      vxlan:\n      - vxlan-instance: 1\n        bgp-instance: 1\n        admin-state: enable\n        ecmp: 8\n\n"
+ok: [dut_l1] => {
+    "msg": "evpn configuration for dut_l1\n=========================================\nupdates:\n- path: configure/router[router-name=Base]\n  value:\n    bgp:\n      rapid-withdrawal: True\n      rapid-update:\n        evpn: True\n      group:\n      - group-name: ibgp-ipv4\n        def-recv-evpn-encap: vxlan\n      neighbor:\n      - ip-address: \"10.0.0.7\"\n        admin-state: enable\n        family:\n          evpn: True\n\n\n- path: configure/service/vpls[service-name=vlan1000]\n  value:\n    bgp:\n    - bgp-instance: 1\n      route-distinguisher: \"10.0.0.5:1000\"\n      route-target:\n        export: \"target:65000:1000\"\n        import: \"target:65000:1000\"\n    bgp-evpn:\n      evi: 1000\n      routes:\n        mac-ip:\n          advertise: True\n      vxlan:\n      - vxlan-instance: 1\n        bgp-instance: 1\n        admin-state: enable\n        ecmp: 8\n- path: configure/service/vpls[service-name=vlan1001]\n  value:\n    bgp:\n    - bgp-instance: 1\n      route-distinguisher: \"10.0.0.5:1001\"\n      route-target:\n        export: \"target:65000:1001\"\n        import: \"target:65000:1001\"\n    bgp-evpn:\n      evi: 1001\n      routes:\n        mac-ip:\n          advertise: True\n      vxlan:\n      - vxlan-instance: 1\n        bgp-instance: 1\n        admin-state: enable\n        ecmp: 8\n\n"
 }
-ok: [l1] => {
-    "msg": "evpn configuration for l1\n=========================================\nupdates:\n- path: configure/router[router-name=Base]\n  val:\n    bgp:\n      rapid-withdrawal: True\n      rapid-update:\n        evpn: True\n      group:\n      - group-name: ibgp-ipv4\n        def-recv-evpn-encap: vxlan\n      neighbor:\n      - ip-address: \"10.0.0.7\"\n        admin-state: enable\n        family:\n          evpn: True\n\n\n- path: configure/service/vpls[service-name=vlan1000]\n  val:\n    bgp:\n    - bgp-instance: 1\n      route-distinguisher: \"10.0.0.5:1000\"\n      route-target:\n        export: \"target:65000:1000\"\n        import: \"target:65000:1000\"\n    bgp-evpn:\n      evi: 1000\n      routes:\n        mac-ip:\n          advertise: True\n      vxlan:\n      - vxlan-instance: 1\n        bgp-instance: 1\n        admin-state: enable\n        ecmp: 8\n- path: configure/service/vpls[service-name=vlan1001]\n  val:\n    bgp:\n    - bgp-instance: 1\n      route-distinguisher: \"10.0.0.5:1001\"\n      route-target:\n        export: \"target:65000:1001\"\n        import: \"target:65000:1001\"\n    bgp-evpn:\n      evi: 1001\n      routes:\n        mac-ip:\n          advertise: True\n      vxlan:\n      - vxlan-instance: 1\n        bgp-instance: 1\n        admin-state: enable\n        ecmp: 8\n\n"
+ok: [dut_spine] => {
+    "msg": "evpn configuration for dut_spine\n=========================================\nupdates:\n- path: configure/router[router-name=Base]\n  value:\n    bgp:\n      rapid-withdrawal: True\n      rapid-update:\n        evpn: True\n      group:\n      - group-name: ibgp-ipv4\n        def-recv-evpn-encap: vxlan\n        next-hop-unchanged:\n          evpn: True\n      neighbor:\n      - ip-address: \"10.0.0.5\"\n        admin-state: enable\n        family:\n          evpn: True\n      - ip-address: \"10.0.0.6\"\n        admin-state: enable\n        family:\n          evpn: True\n\n\n- path: configure/service/vpls[service-name=vlan1000]\n  value:\n    routed-vpls:\n      vxlan-ipv4-tep-ecmp: True # Enable ECMP for routed VXLAN\n    bgp:\n    - bgp-instance: 1\n      route-distinguisher: \"10.0.0.7:1000\"\n      route-target:\n        export: \"target:65000:1000\"\n        import: \"target:65000:1000\"\n    bgp-evpn:\n      evi: 1000\n      routes:\n        mac-ip:\n          advertise: True\n      vxlan:\n      - vxlan-instance: 1\n        bgp-instance: 1\n        admin-state: enable\n        ecmp: 8\n- path: configure/service/vpls[service-name=vlan1001]\n  value:\n    routed-vpls:\n      vxlan-ipv4-tep-ecmp: True # Enable ECMP for routed VXLAN\n    bgp:\n    - bgp-instance: 1\n      route-distinguisher: \"10.0.0.7:1001\"\n      route-target:\n        export: \"target:65000:1001\"\n        import: \"target:65000:1001\"\n    bgp-evpn:\n      evi: 1001\n      routes:\n        mac-ip:\n          advertise: True\n      vxlan:\n      - vxlan-instance: 1\n        bgp-instance: 1\n        admin-state: enable\n        ecmp: 8\n\n"
 }
 
 TASK [Deploy evpn configuration] ***********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut_l1, dut_spine
 
 TASK [Generate gNMI YAML configuration] ****************************************
-ok: [l1]
-ok: [spine]
+ok: [dut_l1]
+ok: [dut_spine]
 
-TASK [Update evpn node configuration from gNMI template /work/netlab_cicd/nokia_c/node_files/l1/evpn] ***
-changed: [l1]
-changed: [spine]
+TASK [Update evpn node configuration from gNMI template /work/netlab_cicd/node_files/dut_l1/evpn] ***
+changed: [dut_l1]
+changed: [dut_spine]
 
 TASK [debug] *******************************************************************
-skipping: [l1]
-skipping: [spine]
+skipping: [dut_l1]
+skipping: [dut_spine]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-l1                         : ok=64   changed=7    unreachable=0    failed=0    skipped=22   rescued=0    ignored=0   
-spine                      : ok=64   changed=7    unreachable=0    failed=0    skipped=22   rescued=0    ignored=0   
+dut_l1                     : ok=60   changed=7    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+dut_spine                  : ok=60   changed=7    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 
-Results of configuration script deployments
+Results of non-Ansible configuration deployments
 ================================================================================
-h1               Script:  initial,routing
-h2               Script:  initial,routing
-h3               Script:  initial,routing
-h4               Script:  initial,routing
-l2               Script:  initial,vlan,ospf,bgp,vrf,vxlan,evpn
+h1               Script:   initial,routing
+h2               Script:   initial,routing
+h3               Script:   initial,routing
+h4               Script:   initial,routing
+l2               Script:   initial,vlan,ospf,bgp,vrf,vxlan,evpn
 
 
 The devices under test are a layer-2 leaf and a spine performing centralized

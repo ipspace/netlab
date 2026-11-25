@@ -35,9 +35,9 @@ Config Deploying device configurations
  [INFO] Executing initial configuration for node ce1
  [INFO] Executing initial configuration for node ce2
  [INFO] Executing initial configuration for node s2
+ [INFO] Executing ospf configuration for node ce1
  [INFO] Executing ospf configuration for node ce2
  [INFO] Executing vlan configuration for node s2
- [INFO] Executing ospf configuration for node ce1
  [INFO] Executing ospf configuration for node s2
  [INFO] Executing bgp configuration for node s2
  [INFO] Executing vrf configuration for node s2
@@ -69,7 +69,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "initial configuration for dut\n=========================================\nset system host-name 'dut'\n\nset vrf name tenant table 100\n\nset interfaces dummy dum0 address 10.0.0.3/32\n\n\n\nset interfaces ethernet eth1 description 'dut -> s2'\n\nset interfaces ethernet eth1 mtu 1600\n\nset interfaces ethernet eth1 address 10.1.0.1/30\n\n\n\n\n\nset interfaces ethernet eth2 description 'dut -> ce1'\n\nset interfaces ethernet eth2 mtu 1500\n\nset interfaces ethernet eth2 address 10.1.0.6/30\n\n\nset interfaces ethernet eth2 vrf tenant\n\n\nset service lldp interface all\n>/dev/null 2>/dev/null set service lldp interface eth0 disable\n>/dev/null 2>/dev/null set service lldp interface eth0 mode disable\n\n\nset service ssh\n\ncommit\n\n# Restart FRR to pick up the new hostname\nsudo service frr restart\n"
+    "msg": "initial configuration for dut\n=========================================\nset system host-name 'dut'\n\n#\n# Create VRF tables as part of initial device configuration\n#\nset vrf name tenant table 100\n\n\n\n\nset interfaces dummy dum0 address 10.0.0.3/32\n\nset system static-host-mapping host-name ce1 inet 10.0.0.1\nset system static-host-mapping host-name ce2 inet 10.0.0.2\nset system static-host-mapping host-name dut-tenant inet 10.1.0.6\nset system static-host-mapping host-name s2 inet 10.0.0.4\nset system static-host-mapping host-name s2-tenant inet 10.1.0.10\n\n\n\nset interfaces ethernet eth1 description 'dut -> s2'\n\nset interfaces ethernet eth1 mtu 1600\n\nset interfaces ethernet eth1 address 10.1.0.1/30\n\n\n\n\n\nset interfaces ethernet eth2 description 'dut -> ce1'\n\nset interfaces ethernet eth2 mtu 1500\n\nset interfaces ethernet eth2 address 10.1.0.6/30\n\n\nset interfaces ethernet eth2 vrf tenant\n\n\nset service lldp interface all\n>/dev/null 2>/dev/null set service lldp interface eth0 disable\n>/dev/null 2>/dev/null set service lldp interface eth0 mode disable\n\n\nset service ssh\n\ncommit\n\n# Restart FRR to pick up the new hostname\nsudo service frr restart\n"
 }
 
 TASK [Deploy initial configuration] ********************************************
@@ -169,7 +169,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "bgp configuration for dut\n=========================================\n\nset protocols bgp system-as 65000\n\nset protocols bgp parameters router-id 10.0.0.3\n\n\n\nset protocols bgp neighbor 10.0.0.4 remote-as 65000\nset protocols bgp neighbor 10.0.0.4 description 's2'\n \nset protocols bgp neighbor 10.0.0.4 update-source dum0\n\n\n\n\n# Work on Family ipv4\n\nset protocols bgp address-family ipv4-unicast network 10.0.0.3/32\n\n\n\nset protocols bgp neighbor 10.0.0.4 address-family ipv4-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.0.0.4 address-family ipv4-unicast nexthop-self\n\n\n\n"
+    "msg": "bgp configuration for dut\n=========================================\n\nset protocols bgp system-as 65000\n\nset protocols bgp parameters router-id 10.0.0.3\n\n\n\n\nset protocols bgp neighbor 10.0.0.4 remote-as 65000\nset protocols bgp neighbor 10.0.0.4 description 's2'\n \nset protocols bgp neighbor 10.0.0.4 update-source dum0\n\n\n\n\n# Work on Family ipv4\n\nset protocols bgp address-family ipv4-unicast network 10.0.0.3/32\n\n\n\nset protocols bgp neighbor 10.0.0.4 address-family ipv4-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.0.0.4 address-family ipv4-unicast nexthop-self\n\n\n\n"
 }
 
 TASK [Deploy bgp configuration] ************************************************
@@ -277,11 +277,11 @@ skipping: no hosts matched
 PLAY RECAP *********************************************************************
 dut                        : ok=65   changed=14   unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 
-Results of configuration script deployments
+Results of non-Ansible configuration deployments
 ================================================================================
-ce1              Script:  initial,ospf
-ce2              Script:  initial,ospf
-s2               Script:  initial,vlan,ospf,bgp,vrf,vxlan,evpn
+ce1              Script:   initial,ospf
+ce2              Script:   initial,ospf
+s2               Script:   initial,vlan,ospf,bgp,vrf,vxlan,evpn
 
 
 The devices under test are layer-3 EVPN/VXLAN routers

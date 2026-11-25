@@ -45,12 +45,12 @@ Config Deploying device configurations
  [INFO] Executing initial configuration for node s2
  [INFO] Executing routing configuration for node hr1 (namespace clab-
           ml-17-hr1)
+ [INFO] Executing routing configuration for node hb2 (namespace clab-
+          ml-17-hb2)
  [INFO] Executing routing configuration for node hr2 (namespace clab-
           ml-17-hr2)
  [INFO] Executing routing configuration for node hb1 (namespace clab-
           ml-17-hb1)
- [INFO] Executing routing configuration for node hb2 (namespace clab-
-          ml-17-hb2)
  [INFO] Executing vlan configuration for node s2
  [INFO] Executing ospf configuration for node s2
  [INFO] Executing bgp configuration for node s2
@@ -83,7 +83,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "initial configuration for dut\n=========================================\nset system host-name 'dut'\n\nset vrf name customer table 100\nset vrf name other table 101\n\nset interfaces dummy dum0 address 10.0.0.5/32\n\n\n\nset interfaces ethernet eth1 description 'dut -> s2'\n\nset interfaces ethernet eth1 mtu 1600\n\nset interfaces ethernet eth1 address 10.1.0.1/30\n\n\n\n\n\nset interfaces ethernet eth2 description 'dut -> hr1 [stub]'\n\nset interfaces ethernet eth2 mtu 1500\n\nset interfaces ethernet eth2 address 172.16.0.5/24\n\n\nset interfaces ethernet eth2 vrf customer\n\n\n\nset interfaces ethernet eth3 description 'dut -> hb1 [stub]'\n\nset interfaces ethernet eth3 mtu 1500\n\nset interfaces ethernet eth3 address 172.16.2.5/24\n\n\nset interfaces ethernet eth3 vrf other\n\n\nset service lldp interface all\n>/dev/null 2>/dev/null set service lldp interface eth0 disable\n>/dev/null 2>/dev/null set service lldp interface eth0 mode disable\n\n\nset service ssh\n\ncommit\n\n# Restart FRR to pick up the new hostname\nsudo service frr restart\n"
+    "msg": "initial configuration for dut\n=========================================\nset system host-name 'dut'\n\n#\n# Create VRF tables as part of initial device configuration\n#\nset vrf name customer table 100\nset vrf name other table 101\n\n\n\n\nset interfaces dummy dum0 address 10.0.0.5/32\n\nset system static-host-mapping host-name dut-customer inet 172.16.0.5\nset system static-host-mapping host-name dut-other inet 172.16.2.5\nset system static-host-mapping host-name hb1 inet 172.16.2.3\nset system static-host-mapping host-name hb2 inet 172.16.3.4\nset system static-host-mapping host-name hr1 inet 172.16.0.1\nset system static-host-mapping host-name hr2 inet 172.16.1.2\nset system static-host-mapping host-name s2 inet 10.0.0.6\nset system static-host-mapping host-name s2-customer inet 172.16.1.6\nset system static-host-mapping host-name s2-other inet 172.16.3.6\n\n\n\nset interfaces ethernet eth1 description 'dut -> s2'\n\nset interfaces ethernet eth1 mtu 1600\n\nset interfaces ethernet eth1 address 10.1.0.1/30\n\n\n\n\n\nset interfaces ethernet eth2 description 'dut -> hr1 [stub]'\n\nset interfaces ethernet eth2 mtu 1500\n\nset interfaces ethernet eth2 address 172.16.0.5/24\n\n\nset interfaces ethernet eth2 vrf customer\n\n\n\nset interfaces ethernet eth3 description 'dut -> hb1 [stub]'\n\nset interfaces ethernet eth3 mtu 1500\n\nset interfaces ethernet eth3 address 172.16.2.5/24\n\n\nset interfaces ethernet eth3 vrf other\n\n\nset service lldp interface all\n>/dev/null 2>/dev/null set service lldp interface eth0 disable\n>/dev/null 2>/dev/null set service lldp interface eth0 mode disable\n\n\nset service ssh\n\ncommit\n\n# Restart FRR to pick up the new hostname\nsudo service frr restart\n"
 }
 
 TASK [Deploy initial configuration] ********************************************
@@ -202,7 +202,7 @@ ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => {
-    "msg": "bgp configuration for dut\n=========================================\n\nset protocols bgp system-as 65000\n\nset protocols bgp parameters router-id 10.0.0.5\n\n\n\nset protocols bgp neighbor 10.0.0.6 remote-as 65000\nset protocols bgp neighbor 10.0.0.6 description 's2'\n \nset protocols bgp neighbor 10.0.0.6 update-source dum0\n\n\n\n\n# Work on Family ipv4\n\nset protocols bgp address-family ipv4-unicast network 10.0.0.5/32\n\n\n\nset protocols bgp neighbor 10.0.0.6 address-family ipv4-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.0.0.6 address-family ipv4-unicast nexthop-self\n\n\n\n"
+    "msg": "bgp configuration for dut\n=========================================\n\nset protocols bgp system-as 65000\n\nset protocols bgp parameters router-id 10.0.0.5\n\n\n\n\nset protocols bgp neighbor 10.0.0.6 remote-as 65000\nset protocols bgp neighbor 10.0.0.6 description 's2'\n \nset protocols bgp neighbor 10.0.0.6 update-source dum0\n\n\n\n\n# Work on Family ipv4\n\nset protocols bgp address-family ipv4-unicast network 10.0.0.5/32\n\n\n\nset protocols bgp neighbor 10.0.0.6 address-family ipv4-unicast soft-reconfiguration inbound\n\nset protocols bgp neighbor 10.0.0.6 address-family ipv4-unicast nexthop-self\n\n\n\n"
 }
 
 TASK [Deploy bgp configuration] ************************************************
@@ -310,13 +310,13 @@ skipping: no hosts matched
 PLAY RECAP *********************************************************************
 dut                        : ok=67   changed=14   unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
 
-Results of configuration script deployments
+Results of non-Ansible configuration deployments
 ================================================================================
-hr1              Script:  initial,routing
-hr2              Script:  initial,routing
-hb1              Script:  initial,routing
-hb2              Script:  initial,routing
-s2               Script:  initial,vlan,ospf,bgp,vrf,vxlan,evpn
+hr1              Script:   initial,routing
+hr2              Script:   initial,routing
+hb1              Script:   initial,routing
+hb2              Script:   initial,routing
+s2               Script:   initial,vlan,ospf,bgp,vrf,vxlan,evpn
 
 
 The device under test is a VLAN-to-VXLAN layer-3 switch between an access
