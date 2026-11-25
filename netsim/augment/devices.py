@@ -14,7 +14,8 @@ from ..utils import log, strings
 Get node provider -- return node-specific provider or the default provider
 """
 def get_provider(node: Box, defaults: Box) -> str:
-  return node.get('provider',defaults.provider)
+  provider = node.get('provider',defaults.provider)
+  return provider if isinstance(provider,str) else defaults.provider   # Invalid node providers are reported in select_primary_provider
 
 """
 Get generic device attribute:

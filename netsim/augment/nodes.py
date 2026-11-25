@@ -439,13 +439,6 @@ def validate_node_provider(n: Box, topology: Box) -> bool:
     n.pop('provider',None)
     return True
 
-  if not n.provider in topology.defaults.providers:
-    log.error(
-      f'Invalid provider {n.provider} specified in node {n.name}',
-      log.IncorrectValue,
-      'nodes')
-    return False
-
   if not n.provider in topology.defaults.providers[topology.provider]:
     log.error(
       f'Provider {n.provider} specified in node {n.name} is not compatible with lab topology provider {topology.provider}',

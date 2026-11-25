@@ -197,6 +197,8 @@ class SchemaBuilder:
       if data_type.get('include_templates',False):
         devices = sorted(set(devices) | set(self.const('template_devices',[])))
       return { 'enum': devices }
+    if dt_name == 'provider':
+      return { 'enum': sorted(self.defaults.providers.keys()) }
     if dt_name == 'r_proto':
       return { 'enum': self.const('routing_protocols',[]) }
     if dt_name in ('prefix_str','named_pfx','addr_pool','node_id','group_id','node_or_group','mac','prefixset'):

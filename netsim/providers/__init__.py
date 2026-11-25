@@ -17,6 +17,7 @@ from box import Box
 
 from ..augment import devices, links
 from ..data import append_to_list, filemaps, get_box, get_empty_box
+from ..data.types import must_be_provider
 from ..outputs.ansible import get_host_addresses
 from ..utils import files as _files
 from ..utils import log, strings, templates
@@ -209,6 +210,15 @@ def select_primary_provider(topology: Box) -> None:
   clab nodes under libvirt provider, but not vice versa
   """
   p_default = topology.provider
+  if log.pending_errors():                        # Group data could contain invalid providers (already reported)
+    return                                        # ... and the caller exits on errors anyway
+
+  for n_name,ndata in topology.nodes.items():     # Validate node providers before using them
+    if 'provider' in ndata:
+      must_be_provider(ndata,'provider',f'nodes.{n_name}',module='nodes')
+
+  if log.pending_errors():                        # Found invalid node providers, get out of here
+    return
 
   # Build a set of all providers used in the topology
   p_set = { ndata.provider if 'provider' in ndata else p_default for ndata in topology.nodes.values() }
