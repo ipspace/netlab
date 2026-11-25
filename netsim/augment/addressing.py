@@ -290,6 +290,8 @@ def get(pools: Box, pool_list: typing.Optional[typing.List[str]] = None, n: typi
 def setup(topology: Box) -> None:
   defaults = topology.defaults
   prior_errors = log.get_error_count()
+  if 'addressing' in topology and not isinstance(topology.addressing,Box):
+    topology.pop('addressing',None)       # Reported by the global attribute validation, use the default pools
   null_to_string(topology.addressing)
   addrs = setup_pools(defaults.addressing + topology.addressing,defaults)
 
@@ -308,7 +310,7 @@ def setup(topology: Box) -> None:
     strings.print_structured_dict(topology.pools,'.. ')
 
   log.exit_on_error(prior_errors)
-  if 'prefix' in topology:
+  if isinstance(topology.get('prefix',None),Box):  # Invalid 'prefix' was reported by the global attribute validation
     setup_prefixes(topology)
 
 '''
@@ -344,7 +346,7 @@ Assign static prefixes to all pool-based named prefixes
 '''
 def setup_prefixes(topology: Box) -> None:
   for p_name,p_value in topology.prefix.items():
-    if 'pool' in p_value:
+    if isinstance(p_value,Box) and 'pool' in p_value:   # Skip invalid named prefixes (reported by the attribute validation)
       evaluate_named_prefix(topology,p_name)
 
 def parse_prefix(prefix: typing.Union[str,Box],path: str = 'links') -> Box:
