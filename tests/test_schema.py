@@ -41,21 +41,15 @@ def schema_validator(plugins: typing.Tuple[str, ...] = ()) -> jsonschema.Draft7V
 def test_schema_is_valid() -> None:
   jsonschema.Draft7Validator.check_schema(json.loads(generate_schema()))
 
-@functools.lru_cache
-def system_providers() -> typing.List[str]:
-  return json.loads(generate_schema())['properties']['provider']['enum']
-
 def extends_attributes(data: typing.Any, path: str = '') -> bool:
   """
-  Lab topologies can define custom attributes or providers in defaults, the schema can't know them
+  Lab topologies can define custom attributes in defaults, the schema can't know them
   """
   if not isinstance(data,dict):
     return False
   for k,v in data.items():
     k_path = f'{path}.{k}' if path else str(k)
     if k_path.startswith('defaults') and 'attributes' in k_path.split('.'):
-      return True
-    if k_path.startswith('defaults.providers.') and k_path.split('.')[2] not in system_providers():
       return True
     if extends_attributes(v,k_path):
       return True
@@ -65,7 +59,7 @@ def extends_attributes(data: typing.Any, path: str = '') -> bool:
 def test_schema_accepts_topology(test_case: str) -> None:
   topology = yaml.safe_load(pathlib.Path(test_case).read_text())
   if extends_attributes(topology):
-    pytest.skip('lab topology defines custom attributes or providers')
+    pytest.skip('lab topology defines custom attributes')
 
   plugins = topology.get('plugin',[])
   if set(plugins) & set(UNDEFINED_PLUGIN_ATTRIBUTES):
