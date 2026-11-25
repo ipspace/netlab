@@ -22,6 +22,7 @@ from .types import attr_help
 #
 list_of_modules: typing.List[str] = []
 list_of_devices: typing.List[str] = []
+list_of_providers: typing.List[str] = []
 topo_attributes: typing.Optional[Box] = None
 topo_pointer: typing.Optional[Box] = None
 
@@ -861,6 +862,7 @@ def init_validation(topology: Box) -> None:
   global topo_attributes
   global list_of_modules
   global list_of_devices
+  global list_of_providers
   global topo_pointer
 
   topo_pointer = topology
@@ -868,6 +870,7 @@ def init_validation(topology: Box) -> None:
   list_of_modules = [ m for m in topology.defaults.keys()
                        if isinstance(topology.defaults[m],Box) and 'supported_on' in topology.defaults[m] ]
   list_of_devices = list(topology.defaults.devices.keys())
+  list_of_providers = list(topology.defaults.providers.keys())
 
 """
 Get object-specific attributes

@@ -1050,6 +1050,25 @@ def must_be_device(value: typing.Any, include_templates: bool = False) -> dict:
   return { '_valid': True }
 
 @type_test()
+def must_be_provider(value: typing.Any) -> dict:
+  from .validate import list_of_providers
+
+  status = {
+    '_type':    "provider",
+    '_hint_id': "providers",
+    '_hint':    "Use 'netlab show providers' to display a list of valid virtualization providers"
+  }
+
+  if not isinstance(value,str):                                       # Otherwise it must be a string
+    return status
+
+  if not value in list_of_providers:
+    status['_value'] = f'known virtualization provider (got {value})'
+    return status
+
+  return { '_valid': True }
+
+@type_test()
 def must_be_node_id(value: typing.Any) -> dict:
   if not isinstance(value,str):                                       # Otherwise it must be a string
     return { '_type': 'valid node name (a string)' }
