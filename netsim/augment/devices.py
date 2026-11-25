@@ -8,6 +8,8 @@ from enum import Enum
 from box import Box
 
 from .. import data
+from ..data import validate
+from ..data.types import must_be_provider
 from ..utils import log, strings
 
 """
@@ -255,42 +257,35 @@ def process_child_provider(pname: str, topology: Box, processed: list) -> None:
   processed.append(pname)
 
   providers = topology.defaults.providers
-  p_parent = providers[pname].get('parent',None)
-  if not p_parent:                                          # This provider is not a child provider
+  if not providers[pname].get('parent',None):               # This provider is not a child provider
     return
 
-  if not isinstance(p_parent,str):
-    log.error(
-      f'The parent of provider {pname} must be a provider name, found {p_parent}',
-      log.IncorrectType,
-      'providers')
-    return
-
-  if p_parent not in providers:
-    log.error(
-      f'Provider {pname} uses an unknown provider {p_parent} as its parent',
-      log.IncorrectValue,
-      'providers')
+  p_parent = must_be_provider(providers[pname],'parent',f'defaults.providers.{pname}',module='providers')
+  if not p_parent:                                          # Invalid parent provider, already reported
     return
 
   process_child_provider(p_parent,topology,processed)      # Process inheritance in parent provider
-  for dname,ddata in topology.defaults.devices.items():
+  for ddata in topology.defaults.devices.values():
     if not isinstance(ddata.get(p_parent,None),Box):        # No parent provider settings for this device
-      continue
-    if not isinstance(ddata.get(pname,{}),dict):            # Child provider settings must be a dictionary
-      log.error(
-        f'Settings of device {dname} for provider {pname} must be a dictionary, found {ddata[pname]}',
-        log.IncorrectType,
-        'providers')
-      ddata.pop(pname)                                      # Remove the invalid settings so they won't crash later
       continue
     ddata[pname] = data.get_box(ddata[p_parent].to_dict()) + ddata.get(pname,{})
     data.remove_null_values(ddata[pname])                   # Remove the settings the child provider set to null
 
+"""
+The provider inheritance is processed before the data validation, so we don't know whether the
+device settings are valid. Report whatever went wrong as a warning and let the data validation
+deal with the invalid data
+"""
 def process_provider_inheritance(topology: Box) -> None:
+  validate.list_of_providers = list(topology.defaults.providers.keys())   # Needed by must_be_provider
   processed: list = []
-  for pname in list(topology.defaults.providers.keys()):
-    process_child_provider(pname,topology,processed)
+  try:
+    for pname in list(topology.defaults.providers.keys()):
+      process_child_provider(pname,topology,processed)
+  except Exception as ex:
+    log.warning(
+      text=f'Cannot process provider setting inheritance: {ex}',
+      module='providers')
 
 """
 Add device features (optionally provider-limited) to module support list
