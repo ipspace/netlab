@@ -1,0 +1,44 @@
+#
+# Code coverage test for alternate data types
+#
+# Node 'a' has valid values, all other nodes have invalid values
+#
+defaults.device: none
+
+defaults.attributes.node:
+  int_alt_scalar: { type: int, _alt_types: [ bool, str ] }
+  dict_alt_list:                # Dictionary or a list of strings
+    type: dict
+    _subtype: int
+    _alt_types: [ { type: list, _subtype: str } ]
+  list_alt_dict:                # List or a dictionary of integers
+    type: list
+    _alt_types: [ { type: dict, _subtype: int } ]
+  list_alt_keys:                # List or a dictionary with specified keys
+    type: list
+    _alt_types: [ { type: dict, _keys: { x: int, y: str } } ]
+  list_alt_keytype:             # List or a dictionary with identifier keys
+    type: list
+    _alt_types: [ { type: dict, _keytype: id } ]
+  list_alt_list:                # Alternate type repeating the primary type
+    type: list
+    _alt_types: [ { type: list, _subtype: str } ]
+
+nodes:
+  a:
+    int_alt_scalar: True
+    dict_alt_list: x            # A string is converted into a list
+    list_alt_dict: { x: 1 }
+    list_alt_keys: { x: 1, y: z }
+    list_alt_keytype: { x_1: 1 }
+    list_alt_list: [ x ]
+  b:                            # Primary type validation errors
+    int_alt_scalar: [ 1 ]       # Not an int or any of the alternate types
+    dict_alt_list: { x: y }     # Dictionary values must be integers
+  c:                            # Alternate type subtype validation errors
+    dict_alt_list: [ x, 1 ]     # List elements must be strings
+    list_alt_dict: { x: y }     # Dictionary values must be integers
+    list_alt_keys: { x: y, z: 1 }       # Invalid value of a specified key, invalid key
+    list_alt_keytype: { 1x: 1 }         # Keys must be identifiers
+  d:                            # Alternate types repeating the expected type are not displayed
+    list_alt_list: { x: 1 }

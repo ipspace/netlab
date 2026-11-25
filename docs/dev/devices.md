@@ -281,6 +281,8 @@ The Ansible variables should include:
 
 * `ansible_user` and `ansible_ssh_pass` must often be set to the default values included in the network device image.
 
+* `netlab_container` tells device quirks and configuration templates whether the device runs as a container (sharing the host kernel) or as a virtual machine (including a virtual machine in a vrnetlab container). Set it to `True` in the provider-specific group variables (for example, `clab.group_vars`) of container devices that need it. Users can change it in node data, either directly or through [group node data](topo-groups) (`groups._name_.netlab_container`), but not with group **vars**, which are used only in the Ansible inventory.
+
 [^DTP]: `netlab_device_type` takes precedence over `ansible_network_os`.
 
 For example, here are the group variables for Cisco IOSv:

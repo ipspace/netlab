@@ -104,6 +104,9 @@ def expand_multiaccess_links(topology: Box) -> None:
     if not b_name:                                          # Is this one of the relevant links?
       continue                                              # No, move on
 
+    if not isinstance(b_name,str):                          # Invalid bridge name, reported by the link validation
+      continue
+
     if b_name not in topology.nodes:                        # Is the bridge name equal to a node name?
       continue                                              # No, it's a name of a Linux bridge
 

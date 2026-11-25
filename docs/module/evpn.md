@@ -56,9 +56,9 @@ The following devices can be used as control-plane-only EVPN nodes (for example,
 
 ```{features}
 - title: VXLAN
-  enabled: not evpn.transport or 'cp_vxlan' in evpn.transport
+  enabled: "'vxlan' in evpn.bgp_session and 'vxlan' not in evpn.transport"
 - title: MPLS
-  enabled: not evpn.transport or 'cp_mpls' in evpn.transport
+  enabled: "'mpls' in evpn.bgp_session and 'mpls' not in evpn.transport"
 ```
 
 The EVPN module supports IBGP- and EBGP-based EVPN with VXLAN transport:
@@ -66,14 +66,14 @@ The EVPN module supports IBGP- and EBGP-based EVPN with VXLAN transport:
 ```{features}
 - title: IBGP+IGP
   enabled: >-
-    'ibgp' in ((evpn.transport.get('vxlan') or evpn.transport.get('cp_vxlan') or []) if isinstance(evpn.transport,dict) else ['ibgp','ebgp'] if not evpn.transport or ('vxlan' in evpn.transport and vxlan) else [])
+    'ibgp' in evpn.bgp_session.vxlan
 - title: EBGP-only
   enabled: >-
-    'ebgp' in ((evpn.transport.get('vxlan') or evpn.transport.get('cp_vxlan') or []) if isinstance(evpn.transport,dict) else ['ibgp','ebgp'] if not evpn.transport or ('vxlan' in evpn.transport and vxlan) else [])
+    'ebgp' in evpn.bgp_session.vxlan
   caveats: evpn.caveats.ebgp
 - title: EBGP<br>Unnumbered
   enabled: >-
-    'ebgp' in ((evpn.transport.get('vxlan') or evpn.transport.get('cp_vxlan') or []) if isinstance(evpn.transport,dict) else ['ibgp','ebgp'] if not evpn.transport or ('vxlan' in evpn.transport and vxlan) else []) and bgp.ipv6_lla
+    'ebgp' in evpn.bgp_session.vxlan and bgp.ipv6_lla
 ```
 
 With additional nerd knobs ([more details](evpn-weird-designs)), it's possible to implement the more convoluted designs, including:
@@ -84,10 +84,10 @@ With additional nerd knobs ([more details](evpn-weird-designs)), it's possible t
 ```{features}
 - title: IBGP over<br>EBGP
   enabled: >-
-    'ibgp' in ((evpn.transport.get('vxlan') or evpn.transport.get('cp_vxlan') or []) if isinstance(evpn.transport,dict) else ['ibgp','ebgp'] if not evpn.transport or ('vxlan' in evpn.transport and vxlan) else []) and bgp.local_as and bgp.activate_af
+    'ibgp' in evpn.bgp_session.vxlan and bgp.local_as and bgp.activate_af
 - title: EBGP<br>over EBGP
   enabled: >-
-    'ebgp' in ((evpn.transport.get('vxlan') or evpn.transport.get('cp_vxlan') or []) if isinstance(evpn.transport,dict) else ['ibgp','ebgp'] if not evpn.transport or ('vxlan' in evpn.transport and vxlan) else []) and bgp.multihop and bgp.activate_af
+    'ebgp' in evpn.bgp_session.vxlan and bgp.multihop and bgp.activate_af
 ```
 
 All devices supporting EVPN with VXLAN transport can use IPv4 VXLAN transport; some can also run VXLAN-over-IPv6:

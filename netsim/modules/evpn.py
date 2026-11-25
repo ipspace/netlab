@@ -75,16 +75,9 @@ def get_evpn_af(node: Box, topology: Box) -> typing.Optional[str]:
 """
 Get the BGP session types the current node/device supports for the selected EVPN transport
 """
-def get_bgp_neighbor_types(node: Box, topology: Box) -> list:
-  topo_transport = node.get('evpn.transport','vxlan')       # EVPN transport used in lab topology
+def get_bgp_neighbor_types(node: Box, topology: Box, transport: str) -> list:
   features = devices.get_device_features(node,topology.defaults)
-  device_transport = features.get('evpn.transport',[])      # EVPN transport(s) supported by the device
-  if isinstance(device_transport,Box):                      # Do we have non-default BGP type settings?
-    return device_transport.get(topo_transport,[]) or \
-           device_transport.get(f'cp_{topo_transport}',[])  # Return DP- or CP- settings
-
-  # Default: support IBGP and EBGP for VXLAN and only IBGP for MPLS/SR
-  return ['ibgp', 'ebgp'] if topo_transport == 'vxlan' else ['ibgp']
+  return features.evpn.bgp_session.get(transport,[])
 
 def enable_evpn_af(node: Box, topology: Box) -> None:
   AF_WARNING = {}
@@ -96,6 +89,8 @@ def enable_evpn_af(node: Box, topology: Box) -> None:
   if not evpn_af:
     return
 
+  transport = topology.get('evpn.transport','vxlan')        # Node evpn.transport could be changed from 'sr' to 'mpls'
+
   # Enable EVPN AF on all BGP neighbors with the correct session type
   # that also use EVPN module
   #
@@ -104,11 +99,11 @@ def enable_evpn_af(node: Box, topology: Box) -> None:
       if evpn_af not in bn:
         continue
       if bgp_neighbor_types is None:                        # Get BGP neighbor types only when needed
-        bgp_neighbor_types = get_bgp_neighbor_types(node,topology)
+        bgp_neighbor_types = get_bgp_neighbor_types(node,topology,transport)
       if bn.type not in bgp_neighbor_types:                 # Does the device support the requested neighbor type?
         if bn.type not in bgp_error_types:                  # Did we already report this error?
           log.error(
-            f'netlab cannot configure EVPN AF for {bn.type} neighbors on {node.device} when using {node.evpn.transport} transport',
+            f'netlab cannot configure EVPN AF for {bn.type} neighbors on {node.device} when using {transport} transport',
             more_data = [ f'Found a {bn.type} session on node {node.name} with {bn.name}'],
             category=log.IncorrectType,
             module='evpn')
@@ -590,11 +585,20 @@ Check whether the node supports the evpn.transport setting used in lab topology
 def check_node_transport(node: Box, topology: Box) -> bool:
   features = devices.get_device_features(node,topology.defaults)
   transport = node.get('evpn.transport','vxlan')            # Get configured VXLAN transport
-  s_trans  = features.get('evpn.transport',[])              # Get supported transports
-  if not s_trans:                                           # Control-plane-only node
-    node.evpn._cp_only = True
-  elif transport not in s_trans:                            # Is the requested transport supported by the device?
-    if f'cp_{transport}' in s_trans:                        # Can the device at least act as a CP node for this transport?
+  s_trans  = features.evpn.get('transport',[])              # Get transports with data-plane support
+  s_bgp    = features.evpn.get('bgp_session',None)          # Get transports with control-plane support
+  if not isinstance(s_trans,list) or not isinstance(s_bgp,Box):
+    log.error(
+      f'Device {node.device} (node {node.name}) uses an obsolete EVPN device features definition',
+      more_hints=[
+        'features.evpn.transport must be a list of data-plane encapsulations',
+        'features.evpn.bgp_session must be a dictionary of supported BGP session types per transport' ],
+      category=log.IncorrectValue,
+      module='evpn')
+    return False
+
+  if transport not in s_trans:                              # Is the requested transport supported by the device?
+    if transport in s_bgp:                                  # Can the device at least act as a CP node for this transport?
       node.evpn._cp_only = True
     else:
       log.error(

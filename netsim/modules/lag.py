@@ -30,8 +30,16 @@ populate_peerlink_id_set -- Collect any user defined lag.mlag.peergroup values g
 """
 def populate_peerlink_id_set(topology: Box) -> None:
   _dataplane.create_id_set(PEERLINK_ID_SET)
-  PEERLINK_IDS = { l[PEERLINK_ID_ATT] for l in topology.links
-                   if not isinstance(l.get(PEERLINK_ID_ATT,False),bool) }
+  PEERLINK_IDS: typing.Set[int] = set()
+  for l in topology.links:
+    pg_id = l.get(PEERLINK_ID_ATT,False)
+    if isinstance(pg_id,str):                                   # Numeric strings become integers during
+      try:                                                      # ... the (later) attribute validation
+        pg_id = int(pg_id)
+      except ValueError:                                        # ... invalid strings are reported there
+        continue
+    if isinstance(pg_id,int) and not isinstance(pg_id,bool):    # Skip True/False (auto-assigned IDs) and
+      PEERLINK_IDS.add(pg_id)                                   # ... invalid values (lists, dictionaries)
   _dataplane.extend_id_set(PEERLINK_ID_SET,PEERLINK_IDS)
   _dataplane.set_id_counter(PEERLINK_ID_SET,1,256)
 

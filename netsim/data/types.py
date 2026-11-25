@@ -59,10 +59,47 @@ def wrong_type_text(x : typing.Any) -> str:
     else "list" if isinstance(x,list) \
     else str(type(x).__name__)
 
-def err_add_alt_types(ctx: dict) -> str:
-  a_types = ctx.get('_alt_types',[])
-  if not a_types:
-    return ''
+'''
+err_add_alt_types: create the alternate data types part of the 'wrong type' error message
+
+The wrong_type_message function creates error messages like "attribute 'x' must be <expected>,
+found <type>". When the attribute has alternate data types, this function returns the text
+added after the <expected> part, for example " or any of a boolean, a string" in:
+
+  attribute 'nodes.b.a_scalar' must be an integer or any of a boolean, a string, found list
+
+Arguments:
+
+* ctx: the validation context. When none of the alternate data types matched the value,
+  validate_alt_type stores the descriptions of the alternate data types in ctx['_alt_types'].
+  Each description is the error text returned by the alternate data type validator (for
+  example, 'a boolean' or 'a scalar or a list'), or the alternate data type name when the
+  value had the right type but an invalid value
+* exp_type: the description of the primary data type returned by its validator (for example,
+  'an integer')
+
+Different data types can have the same description, resulting in confusing error messages
+like "must be a scalar or a list or a scalar or a list". That happens when:
+
+* An alternate data type is a variant of the primary data type. For example, the primary
+  data type is 'list' and the alternate data type is { type: list, _subtype: str }. Both
+  are checked with must_be_list, and both are described as 'a scalar or a list'. Such
+  definitions can also be the result of merging attribute definitions from multiple
+  namespaces (for example, node group attributes include node attributes)
+* Two alternate data types are variants of the same data type (for example, two list
+  alternate data types with different subtypes)
+
+The function therefore skips the descriptions that repeat the description of the primary
+data type or another alternate data type. It returns an empty string when no description
+is left.
+'''
+def err_add_alt_types(ctx: dict, exp_type: str) -> str:
+  a_types = []
+  for a_type in ctx.get('_alt_types',[]):               # Skip alt type descriptions that repeat
+    if a_type != exp_type and a_type not in a_types:    # ... the primary type description
+      a_types.append(a_type)                            # ... or another alt type description
+  if not a_types:                                       # Nothing left (or no alt types at all)?
+    return ''                                           # ... nothing to add to the error message
 
   if len(a_types) == 1:
     return f' or {a_types[0]}'
@@ -105,7 +142,7 @@ def wrong_type_message(
     expected = err_stat.get('_value')                  # ... even though the type is correct
   else:
     if isinstance(context,dict) and '_alt_types' in context:
-      expected += err_add_alt_types(context)
+      expected += err_add_alt_types(context,exp_type)
       ctxt = []
     expected += f', found {wrong_type}'                 # A more generic message, add wrong type
 
@@ -191,6 +228,10 @@ def attr_help(module: typing.Optional[str], data_name: typing.Optional[str]) -> 
   return f"use 'netlab show attributes{' --module '+module if module else ''}" + \
          f"{' ' + attr_type if attr_type else ''}' to display valid attributes"
 
+def is_valid_value(value: typing.Any, expected: list) -> bool:
+  # Python considers True equal to 1 and False equal to 0, so we also have to compare booleans with booleans
+  return any(value == e and isinstance(value,bool) == isinstance(e,bool) for e in expected)
+
 def check_valid_values(
       path: str,                                        # Path to the value
       expected:  list,                                  # Expected values
@@ -202,12 +243,12 @@ def check_valid_values(
                       ) -> bool:
 
   if isinstance(value,list):                            # Deal with lists first
-    f = list(filter(lambda x: x not in expected,value)) # ... find all values not in expected values
+    f = [ x for x in value if not is_valid_value(x,expected) ]   # ... find all values not in expected values
     if not f:
       return True                                       # ... no unexpected values, cool, get out of here
-    value = ','.join(f)                                 # ... otherwise create something to display
+    value = ','.join(map(str,f))                        # ... otherwise create something to display
   else:
-    if value in expected:                               # Not a list? Just check if the value matches one of expected values
+    if is_valid_value(value,expected):                  # Not a list? Just check if the value matches one of expected values
       return True
 
   path = get_element_path(path,key)
@@ -215,7 +256,7 @@ def check_valid_values(
     log.error(
       text=f'attribute {path} has invalid value(s): {value}',
       more_hints=[
-        f'valid values are: {", ".join(expected)}',
+        f'valid values are: {", ".join(map(str,expected))}',
         attr_help(module,data_name)],
       category=log.IncorrectValue,
       module=module or 'topology')
@@ -1042,6 +1083,25 @@ def must_be_device(value: typing.Any, include_templates: bool = False) -> dict:
     if error:
       status['_value'] = f'known device type identifier (got {value})'
       return status
+
+  return { '_valid': True }
+
+@type_test()
+def must_be_provider(value: typing.Any) -> dict:
+  from .validate import list_of_providers
+
+  status = {
+    '_type':    "provider",
+    '_hint_id': "providers",
+    '_hint':    "Use 'netlab show providers' to display a list of valid virtualization providers"
+  }
+
+  if not isinstance(value,str):                                       # Otherwise it must be a string
+    return status
+
+  if not value in list_of_providers:
+    status['_value'] = f'known virtualization provider (got {value})'
+    return status
 
   return { '_valid': True }
 

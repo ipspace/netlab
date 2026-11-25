@@ -49,7 +49,7 @@ timeout 30 bash -c '
 # Enable sshd + an 'admin' user (idempotent) -- interactive access only, see note above.
 #
 id admin >/dev/null 2>&1 || useradd -m -s /bin/bash -G sudo admin
-echo 'admin:{{ ansible_ssh_pass | default("YourPaSsWoRd") }}' | chpasswd
+echo {{ ('admin:' + ansible_ssh_pass | default("YourPaSsWoRd")) | quote }} | chpasswd
 if which sudo; then
   echo 'admin ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/admin
 fi
@@ -165,7 +165,7 @@ sleep 2
    config_db path this device uses. Delegating would mean factoring the vtysh portion of
    initial/frr.j2 into a macro, i.e. a change to the FRR device, out of scope for this submission
    and needing FRR re-verification. Worth doing separately. #}
-cat >/tmp/netlab-initial.frr <<CONFIG
+cat >/tmp/netlab-initial.frr <<'CONFIG'
 hostname {{ inventory_hostname }}
 !
 {% if 'ipv6' in af %}

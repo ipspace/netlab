@@ -325,6 +325,9 @@ def validate_group_data(
         text=f'Group {grp} uses an obsolete attribute node_data. Migrate node parameters into group definition',
         flag='groups.node_data')
 
+      if not isinstance(gdata.node_data,Box):  # Invalid node_data was reported by the group attribute validation
+        continue                             # ... and the group data structures are not safe to work on
+
       validate_attributes(
         data=gdata.node_data,
         topology=topology,
@@ -420,7 +423,8 @@ def add_node_level_groups(topology: Box) -> None:
 
     if must_be_list(n,'group',f'nodes.{name}'):
       for grpname in n.group:
-        add_node_to_group(name,grpname,topology)
+        if isinstance(grpname,str):          # Invalid group names are reported by the node attribute validation
+          add_node_to_group(name,grpname,topology)
 
 '''
 Check recursive group definitions

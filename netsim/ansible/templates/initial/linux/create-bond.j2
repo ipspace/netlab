@@ -2,7 +2,7 @@
 # This macro is used by the initial script to create bond devices
 # (which needs to be done early such that IP addresses can be assigned and/or VLAN interfaces created)
 #
-{% macro create_bond_dev(l,node_provider) %}
+{% macro create_bond_dev(l,container) %}
 {%   if l.type in ['lag','bond'] %}
 {%     set _m = "802.3ad" if 'lag' in l else l.bonding.mode|default("active-backup") %}
 {%     if _m=="802.3ad" %}
@@ -10,7 +10,7 @@
 {%       set lacp_act = 'off' if _lacp=='off' else 'on' %}
 {%       set lacp_rate = (' lacp_rate ' + _lacp) if _lacp!='off' else '' %}
 {%       set _m = _m + lacp_rate %}
-{%       if node_provider == 'clab' %}
+{%       if container %}
 {%         set _m = _m + " lacp_active " + lacp_act %}
 {%       endif %}
 {%     elif l.bonding.primary is defined %}
@@ -20,7 +20,7 @@
 {%       set _m = _m + " xmit_hash_policy encap3+4" %}
 {%     endif -%}
 
-{%     if node_provider!='clab' %}
+{%     if not container %}
 #
 # Make sure 'bonding' module is loaded
 #

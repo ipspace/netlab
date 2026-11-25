@@ -31,7 +31,7 @@ ztp --disable
 
 {% if mtu is defined %}
 echo "INIT: Configuring system wide default MTU policy"
-cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+cat > /etc/network/ifupdown2/policy.d/mtu.json <<'CONFIG'
 { "address": { "defaults": { "mtu": "{{ mtu }}" } } }
 CONFIG
 {% endif %}
@@ -56,7 +56,7 @@ iface {{ name }} inet6 loopback
 {% endif %}
 {% endmacro %}
 
-cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
+cat >/etc/network/interfaces.d/10-loopback.intf <<'CONFIG'
 {% if loopback is defined %}
 {{ loopback_interface(loopback.ifname,loopback,False) }}
 {% endif %}
@@ -70,7 +70,7 @@ until ifreload -a; do
 done
 #
 echo "INIT: creating other interface"
-cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
+cat >/etc/network/interfaces.d/11-physical.intf <<'CONFIG'
 {% for l in interfaces if l.type != 'loopback' %}
 auto {{ l.ifname }}
 {%   if l.ipv4 is defined %}
@@ -102,7 +102,7 @@ iface {{ l.ifname }} inet6 static
 {%     endif %}
   address {{ l.ipv6 }}
 {%   endif %}
-{%   if l.mtu is defined and node_provider == 'clab' %}
+{%   if l.mtu is defined and netlab_container|default(False) %}
 
 iface {{ l.ifname }}
   mtu {{ l.mtu }}
@@ -131,7 +131,7 @@ systemctl reload frr.service
 #
 # Rest of initial configuration done through VTYSH
 #
-cat >/tmp/config <<CONFIG
+cat >/tmp/config <<'CONFIG'
 {% if af.ipv6 is defined %}
 ipv6 forwarding
 {% endif %}

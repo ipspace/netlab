@@ -14,7 +14,8 @@ from ..utils import log, strings
 Get node provider -- return node-specific provider or the default provider
 """
 def get_provider(node: Box, defaults: Box) -> str:
-  return node.get('provider',defaults.provider)
+  provider = node.get('provider',defaults.provider)
+  return provider if isinstance(provider,str) else defaults.provider   # Invalid node providers are reported in select_primary_provider
 
 """
 Get generic device attribute:
@@ -108,6 +109,13 @@ def get_node_group_var(node: Box, g_var: str, defaults: Box) -> typing.Any:
   else:                                           # Not set, get default device value for the node provider
     dev_data = get_consolidated_device_data(node,defaults)
     return dev_data.get(f'group_vars.{g_var}',None)
+
+"""
+Does the node run as a container? Use the 'netlab_container' group variable (set in node data or
+in device group variables) instead of checking the node provider
+"""
+def is_container(node: Box, defaults: Box) -> bool:
+  return bool(get_node_group_var(node,'netlab_container',defaults))
 
 """
 Get device loopback name (built-in loopback if ifindex == 0 else an additional loopback)

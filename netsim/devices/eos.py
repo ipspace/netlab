@@ -27,7 +27,7 @@ def check_mlps_vlan_bundle(node: Box) -> None:
     node.interfaces = [ intf for intf in node.interfaces if intf.ifname != ifname ]
 
 def check_mpls_clab(node: Box, topology: Box) -> None:
-  if devices.get_provider(node,topology) == 'clab':
+  if devices.is_container(node,topology.defaults):
     try:
       ceos_version = node.box.split(':')[1]
     except:
@@ -43,7 +43,7 @@ def check_mpls_clab(node: Box, topology: Box) -> None:
         category=Warning)
 
 def check_shared_mac(node: Box, topology: Box) -> None:
-  if devices.get_provider(node,topology) != 'clab':
+  if not devices.is_container(node,topology.defaults):
     return
 
   for intf in node.interfaces:
@@ -87,7 +87,7 @@ def configure_ceos_attributes(node: Box, topology: Box) -> None:
   node.clab.config_templates['ceos-config'] = mnt_config
 
 def passive_stub_interfaces(node: Box, topology: Box) -> None:
-  if devices.get_provider(node,topology) != 'clab':
+  if not devices.is_container(node,topology.defaults):
     return
 
   for intf in _routing.routing_protocol_interfaces(node,'ospf'):

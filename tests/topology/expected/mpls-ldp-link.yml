@@ -1,0 +1,779 @@
+bgp:
+  advertise_loopback: true
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
+groups:
+  as65000:
+    members:
+    - r1
+    - r2
+    - r3
+  as65001:
+    members:
+    - x1
+    - x2
+input:
+- topology/input/mpls-ldp-link.yml
+- package:topology-defaults.yml
+links:
+- _linkname: links[1]
+  interfaces:
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.1/30
+    node: r1
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.2/30
+    node: r2
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  type: p2p
+- _linkname: links[2]
+  interfaces:
+  - ifindex: 2
+    ifname: eth2
+    ipv4: 10.1.0.5/30
+    node: r2
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.6/30
+    node: r3
+  linkindex: 2
+  mpls:
+    ldp: true
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.4/30
+  type: p2p
+- _linkname: links[3]
+  interfaces:
+  - ifindex: 2
+    ifname: eth2
+    ipv4: 10.1.0.9/30
+    mpls:
+      ldp: false
+    node: r1
+  - ifindex: 2
+    ifname: eth2
+    ipv4: 10.1.0.10/30
+    node: r3
+  linkindex: 3
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.8/30
+  type: p2p
+- _linkname: links[4]
+  interfaces:
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.13/30
+    node: x1
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.14/30
+    node: x2
+  linkindex: 4
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.12/30
+  type: p2p
+- _linkname: links[5]
+  interfaces:
+  - ifindex: 3
+    ifname: eth3
+    ipv4: 10.1.0.17/30
+    node: r1
+  - ifindex: 2
+    ifname: eth2
+    ipv4: 10.1.0.18/30
+    node: x1
+  linkindex: 5
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.16/30
+  role: external
+  type: p2p
+- _linkname: links[6]
+  interfaces:
+  - ifindex: 3
+    ifname: eth3
+    ipv4: 10.1.0.21/30
+    node: r2
+  - ifindex: 2
+    ifname: eth2
+    ipv4: 10.1.0.22/30
+    node: x2
+  linkindex: 6
+  mpls:
+    ldp: true
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.20/30
+  role: external
+  type: p2p
+module:
+- ospf
+- bgp
+- mpls
+mpls:
+  ldp: true
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+    bgp:
+      advertise:
+      - ipv4: 10.0.0.1/32
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - _source_intf:
+          ifindex: 0
+          ifname: Loopback0
+          ipv4: 10.0.0.1/32
+          neighbors: []
+          ospf:
+            area: 0.0.0.0
+            passive: false
+          type: loopback
+          virtual_interface: true
+        activate:
+          ipv4: true
+        as: 65000
+        ipv4: 10.0.0.2
+        name: r2
+        next_hop_self: ebgp
+        type: ibgp
+      - _source_intf:
+          ifindex: 0
+          ifname: Loopback0
+          ipv4: 10.0.0.1/32
+          neighbors: []
+          ospf:
+            area: 0.0.0.0
+            passive: false
+          type: loopback
+          virtual_interface: true
+        activate:
+          ipv4: true
+        as: 65000
+        ipv4: 10.0.0.3
+        name: r3
+        next_hop_self: ebgp
+        type: ibgp
+      - activate:
+          ipv4: true
+        as: 65001
+        ifindex: 3
+        ipv4: 10.1.0.18
+        name: x1
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.1
+    box: none
+    device: none
+    id: 1
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.1/30
+      ldp:
+        passive: false
+      linkindex: 1
+      name: r1 -> r2
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.2/30
+        node: r2
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    - ifindex: 2
+      ifname: eth2
+      ipv4: 10.1.0.9/30
+      linkindex: 3
+      mpls: {}
+      name: r1 -> r3
+      neighbors:
+      - ifname: eth2
+        ipv4: 10.1.0.10/30
+        node: r3
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    - ifindex: 3
+      ifname: eth3
+      ipv4: 10.1.0.17/30
+      linkindex: 5
+      name: r1 -> x1
+      neighbors:
+      - ifname: eth2
+        ipv4: 10.1.0.18/30
+        node: x1
+      role: external
+      type: p2p
+    ldp:
+      af:
+        ipv4: true
+      router_id: 10.0.0.1
+    loopback:
+      bgp:
+        advertise: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.101
+      mac: ca:fe:00:01:00:00
+    module:
+    - ospf
+    - bgp
+    - mpls
+    mpls: {}
+    name: r1
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      areas:
+      - _area_int: 0
+        area: 0.0.0.0
+        kind: regular
+      router_id: 10.0.0.1
+  r2:
+    af:
+      ipv4: true
+    bgp:
+      advertise:
+      - ipv4: 10.0.0.2/32
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - _source_intf:
+          ifindex: 0
+          ifname: Loopback0
+          ipv4: 10.0.0.2/32
+          neighbors: []
+          ospf:
+            area: 0.0.0.0
+            passive: false
+          type: loopback
+          virtual_interface: true
+        activate:
+          ipv4: true
+        as: 65000
+        ipv4: 10.0.0.1
+        name: r1
+        next_hop_self: ebgp
+        type: ibgp
+      - _source_intf:
+          ifindex: 0
+          ifname: Loopback0
+          ipv4: 10.0.0.2/32
+          neighbors: []
+          ospf:
+            area: 0.0.0.0
+            passive: false
+          type: loopback
+          virtual_interface: true
+        activate:
+          ipv4: true
+        as: 65000
+        ipv4: 10.0.0.3
+        name: r3
+        next_hop_self: ebgp
+        type: ibgp
+      - activate:
+          ipv4: true
+        as: 65001
+        ifindex: 3
+        ipv4: 10.1.0.22
+        name: x2
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.2
+    box: none
+    device: none
+    id: 2
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.2/30
+      ldp:
+        passive: false
+      linkindex: 1
+      name: r2 -> r1
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.1/30
+        node: r1
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    - ifindex: 2
+      ifname: eth2
+      ipv4: 10.1.0.5/30
+      ldp:
+        passive: false
+      linkindex: 2
+      mpls:
+        ldp: {}
+      name: r2 -> r3
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.6/30
+        node: r3
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    - ifindex: 3
+      ifname: eth3
+      ipv4: 10.1.0.21/30
+      ldp:
+        passive: false
+      linkindex: 6
+      mpls:
+        ldp: {}
+      name: r2 -> x2
+      neighbors:
+      - ifname: eth2
+        ipv4: 10.1.0.22/30
+        node: x2
+      role: external
+      type: p2p
+    ldp:
+      af:
+        ipv4: true
+      router_id: 10.0.0.2
+    loopback:
+      bgp:
+        advertise: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.102
+      mac: ca:fe:00:02:00:00
+    module:
+    - ospf
+    - bgp
+    - mpls
+    mpls: {}
+    name: r2
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      areas:
+      - _area_int: 0
+        area: 0.0.0.0
+        kind: regular
+      router_id: 10.0.0.2
+  r3:
+    af:
+      ipv4: true
+    bgp:
+      advertise:
+      - ipv4: 10.0.0.3/32
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - _source_intf:
+          ifindex: 0
+          ifname: Loopback0
+          ipv4: 10.0.0.3/32
+          neighbors: []
+          ospf:
+            area: 0.0.0.0
+            passive: false
+          type: loopback
+          virtual_interface: true
+        activate:
+          ipv4: true
+        as: 65000
+        ipv4: 10.0.0.1
+        name: r1
+        next_hop_self: ebgp
+        type: ibgp
+      - _source_intf:
+          ifindex: 0
+          ifname: Loopback0
+          ipv4: 10.0.0.3/32
+          neighbors: []
+          ospf:
+            area: 0.0.0.0
+            passive: false
+          type: loopback
+          virtual_interface: true
+        activate:
+          ipv4: true
+        as: 65000
+        ipv4: 10.0.0.2
+        name: r2
+        next_hop_self: ebgp
+        type: ibgp
+      next_hop_self: true
+      router_id: 10.0.0.3
+    box: none
+    device: none
+    id: 3
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.6/30
+      ldp:
+        passive: false
+      linkindex: 2
+      mpls:
+        ldp: {}
+      name: r3 -> r2
+      neighbors:
+      - ifname: eth2
+        ipv4: 10.1.0.5/30
+        node: r2
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    - ifindex: 2
+      ifname: eth2
+      ipv4: 10.1.0.10/30
+      ldp:
+        passive: false
+      linkindex: 3
+      name: r3 -> r1
+      neighbors:
+      - ifname: eth2
+        ipv4: 10.1.0.9/30
+        node: r1
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    ldp:
+      af:
+        ipv4: true
+      router_id: 10.0.0.3
+    loopback:
+      bgp:
+        advertise: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.3/32
+      neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.103
+      mac: ca:fe:00:03:00:00
+    module:
+    - ospf
+    - bgp
+    - mpls
+    mpls: {}
+    name: r3
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      areas:
+      - _area_int: 0
+        area: 0.0.0.0
+        kind: regular
+      router_id: 10.0.0.3
+  x1:
+    af:
+      ipv4: true
+    bgp:
+      advertise:
+      - ipv4: 10.0.0.4/32
+      advertise_loopback: true
+      as: 65001
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - _source_intf:
+          ifindex: 0
+          ifname: Loopback0
+          ipv4: 10.0.0.4/32
+          neighbors: []
+          ospf:
+            area: 0.0.0.0
+            passive: false
+          type: loopback
+          virtual_interface: true
+        activate:
+          ipv4: true
+        as: 65001
+        ipv4: 10.0.0.5
+        name: x2
+        next_hop_self: ebgp
+        type: ibgp
+      - activate:
+          ipv4: true
+        as: 65000
+        ifindex: 2
+        ipv4: 10.1.0.17
+        name: r1
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.4
+    box: none
+    device: none
+    id: 4
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.13/30
+      ldp:
+        passive: false
+      linkindex: 4
+      name: x1 -> x2
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.14/30
+        node: x2
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    - ifindex: 2
+      ifname: eth2
+      ipv4: 10.1.0.18/30
+      linkindex: 5
+      name: x1 -> r1
+      neighbors:
+      - ifname: eth3
+        ipv4: 10.1.0.17/30
+        node: r1
+      role: external
+      type: p2p
+    ldp:
+      af:
+        ipv4: true
+      router_id: 10.0.0.4
+    loopback:
+      bgp:
+        advertise: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.4/32
+      neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.104
+      mac: ca:fe:00:04:00:00
+    module:
+    - ospf
+    - bgp
+    - mpls
+    mpls: {}
+    name: x1
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      areas:
+      - _area_int: 0
+        area: 0.0.0.0
+        kind: regular
+      router_id: 10.0.0.4
+  x2:
+    af:
+      ipv4: true
+    bgp:
+      advertise:
+      - ipv4: 10.0.0.5/32
+      advertise_loopback: true
+      as: 65001
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - _source_intf:
+          ifindex: 0
+          ifname: Loopback0
+          ipv4: 10.0.0.5/32
+          neighbors: []
+          ospf:
+            area: 0.0.0.0
+            passive: false
+          type: loopback
+          virtual_interface: true
+        activate:
+          ipv4: true
+        as: 65001
+        ipv4: 10.0.0.4
+        name: x1
+        next_hop_self: ebgp
+        type: ibgp
+      - activate:
+          ipv4: true
+        as: 65000
+        ifindex: 2
+        ipv4: 10.1.0.21
+        name: r2
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.5
+    box: none
+    device: none
+    id: 5
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.14/30
+      ldp:
+        passive: false
+      linkindex: 4
+      name: x2 -> x1
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.13/30
+        node: x1
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    - ifindex: 2
+      ifname: eth2
+      ipv4: 10.1.0.22/30
+      ldp:
+        passive: false
+      linkindex: 6
+      mpls:
+        ldp: {}
+      name: x2 -> r2
+      neighbors:
+      - ifname: eth3
+        ipv4: 10.1.0.21/30
+        node: r2
+      role: external
+      type: p2p
+    ldp:
+      af:
+        ipv4: true
+      router_id: 10.0.0.5
+    loopback:
+      bgp:
+        advertise: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.5/32
+      neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.105
+      mac: ca:fe:00:05:00:00
+    module:
+    - ospf
+    - bgp
+    - mpls
+    mpls: {}
+    name: x2
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      areas:
+      - _area_int: 0
+        area: 0.0.0.0
+        kind: regular
+      router_id: 10.0.0.5
+ospf:
+  area: 0.0.0.0
+provider: libvirt

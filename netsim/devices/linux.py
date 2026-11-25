@@ -48,6 +48,6 @@ class Linux(_Quirks):
     check_indirect_static_routes(node)
     etc_resolv_mapping(node,topology)
 
-    if devices.get_provider(node,topology) != 'clab':
+    if not devices.is_container(node,topology.defaults):
       check_vm_modules(node,topology)
       check_extra_loopbacks(node,topology)

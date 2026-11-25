@@ -4,6 +4,7 @@
 # * The schema must be a valid JSON schema
 # * The schema must accept every transformation test topology
 # * The schema must catch common mistakes
+# * List and dictionary alternate data types must be as strict as the attribute validation
 #
 
 import contextlib
@@ -19,6 +20,7 @@ import pytest
 import yaml
 
 from netsim.cli import show
+from netsim.data import get_box, schema
 
 # Plugins that transform the lab topology before validation and don't define their attributes
 UNDEFINED_PLUGIN_ATTRIBUTES = [ 'node.clone' ]
@@ -107,3 +109,19 @@ def test_schema_accepts_input_shortcut(topology: str) -> None:
 def test_schema_rejects_topology(topology: str) -> None:
   if schema_validator().is_valid(yaml.safe_load(topology)):
     pytest.fail(f'The schema accepts an invalid topology: {topology}',pytrace=False)
+
+@pytest.mark.parametrize('alt_type,valid,invalid',[
+  ({ 'type': 'list', '_subtype': 'str' },[ 'x', [ 'x' ] ],[ [ 'x', 1 ] ]),
+  ({ 'type': 'dict', '_subtype': 'int' },[ { 'x': 1 } ],[ { 'x': 'y' } ]),
+  ({ 'type': 'dict', '_keys': { 'x': 'int', 'y': 'str' } },[ { 'x': 1, 'y': 'z' } ],[ { 'x': 'y' }, { 'z': 1 } ]),
+  ({ 'type': 'dict', '_keytype': 'id' },[ { 'x_1': 1 } ],[ { '1x': 1 } ]),
+])
+def test_schema_alt_type(alt_type: dict, valid: list, invalid: list) -> None:
+  builder = schema.SchemaBuilder(get_box({ 'attributes': {}, 'devices': {}, 'const': {} }))
+  validator = jsonschema.Draft7Validator(builder.alt_type(get_box(alt_type)))
+  for value in valid:
+    if not validator.is_valid(value):
+      pytest.fail(f'The {alt_type} alternate data type schema rejects a valid value: {value}',pytrace=False)
+  for value in invalid:
+    if validator.is_valid(value):
+      pytest.fail(f'The {alt_type} alternate data type schema accepts an invalid value: {value}',pytrace=False)

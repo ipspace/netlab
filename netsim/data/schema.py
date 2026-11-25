@@ -197,6 +197,8 @@ class SchemaBuilder:
       if data_type.get('include_templates',False):
         devices = sorted(set(devices) | set(self.const('template_devices',[])))
       return { 'enum': devices }
+    if dt_name == 'provider':
+      return { 'enum': sorted(self.defaults.providers.keys()) }
     if dt_name == 'r_proto':
       return { 'enum': self.const('routing_protocols',[]) }
     if dt_name in ('prefix_str','named_pfx','addr_pool','node_id','group_id','node_or_group','mac','prefixset'):
@@ -286,7 +288,7 @@ class SchemaBuilder:
       schema = self.list_type(dt)
     else:
       schema = self.simple_type(dt)
-      if dt_name in ('str','string') and 'valid_values' in dt:
+      if 'valid_values' in dt:
         schema = { 'enum': list(dt.valid_values) }
     if keys_only:
       return schema
@@ -333,7 +335,9 @@ class SchemaBuilder:
 
   def alt_type(self, alt: typing.Any) -> dict:
     """
-    An alternate data type is checked with its validation function only (see validate_alt_type)
+    An alternate data type is checked with its validation function, and the list elements or
+    dictionary values of a list/dict alternate type are checked against its subtype (see
+    validate_alt_type and validate_item)
     """
     if isinstance(alt,str) and alt in ALT_PYTHON_TYPES and alt not in ('list','dict'):
       if alt in ALT_VALIDATED_TYPES:                        # The validation function also accepts strings
@@ -341,9 +345,9 @@ class SchemaBuilder:
       return { 'type': ALT_PYTHON_TYPES[alt] }                # 'list' and 'dict' also have validation functions
     dt = get_box(_validate.transform_validation_shortcuts(alt))
     if dt.get('type',None) == 'dict':
-      return { 'type': 'object' }
+      return self.dict_type(dt)                             # A plain dictionary if there are no _keys, _subtype or _keytype
     if dt.get('type',None) == 'list':
-      return self.list_type(get_box({ k:v for k,v in dt.items() if k != '_subtype' }))
+      return self.list_type(dt)
     return self.data_type(dt)
 
   #

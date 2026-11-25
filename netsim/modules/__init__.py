@@ -154,6 +154,9 @@ def propagate_global_modules(n: Box, topology: Box) -> bool:
 
     n = n + {'device': topology.defaults.device}            # Assume default device
 
+  if not isinstance(n.device,str):                          # Invalid device type, reported by the node validation
+    return False
+
   if n.device not in topology.defaults.devices:             # Have to do one more check for valid device type
     return False                                            # ... because we cannot assume it has been checked
 
