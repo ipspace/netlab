@@ -372,6 +372,7 @@ def validate_alt_type(data: typing.Any, data_type: Box) -> dict:
                   _raw_status=True,
                   **get_validation_attr(at_data_type))
     if v_result.get('_valid',False):
+      v_result['_data_type'] = at_data_type             # Return the matching alt type (needed for subtype validation)
       return v_result
     v_alt_err.append(at if v_result.get('_value',None) == 'Invalid value' else
                      v_result.get('_value','') or v_result.get('_type',''))
@@ -646,12 +647,26 @@ def validate_item(
     if type(data).__name__ != data_type.get('type',''):               # Does it make sense to check alternate types?
       alt_result = validate_alt_type(data,data_type)                  # Do we have alt data type (potentially returning modified value)
       if alt_result.get('_valid',False):                              # Did we get a valid alt-type?
-        if alt_result.get('value',None):                              # Did it rewrite value?
-          if parent is not None:       
-            parent[key] = alt_result.get('value')                     # ... it did, don't lose it ;)
-          return alt_result.get('value')                              # And return rewritten value
-        else:
-          return True                                                 # Value not rewritten, return true
+        value = alt_result.get('value',None)
+        if value and parent is not None:                              # Did it rewrite value?
+          parent[key] = value                                         # ... it did, don't lose it ;)
+          value = parent[key]                                         # ... and use the Box version of it
+        alt_dt = alt_result.get('_data_type',{})                      # Validate list elements or dictionary values
+        if alt_dt.get('type',None) in subtype_validation:             # ... of the matching alt type
+          if not subtype_validation[alt_dt.type](
+                    data=value or data,
+                    data_type=alt_dt,
+                    parent_path=parent_path if parent is None else f"{parent_path}.{key}",
+                    data_name=data_name,
+                    module=module,
+                    module_source=module_source,
+                    topology=topology,
+                    attr_list=attr_list,
+                    attributes=attributes,
+                    enabled_modules=enabled_modules,
+                    apply_defaults=apply_defaults):
+            return False
+        return value or True                                          # Return rewritten value or True
       elif alt_result.get('_alt_types',[]):                           # ... alt type check failed, copy expected types
         alt_context['_alt_types'] = alt_result['_alt_types']
 

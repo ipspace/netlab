@@ -333,7 +333,9 @@ class SchemaBuilder:
 
   def alt_type(self, alt: typing.Any) -> dict:
     """
-    An alternate data type is checked with its validation function only (see validate_alt_type)
+    An alternate data type is checked with its validation function, and the list elements or
+    dictionary values of a list/dict alternate type are checked against its subtype (see
+    validate_alt_type and validate_item)
     """
     if isinstance(alt,str) and alt in ALT_PYTHON_TYPES and alt not in ('list','dict'):
       if alt in ALT_VALIDATED_TYPES:                        # The validation function also accepts strings
@@ -341,9 +343,9 @@ class SchemaBuilder:
       return { 'type': ALT_PYTHON_TYPES[alt] }                # 'list' and 'dict' also have validation functions
     dt = get_box(_validate.transform_validation_shortcuts(alt))
     if dt.get('type',None) == 'dict':
-      return { 'type': 'object' }
+      return self.dict_type(dt) if '_subtype' in dt or '_keytype' in dt else { 'type': 'object' }
     if dt.get('type',None) == 'list':
-      return self.list_type(get_box({ k:v for k,v in dt.items() if k != '_subtype' }))
+      return self.list_type(dt)
     return self.data_type(dt)
 
   #

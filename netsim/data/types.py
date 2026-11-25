@@ -59,10 +59,47 @@ def wrong_type_text(x : typing.Any) -> str:
     else "list" if isinstance(x,list) \
     else str(type(x).__name__)
 
-def err_add_alt_types(ctx: dict) -> str:
-  a_types = ctx.get('_alt_types',[])
-  if not a_types:
-    return ''
+'''
+err_add_alt_types: create the alternate data types part of the 'wrong type' error message
+
+The wrong_type_message function creates error messages like "attribute 'x' must be <expected>,
+found <type>". When the attribute has alternate data types, this function returns the text
+added after the <expected> part, for example " or any of a boolean, a string" in:
+
+  attribute 'nodes.b.a_scalar' must be an integer or any of a boolean, a string, found list
+
+Arguments:
+
+* ctx: the validation context. When none of the alternate data types matched the value,
+  validate_alt_type stores the descriptions of the alternate data types in ctx['_alt_types'].
+  Each description is the error text returned by the alternate data type validator (for
+  example, 'a boolean' or 'a scalar or a list'), or the alternate data type name when the
+  value had the right type but an invalid value
+* exp_type: the description of the primary data type returned by its validator (for example,
+  'an integer')
+
+Different data types can have the same description, resulting in confusing error messages
+like "must be a scalar or a list or a scalar or a list". That happens when:
+
+* An alternate data type is a variant of the primary data type. For example, the primary
+  data type is 'list' and the alternate data type is { type: list, _subtype: str }. Both
+  are checked with must_be_list, and both are described as 'a scalar or a list'. Such
+  definitions can also be the result of merging attribute definitions from multiple
+  namespaces (for example, node group attributes include node attributes)
+* Two alternate data types are variants of the same data type (for example, two list
+  alternate data types with different subtypes)
+
+The function therefore skips the descriptions that repeat the description of the primary
+data type or another alternate data type. It returns an empty string when no description
+is left.
+'''
+def err_add_alt_types(ctx: dict, exp_type: str) -> str:
+  a_types = []
+  for a_type in ctx.get('_alt_types',[]):               # Skip alt type descriptions that repeat
+    if a_type != exp_type and a_type not in a_types:    # ... the primary type description
+      a_types.append(a_type)                            # ... or another alt type description
+  if not a_types:                                       # Nothing left (or no alt types at all)?
+    return ''                                           # ... nothing to add to the error message
 
   if len(a_types) == 1:
     return f' or {a_types[0]}'
@@ -105,7 +142,7 @@ def wrong_type_message(
     expected = err_stat.get('_value')                  # ... even though the type is correct
   else:
     if isinstance(context,dict) and '_alt_types' in context:
-      expected += err_add_alt_types(context)
+      expected += err_add_alt_types(context,exp_type)
       ctxt = []
     expected += f', found {wrong_type}'                 # A more generic message, add wrong type
 
