@@ -1,0 +1,64 @@
+{# description: Lab address pools #}
+{% import 'address-pools-utils.include.j2' as pcode %}
+{#
+   Get the list of address pools and the list of columns used in at least
+   one of them (see address-pools-utils.include.j2 for details)
+#}
+{% set pools = [] %}
+{{- pcode.pool_list(addressing,pools) -}}
+{% set cols = [] %}
+{{- pcode.used_columns(pools,cols) -}}
+{#
+   Calculate the column widths: the length of the longest value in the
+   column, including the column header. The 'width' dictionary is indexed
+   by column keys, plus 'pool' for the pool name column
+#}
+{% set width = { 'pool': (pools|map('first')|map('length')|list + [ 4 ])|max } %}
+{% for col in cols %}
+{%   set col_values = [ pcode.columns[col]|length ] %}
+{%   for p_name,p_data in pools %}
+{%     set ignore = col_values.append(pcode.cell(p_data,col)|length) %}
+{%   endfor %}
+{%   set ignore = width.update({ col: col_values|max }) %}
+{% endfor %}
+{#
+   Print a table row: the pool name followed by the values of the used
+   columns (in the 'cols' order). Each value is padded to the column width
+   ('%-*s' takes the width as the first argument). Addresses and prefixes
+   are right-aligned ('%*s'), everything else is left-aligned
+#}
+{%- macro row(name,values) -%}
+| {{ "%-*s"|format(width.pool,name) }} |{% for col in cols %} {{ ("%*s" if col in pcode.right_aligned else "%-*s")|format(width[col],values[loop.index0]) }} |{% endfor %}
+{%- endmacro -%}
+{#
+   Build the row separator (+-----+---+) and the list of column headers.
+   Jinja2 cannot change a variable set outside of a loop from within the
+   loop, so the separator text is stored in a namespace
+#}
+{% set row_sep = namespace(text="+" + "-" * (width.pool + 2) + "+") %}
+{% set header = [] %}
+{% for col in cols %}
+{%   set row_sep.text = row_sep.text + "-" * (width[col] + 2) + "+" %}
+{%   set ignore = header.append(pcode.columns[col]) %}
+{% endfor %}
+{#
+   Print the table: header before the first pool, a row per pool, and the
+   separator after the last pool
+#}
+{% for p_name,p_data in pools %}
+{%   if loop.first %}
+{{ row_sep.text }}
+{{ row("Pool",header) }}
+{{ row_sep.text }}
+{%   endif %}
+{%   set values = [] %}
+{%   for col in cols %}
+{%     set ignore = values.append(pcode.cell(p_data,col)) %}
+{%   endfor %}
+{{ row(p_name,values) }}
+{%   if loop.last %}
+{{ row_sep.text }}
+{%   endif %}
+{% else %}
+Your lab has no address pools.
+{% endfor %}
