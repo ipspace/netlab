@@ -111,6 +111,13 @@ def get_node_group_var(node: Box, g_var: str, defaults: Box) -> typing.Any:
     return dev_data.get(f'group_vars.{g_var}',None)
 
 """
+Does the node run as a container? Use the 'netlab_container' group variable (set in node data or
+in device group variables) instead of checking the node provider
+"""
+def is_container(node: Box, defaults: Box) -> bool:
+  return bool(get_node_group_var(node,'netlab_container',defaults))
+
+"""
 Get device loopback name (built-in loopback if ifindex == 0 else an additional loopback)
 """
 def get_loopback_name(node: Box, topology: Box, ifindex: int = 0) -> typing.Optional[str]:

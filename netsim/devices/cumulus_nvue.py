@@ -171,7 +171,7 @@ class Cumulus_Nvue(_Quirks):
     if 'vlan' in mods:
       nvue_check_native_routed_on_mixed_trunk(node,topology)
 
-    if devices.get_provider(node,topology) == 'clab':
+    if devices.is_container(node,topology.defaults):
       report_quirk(
         text=f"Cumulus VX 5.x container used for node {node.name} is not supported and might not work correctly",
         node=node,

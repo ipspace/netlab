@@ -21,7 +21,7 @@ class Cumulus(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
-    if devices.get_provider(node,topology) == 'clab':
+    if devices.is_container(node,topology.defaults):
       report_quirk(
         text=f"We do not test Cumulus containers ({node.name}). They might not work correctly",
         node=node,

@@ -34,6 +34,10 @@ The **‌ipaddr** filter does not accept **‌bool** input values. The input val
 You don't have to check the validity of IP addresses for _netlab_ attributes; _netlab_ does that during the input data validation phase. To differentiate between unnumbered interfaces (where the **‌ipv4** or **‌ipv6** interface attribute is set to *‌True*) and numbered interfaces, use the `intf.ipv4 is string` test.
 ```
 
+## Containers
+
+Configuration templates and deployment task lists can use the [**netlab_container** group variable](dev-devices-ansible-vars) to check whether a node runs as a container. It's undefined on most nodes, so use `netlab_container|default(False)` instead of comparing **node_provider** with `clab`.
+
 ## Undefined Variables
 
 _netlab_ emulates the Ansible implementation of undefined variables that allows you to test the presence of an element in a nested dictionary without checking the presence of the parent variable.
