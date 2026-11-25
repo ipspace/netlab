@@ -343,7 +343,7 @@ class SchemaBuilder:
       return { 'type': ALT_PYTHON_TYPES[alt] }                # 'list' and 'dict' also have validation functions
     dt = get_box(_validate.transform_validation_shortcuts(alt))
     if dt.get('type',None) == 'dict':
-      return self.dict_type(dt) if '_subtype' in dt or '_keytype' in dt else { 'type': 'object' }
+      return self.dict_type(dt)                             # A plain dictionary if there are no _keys, _subtype or _keytype
     if dt.get('type',None) == 'list':
       return self.list_type(dt)
     return self.data_type(dt)
