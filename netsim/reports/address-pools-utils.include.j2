@@ -1,0 +1,84 @@
+{#
+   Shared code for the address pools reports (text, Markdown, HTML)
+
+   The reports are data-driven: each format iterates over a list of columns
+   used in at least one address pool and calls the 'cell' macro to get the
+   value of a column for a pool. To add a column, add it to the 'columns'
+   dictionary and to the 'cell' macro.
+#}
+
+{#
+   Address pool report columns (column key: column header). The dictionary
+   order is the order of columns in the report. The importing templates
+   access this variable as pcode.columns
+#}
+{% set columns = {
+     'ipv4': 'IPv4',
+     'prefix': 'Prefix',
+     'ipv6': 'IPv6',
+     'prefix6': 'Prefix6',
+     'other': 'Other' } %}
+
+{#
+   Columns that are right-aligned in all report formats (addresses and prefixes)
+#}
+{% set right_aligned = [ 'ipv4', 'prefix', 'ipv6', 'prefix6' ] %}
+
+{#
+   Address pool parameters displayed in the 'other' column
+#}
+{% set other_params = [ 'start', 'allocation', 'mac' ] %}
+
+{#
+   Get the value of a report cell (pool data, column key). The macro returns
+   an empty string when the pool does not have the parameter, so the result
+   can be used to check whether a column is used in a pool.
+
+   * ipv4/ipv6: pool prefix, 'unnumbered' or 'LLA only' when the parameter
+     is set to True (unnumbered IPv4 or LLA-only IPv6 interfaces)
+   * prefix/prefix6: subnet allocation size
+   * other: the remaining pool parameters (unnumbered pools, start offset,
+     allocation policy, MAC address) or 'L2 only' for pools with no IPv4 or
+     IPv6 addresses
+#}
+{%- macro cell(p_data,col) -%}
+{%-   if col == 'ipv4' -%}{{ 'unnumbered' if p_data.ipv4 is sameas true else p_data.ipv4|default('') }}
+{%-   elif col == 'ipv6' -%}{{ 'LLA only' if p_data.ipv6 is sameas true else p_data.ipv6|default('') }}
+{%-   elif col in ['prefix','prefix6'] -%}{{ p_data[col]|default('') }}
+{%-   elif col == 'other' -%}
+{%-     set result = [] -%}
+{%-     if p_data.unnumbered|default(false) -%}
+{%-       set ignore = result.append('unnumbered') -%}
+{%-     elif not p_data.ipv4|default(false) and not p_data.ipv6|default(false) -%}
+{%-       set ignore = result.append('L2 only') -%}
+{%-     endif -%}
+{%-     for kw in other_params if p_data[kw] is defined -%}
+{%-       set ignore = result.append(kw + ': ' + p_data[kw]|string) -%}
+{%-     endfor -%}
+{{-     result|join(', ') -}}
+{%-   endif -%}
+{%- endmacro -%}
+
+{#
+   Build the list of address pools sorted by pool name. Like the other
+   list-building macros, it appends (name, data) tuples to a list passed by
+   the caller because Jinja2 macros can return only strings.
+#}
+{%- macro pool_list(addressing,result) -%}
+{%   for p_name,p_data in addressing|dictsort %}
+{%     set ignore = result.append((p_name,p_data)) %}
+{%   endfor %}
+{%- endmacro -%}
+
+{#
+   Build the list of columns that have a value in at least one pool (in the
+   'columns' order). The columns that are not used in any pool are not
+   displayed.
+#}
+{%- macro used_columns(pools,result) -%}
+{%   for col in columns %}
+{%     for p_name,p_data in pools if cell(p_data,col) and col not in result %}
+{%       set ignore = result.append(col) %}
+{%     endfor %}
+{%   endfor %}
+{%- endmacro -%}
