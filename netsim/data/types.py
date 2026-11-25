@@ -191,6 +191,10 @@ def attr_help(module: typing.Optional[str], data_name: typing.Optional[str]) -> 
   return f"use 'netlab show attributes{' --module '+module if module else ''}" + \
          f"{' ' + attr_type if attr_type else ''}' to display valid attributes"
 
+def is_valid_value(value: typing.Any, expected: list) -> bool:
+  # Python considers True equal to 1 and False equal to 0, so we also have to compare booleans with booleans
+  return any(value == e and isinstance(value,bool) == isinstance(e,bool) for e in expected)
+
 def check_valid_values(
       path: str,                                        # Path to the value
       expected:  list,                                  # Expected values
@@ -202,12 +206,12 @@ def check_valid_values(
                       ) -> bool:
 
   if isinstance(value,list):                            # Deal with lists first
-    f = list(filter(lambda x: x not in expected,value)) # ... find all values not in expected values
+    f = [ x for x in value if not is_valid_value(x,expected) ]   # ... find all values not in expected values
     if not f:
       return True                                       # ... no unexpected values, cool, get out of here
-    value = ','.join(f)                                 # ... otherwise create something to display
+    value = ','.join(map(str,f))                        # ... otherwise create something to display
   else:
-    if value in expected:                               # Not a list? Just check if the value matches one of expected values
+    if is_valid_value(value,expected):                  # Not a list? Just check if the value matches one of expected values
       return True
 
   path = get_element_path(path,key)
@@ -215,7 +219,7 @@ def check_valid_values(
     log.error(
       text=f'attribute {path} has invalid value(s): {value}',
       more_hints=[
-        f'valid values are: {", ".join(expected)}',
+        f'valid values are: {", ".join(map(str,expected))}',
         attr_help(module,data_name)],
       category=log.IncorrectValue,
       module=module or 'topology')

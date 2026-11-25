@@ -286,7 +286,7 @@ class SchemaBuilder:
       schema = self.list_type(dt)
     else:
       schema = self.simple_type(dt)
-      if dt_name in ('str','string') and 'valid_values' in dt:
+      if 'valid_values' in dt:
         schema = { 'enum': list(dt.valid_values) }
     if keys_only:
       return schema
