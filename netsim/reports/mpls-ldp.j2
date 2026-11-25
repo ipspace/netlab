@@ -1,0 +1,22 @@
+{# description: MPLS LDP interfaces #}
+{% set row_fmt = "| {0:15} | {1:20} | {2:16} | {3:7} | {4:7} | {5:30} |" %}
+{% set row_sep = "+" + "-"*17 + "+" + "-"*22 + "+" + "-"*18 + "+" + "-"*9 + "+" + "-"*9 + "+" + "-"*32 + "+" %}
+{% for n_name,n_data in nodes|dictsort if 'ldp' in n_data %}
+{%   if loop.first %}
+{{ row_sep }}
+{{ row_fmt.format("Node","Interface","VRF","Enabled","Passive","Description") }}
+{{ row_sep }}
+{%   endif %}
+{%   for intf in n_data.interfaces if 'ipv4' in intf %}
+{{ row_fmt.format(
+     n_name if loop.first else '',
+     intf.ifname,
+     intf.vrf|default(''),
+     'yes' if 'ldp' in intf else 'no',
+     ('yes' if intf.ldp.passive else 'no') if 'ldp' in intf else '',
+     intf.name|default('')|truncate(30,True,'...',0)) }}
+{%   endfor %}
+{{ row_sep }}
+{% else %}
+Your network is not running MPLS LDP.
+{% endfor %}
