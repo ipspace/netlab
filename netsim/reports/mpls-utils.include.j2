@@ -37,24 +37,49 @@
 {%- endmacro -%}
 
 {#
+   Get the BGP session types (ibgp, ebgp...) of the node's BGP neighbors that
+   have the specified address family flag set, as a comma-separated string.
+
+   The MPLS module sets these flags only on the BGP sessions on which the
+   address family is actually activated, while the mpls.* node attributes
+   describe what could be used (for example, 'mpls.bgp: True' requests
+   BGP-LU on IBGP and EBGP sessions in both address families, even when
+   the node has no EBGP neighbors)
+#}
+{%- macro session_types(n_data,flag) -%}
+{%-   set result = [] -%}
+{%-   for ngb in n_data.bgp.neighbors|default([]) if ngb[flag] is defined and ngb.type not in result -%}
+{%-     set ignore = result.append(ngb.type) -%}
+{%-   endfor -%}
+{{-   result|sort(reverse=True)|join(',') -}}
+{%- endmacro -%}
+
+{#
    Get the value of a report cell (node data, column key). The macro
    returns an empty string when the node does not use the feature, so the
    result can be used to check whether a column is used on a node.
 
-   The values are taken from the transformed node data:
+   The values are taken from the transformed node data and describe the
+   features in use, not the features requested with the mpls.* attributes:
 
    * ldp: LDP is enabled on the node when the node has the 'ldp' dictionary
+     (the MPLS module removes it from nodes with no LDP interfaces)
    * sr/sid: SR-MPLS protocols and per-AF node SIDs (sr.protocol, sr.node_sid)
-   * bgp/vpn: per-AF lists of BGP session types (mpls.bgp, mpls.vpn)
-   * 6pe: list of BGP session types (mpls.6pe)
+   * bgp: session types of BGP neighbors with the ipv4_label/ipv6_label flags
+   * vpn: session types of BGP neighbors with the vpnv4/vpnv6 address families
+   * 6pe: session types of BGP neighbors with the 6pe flag
 #}
 {%- macro cell(n_data,col) -%}
 {%-   if col == 'ldp' -%}{{ 'yes' if 'ldp' in n_data else '' }}
 {%-   elif col == 'sr' -%}{{ n_data.sr.protocol|default([])|join(',') }}
 {%-   elif col == 'sid' -%}{{ af_values(n_data.sr.node_sid) }}
-{%-   elif col == 'bgp' -%}{{ af_values(n_data.mpls.bgp) }}
-{%-   elif col == 'vpn' -%}{{ af_values(n_data.mpls.vpn) }}
-{%-   elif col == '6pe' -%}{{ n_data.mpls['6pe']|default([])|join(',') }}
+{%-   elif col == 'bgp' -%}{{ af_values({
+                                'ipv4': session_types(n_data,'ipv4_label'),
+                                'ipv6': session_types(n_data,'ipv6_label') }) }}
+{%-   elif col == 'vpn' -%}{{ af_values({
+                                'ipv4': session_types(n_data,'vpnv4'),
+                                'ipv6': session_types(n_data,'vpnv6') }) }}
+{%-   elif col == '6pe' -%}{{ session_types(n_data,'6pe') }}
 {%-   endif -%}
 {%- endmacro -%}
 
