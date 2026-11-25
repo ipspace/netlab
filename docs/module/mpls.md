@@ -36,7 +36,7 @@ The following table describes the per-platform support of individual MPLS label 
 **Notes:**
 * LDP is enabled on all non-VRF intra-AS interfaces with IPv4 addresses.
 * No platform implements the **mpls.ldp.advertise** attribute.
-* To disable LDP on an intra-AS interface or enable it on a VRF interface, use the **ldp** link/interface parameter.
+* To disable LDP on an intra-AS interface or enable it on an inter-AS or VRF interface, use the **mpls.ldp** link/interface parameter.
 
 ### BGP Labeled Unicast (BGP-LU)
 
@@ -96,7 +96,7 @@ MPLS-based BGP services are not supported over IBGP local-as sessions due to the
 
 * **mpls.ldp** (boolean) -- enable or disable LDP and MPLS encapsulation on the interface.
 
-LDP is enabled by default on all intra-AS interfaces in the global routing table. To enable LDP on a VRF interface, set the **mpls.ldp** link- or interface parameter to *True*.
+LDP is enabled by default on all intra-AS interfaces in the global routing table. To enable LDP on an inter-AS or VRF interface, set the **mpls.ldp** link- or interface parameter to *True*.
 
 ## Configurable LDP Parameters
 

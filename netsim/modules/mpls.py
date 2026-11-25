@@ -64,13 +64,22 @@ def node_adjust_ldp(node: Box, topology: Box, features: Box) -> None:
           'mpls')
         continue
 
-    if not intf_ldp is None and 'mpls' in intf:
-      data.bool_to_defaults(intf.mpls,'ldp')
-      if 'ldp' in intf.mpls:
-        intf.ldp = intf.mpls.ldp
+    inter_as = _routing.external(intf,'ldp')                      # Is this an external (usually inter-AS) link?
+    if intf_ldp is None:                                          # No special instructions...
+      if inter_as:                                                # ... skip inter-AS links (LDP is disabled by default)
+        continue
+    else:                                                         # We have LDP state for the interface
+      data.bool_to_defaults(intf.mpls,'ldp',{})                   # Convert True/False to empty dict/no info
+      if 'ldp' not in intf.mpls:                                  # We have no LDP info after the conversion
+        continue                                                  # ... so LDP is disabled on this interface, move on
+      intf.ldp = intf.mpls.ldp                                    # LDP is enabled only when we set the interface 'ldp' flag
+      if inter_as:                                                # If it's explicitly enabled on an inter-AS link
+        intf.ldp.passive = False                                  # ... it must not be passive
 
-    if not _routing.external(intf,'ldp'):
-      _routing.passive(intf,'ldp',topology)
+    # We got here because mpls.ldp was set on the interface or because it's an intra-AS link. Note that _routing.passive
+    # ensures 'ldp.passive' will have some value, so it implicitly enables LDP on intra-AS links as well.
+    #
+    _routing.passive(intf,'ldp',topology)                         # Use the usual passive rules
 
     if 'ldp' in intf:
       node.ldp.af.ipv4 = True
