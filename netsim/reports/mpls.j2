@@ -1,0 +1,63 @@
+{# description: MPLS features (LDP, SR-MPLS, BGP-LU, L3VPN, 6PE) used on lab nodes #}
+{% import 'mpls-utils.include.j2' as mcode %}
+{#
+   Get the list of MPLS nodes and the list of columns used on at least one
+   of them (see mpls-utils.include.j2 for details)
+#}
+{% set node_list = [] %}
+{{- mcode.mpls_nodes(nodes,node_list) -}}
+{% set cols = [] %}
+{{- mcode.used_columns(node_list,cols) -}}
+{#
+   Calculate the column widths: the length of the longest value in the
+   column, including the column header. The 'width' dictionary is indexed
+   by column keys, plus 'node' for the node name column
+#}
+{% set width = { 'node': (node_list|map(attribute='name')|map('length')|list + [ 4 ])|max } %}
+{% for col in cols %}
+{%   set col_values = [ mcode.columns[col]|length ] %}
+{%   for n_data in node_list %}
+{%     set ignore = col_values.append(mcode.cell(n_data,col)|length) %}
+{%   endfor %}
+{%   set ignore = width.update({ col: col_values|max }) %}
+{% endfor %}
+{#
+   Print a table row: the node name followed by the values of the used
+   columns (in the 'cols' order). Each value is left-aligned and padded to
+   the column width ('%-*s' takes the width as the first argument)
+#}
+{%- macro row(name,values) -%}
+| {{ "%-*s"|format(width.node,name) }} |{% for col in cols %} {{ "%-*s"|format(width[col],values[loop.index0]) }} |{% endfor %}
+{%- endmacro -%}
+{#
+   Build the row separator (+-----+---+) and the list of column headers.
+   Jinja2 cannot change a variable set outside of a loop from within the
+   loop, so the separator text is stored in a namespace
+#}
+{% set row_sep = namespace(text="+" + "-" * (width.node + 2) + "+") %}
+{% set header = [] %}
+{% for col in cols %}
+{%   set row_sep.text = row_sep.text + "-" * (width[col] + 2) + "+" %}
+{%   set ignore = header.append(mcode.columns[col]) %}
+{% endfor %}
+{#
+   Print the table: header before the first node, a row per node, and the
+   separator after the last node
+#}
+{% for n_data in node_list %}
+{%   if loop.first %}
+{{ row_sep.text }}
+{{ row("Node",header) }}
+{{ row_sep.text }}
+{%   endif %}
+{%   set values = [] %}
+{%   for col in cols %}
+{%     set ignore = values.append(mcode.cell(n_data,col)) %}
+{%   endfor %}
+{{ row(n_data.name,values) }}
+{%   if loop.last %}
+{{ row_sep.text }}
+{%   endif %}
+{% else %}
+Your network is not running MPLS.
+{% endfor %}

@@ -1,0 +1,85 @@
+{#
+   Shared code for the MPLS summary reports (text, Markdown, HTML)
+
+   The reports are data-driven: each format iterates over a list of columns
+   used on at least one node and calls the 'cell' macro to get the value of
+   a column for a node. To add a column, add it to the 'columns' dictionary
+   and to the 'cell' macro.
+#}
+
+{#
+   MPLS report columns (column key: column header). The dictionary order
+   is the order of columns in the report. The importing templates access
+   this variable as mcode.columns
+#}
+{% set columns = {
+     'ldp': 'LDP',
+     'sr': 'SR-MPLS',
+     'sid': 'SR node SID',
+     'bgp': 'BGP-LU',
+     'vpn': 'L3VPN',
+     '6pe': '6PE' } %}
+
+{#
+   Format a dictionary of per-AF values as 'v4 value; v6 value'. The values
+   could be lists (BGP session types, for example [ ibgp, ebgp ]) that are
+   joined with commas, or scalars (SR node SIDs). Address families with no
+   value are skipped.
+
+   Example: { ipv4: [ ibgp, ebgp ], ipv6: [ ibgp ] } => 'v4 ibgp,ebgp; v6 ibgp'
+#}
+{%- macro af_values(d) -%}
+{%-   set result = [] -%}
+{%-   for af,value in d|default({})|dictsort if value -%}
+{%-     set ignore = result.append(af|replace('ipv','v') + ' ' + (value|join(',') if value is sequence and value is not string else value|string)) -%}
+{%-   endfor -%}
+{{-   result|join('; ') -}}
+{%- endmacro -%}
+
+{#
+   Get the value of a report cell (node data, column key). The macro
+   returns an empty string when the node does not use the feature, so the
+   result can be used to check whether a column is used on a node.
+
+   The values are taken from the transformed node data:
+
+   * ldp: LDP is enabled on the node when the node has the 'ldp' dictionary
+   * sr/sid: SR-MPLS protocols and per-AF node SIDs (sr.protocol, sr.node_sid)
+   * bgp/vpn: per-AF lists of BGP session types (mpls.bgp, mpls.vpn)
+   * 6pe: list of BGP session types (mpls.6pe)
+#}
+{%- macro cell(n_data,col) -%}
+{%-   if col == 'ldp' -%}{{ 'yes' if 'ldp' in n_data else '' }}
+{%-   elif col == 'sr' -%}{{ n_data.sr.protocol|default([])|join(',') }}
+{%-   elif col == 'sid' -%}{{ af_values(n_data.sr.node_sid) }}
+{%-   elif col == 'bgp' -%}{{ af_values(n_data.mpls.bgp) }}
+{%-   elif col == 'vpn' -%}{{ af_values(n_data.mpls.vpn) }}
+{%-   elif col == '6pe' -%}{{ n_data.mpls['6pe']|default([])|join(',') }}
+{%-   endif -%}
+{%- endmacro -%}
+
+{#
+   Build the list of nodes using MPLS (or SR-MPLS), sorted by node name.
+
+   Jinja2 macros can return only strings, so the macro appends the node data
+   to a list passed by the caller.
+#}
+{%- macro mpls_nodes(nodes,result) -%}
+{%   for n_name,n_data in nodes|dictsort if 'mpls' in n_data.module|default([]) or 'sr' in n_data.module|default([]) %}
+{%     set ignore = result.append(n_data) %}
+{%   endfor %}
+{%- endmacro -%}
+
+{#
+   Build the list of columns that have a value on at least one node (in the
+   'columns' order). The columns that are not used on any node are not
+   displayed. Like 'mpls_nodes', the macro appends the column keys to a
+   list passed by the caller.
+#}
+{%- macro used_columns(node_list,result) -%}
+{%   for col in columns %}
+{%     for n_data in node_list if cell(n_data,col) and col not in result %}
+{%       set ignore = result.append(col) %}
+{%     endfor %}
+{%   endfor %}
+{%- endmacro -%}
