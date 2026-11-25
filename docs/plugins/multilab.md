@@ -69,6 +69,28 @@ $ export NETLAB_PLUGIN=multilab
 $ export NETLAB_MULTILAB_ID=17
 ```
 
+(plugin-multilab-auto-id)=
+## Automatic Lab IDs
+
+Set the **defaults.multilab.auto_id** parameter to have the *multilab* plugin allocate the multilab ID for you. The plugin reads the [netlab status file](plugin-multilab-status-file) and assigns a random ID between 1 and 200 that is not used by any other lab instance. If a lab instance is already running in the current directory, the plugin reuses its ID.
+
+The **defaults.multilab.auto_id** parameter can have these values:
+
+* **True**: allocate the multilab ID only when **defaults.multilab.id** is not set (for example, with an environment variable or the `-s` CLI argument)
+* **force**: allocate the multilab ID even when **defaults.multilab.id** is set. Use this value to prevent duplicate IDs when some users use static IDs and others use dynamic IDs.
+
+For example, use these environment variables to start every lab with a dynamically allocated ID:
+
+```
+$ export NETLAB_PLUGIN=multilab
+$ export NETLAB_MULTILAB_AUTO__ID=force
+```
+
+```{warning}
+* The multilab ID is allocated during the **netlab create** process, but recorded in the netlab status file only when you start the lab with **netlab up**. Labs that are being created in parallel could get the same ID. **netlab up** detects that and refuses to start the second lab.
+* All lab instances must use the same [netlab status file](plugin-multilab-status-file).
+```
+
 (multilab-behind-the-scenes)=
 ## Behind the Scenes
 
