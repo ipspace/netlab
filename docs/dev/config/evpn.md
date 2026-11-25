@@ -22,13 +22,22 @@ This document describes the device data model parameters used in EVPN device con
 
 You can use the following **features.evpn** [device features](dev-device-features) to specify which EVPN features your configuration template implements:
 
-* **transport** -- The supported EVPN transport (data plane) encapsulations. The **evpn** module reports an error when a node uses an **evpn.transport** that its device does not support. The value can be:
+* **transport** -- The list of EVPN transport (data plane) encapsulations (**vxlan**, **mpls**, **sr**) the device implements.
+* **bgp_session** -- A dictionary of EVPN transports the device supports in the control plane. The dictionary values are the lists of BGP session types (**ibgp**, **ebgp**) that can carry the EVPN address family for that transport. For example:
 
-  * A list of supported transports (**vxlan**, **mpls**, **sr**). The device can run EVPN over IBGP and EBGP sessions with VXLAN transport, and over IBGP sessions with MPLS or SR-MPLS transport.
-  * A dictionary of supported transports. The dictionary values are the lists of supported BGP session types (**ibgp**, **ebgp**); the **evpn** module reports an error when a node has an EVPN-enabled BGP session of an unsupported type. Use the **cp_**_transport_ keys (for example, **cp_vxlan**) when the device can be a control-plane-only node (for example, a route reflector) for that transport, but does not implement its data plane.
-  * An empty list. The device can be a control-plane-only node for any transport.
+  ```yaml
+  evpn:
+    transport: [ mpls, sr ]
+    bgp_session: { mpls: [ ibgp ], sr: [ ibgp ], vxlan: [ ibgp ] }
+  ```
 
-  The **evpn** module reports an error when a control-plane-only node has EVPN-enabled VLANs or VRFs.
+  The **evpn** module reports an error when:
+
+  * A node uses an **evpn.transport** that is not in the device **bgp_session** dictionary.
+  * A node has an EVPN-enabled BGP session of a type not listed for the node's transport.
+  * A control-plane-only node (the transport is in the **bgp_session** dictionary but not in the **transport** list; for example, a route reflector) has EVPN-enabled VLANs or VRFs.
+
+  An empty **transport** list (or no **transport** feature) thus describes a control-plane-only device.
 
 * **irb** -- The template configures symmetric IRB with VXLAN transport (VRFs with **evpn.transit_vni**). The **evpn** module reports an error when a device without this feature uses a VRF with a transit VNI. _netlab_ always uses symmetric IRB with MPLS transport; this feature is not checked for MPLS-based EVPN.
 * **asymmetrical_irb** -- The template configures asymmetric IRB with VXLAN transport (VRFs without **evpn.transit_vni**). The **evpn** module reports an error when a device without this feature uses a VRF with IPv4 or IPv6 addresses but without a transit VNI with VXLAN transport.
