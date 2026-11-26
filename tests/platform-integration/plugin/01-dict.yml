@@ -1,8 +1,9 @@
 message: |
   The test checks how netlab merges lists and dictionaries of plugins
   specified in the lab topology, topology defaults, environment variables,
-  and CLI arguments. The integration harness creates the test script and
-  the scratch topologies, and runs the test script as the validation step.
+  and CLI arguments. The integration harness creates the test script, the
+  scratch topologies, and dummy plugins, and runs the test script as the
+  validation step.
   To run the test by hand, use:
 
   netlab create -o none 01-dict.yml && bash plugin-dict/test.sh
@@ -16,32 +17,44 @@ defaults.netlab.integration:
 
 nodes: [ x ]
 
-_scratch: &scratch |
-  defaults.device: none
-  defaults.sources.user: []
-  module: [ bgp ]
-  nodes:
-    r1.bgp.as: 65001
+_dummy: &dummy |
+  # Dummy plugin used to check whether netlab loaded the plugin
 
+#
+# Dummy plugins, common defaults (used instead of user defaults), and
+# self-contained scratch topologies (one per test)
+#
 files:
-  plugin-dict/base.yml: *scratch
+  plugin-dict/p_a.py: *dummy
+  plugin-dict/x.b/plugin.py: *dummy
+  plugin-dict/y.c/plugin.py: *dummy
+  plugin-dict/defaults.yml: |
+    device: none
+    provider: clab
+  plugin-dict/none.yml: |
+    nodes: [ r1 ]
   plugin-dict/list.yml: |
-    plugin: [ files ]
+    plugin: [ p_a ]
+    nodes: [ r1 ]
   plugin-dict/dict.yml: |
     plugin:
-      files: True
-      bgp.session: True
-      ebgp.multihop: False
+      p_a: True
+      x.b: True
+      y.c: False
+    nodes: [ r1 ]
   plugin-dict/nested.yml: |
     plugin:
-      ebgp:
-        multihop: True
+      y:
+        c: True
+    nodes: [ r1 ]
   plugin-dict/d_list.yml: |
-    defaults.plugin: [ files ]
+    defaults.plugin: [ p_a ]
+    nodes: [ r1 ]
   plugin-dict/d_dict.yml: |
     defaults.plugin:
-      files: True
-      bgp.session: False
+      p_a: True
+      x.b: False
+    nodes: [ r1 ]
   plugin-dict/test.sh: |
     #!/bin/bash
     #
@@ -50,88 +63,96 @@ files:
     #
     cd "$(dirname "$0")"
     unset $(env | grep -o '^NETLAB_[A-Za-z0-9_]*')    # Do not use NETLAB_ variables from the user environment
+    export LC_ALL=C                                   # Stable sort order of plugin names
     err_cnt=0
 
-    # Build the scratch topology from the common part and the plugin-specific part
-    # (the 'base' topology has no plugins)
-    topo() {
-      if [ "$1" == "base" ]; then
-        cp base.yml topology.yml
+    # Transform a scratch topology. The common defaults replace the user defaults
+    create() {
+      local topo="$1"
+      shift
+      netlab create --defaults defaults.yml -o pickle "$@" "$topo.yml" 2>&1
+    }
+
+    # Get the sorted list of plugins from the transformed topology. 'netlab inspect'
+    # fails when the 'plugin' attribute is missing (no plugins); any other failure
+    # is an error
+    plugins() {
+      local output
+      if output=$(netlab inspect plugin 2>&1); then
+        echo "$output" | sed -n 's/^- *\([^ ]*\).*/\1/p' | sort | paste -sd, -
+      elif echo "$output" | grep -q "name 'plugin' is not defined"; then
+        echo ""
       else
-        cat base.yml "$1.yml" >topology.yml
+        echo "$output"
+        return 1
       fi
     }
 
-    # Get the sorted list of plugins in the transformed topology
-    plugins() {
-      netlab create -o yaml:plugin "$@" topology.yml 2>&1 | \
-        sed -n 's/^- *\([^ ]*\).*/\1/p' | sort | paste -sd, -
+    # Report a failed test, indenting the extra information
+    failed() {
+      echo "FAILED: $1"
+      [ -n "$2" ] && echo "$2" | sed 's/^/        /'
+      err_cnt=$((err_cnt + 1))
     }
 
     # check <description> <expected plugins> <topology> [<netlab create args>]
     # Use VAR=value check ... to set environment variables
     check() {
-      local desc="$1" expected="$2"
-      topo "$3"
-      shift 3
-      local result=$(plugins "$@")
-      if [ "$result" == "$expected" ]; then
+      local desc="$1" expected="$2" output result
+      shift 2
+      rm -f netlab.snapshot.pickle                    # Never inspect a stale snapshot
+      if ! output=$(create "$@"); then
+        failed "$desc (netlab create failed)" "$output"
+      elif ! result=$(plugins); then
+        failed "$desc (netlab inspect failed)" "$result"
+      elif [ "$result" == "$expected" ]; then
         echo "OK:     $desc"
       else
-        echo "FAILED: $desc"
-        echo "        expected: $expected"
-        echo "        got:      $result"
-        err_cnt=$((err_cnt + 1))
+        failed "$desc" "expected: $expected"$'\n'"got:      $result"
       fi
     }
 
     # fail <description> <error message pattern> <topology> [<netlab create args>]
     # Check that 'netlab create' fails with the expected error message
     fail() {
-      local desc="$1" pattern="$2"
-      topo "$3"
-      shift 3
-      local result
-      if result=$(netlab create -o yaml:plugin "$@" topology.yml 2>&1); then
-        echo "FAILED: $desc (netlab create did not fail)"
-        err_cnt=$((err_cnt + 1))
-      elif echo "$result" | grep -q "$pattern"; then
+      local desc="$1" pattern="$2" output
+      shift 2
+      if output=$(create "$@"); then
+        failed "$desc (netlab create did not fail)"
+      elif echo "$output" | grep -q "$pattern"; then
         echo "OK:     $desc"
       else
-        echo "FAILED: $desc (unexpected error message)"
-        echo "$result" | sed 's/^/        /'
-        err_cnt=$((err_cnt + 1))
+        failed "$desc (unexpected error message)" "$output"
       fi
     }
 
-    check "List of plugins" "files" list
-    check "Dictionary of plugins (False values are skipped)" "bgp.session,files" dict
-    check "Nested dictionary of plugins" "ebgp.multihop" nested
-    check "Default plugins (list)" "files" d_list
-    check "Default plugins (dictionary)" "files" d_dict
+    check "List of plugins" "p_a" list
+    check "Dictionary of plugins (False values are skipped)" "p_a,x.b" dict
+    check "Nested dictionary of plugins" "y.c" nested
+    check "Default plugins (list)" "p_a" d_list
+    check "Default plugins (dictionary)" "p_a" d_dict
 
-    NETLAB_PLUGIN=files \
-      check "Environment variable: list of default plugins" "files" base
-    NETLAB_PLUGIN_BGP_SESSION=True \
-      check "Environment variable: dotted plugin name" "bgp.session" base
-    NETLAB_PLUGIN_BGP_SESSION=True \
-      check "Environment variable + topology list" "bgp.session,files" list
-    NETLAB_PLUGIN_BGP_SESSION=True \
-      check "Environment variable overrides a False default" "bgp.session,files" d_dict
+    NETLAB_PLUGIN=p_a \
+      check "Environment variable: list of default plugins" "p_a" none
+    NETLAB_PLUGIN_X_B=True \
+      check "Environment variable: dotted plugin name" "x.b" none
+    NETLAB_PLUGIN_X_B=True \
+      check "Environment variable + topology list" "p_a,x.b" list
+    NETLAB_PLUGIN_X_B=True \
+      check "Environment variable overrides a False default" "p_a,x.b" d_dict
 
-    check "CLI setting adds a plugin to a dictionary" "bgp.session,ebgp.multihop,files" \
-      dict -s plugin.ebgp.multihop=True
-    check "CLI setting removes a plugin from a dictionary" "bgp.session" dict -s plugin.files=False
-    check "CLI setting creates a dictionary" "bgp.session" base -s plugin.bgp.session=True
-    check "CLI --plugin + topology dictionary" "bgp.session,ebgp.multihop,files" dict --plugin ebgp.multihop
-    check "CLI --plugin + CLI setting" "bgp.session,files" base --plugin files -s plugin.bgp.session=True
+    check "CLI setting adds a plugin to a dictionary" "p_a,x.b,y.c" dict -s plugin.y.c=True
+    check "CLI setting removes a plugin from a dictionary" "x.b" dict -s plugin.p_a=False
+    check "CLI setting creates a dictionary" "x.b" none -s plugin.x.b=True
+    check "CLI --plugin + topology dictionary" "p_a,x.b,y.c" dict --plugin y.c
+    check "CLI --plugin + CLI setting" "p_a,x.b" none --plugin p_a -s plugin.x.b=True
 
     fail "CLI setting cannot extend a topology list" "Cannot set topology value plugin" \
-      list -s plugin.bgp.session=True
-    NETLAB_PLUGIN_BGP_SESSION=True \
+      list -s plugin.x.b=True
+    NETLAB_PLUGIN_X_B=True \
       fail "Environment variable cannot extend a list of default plugins" "Cannot set defaults.plugin" d_list
 
-    rm -f topology.yml
+    rm -f netlab.snapshot.pickle
     if [ "$err_cnt" -ne 0 ]; then
       echo "Found $err_cnt errors"
     fi

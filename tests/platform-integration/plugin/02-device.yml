@@ -1,0 +1,167 @@
+message: |
+  The test checks how netlab adds device plugins (the 'plugin' attribute
+  of a device definition) to the list of lab plugins. The integration
+  harness creates the test script, the scratch topologies, and dummy
+  plugins, and runs the test script as the validation step.
+  To run the test by hand, use:
+
+  netlab create -o none 02-device.yml && bash plugin-device/test.sh
+
+plugin: [ files ]
+defaults.device: linux
+
+defaults.netlab.integration:
+  skip: [ up, initial ]                       # There is no lab to start or configure
+  validate: bash plugin-device/test.sh        # Run the test script created by the 'files' plugin
+
+nodes: [ x ]
+
+_dummy: &dummy |
+  # Dummy plugin used to check whether netlab loaded the plugin
+
+#
+# Dummy plugins, common defaults (used instead of user defaults), and
+# self-contained scratch topologies (one per test)
+#
+files:
+  plugin-device/p_node.py: *dummy
+  plugin-device/p_str.py: *dummy
+  plugin-device/p_default.py: *dummy
+  plugin-device/p_group.py: *dummy
+  plugin-device/p_linux.py: *dummy
+  plugin-device/p_unused.py: *dummy
+  plugin-device/p_extra.py: *dummy
+  plugin-device/defaults.yml: |
+    device: none
+    provider: clab
+    devices:
+      d_node: { parent: none, plugin: [ p_node ] }
+      d_str: { parent: none, plugin: p_str }
+      d_child: { parent: d_node }
+      d_off: { parent: d_node, plugin: [] }
+      d_default: { parent: none, plugin: [ p_default ] }
+      d_group: { parent: none, plugin: [ p_group ] }
+      d_unused: { parent: none, plugin: [ p_unused ] }
+  plugin-device/node.yml: |
+    nodes:
+      r1.device: d_node
+      r2.device: d_node
+  plugin-device/str.yml: |
+    nodes:
+      r1.device: d_str
+  plugin-device/child.yml: |
+    nodes:
+      r1.device: d_child
+  plugin-device/off.yml: |
+    nodes:
+      r1.device: d_off
+  plugin-device/default.yml: |
+    defaults.device: d_default
+    nodes: [ r1 ]
+  plugin-device/no_default.yml: |
+    defaults.device: d_default
+    nodes:
+      r1.device: d_node
+  plugin-device/group.yml: |
+    groups:
+      g1:
+        members: [ r1 ]
+        device: d_group
+    nodes: [ r1 ]
+  plugin-device/d_group.yml: |
+    defaults.groups.g1.device: d_group
+    nodes: [ r1 ]
+  plugin-device/component.yml: |
+    defaults.device: d_default
+    components:
+      pod:
+        nodes:
+          a.device: d_node
+    nodes:
+      p.include: pod
+  plugin-device/daemon.yml: |
+    defaults.devices.linux.plugin: [ p_linux ]
+    nodes:
+      r1.device: bird
+  plugin-device/topo_dict.yml: |
+    plugin:
+      p_extra: True
+    nodes:
+      r1.device: d_node
+  plugin-device/test.sh: |
+    #!/bin/bash
+    #
+    # Run 'netlab create' on topologies using devices with plugins and check
+    # the resulting plugin list
+    #
+    cd "$(dirname "$0")"
+    unset $(env | grep -o '^NETLAB_[A-Za-z0-9_]*')    # Do not use NETLAB_ variables from the user environment
+    export LC_ALL=C                                   # Stable sort order of plugin names
+    err_cnt=0
+
+    # Transform a scratch topology. The common defaults replace the user defaults
+    create() {
+      local topo="$1"
+      shift
+      netlab create --defaults defaults.yml -o pickle "$@" "$topo.yml" 2>&1
+    }
+
+    # Get the sorted list of plugins from the transformed topology. 'netlab inspect'
+    # fails when the 'plugin' attribute is missing (no plugins); any other failure
+    # is an error
+    plugins() {
+      local output
+      if output=$(netlab inspect plugin 2>&1); then
+        echo "$output" | sed -n 's/^- *\([^ ]*\).*/\1/p' | sort | paste -sd, -
+      elif echo "$output" | grep -q "name 'plugin' is not defined"; then
+        echo ""
+      else
+        echo "$output"
+        return 1
+      fi
+    }
+
+    # Report a failed test, indenting the extra information
+    failed() {
+      echo "FAILED: $1"
+      [ -n "$2" ] && echo "$2" | sed 's/^/        /'
+      err_cnt=$((err_cnt + 1))
+    }
+
+    # check <description> <expected plugins> <topology> [<netlab create args>]
+    # Use VAR=value check ... to set environment variables
+    check() {
+      local desc="$1" expected="$2" output result
+      shift 2
+      rm -f netlab.snapshot.pickle                    # Never inspect a stale snapshot
+      if ! output=$(create "$@"); then
+        failed "$desc (netlab create failed)" "$output"
+      elif ! result=$(plugins); then
+        failed "$desc (netlab inspect failed)" "$result"
+      elif [ "$result" == "$expected" ]; then
+        echo "OK:     $desc"
+      else
+        failed "$desc" "expected: $expected"$'\n'"got:      $result"
+      fi
+    }
+
+    check "Device plugins are added once per device" "p_node" node
+    check "Device plugin specified as a string" "p_str" str
+    check "Device plugins are inherited from the parent device" "p_node" child
+    check "Empty plugin list disables parent device plugins" "" off
+    check "Plugins of the default device" "p_default" default
+    check "No plugins of an unused default device" "p_node" no_default
+    check "Plugins of a group device" "p_group" group
+    check "Plugins of a default group device" "p_group" d_group
+    check "Plugins of component node devices" "p_node" component
+    check "Daemons inherit plugins from the linux device" "p_linux" daemon
+    check "Device plugins are added to topology plugins" "p_extra,p_node" topo_dict
+
+    NETLAB_DEVICES_D__NODE_PLUGIN='[]' \
+      check "Users can disable device plugins" "" node
+
+    rm -f netlab.snapshot.pickle
+    if [ "$err_cnt" -ne 0 ]; then
+      echo "Found $err_cnt errors"
+    fi
+    exit $err_cnt
