@@ -202,7 +202,8 @@ def expand_group_members(
       log.error(
         f'Member {m_id} of group {g_name} is not a valid {g_type} or group name',
         category=log.IncorrectValue,
-        module='groups')
+        module='groups',
+        doc_url='groups/#groups-members')
 
   return members
 
@@ -440,7 +441,7 @@ def check_recursive_chain(topology: Box, chain: list, group: str) -> typing.Opti
   for m in topology.groups[group].members:
     if m in chain:
       chain = chain + [ m ]
-      log.error(f'Recursive group definition chain {chain}', log.IncorrectValue, 'groups')
+      log.error(f'Recursive group definition chain {chain}', log.IncorrectValue, 'groups', doc_url='groups/#groups-hierarchy')
       return chain
     if m in topology.groups:
       if check_recursive_chain(topology,chain,m):
@@ -492,7 +493,8 @@ def copy_group_device_module(topology: Box) -> None:
       log.error(
         f'Cannot use "device" attribute in group {grp} that has no direct or indirect members',
         log.IncorrectValue,
-        'groups')
+        'groups',
+        doc_url='groups/#groups-device-module')
       continue
 
     for name in g_members:                                  # Iterate over group members
@@ -518,7 +520,8 @@ def copy_group_device_module(topology: Box) -> None:
       log.error(
         f'Cannot use "module" attribute in group {grp} that has no direct or indirect members',
         log.IncorrectValue,
-        'groups')
+        'groups',
+        doc_url='groups/#groups-device-module')
       continue
 
     for name in g_members:                                  # Iterate over group members
@@ -636,7 +639,8 @@ def create_bgp_autogroups(topology: Box) -> None:
         log.error(
           f'BGP AS group {gname} should not have static members',
           log.IncorrectValue,
-          'groups')
+          'groups',
+          doc_url='groups/#groups-bgp')
 
   for n_name,n_data in topology.nodes.items():                  # Now iterate over nodes
     #

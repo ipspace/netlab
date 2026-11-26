@@ -541,7 +541,8 @@ class VRF(_Module):
         log.error(
           f'VRF {ifdata.vrf} used on an interface in {node.name} is not defined in the node or globally',
           log.MissingValue,
-          'vrf')
+          'vrf',
+          doc_url='module/vrf/#module-vrf-definition')
         continue
 
       if not ifdata.vrf in node.vrfs:                                   # Local VRF not present, mark as required

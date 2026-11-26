@@ -62,7 +62,8 @@ def check_lag_config(node: str, linkname: str, topology: Box) -> bool:
   if 'lag' not in features:
     log.error(f'Node {_n.name} ({_n.device}) does not support lag module, cannot be part of LAG {linkname}',
       category=log.IncorrectAttr,
-      module='lag')
+      module='lag',
+      doc_url='module/lag/#lag-platform')
     return False
   if 'lag' not in _n.get('module',[]):
     log.error(f'lag module not enabled for node {_n.name}, cannot be part of LAG {linkname}',
@@ -541,6 +542,7 @@ class LAG(_Module):
     if uses_mlag and not (has_peerlink or uses_esi_lag):
       log.error(f'Node {node.name} uses MLAG but has no peerlink (lag with {PEERLINK_ID_ATT}) or ESI-LAG configured',
         category=log.IncorrectAttr,
-        module='lag')
+        module='lag',
+        doc_url='module/lag/#lag-mlag')
 
     node.pop('_lag_ifindex',None)              # Cleanup

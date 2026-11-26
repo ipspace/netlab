@@ -354,7 +354,8 @@ def find_node_device(n: Box, topology: Box) -> bool:
       f'No device type specified for {"unmanaged " if u_node else ""}node {n.name} and there is no default device type',
       log.MissingValue,
       'nodes',
-      hint='unmanaged_device' if u_node else None)
+      hint='unmanaged_device' if u_node else None,
+      doc_url='defaults/#default-device-type')
     return False
 
   try:
@@ -423,7 +424,8 @@ def find_node_image(n: Box, topology: Box) -> bool:
   log.error(
     f'No image specified for device {n.device} (provider {provider}) used by node {n.name}',
     log.MissingValue,
-    'nodes')
+    'nodes',
+    doc_url='defaults/#default-device-image')
 
   return False
 

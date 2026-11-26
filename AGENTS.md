@@ -73,6 +73,7 @@ pip3 install -e .
   - `IncorrectAttr`, `IncorrectType`, `IncorrectValue` for validation errors
   - `MissingValue` for required but missing data
 - Use `log.fatal()`, `log.error()`, `log.warning()` for user-facing messages
+- Add a `doc_url` parameter to every new `log.error()`/`log.warning()` call that has relevant user documentation (see `docs/dev/error-doc-url.md`). Use relative URLs with existing MyST anchors (for example, `doc_url='links/#links-types'`); add a new anchor only when absolutely necessary. If the target section does not explain why the error could happen, add a short caveat to it
 - Never use `print()` in library code (allowed in CLI modules)
 
 ### File Structure Patterns
