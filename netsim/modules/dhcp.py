@@ -31,7 +31,8 @@ def check_protocol_support(node: Box, topology: Box) -> bool:
     log.error(
       f'Node {node.name} ({device_info}) cannot be a DHCP server',
       category=log.IncorrectValue,
-      module='dhcp')
+      module='dhcp',
+      doc_url='module/dhcp/#dhcp-platform')
     OK = False
 
   # Iterate over node interface, check whether the device supports configured
@@ -68,7 +69,8 @@ def check_protocol_support(node: Box, topology: Box) -> bool:
       log.error(
         f'Node {node.name} ({device_info}) cannot be a DHCP relay',
         more_data = f'DHCP relay is used on interface {intf.ifname}/{intf.name})',
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='module/dhcp/#dhcp-platform')
       OK = False
 
     if isinstance(f_relay,Box):

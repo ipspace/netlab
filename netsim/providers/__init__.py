@@ -469,7 +469,8 @@ def add_default_config_mode(node: Box, topology: Box) -> bool:
     log.error(
       f'Configuration mode {cfg_mode} is not valid for device {node.device} (node {node.name})',
       module='config',
-      category=log.IncorrectValue)
+      category=log.IncorrectValue,
+      doc_url='platforms/#platform-config-mode')
     return False
 
   # Get what's already been processed and the list of configuration snippets. That list

@@ -77,6 +77,7 @@ Each address pool specification is a dictionary of address pools. Individual add
 * Default IPv6 subnet allocation is /64. You can change this behavior with the **prefix6** pool parameter.
 * IPv4 loopback pool starts at .1 (**start** parameter is assumed to be 1)
 * The IPv6 loopback pool starts at the second subnet to make the loopback IPv6 address similar to its IPv4 counterpart.
+* _netlab_ reports an error when it runs out of prefixes in an address pool. Use a shorter pool prefix (**ipv4**/**ipv6**) or a longer subnet allocation size (**prefix**/**prefix6**) to get more subnets.
 
 ### Address Pool Configuration Example
 
