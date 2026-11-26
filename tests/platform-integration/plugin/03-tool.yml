@@ -2,8 +2,8 @@ message: |
   The test checks how netlab adds tool plugins (the 'plugin' attribute of
   a tool definition) to the list of lab plugins. The integration harness
   creates the test script, the scratch topologies, and dummy plugins, and
-  runs the test script as the validation step. To run the test by hand,
-  use:
+  runs the test script as the validation step.
+  To run the test by hand, use:
 
   netlab create -o none 03-tool.yml && bash plugin-tool/test.sh
 
@@ -19,16 +19,19 @@ nodes: [ x ]
 _dummy: &dummy |
   # Dummy plugin used to check whether netlab loaded the plugin
 
+#
+# Dummy plugins, common defaults (used instead of user defaults), and
+# self-contained scratch topologies (one per test)
+#
 files:
   plugin-tool/p_list.py: *dummy
   plugin-tool/p_str.py: *dummy
   plugin-tool/p_enabled.py: *dummy
   plugin-tool/p_other.py: *dummy
-  plugin-tool/base.yml: |
-    defaults.device: none
-    defaults.sources.user: []
+  plugin-tool/defaults.yml: |
+    device: none
     provider: clab
-    defaults.tools:
+    tools:
       t_list:
         plugin: [ p_list ]
         runtime: docker
@@ -42,29 +45,35 @@ files:
         enabled: True
         runtime: docker
         docker.up: 'true'
-    nodes: [ r1 ]
   plugin-tool/none.yml: |
     defaults.tools.t_enabled.enabled: False
+    nodes: [ r1 ]
   plugin-tool/list.yml: |
     defaults.tools.t_enabled.enabled: False
     tools.t_list: {}
+    nodes: [ r1 ]
   plugin-tool/str.yml: |
     defaults.tools.t_enabled.enabled: False
     tools.t_str: {}
+    nodes: [ r1 ]
   plugin-tool/enabled.yml: |
     tools.t_list: {}
+    nodes: [ r1 ]
   plugin-tool/off.yml: |
     tools:
       t_list.plugin: []
       t_enabled.plugin: []
+    nodes: [ r1 ]
   plugin-tool/other.yml: |
     defaults.tools.t_enabled.enabled: False
     tools.t_list.plugin: p_other
+    nodes: [ r1 ]
   plugin-tool/topo_dict.yml: |
     defaults.tools.t_enabled.enabled: False
     plugin:
       p_other: True
     tools.t_str: {}
+    nodes: [ r1 ]
   plugin-tool/test.sh: |
     #!/bin/bash
     #
@@ -73,35 +82,52 @@ files:
     #
     cd "$(dirname "$0")"
     unset $(env | grep -o '^NETLAB_[A-Za-z0-9_]*')    # Do not use NETLAB_ variables from the user environment
+    export LC_ALL=C                                   # Stable sort order of plugin names
     err_cnt=0
 
-    # Build the scratch topology from the common part and the test-specific part
-    topo() {
-      cat base.yml "$1.yml" >topology.yml
+    # Transform a scratch topology. The common defaults replace the user defaults
+    create() {
+      local topo="$1"
+      shift
+      netlab create --defaults defaults.yml -o pickle "$@" "$topo.yml" 2>&1
+    }
+
+    # Get the sorted list of plugins from the transformed topology. 'netlab inspect'
+    # fails when the 'plugin' attribute is missing (no plugins); any other failure
+    # is an error
+    plugins() {
+      local output
+      if output=$(netlab inspect plugin 2>&1); then
+        echo "$output" | sed -n 's/^- *\([^ ]*\).*/\1/p' | sort | paste -sd, -
+      elif echo "$output" | grep -q "name 'plugin' is not defined"; then
+        echo ""
+      else
+        echo "$output"
+        return 1
+      fi
+    }
+
+    # Report a failed test, indenting the extra information
+    failed() {
+      echo "FAILED: $1"
+      [ -n "$2" ] && echo "$2" | sed 's/^/        /'
+      err_cnt=$((err_cnt + 1))
     }
 
     # check <description> <expected plugins> <topology> [<netlab create args>]
     # Use VAR=value check ... to set environment variables
     check() {
-      local desc="$1" expected="$2"
-      topo "$3"
-      shift 3
-      local output result
-      if ! output=$(netlab create -o pickle "$@" topology.yml 2>&1); then
-        echo "FAILED: $desc (netlab create failed)"
-        echo "$output" | sed 's/^/        /'
-        err_cnt=$((err_cnt + 1))
-        return
-      fi
-      result=$(netlab inspect plugin 2>/dev/null | \
-        sed -n 's/^- *\([^ ]*\).*/\1/p' | sort | paste -sd, -)      # Error => no 'plugin' attribute
-      if [ "$result" == "$expected" ]; then
+      local desc="$1" expected="$2" output result
+      shift 2
+      rm -f netlab.snapshot.pickle                    # Never inspect a stale snapshot
+      if ! output=$(create "$@"); then
+        failed "$desc (netlab create failed)" "$output"
+      elif ! result=$(plugins); then
+        failed "$desc (netlab inspect failed)" "$result"
+      elif [ "$result" == "$expected" ]; then
         echo "OK:     $desc"
       else
-        echo "FAILED: $desc"
-        echo "        expected: $expected"
-        echo "        got:      $result"
-        err_cnt=$((err_cnt + 1))
+        failed "$desc" "expected: $expected"$'\n'"got:      $result"
       fi
     }
 
@@ -116,7 +142,7 @@ files:
     NETLAB_TOOLS_T__STR_ENABLED=True \
       check "Tool enabled with an environment variable" "p_str" none
 
-    rm -f topology.yml netlab.snapshot.pickle
+    rm -f netlab.snapshot.pickle
     if [ "$err_cnt" -ne 0 ]; then
       echo "Found $err_cnt errors"
     fi
