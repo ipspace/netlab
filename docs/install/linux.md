@@ -58,6 +58,8 @@ To see the Linux commands executed by various _netlab_ commands, use the `--dry-
 
 Install the Python package with `sudo python3 -m pip install networklab` or your preferred Python package installation procedure.
 
+On Arch Linux, you can install the [**python-networklab**](https://aur.archlinux.org/packages/python-networklab) package from the AUR instead, for example with `yay -S python-networklab`.
+
 ```{tip}
 Installing Python packages as root is not recommended. If you're not setting up a throwaway VM/server, please use your regular Python package installation process.
 ```
