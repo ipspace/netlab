@@ -110,7 +110,8 @@ def validate_vrf_loopback(vname: str,vdata: Box,obj: Box,topology: Box) -> None:
     log.error(f'IP prefix for VRF loopbacks can only be specified in node VRF data (found in global VRF {vname})',
     more_hints=[ 'Use pool attribute or specify the VRF loopback ipv4/ipv6 address in the node VRF data'],
     category=log.IncorrectAttr,
-    module='vrf')
+    module='vrf',
+    doc_url='module/vrf/#vrf-loopback')
 
   obj_path = f'vrfs.{vname}' if obj is topology else f'nodes.{obj.name}.vrfs.{vname}'
   validate_attributes(
@@ -250,7 +251,8 @@ def set_vrf_ids(obj: Box, topology: Box) -> None:
     if not asn:
       log.error(f'Need a usable vrf.as or bgp.as to create auto-generated VRF RD for {vname} in {obj_name}',
         log.MissingValue,
-        'vrf')
+        'vrf',
+        doc_url='module/vrf/#default-vrf-values')
       return
     set_vrf_auto_id(vdata,get_next_vrf_id(asn))
 

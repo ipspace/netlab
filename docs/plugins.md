@@ -10,6 +10,7 @@
    :backlinks: none
 ```
 
+(topo-plugins-use)=
 ## Using Plugins
 
 Plugins needed by a topology file are listed in the **plugin** top-level element, for example:
@@ -19,6 +20,8 @@ plugin: [ bgp.session ]
 
 module: [ ospf, bgp ]
 ```
+
+_netlab_ searches for plugins in the plugin search path (**defaults.paths.plugin**: current directory, topology directory, `~/.netlab`, and `/etc/netlab`) before trying the [plugins shipped with _netlab_](topo-plugins-builtin). See [](dev-plugins) for more details.
 
 You can specify additional (system-wide) plugins in [system defaults](topo-defaults) (**defaults.plugin**) or as a CLI parameter in **[netlab create](netlab/create.md)** or **[netlab up](netlab/up.md)** commands.
 

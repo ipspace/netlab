@@ -504,7 +504,8 @@ def check_node_vrf_bundle(node: Box, topology: Box) -> None:
       log.error(
         f"'{b_type}'' EVPN bundle service used in VRF {vrf_name} is not supported by device {node.device} (node: {node.name})",
         log.IncorrectValue,
-        'evpn')
+        'evpn',
+        doc_url='module/evpn/#evpn-bundle-service')
 
 """
 Check the VLAN RT values -- some devices support only a single import/export RT

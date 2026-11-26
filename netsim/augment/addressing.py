@@ -272,7 +272,8 @@ def get_pool_prefix(pools: Box, p: str, n: typing.Optional[int] = None) -> Box:
           f'Ran out of {af} prefixes in {p} pool' +
           (' (use --debug addr CLI argument to get more details)' if not log.debug_active('addr') else ''),
           log.MissingValue,
-          'addressing')
+          'addressing',
+          doc_url='addressing/#address-pool-specs')
 
   if log.debug_active('addressing'):
     print(f'get_pool_prefix: {p} => {prefixes}')
@@ -328,7 +329,8 @@ def evaluate_named_prefix(topology: Box, pname: str) -> Box:
     log.error(
       f'Named prefix {pname} references an unknown pool {pool_name}',
       category=log.IncorrectValue,
-      module='addressing')
+      module='addressing',
+      doc_url='prefix/#named-prefixes')
     return get_empty_box()
 
   pool_pfx = get_pool_prefix(topology.pools,pool_name)

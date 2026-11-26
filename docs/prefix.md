@@ -13,7 +13,7 @@ However, there are scenarios in which you have to use the same prefix in multipl
 
 You can use *named IP prefixes* in all three scenarios. The named prefixes are defined in the top-level **prefix** dictionary. The dictionary keys are prefix names; the values are dictionaries defining individual prefixes. The prefix values can include **ipv4**, **ipv6**, **pool** and **[allocation](addr-allocation)** attributes.
 
-The **pool** attribute in a prefix can be used when you want a well-defined prefix but don't want to specify IPv4 and IPv6 subnets. The prefix will be allocated from the specified pool on first use.
+The **pool** attribute in a prefix can be used when you want a well-defined prefix but don't want to specify IPv4 and IPv6 subnets. The prefix will be allocated from the specified pool on first use. The pool must be defined in the [**addressing**](address-pool-specs) dictionary.
 
 You can use the names of the *named prefixes* anywhere you would use an IPv4 or IPv6 prefix, for example, as a **links.prefix** value or as a **vlans._vlan_.prefix** value. You can also use them in [custom configuration templates](custom-config-templates.md).
 

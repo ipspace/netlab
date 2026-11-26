@@ -305,7 +305,8 @@ def init(topology: Box) -> None:
         f"Cannot find plugin {pname}",
         more_data = f"Search path:\n{strings.get_yaml_string(topology.defaults.paths.plugin)}",
         category=log.IncorrectValue,
-        module='plugin')
+        module='plugin',
+        doc_url='plugins/#topo-plugins-use')
 
   if load_error:                                              # Skip the rest of the code on error as it might crash
     return                                                    # ... due to discrepancy between lists of plugin names and loaded plugins

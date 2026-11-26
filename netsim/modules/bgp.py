@@ -56,7 +56,8 @@ def check_bgp_parameters(node: Box, topology: Box) -> None:
     log.error(
       f"Node {node.name} has BGP enabled but no AS number specified",
       log.MissingValue,
-      'bgp')
+      'bgp',
+      doc_url='module/bgp/#bgp-node-params')
     return
 
   must_be_asn(parent=node,key='bgp.as',path=f'nodes.{node.name}',module='bgp')
@@ -727,7 +728,8 @@ def process_as_list(topology: Box) -> None:
         log.error(
           text=f"BGP module supports at most 1 AS per node; {n} is already member of {node_data[n]['as']} and cannot also be part of {asn}",
           category=log.IncorrectValue,
-          module='bgp')
+          module='bgp',
+          doc_url='module/bgp/#bgp-aslist')
         continue
       node_data[n]["as"] = asn
 
@@ -739,7 +741,8 @@ def process_as_list(topology: Box) -> None:
         log.error(
           text=f"Node {n} is specified as route reflector in AS {asn} but is not in member list",
           category=log.IncorrectValue,
-          module='bgp')
+          module='bgp',
+          doc_url='module/bgp/#bgp-aslist')
         continue
       node_data[n].rr = True
 
@@ -750,7 +753,8 @@ def process_as_list(topology: Box) -> None:
         log.error(
           text=f'Node {node.name} has AS {node_as} but is also in member list of AS {node_data[node.name]["as"]}',
           category=log.IncorrectValue,
-          module='bgp')
+          module='bgp',
+          doc_url='module/bgp/#bgp-aslist')
         continue
 
       node.bgp = node_data[name] + node.bgp
@@ -769,14 +773,16 @@ def check_confederation_data(topology: Box) -> None:
       log.error(
         f'Confederation AS {c_asn} needs at least one member ASN',
         category=log.MissingValue,
-        module='bgp')
+        module='bgp',
+        doc_url='module/bgp/#bgp-confederations')
     for cm_asn in c_data.members:
       if cm_asn in rev_map:
         log.error(
           f'Confederation member {cm_asn} is in confederations {c_asn} and {rev_map[cm_asn]}',
           more_hints="While that's a valid BGP design, netlab does not support it",
           category=log.IncorrectValue,
-          module='bgp')
+          module='bgp',
+          doc_url='module/bgp/#bgp-confederations')
       rev_map[cm_asn] = c_asn
       if cm_asn in bgp_confed:
         log.error(
@@ -793,7 +799,8 @@ def check_confederation_data(topology: Box) -> None:
         f'Node {ndata.name} is using confederation ASN {n_as}',
         more_hints='BGP speakers can use only confederation member ASNs, not the confederation ASN',
         category=log.IncorrectValue,
-        module='bgp')
+        module='bgp',
+        doc_url='module/bgp/#bgp-confederations')
     if n_as not in rev_map:
       continue
 
@@ -831,7 +838,8 @@ def bgp_transform_community_list(node: Box, topology: Box) -> None:
           f"Invalid {s_type} BGP community propagation keyword '{kw}' for device {node.device}/node {node.name}",
           category=log.IncorrectValue,
           module='bgp',
-          more_hints=[ f"Valid values are {','.join(kw_xform.keys())}" ])
+          more_hints=[ f"Valid values are {','.join(kw_xform.keys())}" ],
+          doc_url='module/bgp/#bgp-community-propagation')
     
   for i_kw in BGP_INHERIT_COMMUNITY:            # Finally, set up the missing community propagation values
     if i_kw not in clist:                       # for rare BGP session types

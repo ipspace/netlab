@@ -407,7 +407,8 @@ def check_VRF_static_route(sr_data: Box, node: Box, sr_features: Box) -> bool:
       log.error(
         f'Device {node.device} (node {node.name}) does not support VRF static routes',
         category=log.IncorrectValue,
-        module='routing')
+        module='routing',
+        doc_url='module/routing/#generic-routing-static')
       return False
     
   if 'vrf' in sr_data.nexthop:
@@ -415,7 +416,8 @@ def check_VRF_static_route(sr_data: Box, node: Box, sr_features: Box) -> bool:
       log.error(
         f'Device {node.device} (node {node.name}) does not support inter-VRF static routes',
         category=log.IncorrectValue,
-        module='routing')
+        module='routing',
+        doc_url='module/routing/#generic-routing-static')
       return False
     
     if sr_data.nexthop.vrf and sr_data.nexthop.vrf not in node.get('vrfs',{}):
@@ -526,7 +528,8 @@ def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
           log.error(
             f'Device {node.device} (node {node.name}) does not support discard static routes',
             category=log.IncorrectAttr,
-            module='routing')        
+            module='routing',
+            doc_url='module/routing/#generic-routing-static')
       else:
         log.error(
           f'A static route for {",".join(sr_data[af])} on node {node.name} has no {af} next hop',
