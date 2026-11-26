@@ -251,6 +251,16 @@ def sort_extra_config(topology: Box) -> list:
             lambda p: find_preceding_configs(p,topology))
 
 '''
+Normalize the topology- and default plugins: both could be specified as a list
+or as a dictionary (keys are plugin names, plugins with False values are skipped).
+The rest of the code expects lists, so we have to convert dictionaries into lists
+before adding tool- or device plugins
+'''
+def normalize(topology: Box) -> None:
+  for key in ['defaults.plugin','plugin']:
+    data.dict_to_key_list(topology,key)
+
+'''
 Initialize plugin subsystem:
 
 * Merge default- and topology plugins
@@ -263,6 +273,8 @@ def init(topology: Box) -> None:
   # 
   # * defaults.plugin must be a list
   # * topology.plugin (when present or when we have default plugins) must be a list
+  #
+  # Dictionaries were converted into lists in 'normalize'
   #
   data.types.must_be_list(parent=topology,key='defaults.plugin',path='',create_empty=True)
   if topology.defaults.plugin or 'plugin' in topology:

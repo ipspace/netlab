@@ -12,7 +12,7 @@ import yaml
 from box import Box
 
 # Related modules
-from ..data import get_box
+from ..data import dict_to_key_list, get_box
 from ..data import types as _types
 from ..utils import files as _files
 from ..utils import log, versioning
@@ -324,6 +324,7 @@ def include_environment_defaults(topology: Box) -> None:
     except:
       pass                                        # Can't do that? No harm, we'll assume it's a string
 
+    k_env = k                                     # Save the variable name for error messages
     k = k.lower()                                 # Normalize to lowercase
     if not k.startswith('netlab_'):               # Skip non-netlab variables
       continue
@@ -333,7 +334,14 @@ def include_environment_defaults(topology: Box) -> None:
     k = k.replace('..','_')                       # Turn __ (..) back into a single underscore
     if log.VERBOSE > 1:
       print(f'Setting defaults.{k} to {v}')
-    topology.defaults[k] = v                      # And set the value
+    try:
+      topology.defaults[k] = v                    # And set the value
+    except Exception as ex:                       # ... which might fail if a parent is not a dictionary
+      log.error(
+        f'Cannot set defaults.{k} from environment variable {k_env}',
+        more_data=str(ex),
+        category=log.IncorrectValue,
+        module='defaults')
 
 #
 # Load the topology and defaults
@@ -413,13 +421,6 @@ def add_cli_args(topo: Box, args: typing.Union[argparse.Namespace,Box]) -> None:
       for p_element in p_option.split(','):
         topo.defaults.providers[topo.provider][p_element] = True
 
-  if args.plugin:
-    if log.debug_active('plugin'):
-      print(f'Adding plugins from CLI arguments: {args.plugin}')
-    _types.must_be_list(parent=topo,key='plugin',path='',create_empty=True)
-    log.exit_on_error()
-    topo.plugin.extend(args.plugin)
-
   if args.settings:
     for s in args.settings:
       if not "=" in s:
@@ -443,6 +444,14 @@ def add_cli_args(topo: Box, args: typing.Union[argparse.Namespace,Box]) -> None:
           log.fatal(f"Cannot set topology value {k}\n... {ex}")
       except Exception as ex:
         log.fatal(f"Cannot set topology value {k}\n... {ex}")
+
+  if args.plugin:                                 # Add CLI plugins after CLI settings that might set plugin.x
+    if log.debug_active('plugin'):
+      print(f'Adding plugins from CLI arguments: {args.plugin}')
+    dict_to_key_list(topo,'plugin')
+    _types.must_be_list(parent=topo,key='plugin',path='',create_empty=True)
+    log.exit_on_error()
+    topo.plugin.extend(args.plugin)
 
 """
 Read pickled snapshot data
