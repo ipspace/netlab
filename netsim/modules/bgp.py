@@ -244,13 +244,15 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
         log.error(
           text=f'{node.name} (device {node.device}) does not support BGP local AS (interface {l.name})',
           category=log.IncorrectValue,
-          module='bgp')
+          module='bgp',
+          doc_url='module/bgp/#bgp-platform-local-as')
         continue
       if intf_vrf and not features.bgp.vrf_local_as:
         log.error(
           text=f'{node.name} (device {node.device}) does not support BGP local AS for EBGP sessions in VRF {l.vrf}',
           category=log.IncorrectValue,
-          module='bgp')
+          module='bgp',
+          doc_url='module/bgp/#bgp-platform-local-as')
         continue
 
     for ngb_ifdata in l.get("neighbors",[]):
@@ -332,7 +334,8 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
           log.error(
             text=f'{node.name} (device {node.device}) does not support EBGP sessions over auto-generated IPv6 LLA (interface {l.name})',
             category=log.IncorrectValue,
-            module='bgp')
+            module='bgp',
+            doc_url='module/bgp/#bgp-platform-sessions')
           continue
 
       if rfc8950:                                     # Do we have RFC 8950 IPv4 AF over numbered IPv6 session?
@@ -341,7 +344,8 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
           log.error(
             text=f'{node.name} (device {node.device}) does not support IPv4 RFC 8950-style AF over regular IPv6 EBGP sessions (interface {l.name})',
             category=log.IncorrectValue,
-            module='bgp')
+            module='bgp',
+            doc_url='module/bgp/#bgp-platform-sessions')
           continue
 
       for k in ('local_as','replace_global_as'):      # Special handling for local-as attributes
@@ -364,7 +368,8 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
           log.error(
             text=f'You cannot use BGP local-as to create an IBGP session with {ngb_name} on {node.name} (device {node.device})',
             category=log.IncorrectValue,
-            module='bgp')
+            module='bgp',
+            doc_url='module/bgp/#bgp-platform-local-as')
           continue
 
       ebgp_data = bgp_neighbor(neighbor,ngb_ifdata,session_type,sessions,extra_data)
@@ -811,7 +816,8 @@ def check_confederation_data(topology: Box) -> None:
         f'Node {ndata.name} (device {ndata.device}) uses member ASN {n_as} of confederation AS {c_as}',
         more_hints=f'Device {ndata.device} does not support BGP confederations',
         category=log.IncorrectType,
-        module='bgp')
+        module='bgp',
+        doc_url='module/bgp/#bgp-platform')
       continue
 
     ndata.bgp.confederation['as'] = c_as

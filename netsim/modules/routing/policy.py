@@ -142,7 +142,8 @@ def check_routing_policy(p_name: str,o_type: str, node: Box,topology: Box) -> bo
     log.error(
       f'Device {node.device} (node {node.name}) does not support routing polices (policy {p_name})',
       category=log.IncorrectAttr,
-      module='routing')
+      module='routing',
+      doc_url='module/routing/#generic-routing-platforms')
     return False
 
   OK = True
@@ -157,7 +158,8 @@ def check_routing_policy(p_name: str,o_type: str, node: Box,topology: Box) -> bo
             f"Device {node.device} (node {node.name}) does not support routing policy '{p_param}' keyword '{kw}' "+\
             f"used in {p_name} entry #{p_entry.sequence}",
             category=log.IncorrectType,
-            module='routing')
+            module='routing',
+            doc_url='module/routing/#routing-policy-platform')
           continue
         if not isinstance(d_features[p_param],Box):         # No further work needed
           continue
@@ -173,7 +175,8 @@ def check_routing_policy(p_name: str,o_type: str, node: Box,topology: Box) -> bo
             f"Device {node.device} (node {node.name}) does not support routing policy '{p_param}'"+\
             f" keyword '{kw}.{kw_opt}' used in {p_name} entry #{p_entry.sequence}",
             category=log.IncorrectType,
-            module='routing')
+            module='routing',
+            doc_url='module/routing/#routing-policy-platform')
           OK = False
 
   return OK                                                 # Return cumulative error status

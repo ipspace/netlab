@@ -901,7 +901,8 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
       log.error(                                                         # SVI interfaces are not supported on this device
         f'Device {node.device} used by {node.name} does not support VLAN interfaces (access vlan {access_vlan})',
         log.IncorrectValue,
-        'vlan')
+        'vlan',
+        doc_url='module/vlan/#vlan-platform')
       return vlan_ifmap
 
     if not access_vlan in vlan_ifmap:                                       # Do we need to create a SVI interface?
@@ -1061,7 +1062,8 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
       #
       log.error(
         f'Routed subinterfaces on VLAN trunks not supported on device type {node.device}\n... node {node.name} vlan {intf.vlan_name}',
-        log.IncorrectValue,'vlan')
+        log.IncorrectValue,'vlan',
+        doc_url='module/vlan/#vlan-platform')
       continue
 
     subif_name = features.vlan.subif_name
@@ -1136,7 +1138,8 @@ def cleanup_routed_native_vlan(node: Box, topology: Box) -> None:
       log.error(
         f'Node {node.name} device {node.device} does not support native routed VLANs (vlan {intf._vlan_native} interface {intf.name})',
         log.IncorrectValue,
-        'vlan')
+        'vlan',
+        doc_url='module/vlan/#vlan-platform')
 
     vlan_id = node.vlans.get(intf._vlan_native,{}).id
     if vlan_id:
@@ -1174,7 +1177,8 @@ def check_mixed_trunks(node: Box, topology: Box) -> None:
         f'Device type {node.device} does not support mixed bridged/routed VLAN trunks\n'+ \
         f'... node {node.name} interface {parent_intf.ifname}: {parent_intf.name}',
         log.IncorrectValue,
-        'vlan')
+        'vlan',
+        doc_url='module/vlan/#vlan-platform')
     err_ifmap[parent_intf.ifindex] = True
 
 """
@@ -1201,7 +1205,8 @@ def check_mixed_native_trunk(node: Box, topology: Box) -> None:
       f'Device type {node.device} (node {node.name}) cannot have a routed native VLAN with a bridged trunk',
       category=log.IncorrectValue,
       module='vlan',
-      more_data=f'Found on interface {intf.ifname} ({intf.name})')
+      more_data=f'Found on interface {intf.ifname} ({intf.name})',
+      doc_url='module/vlan/#vlan-platform')
 
 """
 populate_node_vlan_data -- merge topology VLANs into node VLANs that were copied from groups.node_data

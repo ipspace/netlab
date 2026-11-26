@@ -1147,7 +1147,8 @@ def interface_fc_ipv4(ifdata: Box, ndata: Box, features: Box, more_data: str) ->
         text=f'Invalid unnumbered IPv4 interface {ifdata.ifname} ({ifdata.name}) on node {ndata.name} ',
         more_hints=f'Device {ndata.device} (node {ndata.name}) does not support unnumbered IPv4 interfaces',
         category=log.IncorrectValue,
-        module='interfaces')
+        module='interfaces',
+        doc_url='platforms/#platform-initial-addresses')
     elif isinstance(f_v4_unnum,list):
       if ifdata.type not in features.initial.ipv4.unnumbered:
         log.error(
@@ -1155,14 +1156,16 @@ def interface_fc_ipv4(ifdata: Box, ndata: Box, features: Box, more_data: str) ->
           more_data=more_data,
           more_hints=f'Device {ndata.device} supports only {",".join(f_v4_unnum)} unnumbered IPv4 interfaces',
           category=log.IncorrectValue,
-          module='interfaces')
+          module='interfaces',
+          doc_url='platforms/#platform-initial-addresses')
     elif f_v4_unnum == 'peer':
       if len(ifdata.neighbors)!=1 or ifdata.neighbors[0].get('ipv4',False) is not True:
         log.error(
           text=f'The unnumbered IPv4 interface {ifdata.ifname} ({ifdata.name}) on node {ndata.name} is not supported',
           more_hints=f'Device {ndata.device} can have unnumbered IPv4 interfaces with a single unnumbered peer',
           category=log.IncorrectType,
-          module='interfaces')
+          module='interfaces',
+          doc_url='platforms/#platform-initial-addresses')
 
 def interface_fc_ipv6(ifdata: Box, ndata: Box, features: Box, more_data: str) -> None:
   if 'ipv6' not in ifdata:
@@ -1174,7 +1177,8 @@ def interface_fc_ipv6(ifdata: Box, ndata: Box, features: Box, more_data: str) ->
       f'Device {ndata.device} (node {ndata.name}) does not support LLA-only IPv6 interfaces',
       category=log.IncorrectValue,
       more_data=more_data,
-      module='interfaces')
+      module='interfaces',
+      doc_url='platforms/#platform-initial-addresses')
 
 def interface_feature_check(nodes: Box, defaults: Box) -> None:
   for node,ndata in nodes.items():
@@ -1281,7 +1285,8 @@ def process_link_ra(link: Box, nodes: Box, defaults: Box) -> None:
           f'We did not implement configurable IPv6 RA parameters for {n_data.device} yet',
           category=log.IncorrectAttr,
           module='links',
-          more_data=f'Node {intf.node}, link {link._linkname}')
+          more_data=f'Node {intf.node}, link {link._linkname}',
+          doc_url='platforms/#platform-initial-addresses')
       continue                                              # Makes no sense to go any further with this interface
     if 'ra' in intf or link_ra:
       intf.ra = link_ra + intf.ra                           # Merge link attributes with interface attributes

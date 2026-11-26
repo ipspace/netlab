@@ -113,7 +113,8 @@ def _unsupported_device_checks(node: Box) -> None:
                 f'Node {node.name}({node.device}) does not support EVPN Multihoming'
                 f' (found "evpn.es" attribute on interface {intf.ifname})',
                 category=log.IncorrectAttr,
-                module=_config_name)
+                module=_config_name,
+                doc_url='plugins/evpn.multihoming/#plugin-evpn-multihoming')
             return
 
 def _es_interface_attribute_validation(topology: Box, node: Box, intf: Box) -> bool:
@@ -134,14 +135,16 @@ def _es_interface_attribute_validation(topology: Box, node: Box, intf: Box) -> b
         log.error(
             f'Node {node.name}({node.device}) does not support EVPN Ethernet Segment on LAG interfaces (found on: {intf.ifname})',
             category=log.IncorrectAttr,
-            module=_config_name)
+            module=_config_name,
+            doc_url='plugins/evpn.multihoming/#plugin-evpn-multihoming')
         return False
     # Check for other interface support (except lag)
     if intf.type in list(set(_es_supported_on) - set(['lag'])) and not features.get('evpn.multihoming.interface', False):
         log.error(
             f'Node {node.name}({node.device}) does not support EVPN Ethernet Segment on "physical" interfaces (found on: {intf.ifname})',
             category=log.IncorrectAttr,
-            module=_config_name)
+            module=_config_name,
+            doc_url='plugins/evpn.multihoming/#plugin-evpn-multihoming')
         return False
     # ES data: if none of auto or id value is specified, trigger error
     if intf_es_data is None or not (intf_es_data.get('auto',False) or intf_es_data.get('id',False)):
@@ -169,7 +172,8 @@ def _es_interface_attribute_validation(topology: Box, node: Box, intf: Box) -> b
             log.error(
                 f'Node {node.name}({node.device}) cannot use auto ESI on interface {intf.ifname} - auto generation not supported.',
                 category=log.IncorrectAttr,
-                module=_config_name)
+                module=_config_name,
+                doc_url='plugins/evpn.multihoming/#plugin-evpn-multihoming')
             return False
     return True
 

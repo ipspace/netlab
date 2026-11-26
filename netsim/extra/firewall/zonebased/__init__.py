@@ -23,7 +23,8 @@ def post_transform(topology: Box) -> None:
                 continue
             if not zbf_supported:                               # Not supported, print error and move on
                 log.error( f"Node {node.name}({node.device}) does not support 'firewall.zone' used on {intf.name}",
-                        category=log.IncorrectAttr,module=_config_name)
+                        category=log.IncorrectAttr,module=_config_name,
+                        doc_url='plugins/firewall.zonebased/#plugin-firewall-zonebased')
                 OK = False
                 continue
 

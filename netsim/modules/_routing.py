@@ -481,7 +481,8 @@ def check_vrf_protocol_support(
       log.error(
         f'Device {node.device} (node {node.name}) does not support {f_name} in VRFs (found in VRF {v_name})',
         category=log.IncorrectValue,
-        module=proto)
+        module=proto,
+        doc_url='module/vrf/#module-vrf-platform-routing-support')
       return
 
 """
@@ -649,7 +650,8 @@ def check_import_request(
     log.error(
       f'Device {node.device} (node {node.name}) does not support route import into {proto}',
       category=log.IncorrectValue,
-      module=proto)
+      module=proto,
+      doc_url=f'module/{proto}/#{proto}-platform')
     return
 
   i_dict = rdata['import']                                  # Use a temporary variable to shorten the code
@@ -690,7 +692,8 @@ def check_import_request(
           f'Device {node.device} (node {node.name}) cannot use routing policies ' + \
           f'on route imports ({s_proto} => {proto}, policy {i_policy})',
           category=log.IncorrectValue,
-          module=proto)
+          module=proto,
+          doc_url='module/routing/#generic-routing-platforms')
         break
       else:
         node_add_routing_policy(i_dict.get(f'{s_proto}.policy'),node,topology)
@@ -737,7 +740,8 @@ def process_imports(node: Box, proto: str, topology: Box, vrf_list: list) -> Non
         log.error(
           f'Route import to {proto} on node {node.name} (device {node.device}) is not VRF-aware',
           category=log.IncorrectValue,
-          module=proto)
+          module=proto,
+          doc_url=f'module/{proto}/#{proto}-platform')
 
 """
 remove_vrf_imports: remove incorrect VRF imports

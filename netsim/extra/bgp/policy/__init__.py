@@ -130,7 +130,8 @@ def check_attribute_direction(ndata: Box, ngb: Box, topology: Box, attr: str, at
       log.error(
         f'You cannot use bgp.{attr}.{kw} on {ndata.device} (node {ndata.name})',
         category=log.IncorrectType,
-        module=_config_name)
+        module=_config_name,
+        doc_url='plugins/bgp.policy/#plugin-bgp-policy-platform')
       continue
 
     if isinstance(a_feature[kw],bool):                  # Does the device have any further restrictions?

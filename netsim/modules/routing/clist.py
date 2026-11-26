@@ -143,7 +143,8 @@ def check_community_support(o_data: Box,o_type: str,node: Box,topology: Box) -> 
       log.error(
         f'Device {node.device}/node {node.name} does not support {c_type} BGP community lists: {cl_name}',
         module='routing',
-        category=log.IncorrectType)
+        category=log.IncorrectType,
+        doc_url='module/routing/#routing-clist-platform')
       continue
     if c_features[c_type] is True:                # Unconditional support (standard/extended)
       continue
@@ -151,4 +152,5 @@ def check_community_support(o_data: Box,o_type: str,node: Box,topology: Box) -> 
       log.error(
         f'Device {node.device}/node {node.name} does not support {l_type} {c_type} BGP community lists: {cl_name}',
         module='routing',
-        category=log.IncorrectType)
+        category=log.IncorrectType,
+        doc_url='module/routing/#routing-clist-platform')

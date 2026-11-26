@@ -83,7 +83,8 @@ def check_routing_object(p_name: str,o_type: str, node: Box,topology: Box) -> bo
     log.error(
       f"Device {node.device} (node {node.name}) does not support '{o_type}' objects ({p_name})",
       category=log.IncorrectAttr,
-      module='routing')
+      module='routing',
+      doc_url='module/routing/#generic-routing-platforms')
     return False
   
   return True

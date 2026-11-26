@@ -27,7 +27,8 @@ def ripv2_unnumbered(node: Box, features: Box) -> bool:
         f'Device {node.device} used on node {node.name} cannot run RIPv2 over unnumbered interface',
         category=log.IncorrectValue,
         module='interfaces',
-        more_data=f'Unnumbered interfaces: {", ".join(unnumbered_intfs)}')
+        more_data=f'Unnumbered interfaces: {", ".join(unnumbered_intfs)}',
+        doc_url='module/ripv2/#ripv2-platform')
       return False
 
   return True
@@ -68,7 +69,8 @@ def check_rip_timers(node: Box, features: Box) -> None:
       text=f'Device {node.device} used on node {node.name} cannot configure RIP timers',
       more_hints='The device will use the default RIP timers',
       flag='timers',
-      module='ripv2')
+      module='ripv2',
+      doc_url='module/ripv2/#ripv2-platform')
 
 class RIPv2(_Module):
 

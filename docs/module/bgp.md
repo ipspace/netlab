@@ -87,6 +87,7 @@ The following features are only supported on a subset of platforms:
     bgp.caveats.vrf_import
 ```
 
+(bgp-platform-sessions)=
 These devices support EBGP sessions between IPv6 LLA or IPv4 AF on IPv6 EBGP sessions:
 ```{features}
 - title: IPv6 LLA<br>EBGP<br>sessions
@@ -102,6 +103,7 @@ These devices support EBGP sessions between IPv6 LLA or IPv4 AF on IPv6 EBGP ses
 
 [^RFC8950]: IPv6 next hops for IPv4 prefixes advertised over a regular (non-LLA) IPv6 EBGP session. RFC 8950-style next hops over IPv6 LLA sessions used to implement interface EBGP sessions are documented in the *Unnumbered IPv4 EBGP sessions* column.
 
+(bgp-platform-local-as)=
 These devices support BGP local-AS functionality to build EBGP or IBGP sessions:
 ```{features}
 - title: EBGP<br>local AS

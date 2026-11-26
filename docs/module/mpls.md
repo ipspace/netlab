@@ -17,6 +17,7 @@ Segment routing for MPLS is implemented in a [separate configuration module](sr-
    :backlinks: none
 ```
 
+(mpls-platform)=
 ## Platform Support
 
 The following table describes the per-platform support of individual MPLS label distribution features:

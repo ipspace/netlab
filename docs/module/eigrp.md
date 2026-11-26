@@ -11,6 +11,7 @@ Supported features:
 * Unnumbered point-to-point interfaces (Cisco IOS-XE only)
 * Passive interfaces
 
+(eigrp-platform)=
 The following table describes per-platform support of EIGRP address families:
 
 ```{features}

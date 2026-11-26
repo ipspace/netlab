@@ -55,6 +55,7 @@ The following table describes where you could apply individual attributes:
 
 The **bgp.role** attributes can also be specified at the global (**bgp.role.strict** only) or link level. The plugin applies global- or node-level **bgp.role** value only to EBGP neighbors. Using this attribute on IBGP sessions results in a configuration error.
 
+(plugin-bgp-policy-platform)=
 ## Platform Support
 
 The plugin implements BGP routing policies and setting of individual BGP attributes on these devices:

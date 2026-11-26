@@ -93,7 +93,8 @@ def check_multihop_support(ndata: Box, topology: Box) -> None:
   
   log.error(
     f'EBGP multihop is not supported by node {ndata.name} (device {ndata.device})',
-    log.IncorrectValue,'ebgp.multihop')
+    log.IncorrectValue,'ebgp.multihop',
+    doc_url='plugins/ebgp.multihop/#plugin-ebgp-multihop')
 
 '''
 check_af_activation_support -- check whether the device used in a multihop EBGP session supports per-af activation
@@ -105,7 +106,8 @@ def check_af_activation_support(ndata: Box, topology: Box) -> None:
   
   log.error(
     f'Selective BGP address family activation is not supported by node {ndata.name} (device {ndata.device})',
-    log.IncorrectValue,'ebgp.multihop')
+    log.IncorrectValue,'ebgp.multihop',
+    doc_url='plugins/ebgp.multihop/#plugin-ebgp-multihop')
 
 '''
 augment_af_activation -- change the address families active on EBGP multihop sessions
@@ -176,7 +178,8 @@ def fix_vrf_loopbacks(ndata: Box, topology: Box) -> None:
         log.error(
           f'Device {ndata.device} does not support VRF EBGP multihop sessions (node {ndata.name}, VRF {ngb._src_vrf})',
           category=log.IncorrectValue,
-          module='ebgp.multihop')
+          module='ebgp.multihop',
+          doc_url='plugins/ebgp.multihop/#plugin-ebgp-multihop')
         continue
 
       lb = vrf.get_vrf_loopback(ndata,ngb._src_vrf)             # Find local VRF loopback

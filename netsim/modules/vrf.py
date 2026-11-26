@@ -329,7 +329,8 @@ def validate_vrf_route_leaking(node : Box, features: Box) -> None:
         text=f"VRF {vname} on {node.name} uses inter-VRF route leaking, which is not supported by device {node.device}",
         module='vrf',
         flag='leaking',
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='module/vrf/#module-vrf-platform-support')
 
     vdata._leaked_routes = True                   # Set the flag for VRF configuration templates
     if node.get('bgp.as',None):                   # If we already have a valid node BGP ASN, move on
@@ -379,7 +380,8 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
         text=f"VRF {vrfname} on {node.name} needs a loopback interface, which is not supported by device {node.device}",
         module='vrf',
         flag='loopback',
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='module/vrf/#module-vrf-platform-support')
 
     # Note: set interface ifindex to v.vrfidx if you want to have VRF-numbered loopbacks
     #
