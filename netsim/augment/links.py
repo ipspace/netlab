@@ -413,13 +413,15 @@ def create_virtual_interface(node: Box, ifdata: Box, defaults: Box) -> None:
     log.error(
       f'Device {node.device}/node {node.name} does not support loopback links',
       log.IncorrectValue,
-      'links')
+      'links',
+      doc_url='links/#links-loopback')
   else:
     log.error(
       f'Need explicit interface name (ifname) for {devtype} interface on node {node.name} ({node.device})',
       category=log.IncorrectValue,
       more_data=str(ifdata),
-      module='links')
+      module='links',
+      doc_url='links/#links-ifname')
 
 def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
   if ifdata.get('type',None) in VIRTUAL_INTERFACE_TYPES:
@@ -542,7 +544,8 @@ def assign_link_prefix(
       log.error(
         f'Unknown address pool {link.pool} used in {link_path}',
         log.IncorrectValue,
-        'links')
+        'links',
+        doc_url='links/#links-custom-pools')
     pools = [ link.pool ] + pools
   else:
     if must_be_string(link,'role',link_path):
@@ -1106,7 +1109,8 @@ def check_link_type(data: Box) -> bool:
       f'More than one node connected to a stub link {data._linkname}',
       category=log.IncorrectValue,
       more_data=[ str(data) ],
-      module='links')
+      module='links',
+      doc_url='links/#links-types')
     return False
 
   if link_type == 'p2p' and node_cnt != 2:
@@ -1114,7 +1118,8 @@ def check_link_type(data: Box) -> bool:
       f'Point-to-point link {data._linkname} needs exactly two nodes',
       category=log.IncorrectValue,
       more_data=[ str(data) ],
-      module='links')
+      module='links',
+      doc_url='links/#links-types')
     return False
 
   if link_type == 'loopback' and node_cnt != 1:
@@ -1122,7 +1127,8 @@ def check_link_type(data: Box) -> bool:
       f'Loopback link {data._linkname} can have a single node attached',
       more_data=[ str(data) ],
       category=log.IncorrectValue,
-      module='links')
+      module='links',
+      doc_url='links/#links-loopback')
     return False
 
   return True

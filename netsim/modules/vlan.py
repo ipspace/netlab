@@ -213,7 +213,8 @@ def check_link_vlan_attributes(obj: Box, link: Box, v_attr: Box, topology: Box) 
         text=f'VLAN {vname} used in vlan.{attr}{node_error} is not defined',
         more_data=f'{link}',
         category=log.IncorrectValue,
-        module='vlan')
+        module='vlan',
+        doc_url='module/vlan/#module-vlan-definition')
       link_ok = False
 
   return link_ok
@@ -368,7 +369,8 @@ def check_link_interface_attributes(link: Box, intf: Box, topology: Box) -> None
       f"Link {link._linkname}, node {intf.node}, vlan {intf.vlan.access}",
       f"Interface VLAN forwarding mode: {vlan_mode}, unexpected attributes {','.join(invalid)}", f"{intf}" ],
     category=log.IncorrectValue,
-    module='vlan')
+    module='vlan',
+    doc_url='module/vlan/#vlan-interface-parameters')
 
 """
 validate_trunk_vlan_list -- validate that the nodes connected to a VLAN trunk have at least some common VLANs

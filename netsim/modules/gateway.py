@@ -44,7 +44,8 @@ def check_protocol_support(node: Box, topology: Box) -> bool:
       log.error(
         f'Node {node.name} ({node.device}) does not support gateway protocol {gw_proto}',
         log.IncorrectValue,
-        'gateway')
+        'gateway',
+        doc_url='module/gateway/#gateway-support')
 
   return OK
 
@@ -152,7 +153,8 @@ class FHRP(_Module):
       log.error(
         f'Global/default gateway parameters are missing. We need at least a gateway ID',
         log.IncorrectType,
-        'gateway')
+        'gateway',
+        doc_url='module/gateway/#gateway-global')
       return
 
     check_gw_protocol(gw,'topology.gateway',topology)

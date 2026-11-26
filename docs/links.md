@@ -132,6 +132,10 @@ Lab topology could contain *lan*, *p2p*, *stub*, *loopback*, *lag*, and *tunnel*
 
 The only reason to change the link types for a regular link is to force a Linux bridge to be used between two *libvirt* nodes to enable [packet capture](libvirt-capture). You do have to set the link **type** attribute to create [additional loopbacks](links-loopback) and [tunnels](links-tunnel).
 
+```{warning}
+_netlab_ checks whether the number of nodes attached to a link matches the link **type**: a *p2p* link must have exactly two nodes, and a *stub* or *loopback* link must have a single node. If you get an error because you added a node to a link with an explicit **type**, remove the **type** attribute (and let _netlab_ select the link type) or change it to *lan*.
+```
+
 (links-default-pools)=
 ## Default Link Prefix Allocation
 
@@ -157,6 +161,11 @@ For example, to turn stub links into loopbacks on Arista EOS devices, use the fo
 ```
 defaults:
   devices.eos.features.stub_loopback: True
+```
+
+```{warning}
+* A loopback link must have a single node attached to it.
+* Not all devices support additional loopback interfaces; check the *Additional loopbacks* column in the [interface parameters table](platform-initial-interfaces). _netlab_ reports an error when you add a loopback link (or turn a stub link into a loopback with the **stub_loopback** setting) to a device that does not support loopback interfaces.
 ```
 
 To turn stub links into loopback interfaces on all lab devices apart from Cisco IOSv routers, set the global default to *True* and the IOSv parameter to *False*:
@@ -497,6 +506,8 @@ There are two mechanisms to change an interface name in the lab topology:
 
 * The **ifname** interface parameter specifies the desired interface name. You can use it with virtual interfaces (for example, loopbacks or tunnels) or when [configuring physical devices with _netlab_](lab-external). Do not use the **ifname** parameter to change the Ethernet interface names on virtual machines or containers.
 * Use the **ifindex** interface parameter to change the Ethernet interface names. The final interface name is derived from the **ifindex** parameter using the device-specific interface naming scheme[^INS]. Do not use the **ifindex** parameter on virtual interfaces (tunnels, loopbacks, VLANs, LAGs)
+
+_netlab_ generates the names of virtual interfaces from device-specific interface name templates. Many devices do not have templates for all virtual interface types (for example, most devices do not define the tunnel interface name template). You must set the **ifname** parameter on [tunnel interfaces](links-tunnel) and other virtual interfaces of such devices; _netlab_ reports an error if it cannot generate the interface name.
 
 [^INS]: Many devices use **ifindex** in interface name. For example, **ifindex** set to three might result in the interface name **GigabitEthernet3**. Some devices use the `slot/port` naming convention; **ifindex** set to seven might result in the interface name **GigabitEthernet1/3**.
 
