@@ -138,6 +138,7 @@ def adjust_test_paths(setup: Box) -> None:
 
   nl_dir = os.path.dirname(nl_path)
   setup.params.test_path = f'{nl_dir}/tests/integration'
+  setup.params.platform_path = f'{nl_dir}/tests/platform-integration'
   setup.params.home = os.getcwd()
   print(f'Test paths:\n{setup.params.to_yaml()}')
 
