@@ -61,6 +61,30 @@ def append_to_list(BX: typing.Optional[Box], list_name: str, item: typing.Any, f
   return BX[list_name]
 
 """
+dict_to_key_list: Given a box and a key (which could be a dotted path):
+
+* Replace a dictionary with the list of its keys, skipping keys with False values
+* Flatten nested dictionaries into dotted names. Dotted settings like plugin.bgp.session
+  (or NETLAB_PLUGIN_BGP_SESSION) create nested dictionaries, but we need 'bgp.session'
+* Leave all other values unchanged (they have to be validated by the caller)
+
+Use it to accept a dictionary of names (for example, plugins) where a list is expected.
+A dictionary is easier to extend with environment variables or CLI settings.
+"""
+def dict_to_key_list(BX: Box, key: str) -> None:
+  def key_list(d: dict, prefix: str) -> list:
+    result: list = []
+    for k,v in d.items():
+      if isinstance(v,dict) and v:                  # Non-empty dictionary => nested dotted name
+        result.extend(key_list(v,f'{prefix}{k}.'))
+      elif v is not False:                          # Skip names with False values
+        result.append(f'{prefix}{k}')
+    return result
+
+  if isinstance(BX.get(key,None),dict):
+    BX[key] = key_list(BX[key],'')
+
+"""
 Check whether attributes were removed in the specified attribute path
 """
 def removed_attributes(data: Box, path: str) -> bool:

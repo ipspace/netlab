@@ -39,6 +39,7 @@ def topology_init(topology: Box) -> None:
   augment.config.paths(topology)
   topology.nodes = augment.nodes.create_node_dict(topology.nodes)
   augment.components.normalize_components(topology)
+  augment.plugin.normalize(topology)
   augment.tools.add_tool_plugins(topology)
   augment.devices.add_device_plugins(topology)
   augment.plugin.init(topology)

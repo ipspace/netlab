@@ -22,6 +22,18 @@ module: [ ospf, bgp ]
 
 You can specify additional (system-wide) plugins in [system defaults](topo-defaults) (**defaults.plugin**) or as a CLI parameter in **[netlab create](netlab/create.md)** or **[netlab up](netlab/up.md)** commands.
 
+The **plugin** and **defaults.plugin** values can also be dictionaries. The dictionary keys are plugin names; _netlab_ skips the plugins with the value set to **False** and converts the dictionary into a list of plugin names. Use dictionaries to add plugins with environment variables or CLI settings without overwriting the plugins specified elsewhere, for example:
+
+```
+$ export NETLAB_PLUGIN_MULTILAB=True
+$ export NETLAB_PLUGIN_BGP_SESSION=True
+$ netlab up -s plugin.files=True
+```
+
+```{warning}
+You cannot add plugins with environment variables or CLI settings to a list of plugins. For example, `netlab up -s plugin.files=True` fails if the lab topology uses `plugin: [ bgp.session ]`, and `NETLAB_PLUGIN_MULTILAB=True` fails if your user defaults use `plugin: [ files ]`.
+```
+
 _netlab_ also loads the plugins required by the [external tools](extools-plugin) and the [devices](dev-device-plugin) used in the lab topology.
 
 Plugins can define their own _netlab_ attributes that you can use to configure plugin-provided functionality. For example, the [BGP sessions](plugins/bgp.session.md) plugin defines **bgp.password** attribute that can be used to enable MD5 authentication of EBGP sessions:
