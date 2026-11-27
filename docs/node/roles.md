@@ -26,6 +26,15 @@ Hosts do not have loopback interfaces (it's easiest if they have a single interf
 
 Hosts use static routes toward an adjacent [default gateway](links-gateway). On devices without the management VRF, Vagrant or containerlab sets up the IPv4 default route, and _netlab_ adds static IPv4 routes for IPv4 prefixes defined in [address pools](address-pools).
 
+If you assign IPv4 addresses manually on two LANs, Linux hosts on one LAN need a route to the other. A pool covering `10.231.31.0/24` and `10.231.32.0/24` can provide that route.
+
+```yaml
+addressing:
+  lab_hosts: {ipv4: 10.231.0.0/16, prefix: 24}
+```
+
+Each Linux host gets a route to `10.231.0.0/16` through its adjacent router, even when neither link uses the **pool** attribute. For a host named `h1`, run `netlab create -o yaml:nodes.h1.routing.static` to see the generated route.
+
 Hosts that have a management VRF (mostly network devices used as hosts) get two IPv4 default routes. Vagrant or containerlab sets up the IPv4 default route in the management VRF, and netlab adds a default route toward an adjacent router in the global routing table.
 
 Most hosts listen to IPv6 RA messages to get the IPv6 default route. _netlab_ can add an IPv6 default route[^SRv6] on devices that do not listen to RA messages.
