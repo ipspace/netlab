@@ -375,8 +375,14 @@ def validate_alt_type(data: typing.Any, data_type: Box) -> dict:
     if v_result.get('_valid',False):
       v_result['_data_type'] = at_data_type             # Return the matching alt type (needed for subtype validation)
       return v_result
-    v_alt_err.append(at if v_result.get('_value',None) == 'Invalid value' else
-                     v_result.get('_value','') or v_result.get('_type',''))
+    if v_result.get('_value',None) == 'Invalid value':  # Report the alt type for invalid values
+      if isinstance(at,str):                            # ... using its name
+        v_alt_err.append(at)
+      else:                                             # ... or a description of the alt type definition
+        valid = at_data_type.get('valid_values',[])
+        v_alt_err.append(f'{at_data_type.type} of {"/".join(map(str,valid))}' if valid else at_data_type.type)
+    else:
+      v_alt_err.append(v_result.get('_value','') or v_result.get('_type',''))
 
   return { '_alt_types': v_alt_err or alt_types }       # No alt data type matched, return the collected error messages
 

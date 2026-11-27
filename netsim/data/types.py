@@ -96,6 +96,8 @@ is left.
 def err_add_alt_types(ctx: dict, exp_type: str) -> str:
   a_types = []
   for a_type in ctx.get('_alt_types',[]):               # Skip alt type descriptions that repeat
+    if not isinstance(a_type,str):                      # Alt type defined with a dictionary, use its type name
+      a_type = a_type.get('type','')
     if a_type != exp_type and a_type not in a_types:    # ... the primary type description
       a_types.append(a_type)                            # ... or another alt type description
   if not a_types:                                       # Nothing left (or no alt types at all)?
