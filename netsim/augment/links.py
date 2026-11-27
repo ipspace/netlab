@@ -1110,7 +1110,11 @@ def check_link_type(data: Box) -> bool:
   link_type = data.get('type')
 
   if 'mtu' in data and not isinstance(data.mtu,int): # pragma: no cover
-    log.error(f'MTU parameter for link {data._linkname} should be an integer',log.IncorrectValue,'links',doc_url='links/#links-mtu')
+    log.error(
+      f'MTU parameter for link {data._linkname} should be an integer',
+      log.IncorrectValue,
+      'links',
+      doc_url='links/#links-mtu')
 
   if not link_type: # pragma: no cover (shouldn't get here)
     log.fatal(f'Internal error: link type still undefined in check_link_type: {data}','links')

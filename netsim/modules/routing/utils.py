@@ -133,7 +133,11 @@ def eval_prefixset(pfx: str, path: str, topology: Box) -> dict:
       pfx_type = 'prefix'
 
     if pfx_type not in PREFIXSET_LOOKUP:
-      log.error(f'Invalid prefix namespace {pfx_type} in {path}',category=log.FatalError,module='routing',doc_url='module/routing/#generic-routing-prefix-set')
+      log.error(
+        f'Invalid prefix namespace {pfx_type} in {path}',
+        category=log.FatalError,
+        module='routing',
+        doc_url='module/routing/#generic-routing-prefix-set')
       return {}
 
     result = PREFIXSET_LOOKUP[pfx_type](pfx,path,topology)

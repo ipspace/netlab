@@ -420,7 +420,11 @@ def validate_trunk_vlan_list(link: Box) -> bool:
 
     for vname in o_intf.vlan.trunk.keys():                            # OK, now we can iterate over all VLANs in this interfaces' trunk
       if not isinstance(vname,str):
-        log.error(f'VLAN names in trunks ({vname}) must be strings:\n... {link}',log.IncorrectValue,'vlan',doc_url='module/vlan/#module-vlan-interface')
+        log.error(
+          f'VLAN names in trunks ({vname}) must be strings:\n... {link}',
+          log.IncorrectValue,
+          'vlan',
+          doc_url='module/vlan/#module-vlan-interface')
         return False
       vlan_found = False
       for i_intf in link.interfaces:                                  # ... and over all other other interfaces

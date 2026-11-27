@@ -45,7 +45,11 @@ def expand_acl_address_entry(p_entry: Box, path: str, topology: Box) -> Box:
       ifname = p_entry.interface
       intf_list = [intf for intf in intf_list if intf.get("ifname") in ifname]
       if not intf_list:
-        log.error(f"Node {node_name} has no interface {ifname} referenced in ACL entry", log.IncorrectValue, "acl", doc_url='module/routing/#routing-acl-matching-addr')
+        log.error(
+          f"Node {node_name} has no interface {ifname} referenced in ACL entry",
+          log.IncorrectValue,
+          "acl",
+          doc_url='module/routing/#routing-acl-matching-addr')
         continue
     elif "role" in p_entry:
       role = p_entry.role

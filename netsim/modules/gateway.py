@@ -126,11 +126,19 @@ def process_gw_id(
   if gw_id is None:
     if not required:
       return
-    log.error(f'{path} gateway.id parameter is missing',log.MissingValue,'gateway',doc_url='module/gateway/#gateway-global')
+    log.error(
+      f'{path} gateway.id parameter is missing',
+      log.MissingValue,
+      'gateway',
+      doc_url='module/gateway/#gateway-global')
     return
   
   if not data.is_true_int(gw_id):
-    log.error(f'{path} gateway.id parameter is not integer',log.IncorrectValue,'gateway',doc_url='module/gateway/#gateway-global')
+    log.error(
+      f'{path} gateway.id parameter is not integer',
+      log.IncorrectValue,
+      'gateway',
+      doc_url='module/gateway/#gateway-global')
     return
   
   if gw_id < 0:

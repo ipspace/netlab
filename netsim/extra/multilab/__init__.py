@@ -139,7 +139,11 @@ def init(topology: Box) -> None:
   abort = False
   for kw in ['id','change']:                          # Check that we have all default parameters needed for multilab to work
     if not kw in mlab:
-      log.error(f'multilab plugin requires defaults.multilab.{kw} parameter',log.MissingValue,'multilab',doc_url='plugins/multilab/#plugin-multilab-usage')
+      log.error(
+        f'multilab plugin requires defaults.multilab.{kw} parameter',
+        log.MissingValue,
+        'multilab',
+        doc_url='plugins/multilab/#plugin-multilab-usage')
       abort = True
 
   if abort:
