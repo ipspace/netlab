@@ -10,7 +10,7 @@ from box import Box, BoxList
 
 from .. import data
 from ..data.global_vars import get_const
-from ..data.types import must_be_dict, must_be_id, must_be_list, must_be_string
+from ..data.types import must_be_dict, must_be_id, must_be_list
 from ..data.validate import get_object_attributes, validate_attributes
 from ..modules import get_effective_module_attribute
 
@@ -547,7 +547,7 @@ def assign_link_prefix(
     link.prefix = data.get_box({ 'unnumbered': True })
     return link.prefix
 
-  if must_be_string(link,'pool',link_path):
+  if link.get('pool',None):
     if not link.pool in addr_pools:
       log.error(
         f'Unknown address pool {link.pool} used in {link_path}',
@@ -556,7 +556,7 @@ def assign_link_prefix(
         doc_url='links/#links-custom-pools')
     pools = [ link.pool ] + pools
   else:
-    if must_be_string(link,'role',link_path):
+    if link.get('role',None):
       pools = [ link.get('role') ] + pools
 
   pfx_list = addressing.get(addr_pools,pools)

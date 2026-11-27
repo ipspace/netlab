@@ -249,7 +249,6 @@ class FHRP(_Module):
         intf.pop('gateway',None)
       return
     else:                                       # Otherwise merge global defaults with links settings (because we usually don't do that)
-      check_gw_protocol(link.gateway,f'{link._linkname}',topology)
       link.gateway = global_gateway + link.gateway
 
     for k in ('id','protocol'):
@@ -261,15 +260,6 @@ class FHRP(_Module):
           'gateway',
           doc_url='module/gateway/#gateway-link')
         return
-
-    if not data.is_true_int(link.gateway.id):
-      log.error(
-        f'Gateway.id parameter in {link._linkname} must be an integer\n' + \
-          strings.extra_data_printout(strings.format_structured_dict(link)),
-        log.IncorrectType,
-        'gateway',
-        doc_url='module/gateway/#gateway-link')
-      return
 
     if link.gateway.id == -1:
         log.error(

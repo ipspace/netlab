@@ -8,7 +8,6 @@ from box import Box
 
 from ..augment import addressing, devices, groups, links
 from ..data import get_box, global_vars
-from ..data.types import must_be_list
 from ..data.validate import validate_attributes
 from ..utils import log
 from ..utils import routing as utils_routing
@@ -279,8 +278,6 @@ def set_import_export_rt(obj : Box, topology: Box) -> None:
 
         vdata[rtname] = [ vdata.rd ]                                  # No usable parent RT, set RT to RD
         continue
-
-      must_be_list(vdata,rtname,f'{obj_id}.{vname}')
 
       rtlist = []     # The final parsed and looked-up list of RT values
       for rtvalue in vdata[rtname]:
