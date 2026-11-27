@@ -44,7 +44,11 @@ def init(topology: Box) -> None:
   servers = ms.get("servers", Box({}))
 
   if not servers:
-    log.error('multiserver plugin requires a "servers" dictionary', log.MissingValue, "multiserver", doc_url='plugins/multiserver/#multiserver-servers')
+    log.error(
+      'multiserver plugin requires a "servers" dictionary',
+      log.MissingValue,
+      "multiserver",
+      doc_url='plugins/multiserver/#multiserver-servers')
     return
 
   _validate_servers(servers)
@@ -445,7 +449,11 @@ def _classify_links(topology: Box, assignment: dict, replicated: set, vni_base: 
       link._ms = Box({"cross": False, "servers": sorted(link_servers)})
 
   if vni > 16777215:
-    log.error(f"VXLAN VNI overflow: {vni} exceeds 24-bit maximum (16777215)", log.IncorrectValue, "multiserver", doc_url='plugins/multiserver/#multiserver-vxlan')
+    log.error(
+      f"VXLAN VNI overflow: {vni} exceeds 24-bit maximum (16777215)",
+      log.IncorrectValue,
+      "multiserver",
+      doc_url='plugins/multiserver/#multiserver-vxlan')
 
   return vni - vni_base
 

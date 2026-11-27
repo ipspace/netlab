@@ -146,7 +146,11 @@ def expand_group_members(
   g_names: typing.List[str] = []
   for m_id in g_members:
     if not isinstance(m_id,str):
-      log.error(f'Member {m_id} of {g_type} group {g_name} is not a string',log.IncorrectType,module='groups',doc_url='groups/#groups-members')
+      log.error(
+        f'Member {m_id} of {g_type} group {g_name} is not a string',
+        log.IncorrectType,
+        module='groups',
+        doc_url='groups/#groups-members')
       continue
 
     # Simple case: the member belongs to the group objects
@@ -453,7 +457,11 @@ def check_recursive_chain(topology: Box, chain: list, group: str) -> typing.Opti
   for m in topology.groups[group].members:
     if m in chain:
       chain = chain + [ m ]
-      log.error(f'Recursive group definition chain {chain}', log.IncorrectValue, 'groups', doc_url='groups/#groups-hierarchy')
+      log.error(
+        f'Recursive group definition chain {chain}',
+        log.IncorrectValue,
+        'groups',
+        doc_url='groups/#groups-hierarchy')
       return chain
     if m in topology.groups:
       if check_recursive_chain(topology,chain,m):
