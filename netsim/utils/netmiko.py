@@ -233,9 +233,10 @@ def execute(
   except Exception as ex:
     if not quiet:
       log.error(
-        f'Cannot execute a SSH command on {n_name}: {str(ex)}',
+        f'Cannot execute a SSH command on {n_name}',
         module='netmiko',
-        skip_header=True)
+        skip_header=True,
+        more_data=str(ex))
     return None
 
   try:
@@ -253,9 +254,10 @@ def execute(
   except Exception as ex:
     if not quiet:
       log.error(
-        f'Cannot fetch results of a SSH command on {n_name}: {str(ex)}',
+        f'Cannot fetch results of a SSH command on {n_name}',
         module='netmiko',
-        skip_header=True)
+        skip_header=True,
+        more_data=str(ex))
     return None
   finally:
     stdout.channel.close()
@@ -285,9 +287,10 @@ def command(
   except Exception as ex:
     if not quiet:
       log.error(
-        f'Cannot execute a command on {n_name}: {str(ex)}',
+        f'Cannot execute a command on {n_name}',
         module='netmiko',
-        skip_header=True)
+        skip_header=True,
+        more_data=str(ex))
     return None
 
   if cmd_marker not in output:

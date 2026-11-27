@@ -418,8 +418,9 @@ def run_up(cli_args: typing.List[str]) -> None:
     stats.update_topo_stats(topology)
   except Exception as ex:
     log.warning(
-      text=f'Cannot update usage stats: {str(ex)}',
-      module='stats')
+      text='Cannot update usage stats',
+      module='stats',
+      more_data=str(ex))
 
   if args.validate:
     if args.no_config:

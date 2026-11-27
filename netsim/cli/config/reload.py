@@ -268,11 +268,12 @@ def reload_with_netmiko(nm_nodes: dict, nodeset: list, topology: Box) -> list:
 
     except Exception as ex:
       log.error(
-        f'Failed to copy/replace configuration for node {n_name}: {ex}',
+        f'Failed to copy/replace configuration for node {n_name}',
         more_hints=f'Examine the session log in node_files/{n_name}/netmiko.log',
         category=log.FatalError,
         module='netmiko',
-        skip_header=True)
+        skip_header=True,
+        more_data=str(ex))
 
     return
 

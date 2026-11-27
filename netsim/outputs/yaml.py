@@ -51,7 +51,7 @@ class YAML(_TopologyOutput):
         try:
           result = eval(fmt,cleantopo) if fmt != '.' else cleantopo
         except Exception as ex:
-          log.fatal(f'Error trying to evaluate {fmt}: {str(ex)}')
+          log.fatal(f'Error trying to evaluate {fmt}',more_data=str(ex))
           return
         cleantopo = result
         break

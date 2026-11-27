@@ -116,7 +116,7 @@ def get_ansible_collection(cname: str) -> typing.Optional[dict]:
           ANSIBLE_COLLECTIONS[ack] = acv
 
   except Exception as ex:
-    log.fatal(f'Cannot parse the ansible-galaxy JSON printout: {ex}')
+    log.fatal('Cannot parse the ansible-galaxy JSON printout',more_data=str(ex))
 
   return ANSIBLE_COLLECTIONS.get(cname,None)
 

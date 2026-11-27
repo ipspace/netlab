@@ -114,7 +114,7 @@ def run(cli_args: typing.List[str]) -> None:
   try:
     topology = _read.system_defaults(include_user=user_defaults)
   except Exception as ex:
-    log.fatal(f"Cannot read system settings: {str(ex)}")
+    log.fatal("Cannot read system settings",more_data=str(ex))
 
   # Skip meta devices when displaying device/module support
   DEVICES_TO_SKIP.extend(

@@ -57,7 +57,11 @@ def deploy_internal_config(nodeset: list, topology: Box, args: argparse.Namespac
         INTERNAL_CONFIG_MECHANISMS[config_mode](n_data,topology,n_deploy)
       execute_node("deploy_node_config", n_data, topology, deploy_list=n_deploy)
     except Exception as ex:
-      log.error(f"Failed to deploy configuration on {n_name}: {ex}",category=log.FatalError,module='initial')
+      log.error(
+        f"Failed to deploy configuration on {n_name}",
+        category=log.FatalError,
+        module='initial',
+        more_data=str(ex))
 
   with concurrent.futures.ThreadPoolExecutor() as executor:
     executor.map(deploy_node, nodeset)

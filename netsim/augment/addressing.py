@@ -69,9 +69,10 @@ def normalize_prefix(pfx: typing.Union[str,Box]) -> Box:
       return str(ipaddress.ip_network(ip)) if isinstance(ip,str) else ip
     except Exception as ex:
       log.error(
-        f'Cannot parse address prefix: {ex}',
+        'Cannot parse address prefix',
         log.IncorrectValue,
         'addressing',
+        more_data=str(ex),
         doc_url='addressing/#address-pool-specs')
       return False
 

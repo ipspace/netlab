@@ -221,14 +221,14 @@ def open_output_file(fname: str) -> typing.TextIO:
   try:
     return open(fname,mode='w')
   except Exception as ex:
-    log.fatal(f'Cannot open file {fname} for writing: {str(ex)}')
+    log.fatal(f'Cannot open file {fname} for writing',more_data=str(ex))
 
 def close_output_file(f: typing.TextIO) -> None:
   try:
     if f.name != '<stdout>':
       f.close()
   except Exception as ex:
-    log.fatal(f'Cannot close file {f.name}: {ex}')
+    log.fatal(f'Cannot close file {f.name}',more_data=str(ex))
 
 def create_file_from_text(fname: str, txt: str) -> None:
   fh = open_output_file(fname)

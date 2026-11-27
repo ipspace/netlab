@@ -94,12 +94,16 @@ def get_lab_status(collect_status: dict) -> Box:
           if items[2] == 'state-human-short':
             stat_box[items[1]].status = items[3]
     except Exception as ex:
-      log.error(f'Cannot get Vagrant status: {ex}',category=log.FatalError,module='libvirt')
+      log.error('Cannot get Vagrant status',category=log.FatalError,module='libvirt',more_data=str(ex))
       return stat_box
 
     if collect_status.get('memory',False):
       add_memory_usage(stat_box)
     return stat_box
   except Exception as ex:
-    log.error(f'Cannot execute "vagrant status --machine-readable": {ex}',category=log.FatalError,module='libvirt')
+    log.error(
+      'Cannot execute "vagrant status --machine-readable"',
+      category=log.FatalError,
+      module='libvirt',
+      more_data=str(ex))
     return get_empty_box()

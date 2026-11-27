@@ -68,7 +68,7 @@ def clab_config_adjust(infile: str, outfile: str, configs: str) -> None:
   try:
     cfglist = os.listdir(configs)
   except Exception as ex:
-    log.fatal(f'Cannot read the contents of {configs} directory: {ex}')
+    log.fatal(f'Cannot read the contents of {configs} directory',more_data=str(ex))
 
   for n in list(clab.topology.nodes.keys()):
     cfgfile = find_config_file(n,cfglist)
@@ -100,7 +100,7 @@ def clab_tarball(args: argparse.Namespace, settings: Box) -> None:
   try:
     subprocess.check_call(['tar','cfz' if args.quiet else 'cvfz',tarball,'clab.config.yml',args.output])
   except Exception as ex:
-    log.fatal(f"Cannot start tar: {ex}")
+    log.fatal("Cannot start tar",more_data=str(ex))
 
   if args.cleanup:
     external_commands.print_step(4,"Cleanup",spacing = True)
