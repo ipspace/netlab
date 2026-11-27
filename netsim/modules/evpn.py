@@ -4,7 +4,7 @@ from box import Box
 
 from .. import data
 from ..augment import devices
-from ..data.types import must_be_dict, must_be_int, must_be_string
+from ..data.types import must_be_dict, must_be_int
 from ..utils import log
 from ..utils import routing as _rp_utils
 from . import _dataplane, _Module, _routing
@@ -217,13 +217,6 @@ def get_vlan_bundle_flag(vlan: Box, vname: str, topology: Box) -> bool:
   if not vrf.get('evpn.bundle',None):                               # VRF does not have evpn.bundle attribute ==> VLAN service
     return False
 
-  must_be_string(
-    parent=vrf,
-    key='evpn.bundle',
-    path=f'vrfs.{vlan.vrf}',
-    module='evpn',
-    valid_values=topology.defaults.evpn.attributes.bundle)          # Validate evpn.bundle value
-
   return True
 
 """
@@ -260,8 +253,6 @@ Validate transit VNI values and register them with the VNI set
 def register_static_transit_vni(topology: Box) -> None:
   vni_set = _dataplane.get_id_set('vni')
   for vrf_name,vrf_data in topology.get('vrfs',{}).items():
-    must_be_dict(vrf_data,'evpn',f'vrfs.{vrf_name}',create_empty=False)
-
     transit_vni = vrf_data.get('evpn.transit_vni',None)
     if data.is_true_int(transit_vni):
       if transit_vni in vni_set:
@@ -278,12 +269,7 @@ Check evpn.transport from user, default to VXLAN if not provided
 """
 def check_evpn_transport(topology: Box) -> str:
   global VALID_TRANSPORTS
-  setting = must_be_string(
-      parent=topology,
-      key='evpn.transport',
-      path='topology',
-      valid_values=VALID_TRANSPORTS,
-      module='evpn')
+  setting = topology.get('evpn.transport',None)    # Validated as a global attribute
   if not setting:
     setting = VALID_TRANSPORTS[0]                 # Default to VXLAN
   if setting not in topology.get('module',[]):    # Warn if user sets it without adding the module

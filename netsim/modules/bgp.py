@@ -9,7 +9,6 @@ from box import Box
 from .. import data
 from ..augment import devices, groups
 from ..data import global_vars
-from ..data.types import must_be_asn, must_be_list
 from ..data.validate import validate_item
 from ..utils import log
 from ..utils import routing as _rp_utils
@@ -59,30 +58,6 @@ def check_bgp_parameters(node: Box, topology: Box) -> None:
       'bgp',
       doc_url='module/bgp/#bgp-node-params')
     return
-
-  must_be_asn(parent=node,key='bgp.as',path=f'nodes.{node.name}',module='bgp')
-
-def validate_bgp_sessions(node: Box, sessions: Box, attribute: str) -> bool:
-  OK = True
-  for k in list(sessions.keys()):
-    if not k in log.AF_LIST:
-      log.error(
-        f'Invalid address family in bgp.{attribute} in node {node.name}',
-        log.IncorrectValue,
-        'bgp',
-        doc_url='module/bgp/#bgp-advanced-node')
-      OK = False
-    else:
-      if must_be_list(
-          parent=sessions,
-          key=k,
-          path=f'nodes.{node.name}.bgp.{attribute}',
-          true_value=BGP_VALID_SESSION_TYPE,
-          valid_values=BGP_VALID_SESSION_TYPE,
-          module='bgp') is None:
-        OK = False        
-
-  return OK
 
 """
 find_bgp_rr: find route reflectors in the specified autonomous system
@@ -486,8 +461,6 @@ def build_bgp_sessions(node: Box, topology: Box) -> None:
 
   node.bgp.neighbors = []
   bgp_sessions = node.bgp.get('sessions') or data.get_box(BGP_DEFAULT_SESSIONS)
-  if not validate_bgp_sessions(node,bgp_sessions,'sessions'):
-    return
 
   build_ibgp_sessions(node,bgp_sessions,topology)
   build_ebgp_sessions(node,bgp_sessions,topology)
@@ -512,8 +485,6 @@ def build_bgp_sessions(node: Box, topology: Box) -> None:
       return
 
   activate = node.bgp.get('activate') or data.get_box(BGP_DEFAULT_SESSIONS)
-  if not validate_bgp_sessions(node,activate,'activate'):
-    return
 
   activate_bgp_default_af(node,activate,topology)
 

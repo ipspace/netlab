@@ -107,25 +107,14 @@ def validate_mpls_bgp_parameter(node: Box, feature: str) -> bool:
       if not af in node.mpls[feature]:
         continue
 
-      if must_be_list(node.mpls[feature],af,f'nodes.{node.name}.mpls.{feature}') is None:
-        return False
-
       if not must_be_list(
           parent=node.mpls,
           key=f'{feature}.{af}',
-          path=f'nodes.{node.name}.mpls.{feature}.{af}',
+          path=f'nodes.{node.name}.mpls',
           valid_values=BGP_SESSIONS,
           create_empty=False,
           module='mpls'):
         return False
-
-  else:
-    log.error(
-      f'nodes.{node.name}.mpls.{feature} parameter must be a boolean, list, or dictionary',
-      log.IncorrectValue,
-      'mpls',
-      doc_url='module/mpls/#mpls-params')
-    return False
 
   return True
 
