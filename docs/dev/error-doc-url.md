@@ -1,7 +1,7 @@
 (dev-documentation-url)=
 # Adding Documentation URLs to log.error/log.warning calls
 
-The `utils.log.error` function is the main error-reporting function (`warning` calls it, and `fatal` should as well). It can accept `doc_url` (pointer to relevant documentation) and `doc_url_text` (formatting of the hint text) among its many parameters. This document describes those two parameters.
+The `utils.log.error` function is the main error-reporting function (`warning` and `fatal` call it, so they accept the same optional parameters). It can accept `doc_url` (pointer to relevant documentation) and `doc_url_text` (formatting of the hint text) among its many parameters. This document describes those two parameters.
 
 The `doc_url` parameter points to the relevant documentation page. While you can use absolute URLs to point to non-netlab documentation, internal pointers should be relative URLs (`module/stp/`, not `https://netlab.tools/module/stp/`) and should include [an anchor](dev-documentation-url-anchor).
 
