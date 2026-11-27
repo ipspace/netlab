@@ -55,8 +55,9 @@ def post_transform(topology: Box) -> None:
     # in a different domain.
     (b_domain,b_as) = domain_as.split(':')
     log.error(
-      f'BGP AS {b_as} is using route reflectors, but has no RRs in domain {b_domain}.\n' + \
-      f'... You will have no IBGP route propagation within AS {b_as} in domain {b_domain}\n' + \
-      f'... Make sure at least one router in AS {b_as} in domain {b_domain} is a route reflector',
+      f'BGP AS {b_as} is using route reflectors, but has no RRs in domain {b_domain}',
       log.IncorrectValue,'bgp.domain',
+      more_hints=[
+        f'You will have no IBGP route propagation within AS {b_as} in domain {b_domain}',
+        f'Make sure at least one router in AS {b_as} in domain {b_domain} is a route reflector' ],
       doc_url='plugins/bgp.domain/#plugin-bgp-domain')

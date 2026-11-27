@@ -201,7 +201,7 @@ class OSPF(_Module):
         _routing.passive(intf,'ospf',topology)              # Set passive flag on other OSPF interfaces
         err = _routing.network_type(intf,'ospf',['point-to-point','point-to-multipoint','broadcast','non-broadcast'])
         if err:
-          log.error(f'{err}\n... node {node.name} link {intf}')
+          log.error(err,more_data=f'node {node.name} link {intf}')
 
     if not ospf_unnumbered(node,features):
       return

@@ -266,8 +266,8 @@ def create_show_command(host: Box, rest: list) -> list:
 def create_command_list(host: Box, args: argparse.Namespace, rest: list) -> list:
   if rest and args.show:
     log.fatal(
-      'Cannot run a command and a show command at the same time.\n' +
-      '... Make --show the first argument after the node name')
+      'Cannot run a command and a show command at the same time',
+      more_hints='Make --show the first argument after the node name')
 
   if args.show:
     show_cmd = create_show_command(host,args.show)

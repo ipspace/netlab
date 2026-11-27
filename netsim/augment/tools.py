@@ -18,9 +18,10 @@ def validate_tool_attributes(topology: Box) -> None:
   for tool in topology.tools.keys():                # Iterate over tools     
     if not tool in topology.defaults.tools:         # Check that the tool is valid
       log.error(
-        f'Invalid tool {tool}\n... valid tools are {",".join(topology.defaults.tools.keys())}',
+        f'Invalid tool {tool}',
         log.IncorrectValue,
         'topology',
+        more_hints=f'valid tools are {",".join(topology.defaults.tools.keys())}',
         doc_url='extools/#extools-list')
       continue
     if not 'runtime' in topology.tools[tool]:       # Check that the tool has a runtime defined
@@ -35,9 +36,10 @@ def merge_tool_defaults(topology: Box) -> None:
     if not tool_data[tool_data.runtime] or not 'up' in tool_data[tool_data.runtime]:            
       valid_runtimes = [k for k in tool_data.keys() if 'up' in k ]
       log.error(
-        f'Invalid runtime {tool_data.runtime} for tool {tool}\n... valid runtimes are {",".join(valid_runtimes)}',
+        f'Invalid runtime {tool_data.runtime} for tool {tool}',
         log.IncorrectValue,
         'topology',
+        more_hints=f'valid runtimes are {",".join(valid_runtimes)}',
         doc_url='extools/#tools-intro')
 
 """

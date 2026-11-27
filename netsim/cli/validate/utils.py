@@ -70,7 +70,7 @@ def get_entry_value(v_entry: Box, action: str, node: Box, topology: Box) -> typi
       value = templates.render_template(data=node,j2_text=value)
       node.pop('hostvars',None)                                   # ... but only while evaluating J2 template
     except Exception as ex:
-      log.fatal(f'Jinja2 error rendering {value}\n... {ex}')
+      log.fatal(f'Jinja2 error rendering {value}',more_data=str(ex))
 #    print(f"{action} value for {node.name}: {value}")
 
   return value  

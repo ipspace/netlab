@@ -489,7 +489,7 @@ def set_fhrp_gateway(link: Box, pfx_list: Box, nodes: Box, link_path: str) -> No
     except Exception as ex:
       log.error(
         f'Cannot generate gateway IP address on {link_path}' + \
-        f' from [af] prefix {link.prefix[af]} and gateway ID {link.gateway.id}\n',
+        f' from {af} prefix {link.prefix[af]} and gateway ID {link.gateway.id}',
         more_hints=str(ex),
         category=log.IncorrectValue,
         module='links',

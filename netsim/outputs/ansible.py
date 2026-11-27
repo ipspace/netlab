@@ -236,8 +236,9 @@ def ansible_config(
                 extra_path=_files.get_search_path('templates'))
   except Exception as ex:
     log.fatal(
-      text=f"Error rendering ansible.cfg\n{strings.extra_data_printout(str(ex))}",
-      module='ansible')
+      text="Error rendering ansible.cfg",
+      module='ansible',
+      more_data=str(ex))
 
   _files.create_file_from_text(config_file,cfg_text)
   if not log.QUIET:

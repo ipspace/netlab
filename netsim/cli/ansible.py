@@ -60,7 +60,7 @@ def inventory(name: str) -> typing.Optional[dict]:
     try:
       subprocess.run(['ansible-inventory','-h'],capture_output=True,check=True)
     except Exception as ex:
-      log.fatal(f'Cannot execute ansible-inventory command\n  {ex}','inventory')
+      log.fatal('Cannot execute ansible-inventory command','inventory',more_data=str(ex))
 
     log.fatal('Cannot get Ansible inventory data for %s with ansible-inventory. Is the host name correct?' % name,'inventory')
 

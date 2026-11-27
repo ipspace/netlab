@@ -254,19 +254,19 @@ class FHRP(_Module):
     for k in ('id','protocol'):
       if not k in link.gateway or not link.gateway[k]:
         log.error(
-          f'Gateway attribute {k} is missing in {link._linkname}\n' + \
-          strings.extra_data_printout(strings.format_structured_dict(link)),
+          f'Gateway attribute {k} is missing in {link._linkname}',
           log.MissingValue,
           'gateway',
+          more_data=strings.format_structured_dict(link),
           doc_url='module/gateway/#gateway-link')
         return
 
     if link.gateway.id == -1:
         log.error(
-          f'Cannot use -1 as the gateway ID in {link._linkname} -- that would be the broadcast address\n' + \
-          strings.extra_data_printout(strings.format_structured_dict(link)),
+          f'Cannot use -1 as the gateway ID in {link._linkname} -- that would be the broadcast address',
           log.IncorrectValue,
           'gateway',
+          more_data=strings.format_structured_dict(link),
           doc_url='module/gateway/#gateway-link')
 
     # Finally, some interfaces might have had 'gateway' set to True. Now that we have the

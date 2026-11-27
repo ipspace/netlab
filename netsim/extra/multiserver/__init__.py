@@ -608,14 +608,13 @@ def pre_shell_pre_probe(topology: Box) -> None:
   """
   abort = topology.defaults.get("multiserver", {}).get("_control_node_abort", None)
   if abort:
-    folders = "\n".join(f"  - {f}/" for f in abort)
     log.fatal(
-      "multiserver: per-server configurations have been generated; "
-      "'netlab up' will not start the merged topology on the controller.\n"
-      f"Generated server folders:\n{folders}\n"
-      "Copy each folder to its worker and run 'netlab up --snapshot' there "
-      "(see docs/plugins/multiserver.md, Deployment Workflow).",
+      "per-server configurations have been generated; "
+      "'netlab up' will not start the merged topology on the controller",
       "multiserver",
+      more_data=["Generated server folders:"] + [f"  - {f}/" for f in abort],
+      more_hints="Copy each folder to its worker and run 'netlab up --snapshot' there",
+      doc_url="plugins/multiserver/#multiserver-deployment",
     )
 
   if "paths" in topology.get("defaults", {}):

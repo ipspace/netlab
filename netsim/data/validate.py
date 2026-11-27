@@ -92,15 +92,15 @@ def get_valid_attributes(
     if isinstance(add_attr,str):                            # Got a specific data type?
       if valid:                                             # Have we already collected something?
         log.fatal(                                          # ... bad karma, inconsistent validation requirements
-          f'Internal error trying to build list of attributes for {attr_list} -- unexpected value at {atlist}\n' +
-          f'... attributes: {attributes}')
+          f'Internal error trying to build list of attributes for {attr_list} -- unexpected value at {atlist}',
+          more_data=f'attributes: {attributes}')
 
       return add_attr
 
     if not isinstance(add_attr,Box):
       log.fatal(                                            # ... dang, someone messed up. Abort, abort, abort...
-        f'Internal error: Expected dictionary for {atlist} attributes\n' +
-        f'... attributes: {attributes}')
+        f'Internal error: Expected dictionary for {atlist} attributes',
+        more_data=f'attributes: {attributes}')
 
     no_propagate = f'{atlist}_no_propagate'                 # No-propagate list excluded only for non-first attribute category
     if idx:                                                 # Special handling for secondary namespaces

@@ -24,8 +24,9 @@ def render_from_settings(settings: Box, fmt: str, topo: Box) -> str:
       extra_path=EXTRA_PATH)+"\n"
   except Exception as ex:
     log.fatal(
-      text=f"Error rendering topology format {fmt}\n{strings.extra_data_printout(str(ex))}",
-      module='report')
+      text=f"Error rendering topology format {fmt}",
+      module='report',
+      more_data=str(ex))
     return ""
 
 def render_from_file(fmt: str, topo: Box) -> str:
@@ -45,8 +46,8 @@ def render_from_file(fmt: str, topo: Box) -> str:
     return ""
   except Exception as ex:
     log.error(
-      text=f"Error rendering {fmt}\n{strings.extra_data_printout(str(ex))}",
-      more_data=templates.template_error_location(ex),
+      text=f"Error rendering {fmt}",
+      more_data=[ str(ex) ] + templates.template_error_location(ex),
       category=log.FatalError,
       module="report",
       skip_header=True,
