@@ -122,7 +122,7 @@ EVPN module supports these default/global/node parameters:
 
 EVPN-related VLAN parameters are set on the **vlans** dictionary. You can set the following parameters for every VLAN using VLAN-Based Service:
 
-* **evpn.evi**: EVPN Instance identifier.
+* **evpn.evi**: EVPN Instance identifier (an integer between 1 and 65535).
 * **evpn.rd**: EVPN Instance route distinguisher. Default: **bgp.router_id**:**evpn.evi**
 * **evpn.import** and **evpn.export**: Import and export route targets (not currently checked).
 
@@ -164,7 +164,7 @@ IRB is configured whenever EVPN-enabled VLANs in a VRF contain IPv4 or IPv6 addr
 The **evpn.transit_vni** parameter must specify a globally unique VNI value. It could be set to:
 
 * *True*: EVPN configuration module auto-assigns a unique VNI to the VRF.
-* An *integer value*: static VNI assignment, checked for uniqueness
+* An *integer value* between 4096 and 16777215: static VNI assignment, checked for uniqueness
 * Name of *another VRF*: the **evpn.transit_vni** value is copied from that VRF. Use this setting for complex topologies where VRFs with different connectivity requirements have to share the transit VXLAN segment.
 
 (evpn-asymmetric-irb)=

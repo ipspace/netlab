@@ -290,13 +290,7 @@ def set_import_export_rt(obj : Box, topology: Box) -> None:
               doc_url='module/vrf/#vrf-rd-rt')
             continue
           rtvalue = f'{asn}:{rtvalue}'
-        elif not isinstance(rtvalue,str):   # If RT is not an integer, it really should be a string
-          log.error(f'{rtname} value {rtvalue} in VRF {vname} in {obj_id} should be a string or an integer',
-            log.IncorrectValue,
-            'vrf',
-            doc_url='module/vrf/#vrf-rd-rt')
-          continue
-        else:
+        else:                               # Otherwise, it's a string (checked during attribute validation)
           if ':' in rtvalue:                # If there's a colon in RT value, then we're assuming N:N format
             if parse_rdrt_value(rtvalue) is None:
               log.error(f'{rtname} value {rtvalue} in VRF {vname} in {obj_id} is not in valid N:N format',
