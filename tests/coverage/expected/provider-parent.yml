@@ -1,0 +1,131 @@
+input:
+- coverage/input/provider-parent.yml
+- package:topology-defaults.yml
+links:
+- _linkname: links[1]
+  interfaces:
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.1/30
+    node: r1
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.2/30
+    node: r2
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  type: p2p
+module:
+- services
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+    box: registry.example.com/ceos:4.34.1F
+    device: eos
+    id: 1
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      ipv4: 10.1.0.1/30
+      kube:
+        name: et1
+      linkindex: 1
+      mac_address: caf0.0001.0001
+      name: r1 -> r2
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.2/30
+        node: r2
+      type: p2p
+    kube:
+      env:
+        INTFTYPE: et
+        KUBE: true
+      kind: ceos
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: Management0
+      ipv4: 192.168.121.101
+      mac: ca:fe:00:01:00:00
+    name: r1
+    role: router
+  r2:
+    af:
+      ipv4: true
+    box: quay.io/frrouting/frr:10.7.1
+    device: frr
+    id: 2
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      mtu: 1500
+      name: r2 -> r1
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.1/30
+        node: r1
+      type: p2p
+    kube:
+      config_templates:
+        hosts: /etc/hosts:shared
+      kind: frr
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.102
+      mac: ca:fe:00:02:00:00
+    module:
+    - services
+    mtu: 1500
+    name: r2
+    role: router
+    services:
+      dns:
+        domain: netlab.local
+  r3:
+    af:
+      ipv4: true
+    box: vrnetlab/vr-csr:17.03.04
+    device: csr
+    id: 3
+    interfaces: []
+    kube:
+      env:
+        CLAB_MGMT_PASSTHROUGH: 'true'
+      kind: cisco_csr1000v
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.3/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: GigabitEthernet1
+      ipv4: 192.168.121.103
+      mac: ca:fe:00:03:00:00
+    min_mtu: 1500
+    name: r3
+    role: router
+provider: kube
+services:
+  dns:
+    domain: netlab.local

@@ -8,6 +8,8 @@ from enum import Enum
 from box import Box
 
 from .. import data
+from ..data import validate
+from ..data.types import must_be_provider
 from ..utils import log, strings
 
 """
@@ -237,6 +239,67 @@ def process_device_inheritance(topology: Box) -> None:
     process_child_device(dname,devices)
 
 """
+process_provider_inheritance: for providers with 'parent' attribute merge the device settings for
+the parent provider with the device settings for the child provider.
+
+The child provider thus uses the device settings of the parent provider (for example, container
+images or interface names) unless the device overrides them with settings for the child provider.
+The provider inheritance is processed after the device inheritance, so the device settings for
+the parent provider already include the settings inherited from the parent device.
+
+The main work is done in the process_child_provider function that is called recursively to process
+multi-level inheritance. Circular references are broken at a random place in the ring because the
+provider is marked as processed before the recursive call
+"""
+def process_child_provider(pname: str, topology: Box, processed: list) -> None:
+  if pname in processed:                                    # Provider already processed, nothing to do
+    return
+  processed.append(pname)
+
+  providers = topology.defaults.providers
+  if not isinstance(providers[pname],Box):                  # The provider settings have not been validated yet
+    log.error(
+      f'Settings of provider {pname} (defaults.providers.{pname}) must be a dictionary',
+      category=log.IncorrectType,
+      module='providers')
+    return
+
+  if 'parent' not in providers[pname]:                      # This provider is not a child provider
+    return
+
+  p_parent = must_be_provider(providers[pname],'parent',f'defaults.providers.{pname}',module='providers')
+  if not p_parent:                                          # Invalid parent provider, already reported
+    return
+
+  process_child_provider(p_parent,topology,processed)       # Process inheritance in parent provider
+  for dname,ddata in topology.defaults.devices.items():
+    if p_parent not in ddata:                               # No parent provider settings for this device
+      continue
+    if not isinstance(ddata[p_parent],Box):                 # The device settings have not been validated yet
+      log.error(
+        f'Settings of device {dname} for provider {p_parent} (defaults.devices.{dname}.{p_parent}) must be a dictionary',
+        category=log.IncorrectType,
+        module='providers')
+      continue
+    try:
+      ddata[pname] = data.get_box(ddata[p_parent].to_dict()) + ddata.get(pname,{})
+      data.remove_null_values(ddata[pname])                 # Remove the settings the child provider set to null
+    except Exception as ex:
+      log.error(
+        f'Cannot merge settings of device {dname} for provider {pname} with provider {p_parent}',
+        more_data=str(ex),
+        category=log.IncorrectValue,
+        module='providers')
+
+def process_provider_inheritance(topology: Box) -> None:
+  validate.list_of_providers = list(topology.defaults.providers.keys())   # Needed by must_be_provider
+  processed: list = []
+  for pname in list(topology.defaults.providers.keys()):
+    process_child_provider(pname,topology,processed)
+
+  log.exit_on_error()                                       # Don't use device settings that could not be inherited
+
+"""
 Add device features (optionally provider-limited) to module support list
 """
 def add_device_module_support(
@@ -268,11 +331,11 @@ def add_device_module_support(
         mdata.supported_on[dname][provider] = False # ... and remove support for this provider
       continue                                      # ... and skip it
 
-    if not dname in mdata.supported_on:             # Append device to module support list if needed
-      if provider:
-        mdata.supported_on[dname][provider] = True
-      else:
-        mdata.supported_on[dname] = True
+    if provider:                                    # Append device to module support list if needed
+      if mdata.supported_on.get(dname,None) is not True:
+        mdata.supported_on[dname][provider] = True  # ... unless the device supports the module with all providers
+    elif not dname in mdata.supported_on:
+      mdata.supported_on[dname] = True
 
     if provider:
       features[m]._provider = provider              # Remember we're dealing with provider-specific features
@@ -401,8 +464,8 @@ def add_device_plugins(topology: Box) -> None:
 """
 Initial device setting augmentation:
 
+* Inherit device data from parent devices and parent providers
 * Build supported_on module lists
-* Future: Inherit device data from parent devices
 """
 def augment_device_settings(topology: Box) -> None:
   devices = topology.defaults.devices
@@ -417,6 +480,7 @@ def augment_device_settings(topology: Box) -> None:
   merge_daemons(topology)
   add_device_attributes(topology)
   process_device_inheritance(topology)
+  process_provider_inheritance(topology)
   build_module_support_lists(topology)
 
   for dname in list(devices.keys()):              # After completing device transformation, do a few sanity checks
