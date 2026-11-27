@@ -49,7 +49,6 @@ parameters when the corresponding addressing parameteres are missing:
 '''
 
 import ipaddress
-import sys
 import types
 import typing
 
@@ -170,11 +169,12 @@ def validate_pools(addrs: Box, topology: Box) -> None:
     if 'mac' in pfx:
       try:
         addrs[pool].mac_eui = netaddr.EUI(pfx.mac)
-      except:
+      except Exception as ex:
         log.error(
-          "MAC prefix %s in addressing pool '%s' is invalid (%s)" % (pfx.mac,pool,sys.exc_info()[1]),
+          f"MAC prefix {pfx.mac} in addressing pool '{pool}' is invalid",
           category=log.IncorrectValue,
           module='addressing',
+          more_data=str(ex),
           doc_url='addressing/#address-pool-specs')
         continue
 

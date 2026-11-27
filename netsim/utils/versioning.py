@@ -28,8 +28,8 @@ def get_version_specifier(version: typing.Any) -> typing.Optional[_ps.SpecifierS
     if not version_spec:
       version_string = f'>= {version_string}'
     return _ps.SpecifierSet(version_string)
-  except:
-    log.error(f'Error parsing version {version}: {str(sys.exc_info()[1])}',log.IncorrectValue,'version')
+  except Exception as ex:
+    log.error(f'Error parsing version {version}',log.IncorrectValue,'version',more_data=str(ex))
     return None
 
 """
