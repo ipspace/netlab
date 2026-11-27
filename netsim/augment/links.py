@@ -1297,7 +1297,8 @@ def process_link_ra(link: Box, nodes: Box, defaults: Box) -> None:
   if link_ra and not ra_supported:                          # Does at least one node on the link supports RA?
     log.warning(
       text=f'None of the routers connected to link {link._linkname} supports netlab IPv6 RA attributes',
-      module='links',flag='ra_unsupported')
+      module='links',flag='ra_unsupported',
+      doc_url='platforms/#platform-initial-addresses')
 
   return
 

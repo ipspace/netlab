@@ -616,7 +616,8 @@ def bgp_process_originate(node: Box, topology: Box) -> None:
       log.error(
         f'device {node.device} (node {node.name}) does not support VRF bgp.originate attribute',
         category=log.IncorrectAttr,
-        module='bgp')
+        module='bgp',
+        doc_url='module/bgp/#module-bgp-originate')
       continue
 
     if originate_v2:                              # Handle next-generation BGP route origination
@@ -651,7 +652,8 @@ def bgp_process_originate(node: Box, topology: Box) -> None:
           log.error(
             f'device {node.device} (node {node.name}) cannot use bgp.originate with IPv6 BGP prefixes',
             category=log.IncorrectValue,
-            module='bgp')
+            module='bgp',
+            doc_url='module/bgp/#module-bgp-originate')
           return
         elif 'ipv4' in pfx:                       # Save IPv4 prefix (if it exists) into the old-style
           originate_list.append(pfx['ipv4'])      # originate list

@@ -348,6 +348,11 @@ nodes:
       - "172.16.0.0/19"
 ```
 
+```{warning}
+* Devices that cannot configure [discard static routes](generic-routing-static) can originate only IPv4 prefixes.
+* You can use the **bgp.originate** VRF attribute only on devices that support [VRF discard static routes](generic-routing-static).
+```
+
 (bgp-sessions)=
 ## BGP Sessions
 

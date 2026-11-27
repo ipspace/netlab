@@ -35,7 +35,8 @@ def replace_community_delete(node: Box, p_name: str, p_entry: Box, topology: Box
         f'Node {node.name} (device {node.device}) cannot delete {type} BGP communities in a routing policy',
         more_data=f'Policy {p_name} sequence# {p_entry.sequence}',
         category=log.IncorrectType,
-        module='routing')
+        module='routing',
+        doc_url='module/routing/#routing-clist-platform')
     else:
       clist += [ { 'action': 'permit', '_value': i } for i in p_entry.delete.community[type] ]
 

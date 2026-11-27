@@ -160,7 +160,8 @@ def check_gr(node: Box, features: Box) -> None:
         log.error(                                    # ... but we still call foul on that
           f'Device {node.device} does not support OSPF Graceful Restart for {af} (node {node.name}{vrf_info})',
           log.IncorrectValue,
-          'ospf')
+          'ospf',
+          doc_url='module/ospf/#ospf-gr-platform')
 
 class OSPF(_Module):
 
