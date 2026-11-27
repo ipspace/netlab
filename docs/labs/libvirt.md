@@ -82,6 +82,10 @@ Recent Nexus OS releases need more memory than the default value ([more details]
 (libvirt-build-boxes)=
 ### Building Vagrant Boxes
 
+```{warning}
+Please read the note about [sunsetting **libvirt** provider](libvirt-sunset) before creating Vagrant boxes...
+```
+
 These documents contain box-building recipes using the **netlab libvirt** utility:
 
 * [Arista vEOS](eos.md)
