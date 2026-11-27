@@ -321,7 +321,7 @@ def fatal(
     skip_header=None if header else True,
     exit_on_error=True,
     **kwargs)
-  sys.exit(1)                                     # Not reached, but keeps mypy happy
+  abort_on_error(text)                            # Not reached unless 'error' returns early, keeps mypy happy
 
 def warning(*,
       text: str,
