@@ -20,6 +20,7 @@ The VLAN module implements data-plane functionality but does not configure the S
    :backlinks: none
 ```
 
+(vlan-platform)=
 ## Platform Support
 
 VLANs are supported on these platforms:

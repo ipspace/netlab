@@ -114,7 +114,8 @@ def node_set_vtep(node: Box, topology: Box) -> bool:
       log.error(
         f'Device {node.device} (node {node.name}) does not support VXLAN over IPv6',
         log.IncorrectValue,
-        'vxlan')
+        'vxlan',
+        doc_url='module/vxlan/#vxlan-platform')
       return False
   else:
     vtep_af = 'ipv4'

@@ -235,7 +235,8 @@ def check_node_features(node: Box, topology: Box, features: Box) -> None:
       log.error(
         f'Device {node.device} used by {node.name} does not support {FEATURE_NAME[fn]}',
         log.IncorrectValue,
-        'mpls')
+        'mpls',
+        doc_url='module/mpls/#mpls-platform')
       continue
 
     if isinstance(node.mpls[fn],Box) and isinstance(features.mpls[fn],Box):
@@ -244,7 +245,8 @@ def check_node_features(node: Box, topology: Box, features: Box) -> None:
           log.error(
             f'Device {node.device} used by {node.name} does not support {FEATURE_NAME[fn]} for {af}',
             log.IncorrectValue,
-            'mpls')
+            'mpls',
+            doc_url='module/mpls/#mpls-platform')
 
 '''
 check_attribute_features: Check if a node supports the optional LDP/BGP-LU attributes
@@ -260,7 +262,8 @@ def check_attribute_features(node: Box, features: Box) -> None:
         log.error(
           f'Device {node.device} used by {node.name} does not support mpls.{fn}.{attr}',
           log.IncorrectAttr,
-          'mpls')
+          'mpls',
+          doc_url='module/mpls/#mpls-platform')
 
 class MPLS(_Module):
 

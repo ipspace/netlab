@@ -11,6 +11,10 @@ from .. import data
 from ..augment import devices
 from . import log
 
+PLATFORM_DOC_URL: typing.Final[dict] = {                    # Platform support tables for plugins using BGP attributes
+  'bgp.session': 'plugins/bgp.session/#bgp-session-platforms',
+  'bgp.policy': 'plugins/bgp.policy/#plugin-bgp-policy-platform' }
+
 
 # Return IP address from int, address, or prefix
 #
@@ -156,7 +160,8 @@ def check_device_attribute_support(
         log.error(                                          # ... and report unsupported value
           f'Node {ndata.name} (device {ndata.device}) does not support BGP attribute {attr} value {value}',
           log.IncorrectValue,
-          module)
+          module,
+          doc_url=PLATFORM_DOC_URL.get(module))
         return False
     elif isinstance(value,list):                            # Oh, the value is a list of keywords
       for elem in value:                                    # So we have to iterate over all of them...
@@ -171,7 +176,8 @@ def check_device_attribute_support(
     log.error(                                              # Report an error
       f'Attribute {attr}{ngb_info} is not supported by node {ndata.name} (device {ndata.device})',
       log.IncorrectValue,
-      module)
+      module,
+      doc_url=PLATFORM_DOC_URL.get(module))
     return False
 
   if enabled is True:                                       # Unconditionally supported?
@@ -199,7 +205,8 @@ def check_device_attribute_support(
     log.error(                                              # Provider used on node is not supported
       f'Node {ndata.name} (device {ndata.device}) does not support BGP attribute {attr} when running with {n_provider} provider',
       log.IncorrectValue,
-      module)
+      module,
+      doc_url=PLATFORM_DOC_URL.get(module))
     return False
 
   return True

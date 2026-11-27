@@ -77,6 +77,7 @@ We implemented OSPFv2, OSPFv3, OSPF areas, reference bandwidth, passive interfac
 **Notes:**
 * Use the `netlab show modules -m ospf` command to display the route types that can be imported into OSPFv2/OSPFv3.
 
+(ospf-gr-platform)=
 The following devices support OSPF graceful restart:
 
 ```{features}

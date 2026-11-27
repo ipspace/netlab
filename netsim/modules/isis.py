@@ -47,7 +47,8 @@ def isis_unnumbered(node: Box, features: Box) -> bool:
       log.error(
         f'Device {node.device} used on node {node.name} cannot run IS-IS over {"unnumbered" if af == "ipv4" else "LLA"} {af} interfaces',
         log.IncorrectValue,
-        'interfaces')
+        'interfaces',
+        doc_url='module/isis/#isis-platform')
       return False
 
   OK = True
@@ -59,7 +60,8 @@ def isis_unnumbered(node: Box, features: Box) -> bool:
       log.error(
         f'Device {node.device} (node {node.name}) cannot run IS-IS over unnumbered multi-access link {l.name}',
         log.IncorrectValue,
-        'interfaces')
+        'interfaces',
+        doc_url='module/isis/#isis-platform')
       OK = False
 
   return OK
@@ -85,7 +87,8 @@ def isis_mt(node: Box, features: Box) -> None:
       'IPv6 IS-IS on this device cannot interoperate with other IS-IS devices'],
     flag='mt',
     category=log.IncorrectValue,
-    module='isis')
+    module='isis',
+    doc_url='module/isis/#isis-platform')
 
 class ISIS(_Module):
 

@@ -68,12 +68,14 @@ class STP(_Module):
           log.error(
             f'node {node.name} (device {node.device}) does not support enabling/disabling STP only on a specific port ({intf.ifname})',
             log.IncorrectValue,
-            'stp')
+            'stp',
+            doc_url='module/stp/#stp-platform')
         if 'port_type' in intf.stp and not features.get('stp.port_type',False):
           log.error(
             f'node {node.name} (device {node.device}) does not support configuration of STP port_type on ({intf.ifname})',
             log.IncorrectValue,
-            'stp')
+            'stp',
+            doc_url='module/stp/#stp-platform')
       if not features.get('stp.port_type',False):                   # If the device doesn't support it, move on
         continue
       stp_port_type = intf.get('stp.port_type',None)

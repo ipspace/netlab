@@ -18,6 +18,7 @@ This configuration module configures the BGP EVPN address family to implement L2
    :backlinks: none
 ```
 
+(evpn-platform)=
 ## Platform Support
 
 The following table describes the per-platform support of individual EVPN/VXLAN features:

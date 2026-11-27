@@ -95,7 +95,8 @@ def check_mlag_support(node: str, linkname: str, topology: Box) -> bool:
   if not _supports_mlag(features):
     log.error(f'Node {_n.name} ({_n.device}) does not support MLAG, cannot be part of peerlink {linkname}',
       category=log.IncorrectValue,
-      module='lag')
+      module='lag',
+      doc_url='module/lag/#lag-platform')
     return False
   return True
 
@@ -114,14 +115,16 @@ def check_mside_lag_support(node: str, linkname: str, topology: Box) -> bool:
   if not _supports_esi_lag(features):
     log.error(f'Node {_n.name} ({_n.device}) does not support MLAG or ESI-LAG, cannot be part of M-side of LAG {linkname}',
       category=log.IncorrectValue,
-      module='lag')
+      module='lag',
+      doc_url='module/lag/#lag-platform')
     return False
 
   if not _uses_esi_lag(topology):
     log.error(f'Node {_n.name} ({_n.device}) does not support MLAG, cannot be part of M-side of LAG {linkname}',
       more_hints='The device supports ESI-LAG. Use the evpn.multihoming plugin to configure it',
       category=log.IncorrectValue,
-      module='lag')
+      module='lag',
+      doc_url='module/lag/#lag-platform')
     return False
 
   return True
@@ -517,11 +520,13 @@ class LAG(_Module):
         if lacp_mode=='passive' and not features.lag.get('passive',False):
           log.error(f'Node {node.name}({node.device}) does not support passive LACP configured on interface {i.ifname}',
             category=log.IncorrectAttr,
-            module='lag')
+            module='lag',
+            doc_url='module/lag/#lag-platform')
         if i.lag.get('lacp',None) == 'off' and 'mode' not in i.lag and not features.lag.get('static',False):
           log.error(f'Node {node.name}({node.device}) does not support static LAG (lacp: off) configured on interface {i.ifname}',
             category=log.IncorrectAttr,
-            module='lag')
+            module='lag',
+            doc_url='module/lag/#lag-platform')
         if i.lag.get('_mlag',False) is True:
           uses_mlag = True
           if 'ipv4' in i or 'ipv6' in i:

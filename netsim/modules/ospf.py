@@ -48,7 +48,8 @@ def ospf_unnumbered(node: Box, features: Box) -> bool:
       log.error(
         f'Device {node.device} used on node {node.name} cannot run OSPF over unnumbered interface',
         log.IncorrectValue,
-        'interfaces')
+        'interfaces',
+        doc_url='module/ospf/#ospf-platform')
       OK = False
 
   return OK
@@ -159,7 +160,8 @@ def check_gr(node: Box, features: Box) -> None:
         log.error(                                    # ... but we still call foul on that
           f'Device {node.device} does not support OSPF Graceful Restart for {af} (node {node.name}{vrf_info})',
           log.IncorrectValue,
-          'ospf')
+          'ospf',
+          doc_url='module/ospf/#ospf-gr-platform')
 
 class OSPF(_Module):
 
@@ -184,7 +186,8 @@ class OSPF(_Module):
         log.error(
           f'{node.name} uses strict BFD with OSPF which is not supported by {node.device} device',
           log.IncorrectValue,
-          'ospf')
+          'ospf',
+          doc_url='module/ospf/#ospf-platform')
 
     bfd.bfd_link_state(node,'ospf')
 

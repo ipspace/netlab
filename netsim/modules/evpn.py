@@ -67,7 +67,8 @@ def get_evpn_af(node: Box, topology: Box) -> typing.Optional[str]:
       log.error(
         f'node {node.name}/device {node.device} cannot use EVPN with IPv6 next hops',
         more_hints=['The node is using VXLAN-over-IPv6 transport, but does not support EVPN over IPv6'],
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='module/evpn/#evpn-platform')
       return None
 
   return evpn_af
@@ -106,7 +107,8 @@ def enable_evpn_af(node: Box, topology: Box) -> None:
             f'netlab cannot configure EVPN AF for {bn.type} neighbors on {node.device} when using {transport} transport',
             more_data = [ f'Found a {bn.type} session on node {node.name} with {bn.name}'],
             category=log.IncorrectType,
-            module='evpn')
+            module='evpn',
+            doc_url='module/evpn/#evpn-platform')
           bgp_error_types.append(bn.type)
 
         continue
@@ -478,14 +480,16 @@ def check_node_vrf_irb(node: Box, topology: Box) -> None:
         log.error(
           f'VRF {vrf_name} on {node.name} uses symmetrical EVPN IRB which is not supported by {node.device} device',
           log.IncorrectValue,
-          'evpn')
+          'evpn',
+          doc_url='module/evpn/#evpn-platform')
         continue
     else:
       if not features.evpn.asymmetrical_irb:                    # ... does this device asymmetrical IRB -- is it supported?
         log.error(
           f'VRF {vrf_name} on {node.name} uses asymmetrical EVPN IRB which is not supported by {node.device} device',
           log.IncorrectValue,
-          'evpn')
+          'evpn',
+          doc_url='module/evpn/#evpn-platform')
         continue
 
       check_asym_vlan(vrf_name,node,topology)
@@ -605,7 +609,8 @@ def check_node_transport(node: Box, topology: Box) -> bool:
       log.error(
         f'Device {node.device} (node {node.name}) does not support EVPN transport {transport}',
         module='evpn',
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='module/evpn/#evpn-platform')
       return False
 
   if transport == 'sr':                                     # SR-MPLS and MPLS are identical from EVPN perspective
@@ -625,7 +630,8 @@ def check_cp_only(node: Box) -> None:
     log.error(
       f'Device {node.device} (node {node.name}) cannot have MAC-VRF or IP-VRF instances with EVPN transport {node.evpn.transport}',
       module='evpn',
-      category=log.IncorrectValue)
+      category=log.IncorrectValue,
+      doc_url='module/evpn/#evpn-platform')
 
 class EVPN(_Module):
 

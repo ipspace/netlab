@@ -295,7 +295,8 @@ def augment_loopback_interface(n: Box, pools: Box, topology: Box) -> None:
     log.error(
       f'Device {n.device} (node {n.name}) cannot have loopback interfaces',
       category=log.IncorrectType,
-      module='nodes')
+      module='nodes',
+      doc_url='platforms/#platform-initial-config')
 
   n.loopback.type = 'loopback'                    # Back to regular programming: set loopback interface data
   n.loopback.neighbors = []
@@ -549,7 +550,8 @@ def augment_node_device_data(n: Box, topology: Box) -> None:
         more_hints=[ f'Allowed roles for this device type are: {",".join(allowed_roles) }' ],
         flag='nodes.roles',
         category=log.IncorrectType,
-        module='nodes')
+        module='nodes',
+        doc_url='platforms/#platform-host')
 
   if not features.get('initial.reload',False):
     append_to_list(topology.groups.netlab_no_reload,'members',n.name)
@@ -672,11 +674,13 @@ def cleanup_mtu(node: Box, topology: Box) -> None:
       log.error(
         f'Node MTU {node.mtu} on node {node.name} is lower than the minimum physical ' + \
         f'MTU for {node.device} ({features.min_phy_mtu})',
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='platforms/#platform-initial-interfaces')
     elif 'min_mtu' in features and node.mtu < features.min_mtu:
       log.error(
         f'Node MTU {node.mtu} on node {node.name} is lower than the minimum MTU for {node.device} ({features.min_mtu})',
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='platforms/#platform-initial-interfaces')
     elif 'ipv6' in node.get('af',{}) and node.mtu < 1280:
       log.error(
         f'Node MTU cannot be lower than 1280 on IPv6-enabled devices. Node {node.name} has MTU {node.mtu}',
@@ -684,7 +688,8 @@ def cleanup_mtu(node: Box, topology: Box) -> None:
     if 'max_mtu' in features and node.mtu > features.max_mtu:
       log.error(
         f'Node MTU {node.mtu} on node {node.name} is higher than the maximum MTU for {node.device} ({features.max_mtu})',
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='platforms/#platform-initial-interfaces')
 
   for intf in node.interfaces:
     if 'mtu' not in intf:
@@ -696,12 +701,14 @@ def cleanup_mtu(node: Box, topology: Box) -> None:
       log.error(
         f'Interface MTU {intf.mtu} on node {node.name}/{intf.ifname}({intf.name}) is higher '+\
         f'than the maximum MTU for {node.device} ({features.max_mtu})',
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='platforms/#platform-initial-interfaces')
     if 'min_mtu' in features and intf.mtu < features.min_mtu:
       log.error(
         f'Interface MTU {intf.mtu} on node {node.name}/{intf.ifname}({intf.name}) is lower '+\
         f'than the minimum MTU for {node.device} ({features.min_mtu})',
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='platforms/#platform-initial-interfaces')
     elif 'ipv6' in intf and intf.mtu < 1280:
       log.error(
         f'IPv6-enabled interface {intf.ifname}({intf.name}) on node {node.name} cannot have '+\
@@ -732,7 +739,8 @@ def check_ipv6_support(node: Box, topology: Box) -> None:
       more_data=f'Found an IPv6 address on {intf.get("ifname","loopback")} ({intf.get("name","loopback")})',
       flag='nodes.ipv6',
       category=log.IncorrectValue,
-      module='nodes')
+      module='nodes',
+      doc_url='platforms/#platform-initial-addresses')
     return
 
 '''
@@ -755,7 +763,8 @@ def check_bandwidth_support(node: Box, topology: Box) -> None:
       text=f'Device {node.device} (node {node.name}) cannot configure interface bandwidth',
       more_data=f'Interface(s) with bandwidth attribute: {", ".join(bw_list)}',
       flag='nodes.bandwidth',
-      module='nodes')
+      module='nodes',
+      doc_url='platforms/#platform-initial-interfaces')
 
 def cleanup(topology: Box) -> None:
   plugin_config = topology.get('_plugin_config',[])

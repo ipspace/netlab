@@ -204,7 +204,8 @@ def check_supported_node_devices(topology: Box) -> None:
         log.error(
           f"Device type {n.device} (node {name}) does not support module {m}",
           log.IncorrectValue,
-          'modules')
+          'modules',
+          doc_url='platforms/#platform-routing-support')
         continue
       if not isinstance(mod_def.supported_on[n.device],Box):    # Provider-specific support?
         continue
@@ -214,7 +215,8 @@ def check_supported_node_devices(topology: Box) -> None:
         log.error(
           f"Device type {n.device} (node {name}) does not support module {m} with provider {d_provider}",
           log.IncorrectValue,
-          'modules')
+          'modules',
+          doc_url='platforms/#platform-routing-support')
         continue
 
 # Merge global module parameters with per-node module parameters

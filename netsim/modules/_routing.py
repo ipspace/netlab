@@ -107,7 +107,8 @@ def check_af_feature(
     log.error(
       f'{n_name} cannot run {proto} on {af}',
       log.IncorrectValue,
-      proto)
+      proto,
+      doc_url=f'module/{proto}/#{proto}-platform' if af != 'ipv6' else 'platforms/#platform-ipv6-support')
 
 # After parsing/building the IGP AF structure and offloading VRF interfaces into VRF data
 # structure, recheck the interface status. If there's no match between interface AF and IGP AF,
@@ -211,7 +212,8 @@ def passive(
         log.error(
           f'Device {ndata.device} (node {ndata.name}) does not support passive {proto} interfaces',
           log.IncorrectType,
-          proto)
+          proto,
+          doc_url=f'module/{proto}/#{proto}-platform')
     return
 
   role = intf.get('role',"")
@@ -481,7 +483,8 @@ def check_vrf_protocol_support(
       log.error(
         f'Device {node.device} (node {node.name}) does not support {f_name} in VRFs (found in VRF {v_name})',
         category=log.IncorrectValue,
-        module=proto)
+        module=proto,
+        doc_url='module/vrf/#module-vrf-platform-routing-support')
       return
 
 """
@@ -512,7 +515,8 @@ def check_intf_support(node: Box, proto: str, topology: Box) -> bool:
       f'Device {node.device} (node {node.name}) does not support {proto} interface parameter {kw}',
       category=log.IncorrectAttr,
       module=proto,
-      more_data=err_list[kw])                     # ... together with the list of interfaces where it was found
+      more_data=err_list[kw],                     # ... together with the list of interfaces where it was found
+      doc_url=f'module/{proto}/#{proto}-interface-support')
 
   return False
 
@@ -649,7 +653,8 @@ def check_import_request(
     log.error(
       f'Device {node.device} (node {node.name}) does not support route import into {proto}',
       category=log.IncorrectValue,
-      module=proto)
+      module=proto,
+      doc_url=f'module/{proto}/#{proto}-platform')
     return
 
   i_dict = rdata['import']                                  # Use a temporary variable to shorten the code
@@ -658,7 +663,8 @@ def check_import_request(
       log.error(
         f'Device {node.device} (node {node.name}) cannot import {s_proto} routes into {proto}',
         category=log.IncorrectValue,
-        module=proto)
+        module=proto,
+        doc_url=f'module/{proto}/#{proto}-platform')
       continue
     i_data = i_dict[s_proto]
     if i_data is False:                                     # Remove requests to disable route import 
@@ -676,7 +682,7 @@ def check_import_request(
 
     if s_proto == proto:                                    # Cannot redistribute a protocol into itself
       log.error(
-        f'Node {node.name}: cannot {s_proto} routes into {proto}',
+        f'Node {node.name}: cannot import {s_proto} routes into {proto}',
         more_hints=['Route import works between different protocols or from connected subnets'],
         category=log.IncorrectValue,
         module=proto)
@@ -690,7 +696,8 @@ def check_import_request(
           f'Device {node.device} (node {node.name}) cannot use routing policies ' + \
           f'on route imports ({s_proto} => {proto}, policy {i_policy})',
           category=log.IncorrectValue,
-          module=proto)
+          module=proto,
+          doc_url='module/routing/#generic-routing-platforms')
         break
       else:
         node_add_routing_policy(i_dict.get(f'{s_proto}.policy'),node,topology)
@@ -737,7 +744,8 @@ def process_imports(node: Box, proto: str, topology: Box, vrf_list: list) -> Non
         log.error(
           f'Route import to {proto} on node {node.name} (device {node.device}) is not VRF-aware',
           category=log.IncorrectValue,
-          module=proto)
+          module=proto,
+          doc_url=f'module/{proto}/#{proto}-platform')
 
 """
 remove_vrf_imports: remove incorrect VRF imports
@@ -800,7 +808,8 @@ def default_route_adjust(
     log.error(
       f'Device {node.device} (node {node.name}) cannot originate {proto} default route in {vname}',
       category=log.IncorrectValue,
-      module=proto)
+      module=proto,
+      doc_url=f'module/{proto}/#{proto}-platform')
     return
   
   if 'policy' in vdata[proto].default:            # Add default route origination routing policy if needed

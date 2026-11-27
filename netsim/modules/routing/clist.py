@@ -35,7 +35,8 @@ def replace_community_delete(node: Box, p_name: str, p_entry: Box, topology: Box
         f'Node {node.name} (device {node.device}) cannot delete {type} BGP communities in a routing policy',
         more_data=f'Policy {p_name} sequence# {p_entry.sequence}',
         category=log.IncorrectType,
-        module='routing')
+        module='routing',
+        doc_url='module/routing/#routing-clist-platform')
     else:
       clist += [ { 'action': 'permit', '_value': i } for i in p_entry.delete.community[type] ]
 
@@ -143,7 +144,8 @@ def check_community_support(o_data: Box,o_type: str,node: Box,topology: Box) -> 
       log.error(
         f'Device {node.device}/node {node.name} does not support {c_type} BGP community lists: {cl_name}',
         module='routing',
-        category=log.IncorrectType)
+        category=log.IncorrectType,
+        doc_url='module/routing/#routing-clist-platform')
       continue
     if c_features[c_type] is True:                # Unconditional support (standard/extended)
       continue
@@ -151,4 +153,5 @@ def check_community_support(o_data: Box,o_type: str,node: Box,topology: Box) -> 
       log.error(
         f'Device {node.device}/node {node.name} does not support {l_type} {c_type} BGP community lists: {cl_name}',
         module='routing',
-        category=log.IncorrectType)
+        category=log.IncorrectType,
+        doc_url='module/routing/#routing-clist-platform')

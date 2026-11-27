@@ -56,7 +56,8 @@ def check_protocol_support(node: Box, topology: Box) -> bool:
           f'Node {node.name} ({device_info}) does not support {af} DHCP client',
           more_data= [ f'DHCP client is used on interface {intf.ifname} ({intf.name})' ],
           category=log.IncorrectValue,
-          module='dhcp')
+          module='dhcp',
+          doc_url='module/dhcp/#dhcp-platform')
         OK = False
 
   # Iterate over configured DHCP relays, check whether the device supports DHCP relaying
@@ -79,7 +80,8 @@ def check_protocol_support(node: Box, topology: Box) -> bool:
           log.error(
             f'Node {node.name} ({device_info}) cannot be a DHCP relay for {af}',
             more_data = f'DHCP relay is used on interface {intf.ifname}/{intf.name})',
-            category=log.IncorrectValue)
+            category=log.IncorrectValue,
+            doc_url='module/dhcp/#dhcp-platform')
 
     for srv in intf.dhcp.server:
       if not topology.nodes.get(f'{srv}.dhcp.server',False):
@@ -98,7 +100,8 @@ def check_protocol_support(node: Box, topology: Box) -> bool:
       log.error(                                          # No, report an error
         f'Node {node.name} ({device_info}) cannot perform inter-VRF DHCP relaying',
         category=log.IncorrectValue,
-        module='dhcp')
+        module='dhcp',
+        doc_url='module/dhcp/#dhcp-platform')
       OK = False
     else:                                                 # Inter-VRF relaying is configured
       if node.get('dhcp.vrf',None) is None:               # ... assume the device can insert DHCP VPN option
@@ -338,7 +341,8 @@ def check_dynamic_routing(intf: Box, node: Box, topology: Box) -> bool:
         f'Device {node.device} / node {node.name} cannot run dynamic routing protocols on DHCP client interface',
         more_data = [ f'protocol: {rp}, interface {intf.name}'],
         category=log.IncorrectValue,
-        module='dhcp')
+        module='dhcp',
+        doc_url='module/dhcp/#dhcp-platform')
       OK = False
 
   return OK

@@ -136,7 +136,8 @@ class SRV6(_Module):
         log.error(
           f"Node {node.name} (device {node.device}) does not support {igp} as IGP for SRv6",
           category=log.IncorrectValue,
-          module='srv6')
+          module='srv6',
+          doc_url='module/srv6/#module-srv6-platform')
 
     data.bool_to_defaults(node.srv6,'bgp',DEFAULT_BGP_AF)
     if node.srv6.get('bgp'):
@@ -144,7 +145,8 @@ class SRV6(_Module):
         log.error(
           f"Node {node.name} (device {node.device}) does not support BGP v4/v6 with SRv6",
           category=log.IncorrectValue,
-          module='srv6')
+          module='srv6',
+          doc_url='module/srv6/#module-srv6-platform')
       if 'bgp' not in mods:
         log.error(
           f"Node {node.name} does not have the BGP module enabled to support BGP v4/v6",
@@ -155,7 +157,8 @@ class SRV6(_Module):
       log.error(
         f"Node {node.name} (device {node.device}) does not support L3VPN BGP v4/v6 with SRv6",
         category=log.IncorrectValue,
-        module='srv6')
+        module='srv6',
+        doc_url='module/srv6/#module-srv6-platform')
 
     process_srv6_locator(node,topology)
     

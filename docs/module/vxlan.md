@@ -20,6 +20,7 @@ The module requires the VLAN module (to set up the **vlans** dictionary) and sho
    :backlinks: none
 ```
 
+(vxlan-platform)=
 ## Platform Support
 
 The following table describes the per-platform support of individual VXLAN features:

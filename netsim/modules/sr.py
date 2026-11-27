@@ -56,7 +56,8 @@ class SR(_Module):
         log.error(
           f'Device {node.device} (node {node.name}) does not support {sr_proto} with SR-MPLS',
           category=log.IncorrectType,
-          module='sr')
+          module='sr',
+          doc_url='module/sr-mpls/#sr-mpls-platforms')
         OK = False
       elif proto_info.module not in node.module:            # ... and check that the node is using correct module(s)
         log.error(
@@ -78,7 +79,8 @@ class SR(_Module):
           log.error(
             f'Device {node.device} (node {node.name}) does not support SR-MPLS for {af}',
             category=log.IncorrectValue,
-            module='sr')
+            module='sr',
+            doc_url='module/sr-mpls/#sr-mpls-platforms')
           continue
       if af not in proto_af:
         log.error(

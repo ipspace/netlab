@@ -182,7 +182,8 @@ def post_transform(topology: Box) -> None:
         log.error(
           f'Device {ndata.device} (node {ndata.name}) does not support OSPF area parameters',
           category=log.IncorrectAttr,
-          module=_config_name)
+          module=_config_name,
+          doc_url='plugins/ospf.areas/#plugin-ospf-areas')
         return
 
       check_node_support(ndata,topology)                    # Report warnings if a device does not support optional features
