@@ -489,9 +489,11 @@ Add system data to devices -- hacks that are not yet covered in the settings str
 """
 def augment_node_system_data(topology: Box) -> None:
   if 'mtu' in topology.defaults.get('interfaces',{}):
-    if not isinstance(topology.defaults.interfaces.mtu,int):            # pragma: no cover
+    d_mtu = topology.defaults.interfaces.mtu
+    mtu_attr = topology.defaults.attributes.node.mtu                    # Use the limits from the node MTU attribute
+    if not is_true_int(d_mtu) or not mtu_attr.min_value <= d_mtu <= mtu_attr.max_value:
       log.error(
-        'defaults.interfaces.mtu setting should be an integer',
+        f'defaults.interfaces.mtu setting should be an integer between {mtu_attr.min_value} and {mtu_attr.max_value}',
         log.IncorrectValue,
         'topology',
         doc_url='links/#links-mtu')
@@ -499,13 +501,6 @@ def augment_node_system_data(topology: Box) -> None:
       for n in topology.nodes.values():
         if not 'mtu' in n:
           n.mtu = topology.defaults.interfaces.mtu
-        else:
-          if not isinstance(n.mtu,int):                                 # pragma: no cover
-            log.error(
-              f'nodes.{n.name}.mtu setting should be an integer',
-              log.IncorrectValue,
-              'nodes',
-              doc_url='links/#links-mtu')
 
 """
 augment_node_device_data: copy attributes that happen to be node attributes from device defaults into node data
