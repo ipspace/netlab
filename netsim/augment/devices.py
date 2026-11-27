@@ -257,37 +257,47 @@ def process_child_provider(pname: str, topology: Box, processed: list) -> None:
   processed.append(pname)
 
   providers = topology.defaults.providers
-  try:                                                      # The provider settings have not been validated yet
-    if not providers[pname].get('parent',None):             # This provider is not a child provider
-      return
-    p_parent = must_be_provider(providers[pname],'parent',f'defaults.providers.{pname}',module='providers')
-  except Exception as ex:
-    log.warning(
-      text=f'Cannot process the settings inheritance of provider {pname}: {ex}',
+  if not isinstance(providers[pname],Box):                  # The provider settings have not been validated yet
+    log.error(
+      f'Settings of provider {pname} (defaults.providers.{pname}) must be a dictionary',
+      category=log.IncorrectType,
       module='providers')
     return
 
+  if 'parent' not in providers[pname]:                      # This provider is not a child provider
+    return
+
+  p_parent = must_be_provider(providers[pname],'parent',f'defaults.providers.{pname}',module='providers')
   if not p_parent:                                          # Invalid parent provider, already reported
     return
 
   process_child_provider(p_parent,topology,processed)       # Process inheritance in parent provider
   for dname,ddata in topology.defaults.devices.items():
-    if not isinstance(ddata.get(p_parent,None),Box):        # No parent provider settings for this device
+    if p_parent not in ddata:                               # No parent provider settings for this device
       continue
-    try:                                                    # The device settings have not been validated yet
+    if not isinstance(ddata[p_parent],Box):                 # The device settings have not been validated yet
+      log.error(
+        f'Settings of device {dname} for provider {p_parent} (defaults.devices.{dname}.{p_parent}) must be a dictionary',
+        category=log.IncorrectType,
+        module='providers')
+      continue
+    try:
       ddata[pname] = data.get_box(ddata[p_parent].to_dict()) + ddata.get(pname,{})
       data.remove_null_values(ddata[pname])                 # Remove the settings the child provider set to null
-    except Exception as ex:                                 # Report invalid settings and ignore them
-      log.warning(
-        text=f'Cannot merge settings of device {dname} for provider {pname} with provider {p_parent}: {ex}',
+    except Exception as ex:
+      log.error(
+        f'Cannot merge settings of device {dname} for provider {pname} with provider {p_parent}',
+        more_data=str(ex),
+        category=log.IncorrectValue,
         module='providers')
-      ddata.pop(pname,None)
 
 def process_provider_inheritance(topology: Box) -> None:
   validate.list_of_providers = list(topology.defaults.providers.keys())   # Needed by must_be_provider
   processed: list = []
   for pname in list(topology.defaults.providers.keys()):
     process_child_provider(pname,topology,processed)
+
+  log.exit_on_error()                                       # Don't use device settings that could not be inherited
 
 """
 Add device features (optionally provider-limited) to module support list
