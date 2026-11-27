@@ -2,7 +2,6 @@
 # Create devices inventory in YAML format
 #
 import os
-import sys
 import typing
 
 from box import Box
@@ -62,8 +61,8 @@ def read_inventory(host: str, filename: typing.Optional[str] = None) -> typing.O
     return None
   try:
     data = Box().from_yaml(filename=filename,default_box=True,box_dots=True,default_box_none_transform=False)
-  except:
-    log.fatal("Cannot read YAML from %s: %s " % (filename,str(sys.exc_info()[1])))
+  except Exception as ex:
+    log.fatal(f"Cannot read YAML from {filename}",more_data=str(ex))
 
   if host in (data or {}):
     return data[host]

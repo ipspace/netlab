@@ -3,7 +3,6 @@
 #
 
 import os
-import sys
 import typing
 
 from box import Box
@@ -63,8 +62,8 @@ def change_status(topology: Box, callback: typing.Callable[[Box,Box], None]) -> 
       print(f'Lab status: {status}')
     with open(status_file, 'w') as f:                       # Write the modified status          
       f.write(strings.get_yaml_string(status))
-  except:
-    log.fatal(f'Cannot lock lab status file {lock_file}',more_data=str(sys.exc_info()[0]))
+  except Exception as ex:
+    log.fatal(f'Cannot lock lab status file {lock_file}',more_data=str(ex))
   finally:
     lock.release()
 

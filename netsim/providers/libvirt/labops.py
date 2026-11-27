@@ -5,7 +5,6 @@
 import ipaddress
 import os
 import re
-import sys
 import tempfile
 import typing
 
@@ -86,8 +85,8 @@ def create_network_template(topology: Box) -> str:
   try:
     with open(net_template_xml) as xfile:
       xml = xfile.read()
-  except Exception:
-    log.fatal(f'Cannot open/read XML definition of vagrant-libvirt network {str(sys.exc_info()[1])}')
+  except Exception as ex:
+    log.fatal('Cannot open/read XML definition of vagrant-libvirt network',more_data=str(ex))
 
   if mgmt._network:
     xml = xml.replace(LIBVIRT_MANAGEMENT_NETWORK_NAME,mgmt._network)

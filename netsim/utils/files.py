@@ -247,11 +247,11 @@ def load_python_module(module_name: str, module_path: str) -> typing.Any:
     sys.modules[module_name] = pymodule
     assert(modspec.loader is not None)
     modspec.loader.exec_module(pymodule)
-  except:
+  except Exception as ex:
     log.error(
       text=f'Failed to load plugin {module_name} from {module_path}',
       category=log.IncorrectType,
-      more_hints=[ 'Error reported by module loader:', str(sys.exc_info()[1]) ],
+      more_data=[ 'Error reported by module loader:', str(ex) ],
       module='loader')
     return None
 

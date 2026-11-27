@@ -118,9 +118,11 @@ def load_plugin_from_path(path: str, plugin: str, topology: Box) -> typing.Optio
     sys.modules[module_name] = pymodule
     assert(modspec.loader is not None)
     modspec.loader.exec_module(pymodule)
-  except:
-    print(f"Failed to load plugin {module_name} from {module_path}\nError reported by module loader: {str(sys.exc_info()[1])}")
-    log.fatal('Aborting the transformation process','plugin')
+  except Exception as ex:
+    log.fatal(
+      f'Failed to load plugin {module_name} from {module_path}',
+      'plugin',
+      more_data=[ 'Error reported by module loader:', str(ex) ])
 
   r_module = handle_plugin_redirects(pymodule,plugin,topology)
   if r_module:

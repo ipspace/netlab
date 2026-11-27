@@ -4,7 +4,6 @@
 import argparse
 import os
 import pickle
-import sys
 import time
 import typing
 
@@ -202,8 +201,8 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
     try:
       yaml_data = Box().from_yaml(yaml_string=string,default_box=True,box_dots=True,default_box_none_transform=False,Loader=UniqueKeyLoader)
       return yaml_data
-    except:                                                                    # pragma: no cover -- can't get here unless there's a package error
-      log.fatal("Cannot parse YAML string: %s " % (str(sys.exc_info()[1])))
+    except Exception as ex:                                                    # pragma: no cover -- can't get here unless there's a package error
+      log.fatal("Cannot parse YAML string",more_data=str(ex))
       return None
   elif filename is None:
     log.fatal("read_yaml: have no idea what to do") # pragma: no cover -- sanity check
@@ -362,7 +361,7 @@ def load(
 
   topology = read_yaml(fname)
   if topology is None:
-    log.fatal('Cannot read topology file: %s' % sys.exc_info()[0]) # pragma: no cover -- sanity check, getting here would be hard
+    log.fatal(f'Cannot read topology file {fname}') # pragma: no cover -- sanity check, getting here would be hard
 
   topology.input = [ fname ]
   if 'includes' in topology:                                # includes topology element SHOULD NOT BE USED
