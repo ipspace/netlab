@@ -115,18 +115,21 @@ def adjust_interface_list(iflist: list, link: Box, nodes: Box) -> list:
       log.error(                          # ... report an error
         f'Interface data in {link._linkname}.interfaces[{intf_cnt}] must be a dictionary, found {type(n).__name__}',
         log.IncorrectValue,
-        'links')
+        'links',
+        doc_url='links/#link-formats')
     elif not 'node' in n:                 # Do we have node name in interface data?
       log.error(                          # ... no? Too bad, throw an error
         text=f'Interface data {link._linkname}.interfaces[{intf_cnt}] is missing a "node" attribute',
         more_data=[ f'found {n}' ],
         category=log.MissingValue,
-        module='links')
+        module='links',
+        doc_url='links/#link-formats')
     elif not is_nodename_valid(n.node,nodes):
       log.error(                          # ... the node name is not valid, get lost
         f'Interface data {link._linkname}.interfaces[{intf_cnt}] refers to an unknown node {n.node}',
         log.IncorrectValue,
-        'links')
+        'links',
+        doc_url='links/#link-formats')
     else:
       link_intf.append(n)                 # Interface data is OK, append it to interface list
 
@@ -182,7 +185,8 @@ def adjust_link_object(l: typing.Any, linkname: str, nodes: Box) -> typing.Optio
         log.error(
           f'Link string {l} in {linkname} refers to an unknown node {n}',
           log.IncorrectValue,
-          'links')
+          'links',
+          doc_url='links/#link-formats')
     return data.get_box({
       'interfaces': link_intf,
       '_linkname' : linkname })
@@ -190,7 +194,8 @@ def adjust_link_object(l: typing.Any, linkname: str, nodes: Box) -> typing.Optio
   log.error(
     f'Invalid type {type(l).__name__} for {linkname}',
     log.IncorrectType,
-    'links')
+    'links',
+    doc_url='links/#link-formats')
   return None
 
 def adjust_link_list(
@@ -224,7 +229,8 @@ def adjust_link_list(
     log.error(
       f'{linkname_path} must be a list or dictionary',
       log.IncorrectType,
-      'links')
+      'links',
+      doc_url='links/#link-formats')
 
   if log.debug_active('links'):
     print("Adjusted link list")
@@ -338,7 +344,8 @@ def create_regular_interface(node: Box, ifdata: Box, defaults: Box) -> None:
         f'Interface ifindex for device {node.device} (node {node.name}) cannot be lower than {ifindex_offset}',
         category=log.IncorrectValue,
         more_data = [ 'Interface data: ', str(ifdata) ],
-        module='links')
+        module='links',
+        doc_url='links/#links-ifname')
 
   # Set interface name -- either in 'ifname' field (for the "real" interface name)
   # or in the "netlab_ifname" field to track what netlab would have generated
@@ -485,7 +492,8 @@ def set_fhrp_gateway(link: Box, pfx_list: Box, nodes: Box, link_path: str) -> No
         f' from [af] prefix {link.prefix[af]} and gateway ID {link.gateway.id}\n',
         more_hints=str(ex),
         category=log.IncorrectValue,
-        module='links')
+        module='links',
+        doc_url='module/gateway/#gateway-link')
       return
 
   if not fhrp_assigned:
@@ -630,7 +638,8 @@ def check_interface_host_bits(intf: Box, node: Box, link: typing.Optional[Box] =
       log.error(
         f'Interfaces cannot have multicast {af} addresses ({intf[af]} on {node.name}/{intf_name})',
         log.IncorrectValue,
-        'links')
+        'links',
+        doc_url='links/#links-interface-static-addressing')
       OK = False
       continue
 
@@ -641,7 +650,8 @@ def check_interface_host_bits(intf: Box, node: Box, link: typing.Optional[Box] =
       log.error(
         f'Address {intf[af]} on node {node.name}/{intf_name} does not contain host bits',
         log.IncorrectValue,
-        'links')
+        'links',
+        doc_url='links/#links-interface-static-addressing')
       OK = False
       continue
 
@@ -649,7 +659,8 @@ def check_interface_host_bits(intf: Box, node: Box, link: typing.Optional[Box] =
       log.error(
         f'Address {intf[af]} on node {node.name}/{intf_name} is a subnet broadcast address',
         log.IncorrectValue,
-        'links')
+        'links',
+        doc_url='links/#links-interface-static-addressing')
       OK = False
       continue
 
@@ -676,7 +687,8 @@ def set_interface_address(intf: Box, af: str, pfx: ipaddress._BaseNetwork, node_
           f'Cannot parse {af} address {intf.af} for node {intf.node}',
           more_data=str(ex),
           category=log.IncorrectValue,
-          module='links')
+          module='links',
+          doc_url='links/#links-interface-static-addressing')
         return False
 
       return True                               # Further checks done in check_interface_host_bits
@@ -690,7 +702,8 @@ def set_interface_address(intf: Box, af: str, pfx: ipaddress._BaseNetwork, node_
       f'Cannot assign host index {node_id} in {af} from prefix {str(pfx)} to node {intf.node}',
       more_hints=str(ex),
       category=log.IncorrectValue,
-      module='links')
+      module='links',
+      doc_url='links/#links-default-pools')
 
   return False
 
@@ -713,7 +726,8 @@ def IPAM_unnumbered(link: Box, af: str, pfx: typing.Optional[bool], ndict: Box) 
       log.error(
         f'Node {intf.node} is using host index {intf[af]} for {af} on an unnumbered link',
         log.IncorrectValue,
-        'links')
+        'links',
+        doc_url='addressing/#addressing-unnumbered')
       OK = False
 
   return OK
@@ -798,7 +812,8 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
           f'Cannot parse {af} prefix {pfx_list[af]} on {link._linkname}',
           more_data=[ str(ex), str(link) ],
           category=log.IncorrectValue,
-          module='links')
+          module='links',
+          doc_url='links/#links-static-addressing')
         error = True
         continue
 
@@ -820,7 +835,8 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
         more_data=f'link data: {link}',
         more_hints=hints,
         category=log.IncorrectValue,
-        module='links')
+        module='links',
+        doc_url='links/#links-custom-pools')
       error = True
       continue
 
@@ -828,7 +844,8 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
       log.error(
         f'Invalid IP address allocation policy specified in prefix {pfx_list} found on {link._linkname}',
         log.IncorrectValue,
-        'links')
+        'links',
+        doc_url='example/addressing-tutorial/#addr-allocation')
       error = True
 
     # execute IPAM policy to get AF addresses on interfaces
@@ -862,7 +879,8 @@ def cleanup_link_interface_AF_entries(link: Box) -> None:
           f'Interface ID for node {intf.node} did not result in a usable address on {link._linkname}',
           more_data=str(link),
           category=log.IncorrectType,
-          module='links')
+          module='links',
+          doc_url='links/#links-interface-static-addressing')
         continue
 
       if not '/' in intf[af]:                   # Subnet mask is unknown
@@ -870,7 +888,8 @@ def cleanup_link_interface_AF_entries(link: Box) -> None:
           f'Unknown subnet mask for {af} address {intf[af]} used by node {intf.node} on {link._linkname}',
           more_data=str(link),
           category=log.IncorrectType,
-          module='links')
+          module='links',
+          doc_url='links/#links-interface-static-addressing')
         continue
 
 """
@@ -1083,14 +1102,15 @@ def set_link_bridge_name(link: Box, defaults: Box) -> None:
     log.error(
       f'Bridge name {link["bridge"]} has more than 15 characters',
       log.IncorrectValue,
-      'interfaces')
+      'interfaces',
+      doc_url='links/#links-bridge')
 
 def check_link_type(data: Box) -> bool:
   node_cnt = data.get('node_count') # link_node_count(data,nodes)
   link_type = data.get('type')
 
   if 'mtu' in data and not isinstance(data.mtu,int): # pragma: no cover
-    log.error(f'MTU parameter for link {data._linkname} should be an integer',log.IncorrectValue,'links')
+    log.error(f'MTU parameter for link {data._linkname} should be an integer',log.IncorrectValue,'links',doc_url='links/#links-mtu')
 
   if not link_type: # pragma: no cover (shouldn't get here)
     log.fatal(f'Internal error: link type still undefined in check_link_type: {data}','links')
@@ -1101,7 +1121,8 @@ def check_link_type(data: Box) -> bool:
       f'No valid nodes on link {data._linkname}',
       category=log.MissingValue,
       more_data=[ str(data) ],
-      module='links')
+      module='links',
+      doc_url='links/#link-formats')
     return False
 
   if link_type == 'stub' and node_cnt > 1:
@@ -1247,7 +1268,8 @@ def process_link_ra(link: Box, nodes: Box, defaults: Box) -> None:
           text='Applying RA attributes to an interface without an IPv6 address makes no sense',
           more_data=f'Node {intf.node} link {link._linkname}',
           module='links',
-          flag='ra_no_ipv6')
+          flag='ra_no_ipv6',
+          doc_url='links/#links-ra')
       continue                                              # No further checks on routers (yet)
     elif role == 'host':                                    # If we have a host
       host_list.append(intf)                                # ... then let's remember that
@@ -1257,7 +1279,8 @@ def process_link_ra(link: Box, nodes: Box, defaults: Box) -> None:
         text='Applying RA attributes to a device that is not a router makes no sense',
         more_data=f'Node {intf.node} link {link._linkname}',
         module='links',
-        flag='ra_not_router')
+        flag='ra_not_router',
+        doc_url='links/#links-ra')
 
   if 'ra' in link and not rtr_list:                         # Link RA attribute with no hosts attached
     log.warning(                                            # ... doesn't make much sense either
@@ -1339,7 +1362,8 @@ def check_duplicate_address(
           f'Duplicate address {if_ip} found on {obj_name} {link_name}: {intf.node} and {dup_dict[if_ip]}',
           category=log.IncorrectValue,
           more_hints=['Set defaults.warnings.duplicate_address to False to disable this check'],
-          module=module or obj_name)
+          module=module or obj_name,
+          doc_url='links/#links-interface-static-addressing')
       else:
         dup_dict[if_ip] = intf.node
 
@@ -1358,7 +1382,8 @@ def expand_groups(topology: Box) -> None:
         log.error(
           f'Link {link._linkname} is not a group link, but has a "members" list',
           log.IncorrectValue,
-          'links')
+          'links',
+          doc_url='links/#link-groups')
       expanded_links.append(link)
       continue
 
@@ -1407,7 +1432,8 @@ def check_duplicate_link_ids(link_list: BoxList) -> None:
       log.error(
         f'Duplicate linkid {linkid} used on links {found_ids[linkid]} and {link._linkname}',
         category=log.IncorrectValue,
-        module='links')
+        module='links',
+        doc_url='links/#link-linkid')
     else:
       found_ids[linkid] = link._linkname          # Unique ID, remember where we've first seen it
 
@@ -1427,7 +1453,8 @@ def check_duplicate_intf_ids(nodes: Box) -> None:
           f'Linkid {linkid} used on multiple interfaces of node {nname}',
           more_data=f'{p_intf.ifname} ({p_intf.name}) and {intf.ifname} ({intf.name})',
           category=log.IncorrectValue,
-          module='links')
+          module='links',
+          doc_url='links/#link-linkid')
       else:
         found_ids[linkid] = intf                  # Unique ID, remember where we've first seen it
 

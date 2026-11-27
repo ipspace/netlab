@@ -69,7 +69,8 @@ def ensure_tunnel_keys(
       f'tunnel.public_key without tunnel.private_key on node {node} interface {intf.ifname} ({intf.name})',
       more_data=f'link {linkname}',
       category=log.IncorrectValue,
-      module='tunnel.wireguard')
+      module='tunnel.wireguard',
+      doc_url='plugins/tunnel.wireguard/#plugin-tunnel-wireguard-keys')
     return False
 
   if private_key:
@@ -120,7 +121,8 @@ def allocate_listen_ports(ndata: Box, topology: Box) -> None:
         f'Duplicate tunnel.listen_port {port} on node {ndata.name} interface {intf.ifname}',
         more_data='Each WireGuard tunnel on a node needs a unique UDP listen port',
         category=log.IncorrectValue,
-        module='tunnel.wireguard')
+        module='tunnel.wireguard',
+        doc_url='plugins/tunnel.wireguard/#plugin-tunnel-wireguard')
     _dataplane.extend_id_set(id_set,{port})
 
   listen_port = topology.defaults.attributes.link.tunnel.listen_port
@@ -171,7 +173,8 @@ def pre_transform(topology: Box) -> None:
       log.error(
         f'A WireGuard tunnel must have exactly two nodes attached to it (link {link._linkname})',
         category=log.IncorrectAttr,
-        module='tunnel.wireguard')
+        module='tunnel.wireguard',
+        doc_url='plugins/tunnel.wireguard/#plugin-tunnel-wireguard')
 
 def post_transform(topology: Box) -> None:
   '''

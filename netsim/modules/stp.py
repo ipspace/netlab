@@ -53,7 +53,8 @@ class STP(_Module):
         log.error(
           f'node {node.name} (device {node.device}) stp.priority: {priority} must be a multiple of 4096',
           log.IncorrectValue,
-          'stp')
+          'stp',
+          doc_url='module/stp/#module-stp-params')
 
     stub_port_type = topology.get('stp.stub_port_type','none')
     for intf in node.get('interfaces',[]):

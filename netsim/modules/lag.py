@@ -68,12 +68,14 @@ def check_lag_config(node: str, linkname: str, topology: Box) -> bool:
   if 'lag' not in _n.get('module',[]):
     log.error(f'lag module not enabled for node {_n.name}, cannot be part of LAG {linkname}',
       category=log.IncorrectAttr,
-      module='lag')
+      module='lag',
+      doc_url='module/lag/#lag-params')
     return False
   if _n.get('role',None)=='bridge':
     log.error('The lag module is not designed to be used with bridge devices',
       category=log.IncorrectAttr,
-      module='lag')
+      module='lag',
+      doc_url='module/lag/#module-lag')
     return False
   return True
 
@@ -148,17 +150,20 @@ def normalized_members(l: Box, topology: Box, peerlink: bool = False) -> list:
       if peerlink or (lag_atts>0):                  # ...but allow for custom bond numbering
         log.error(f'LAG attributes must be configured on the link, not member interface {member._linkname}: {member.lag}',
                   category=log.IncorrectAttr,
-                  module='lag')
+                  module='lag',
+                  doc_url='module/lag/#lag-params')
         return []
     if len(member.interfaces)!=2:                   # Check that there are exactly 2 nodes involved
       log.error(f'Link {member._linkname} in LAG {l.lag.ifindex} must have exactly 2 nodes',
                 category=log.IncorrectValue,
-                module='lag')
+                module='lag',
+                doc_url='module/lag/#lag-params')
       return []
     if member.interfaces[0].node==member.interfaces[1].node:
       log.error(f'Link {member._linkname} in LAG {l.lag.ifindex} cannot connect a node to itself',
                 category=log.IncorrectValue,
-                module='lag')
+                module='lag',
+                doc_url='module/lag/#lag-params')
       return []
     members.append(member)
   return members
@@ -248,7 +253,8 @@ def create_lag_interfaces(link: Box, mlag_pairs: dict, topology: Box) -> None:
         f'Unsupported configuration of members on LAG link {link._linkname}',
         more_hints='A LAG/MLAG link must consist of 2, 3 or 4 different nodes connected as 1:1, 1:2 or 2:2',
         category=log.IncorrectValue,
-        module='lag')
+        module='lag',
+        doc_url='module/lag/#lag-mlag')
       return
 
   if log.debug_active('lag'):
@@ -299,7 +305,8 @@ def create_peer_links(l: Box, mlag_pairs: dict, topology: Box) -> bool:
     if others:
       log.error(f'All member links must connect the same pair of nodes({first_pair}), found {others}',
         category=log.IncorrectValue,
-        module='lag')
+        module='lag',
+        doc_url='module/lag/#lag-params')
       return False
     return True
 
@@ -315,7 +322,8 @@ def create_peer_links(l: Box, mlag_pairs: dict, topology: Box) -> bool:
       if len(_devs)!=1:                           # Check that both are the same device type
         log.error(f'Nodes {first_pair} on MLAG peerlink {member._linkname} have different device types ({_devs})',
           category=log.IncorrectValue,
-          module='lag')
+          module='lag',
+          doc_url='module/lag/#lag-mlag')
         return False
       for node in first_pair:
         if not check_mlag_support(node,l._linkname,topology):
@@ -346,7 +354,8 @@ def process_lag_link(link: Box, mlag_pairs: dict, topology: Box) -> bool:
   if not 'members' in link.lag:
     log.error(f"Link {link._linkname} has 'lag' attribute but no 'lag.members'",
       category=log.IncorrectAttr,
-      module='lag')
+      module='lag',
+      doc_url='module/lag/#lag-params')
     return False
   elif not _types.must_be_list(link.lag,'members',link._linkname,module='lag'):
     return False
@@ -380,7 +389,8 @@ def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
       else:
         log.error(f'Node {peer.name} must have {mlag_peer.ip} defined to support MLAG',
           category=log.IncorrectValue,
-          module='lag')
+          module='lag',
+          doc_url='module/lag/#lag-mlag')
     else:
       net = netaddr.IPNetwork(mlag_peer.ip)
       id = 0 if node.id < peer.id else 1
@@ -396,7 +406,8 @@ def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
     else:
       log.error(f'Node {peer.name} must have "{mlag_peer.backup_ip}" defined to support backup MLAG peerlink',
                 category=log.IncorrectValue,
-                module='lag')
+                module='lag',
+                doc_url='module/lag/#lag-mlag')
 
   if 'mac' in mlag_peer and not isinstance(_target.get('mlag.mac',None),str):
     mac = netaddr.EUI(mlag_peer.mac)                                        # Generate unique virtual MAC per MLAG group
@@ -430,7 +441,8 @@ def check_bridge_links(topology: Box) -> None:
       text=f'The LAG link {link._linkname} between {n_text} is using a Linux bridge. LACP will not work',
       more_hints = [ 'See https://netlab.tools/module/lag/#lag-multi-provider for more details' ],
       module='lag',
-      flag='lag.bridge')
+      flag='lag.bridge',
+      doc_url='module/lag/#lag-multi-provider')
 
     err_cache[n_text] = True                                # Remember we already warned the user
 
@@ -507,7 +519,8 @@ class LAG(_Module):
         if 'mode' in i.lag:
           log.warning(
             text=f'lag.mode {i.lag.mode} used by node {node.name} is deprecated, use only 802.3ad',
-            module='lag')
+            module='lag',
+            doc_url='module/lag/#lag-params')
           if i.lag.mode != '802.3ad':
             i.lag.lacp = 'off'                 # Disable LACP for other modes
 
@@ -532,7 +545,8 @@ class LAG(_Module):
           if 'ipv4' in i or 'ipv6' in i:
             log.error(f'Node {node.name}: IP address directly on MLAG interface {i.ifname} is not supported, use a VLAN instead',
               category=log.IncorrectAttr,
-              module='lag')
+              module='lag',
+              doc_url='module/lag/#lag-mlag')
         # LACP System-ID generation, if needed
         if i.lag.get('lacp_system_id', False):
           # Convert 'int(0-65535)' type lacp_system_id to a real MAC value in format: 02:xx:yy:xx:yy:00

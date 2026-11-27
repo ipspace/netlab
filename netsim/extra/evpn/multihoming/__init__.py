@@ -90,6 +90,7 @@ def _generate_esi_warnings() -> None:
                 module=_config_name,
                 flag='evpn_mh_segment_used_once',
                 more_hints=[ f'This could be due to a typo on Ethernet Segment name on the interface' ],
+                doc_url='plugins/evpn.multihoming/#plugin-evpn-multihoming',
                 )
     # ESI LAG LACP mismatch
     for esi_name, esi_lacp_ids in _esi_stats.esi_lacp_id.items():
@@ -103,6 +104,7 @@ def _generate_esi_warnings() -> None:
                 text=f'EVPN ESI-LAG "{esi_name}" LACP mismatch. Found: {mismatch_txt}',
                 module=_config_name,
                 flag='evpn_mh_lacp_mismatch',
+                doc_url='plugins/evpn.multihoming/#plugin-evpn-multihoming',
                 )
     return
 
@@ -128,7 +130,8 @@ def _es_interface_attribute_validation(topology: Box, node: Box, intf: Box) -> b
             f'EVPN Ethernet Segment is supported only on LAG or "physical" interfaces '
             f'(found on: Node {node.name}({node.device}) - interface {intf.ifname} ({intf.type}))',
             category=log.IncorrectAttr,
-            module=_config_name)
+            module=_config_name,
+            doc_url='plugins/evpn.multihoming/#plugin-evpn-multihoming')
         return False
     # Check for explicit lag support
     if intf.type == 'lag' and not features.get('evpn.multihoming.lag', False):
@@ -151,14 +154,16 @@ def _es_interface_attribute_validation(topology: Box, node: Box, intf: Box) -> b
         log.error(
             f'Node {node.name}({node.device}) no valid EVPN Ethernet Segment Identifier configuration for {intf_es} (on interface {intf.ifname})',
             category=log.IncorrectAttr,
-            module=_config_name)
+            module=_config_name,
+            doc_url='plugins/evpn.multihoming/#plugin-evpn-multihoming')
         return False
     # ESI-LAG **requires** a manually assigned LACP System ID (unless we auto generate it)
     if intf.type == 'lag' and not intf.get('lag.lacp_system_id',False):
         log.error(
             f'Node {node.name}({node.device}) cannot use ESI-LAG interface without "lacp_system_id" ({intf.ifname})',
             category=log.IncorrectAttr,
-            module=_config_name)
+            module=_config_name,
+            doc_url='plugins/evpn.multihoming/#plugin-evpn-multihoming')
         return False
     # ES data: if auto value, and not lacp system id is defined (or not lag or not supported), trigger an error
     if intf_es_data.get('auto',False):
@@ -166,7 +171,8 @@ def _es_interface_attribute_validation(topology: Box, node: Box, intf: Box) -> b
             log.error(
                 f'Node {node.name}({node.device}) cannot use auto ESI on non-LAG interface ({intf.ifname})',
                 category=log.IncorrectAttr,
-                module=_config_name)
+                module=_config_name,
+                doc_url='plugins/evpn.multihoming/#plugin-evpn-multihoming')
             return False
         if not features.get('evpn.multihoming.esi_auto', False):
             log.error(

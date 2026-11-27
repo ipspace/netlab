@@ -59,7 +59,7 @@ def check_required_elements(topology: Box) -> None:
   invalid_topo = False
   for rq in ['nodes']:
     if not topology.get(rq):
-      log.error(f"Required topology element '{rq}' is missing or empty",category=log.MissingValue,module="topology")
+      log.error(f"Required topology element '{rq}' is missing or empty",category=log.MissingValue,module="topology",doc_url='topology-overview/#topology-overview')
       invalid_topo = True
 
   if invalid_topo:

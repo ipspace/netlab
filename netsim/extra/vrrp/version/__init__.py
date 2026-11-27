@@ -15,7 +15,8 @@ def pre_link_transform(topology: Box) -> None:
     log.error(
       'gateway module is not loaded.',
       log.IncorrectValue,
-      _config_name)
+      _config_name,
+      doc_url='plugins/vrrp.version/#plugin-vrrp-version')
 
 '''
 post_transform hook

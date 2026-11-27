@@ -88,7 +88,8 @@ def check_protocol_support(node: Box, topology: Box) -> bool:
         log.error(
           f'Node {srv} used for DHCP relaying on node {node.name} is not a DHCP server',
           category=log.IncorrectValue,
-          module='dhcp')
+          module='dhcp',
+          doc_url='module/dhcp/#dhcp-parameters-intf')
         OK = False
 
     node.dhcp.relay = True                                # Remember the node uses a DHCP relay
@@ -118,7 +119,8 @@ def check_protocol_support(node: Box, topology: Box) -> bool:
       log.error(
         f'VRF {vrf} used for DHCP relaying on node {node.name} has no interfaces on that node',
         category=log.IncorrectValue,
-        module='dhcp')
+        module='dhcp',
+        doc_url='module/dhcp/#dhcp-parameters-intf')
       OK = False
 
   return OK
@@ -230,7 +232,8 @@ def build_topology_dhcp_pools(topology: Box) -> None:
           log.error(
             f'Mismatch in DHCP pool {pid} prefix {pools[pid][af]}, link {lname} claims the prefix should be {af_pfx}',
             category=log.IncorrectValue,
-            module='dhcp')
+            module='dhcp',
+            doc_url='module/dhcp/#dhcp-pools')
       else:
         pools[pid][af] = af_pfx                             # New pool, add prefix
 
@@ -303,14 +306,16 @@ def set_dhcp_relay(intf: Box, n_name: str, topology: Box) -> None:
         log.error(
           f'DHCP server {srv_name} used by node {n_name} interface {intf.ifname} has no usable interface',
           category=log.MissingValue,
-          module='dhcp')
+          module='dhcp',
+          doc_url='module/dhcp/#dhcp-parameters-intf')
         continue
 
       if not af in cp_intf:                                 # Target AF not configured on the server CP interface?
         log.error(
           f'Missing {af} address on {cp_intf.ifname} on {srv_name}. Node {n_name} cannot use it as DHCP {af} relay',
           category=log.MissingValue,
-          module='dhcp')
+          module='dhcp',
+          doc_url='module/dhcp/#dhcp-parameters-intf')
         continue
 
       # We have a usable address on the DHCP server control-plane interface.
@@ -365,7 +370,8 @@ class DHCP(_Module):
           intf.pop(af)                              # Pop the interface address -- we don't want to confuse link augmentation
           if link.get(f'dhcp.client.{af}',None) is False:
             log.error(
-              f'Node {intf.name} cannot get a DHCP {af} address on link {link._linkname} that has DHCP disabled')
+              f'Node {intf.name} cannot get a DHCP {af} address on link {link._linkname} that has DHCP disabled',
+              doc_url='module/dhcp/#dhcp-parameters-link')
             continue
 
         # Copy link DHCP client status to interface in case the node does not have DHCP module enabled

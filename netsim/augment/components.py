@@ -74,7 +74,8 @@ def validate_include(n_name: str, n_data: Box, topology: Box) -> bool:
   if not n_data.include in topology.components:
     log.error(
       text=f'Component {n_data.include} used in node {n_name} not found',
-      category=log.IncorrectValue,module='components')
+      category=log.IncorrectValue,module='components',
+      doc_url='components/#topo-components')
     return False
   
   return True
@@ -111,7 +112,8 @@ def include_nodes(n_name: str, c_data: Box, topology: Box) -> None:
     if node_name in topology.nodes:
       log.error(
         text=f'Node {inc_name} included in component {n_name} already exists in topology',
-        category=log.IncorrectValue,module='components')
+        category=log.IncorrectValue,module='components',
+        doc_url='components/#topo-components')
       continue
 
     if 'include' in inc_data:                               # Are we dealing with a nested include?
@@ -142,7 +144,8 @@ def create_included_group(n_name: str, n_data: Box, c_data: Box, topology: Box) 
   if g_name in topology.groups:
     log.error(
       text=f'Group {g_name} already exists in topology',
-      category=log.IncorrectValue,module='components')
+      category=log.IncorrectValue,module='components',
+      doc_url='components/#topo-components')
     return
 
   g_data = topology.groups[g_name]
@@ -187,7 +190,8 @@ def validate_link_nodenames(topology: Box) -> None:
         log.error(
           f'{link._linkname} refers to an unknown node {intf.node}',
           category=log.IncorrectValue,
-          module='links')
+          module='links',
+          doc_url='components/#topo-components')
 
 '''
 Expand included components into groups, nodes and links

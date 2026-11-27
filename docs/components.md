@@ -1,3 +1,4 @@
+(topo-components)=
 # Topology Components
 
 Large lab topologies tend to be structured. For example, you might have two sites with a leaf-and-spine fabric, or a leaf-and-spine fabric with multiple racks.

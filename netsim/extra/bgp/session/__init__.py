@@ -18,7 +18,8 @@ def pre_link_transform(topology: Box) -> None:
     log.error(
       'BGP Module is not loaded.',
       log.IncorrectValue,
-      _config_name)
+      _config_name,
+      doc_url='plugins/bgp.session/#plugin-bgp-session')
 
 '''
 Get a list of attributes to apply to IBGP or EBGP sessions
@@ -128,7 +129,8 @@ def process_tcpao_password(neigh: Box, ndata: Box) -> None:
     log.error(
       f'BGP neighbor {neigh.name} on node {ndata.name} has TCP-AO configured without a password',
       log.MissingValue,
-      _config_name)
+      _config_name,
+      doc_url='plugins/bgp.session/#bgp-session-security')
     return
   
   pwd = neigh.password
@@ -155,7 +157,8 @@ def process_bfd_requests(ndata: Box, topology: Box) -> None:
       log.error(
         f'node {ndata.name} is running BFD with BGP neighbor {ngb.name} but does not use BFD module',
         log.IncorrectValue,
-        _config_name)
+        _config_name,
+        doc_url='plugins/bgp.session/#bgp-session-attributes')
 
 '''
 Check whether a node originating a default route needs static default route(s)
@@ -255,7 +258,8 @@ def set_rs_client(ndata: Box, ngb: Box, topology: Box) -> None:
         log.error(
           f'Node {r_ndata.name} cannot have an EBGP session with a BGP Route Server {ndata.name}',
           category=log.IncorrectType,
-          module='bgp.session')
+          module='bgp.session',
+          doc_url='plugins/bgp.session/#bgp-session-as-path')
 
 '''
 Deal with RS requests:

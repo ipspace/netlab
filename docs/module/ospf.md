@@ -144,6 +144,7 @@ You can specify most node parameters as global values (top-level topology elemen
 * To disable OSPF in a VRF set **ospf** to *False* (see also [](routing_disable_vrf)).
 * To originate a default route in a VRF OSPF instance, set the **ospf.default** VRF parameter ([more details](ospf-default))
 
+(ospf-link-parameters)=
 ## Link Parameters
 
 * **ospf.area** -- OSPF area. Use on ABRs; node-level OSPF area is recommended for intra-area routers.
@@ -153,7 +154,7 @@ You can specify most node parameters as global values (top-level topology elemen
 * **ospf.network_type** -- Set OSPF network type. Allowed values are **point-to-point**, **point-to-multipoint**, **broadcast** and **non-broadcast**[^NS]. See also [Default Link Parameters](#default-link-parameters)
 * **ospf.passive** -- explicitly enable or disable [passive interfaces](routing_passive)
 * **ospf.password** -- OSPFv2 cleartext interface authentication password
-* **ospf.timers** -- set OSPF interface timers. A dictionary containing **dead** and **hello** values (from 1 to 8192 seconds). If you specify only one of the timers, the other one is set to be four times higher/lower.
+* **ospf.timers** -- set OSPF interface timers. A dictionary containing **dead** and **hello** values (from 1 to 8192 seconds). If you specify only one of the timers, the other one is set to be four times higher/lower. The **hello** timer must be lower than the **dead** timer.
 
 [^NS]: Some OSPF network types (non-broadcast or point-to-multipoint) are not supported by all platforms.
 
@@ -167,6 +168,7 @@ You can specify most node parameters as global values (top-level topology elemen
 OSPF is automatically started on all interfaces within an autonomous system (interfaces with no EBGP neighbors; see also [](routing_external)). To disable OSPF on an intra-AS link, set **ospf** to *False* (see also [](routing_disable)).
 
 ```{tip}
+* OSPF cannot run on unnumbered IPv4 stub interfaces (unnumbered interfaces on links with no other nodes). Use a numbered stub link or a [loopback link](links-loopback) instead.
 * Management interfaces are never added to the OSPF process. They are not in the set of device links and, thus, not considered in the OSPF configuration template.
 * The OSPF configuration module is automatically removed from a node that does not run OSPF on any non-loopback interface or VRF. In that case, _netlab_ generates a warning that can be turned off by setting **‌defaults.ospf.warnings.inactive** to **‌False**.
 ```

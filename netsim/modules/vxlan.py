@@ -126,7 +126,8 @@ def node_set_vtep(node: Box, topology: Box) -> bool:
     log.error(
       f'VXLAN module needs an {vtep_af.upper()} address on interface {loopback_name} of {node.name}',
       category=log.IncorrectValue,
-      module='vxlan')
+      module='vxlan',
+      doc_url='module/vxlan/#vxlan-vtep')
     return False
 
   # Save VTEP IP address (from the selected VTEP interface) and VTEP interface name

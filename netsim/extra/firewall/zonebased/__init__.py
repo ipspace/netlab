@@ -40,5 +40,6 @@ def post_transform(topology: Box) -> None:
                 z = def_rule[z_direction]
                 if z not in node.firewall.zonebased._zones:
                     log.error( f"Node {node.name} does not have zone '{z}' used in firewall.zonebased.default_rules[{rule_idx}].{z_direction}",
-                            category=log.IncorrectAttr,module=_config_name)
+                            category=log.IncorrectAttr,module=_config_name,
+                            doc_url='plugins/firewall.zonebased/#plugin-firewall-zonebased')
     return

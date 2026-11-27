@@ -8,7 +8,7 @@ The `doc_url` parameter points to the relevant documentation page. While you can
 The `defaults.const.doc_url_prefix` topology default contains the _netlab_ documentation website URL (default: `https://netlab.tools/`) and can be changed by the user if they use a different website (for example, `https://ipspace.github.io/netlab/`) or an internal mirror.
 
 (dev-documentation-url-anchor)=
-The URL anchor should be taken from the Markdown text, not from the auto-generated website anchors. Sphinx generates heading anchors from heading text, which can change, whereas the source anchors do not. For example, do not use `module/stp/#global-parameters` (generated from heading text) to point to STP global parameters. Use `module/stp/#module-stp-global-params` (using Markdown anchor).
+The URL anchor should be taken from the Markdown text, not from the auto-generated website anchors. Sphinx replaces underscores in the Markdown anchors with hyphens; use `module/routing_protocols/#routing-router-id` to point to the `(routing_router_id)=` anchor. Sphinx generates heading anchors from heading text, which can change, whereas the source anchors do not. For example, do not use `module/stp/#global-parameters` (generated from heading text) to point to STP global parameters. Use `module/stp/#module-stp-global-params` (using Markdown anchor).
 
 Finally, the documentation pointer is displayed with the green `[DOCS]` marker and the intro text derived from the `doc_url_text` parameter. Omitting that parameter will result in the standard text:
 

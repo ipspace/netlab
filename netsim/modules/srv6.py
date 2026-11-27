@@ -76,7 +76,8 @@ def process_srv6_locator(node: Box, topology: Box) -> None:
   if locator_pfx.prefixlen != 48:
     log.error(
       f'The SRv6 node uSID should be in the F3126 format (a /48 prefix), found {node.srv6.locator} on {node.name}',
-      category=log.IncorrectValue)
+      category=log.IncorrectValue,
+      doc_url='module/srv6/#srv6-node-parameters')
     return
 
   # Split the locator prefix into block (upper 32 bits) and node ID (next 16 bits)
@@ -109,7 +110,8 @@ class SRV6(_Module):
       log.error(
           f"Custom SRv6 addressing pool '{POOL_NAME}' must provide IPv6 prefixes",
           category=log.MissingValue,
-          module='srv6')
+          module='srv6',
+          doc_url='module/srv6/#srv6-node-parameters')
 
   def module_pre_transform(self, topology: Box) -> None:
     addressing.get(topology.pools,[get_pool_name()])        # Throw away the all-zeroes prefix
@@ -131,7 +133,8 @@ class SRV6(_Module):
         log.error(
           f"Node {node.name} does not have the {igp} IGP module enabled to run SRv6",
           category=log.MissingDependency,
-          module='srv6')
+          module='srv6',
+          doc_url='module/srv6/#module-srv6')
       if not d_features.srv6.get(igp):
         log.error(
           f"Node {node.name} (device {node.device}) does not support {igp} as IGP for SRv6",
@@ -151,7 +154,8 @@ class SRV6(_Module):
         log.error(
           f"Node {node.name} does not have the BGP module enabled to support BGP v4/v6",
           category=log.MissingDependency,
-          module='srv6')
+          module='srv6',
+          doc_url='module/srv6/#srv6-services')
     data.bool_to_defaults(node.srv6,'vpn',DEFAULT_BGP_AF)    # Typically used with the vrf module, but not only
     if node.srv6.get('vpn') and not d_features.srv6.get('vpn'):
       log.error(
@@ -167,13 +171,15 @@ class SRV6(_Module):
         log.error(
           f"Node {node.name} does not have an IPv6 loopback required for SRv6, and auto-allocation is disabled",
           category=log.MissingValue,
-          module='srv6')
+          module='srv6',
+          doc_url='module/srv6/#srv6-node-parameters')
     mods = node.get('module',[])
     for igp in node.get('srv6.igp',[]):           # Check if the IGP module is still active, it may have been removed
       igp = igp.replace('ebgp','bgp')             # EBGP as IGP requires BGP module
       if igp not in mods:
         log.warning(
           text=f"The IGP module for {igp} on node {node.name} has been removed, SRv6 will likely not work",
-          module='srv6')
+          module='srv6',
+          doc_url='module/srv6/#module-srv6')
     if 'bgp' in node:
       configure_bgp_for_srv6(node,topology)

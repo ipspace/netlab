@@ -102,17 +102,20 @@ def clone_node(node: Box, topology: Box) -> None:
   _p = { 'start': 1, 'step': 1 } + node.pop('clone',{})                      # Define cloning parameters
   if 'count' not in _p:
     log.error("Node {node.name} missing required attribute clone.count",     # Not validated by Netlab
-              category=AttributeError, module='node.clone')
+              category=AttributeError, module='node.clone',
+              doc_url='plugins/node.clone/#plugin-node-clone')
     return
   for attr in _p:
     if not data.is_true_int(_p[attr]) or _p[attr]<=0:
       log.error(f"Attribute {attr} for node.clone must be a positive int",
-                category=AttributeError, module='node.clone')
+                category=AttributeError, module='node.clone',
+                doc_url='plugins/node.clone/#plugin-node-clone')
       return
 
   if 'include' in node:                                                      # Check for components
     log.error("Cannot clone component {node.name}, only elementary nodes",
-              category=AttributeError, module='node.clone')
+              category=AttributeError, module='node.clone',
+              doc_url='plugins/node.clone/#plugin-node-clone')
     return
 
   name_format = topology.defaults.clone.node_name_pattern

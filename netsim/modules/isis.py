@@ -20,7 +20,8 @@ def isis_net(i_data: Box, node: Box) -> bool:
       log.error(
         'net attribute is not a NSAP with zero n-selector',
         category=log.IncorrectValue,
-        module='isis')
+        module='isis',
+        doc_url='module/isis/#isis-node')
       return False
     i_data.area = n_parsed[1]
     i_data.system_id = n_parsed[2].rstrip('.')
@@ -31,7 +32,8 @@ def isis_net(i_data: Box, node: Box) -> bool:
       log.error(
         f'isis.area or isis.net is not defined on node {node.name}',
         category=log.MissingValue,
-        module='isis')
+        module='isis',
+        doc_url='module/isis/#isis-node')
       return False
     i_data.net = f'{i_data.area}.{i_data.system_id}.00'
 

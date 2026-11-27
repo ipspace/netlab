@@ -73,7 +73,7 @@ A dictionary describing an individual link contains *node names* and *additional
 * **linkindex** [R/O] -- link sequence number (starting with one), used to generate default bridge names in libvirt.
 * **linkid** (identifier) -- an identifier that [uniquely identifies a link or a node interface](link-linkid).
 * **members** -- list of links in a [link group](link-groups)
-* **mtu** -- link MTU (see [Changing MTU](links-mtu) section for more details)
+* **mtu** -- link MTU (integer, see [Changing MTU](links-mtu) section for more details)
 * **name** -- [link name](link-name) (used for interface description)
 * **pool** -- addressing pool used to assign a prefix to this link. The **pool** attribute is ignored on links with a **prefix** attribute.
 * **prefix** -- [prefix (or a set of prefixes)](links-static-addressing) used on the link. Setting **prefix** to *false* will give you a link without any IP configuration[^NOIP]
@@ -393,6 +393,10 @@ All devices supported by *netlab* are assumed to use the ancient default layer-3
 Please note that the **mtu** specified by *netlab* is always the layer-3 (IPv4 or IPv6) MTU. The peculiarities of individual device configuration commands are transparently (to the end-user) handled in the device configuration templates.
 
 You can change the **mtu** on an individual interface (probably not a good idea), on a link, for a particular node, device type, or the whole lab.
+
+```{warning}
+* IPv6-enabled nodes and interfaces cannot have an MTU lower than 1280 (the minimum IPv6 MTU).
+```
 
 ### Interface MTU
 

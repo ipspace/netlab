@@ -49,4 +49,5 @@ def post_quirks(topology: Box) -> None:
       log.warning(
         text=f'Custom configuration {m_config.item} is missing for device {m_device} (nodes {",".join(m_nodes)})',
         more_hints='You will have to configure the missing functionality yourself',
-        module='check.config')
+        module='check.config',
+        doc_url='plugins/check.config/#plugin-check-config')

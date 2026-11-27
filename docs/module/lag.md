@@ -23,6 +23,7 @@ LAG is currently supported on these platforms:
 * Static LAG (LACP disabled) is not tested with integration tests.
 * Cisco IOL L2 and IOSv L2 treat port-channel interfaces like physical interfaces. Setting the LACP rate is not available.
 
+(lag-params)=
 ## Parameters
 
 The following parameters can be set globally, per node or link aggregation group:
@@ -37,7 +38,7 @@ The following parameters can be set globally, per node or link aggregation group
 
 The following parameters can be set on individual links:
 
-* **lag.members**: Mandatory list of links that form the LAG. It uses the [same format as the topology **links** list](link-formats).
+* **lag.members**: Mandatory list of links that form the LAG. It uses the [same format as the topology **links** list](link-formats). Each member link must connect two different nodes, and all member links of a non-MLAG LAG must connect the same pair of nodes. Configure the LAG attributes on the LAG link, not on the member links.
 * **lag.ifindex**: Optional parameter that controls the naming of the LAG (bonding, port-channel) interface.
 * **lag.mlag**: Optional dictionary with peer link parameters; see [below](lag-mlag)
 

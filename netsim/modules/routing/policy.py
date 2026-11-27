@@ -71,7 +71,8 @@ def normalize_policy_entry(p_entry: typing.Any, p_idx: int) -> typing.Any:
       log.error(
         'Cannot use "set.community.delete" and "delete" attributes in the same routing policy entry',
         category=log.IncorrectAttr,
-        module='routing')
+        module='routing',
+        doc_url='module/routing/#generic-routing-policies')
     p_entry.delete.community = p_entry.set.community
     p_entry.delete.community.pop('delete')        # ... and remove the 'delete' keyword
     p_entry.pop('set.community',None)
@@ -79,7 +80,8 @@ def normalize_policy_entry(p_entry: typing.Any, p_idx: int) -> typing.Any:
       text='Replacing routing.policy.set.community.delete with routing.policy.delete.community',
       more_hints=['The set.community.delete attribute is obsolete, use the new delete.community attribute'],
       flag='set_delete',
-      once=True)
+      once=True,
+      doc_url='module/routing/#generic-routing-policies')
 
   # Also, migrage set.community.delete_list into delete.community.list
   #
@@ -88,14 +90,16 @@ def normalize_policy_entry(p_entry: typing.Any, p_idx: int) -> typing.Any:
       log.error(
         'Cannot use "set.community.delete_list" and "delete" attributes in the same routing policy entry',
         category=log.IncorrectAttr,
-        module='routing')
+        module='routing',
+        doc_url='module/routing/#generic-routing-policies')
     p_entry.delete.community.standard.list = p_entry.set.community.delete_list
     p_entry.pop('set.community',None)
     log.warning(
       text='Replacing routing.policy.set.community.delete_list with routing.policy.delete.community.list',
       more_hints=['The set.community.delete_list attribute is obsolete, use the new delete.community.list attribute'],
       flag='set_delete_list',
-      once=True)
+      once=True,
+      doc_url='module/routing/#generic-routing-policies')
 
   if 'set' in p_entry and not p_entry.set:        # If the policy 'set' operation is empty
     p_entry.pop('set')                            # ... remove it completely

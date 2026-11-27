@@ -237,7 +237,8 @@ def create_routing_policy(ndata: Box, ngb: Box, p_name: str) -> None:
         f'Cannot mix bgp.policy with individual BGP policy attributes -- node {ndata.name} neighbor {ngb.name}',
         category=log.IncorrectValue,
         more_data = more_data,
-        module='bgp.policy')
+        module='bgp.policy',
+        doc_url='plugins/bgp.policy/#plugin-bgp-policy-individual')
       continue
 
     data.append_to_list(ndata,'module','routing')
@@ -259,7 +260,8 @@ def apply_bgp_routing_policy(ndata: Box,ngb: Box,intf: Box,topology: Box) -> Non
       log.error(
         f"You cannot use 'bgp.policy' interface attribute on a node that does not use 'routing' module",
         category=log.IncorrectType,
-        module='bgp.policy')
+        module='bgp.policy',
+        doc_url='plugins/bgp.policy/#plugin-bgp-policy-apply')
       return
 
     # Get the routing policy name, try to import it, and check it if the import was successful

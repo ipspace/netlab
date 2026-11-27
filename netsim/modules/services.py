@@ -24,7 +24,8 @@ def resolve_servers(node: Box, svc_data: Box, topology: Box, mod_attr: Box, svc_
             f'or services.server.{kw} attribute. You can also specify {kw} server as',
             f'non-empty services.{kw}.ipv4 or services.{kw}.ipv6 address lists'],
           category=log.MissingValue,
-          module='services')
+          module='services',
+          doc_url='module/services/#services-common-parameters')
       continue
 
     for srv_name in svc_data[kw].get('server',[]):
@@ -87,12 +88,14 @@ def print_client_server_errors(svc_cache: Box, mod_attr: Box) -> None:
         log.error(
           f'Node {srv_name} is not a {kw} server',
           category=log.IncorrectValue,
-          more_data=f'Used by {kw} client(s) on node(s) '+','.join(srv_data[kw].err_clients))
+          more_data=f'Used by {kw} client(s) on node(s) '+','.join(srv_data[kw].err_clients),
+          doc_url='module/services/#services-common-parameters')
       elif 'err_af' in srv_data[kw]:
         log.error(
           f'{kw} server {srv_name} has no address family in common with some of its clients',
           category=log.MissingDependency,
-          more_data=f'Conflict with {kw} client(s) on node(s) '+','.join(srv_data[kw].err_af))
+          more_data=f'Conflict with {kw} client(s) on node(s) '+','.join(srv_data[kw].err_af),
+          doc_url='module/services/#services-common-parameters')
 
 def check_vrf(ndata: Box,mod_attr: Box) -> None:
   for kw in mod_attr.clients:
@@ -103,7 +106,8 @@ def check_vrf(ndata: Box,mod_attr: Box) -> None:
       log.error(
         f'VRF {vrf_name} used to reach {kw} server from node {ndata.name} is not present on that node',
         category=log.MissingDependency,
-        module='services')
+        module='services',
+        doc_url='module/services/#services-common-parameters')
 
 def set_dns_fields(ndata: Box) -> None:
   """

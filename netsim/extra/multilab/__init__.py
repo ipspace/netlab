@@ -119,7 +119,8 @@ def allocate_id(topology: Box) -> None:
       'Cannot allocate multilab ID, all IDs between 1 and 200 are used',
       category=log.IncorrectValue,
       module='multilab',
-      more_hints="Use 'netlab status --all' to display the list of lab instances")
+      more_hints="Use 'netlab status --all' to display the list of lab instances",
+      doc_url='plugins/multilab/#plugin-multilab-auto-id')
     return
 
   mlab.id = random.choice(free_id)
@@ -138,7 +139,7 @@ def init(topology: Box) -> None:
   abort = False
   for kw in ['id','change']:                          # Check that we have all default parameters needed for multilab to work
     if not kw in mlab:
-      log.error(f'multilab plugin requires defaults.multilab.{kw} parameter',log.MissingValue,'multilab')
+      log.error(f'multilab plugin requires defaults.multilab.{kw} parameter',log.MissingValue,'multilab',doc_url='plugins/multilab/#plugin-multilab-usage')
       abort = True
 
   if abort:
