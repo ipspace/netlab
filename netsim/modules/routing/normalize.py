@@ -51,7 +51,8 @@ def normalize_routing_objects(
         log.error(
           f'Global routing {o_type} {o_name} cannot be None. Use an empty list if you want to have an empty object',
           category=log.IncorrectValue,
-          module='routing')
+          module='routing',
+          doc_url='module/routing/#routing-object-import')
       continue
 
     o_value = o_dict[o_name]
@@ -110,7 +111,8 @@ def import_routing_object(
       log.error(                                            # ... we have to throw an error
         f'Global routing {o_name} {pname} referenced in node {node.name} does not exist',
         category=log.MissingValue,
-        module='routing')
+        module='routing',
+        doc_url='module/routing/#routing-object-import')
       node.routing[o_name].pop(pname,None)
       return None
 
@@ -135,7 +137,8 @@ def import_routing_object(
           f'node {node.name} {np_data.type} {o_name} list {pname}',
           more_hints=['The type of the global and node object must match'],
           module='routing',
-          category=log.IncorrectType)
+          category=log.IncorrectType,
+          doc_url='module/routing/#routing-object-merge')
         return None
     np_data = np_data[list_attr]                            # List values stored in a dict; work with them
     tp_data = tp_data[list_attr]

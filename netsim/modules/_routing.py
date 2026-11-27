@@ -260,7 +260,8 @@ def get_router_id_prefix(node: Box, proto: str, pools: Box, use_id: bool = True)
     log.error(
       f'Cannot create a router ID for protocol {proto} on node {node.name}: router_id addressing pool is not defined',
       log.MissingValue,
-      proto)
+      proto,
+      doc_url='module/routing_protocols/#routing-router-id')
     return None
 
   pool = 'router_id'
@@ -269,14 +270,16 @@ def get_router_id_prefix(node: Box, proto: str, pools: Box, use_id: bool = True)
     log.error(
       f'Cannot create a router ID prefix from {pool} pool for protocol {proto} on node {node.name}',
       log.IncorrectValue,
-      proto)
+      proto,
+      doc_url='module/routing_protocols/#routing-router-id')
     return None
 
   if not pfx.get('ipv4',None):
     log.error(
       f'{pool} pool did not return a usable IPv4 address to use as router ID for protocol {proto} on node {node.name}',
       log.IncorrectValue,
-      proto)
+      proto,
+      doc_url='module/routing_protocols/#routing-router-id')
     return None
 
   return pfx
@@ -292,7 +295,8 @@ def router_id(node: Box, proto: str, pools: Box) -> None:
         f'{proto} router_id "{node[proto].router_id}" specified for {proto} on node {node.name} is not an IPv4 address',
         more_data=str(ex),
         category=log.IncorrectValue,
-        module=proto)
+        module=proto,
+        doc_url='module/routing_protocols/#routing-router-id')
     return
 
   if 'router_id' in node:                     # Node has a configured router ID, copy it and get out
@@ -304,7 +308,8 @@ def router_id(node: Box, proto: str, pools: Box) -> None:
         f'router_id "{node.router_id}" specified on node {node.name} is not an IPv4 address',
         more_data=str(ex),
         category=log.IncorrectValue,
-        module=proto)
+        module=proto,
+        doc_url='module/routing_protocols/#routing-router-id')
     return
 
   if 'ipv4' in node.get('loopback',{}):       # Do we have IPv4 address on the loopback? If so, use it as router ID
@@ -386,7 +391,8 @@ def build_vrf_interface_list(
         f"VRF {vname} on {node.name} has unnumbered interface(s) running {proto} without a VRF loopback",
         category=log.MissingDependency,
         module="vrf",
-        more_data=f"Used on interface(s) {','.join(unnum_err_list[vname])}")
+        more_data=f"Used on interface(s) {','.join(unnum_err_list[vname])}",
+        doc_url='module/vrf/#vrf-loopback')
 
     routing_af(vdata,proto,f'VRF {vname} on {node.name}',is_vrf=True,features=features)
 
@@ -606,11 +612,13 @@ def get_unique_router_ids(node: Box, proto: str, topology: Box) -> None:
         text=f'router ID for VRF {vname} on node {node.name} was changed from {rid} to {vdata[proto].router_id}',
         module=proto,
         more_hints=f'Device {node.device} requires a unique router ID for each {proto} instance',
-        flag='changed_id')
+        flag='changed_id',
+        doc_url='module/routing_protocols/#routing-router-id')
     else:                                                   # Ran out of RID pool, report another error
       log.warning(
         text=f'Cannot change router ID for VRF {vname} on node {node.name}',
-        module=proto)
+        module=proto,
+        doc_url='module/routing_protocols/#routing-router-id')
 
 """
 is_vrf_protocol: Check if a protocol runs in the current VRF
@@ -677,7 +685,8 @@ def check_import_request(
       log.error(                                            # Source protocol not active on the node ==> yell
         f'Node {node.name}: cannot import routes from {s_proto} which is not running on the box',
         category=log.IncorrectValue,
-        module=proto)
+        module=proto,
+        doc_url='module/routing_protocols/#routing-import')
       continue
 
     if s_proto == proto:                                    # Cannot redistribute a protocol into itself
@@ -685,7 +694,8 @@ def check_import_request(
         f'Node {node.name}: cannot import {s_proto} routes into {proto}',
         more_hints=['Route import works between different protocols or from connected subnets'],
         category=log.IncorrectValue,
-        module=proto)
+        module=proto,
+        doc_url='module/routing_protocols/#routing-import')
       continue
 
     # Add an import routing policy if needed
@@ -776,7 +786,8 @@ def remove_vrf_imports(node: Box, vname: str, vdata: Box, proto: str) -> None:
       log.error(
         f'Cannot import {proto} routes into {rp} in VRF {vname} on node {node.name}: {proto} is not active in that VRF',
         category=log.IncorrectValue,
-        module=rp)
+        module=rp,
+        doc_url='module/routing_protocols/#routing-import')
 
 """
 process_default_route: Perform default route processing

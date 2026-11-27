@@ -154,7 +154,8 @@ def normalize_vrf_dict(obj: Box, topology: Box) -> None:
           f'Reserved VRF names are {r_list}',
           'Set defaults.vrf.attributes.reserved attribute to change that list' ],
         category=log.IncorrectValue,
-        module='vrf')
+        module='vrf',
+        doc_url='module/vrf/#module-vrf-definition')
 
     if 'loopback' in vdata:
       validate_vrf_loopback(vname,vdata,obj,topology)
@@ -167,14 +168,16 @@ def normalize_vrf_dict(obj: Box, topology: Box) -> None:
         if not asn:
           log.error(f'VRF {vname} in {obj_name} uses integer RD value without a usable vrf.as or bgp.as AS number',
             log.MissingValue,
-            'vrf')
+            'vrf',
+            doc_url='module/vrf/#vrf-rd-rt')
           return
         vdata.rd = f'{asn}:{vdata.rd}'
       else:                     # We know that RD attribute makes some sense (due to type validation), so it's either int or str
         if parse_rdrt_value(vdata.rd) is None:
           log.error(f'RD value in VRF {vname} in {obj_name} ({vdata.rd}) is not in N:N format',
             log.IncorrectValue,
-            'vrf')
+            'vrf',
+            doc_url='module/vrf/#vrf-rd-rt')
 
 def normalize_vrf_ids(topology: Box) -> None:
   normalize_vrf_dict(topology,topology)
@@ -286,20 +289,23 @@ def set_import_export_rt(obj : Box, topology: Box) -> None:
           if not asn:
             log.error(f'VRF {vname} in {obj_id} uses integer {rtname} value without a usable vrf.as or bgp.as AS number',
               log.MissingValue,
-              'vrf')
+              'vrf',
+              doc_url='module/vrf/#vrf-rd-rt')
             continue
           rtvalue = f'{asn}:{rtvalue}'
         elif not isinstance(rtvalue,str):   # If RT is not an integer, it really should be a string
           log.error(f'{rtname} value {rtvalue} in VRF {vname} in {obj_id} should be a string or an integer',
             log.IncorrectValue,
-            'vrf')
+            'vrf',
+            doc_url='module/vrf/#vrf-rd-rt')
           continue
         else:
           if ':' in rtvalue:                # If there's a colon in RT value, then we're assuming N:N format
             if parse_rdrt_value(rtvalue) is None:
               log.error(f'{rtname} value {rtvalue} in VRF {vname} in {obj_id} is not in valid N:N format',
                 log.IncorrectValue,
-                'vrf')
+                'vrf',
+                doc_url='module/vrf/#vrf-rd-rt')
               continue
           else:                             # Otherwise the RT value should refer to another VRF name
             rtvalue = get_vrf_id(rtvalue,obj,topology)
@@ -572,7 +578,8 @@ class VRF(_Module):
           log.error(
             f'VRF {ifdata.vrf} used on an interface in {node.name} does not have a usable RD',
             log.MissingValue,
-            'vrf')
+            'vrf',
+            doc_url='module/vrf/#vrf-rd-rt')
           continue
 
         for af in ['v4','v6']:
@@ -612,7 +619,8 @@ class VRF(_Module):
         log.error(
           f"Found invalid VRF {k} on node {node.name}. Did you mention it only in groups.node_data? You can't do that.",
           log.IncorrectValue,
-          'vrf')
+          'vrf',
+          doc_url='groups/#groups-node-vlan-vrf')
         log.exit_on_error()
 
     # We need unique VRF index to create OSPF processes, assign in order sorted by VRF ID "for consistency"

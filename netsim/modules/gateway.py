@@ -126,11 +126,11 @@ def process_gw_id(
   if gw_id is None:
     if not required:
       return
-    log.error(f'{path} gateway.id parameter is missing',log.MissingValue,'gateway')
+    log.error(f'{path} gateway.id parameter is missing',log.MissingValue,'gateway',doc_url='module/gateway/#gateway-global')
     return
   
   if not data.is_true_int(gw_id):
-    log.error(f'{path} gateway.id parameter is not integer',log.IncorrectValue,'gateway')
+    log.error(f'{path} gateway.id parameter is not integer',log.IncorrectValue,'gateway',doc_url='module/gateway/#gateway-global')
     return
   
   if gw_id < 0:
@@ -204,7 +204,8 @@ class FHRP(_Module):
             text='Interface gateway attribute ignored due to gateway:false configured on the link',
             more_data=f'Link {link._linkname} node {intf.node}',
             flag='no_gateway',
-            module='gateway')
+            module='gateway',
+            doc_url='module/gateway/#gateway-intf')
           intf.pop('gateway',None)
       else:
         link.gateway = True                                 # Found interface gateway attribute but no link GW. Fix that
@@ -249,7 +250,8 @@ class FHRP(_Module):
           f'Gateway attribute {k} is missing in {link._linkname}\n' + \
           strings.extra_data_printout(strings.format_structured_dict(link)),
           log.MissingValue,
-          'gateway')
+          'gateway',
+          doc_url='module/gateway/#gateway-link')
         return
 
     if not data.is_true_int(link.gateway.id):
@@ -257,7 +259,8 @@ class FHRP(_Module):
         f'Gateway.id parameter in {link._linkname} must be an integer\n' + \
           strings.extra_data_printout(strings.format_structured_dict(link)),
         log.IncorrectType,
-        'gateway')
+        'gateway',
+        doc_url='module/gateway/#gateway-link')
       return
 
     if link.gateway.id == -1:
@@ -265,7 +268,8 @@ class FHRP(_Module):
           f'Cannot use -1 as the gateway ID in {link._linkname} -- that would be the broadcast address\n' + \
           strings.extra_data_printout(strings.format_structured_dict(link)),
           log.IncorrectValue,
-          'gateway')
+          'gateway',
+          doc_url='module/gateway/#gateway-link')
 
     # Finally, some interfaces might have had 'gateway' set to True. Now that we have the
     # full gateway structure, copy that to those interfaces

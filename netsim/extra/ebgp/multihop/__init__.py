@@ -69,7 +69,8 @@ def pre_link_transform(topology: Box) -> None:
       if not 'loopback' in node:
         log.error(
           'Cannot establish EBGP multihop session from node {intf.name}: node has no loopback interface',
-          log.IncorrectValue,'ebgp.multihop')
+          log.IncorrectValue,'ebgp.multihop',
+          doc_url='plugins/ebgp.multihop/#plugin-ebgp-multihop')
         continue
       for af in ['ipv4','ipv6']:
         if af in node.loopback:
@@ -188,7 +189,8 @@ def fix_vrf_loopbacks(ndata: Box, topology: Box) -> None:
           f'Cannot create EBGP multihop session to {ngb.name} from VRF {ngb._src_vrf} on {ndata.name}',
           more_hints=['A VRF with a multihop EBGP session must have a loopback interface'],
           category=log.MissingValue,
-          module='ebgp.multihop')
+          module='ebgp.multihop',
+          doc_url='plugins/ebgp.multihop/#plugin-ebgp-multihop')
         continue
 
       ngb._source_intf = lb

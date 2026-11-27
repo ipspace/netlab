@@ -10,6 +10,7 @@ This configuration module configures Segment Routing with MPLS encapsulation (SR
    :backlinks: none
 ```
 
+(sr-mpls-features)=
 ## Supported Features
 
 Supported Segment Routing features (see also [](sr-mpls-platforms)):

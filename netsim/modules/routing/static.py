@@ -35,7 +35,8 @@ def include_global_static_routes(o_data: BoxList,o_type: str,node: Box,topology:
         log.error(
           f'{sr_name} is trying to include non-existent global static route list {sr_data.include}',
           category=log.MissingValue,
-          module='routing')
+          module='routing',
+          doc_url='module/routing/#routing-static-global')
         sr_data.remove = True
         continue
 
@@ -58,7 +59,8 @@ def include_global_static_routes(o_data: BoxList,o_type: str,node: Box,topology:
         f'{sr_name} has exceeded the include depth limit',
         more_hints='You might have a loop of "include" requests',
         category=log.IncorrectValue,
-        module='routing')
+        module='routing',
+        doc_url='module/routing/#routing-static-global')
       return o_data
 
 """
@@ -115,7 +117,8 @@ def process_static_route_includes(
         log.error(
           f'{sr_name} is trying to include non-existent global static route list {sr_data.include}',
           category=log.MissingValue,
-          module='routing')
+          module='routing',
+          doc_url='module/routing/#routing-static-global')
         sr_data.remove = True
         continue
 
@@ -138,7 +141,8 @@ def process_static_route_includes(
         f'{sr_name} has exceeded the include depth limit',
         more_hints='You might have a loop of "include" requests',
         category=log.IncorrectValue,
-        module='routing')
+        module='routing',
+        doc_url='module/routing/#routing-static-global')
       return o_data
 
 """
@@ -241,7 +245,8 @@ def resolve_node_nexthop(sr_data: Box, node: Box, topology: Box) -> Box:
         f'Next hop {sr_data.nexthop.node} for static route "{get_static_route_id(sr_data)}"'+ \
         f' is connected to node {node.name} but not in VRF {nh_vrf or "default"}',
         category=log.IncorrectValue,
-        module='routing')
+        module='routing',
+        doc_url='module/routing/#routing-static-vrf')
 
     nh = extract_af_info(
            _routing.get_remote_cp_endpoint(topology.nodes[sr_data.nexthop.node]),
@@ -400,7 +405,8 @@ def check_VRF_static_route(sr_data: Box, node: Box, sr_features: Box) -> bool:
         f'Static route "{get_static_route_id(sr_data)}" in node {node.name}' + \
         f' refers to VRF {sr_data.vrf} which is not defined',
         category=log.IncorrectValue,
-        module='routing')
+        module='routing',
+        doc_url='module/routing/#routing-static-vrf')
       return False
 
     if not sr_features.get('vrf',False):
@@ -425,7 +431,8 @@ def check_VRF_static_route(sr_data: Box, node: Box, sr_features: Box) -> bool:
         f'Next hop of a static route "{get_static_route_id(sr_data)}" in node {node.name}' + \
         f' refers to VRF {sr_data.nexthop.vrf} which is not defined',
         category=log.IncorrectValue,
-        module='routing')
+        module='routing',
+        doc_url='module/routing/#routing-static-vrf')
       return False
     
   return True
@@ -488,7 +495,8 @@ def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
     log.error(
       f'Static route "{get_static_route_id(sr_data)}" in node {node.name} has no usable IPv4 or IPv6 prefix',
       category=log.MissingValue,
-      module='routing')
+      module='routing',
+      doc_url='module/routing/#routing-static-config')
     return
 
   if 'nexthop' not in sr_data:
@@ -498,7 +506,8 @@ def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
       log.error(
         f'Static route "{get_static_route_id(sr_data)}" in node {node.name} has no next hop information',
         category=log.MissingValue,
-        module='routing')
+        module='routing',
+        doc_url='module/routing/#routing-static-config')
     return
 
   if 'vrf' in sr_data or 'vrf' in sr_data.nexthop:
@@ -535,7 +544,8 @@ def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
           f'A static route for {",".join(sr_data[af])} on node {node.name} has no {af} next hop',
           more_data=str(sr_data),
           category=log.MissingValue,
-          module='routing')
+          module='routing',
+          doc_url='module/routing/#routing-static-config')
         return
 
     if comment:

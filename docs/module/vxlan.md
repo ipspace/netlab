@@ -85,6 +85,7 @@ The VXLAN module builds ingress replication lists for all nodes with **vxlan.flo
 
 All VLAN-specific ingress replication lists are merged into a node-level ingress replication list. Some devices support per-VLAN replication lists while others might use node-level replication lists; the only difference is the amount of irrelevant traffic replicated across the VXLAN transport network.
 
+(vxlan-vtep)=
 ## Changing the VXLAN VTEP Source interface/address
 
 _netlab_ assumes you want to use the first loopback interface/address as the VTEP source interface/address.

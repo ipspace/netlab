@@ -46,7 +46,8 @@ def update_neighbors( node: Box, intf: Box, topology: Box ) -> bool:
   link = topology.links[ intf.linkindex-1 ]
   if 'virtual_interface' in intf or link.node_count!=2:
     log.error( f"{intf.name}: 'bonding.ifindex' can only be applied to interfaces on direct p2p links",
-               category=log.IncorrectAttr,module=_config_name)
+               category=log.IncorrectAttr,module=_config_name,
+               doc_url='plugins/bonding/#plugin-bonding')
     return False
 
   intf.neighbors = [ { 'node': n.node, 'ifname': n.ifname } for n in intf.neighbors ]  # Clear any IP addresses from neighbors

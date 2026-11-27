@@ -20,7 +20,8 @@ def validate_tool_attributes(topology: Box) -> None:
       log.error(
         f'Invalid tool {tool}\n... valid tools are {",".join(topology.defaults.tools.keys())}',
         log.IncorrectValue,
-        'topology')
+        'topology',
+        doc_url='extools/#extools-list')
       continue
     if not 'runtime' in topology.tools[tool]:       # Check that the tool has a runtime defined
       topology.tools[tool].runtime = 'docker'       # Default is Docker
@@ -36,7 +37,8 @@ def merge_tool_defaults(topology: Box) -> None:
       log.error(
         f'Invalid runtime {tool_data.runtime} for tool {tool}\n... valid runtimes are {",".join(valid_runtimes)}',
         log.IncorrectValue,
-        'topology')
+        'topology',
+        doc_url='extools/#tools-intro')
 
 """
 Get the list of active tools: tools specified in the lab topology and tools enabled by default

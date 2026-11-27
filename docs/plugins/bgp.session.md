@@ -10,13 +10,18 @@ The **bgp.session** plugin (initially contributed by Stefano Sasso) implements n
    :backlinks: none
 ```
 
+```{tip}
+The plugin works with the BGP configuration module; you have to add **bgp** to the list of [configuration modules](topo-modules) used in your lab topology.
+```
+
+(bgp-session-attributes)=
 ## Supported BGP Attributes
 
 The plugin adds the following BGP session attributes:
 
 * **bgp.allowas_in** is an attribute that controls whether a BGP router accepts one or more copies of its own AS number in incoming update. It takes an integer value between 1 and 10. A *true* value sets it to 1.
 * **bgp.as_override** is a boolean attribute that controls whether a BGP router replaces peer AS with its own AS.
-* **bgp.bfd** is a boolean attribute that enables BFD with BGP neighbors.
+* **bgp.bfd** is a boolean attribute that enables BFD with BGP neighbors. The nodes using this attribute must also use the **bfd** configuration module.
 * **bgp.default_originate** is a boolean attribute that controls whether a BGP router advertises a default route to its neighbor(s).
 * **bgp.gr** defines [BGP graceful restart](plugin-bgp-session-gr) capabilities
 * **bgp.gtsm** is an integer attribute that enables the Generic TTL Security Mechanism (GTSM). A *true* value sets it to 1 (the remote router can be up to one hop away).

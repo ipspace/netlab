@@ -43,7 +43,8 @@ def node_adjust_ldp(node: Box, topology: Box, features: Box) -> None:
     log.error(
       f'You cannot enable MPLS LDP on node {node.name} without IPv4 address family',
       log.MissingValue,
-      'mpls')
+      'mpls',
+      doc_url='module/mpls/#mpls-params')
     return
 
   node.ldp = node.mpls.ldp
@@ -122,7 +123,8 @@ def validate_mpls_bgp_parameter(node: Box, feature: str) -> bool:
     log.error(
       f'nodes.{node.name}.mpls.{feature} parameter must be a boolean, list, or dictionary',
       log.IncorrectValue,
-      'mpls')
+      'mpls',
+      doc_url='module/mpls/#mpls-params')
     return False
 
   return True
@@ -144,14 +146,16 @@ def node_adjust_6pe(node: Box, topology: Box, features: Box) -> None:
     log.error(
       f'6PE feature used on {node.name} needs IPv4 address family configured within BGP process',
       log.IncorrectValue,
-      'mpls')
+      'mpls',
+      doc_url='module/mpls/#mpls-params')
     return
     
   if node.get('mpls.bgp.ipv6',False):
     log.error(
       f'6PE and IPv6 BGP Labeled Unicast cannot be used at the same time on {node.name}',
       log.IncorrectValue,
-      'mpls')
+      'mpls',
+      doc_url='module/mpls/#mpls-params')
     return    
 
   if not 'neighbors' in node.get('bgp',{}):
@@ -221,7 +225,8 @@ def node_adjust_mplsvpn(node: Box, topology: Box, features: Box) -> None:
         text=f'Extended BGP communities are not enabled on {s_type} BGP sessions on {node.name}',
         more_hints='MPLS/VPN needs extended BGP communities attached to L3VPN routes',
         module='mpls',
-        flag='extcommunity')
+        flag='extcommunity',
+        doc_url='module/bgp/#bgp-community-propagation')
       AF_WARNING[s_type] = True
 
 '''
@@ -278,7 +283,8 @@ class MPLS(_Module):
         log.error(
           f'You cannot enable LDP on node {node.name} without an IGP',
           log.MissingValue,
-          'mpls')
+          'mpls',
+          doc_url='module/mpls/#mpls-params')
 
     data.bool_to_defaults(node.mpls,'bgp',DEFAULT_BGP_LU)
     data.bool_to_defaults(node.mpls,'vpn',DEFAULT_VPN_AF)
@@ -288,7 +294,8 @@ class MPLS(_Module):
         log.error(
           f'You cannot enable BGP-LU or MPLS/VPN on node {node.name} without BGP module',
           log.MissingValue,
-          'mpls')
+          'mpls',
+          doc_url='module/mpls/#mpls-params')
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
     global FEATURE_NAME

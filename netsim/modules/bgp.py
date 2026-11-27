@@ -69,7 +69,8 @@ def validate_bgp_sessions(node: Box, sessions: Box, attribute: str) -> bool:
       log.error(
         f'Invalid address family in bgp.{attribute} in node {node.name}',
         log.IncorrectValue,
-        'bgp')
+        'bgp',
+        doc_url='module/bgp/#bgp-advanced-node')
       OK = False
     else:
       if must_be_list(
@@ -310,7 +311,8 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
           f'Cannot create an EBGP session between IPv4 unnumbered interface on {node.name}' + \
           f' and regular IPv4 interface on {ngb_name}',
           category=log.IncorrectValue,
-          module='bgp')
+          module='bgp',
+          doc_url='module/bgp/#bgp-ebgp-rfc8950')
         continue
 
       if ipv6_addr is True and not ipv6_lla:
@@ -318,7 +320,8 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
           f'Cannot create an EBGP session between IPv6 LLA-only interface on {node.name}' + \
           f' and numbered IPv6 interface on {ngb_name}',
           category=log.IncorrectValue,
-          module='bgp')
+          module='bgp',
+          doc_url='module/bgp/#bgp-ebgp-lla')
         continue
 
       if ipv4_unnum and not ipv6_num:                 # Unnumbered IPv4 without numbered IPv6
@@ -415,7 +418,8 @@ def localas_ibgp_nhs_fixup(node: Box,topology: Box) -> None:
     log.warning(
       text=f'{node.name} has a local-as IBGP session and SHOULD NOT be a route reflector',
       module='bgp',
-      flag='localas_ibgp_rr')
+      flag='localas_ibgp_rr',
+      doc_url='module/bgp/#bgp-ibgp-localas')
 
 """
 activate_bgp_default_af -- activate default AF on IPv4 and/or IPv6 transport sessions
@@ -795,7 +799,8 @@ def check_confederation_data(topology: Box) -> None:
         log.error(
           f'Confederation member AS {cm_asn} (part of AS {c_asn}) is itself also a confederation AS',
           category=log.IncorrectValue,
-          module='bgp')
+          module='bgp',
+          doc_url='module/bgp/#bgp-confederations')
 
   for ndata in topology.nodes.values():
     if 'bgp.as' not in ndata:

@@ -47,7 +47,8 @@ def restructure_configlets(topology: Box) -> None:
         log.error(
           f'Configlet {k_path} should be a string value',
           category=log.IncorrectType,
-          module='files')
+          module='files',
+          doc_url='plugins/files/#plugin-files-configlets')
 
   if not must_be_dict(topology,'configlets','',create_empty=False):
     return                                            # Check that the value is really a dict
@@ -64,7 +65,8 @@ def restructure_configlets(topology: Box) -> None:
       log.error(
         f'Configlet {k} should be a dictionary or a string',
         category=log.IncorrectType,
-        module='files')
+        module='files',
+        doc_url='plugins/files/#plugin-files-configlets')
 
   topology.pop('configlets',None)                     # We no longer need this
 
@@ -112,7 +114,8 @@ def process_inline_config(topology: Box, o_type: str) -> None:
         log.error(
           f'{o_type} {o_name} tries to define config template {c_n} that already exists in configlets',
           category=log.IncorrectAttr,
-          module='files')                             # Overlap in naming
+          module='files',                             # Overlap in naming
+          doc_url='plugins/files/#plugin-files-configlets')
       else:
         topology.configlets[c_n] = c_v                # Add node- or group-defined configlet
       c_templates.append(c_n)                         # ... and remember what templates the node/group uses
@@ -133,7 +136,8 @@ def check_output_paths(topology: Box) -> None:
         f"path {f_entry.path} specified in 'files' entry#{topology.files.index(f_entry) + 1} is outside of the lab directory",
         more_hints='You cannot use the files plugin to create files outside of the lab directory',
         module='files',
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='plugins/files/#plugin-files-create')
 
 """
 Plugin initialization:

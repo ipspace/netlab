@@ -23,7 +23,8 @@ def pre_link_transform(topology: Box) -> None:
     log.error(
       'vxlan and/or lag module is not loaded.',
       log.IncorrectValue,
-      _config_name)
+      _config_name,
+      doc_url='plugins/mlag.vtep/#plugin-mlag-vtep')
 
   # Find nodes that participate in MLAG and have VXLAN enabled, and add an extra VTEP loopback
   for l in list(topology.get('links',[])):
@@ -48,7 +49,8 @@ def pre_link_transform(topology: Box) -> None:
             log.error(
               f'Loopback pool {pool} does not provide an address for {af} to use as shared VTEP',
               log.MissingValue,
-              _config_name)
+              _config_name,
+              doc_url='plugins/mlag.vtep/#plugin-mlag-vtep')
             return
         vtep_loopback = data.get_empty_box()
         vtep_loopback.type = 'loopback'              # Assign same static IP to both nodes

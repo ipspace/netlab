@@ -156,7 +156,7 @@ To keep the VLAN complexity manageable, the VLAN configuration module enforces t
 
 * Access VLAN defined with link **vlan.access** attribute applies to every attached node that uses **vlan** configuration module.
 * Access VLANs defined with interface **vlan.access** attribute on multiple nodes attached to the same link must match (you cannot change access VLAN numbers on the same physical segment).
-* An access VLAN used by more than one node attached to a physical link must be defined in global **vlans** dictionary to ensure the same VLAN parameters (in particular the IPv4/IPv6 subnets) apply to all nodes using the VLAN.
+* An access VLAN used by more than one node attached to a physical link must be defined in the global **vlans** dictionary to ensure the same VLAN parameters (in particular the IPv4/IPv6 subnets) apply to all nodes using the VLAN.
 
 ### Trunk VLAN Restrictions
 
@@ -165,6 +165,8 @@ VLAN configuration module enforces these rules:
 * VLANs listed within a **vlan.trunk** attribute must be defined as global VLANs.
 * Native VLAN specified in **vlan.native** must be included in **vlan.trunk** list.
 * Native VLAN must match across all VLAN-capable nodes connected to a link.
+* You cannot use access VLANs (**vlan.access**) and VLAN trunks (**vlan.trunk**) on the same link.
+* If a node that does not use the **vlan** configuration module is connected to a VLAN trunk, the trunk must have a native VLAN.
 
 (module-vlan-creating-access-links)=
 ### Create Access VLAN Links

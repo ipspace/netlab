@@ -63,7 +63,8 @@ class SR(_Module):
         log.error(
           f'SR-MPLS on node {node.name} uses {sr_proto} without {proto_info.module} configuration module',
           category=log.MissingDependency,
-          module='sr')
+          module='sr',
+          doc_url='module/sr-mpls/#sr-mpls-features')
         OK = False
       else:
         proto_af.update(proto_info.af)                      # Add AFs supported by the SR-MPLS protocol
@@ -86,7 +87,8 @@ class SR(_Module):
         log.error(
           f'{af} address family is not supported by the SR-MPLS protocol(s) {node.sr.protocol} used on {node.name}',
           category=log.MissingDependency,
-          module='sr')
+          module='sr',
+          doc_url='module/sr-mpls/#sr-mpls-platforms')
         continue
       if af not in sr_data.node_sid:                        # Is node SID statically defined (or empty)?
         af_offset = topology.get(f'sr.node_sid_offset.{af}',100 if af == 'ipv6' else 0)

@@ -45,7 +45,7 @@ def expand_acl_address_entry(p_entry: Box, path: str, topology: Box) -> Box:
       ifname = p_entry.interface
       intf_list = [intf for intf in intf_list if intf.get("ifname") in ifname]
       if not intf_list:
-        log.error(f"Node {node_name} has no interface {ifname} referenced in ACL entry", log.IncorrectValue, "acl")
+        log.error(f"Node {node_name} has no interface {ifname} referenced in ACL entry", log.IncorrectValue, "acl", doc_url='module/routing/#routing-acl-matching-addr')
         continue
     elif "role" in p_entry:
       role = p_entry.role
@@ -54,7 +54,8 @@ def expand_acl_address_entry(p_entry: Box, path: str, topology: Box) -> Box:
         log.error(
           f"Node {node_name} has no interface with role {role} referenced in ACL entry",
           log.IncorrectValue,
-          "acl")
+          "acl",
+          doc_url='module/routing/#routing-acl-matching-addr')
         continue
 
     for intf in intf_list:
@@ -106,12 +107,14 @@ def validate_acl_address_entry(p_entry: Box, ctx: validation_context) -> None:
     log.error(
       f"ACL {ctx.p_name} entry {ctx.idx} protocol number out of IANA range [0,255]",
       category=log.IncorrectAttr,
+      doc_url='module/routing/#routing-acl-entries',
     )
 
   if ctx.established and ctx.protocol != TCP:
     log.error(
       f"ACL {ctx.p_name} entry {ctx.idx} established keyword is only valid with TCP protocol",
       category=log.IncorrectAttr,
+      doc_url='module/routing/#routing-acl-entries',
     )
 
   # By this time we should have a valid ipv4 address acl_address, either
@@ -126,6 +129,7 @@ def validate_acl_address_entry(p_entry: Box, ctx: validation_context) -> None:
         f"ACL {ctx.p_name} entry {ctx.idx} cannot use a port or "
         f"port range in {direction} address with this protocol. Use UDP/TCP",
         category=log.IncorrectAttr,
+        doc_url='module/routing/#routing-acl-matching-port',
       )
       continue
 
@@ -208,7 +212,8 @@ def expand_af_acl(acl_list: list,acl_af: str, acl_name: str, node_name: str) -> 
     if not src_list or not dst_list:                        # Otherwise we need both source and destination entries
       log.warning(
         text=f'ACL {acl_name}[{acl_idx}] on node {node_name} does not have {acl_af} entries in source and destination fields',
-        flag='acl_af_src_dst',module='routing')
+        flag='acl_af_src_dst',module='routing',
+        doc_url='module/routing/#routing-acl-matching-addr')
       continue
 
     if 'description' in acl_data:

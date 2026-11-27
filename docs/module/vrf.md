@@ -120,6 +120,7 @@ Global and node VRF definitions can also include a subset of OSPF (area, cost), 
 
 To disable a VRF loopback, set the **loopback** parameter to *False* or *None* (no value).
 
+(vrf-rd-rt)=
 ### RD and RT Values
 
 A route distinguisher could be specified in N:N format (example: 65000:1) or as an integer. AS number specified in **bgp.as** or **vrf.as** will be prepended to an integer RD-value to generate RD value in N:N format.
