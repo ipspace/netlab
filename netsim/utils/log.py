@@ -110,32 +110,6 @@ def print_error_header(indent: int = 10) -> None:
     pass
 
 """
-Print the final error message and abort
-"""
-def fatal(text: str, module: str = 'netlab', header: bool = False, indent: int = 10) -> typing.NoReturn:
-  global _ERROR_LOG
-
-  err_line = f'Fatal error in {module}: {text}'
-  _ERROR_LOG.extend(err_line.split("\n"))
-
-  if RAISE_ON_ERROR:                              # CI flag: raise exception instead of aborting
-    raise ErrorAbort(text)
-  else:
-    if WARNING:                                   # CI flag: raise a warning
-      warnings.warn_explicit(text,FatalError,filename=module,lineno=len(_ERROR_LOG))
-    else:
-      if header:
-        print_error_header(indent)
-      if strings.rich_err_color:                  # Color-capable terminal
-        strings.print_colored_text(strings.pad_err_code('FATAL',indent),'red',stderr=True)
-        if module != 'netlab':
-          print(f'{module}: ',end='',file=sys.stderr)
-        print(text,file=sys.stderr,flush=True)
-      else:                                       # ... or teletype/file
-        print(err_line,file=sys.stderr,flush=True)
-    sys.exit(1)
-
-"""
 Generic hint-processing function:
 
 * Calculate terminal width
@@ -245,7 +219,10 @@ def error(
 
   module = '' if module == '-' else get_calling_module(module)
   err_name = category.__name__
-  err_line = f'{err_name} in {module}: {text}' if module else f'{err_name}: {text}'
+  if category is FatalError:                                        # Fatal errors use a different log format
+    err_line = f'Fatal error in {module}: {text}'
+  else:
+    err_line = f'{err_name} in {module}: {text}' if module else f'{err_name}: {text}'
 
   if skip_header is not None:
     _error_header_printed = skip_header
@@ -270,6 +247,8 @@ def error(
         err_color_map.get(err_code,'yellow'),
         stderr=True)
       mod_txt = f'{module}: ' if module else ''                     # Skip module header if it's explicitly set to empty
+      if category is FatalError and module == 'netlab':             # ... or if it's a generic fatal error
+        mod_txt = ''
       print(strings.wrap_error_message(f'{mod_txt}{text}',indent),file=sys.stderr,flush=True)
     else:
       print(err_line,file=sys.stderr,flush=True)
@@ -287,7 +266,7 @@ def error(
 
   if hint is None:                                                  # No pointers to static hints
     if exit_on_error and category is not Warning:
-      sys.exit(1)
+      abort_on_error(text)
     return
 
   from ..data.global_vars import get_topology
@@ -296,7 +275,7 @@ def error(
   topology = get_topology()
   if topology is None:                                              # No valid topology ==> no static hints
     if exit_on_error and category is not Warning:
-      sys.exit(1)
+      abort_on_error(text)
     return
 
   mod_hints = topology.defaults.hints[module]                       # Get static hints for current module
@@ -314,7 +293,35 @@ def error(
     mod_hints[hint] = ''
 
   if exit_on_error and category is not Warning:
-    sys.exit(1)
+    abort_on_error(text)
+
+def abort_on_error(text: str) -> typing.NoReturn:
+  """
+  Abort after an error, or raise ErrorAbort when the caller (usually CI) wants to catch it
+  """
+  if RAISE_ON_ERROR:
+    raise ErrorAbort(text)
+  sys.exit(1)
+
+def fatal(
+      text: str,
+      module: str = 'netlab',
+      header: bool = False,
+      indent: int = 10,
+      **kwargs: typing.Any) -> typing.NoReturn:
+  """
+  Report a fatal error and abort (or raise ErrorAbort in CI mode). Accepts the same
+  optional parameters (hints, extra data, documentation URL) as the 'error' function
+  """
+  error(
+    text,
+    category=FatalError,
+    module=module,
+    indent=indent,
+    skip_header=None if header else True,
+    exit_on_error=True,
+    **kwargs)
+  abort_on_error(text)                            # Not reached unless 'error' returns early, keeps mypy happy
 
 def warning(*,
       text: str,
