@@ -432,18 +432,19 @@ def add_cli_args(topo: Box, args: typing.Union[argparse.Namespace,Box]) -> None:
       except TypeError as ex:
         if 'nodes.' in k:
           log.error(
-            f'Cannot set {k}:\n... nodes element must be a dictionary if you want to set values via CLI arguments',
+            f'Cannot set {k}',
             log.IncorrectValue,
-            'cli')
+            'cli',
+            more_hints='nodes element must be a dictionary if you want to set values via CLI arguments')
         elif 'links.' in k:
           log.error(
             f'Cannot set link value {k} through CLI arguments',
             log.IncorrectValue,
             'cli')
         else:
-          log.fatal(f"Cannot set topology value {k}\n... {ex}")
+          log.fatal(f"Cannot set topology value {k}",more_data=str(ex))
       except Exception as ex:
-        log.fatal(f"Cannot set topology value {k}\n... {ex}")
+        log.fatal(f"Cannot set topology value {k}",more_data=str(ex))
 
   if args.plugin:                                 # Add CLI plugins after CLI settings that might set plugin.x
     if log.debug_active('plugin'):

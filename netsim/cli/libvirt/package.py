@@ -295,8 +295,9 @@ window and follow the instructions.
                   path="install/libvirt")
     except Exception as ex:
       log.fatal(
-        text=f"Error rendering {tname}\n{strings.extra_data_printout(str(ex))}",
-        module='libvirt')
+        text=f"Error rendering {tname}",
+        module='libvirt',
+        more_data=str(ex))
 
     pathlib.Path("template.xml").write_text(template)
     abort_on_failure("virsh define template.xml")

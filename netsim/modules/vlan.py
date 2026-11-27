@@ -151,9 +151,10 @@ def check_link_vlan_attributes(obj: Box, link: Box, v_attr: Box, topology: Box) 
 
   if not isinstance(obj.vlan,dict):                               # Basic sanity check: VLAN attribute must be a dictionary
     log.error(
-      f'vlan link attribute on {link._linkname} must be a dictionary\n... {link}',
+      f'vlan link attribute on {link._linkname} must be a dictionary',
       log.IncorrectValue,
       'vlan',
+      more_data=strings.format_structured_dict(link),
       doc_url='module/vlan/#module-vlan-interface')
     return False
 
@@ -164,9 +165,10 @@ def check_link_vlan_attributes(obj: Box, link: Box, v_attr: Box, topology: Box) 
   for attr in obj.vlan.keys():                                    # Check for unexpected attributes
     if not attr in vlan_link_attr:
       log.error(
-        f'Unknown VLAN attribute {attr}{node_error}\n... {link}',
+        f'Unknown VLAN attribute {attr}{node_error}',
         log.IncorrectValue,
         'vlan',
+        more_data=strings.format_structured_dict(link),
         doc_url='module/vlan/#module-vlan-interface')
       link_ok = False
 
@@ -180,9 +182,10 @@ def check_link_vlan_attributes(obj: Box, link: Box, v_attr: Box, topology: Box) 
         obj.vlan[attr] = { vname: {} for vname in obj.vlan[attr] }
       else:
         log.error(
-          f'VLAN attribute {attr}{node_error} must be a {a_type.__name__}\n... {link}',
+          f'VLAN attribute {attr}{node_error} must be a {a_type.__name__}',
           log.IncorrectValue,
           'vlan',
+          more_data=strings.format_structured_dict(link),
           doc_url='module/vlan/#module-vlan-interface')
         link_ok = False
         continue
@@ -236,17 +239,19 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
 
   if 'trunk' in v_attr and 'access' in v_attr:
     log.error(
-      f"Cannot mix trunk and access VLANs on the same link\n... {link}",
+      "Cannot mix trunk and access VLANs on the same link",
       log.IncorrectValue,
       'vlan',
+      more_data=strings.format_structured_dict(link),
       doc_url='module/vlan/#module-vlan-interface')
     return False
 
   if 'native' in v_attr and not 'trunk' in v_attr:
     log.error(
-      f"Native VLAN is valid only on VLAN trunks\n... {link}",
+      "Native VLAN is valid only on VLAN trunks",
       log.IncorrectValue,
       'vlan',
+      more_data=strings.format_structured_dict(link),
       doc_url='module/vlan/#module-vlan-interface')
     return False
 
@@ -282,9 +287,10 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
       for vname in v_attr[attr].set:                              # Iterate over the VLAN set
         if not vname in topology.get('vlans',{}):                 # ... and check that all VLANs used this way are globally defined
           log.error(
-            f"VLAN {vname} used in more than one place on the same link must be a global VLAN\n... {link}",
+            f"VLAN {vname} used in more than one place on the same link must be a global VLAN",
             log.IncorrectValue,
             'vlan',
+            more_data=strings.format_structured_dict(link),
             doc_url='module/vlan/#module-vlan-interface')
           link_ok = False
 
@@ -293,18 +299,20 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
 
     if len(v_attr[attr].set) > 1:                                 # ... if so, check the length of the VLAN set
       log.error(
-        f"Cannot use more than one {attr} VLAN on the same link\n... {link}",
+        f"Cannot use more than one {attr} VLAN on the same link",
         log.IncorrectValue,
         'vlan',
+        more_data=strings.format_structured_dict(link),
         doc_url='module/vlan/#module-vlan-interface')
       return False
 
   if 'native' in v_attr:                                          # Do we have a native VLAN defined on the link?
     if not set.intersection(v_attr.native.set,v_attr.trunk.set):  # Is it included in the VLAN trunk?
       log.error(
-        f'Native VLAN {v_attr.native.list[0]} used on a link is not in the VLAN trunk definition\n... {link}',
+        f'Native VLAN {v_attr.native.list[0]} used on a link is not in the VLAN trunk definition',
         log.IncorrectValue,
         'vlan',
+        more_data=strings.format_structured_dict(link),
         doc_url='module/vlan/#module-vlan-interface')
     else:
       for intf in link.interfaces:                                # Now check if every node using native VLAN has it in its trunk
@@ -315,23 +323,27 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
           if node_native:                                         # Does this node use native VLAN?
             if not node_trunk:                                    # ... no trunk data for this node, cannot use native VLAN
               log.error(
-                f'Node {intf.node} is using native VLAN without VLAN trunk\n... {link}',
+                f'Node {intf.node} is using native VLAN without VLAN trunk',
                 log.IncorrectValue,
                 'vlan',
+                more_data=strings.format_structured_dict(link),
                 doc_url='module/vlan/#module-vlan-interface')
             elif node_native not in node_trunk:                   # ... native VLAN not in trunk, that's not valid
               log.error(
-                f'Node {intf.node} is using native VLAN that is not defined in its VLAN trunk\n... {link}',
+                f'Node {intf.node} is using native VLAN that is not defined in its VLAN trunk',
                 log.IncorrectValue,
                 'vlan',
+                more_data=strings.format_structured_dict(link),
                 doc_url='module/vlan/#module-vlan-interface')
           else:                                                   # There's native VLAN on this link, but not on this node
             if isinstance(node_trunk,Box):                        # ... trunk data should be a Box, but mypy doesn't know that ;)
               if v_attr.native.list[0] in node_trunk:             # ... if this node lists native VLAN in its trunk we have  problem
                 log.error(
-                  f'Native VLAN used on the link is in the VLAN trunk of node {intf.node}, but is not configured as native VLAN\n... {link}',
+                  f'Native VLAN used on the link is in the VLAN trunk of node {intf.node}, ' + \
+                  'but is not configured as native VLAN',
                   log.IncorrectValue,
                   'vlan',
+                  more_data=strings.format_structured_dict(link),
                   doc_url='module/vlan/#module-vlan-interface')
                 continue
               for af in ('ipv4','ipv6'):                          # Interface is not participating in native VLAN
@@ -415,15 +427,18 @@ def validate_trunk_vlan_list(link: Box) -> bool:
     if not 'vlan' in o_intf:                                          # Skip non-VLAN interfaces (obviously we have a native VLAN by now)
       continue
     if not 'trunk' in o_intf.vlan:                                    # a VLAN interface without a trunk attribute is a huge red flag
-      log.fatal(f'validate_trunk_vlan_list: Found a VLAN node without trunk attribute\n... {link}')
+      log.fatal(
+        'validate_trunk_vlan_list: Found a VLAN node without trunk attribute',
+        more_data=strings.format_structured_dict(link))
       return False
 
     for vname in o_intf.vlan.trunk.keys():                            # OK, now we can iterate over all VLANs in this interfaces' trunk
       if not isinstance(vname,str):
         log.error(
-          f'VLAN names in trunks ({vname}) must be strings:\n... {link}',
+          f'VLAN names in trunks ({vname}) must be strings:',
           log.IncorrectValue,
           'vlan',
+          more_data=strings.format_structured_dict(link),
           doc_url='module/vlan/#module-vlan-interface')
         return False
       vlan_found = False
@@ -603,7 +618,9 @@ def set_link_vlan_prefix(link: Box, v_attr: Box, topology: Box) -> None:
     return
 
   if not node_set:
-    log.fatal(f'Cannot find the node using VLAN {link_vlan}\n... {link}')
+    log.fatal(
+      f'Cannot find the node using VLAN {link_vlan}',
+      more_data=strings.format_structured_dict(link))
     return
 
   copy_vlan_attributes(link_vlan,topology.nodes[list(node_set)[0]].vlans[link_vlan],link)
@@ -1015,7 +1032,9 @@ def map_trunk_vlans(node: Box, topology: Box) -> None:
     vlan_list = []
     for vlan in list(trunk.keys()):
       if not vlan in node.vlans:
-        log.fatal(f'Internal error: VLAN {vlan} should be already defined on node {node.name}\n... interface {intf}')
+        log.fatal(
+        f'Internal error: VLAN {vlan} should be already defined on node {node.name}',
+        more_data=f'interface {intf}')
         break
       vlan_list.append(node.vlans[vlan].id)
 
@@ -1084,8 +1103,9 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
       # does not support VLAN subinterfaces
       #
       log.error(
-        f'Routed subinterfaces on VLAN trunks not supported on device type {node.device}\n... node {node.name} vlan {intf.vlan_name}',
+        f'Routed subinterfaces on VLAN trunks not supported on device type {node.device}',
         log.IncorrectValue,'vlan',
+        more_data=f'node {node.name} vlan {intf.vlan_name}',
         doc_url='module/vlan/#vlan-platform')
       continue
 
@@ -1197,10 +1217,10 @@ def check_mixed_trunks(node: Box, topology: Box) -> None:
 
     if not parent_intf.ifindex in err_ifmap:                          # We have a problem. Do we have to generate an error?
       log.error(
-        f'Device type {node.device} does not support mixed bridged/routed VLAN trunks\n'+ \
-        f'... node {node.name} interface {parent_intf.ifname}: {parent_intf.name}',
+        f'Device type {node.device} does not support mixed bridged/routed VLAN trunks',
         log.IncorrectValue,
         'vlan',
+        more_data=f'node {node.name} interface {parent_intf.ifname}: {parent_intf.name}',
         doc_url='module/vlan/#vlan-platform')
     err_ifmap[parent_intf.ifindex] = True
 

@@ -9,7 +9,7 @@ from box import Box
 from ..data import get_box
 from ..tools import _ToolOutput
 from ..utils import files as _files
-from ..utils import log, strings, templates
+from ..utils import log, templates
 from . import _TopologyOutput, check_writeable
 from . import common as outputs_common
 
@@ -34,7 +34,7 @@ def create_tool_config(tool: str, topology: Box) -> None:
   print(f'{tool} configuration directory')
   for config in tdata.config:
     if not 'dest' in config:
-      log.error(f'No destination file specified for tool configuration\n... tool {tool}\n... config {config}')
+      log.error('No destination file specified for tool configuration',more_data=[ f'tool {tool}', f'config {config}' ])
       continue
     fname = f'{tool}/{config.dest}'
     Path(fname).parent.mkdir(exist_ok=True, parents=True)
@@ -50,11 +50,12 @@ def create_tool_config(tool: str, topology: Box) -> None:
                         extra_path=_files.get_search_path(f'tools/{tool}',topology=topo_data))
       except Exception as ex:
         log.fatal(
-          text=f"Error rendering {config.template}\n{strings.extra_data_printout(str(ex))}",
-          module='libvirt')
+          text=f"Error rendering {config.template}",
+          module='tools',
+          more_data=str(ex))
       config_src  = f'from {config.template} template'
     else:
-      log.error(f'Unknown tool configuration type\n... tool {tool}\n... config {config}')
+      log.error('Unknown tool configuration type',more_data=[ f'tool {tool}', f'config {config}' ])
       continue
 
     try:
@@ -62,7 +63,7 @@ def create_tool_config(tool: str, topology: Box) -> None:
       log.status_created()
       print(f'{fname} {config_src}')
     except Exception as e:
-      log.error(f'Error writing tool configuration file {fname}\n... {e}')
+      log.error(f'Error writing tool configuration file {fname}',more_data=str(e))
 
 class ToolConfigs(_TopologyOutput):
 
