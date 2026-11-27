@@ -174,7 +174,7 @@ def save_to_pickle(path: str, data: Box) -> None:
   except Exception as ex:
     if log.VERBOSE or log.debug_active('defaults'):
       log.warning(
-        text=f'Cannot save pickled data for {path} into {str(pickle_path)})',
+        text=f'Cannot save pickled data for {path} into {pickle_info["pickle"]}',
         more_data=[ str(ex) ],
         module='read')
 
@@ -460,7 +460,7 @@ def load_pickled_data(snapshot: str) -> Box:
   try:
     pfile = open(snapshot,'rb')
   except Exception as ex:
-    log.fatal(f'Cannot open pickle file {pfile}',more_data=str(ex))
+    log.fatal(f'Cannot open pickle file {snapshot}',more_data=str(ex))
 
   try:
     data = pickle.load(pfile)
@@ -468,6 +468,6 @@ def load_pickled_data(snapshot: str) -> Box:
       log.fatal(f'The picked snapshot {snapshot} contains {type(data)}, not a dictionary')
     pfile.close()
   except Exception as ex:
-    log.fatal(f'Cannot read pickled data from {pfile}',more_data=str(ex))
+    log.fatal(f'Cannot read pickled data from {snapshot}',more_data=str(ex))
 
   return get_box(data)
