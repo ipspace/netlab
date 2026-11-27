@@ -63,7 +63,8 @@ def handle_plugin_redirects(p_module: object, p_name: str, topology: Box) -> typ
   log.warning(
     text=f'Plugin {p_name} has been replaced by {redirect}. Please update your lab topology',
     module='plugins',
-    flag='redirect')
+    flag='redirect',
+    doc_url='plugins/#topo-plugins-builtin')
 
   topology.plugin = [ redirect if p == p_name else p for p in topology.plugin ]
   return load_plugin(redirect,topology)
@@ -251,6 +252,16 @@ def sort_extra_config(topology: Box) -> list:
             lambda p: find_preceding_configs(p,topology))
 
 '''
+Normalize the topology- and default plugins: both could be specified as a list
+or as a dictionary (keys are plugin names, plugins with False values are skipped).
+The rest of the code expects lists, so we have to convert dictionaries into lists
+before adding tool- or device plugins
+'''
+def normalize(topology: Box) -> None:
+  for key in ['defaults.plugin','plugin']:
+    data.dict_to_key_list(topology,key)
+
+'''
 Initialize plugin subsystem:
 
 * Merge default- and topology plugins
@@ -263,6 +274,8 @@ def init(topology: Box) -> None:
   # 
   # * defaults.plugin must be a list
   # * topology.plugin (when present or when we have default plugins) must be a list
+  #
+  # Dictionaries were converted into lists in 'normalize'
   #
   data.types.must_be_list(parent=topology,key='defaults.plugin',path='',create_empty=True)
   if topology.defaults.plugin or 'plugin' in topology:
@@ -279,7 +292,8 @@ def init(topology: Box) -> None:
       log.error(
         f"Plugin name must be a string, found {pname}",
         category=log.IncorrectValue,
-        module='plugin')
+        module='plugin',
+        doc_url='plugins/#topo-plugins-use')
       load_error = True
       continue
 
@@ -293,7 +307,8 @@ def init(topology: Box) -> None:
         f"Cannot find plugin {pname}",
         more_data = f"Search path:\n{strings.get_yaml_string(topology.defaults.paths.plugin)}",
         category=log.IncorrectValue,
-        module='plugin')
+        module='plugin',
+        doc_url='plugins/#topo-plugins-use')
 
   if load_error:                                              # Skip the rest of the code on error as it might crash
     return                                                    # ... due to discrepancy between lists of plugin names and loaded plugins
@@ -326,7 +341,8 @@ def plugin_requires_check(plugin: object, topology: Box) -> None:
       log.error(
         f"{pname} plugin requires {dp} {'module' if dp in topology.defaults else 'plugin'} which is not included in lab topology",
         log.MissingDependency,
-        'plugin')
+        'plugin',
+        doc_url='plugins/#topo-plugins-use')
 
 def check_plugin_dependencies(topology: Box) -> None:
   for plugin in topology.get('Plugin',[]):

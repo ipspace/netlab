@@ -44,7 +44,7 @@ def init(topology: Box) -> None:
   servers = ms.get("servers", Box({}))
 
   if not servers:
-    log.error('multiserver plugin requires a "servers" dictionary', log.MissingValue, "multiserver")
+    log.error('multiserver plugin requires a "servers" dictionary', log.MissingValue, "multiserver", doc_url='plugins/multiserver/#multiserver-servers')
     return
 
   _validate_servers(servers)
@@ -73,6 +73,7 @@ def post_transform(topology: Box) -> None:
       log.IncorrectValue,
       "multiserver",
       more_hints=["libvirt and virtualbox support may be added in a future release"],
+      doc_url='plugins/multiserver/#plugin-multiserver',
     )
     return
 
@@ -91,6 +92,7 @@ def post_transform(topology: Box) -> None:
           "Assign nodes via multiserver.servers[].groups or .members",
           "Or set multiserver.assignment: auto for round-robin distribution",
         ],
+        doc_url='plugins/multiserver/#multiserver-assignment',
       )
     else:
       _auto_distribute(unassigned, server_map, assignment, topology)
@@ -167,6 +169,7 @@ def output(topology: Box) -> None:
           log.MissingValue,
           "multiserver",
           more_hints=["Set multiserver.vxlan.dev or multiserver.servers[].vxlan_dev"],
+          doc_url='plugins/multiserver/#multiserver-vxlan',
         )
         continue
       _write_vxlan_scripts(out_dir, vxlan_tunnels, dev)
@@ -371,6 +374,7 @@ def _resolve_assignments(servers: Box, topology: Box) -> dict:
         f'Node {member} assigned to both server {assignment[member]} and "{sname}"',
         log.IncorrectValue,
         "multiserver",
+        doc_url='plugins/multiserver/#multiserver-assignment',
       )
     assignment[member] = server.id
 
@@ -441,7 +445,7 @@ def _classify_links(topology: Box, assignment: dict, replicated: set, vni_base: 
       link._ms = Box({"cross": False, "servers": sorted(link_servers)})
 
   if vni > 16777215:
-    log.error(f"VXLAN VNI overflow: {vni} exceeds 24-bit maximum (16777215)", log.IncorrectValue, "multiserver")
+    log.error(f"VXLAN VNI overflow: {vni} exceeds 24-bit maximum (16777215)", log.IncorrectValue, "multiserver", doc_url='plugins/multiserver/#multiserver-vxlan')
 
   return vni - vni_base
 

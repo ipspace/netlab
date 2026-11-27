@@ -20,7 +20,8 @@ def isis_net(i_data: Box, node: Box) -> bool:
       log.error(
         'net attribute is not a NSAP with zero n-selector',
         category=log.IncorrectValue,
-        module='isis')
+        module='isis',
+        doc_url='module/isis/#isis-node')
       return False
     i_data.area = n_parsed[1]
     i_data.system_id = n_parsed[2].rstrip('.')
@@ -31,7 +32,8 @@ def isis_net(i_data: Box, node: Box) -> bool:
       log.error(
         f'isis.area or isis.net is not defined on node {node.name}',
         category=log.MissingValue,
-        module='isis')
+        module='isis',
+        doc_url='module/isis/#isis-node')
       return False
     i_data.net = f'{i_data.area}.{i_data.system_id}.00'
 
@@ -47,7 +49,8 @@ def isis_unnumbered(node: Box, features: Box) -> bool:
       log.error(
         f'Device {node.device} used on node {node.name} cannot run IS-IS over {"unnumbered" if af == "ipv4" else "LLA"} {af} interfaces',
         log.IncorrectValue,
-        'interfaces')
+        'interfaces',
+        doc_url='module/isis/#isis-platform')
       return False
 
   OK = True
@@ -59,7 +62,8 @@ def isis_unnumbered(node: Box, features: Box) -> bool:
       log.error(
         f'Device {node.device} (node {node.name}) cannot run IS-IS over unnumbered multi-access link {l.name}',
         log.IncorrectValue,
-        'interfaces')
+        'interfaces',
+        doc_url='module/isis/#isis-platform')
       OK = False
 
   return OK
@@ -85,7 +89,8 @@ def isis_mt(node: Box, features: Box) -> None:
       'IPv6 IS-IS on this device cannot interoperate with other IS-IS devices'],
     flag='mt',
     category=log.IncorrectValue,
-    module='isis')
+    module='isis',
+    doc_url='module/isis/#isis-platform')
 
 class ISIS(_Module):
 

@@ -27,7 +27,8 @@ def normalize_area_data(parent: Box,pname: str) -> bool:
       log.error(
         f'area is missing in {pname}.ospf.areas[{a_idx}]',
         category=log.MissingValue,
-        module=_config_name)
+        module=_config_name,
+        doc_url='plugins/ospf.areas/#plugin-ospf-areas')
       a_OK = False
       continue
 
@@ -36,7 +37,8 @@ def normalize_area_data(parent: Box,pname: str) -> bool:
       log.error(
         f'Duplicate area {a_data.area} definition in {pname}.ospf.areas[{a_idx}]',
         category=log.IncorrectValue,
-        module=_config_name)
+        module=_config_name,
+        doc_url='plugins/ospf.areas/#plugin-ospf-areas')
       a_OK = False
     else:
       a_set.add(a_data._area_int)
@@ -50,7 +52,8 @@ def normalize_area_data(parent: Box,pname: str) -> bool:
       log.error(
         f'The inter_area attribute cannot be used with regular area ({pname}.ospf.areas[{a_idx}])',
         category=log.IncorrectAttr,
-        module=_config_name)
+        module=_config_name,
+        doc_url='plugins/ospf.areas/#plugin-ospf-areas')
       a_OK = False
     for kw in ['external_filter','external_range']:         # External filter/range is applicable only to NSSA areas
       if kw not in a_data:
@@ -59,7 +62,8 @@ def normalize_area_data(parent: Box,pname: str) -> bool:
         log.error(
           f'The {kw} parameter can only be specified for NSSA areas ({pname}.ospf.areas[{a_idx}])',
           category=log.IncorrectAttr,
-          module=_config_name)
+          module=_config_name,
+          doc_url='plugins/ospf.areas/#plugin-ospf-areas')
         a_OK = False
 
   return a_OK
@@ -182,7 +186,8 @@ def post_transform(topology: Box) -> None:
         log.error(
           f'Device {ndata.device} (node {ndata.name}) does not support OSPF area parameters',
           category=log.IncorrectAttr,
-          module=_config_name)
+          module=_config_name,
+          doc_url='plugins/ospf.areas/#plugin-ospf-areas')
         return
 
       check_node_support(ndata,topology)                    # Report warnings if a device does not support optional features

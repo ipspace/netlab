@@ -55,6 +55,7 @@ The following table describes where you could apply individual attributes:
 
 The **bgp.role** attributes can also be specified at the global (**bgp.role.strict** only) or link level. The plugin applies global- or node-level **bgp.role** value only to EBGP neighbors. Using this attribute on IBGP sessions results in a configuration error.
 
+(plugin-bgp-policy-platform)=
 ## Platform Support
 
 The plugin implements BGP routing policies and setting of individual BGP attributes on these devices:
@@ -92,9 +93,14 @@ See [BGP Policies Test Results](https://release.netlab.tools/_html/coverage.bgp.
 * Arista EOS and Aruba CX do not support node-level default local preference. Node-level **bgp.locpref** attribute (if specified) is thus applied to all interfaces that do not have an explicit **bgp.locpref** attribute. That might interfere with the **bgp.policy** interface attributes.
 * FRR implements BGP Roles starting with release 8.4. BIRD implements them starting with release 2.0.11. On BIRD, BGP roles are rendered into the BGP module configuration file (`daemons/bird/bgp.j2`).
 
+(plugin-bgp-policy-apply)=
 ## Applying Routing Policies to EBGP Neighbors
 
 You can use **bgp.policy.in** and **bgp.policy.out** interface-level attributes to apply predefined global- or node-level [routing policies](generic-routing-policies) to EBGP sessions.  
+
+```{warning}
+The nodes using the **bgp.policy.in** or **bgp.policy.out** interface attributes must use the **routing** configuration module.
+```
 
 The following lab topology contains a combination of these features:
 
@@ -149,6 +155,7 @@ route-map set_locpref permit 10
  set local-preference 120
 ```
 
+(plugin-bgp-policy-individual)=
 ## Applying Individual Policy Attributes
 
 You could specify individual BGP policy attributes at the interface level instead of defining and deploying a routing policy. This approach is probably easier to use in simple scenarios without route filters.

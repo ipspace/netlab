@@ -58,4 +58,5 @@ def post_transform(topology: Box) -> None:
       f'BGP AS {b_as} is using route reflectors, but has no RRs in domain {b_domain}.\n' + \
       f'... You will have no IBGP route propagation within AS {b_as} in domain {b_domain}\n' + \
       f'... Make sure at least one router in AS {b_as} in domain {b_domain} is a route reflector',
-      log.IncorrectValue,'bgp.domain')
+      log.IncorrectValue,'bgp.domain',
+      doc_url='plugins/bgp.domain/#plugin-bgp-domain')

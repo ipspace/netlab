@@ -35,7 +35,8 @@ def replace_community_delete(node: Box, p_name: str, p_entry: Box, topology: Box
         f'Node {node.name} (device {node.device}) cannot delete {type} BGP communities in a routing policy',
         more_data=f'Policy {p_name} sequence# {p_entry.sequence}',
         category=log.IncorrectType,
-        module='routing')
+        module='routing',
+        doc_url='module/routing/#routing-clist-platform')
     else:
       clist += [ { 'action': 'permit', '_value': i } for i in p_entry.delete.community[type] ]
 
@@ -99,7 +100,8 @@ def expand_community_list(p_name: str,o_name: str,node: Box,topology: Box) -> ty
         f'BGP community list {p_name} line {p_idx+1} contains an integer',
         more_hints='You probably forgot to put an A:B value within quotes and YAML parser got confused',
         category=log.IncorrectValue,
-        module='routing')
+        module='routing',
+        doc_url='module/routing/#generic-routing-community')
     regexp = regexp or bool(p_clist.value[p_idx].get('regexp',False))
 
   p_clist.cl_type = 'expanded' if regexp else 'standard'    # Set clist type for devices that use standard/expanded
@@ -124,7 +126,8 @@ def check_match_clist_type(node: Box, p_name: str, p_entry: Box, topology: Box) 
         f'Cannot use {clist.type} community list {cl_name} in match.community.{cl_type}',
         more_data=f'node {node.name} routing policy {p_name} sequence #{p_entry.sequence}',
         module='routing',
-        category=log.IncorrectType)
+        category=log.IncorrectType,
+        doc_url='module/routing/#generic-routing-community')
 
 """
 check_community_support: check that the community lists defined on a node can be
@@ -143,7 +146,8 @@ def check_community_support(o_data: Box,o_type: str,node: Box,topology: Box) -> 
       log.error(
         f'Device {node.device}/node {node.name} does not support {c_type} BGP community lists: {cl_name}',
         module='routing',
-        category=log.IncorrectType)
+        category=log.IncorrectType,
+        doc_url='module/routing/#routing-clist-platform')
       continue
     if c_features[c_type] is True:                # Unconditional support (standard/extended)
       continue
@@ -151,4 +155,5 @@ def check_community_support(o_data: Box,o_type: str,node: Box,topology: Box) -> 
       log.error(
         f'Device {node.device}/node {node.name} does not support {l_type} {c_type} BGP community lists: {cl_name}',
         module='routing',
-        category=log.IncorrectType)
+        category=log.IncorrectType,
+        doc_url='module/routing/#routing-clist-platform')

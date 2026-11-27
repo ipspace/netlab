@@ -17,6 +17,7 @@ Segment routing for MPLS is implemented in a [separate configuration module](sr-
    :backlinks: none
 ```
 
+(mpls-platform)=
 ## Platform Support
 
 The following table describes the per-platform support of individual MPLS label distribution features:
@@ -79,6 +80,7 @@ The following table describes the per-platform support of individual MPLS label 
 
 * You cannot enable 6PE and IPv6 BGP-LU on the same node.
 
+(mpls-params)=
 ## Configurable Global and Node Parameters
 
 * **mpls.ldp** -- enable LDP on intra-AS links (see [common routing protocol features](routing.md)) for more details.
@@ -89,7 +91,9 @@ The following table describes the per-platform support of individual MPLS label 
 LDP is enabled by default on all nodes using the **mpls** configuration module, and can be disabled by setting **mpls.ldp** node parameter to *False*.
 
 ```{warning}
-MPLS-based BGP services are not supported over IBGP local-as sessions due to the required BGP next-hop changes on IBGP sessions.
+* MPLS-based BGP services are not supported over IBGP local-as sessions due to the required BGP next-hop changes on IBGP sessions.
+* LDP requires an IGP and the IPv4 address family on the node.
+* BGP-LU, BGP/MPLS L3VPN, and 6PE require the BGP configuration module. 6PE also requires the IPv4 address family within the BGP routing process.
 ```
 
 ## Configurable Link and Interface Parameters

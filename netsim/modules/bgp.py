@@ -56,7 +56,8 @@ def check_bgp_parameters(node: Box, topology: Box) -> None:
     log.error(
       f"Node {node.name} has BGP enabled but no AS number specified",
       log.MissingValue,
-      'bgp')
+      'bgp',
+      doc_url='module/bgp/#bgp-node-params')
     return
 
   must_be_asn(parent=node,key='bgp.as',path=f'nodes.{node.name}',module='bgp')
@@ -68,7 +69,8 @@ def validate_bgp_sessions(node: Box, sessions: Box, attribute: str) -> bool:
       log.error(
         f'Invalid address family in bgp.{attribute} in node {node.name}',
         log.IncorrectValue,
-        'bgp')
+        'bgp',
+        doc_url='module/bgp/#bgp-advanced-node')
       OK = False
     else:
       if must_be_list(
@@ -243,13 +245,15 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
         log.error(
           text=f'{node.name} (device {node.device}) does not support BGP local AS (interface {l.name})',
           category=log.IncorrectValue,
-          module='bgp')
+          module='bgp',
+          doc_url='module/bgp/#bgp-platform-local-as')
         continue
       if intf_vrf and not features.bgp.vrf_local_as:
         log.error(
           text=f'{node.name} (device {node.device}) does not support BGP local AS for EBGP sessions in VRF {l.vrf}',
           category=log.IncorrectValue,
-          module='bgp')
+          module='bgp',
+          doc_url='module/bgp/#bgp-platform-local-as')
         continue
 
     for ngb_ifdata in l.get("neighbors",[]):
@@ -307,7 +311,8 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
           f'Cannot create an EBGP session between IPv4 unnumbered interface on {node.name}' + \
           f' and regular IPv4 interface on {ngb_name}',
           category=log.IncorrectValue,
-          module='bgp')
+          module='bgp',
+          doc_url='module/bgp/#bgp-ebgp-rfc8950')
         continue
 
       if ipv6_addr is True and not ipv6_lla:
@@ -315,7 +320,8 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
           f'Cannot create an EBGP session between IPv6 LLA-only interface on {node.name}' + \
           f' and numbered IPv6 interface on {ngb_name}',
           category=log.IncorrectValue,
-          module='bgp')
+          module='bgp',
+          doc_url='module/bgp/#bgp-ebgp-lla')
         continue
 
       if ipv4_unnum and not ipv6_num:                 # Unnumbered IPv4 without numbered IPv6
@@ -331,7 +337,8 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
           log.error(
             text=f'{node.name} (device {node.device}) does not support EBGP sessions over auto-generated IPv6 LLA (interface {l.name})',
             category=log.IncorrectValue,
-            module='bgp')
+            module='bgp',
+            doc_url='module/bgp/#bgp-platform-sessions')
           continue
 
       if rfc8950:                                     # Do we have RFC 8950 IPv4 AF over numbered IPv6 session?
@@ -340,7 +347,8 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
           log.error(
             text=f'{node.name} (device {node.device}) does not support IPv4 RFC 8950-style AF over regular IPv6 EBGP sessions (interface {l.name})',
             category=log.IncorrectValue,
-            module='bgp')
+            module='bgp',
+            doc_url='module/bgp/#bgp-platform-sessions')
           continue
 
       for k in ('local_as','replace_global_as'):      # Special handling for local-as attributes
@@ -363,7 +371,8 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
           log.error(
             text=f'You cannot use BGP local-as to create an IBGP session with {ngb_name} on {node.name} (device {node.device})',
             category=log.IncorrectValue,
-            module='bgp')
+            module='bgp',
+            doc_url='module/bgp/#bgp-platform-local-as')
           continue
 
       ebgp_data = bgp_neighbor(neighbor,ngb_ifdata,session_type,sessions,extra_data)
@@ -409,7 +418,8 @@ def localas_ibgp_nhs_fixup(node: Box,topology: Box) -> None:
     log.warning(
       text=f'{node.name} has a local-as IBGP session and SHOULD NOT be a route reflector',
       module='bgp',
-      flag='localas_ibgp_rr')
+      flag='localas_ibgp_rr',
+      doc_url='module/bgp/#bgp-ibgp-localas')
 
 """
 activate_bgp_default_af -- activate default AF on IPv4 and/or IPv6 transport sessions
@@ -610,7 +620,8 @@ def bgp_process_originate(node: Box, topology: Box) -> None:
       log.error(
         f'device {node.device} (node {node.name}) does not support VRF bgp.originate attribute',
         category=log.IncorrectAttr,
-        module='bgp')
+        module='bgp',
+        doc_url='module/bgp/#module-bgp-originate')
       continue
 
     if originate_v2:                              # Handle next-generation BGP route origination
@@ -645,7 +656,8 @@ def bgp_process_originate(node: Box, topology: Box) -> None:
           log.error(
             f'device {node.device} (node {node.name}) cannot use bgp.originate with IPv6 BGP prefixes',
             category=log.IncorrectValue,
-            module='bgp')
+            module='bgp',
+            doc_url='module/bgp/#module-bgp-originate')
           return
         elif 'ipv4' in pfx:                       # Save IPv4 prefix (if it exists) into the old-style
           originate_list.append(pfx['ipv4'])      # originate list
@@ -727,7 +739,8 @@ def process_as_list(topology: Box) -> None:
         log.error(
           text=f"BGP module supports at most 1 AS per node; {n} is already member of {node_data[n]['as']} and cannot also be part of {asn}",
           category=log.IncorrectValue,
-          module='bgp')
+          module='bgp',
+          doc_url='module/bgp/#bgp-aslist')
         continue
       node_data[n]["as"] = asn
 
@@ -739,7 +752,8 @@ def process_as_list(topology: Box) -> None:
         log.error(
           text=f"Node {n} is specified as route reflector in AS {asn} but is not in member list",
           category=log.IncorrectValue,
-          module='bgp')
+          module='bgp',
+          doc_url='module/bgp/#bgp-aslist')
         continue
       node_data[n].rr = True
 
@@ -750,7 +764,8 @@ def process_as_list(topology: Box) -> None:
         log.error(
           text=f'Node {node.name} has AS {node_as} but is also in member list of AS {node_data[node.name]["as"]}',
           category=log.IncorrectValue,
-          module='bgp')
+          module='bgp',
+          doc_url='module/bgp/#bgp-aslist')
         continue
 
       node.bgp = node_data[name] + node.bgp
@@ -769,20 +784,23 @@ def check_confederation_data(topology: Box) -> None:
       log.error(
         f'Confederation AS {c_asn} needs at least one member ASN',
         category=log.MissingValue,
-        module='bgp')
+        module='bgp',
+        doc_url='module/bgp/#bgp-confederations')
     for cm_asn in c_data.members:
       if cm_asn in rev_map:
         log.error(
           f'Confederation member {cm_asn} is in confederations {c_asn} and {rev_map[cm_asn]}',
           more_hints="While that's a valid BGP design, netlab does not support it",
           category=log.IncorrectValue,
-          module='bgp')
+          module='bgp',
+          doc_url='module/bgp/#bgp-confederations')
       rev_map[cm_asn] = c_asn
       if cm_asn in bgp_confed:
         log.error(
           f'Confederation member AS {cm_asn} (part of AS {c_asn}) is itself also a confederation AS',
           category=log.IncorrectValue,
-          module='bgp')
+          module='bgp',
+          doc_url='module/bgp/#bgp-confederations')
 
   for ndata in topology.nodes.values():
     if 'bgp.as' not in ndata:
@@ -793,7 +811,8 @@ def check_confederation_data(topology: Box) -> None:
         f'Node {ndata.name} is using confederation ASN {n_as}',
         more_hints='BGP speakers can use only confederation member ASNs, not the confederation ASN',
         category=log.IncorrectValue,
-        module='bgp')
+        module='bgp',
+        doc_url='module/bgp/#bgp-confederations')
     if n_as not in rev_map:
       continue
 
@@ -804,7 +823,8 @@ def check_confederation_data(topology: Box) -> None:
         f'Node {ndata.name} (device {ndata.device}) uses member ASN {n_as} of confederation AS {c_as}',
         more_hints=f'Device {ndata.device} does not support BGP confederations',
         category=log.IncorrectType,
-        module='bgp')
+        module='bgp',
+        doc_url='module/bgp/#bgp-platform')
       continue
 
     ndata.bgp.confederation['as'] = c_as
@@ -831,7 +851,8 @@ def bgp_transform_community_list(node: Box, topology: Box) -> None:
           f"Invalid {s_type} BGP community propagation keyword '{kw}' for device {node.device}/node {node.name}",
           category=log.IncorrectValue,
           module='bgp',
-          more_hints=[ f"Valid values are {','.join(kw_xform.keys())}" ])
+          more_hints=[ f"Valid values are {','.join(kw_xform.keys())}" ],
+          doc_url='module/bgp/#bgp-community-propagation')
     
   for i_kw in BGP_INHERIT_COMMUNITY:            # Finally, set up the missing community propagation values
     if i_kw not in clist:                       # for rare BGP session types

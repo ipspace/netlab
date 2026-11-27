@@ -20,6 +20,8 @@ The following table describes per-platform support of individual STP features:
   enabled: "'pvrst' in stp.supported_protocols"
 - title: Enable<br>per port
   enabled: stp.enable_per_port
+- title: Port<br>type
+  enabled: stp.port_type
 ```
 
 **Notes:**

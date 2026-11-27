@@ -64,7 +64,8 @@ def validate_global_node_match(vname: str, node: Box, topology: Box) -> bool:
     log.error(
       f'Cannot set {kw} for VLAN {vname} on node {node.name} -- VLAN is defined globally',
       log.IncorrectValue,
-      'vlan')
+      'vlan',
+      doc_url='module/vlan/#module-vlan-definition')
     OK = False
 
   return OK
@@ -124,7 +125,8 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
           module='vlan',
           more_hints=[
             "Use the 'pool' VLAN attribute to control VLAN prefix allocation on routed VLANs",
-            "You can also change the global VLAN to 'irb' and set vlan.mode to 'route' at selected nodes"])
+            "You can also change the global VLAN to 'irb' and set vlan.mode to 'route' at selected nodes"],
+            doc_url='module/vlan/#vlan-addressing-routed')
       continue
 
     vlan_pool = [ vdata.pool ] if isinstance(vdata.get('pool',None),str) else []
@@ -151,7 +153,8 @@ def check_link_vlan_attributes(obj: Box, link: Box, v_attr: Box, topology: Box) 
     log.error(
       f'vlan link attribute on {link._linkname} must be a dictionary\n... {link}',
       log.IncorrectValue,
-      'vlan')
+      'vlan',
+      doc_url='module/vlan/#module-vlan-interface')
     return False
 
   # Prepare details about object that's in error
@@ -163,7 +166,8 @@ def check_link_vlan_attributes(obj: Box, link: Box, v_attr: Box, topology: Box) 
       log.error(
         f'Unknown VLAN attribute {attr}{node_error}\n... {link}',
         log.IncorrectValue,
-        'vlan')
+        'vlan',
+        doc_url='module/vlan/#module-vlan-interface')
       link_ok = False
 
   for attr in vlan_link_attr.keys():                              # Loop over VLAN attributes
@@ -178,7 +182,8 @@ def check_link_vlan_attributes(obj: Box, link: Box, v_attr: Box, topology: Box) 
         log.error(
           f'VLAN attribute {attr}{node_error} must be a {a_type.__name__}\n... {link}',
           log.IncorrectValue,
-          'vlan')
+          'vlan',
+          doc_url='module/vlan/#module-vlan-interface')
         link_ok = False
         continue
 
@@ -213,7 +218,8 @@ def check_link_vlan_attributes(obj: Box, link: Box, v_attr: Box, topology: Box) 
         text=f'VLAN {vname} used in vlan.{attr}{node_error} is not defined',
         more_data=f'{link}',
         category=log.IncorrectValue,
-        module='vlan')
+        module='vlan',
+        doc_url='module/vlan/#module-vlan-definition')
       link_ok = False
 
   return link_ok
@@ -232,14 +238,16 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
     log.error(
       f"Cannot mix trunk and access VLANs on the same link\n... {link}",
       log.IncorrectValue,
-      'vlan')
+      'vlan',
+      doc_url='module/vlan/#module-vlan-interface')
     return False
 
   if 'native' in v_attr and not 'trunk' in v_attr:
     log.error(
       f"Native VLAN is valid only on VLAN trunks\n... {link}",
       log.IncorrectValue,
-      'vlan')
+      'vlan',
+      doc_url='module/vlan/#module-vlan-interface')
     return False
 
   if 'access' in v_attr:
@@ -250,7 +258,8 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
         f"Cannot use more than one global access VLAN on link {link._linkname}",
         more_data=f"Found {set_txt}",
         category=log.IncorrectValue,
-        module='vlan')
+        module='vlan',
+        doc_url='module/vlan/#module-vlan-interface')
       return False
     
     if len(v_attr.access.set) > 1:
@@ -258,7 +267,8 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
       log.warning(
         text=f"Using more than one access VLAN per link is not supported",
         more_data=f"Link {link._linkname}, access VLANs: {set_txt}",
-        module='vlan')
+        module='vlan',
+        doc_url='module/vlan/#module-vlan-interface')
 
   link_ok = True
   for attr in vlan_link_attr.keys():                              # Loop over VLAN attributes
@@ -274,7 +284,8 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
           log.error(
             f"VLAN {vname} used in more than one place on the same link must be a global VLAN\n... {link}",
             log.IncorrectValue,
-            'vlan')
+            'vlan',
+            doc_url='module/vlan/#module-vlan-interface')
           link_ok = False
 
     if not 'single' in v_attr:                                    # Does the attribute require a consistent VLAN across the link?
@@ -284,7 +295,8 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
       log.error(
         f"Cannot use more than one {attr} VLAN on the same link\n... {link}",
         log.IncorrectValue,
-        'vlan')
+        'vlan',
+        doc_url='module/vlan/#module-vlan-interface')
       return False
 
   if 'native' in v_attr:                                          # Do we have a native VLAN defined on the link?
@@ -292,7 +304,8 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
       log.error(
         f'Native VLAN {v_attr.native.list[0]} used on a link is not in the VLAN trunk definition\n... {link}',
         log.IncorrectValue,
-        'vlan')
+        'vlan',
+        doc_url='module/vlan/#module-vlan-interface')
     else:
       for intf in link.interfaces:                                # Now check if every node using native VLAN has it in its trunk
         if 'vlan' in intf:                                        # VLAN attributes on interface?
@@ -304,19 +317,22 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
               log.error(
                 f'Node {intf.node} is using native VLAN without VLAN trunk\n... {link}',
                 log.IncorrectValue,
-                'vlan')
+                'vlan',
+                doc_url='module/vlan/#module-vlan-interface')
             elif node_native not in node_trunk:                   # ... native VLAN not in trunk, that's not valid
               log.error(
                 f'Node {intf.node} is using native VLAN that is not defined in its VLAN trunk\n... {link}',
                 log.IncorrectValue,
-                'vlan')
+                'vlan',
+                doc_url='module/vlan/#module-vlan-interface')
           else:                                                   # There's native VLAN on this link, but not on this node
             if isinstance(node_trunk,Box):                        # ... trunk data should be a Box, but mypy doesn't know that ;)
               if v_attr.native.list[0] in node_trunk:             # ... if this node lists native VLAN in its trunk we have  problem
                 log.error(
                   f'Native VLAN used on the link is in the VLAN trunk of node {intf.node}, but is not configured as native VLAN\n... {link}',
                   log.IncorrectValue,
-                  'vlan')
+                  'vlan',
+                  doc_url='module/vlan/#module-vlan-interface')
                 continue
               for af in ('ipv4','ipv6'):                          # Interface is not participating in native VLAN
                 intf[af] = False                                  # ... make sure it's not connected to the native VLAN subnet
@@ -348,7 +364,8 @@ def check_link_interface_attributes(link: Box, intf: Box, topology: Box) -> None
           f"on {link._linkname}",
           category=log.IncorrectType,
           hint='fwd_mode_check',
-          module='vlan')        
+          module='vlan',
+          doc_url='module/vlan/#vlan-forwarding-modes')
         return
 
   invalid = []                                              # This is where we collect invalid attributes
@@ -368,7 +385,8 @@ def check_link_interface_attributes(link: Box, intf: Box, topology: Box) -> None
       f"Link {link._linkname}, node {intf.node}, vlan {intf.vlan.access}",
       f"Interface VLAN forwarding mode: {vlan_mode}, unexpected attributes {','.join(invalid)}", f"{intf}" ],
     category=log.IncorrectValue,
-    module='vlan')
+    module='vlan',
+    doc_url='module/vlan/#vlan-interface-parameters')
 
 """
 validate_trunk_vlan_list -- validate that the nodes connected to a VLAN trunk have at least some common VLANs
@@ -387,7 +405,8 @@ def validate_trunk_vlan_list(link: Box) -> bool:
     log.error(
       f'Non-VLAN nodes are attached to VLAN trunk {link._linkname} that has no native VLAN',
       log.IncorrectValue,
-      'vlan')
+      'vlan',
+      doc_url='module/vlan/#module-vlan-interface')
     return False
 
   # Second check: Every VLAN used by a node must be used by at least one other node
@@ -401,7 +420,7 @@ def validate_trunk_vlan_list(link: Box) -> bool:
 
     for vname in o_intf.vlan.trunk.keys():                            # OK, now we can iterate over all VLANs in this interfaces' trunk
       if not isinstance(vname,str):
-        log.error(f'VLAN names in trunks ({vname}) must be strings:\n... {link}',log.IncorrectValue,'vlan')
+        log.error(f'VLAN names in trunks ({vname}) must be strings:\n... {link}',log.IncorrectValue,'vlan',doc_url='module/vlan/#module-vlan-interface')
         return False
       vlan_found = False
       for i_intf in link.interfaces:                                  # ... and over all other other interfaces
@@ -422,7 +441,8 @@ def validate_trunk_vlan_list(link: Box) -> bool:
       log.error(
         f'VLAN {vname} used by node {o_intf.node} on {link._linkname} is not used by any other node on that link',
         log.IncorrectValue,
-        'vlan')
+        'vlan',
+        doc_url='module/vlan/#module-vlan-interface')
       has_error = True
 
   return not has_error
@@ -649,7 +669,8 @@ def xtra_warning(xtra_attr: list, obj: Box, obj_name: str) -> None:
     text=f'Do not use attribute(s) {",".join(xtra_map)} on {obj_name}',
     hint='trunk_attr',
     module='vlan',
-    flag='trunk_attribute')
+    flag='trunk_attribute',
+    doc_url='module/vlan/#module-vlan-trunk-attributes')
 
 """
 create_vlan_links: Create virtual links for every VLAN in the VLAN trunk
@@ -899,7 +920,8 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
       log.error(                                                         # SVI interfaces are not supported on this device
         f'Device {node.device} used by {node.name} does not support VLAN interfaces (access vlan {access_vlan})',
         log.IncorrectValue,
-        'vlan')
+        'vlan',
+        doc_url='module/vlan/#vlan-platform')
       return vlan_ifmap
 
     if not access_vlan in vlan_ifmap:                                       # Do we need to create a SVI interface?
@@ -1059,7 +1081,8 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
       #
       log.error(
         f'Routed subinterfaces on VLAN trunks not supported on device type {node.device}\n... node {node.name} vlan {intf.vlan_name}',
-        log.IncorrectValue,'vlan')
+        log.IncorrectValue,'vlan',
+        doc_url='module/vlan/#vlan-platform')
       continue
 
     subif_name = features.vlan.subif_name
@@ -1134,7 +1157,8 @@ def cleanup_routed_native_vlan(node: Box, topology: Box) -> None:
       log.error(
         f'Node {node.name} device {node.device} does not support native routed VLANs (vlan {intf._vlan_native} interface {intf.name})',
         log.IncorrectValue,
-        'vlan')
+        'vlan',
+        doc_url='module/vlan/#vlan-platform')
 
     vlan_id = node.vlans.get(intf._vlan_native,{}).id
     if vlan_id:
@@ -1172,7 +1196,8 @@ def check_mixed_trunks(node: Box, topology: Box) -> None:
         f'Device type {node.device} does not support mixed bridged/routed VLAN trunks\n'+ \
         f'... node {node.name} interface {parent_intf.ifname}: {parent_intf.name}',
         log.IncorrectValue,
-        'vlan')
+        'vlan',
+        doc_url='module/vlan/#vlan-platform')
     err_ifmap[parent_intf.ifindex] = True
 
 """
@@ -1199,7 +1224,8 @@ def check_mixed_native_trunk(node: Box, topology: Box) -> None:
       f'Device type {node.device} (node {node.name}) cannot have a routed native VLAN with a bridged trunk',
       category=log.IncorrectValue,
       module='vlan',
-      more_data=f'Found on interface {intf.ifname} ({intf.name})')
+      more_data=f'Found on interface {intf.ifname} ({intf.name})',
+      doc_url='module/vlan/#vlan-platform')
 
 """
 populate_node_vlan_data -- merge topology VLANs into node VLANs that were copied from groups.node_data

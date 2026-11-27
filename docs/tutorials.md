@@ -9,8 +9,8 @@ We published dozens of tutorials describing various _netlab_ features. Choose on
 
 These instructions and tutorials cover some of the usual early hurdles:
 
-* [Building Vagrant boxes](libvirt-build-boxes)
 * [Building or installing containers](clab-images)
+* [Building Vagrant boxes](libvirt-build-boxes)
 * [Selecting Network Devices' Software Release](tutorial-release)
 * [](tutorial-linux)
 

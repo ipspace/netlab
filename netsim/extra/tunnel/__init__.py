@@ -36,7 +36,8 @@ def set_tunnel_type(topology: Box) -> None:
       log.error(
         f"Link {link._linkname} has tunnel attributes and 'type' set to {link.type}",
         category=log.IncorrectValue,
-        module='tunnel')
+        module='tunnel',
+        doc_url='links/#links-tunnel')
     else:
       link.type = 'tunnel'
 
@@ -195,5 +196,6 @@ def check_feature(
 
   log.error(
     f'Device {ndata.device} (node {ndata.name}) does not support {f_desc}',
-    log.IncorrectValue,'tunnel')
+    log.IncorrectValue,'tunnel',
+    doc_url=f'plugins/tunnel.{f_name}/#plugin-tunnel-{f_name}')
   return False

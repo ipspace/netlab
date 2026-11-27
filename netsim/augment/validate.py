@@ -40,7 +40,8 @@ def lookup_wait_time(v_entry: Box, topology: Box) -> None:
       f'Wait time {v_entry.wait} specified in validation entry {v_entry.name} is not a validation constant',
       more_hints='Define validation constants in defaults.const.validate',
       category=log.IncorrectValue,
-      module='validation')
+      module='validation',
+      doc_url='topology/validate/#validate-tests')
 
 '''
 validate_test_entry: Check if the test makes sense
@@ -57,7 +58,8 @@ def validate_test_entry(v_entry: Box, topology: Box) -> bool:
     log.error(
           f'Test {v_entry.name} should have wait, show, exec, config, plugin, suzieq, or ansible option',
           category=log.MissingValue,
-          module='validation')
+          module='validation',
+          doc_url='topology/validate/#validate-tests')
     return False
 
   lookup_wait_time(v_entry,topology)
@@ -77,7 +79,8 @@ def validate_test_entry(v_entry: Box, topology: Box) -> bool:
       log.error(
             f'You cannot use {",".join(x_kw)} in test {v_entry.name}. Use only one action per test',
             category=log.IncorrectValue,
-            module='validation')
+            module='validation',
+            doc_url='topology/validate/#validate-tests')
       return False
 
   if not kw_set & set(['suzieq','wait']) and not 'nodes' in v_entry:
@@ -85,7 +88,8 @@ def validate_test_entry(v_entry: Box, topology: Box) -> bool:
           f'Test {v_entry.name} must specify the nodes to execute the test on',
           hint='nodes',
           category=log.IncorrectValue,
-          module='validation')
+          module='validation',
+          doc_url='topology/validate/#validate-tests')
     return False
 
   if 'show' in v_entry and 'valid' not in v_entry:      # A test with 'show' must also have 'valid'
@@ -93,7 +97,8 @@ def validate_test_entry(v_entry: Box, topology: Box) -> bool:
           f'Test {v_entry.name} has a "show" option but no "valid" option',
           category=log.MissingValue,
           hint='show',
-          module='validation')
+          module='validation',
+          doc_url='topology/validate/#validate-tests')
     return False
 
   if 'valid' not in v_entry:                            # A test does not have 'valid' option, no further validation needed
@@ -104,7 +109,8 @@ def validate_test_entry(v_entry: Box, topology: Box) -> bool:
           f'Test {v_entry.name} has a "valid" option but no action that would generate data to check',
           hint='valid',
           category=log.MissingValue,
-          module='validation')                          # OOPS, we have no action that would produce a result to validate
+          module='validation',                          # OOPS, we have no action that would produce a result to validate
+          doc_url='topology/validate/#validate-tests')
     return False
 
   return True
@@ -141,7 +147,8 @@ def calculate_device_support(v_entry: Box, topology: Box) -> bool:
     log.error(
       f'Validation test {v_entry.name} does not include any valid device',
       category=log.MissingValue,
-      module='validation')
+      module='validation',
+      doc_url='topology/validate/#validate-tests')
     return False
   
   return True

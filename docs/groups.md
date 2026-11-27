@@ -24,7 +24,7 @@ For example, you could use `netlab config mpls.j2 --limit iosv` to deploy config
 (groups-create)=
 ## Creating Custom Object Groups
 
-Lab topology can specify custom object groups in the **groups** top-level parameter. The **groups** parameter must be a dictionary with group names as dictionary keys. Dictionary values could be either a list of member nodes or a further dictionary specifying **members**:
+Lab topology can specify custom object groups in the **groups** top-level parameter. The **groups** parameter must be a dictionary with group names as dictionary keys (a group cannot have the same name as a node). Dictionary values could be either a list of member nodes or a further dictionary specifying **members**:
 
 ```
 ---
@@ -240,7 +240,14 @@ The following groups have special meaning in *netlab*-generated Ansible inventor
 
 * `unprovisioned`: **netlab up** and **netlab initial** will skip devices in this group while deploying device configurations.
 
+(groups-predefined)=
 ### Changing Group Variables for Predefined Groups
+
+_netlab_ automatically creates the **all** group (containing all lab nodes) and a group for every device type used in the lab topology (named after the device type and containing all nodes using that device type). You can set attributes of these groups in the lab topology, but:
+
+* You cannot use **all** or device names as names of custom groups, and you cannot specify the **members** of these groups.
+* You cannot change the **device** attribute of a device group.
+
 
 If you want to set one or more Ansible facts for all devices in your lab, use the **vars** element in the **all** group:
 

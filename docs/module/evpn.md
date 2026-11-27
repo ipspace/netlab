@@ -18,6 +18,7 @@ This configuration module configures the BGP EVPN address family to implement L2
    :backlinks: none
 ```
 
+(evpn-platform)=
 ## Platform Support
 
 The following table describes the per-platform support of individual EVPN/VXLAN features:
@@ -147,6 +148,11 @@ The EVPN bundle service is enabled with **evpn.bundle** VRF parameter that can t
 * **vlan_aware** -- VLAN-aware bundle service (RFC 7432 section 6.3)
 * **port_aware** -- Port-based VLAN-aware service (RFC 7432 section 6.3.1)
 
+```{warning}
+The devices that support EVPN bundle services (see the *VLAN Bundle service* column in the *Platform Support* table) currently support only the **vlan_aware** bundle service.
+```
+
+(evpn-irb)=
 ### Integrated Routing and Bridging
 
 IRB is configured whenever EVPN-enabled VLANs in a VRF contain IPv4 or IPv6 addresses:

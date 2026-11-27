@@ -23,7 +23,8 @@ def post_transform(topology: Box) -> None:
                 continue
             if not zbf_supported:                               # Not supported, print error and move on
                 log.error( f"Node {node.name}({node.device}) does not support 'firewall.zone' used on {intf.name}",
-                        category=log.IncorrectAttr,module=_config_name)
+                        category=log.IncorrectAttr,module=_config_name,
+                        doc_url='plugins/firewall.zonebased/#plugin-firewall-zonebased')
                 OK = False
                 continue
 
@@ -39,5 +40,6 @@ def post_transform(topology: Box) -> None:
                 z = def_rule[z_direction]
                 if z not in node.firewall.zonebased._zones:
                     log.error( f"Node {node.name} does not have zone '{z}' used in firewall.zonebased.default_rules[{rule_idx}].{z_direction}",
-                            category=log.IncorrectAttr,module=_config_name)
+                            category=log.IncorrectAttr,module=_config_name,
+                            doc_url='plugins/firewall.zonebased/#plugin-firewall-zonebased')
     return

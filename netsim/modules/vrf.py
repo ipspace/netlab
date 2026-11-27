@@ -110,7 +110,8 @@ def validate_vrf_loopback(vname: str,vdata: Box,obj: Box,topology: Box) -> None:
     log.error(f'IP prefix for VRF loopbacks can only be specified in node VRF data (found in global VRF {vname})',
     more_hints=[ 'Use pool attribute or specify the VRF loopback ipv4/ipv6 address in the node VRF data'],
     category=log.IncorrectAttr,
-    module='vrf')
+    module='vrf',
+    doc_url='module/vrf/#vrf-loopback')
 
   obj_path = f'vrfs.{vname}' if obj is topology else f'nodes.{obj.name}.vrfs.{vname}'
   validate_attributes(
@@ -153,7 +154,8 @@ def normalize_vrf_dict(obj: Box, topology: Box) -> None:
           f'Reserved VRF names are {r_list}',
           'Set defaults.vrf.attributes.reserved attribute to change that list' ],
         category=log.IncorrectValue,
-        module='vrf')
+        module='vrf',
+        doc_url='module/vrf/#module-vrf-definition')
 
     if 'loopback' in vdata:
       validate_vrf_loopback(vname,vdata,obj,topology)
@@ -166,14 +168,16 @@ def normalize_vrf_dict(obj: Box, topology: Box) -> None:
         if not asn:
           log.error(f'VRF {vname} in {obj_name} uses integer RD value without a usable vrf.as or bgp.as AS number',
             log.MissingValue,
-            'vrf')
+            'vrf',
+            doc_url='module/vrf/#vrf-rd-rt')
           return
         vdata.rd = f'{asn}:{vdata.rd}'
       else:                     # We know that RD attribute makes some sense (due to type validation), so it's either int or str
         if parse_rdrt_value(vdata.rd) is None:
           log.error(f'RD value in VRF {vname} in {obj_name} ({vdata.rd}) is not in N:N format',
             log.IncorrectValue,
-            'vrf')
+            'vrf',
+            doc_url='module/vrf/#vrf-rd-rt')
 
 def normalize_vrf_ids(topology: Box) -> None:
   normalize_vrf_dict(topology,topology)
@@ -250,7 +254,8 @@ def set_vrf_ids(obj: Box, topology: Box) -> None:
     if not asn:
       log.error(f'Need a usable vrf.as or bgp.as to create auto-generated VRF RD for {vname} in {obj_name}',
         log.MissingValue,
-        'vrf')
+        'vrf',
+        doc_url='module/vrf/#default-vrf-values')
       return
     set_vrf_auto_id(vdata,get_next_vrf_id(asn))
 
@@ -284,20 +289,23 @@ def set_import_export_rt(obj : Box, topology: Box) -> None:
           if not asn:
             log.error(f'VRF {vname} in {obj_id} uses integer {rtname} value without a usable vrf.as or bgp.as AS number',
               log.MissingValue,
-              'vrf')
+              'vrf',
+              doc_url='module/vrf/#vrf-rd-rt')
             continue
           rtvalue = f'{asn}:{rtvalue}'
         elif not isinstance(rtvalue,str):   # If RT is not an integer, it really should be a string
           log.error(f'{rtname} value {rtvalue} in VRF {vname} in {obj_id} should be a string or an integer',
             log.IncorrectValue,
-            'vrf')
+            'vrf',
+            doc_url='module/vrf/#vrf-rd-rt')
           continue
         else:
           if ':' in rtvalue:                # If there's a colon in RT value, then we're assuming N:N format
             if parse_rdrt_value(rtvalue) is None:
               log.error(f'{rtname} value {rtvalue} in VRF {vname} in {obj_id} is not in valid N:N format',
                 log.IncorrectValue,
-                'vrf')
+                'vrf',
+                doc_url='module/vrf/#vrf-rd-rt')
               continue
           else:                             # Otherwise the RT value should refer to another VRF name
             rtvalue = get_vrf_id(rtvalue,obj,topology)
@@ -327,7 +335,8 @@ def validate_vrf_route_leaking(node : Box, features: Box) -> None:
         text=f"VRF {vname} on {node.name} uses inter-VRF route leaking, which is not supported by device {node.device}",
         module='vrf',
         flag='leaking',
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='module/vrf/#module-vrf-platform-support')
 
     vdata._leaked_routes = True                   # Set the flag for VRF configuration templates
     if node.get('bgp.as',None):                   # If we already have a valid node BGP ASN, move on
@@ -377,7 +386,8 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
         text=f"VRF {vrfname} on {node.name} needs a loopback interface, which is not supported by device {node.device}",
         module='vrf',
         flag='loopback',
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='module/vrf/#module-vrf-platform-support')
 
     # Note: set interface ifindex to v.vrfidx if you want to have VRF-numbered loopbacks
     #
@@ -541,7 +551,8 @@ class VRF(_Module):
         log.error(
           f'VRF {ifdata.vrf} used on an interface in {node.name} is not defined in the node or globally',
           log.MissingValue,
-          'vrf')
+          'vrf',
+          doc_url='module/vrf/#module-vrf-definition')
         continue
 
       if not ifdata.vrf in node.vrfs:                                   # Local VRF not present, mark as required
@@ -567,7 +578,8 @@ class VRF(_Module):
           log.error(
             f'VRF {ifdata.vrf} used on an interface in {node.name} does not have a usable RD',
             log.MissingValue,
-            'vrf')
+            'vrf',
+            doc_url='module/vrf/#vrf-rd-rt')
           continue
 
         for af in ['v4','v6']:
@@ -607,7 +619,8 @@ class VRF(_Module):
         log.error(
           f"Found invalid VRF {k} on node {node.name}. Did you mention it only in groups.node_data? You can't do that.",
           log.IncorrectValue,
-          'vrf')
+          'vrf',
+          doc_url='groups/#groups-node-vlan-vrf')
         log.exit_on_error()
 
     # We need unique VRF index to create OSPF processes, assign in order sorted by VRF ID "for consistency"

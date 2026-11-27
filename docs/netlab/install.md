@@ -3,7 +3,7 @@
 
 **netlab install** uses internal installation scripts to install nice-to-have Ubuntu software, Ansible and related networking libraries, or libvirt+vagrant.
 
-The *ubuntu*, *libvirt*, and *containerlab* installation scripts run only on Ubuntu[^UT] and Debian[^DT]; the *ansible* and *grpc* installation scripts should run in any environment with **bash** and **pip3**.
+The *ubuntu*, *libvirt*, and *containerlab* installation scripts run only on Ubuntu[^UT] and Debian[^DT]; the *ansible*, *netmiko*, and *grpc* installation scripts should run in any environment with **bash** and **pip3**.
 
 ## Usage
 

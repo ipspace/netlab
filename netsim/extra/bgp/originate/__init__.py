@@ -14,7 +14,8 @@ def init(topology: Box) -> None:
   log.warning(
         text='The functionality of the bgp.originate plugin is now available in the BGP module',
         module='bgp',
-        flag='obsolete')
+        flag='obsolete',
+        doc_url='module/bgp/#module-bgp-originate')
 
 def post_node_transform(topology: Box) -> None:
   for n, ndata in topology.nodes.items():

@@ -79,6 +79,7 @@ def post_transform(topology: Box) -> None:
     log.warning(
       text=f"tools.{TOOL}.validate is set, but the lab topology has no validation tests; the validation loop is not started",
       module=TOOL,
+      doc_url='extool/network_xray/#extool-network-xray-validate',
     )
     return
   for cmd in ("up", "down"):

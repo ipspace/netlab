@@ -72,7 +72,8 @@ def normalize_prefix(pfx: typing.Union[str,Box]) -> Box:
       log.error(
         f'Cannot parse address prefix: {ex}',
         log.IncorrectValue,
-        'addressing')
+        'addressing',
+        doc_url='addressing/#address-pool-specs')
       return False
 
   if not pfx:
@@ -148,7 +149,8 @@ def validate_pools(addrs: Box, topology: Box) -> None:
         log.error(
           f'Pool {pool} is an unnumbered pool and cannot have IPv4 or IPv6 prefixes {pfx}',
           category=log.IncorrectValue,
-          module='addressing')
+          module='addressing',
+          doc_url='addressing/#addressing-unnumbered')
         continue
     for k in ('ipv4','ipv6'):
       if k in pfx:
@@ -161,7 +163,8 @@ def validate_pools(addrs: Box, topology: Box) -> None:
               f"{k} prefix {pfx[k]} in addressing pool '{pool}' is invalid",
               more_data=str(Ex),
               category=log.IncorrectValue,
-              module='addressing')
+              module='addressing',
+              doc_url='addressing/#address-pool-specs')
             continue
 
     if 'mac' in pfx:
@@ -171,7 +174,8 @@ def validate_pools(addrs: Box, topology: Box) -> None:
         log.error(
           "MAC prefix %s in addressing pool '%s' is invalid (%s)" % (pfx.mac,pool,sys.exc_info()[1]),
           category=log.IncorrectValue,
-          module='addressing')
+          module='addressing',
+          doc_url='addressing/#address-pool-specs')
         continue
 
     if 'ipv4' in pfx and 'ipv4_pfx' in pfx and pool != 'mgmt':
@@ -179,37 +183,43 @@ def validate_pools(addrs: Box, topology: Box) -> None:
         log.error(
           "IPv4 prefix length is missing in '%s' addressing pool" % pool,
           category=log.MissingValue,
-          module='addressing')
+          module='addressing',
+          doc_url='addressing/#address-pool-specs')
       else:
         if not isinstance(pfx['prefix'],int):
           log.error(
             "IPv4 prefix length in '%s' addressing pool is not an integer" % pool,
             category=log.IncorrectValue,
-            module='addressing')
+            module='addressing',
+            doc_url='addressing/#address-pool-specs')
         else:
           if pfx.prefix > 32 or pfx.prefix < 1:
             log.error(
               "IPv4 subnet prefix length in '%s' addressing pool is not between 1 and 32" % pool,
               category=log.IncorrectValue,
-              module='addressing')
+              module='addressing',
+              doc_url='addressing/#address-pool-specs')
           if pfx.prefix < pfx.ipv4_pfx.prefixlen:
             log.error(
               "IPv4 subnet prefix length in '%s' addressing pool is not longer than pool prefix" % pool,
               category=log.IncorrectValue,
-              module='addressing')
+              module='addressing',
+              doc_url='addressing/#address-pool-specs')
 
     if 'ipv6' in pfx and 'ipv6_pfx' in pfx:
       if pfx.ipv6_pfx.prefixlen > 56 and pool != 'mgmt':
         log.error(
           f"Error in '{pool}' addressing pool: IPv6 pool prefix cannot be longer than /56",
           category=log.IncorrectValue,
-          module='addressing')
+          module='addressing',
+          doc_url='addressing/#address-pool-specs')
 
   if not 'ipv4' in addrs.loopback and not 'ipv6' in addrs.loopback:
     log.error(
       "Loopback addressing pool has no IPv4 or IPv6 address prefix",
       category=log.MissingValue,
-      module='addressing')
+      module='addressing',
+      doc_url='addressing/#address-pool-specs')
 
 def create_pool_generators(addrs: Box, no_copy_list: list) -> Box:
   if not addrs:       # pragma: no cover (pretty hard not to have address pools)
@@ -263,7 +273,8 @@ def get_pool_prefix(pools: Box, p: str, n: typing.Optional[int] = None) -> Box:
         log.error(
           f'Cannot allocate {n}-th {af} element from {p} pool',
           log.IncorrectValue,
-          'addressing')
+          'addressing',
+          doc_url='addressing/#address-pool-specs')
     else:                                                             # Just asking for the next available prefix
       try:
         prefixes[af] = next(pools[p][af])                             # Let's see if we can get one more
@@ -272,7 +283,8 @@ def get_pool_prefix(pools: Box, p: str, n: typing.Optional[int] = None) -> Box:
           f'Ran out of {af} prefixes in {p} pool' +
           (' (use --debug addr CLI argument to get more details)' if not log.debug_active('addr') else ''),
           log.MissingValue,
-          'addressing')
+          'addressing',
+          doc_url='addressing/#address-pool-specs')
 
   if log.debug_active('addressing'):
     print(f'get_pool_prefix: {p} => {prefixes}')
@@ -328,7 +340,8 @@ def evaluate_named_prefix(topology: Box, pname: str) -> Box:
     log.error(
       f'Named prefix {pname} references an unknown pool {pool_name}',
       category=log.IncorrectValue,
-      module='addressing')
+      module='addressing',
+      doc_url='prefix/#named-prefixes')
     return get_empty_box()
 
   pool_pfx = get_pool_prefix(topology.pools,pool_name)

@@ -19,7 +19,8 @@ def pre_transform(topology: Box) -> None:
       log.error(
         f'A GRE tunnel must have exactly two nodes attached to it (link {link._linkname})',
         category=log.IncorrectAttr,
-        module='tunnel.gre')
+        module='tunnel.gre',
+        doc_url='plugins/tunnel.gre/#plugin-tunnel-gre')
 
 def post_transform(topology: Box) -> None:
   '''

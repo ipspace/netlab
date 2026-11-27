@@ -15,6 +15,7 @@ This configuration module configures the RIPv2 and RIPng. The module supports th
    :backlinks: none
 ```
 
+(ripv2-platform)=
 ## Platform Support
 
 The following table describes per-platform support of individual RIPv2/RIPng features:

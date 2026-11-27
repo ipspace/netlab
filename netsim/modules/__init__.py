@@ -197,14 +197,16 @@ def check_supported_node_devices(topology: Box) -> None:
         log.error(
           f"Unknown module {m} used by node {name}",
           log.IncorrectValue,
-          'modules')
+          'modules',
+          doc_url='modules/#topo-modules')
         continue
       mod_def = topology.defaults[m]
       if not n.device in mod_def.supported_on:                  # ... and is the device on the list?
         log.error(
           f"Device type {n.device} (node {name}) does not support module {m}",
           log.IncorrectValue,
-          'modules')
+          'modules',
+          doc_url='platforms/#platform-routing-support')
         continue
       if not isinstance(mod_def.supported_on[n.device],Box):    # Provider-specific support?
         continue
@@ -214,7 +216,8 @@ def check_supported_node_devices(topology: Box) -> None:
         log.error(
           f"Device type {n.device} (node {name}) does not support module {m} with provider {d_provider}",
           log.IncorrectValue,
-          'modules')
+          'modules',
+          doc_url='platforms/#platform-routing-support')
         continue
 
 # Merge global module parameters with per-node module parameters
@@ -372,7 +375,8 @@ def check_module_dependencies(topology:  Box) -> None:
           log.error(
             f"Module {m} requires module {rqm} which is not enabled in your topology",
             log.MissingValue,
-            'modules')
+            'modules',
+            doc_url='modules/#topo-modules')
 
       for n in topology.nodes.values():                   # Now iterate over nodes and check device-specific requirements
         if not m in n.get('module',[]):                   # Is the module we're currently checking used by this node?
@@ -389,7 +393,8 @@ def check_module_dependencies(topology:  Box) -> None:
             log.error(
               f"Module {m} on device {n.device} (node {n.name}) requires {rqm} module",
               log.IncorrectValue,
-              'modules')
+              'modules',
+              doc_url='modules/#topo-modules')
 
 """
 reorder_node_modules:

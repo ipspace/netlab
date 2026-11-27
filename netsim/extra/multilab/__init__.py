@@ -1,10 +1,12 @@
+import os
+import random
 from pathlib import Path
 
 from box import Box
 
 from netsim import data
 from netsim.augment import devices
-from netsim.utils import log, strings
+from netsim.utils import log, status, strings
 
 _description = 'Run multiple labs on the same Linux server'
 
@@ -85,6 +87,46 @@ def add_provider_locks(topology: Box) -> None:
       change_up_down(pdata[sname],lock,f'providers.{pname}.{sname}')
 
 """
+Allocate a multilab ID that is not used by any lab instance in the netlab status file
+
+* Reuse the ID of the lab instance running in the current directory (recreating the lab)
+* Otherwise, select a random ID from the unused IDs (1..200)
+"""
+def allocate_id(topology: Box) -> None:
+  mlab = topology.defaults.multilab
+  auto_id = data.types.must_be_str(                   # auto_id can be True/False or 'force'
+    parent=mlab,
+    key='auto_id',
+    path='defaults.multilab',
+    module='multilab',
+    true_value='auto',
+    valid_values=['auto','force'])
+  if auto_id not in ['auto','force']:                 # auto_id not set or invalid
+    return
+  if 'id' in mlab and auto_id != 'force':             # Static ID is set and we're not forced to ignore it
+    return
+
+  lab_states = status.read_status(topology)
+  used_id = { lab_id for lab_id in lab_states.keys() if isinstance(lab_id,int) }
+  for lab_id in used_id:                              # Is there a lab instance running in this directory?
+    if lab_states[lab_id].dir == os.getcwd():
+      mlab.id = lab_id                                # ... reuse its ID
+      return
+
+  free_id = [ lab_id for lab_id in range(1,201) if lab_id not in used_id ]
+  if not free_id:
+    log.error(
+      'Cannot allocate multilab ID, all IDs between 1 and 200 are used',
+      category=log.IncorrectValue,
+      module='multilab',
+      more_hints="Use 'netlab status --all' to display the list of lab instances",
+      doc_url='plugins/multilab/#plugin-multilab-auto-id')
+    return
+
+  mlab.id = random.choice(free_id)
+  log.info(f'Using multilab ID {mlab.id}',module='multilab')
+
+"""
 Main multilab code:
 
 * Validate default settings
@@ -93,10 +135,11 @@ Main multilab code:
 """
 def init(topology: Box) -> None:
   mlab = topology.defaults.multilab
+  allocate_id(topology)                               # Allocate dynamic lab ID if needed
   abort = False
   for kw in ['id','change']:                          # Check that we have all default parameters needed for multilab to work
     if not kw in mlab:
-      log.error(f'multilab plugin requires defaults.multilab.{kw} parameter',log.MissingValue,'multilab')
+      log.error(f'multilab plugin requires defaults.multilab.{kw} parameter',log.MissingValue,'multilab',doc_url='plugins/multilab/#plugin-multilab-usage')
       abort = True
 
   if abort:

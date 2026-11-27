@@ -103,7 +103,8 @@ def check_group_data_sanity(
       log.error(
         f"Definition of {grp_namespace}group '{grp}' must be a dictionary",
         log.IncorrectType,
-        'groups')
+        'groups',
+        doc_url='groups/#groups-create')
       return False
 
     if isinstance(parent.groups[grp],list):
@@ -113,7 +114,8 @@ def check_group_data_sanity(
       log.error(
         f"{grp_namespace}group '{grp}' is also a node name. I can't deal with that level of confusion",
         log.IncorrectValue,
-        'groups')
+        'groups',
+        doc_url='groups/#groups-create')
       return False
 
     if 'members' in parent.groups[grp]:
@@ -144,7 +146,7 @@ def expand_group_members(
   g_names: typing.List[str] = []
   for m_id in g_members:
     if not isinstance(m_id,str):
-      log.error(f'Member {m_id} of {g_type} group {g_name} is not a string',log.IncorrectType,module='groups')
+      log.error(f'Member {m_id} of {g_type} group {g_name} is not a string',log.IncorrectType,module='groups',doc_url='groups/#groups-members')
       continue
 
     # Simple case: the member belongs to the group objects
@@ -163,13 +165,15 @@ def expand_group_members(
           f'Invalid regular expression {m_id} used in {g_type} group {g_name}',
           more_data=str(ex),
           category=log.IncorrectValue,
-          module='groups')
+          module='groups',
+          doc_url='groups/#groups-members')
         continue
       if not g_match:                             # ... or we had no matches
         log.error(
           f'Regular expression {m_id} used in {g_type} group {g_name} does not match anything',
           category=log.IncorrectType,
-          module='groups')
+          module='groups',
+          doc_url='groups/#groups-members')
         continue
 
       # All good, add new re-matched members
@@ -186,13 +190,15 @@ def expand_group_members(
           f'Invalid wildcard expression {m_id} used in {g_type} group {g_name}',
           more_data=str(ex),
           category=log.IncorrectValue,
-          module='groups')
+          module='groups',
+          doc_url='groups/#groups-members')
         continue
       if not g_match:
         log.error(
           f'Wildcard expression {m_id} used in {g_type} group {g_name} does not match anything',
           category=log.IncorrectType,
-          module='groups')
+          module='groups',
+          doc_url='groups/#groups-members')
         continue
 
       # All good, add new wildcard-matched members
@@ -202,7 +208,8 @@ def expand_group_members(
       log.error(
         f'Member {m_id} of group {g_name} is not a valid {g_type} or group name',
         category=log.IncorrectValue,
-        module='groups')
+        module='groups',
+        doc_url='groups/#groups-members')
 
   return members
 
@@ -240,7 +247,8 @@ def check_group_data_structure(
       log.error(
         f"Invalid group type for group {grp}; can be {','.join(gt_values)}",
         category=log.IncorrectType,
-        module='groups')
+        module='groups',
+        doc_url='groups/#groups-create')
 
     g_namespace = [ f'{g_type}_group' ]
     g_namespace.extend(topology.defaults.attributes[g_namespace[0]].get('_namespace',[]))
@@ -253,12 +261,14 @@ def check_group_data_structure(
         text=f'{grp_namespace}group "{grp}" should not have explicit members',
         more_hints='Device names or "all" cannot be used as names for user-defined groups',
         category=log.IncorrectValue,
-        module='groups')
+        module='groups',
+        doc_url='groups/#groups-predefined')
     if grp in topology.defaults.devices and 'device' in gdata:
       log.error(
         text=f'Trying to change the device to {gdata.device} in device group {grp} is ridiculous',
         category=log.IncorrectAttr,
-        module='groups')
+        module='groups',
+        doc_url='groups/#groups-predefined')
 
     must_be_list(gdata,'module',gpath,create_empty=False,module='groups',valid_values=sorted(list_of_modules))
 
@@ -323,7 +333,8 @@ def validate_group_data(
     if 'node_data' in gdata and g_type == 'node':
       log.warning(
         text=f'Group {grp} uses an obsolete attribute node_data. Migrate node parameters into group definition',
-        flag='groups.node_data')
+        flag='groups.node_data',
+        doc_url='groups/#groups-object-data')
 
       if not isinstance(gdata.node_data,Box):  # Invalid node_data was reported by the group attribute validation
         continue                             # ... and the group data structures are not safe to work on
@@ -345,7 +356,8 @@ def validate_group_data(
           log.error(
             f'Cannot use attribute {k} in node_data in {grp_namespace}group {grp}, set it as a group attribute',
             log.IncorrectValue,
-            'groups')
+            'groups',
+            doc_url='groups/#groups-object-data')
 
     if log.pending_errors():                 # If we already found errors
       continue                               # ... then the group data structures are not safe to work on
@@ -412,7 +424,8 @@ def add_node_to_group(node: str, group: str, topology: Box) -> None:
     log.error(
       f"Cannot add node {node} to non-node group {group}",
       category=log.IncorrectType,
-      module='groups')
+      module='groups',
+      doc_url='groups/#groups-create')
 
   data.append_to_list(g_data,'members',node)
 
@@ -440,7 +453,7 @@ def check_recursive_chain(topology: Box, chain: list, group: str) -> typing.Opti
   for m in topology.groups[group].members:
     if m in chain:
       chain = chain + [ m ]
-      log.error(f'Recursive group definition chain {chain}', log.IncorrectValue, 'groups')
+      log.error(f'Recursive group definition chain {chain}', log.IncorrectValue, 'groups', doc_url='groups/#groups-hierarchy')
       return chain
     if m in topology.groups:
       if check_recursive_chain(topology,chain,m):
@@ -492,7 +505,8 @@ def copy_group_device_module(topology: Box) -> None:
       log.error(
         f'Cannot use "device" attribute in group {grp} that has no direct or indirect members',
         log.IncorrectValue,
-        'groups')
+        'groups',
+        doc_url='groups/#groups-device-module')
       continue
 
     for name in g_members:                                  # Iterate over group members
@@ -518,7 +532,8 @@ def copy_group_device_module(topology: Box) -> None:
       log.error(
         f'Cannot use "module" attribute in group {grp} that has no direct or indirect members',
         log.IncorrectValue,
-        'groups')
+        'groups',
+        doc_url='groups/#groups-device-module')
       continue
 
     for name in g_members:                                  # Iterate over group members
@@ -614,7 +629,8 @@ def export_group_node_data(
             log.error(
               f'Cannot redefine {key} attribute {attr} for {key}.{obj_name} from node_data in group {gname}',
               log.IncorrectValue,
-              module)
+              module,
+              doc_url='groups/#groups-object-data')
         for attr in copy_keys:                                        # Finally, copy missing values from group to global object
           if attr in obj_data and attr not in topology[key][obj_name]:
             topology[key][obj_name][attr] = obj_data[attr]
@@ -636,7 +652,8 @@ def create_bgp_autogroups(topology: Box) -> None:
         log.error(
           f'BGP AS group {gname} should not have static members',
           log.IncorrectValue,
-          'groups')
+          'groups',
+          doc_url='groups/#groups-bgp')
 
   for n_name,n_data in topology.nodes.items():                  # Now iterate over nodes
     #
@@ -667,7 +684,8 @@ def create_bgp_autogroups(topology: Box) -> None:
         log.error(
           f"Cannot create group '{grpname}' for BGP AS {n_bgpas}, node {grpname} already exists",
           category=log.IncorrectValue,
-          module='groups')
+          module='groups',
+          doc_url='groups/#groups-bgp')
       err_list.append(grpname)
 
     if not 'members' in topology.groups[grpname]:               # Set members of a new group to an empty list

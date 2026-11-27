@@ -130,7 +130,8 @@ def check_attribute_direction(ndata: Box, ngb: Box, topology: Box, attr: str, at
       log.error(
         f'You cannot use bgp.{attr}.{kw} on {ndata.device} (node {ndata.name})',
         category=log.IncorrectType,
-        module=_config_name)
+        module=_config_name,
+        doc_url='plugins/bgp.policy/#plugin-bgp-policy-platform')
       continue
 
     if isinstance(a_feature[kw],bool):                  # Does the device have any further restrictions?
@@ -154,7 +155,8 @@ def check_attribute_direction(ndata: Box, ngb: Box, topology: Box, attr: str, at
       f'bgp.{attr}.{kw} should be {",".join(a_feature[kw])} on device {ndata.device} (node {ndata.name})' + \
       f' found "{attr_value[kw]}"',
       category=log.IncorrectType,
-      module=_config_name)
+      module=_config_name,
+      doc_url='plugins/bgp.policy/#plugin-bgp-policy-platform')
 
 '''
 apply_config: add a plugin configuration template, collect BGP sessions that have to be cleared
@@ -235,7 +237,8 @@ def create_routing_policy(ndata: Box, ngb: Box, p_name: str) -> None:
         f'Cannot mix bgp.policy with individual BGP policy attributes -- node {ndata.name} neighbor {ngb.name}',
         category=log.IncorrectValue,
         more_data = more_data,
-        module='bgp.policy')
+        module='bgp.policy',
+        doc_url='plugins/bgp.policy/#plugin-bgp-policy-individual')
       continue
 
     data.append_to_list(ndata,'module','routing')
@@ -257,7 +260,8 @@ def apply_bgp_routing_policy(ndata: Box,ngb: Box,intf: Box,topology: Box) -> Non
       log.error(
         f"You cannot use 'bgp.policy' interface attribute on a node that does not use 'routing' module",
         category=log.IncorrectType,
-        module='bgp.policy')
+        module='bgp.policy',
+        doc_url='plugins/bgp.policy/#plugin-bgp-policy-apply')
       return
 
     # Get the routing policy name, try to import it, and check it if the import was successful

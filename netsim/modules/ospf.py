@@ -34,13 +34,15 @@ def ospf_unnumbered(node: Box, features: Box) -> bool:
         log.error(
           f'OSPF does not work over multi-access unnumbered IPv4 interfaces: node {node.name} link {l.name}',
           log.IncorrectValue,
-          'ospf')
+          'ospf',
+          doc_url='module/ospf/#ospf-platform')
         OK = False
       elif not len(l.get('neighbors',[])):
         log.error(
           f'Configuring OSPF on an unnumbered stub interface makes no sense: node {node.name} link {l.name}',
           log.IncorrectValue,
-          'ospf')
+          'ospf',
+          doc_url='module/ospf/#ospf-link-parameters')
         OK = False
 
   if 'unnumbered' in node.ospf:
@@ -48,7 +50,8 @@ def ospf_unnumbered(node: Box, features: Box) -> bool:
       log.error(
         f'Device {node.device} used on node {node.name} cannot run OSPF over unnumbered interface',
         log.IncorrectValue,
-        'interfaces')
+        'interfaces',
+        doc_url='module/ospf/#ospf-platform')
       OK = False
 
   return OK
@@ -137,7 +140,8 @@ def adjust_interface_timers(node: Box) -> None:
         'OSPF interface hello timer is greater or equal to dead timer',
         more_data=f'Node {node.name} interface {intf.ifname} ({intf.name})',
         module='ospf',
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='module/ospf/#ospf-link-parameters')
 
 def check_gr(node: Box, features: Box) -> None:
   """
@@ -159,7 +163,8 @@ def check_gr(node: Box, features: Box) -> None:
         log.error(                                    # ... but we still call foul on that
           f'Device {node.device} does not support OSPF Graceful Restart for {af} (node {node.name}{vrf_info})',
           log.IncorrectValue,
-          'ospf')
+          'ospf',
+          doc_url='module/ospf/#ospf-gr-platform')
 
 class OSPF(_Module):
 
@@ -184,7 +189,8 @@ class OSPF(_Module):
         log.error(
           f'{node.name} uses strict BFD with OSPF which is not supported by {node.device} device',
           log.IncorrectValue,
-          'ospf')
+          'ospf',
+          doc_url='module/ospf/#ospf-platform')
 
     bfd.bfd_link_state(node,'ospf')
 

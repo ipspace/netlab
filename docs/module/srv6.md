@@ -11,9 +11,11 @@ Supported SRv6 features:
 * SRv6 next hops for global IPv4/IPv6 BGP routes (Layer-3 services with SRv6)
 * BGP IPv4/IPv6 L3VPN over SRv6
 
-You can use IS-IS or EBGP to advertise SRv6 SIDs[^CRM], and use SRv6 for layer-3 services (IPv4 islands over SRv6, BGP-free core with IPv6) and IPv4/IPv6 layer-3 VPNs.
+You can use IS-IS or EBGP to advertise SRv6 SIDs, and use SRv6 for layer-3 services (IPv4 islands over SRv6, BGP-free core with IPv6) and IPv4/IPv6 layer-3 VPNs.
 
-[^CRM]: The module checks whether the corresponding routing module is enabled and will trigger a configuration error if it's missing.
+```{warning}
+You have to enable the IS-IS or BGP configuration module (depending on the routing protocols listed in the **srv6.igp** parameter; the default is IS-IS) on all nodes using the SRv6 configuration module. The SRv6 module reports a configuration error if the corresponding routing module is missing.
+```
 
 (module-srv6-platform)=
 ## Platform Support
@@ -62,6 +64,10 @@ The following table describes the per-platform support of SRv6 features:
 ## Configurable Layer-3 Services and L3VPN Parameters
 
 This module provides 2 parameters that are identical in structure, controlling different BGP address families:
+
+```{warning}
+The nodes using the **srv6.bgp** or **srv6.vpn** parameters must also use the BGP configuration module.
+```
 
 * **srv6.bgp** -- Controls SRv6 next hops for global IPv4 and IPv6 BGP routes
 * **srv6.vpn** -- Controls VPNv4 and VPNv6 address families

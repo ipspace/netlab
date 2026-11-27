@@ -349,6 +349,7 @@ Network services [configuration modules](module-reference.md) are supported on t
 See [integration test results](https://release.netlab.tools/) for more details.
 ```
 
+(platform-ipv6-support)=
 ## IPv6 Support
 
 Core *netlab* functionality and all multi-protocol routing protocol configuration modules fully support IPv6. However, you might not be able to configure IPv6 versions of some routing protocols (or assign SR-MPLS SIDs to IPv6 prefixes) on all platforms.

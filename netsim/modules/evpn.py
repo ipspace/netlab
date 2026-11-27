@@ -67,7 +67,8 @@ def get_evpn_af(node: Box, topology: Box) -> typing.Optional[str]:
       log.error(
         f'node {node.name}/device {node.device} cannot use EVPN with IPv6 next hops',
         more_hints=['The node is using VXLAN-over-IPv6 transport, but does not support EVPN over IPv6'],
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='module/evpn/#evpn-platform')
       return None
 
   return evpn_af
@@ -106,7 +107,8 @@ def enable_evpn_af(node: Box, topology: Box) -> None:
             f'netlab cannot configure EVPN AF for {bn.type} neighbors on {node.device} when using {transport} transport',
             more_data = [ f'Found a {bn.type} session on node {node.name} with {bn.name}'],
             category=log.IncorrectType,
-            module='evpn')
+            module='evpn',
+            doc_url='module/evpn/#evpn-platform')
           bgp_error_types.append(bn.type)
 
         continue
@@ -124,7 +126,8 @@ def enable_evpn_af(node: Box, topology: Box) -> None:
           text=f'Extended BGP communities are not enabled on {s_type} BGP sessions on {node.name}',
           more_hints='EVPN needs extended BGP communities attached to EVPN routes',
           module='evpn',
-          flag='extcommunity')
+          flag='extcommunity',
+          doc_url='module/bgp/#bgp-community-propagation')
         AF_WARNING[s_type] = True
 
 def get_usable_evpn_asn(topology: Box) -> int:
@@ -138,7 +141,8 @@ def get_usable_evpn_asn(topology: Box) -> int:
   log.error(
     f'Cannot get a usable global AS number to use in EVPN route targets',
     log.IncorrectValue,
-    'evpn',hint='asn')
+    'evpn',hint='asn',
+    doc_url='module/evpn/#evpn-global-parameters')
   return 0
 
 def create_evpn_service(obj: Box, oname: str, topology: Box, opath: str, set_rt: bool = True) -> None:
@@ -169,14 +173,16 @@ def vlan_aware_bundle_service(vlan: Box, vname: str, topology: Box) -> None:
     log.error(
       f'VXLAN-enabled VLAN {vname} that is part of VLAN bundle must belong to a global VRF',
       log.IncorrectValue,
-      'evpn')
+      'evpn',
+      doc_url='module/evpn/#evpn-bundle-service')
     return
 
   if 'evpn' in vlan:                                                # VLAN that is part of a bundle cannot have EVI/RT/RD attributes
     log.error(
       f'VLAN {vname} is part of a VLAN bundle {vrf_name} and cannot have EVPN-related attributes',
       log.IncorrectValue,
-      'evpn')
+      'evpn',
+      doc_url='module/evpn/#evpn-bundle-service')
     return
 
   vrf = topology.vrfs[vrf_name]
@@ -262,7 +268,8 @@ def register_static_transit_vni(topology: Box) -> None:
         log.error(
           f'transit VNI {transit_vni} for VRF {vrf_name} is already used elsewhere',
           log.IncorrectValue,
-          'evpn')
+          'evpn',
+          doc_url='module/evpn/#evpn-irb')
         continue
       vni_set.add(transit_vni)
 
@@ -283,7 +290,8 @@ def check_evpn_transport(topology: Box) -> str:
     log.error(
       f"Selected EVPN transport module (evpn.transport='{setting}') not active in topology",
       log.MissingDependency,
-      'evpn')
+      'evpn',
+      doc_url='module/evpn/#evpn-global-parameters')
   return setting
 
 """
@@ -297,7 +305,8 @@ def check_no_vnis_for_mpls(topology:Box) -> None:
         f'VLAN VNIs cannot be used with mpls transport',
         log.IncorrectAttr,
         'evpn',
-        more_data=f"{vname} VNI {vdata.vni}")
+        more_data=f"{vname} VNI {vdata.vni}",
+        doc_url='module/evpn/#evpn-global-parameters')
 
   for vname,vdata in topology.get('vlans',{}).items():
     check_vlan(f"Global VLAN {vname}",vdata)
@@ -330,7 +339,8 @@ def vrf_transit_vni(topology: Box) -> None:
       log.error(
         f'evpn.transit_vni in VRF {vrf_name} is not allowed with mpls evpn.transport',
         log.IncorrectValue,
-        'evpn')
+        'evpn',
+        doc_url='module/evpn/#evpn-irb')
       vni_error = True
       continue
 
@@ -342,7 +352,8 @@ def vrf_transit_vni(topology: Box) -> None:
       log.error(
         f'VRF {vrf_name} is using the same EVPN transit VNI as another VRF',
         log.IncorrectValue,
-        'evpn')
+        'evpn',
+        doc_url='module/evpn/#evpn-irb')
       continue  
     vni_list.append( vni )                                      # Insert it to detect duplicates elsewhere
 
@@ -376,14 +387,16 @@ def vrf_transit_vni(topology: Box) -> None:
       log.error(
         f'evpn.transit_vni "{transit_vni}" in VRF {vrf_name} does not refer to a valid VRF',
         log.IncorrectValue,
-        'evpn')
+        'evpn',
+        doc_url='module/evpn/#evpn-irb')
       continue
     foreign_vni = topology.vrfs.get(f'{transit_vni}.evpn.transit_vni',None)
     if not data.is_true_int(foreign_vni):
       log.error(
         f'evpn.transit_vni "{transit_vni}" in VRF {vrf_name} refers to a VRF that does not have a valid evpn.transit_vni',
         log.IncorrectValue,
-        'evpn')
+        'evpn',
+        doc_url='module/evpn/#evpn-irb')
       continue
     vrf_data.evpn.transit_vni = foreign_vni
 
@@ -430,7 +443,8 @@ def set_local_evpn_rd(node: Box) -> None:
         log.error(
           f'{obj}.{o_name} on node {node.name} has EVPN attributes but no evpn.evi ({o_data.evpn})',
           log.IncorrectValue,
-          'evpn')
+          'evpn',
+          doc_url='module/evpn/#evpn-vlan-service')
         continue
       #
       # Set local RD unless a static RD was set
@@ -459,7 +473,8 @@ def check_asym_vlan(vrf_name: str, node: Box, topology: Box) -> None:
       f'VLAN {vl_name} -- part of VRF {vrf_name} that uses asymmetric IRB -- is not present on node {node.name}',
       log.IncorrectValue,
       module='evpn',
-      hint='irb_group')
+      hint='irb_group',
+      doc_url='module/evpn/#evpn-asymmetric-irb')
 
 """
 Check whether VXLAN IRB mode is supported by the device
@@ -478,14 +493,16 @@ def check_node_vrf_irb(node: Box, topology: Box) -> None:
         log.error(
           f'VRF {vrf_name} on {node.name} uses symmetrical EVPN IRB which is not supported by {node.device} device',
           log.IncorrectValue,
-          'evpn')
+          'evpn',
+          doc_url='module/evpn/#evpn-platform')
         continue
     else:
       if not features.evpn.asymmetrical_irb:                    # ... does this device asymmetrical IRB -- is it supported?
         log.error(
           f'VRF {vrf_name} on {node.name} uses asymmetrical EVPN IRB which is not supported by {node.device} device',
           log.IncorrectValue,
-          'evpn')
+          'evpn',
+          doc_url='module/evpn/#evpn-platform')
         continue
 
       check_asym_vlan(vrf_name,node,topology)
@@ -504,7 +521,8 @@ def check_node_vrf_bundle(node: Box, topology: Box) -> None:
       log.error(
         f"'{b_type}'' EVPN bundle service used in VRF {vrf_name} is not supported by device {node.device} (node: {node.name})",
         log.IncorrectValue,
-        'evpn')
+        'evpn',
+        doc_url='module/evpn/#evpn-bundle-service')
 
 """
 Check the VLAN RT values -- some devices support only a single import/export RT
@@ -570,7 +588,8 @@ def remove_vlan_ebgp_neighbors(node: Box,topology: Box) -> None:
     log.warning(
       text=f'Removing an EBGP session between {node.name} and {ngb.name} running over an EVPN-enabled VLAN {ngb_vlan}',
       flag='ebgp_vlan',
-      hint='ebgp_vlan')
+      hint='ebgp_vlan',
+      doc_url='module/evpn/#evpn-rp')
 
     cleanup_needed = True
 
@@ -604,7 +623,8 @@ def check_node_transport(node: Box, topology: Box) -> bool:
       log.error(
         f'Device {node.device} (node {node.name}) does not support EVPN transport {transport}',
         module='evpn',
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='module/evpn/#evpn-platform')
       return False
 
   if transport == 'sr':                                     # SR-MPLS and MPLS are identical from EVPN perspective
@@ -624,7 +644,8 @@ def check_cp_only(node: Box) -> None:
     log.error(
       f'Device {node.device} (node {node.name}) cannot have MAC-VRF or IP-VRF instances with EVPN transport {node.evpn.transport}',
       module='evpn',
-      category=log.IncorrectValue)
+      category=log.IncorrectValue,
+      doc_url='module/evpn/#evpn-platform')
 
 class EVPN(_Module):
 

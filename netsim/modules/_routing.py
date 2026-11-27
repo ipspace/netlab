@@ -107,7 +107,8 @@ def check_af_feature(
     log.error(
       f'{n_name} cannot run {proto} on {af}',
       log.IncorrectValue,
-      proto)
+      proto,
+      doc_url=f'module/{proto}/#{proto}-platform' if af != 'ipv6' else 'platforms/#platform-ipv6-support')
 
 # After parsing/building the IGP AF structure and offloading VRF interfaces into VRF data
 # structure, recheck the interface status. If there's no match between interface AF and IGP AF,
@@ -211,7 +212,8 @@ def passive(
         log.error(
           f'Device {ndata.device} (node {ndata.name}) does not support passive {proto} interfaces',
           log.IncorrectType,
-          proto)
+          proto,
+          doc_url=f'module/{proto}/#{proto}-platform')
     return
 
   role = intf.get('role',"")
@@ -258,7 +260,8 @@ def get_router_id_prefix(node: Box, proto: str, pools: Box, use_id: bool = True)
     log.error(
       f'Cannot create a router ID for protocol {proto} on node {node.name}: router_id addressing pool is not defined',
       log.MissingValue,
-      proto)
+      proto,
+      doc_url='module/routing_protocols/#routing-router-id')
     return None
 
   pool = 'router_id'
@@ -267,14 +270,16 @@ def get_router_id_prefix(node: Box, proto: str, pools: Box, use_id: bool = True)
     log.error(
       f'Cannot create a router ID prefix from {pool} pool for protocol {proto} on node {node.name}',
       log.IncorrectValue,
-      proto)
+      proto,
+      doc_url='module/routing_protocols/#routing-router-id')
     return None
 
   if not pfx.get('ipv4',None):
     log.error(
       f'{pool} pool did not return a usable IPv4 address to use as router ID for protocol {proto} on node {node.name}',
       log.IncorrectValue,
-      proto)
+      proto,
+      doc_url='module/routing_protocols/#routing-router-id')
     return None
 
   return pfx
@@ -290,7 +295,8 @@ def router_id(node: Box, proto: str, pools: Box) -> None:
         f'{proto} router_id "{node[proto].router_id}" specified for {proto} on node {node.name} is not an IPv4 address',
         more_data=str(ex),
         category=log.IncorrectValue,
-        module=proto)
+        module=proto,
+        doc_url='module/routing_protocols/#routing-router-id')
     return
 
   if 'router_id' in node:                     # Node has a configured router ID, copy it and get out
@@ -302,7 +308,8 @@ def router_id(node: Box, proto: str, pools: Box) -> None:
         f'router_id "{node.router_id}" specified on node {node.name} is not an IPv4 address',
         more_data=str(ex),
         category=log.IncorrectValue,
-        module=proto)
+        module=proto,
+        doc_url='module/routing_protocols/#routing-router-id')
     return
 
   if 'ipv4' in node.get('loopback',{}):       # Do we have IPv4 address on the loopback? If so, use it as router ID
@@ -384,7 +391,8 @@ def build_vrf_interface_list(
         f"VRF {vname} on {node.name} has unnumbered interface(s) running {proto} without a VRF loopback",
         category=log.MissingDependency,
         module="vrf",
-        more_data=f"Used on interface(s) {','.join(unnum_err_list[vname])}")
+        more_data=f"Used on interface(s) {','.join(unnum_err_list[vname])}",
+        doc_url='module/vrf/#vrf-loopback')
 
     routing_af(vdata,proto,f'VRF {vname} on {node.name}',is_vrf=True,features=features)
 
@@ -481,7 +489,8 @@ def check_vrf_protocol_support(
       log.error(
         f'Device {node.device} (node {node.name}) does not support {f_name} in VRFs (found in VRF {v_name})',
         category=log.IncorrectValue,
-        module=proto)
+        module=proto,
+        doc_url='module/vrf/#module-vrf-platform-routing-support')
       return
 
 """
@@ -512,7 +521,8 @@ def check_intf_support(node: Box, proto: str, topology: Box) -> bool:
       f'Device {node.device} (node {node.name}) does not support {proto} interface parameter {kw}',
       category=log.IncorrectAttr,
       module=proto,
-      more_data=err_list[kw])                     # ... together with the list of interfaces where it was found
+      more_data=err_list[kw],                     # ... together with the list of interfaces where it was found
+      doc_url=f'module/{proto}/#{proto}-interface-support')
 
   return False
 
@@ -602,11 +612,13 @@ def get_unique_router_ids(node: Box, proto: str, topology: Box) -> None:
         text=f'router ID for VRF {vname} on node {node.name} was changed from {rid} to {vdata[proto].router_id}',
         module=proto,
         more_hints=f'Device {node.device} requires a unique router ID for each {proto} instance',
-        flag='changed_id')
+        flag='changed_id',
+        doc_url='module/routing_protocols/#routing-router-id')
     else:                                                   # Ran out of RID pool, report another error
       log.warning(
         text=f'Cannot change router ID for VRF {vname} on node {node.name}',
-        module=proto)
+        module=proto,
+        doc_url='module/routing_protocols/#routing-router-id')
 
 """
 is_vrf_protocol: Check if a protocol runs in the current VRF
@@ -649,7 +661,8 @@ def check_import_request(
     log.error(
       f'Device {node.device} (node {node.name}) does not support route import into {proto}',
       category=log.IncorrectValue,
-      module=proto)
+      module=proto,
+      doc_url=f'module/{proto}/#{proto}-platform')
     return
 
   i_dict = rdata['import']                                  # Use a temporary variable to shorten the code
@@ -658,7 +671,8 @@ def check_import_request(
       log.error(
         f'Device {node.device} (node {node.name}) cannot import {s_proto} routes into {proto}',
         category=log.IncorrectValue,
-        module=proto)
+        module=proto,
+        doc_url=f'module/{proto}/#{proto}-platform')
       continue
     i_data = i_dict[s_proto]
     if i_data is False:                                     # Remove requests to disable route import 
@@ -671,15 +685,17 @@ def check_import_request(
       log.error(                                            # Source protocol not active on the node ==> yell
         f'Node {node.name}: cannot import routes from {s_proto} which is not running on the box',
         category=log.IncorrectValue,
-        module=proto)
+        module=proto,
+        doc_url='module/routing_protocols/#routing-import')
       continue
 
     if s_proto == proto:                                    # Cannot redistribute a protocol into itself
       log.error(
-        f'Node {node.name}: cannot {s_proto} routes into {proto}',
+        f'Node {node.name}: cannot import {s_proto} routes into {proto}',
         more_hints=['Route import works between different protocols or from connected subnets'],
         category=log.IncorrectValue,
-        module=proto)
+        module=proto,
+        doc_url='module/routing_protocols/#routing-import')
       continue
 
     # Add an import routing policy if needed
@@ -690,7 +706,8 @@ def check_import_request(
           f'Device {node.device} (node {node.name}) cannot use routing policies ' + \
           f'on route imports ({s_proto} => {proto}, policy {i_policy})',
           category=log.IncorrectValue,
-          module=proto)
+          module=proto,
+          doc_url='module/routing/#generic-routing-platforms')
         break
       else:
         node_add_routing_policy(i_dict.get(f'{s_proto}.policy'),node,topology)
@@ -737,7 +754,8 @@ def process_imports(node: Box, proto: str, topology: Box, vrf_list: list) -> Non
         log.error(
           f'Route import to {proto} on node {node.name} (device {node.device}) is not VRF-aware',
           category=log.IncorrectValue,
-          module=proto)
+          module=proto,
+          doc_url=f'module/{proto}/#{proto}-platform')
 
 """
 remove_vrf_imports: remove incorrect VRF imports
@@ -768,7 +786,8 @@ def remove_vrf_imports(node: Box, vname: str, vdata: Box, proto: str) -> None:
       log.error(
         f'Cannot import {proto} routes into {rp} in VRF {vname} on node {node.name}: {proto} is not active in that VRF',
         category=log.IncorrectValue,
-        module=rp)
+        module=rp,
+        doc_url='module/routing_protocols/#routing-import')
 
 """
 process_default_route: Perform default route processing
@@ -800,7 +819,8 @@ def default_route_adjust(
     log.error(
       f'Device {node.device} (node {node.name}) cannot originate {proto} default route in {vname}',
       category=log.IncorrectValue,
-      module=proto)
+      module=proto,
+      doc_url=f'module/{proto}/#{proto}-platform')
     return
   
   if 'policy' in vdata[proto].default:            # Add default route origination routing policy if needed

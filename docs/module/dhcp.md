@@ -78,6 +78,7 @@ You can enable the DHCP client on all non-relaying devices attached to a link wi
 * You cannot use **‌dhcp.client** link/VLAN parameter to enable the DHCP client on a VLAN interface. You have to enable the DHCP client on an IRB VLAN interface within the node **‌vlans** dictionary ([more details](vlan-interface-parameters)).
 ```
 
+(dhcp-parameters-intf)=
 ## Interface Parameters
 
 * To start a DHCP client on an interface, set the **ipv4** or **ipv6** address to **dhcp**. You can use the **dhcp.client.ipv4** or the **dhcp.client.ipv6** interface attribute only when the node already uses the DHCP module. 

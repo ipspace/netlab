@@ -43,7 +43,7 @@ def create_node_dict(nodes: Box) -> Box:
     for n in nodes or []:
       if isinstance(n,dict):
         if not 'name' in n:
-          log.error(f'Node is missing a "name" attribute: {n}',log.IncorrectValue,'nodes')
+          log.error(f'Node is missing a "name" attribute: {n}',log.IncorrectValue,'nodes',doc_url='nodes/#topo-nodes')
           continue
       elif isinstance(n,str):
         n = data.get_box({ 'name': n })
@@ -57,7 +57,8 @@ def create_node_dict(nodes: Box) -> Box:
       log.error(
         text=f'Node data for node {name} must be a dictionary',
         category=log.IncorrectType,
-        module='nodes')
+        module='nodes',
+        doc_url='nodes/#topo-nodes')
       node_dict[name] = { 'name': name, 'extra': ndata }
       ndata = node_dict[name]
     else:
@@ -138,7 +139,8 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
         f'Incorrect management MAC address {node.mgmt.mac} on node {node.name}',
         more_hints=str(Ex),
         category=log.IncorrectValue,
-        module='nodes')
+        module='nodes',
+        doc_url='nodes/#node-augment')
   elif addrs and addrs.mac_eui:                   # ... or assign one from the pool
     mgmt_mac = netaddr.EUI(int(addrs.mac_eui) + node.id * (65536 if node.id < 256 else 1))
     node.mgmt.mac = mgmt_mac.format(netaddr.mac_unix_expanded)
@@ -155,7 +157,8 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
     log.error(
       f"Node {node.name} does not have a management IP address and there's no 'mgmt' address pool",
       log.MissingValue,
-      'nodes')
+      'nodes',
+      doc_url='nodes/#node-augment')
     return
 
   start = addrs.get('start',1)                                        # Get first address, skipping the default GW
@@ -182,13 +185,15 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
         f'Cannot assign management address #{node.mgmt[af]} for node {node.name} from prefix {str(addrs[pfx])}',
         more_data=f'Node id {node.id}, management address offset {addrs.start}',
         category=log.IncorrectValue,
-        module='nodes')
+        module='nodes',
+        doc_url='nodes/#node-augment')
 
   if not 'ipv4' in node.mgmt and not 'ipv6' in node.mgmt:             # Final check: did we get a usable management address?
     log.error(
       f'Node {node.name} does not have a usable management IP addresss',
       category=log.MissingValue,
-      module='nodes')
+      module='nodes',
+      doc_url='nodes/#node-augment')
 
 """
 Check duplicate management MAC/IPv4/IPv6 addresses
@@ -205,7 +210,8 @@ def check_duplicate_mgmt_addr(topology: Box) -> None:
         log.error(
           f'Duplicate management {af} address {n_addr} on {nname} and {used_addr[af][n_addr]}',
           category=log.IncorrectValue,
-          module='nodes')
+          module='nodes',
+          doc_url='nodes/#node-augment')
       else:
         used_addr[af][n_addr] = nname
 
@@ -264,14 +270,16 @@ def check_netmiko_config_mode(topology: Box) -> None:
       f'netlab needs Netmiko library to work with device(s) {",".join(netmiko_rq_list)}',
       category=log.MissingDependency,
       module='netmiko',
-      more_hints=nm_hints)
+      more_hints=nm_hints,
+      doc_url='netlab/install/#netlab-install')
 
   if netmiko_miss_list:
     log.warning(
       text=f'Netmiko is not installed, device(s) {",".join(netmiko_miss_list)} will be configured with Ansible',
       flag='installed',
       module='netmiko',
-      more_hints=nm_hints)
+      more_hints=nm_hints,
+      doc_url='netlab/install/#netlab-install')
 
 """
 Set up the default loopback interface
@@ -295,7 +303,8 @@ def augment_loopback_interface(n: Box, pools: Box, topology: Box) -> None:
     log.error(
       f'Device {n.device} (node {n.name}) cannot have loopback interfaces',
       category=log.IncorrectType,
-      module='nodes')
+      module='nodes',
+      doc_url='platforms/#platform-initial-config')
 
   n.loopback.type = 'loopback'                    # Back to regular programming: set loopback interface data
   n.loopback.neighbors = []
@@ -315,7 +324,8 @@ def augment_loopback_interface(n: Box, pools: Box, topology: Box) -> None:
       log.error(
         f"Address pool {pool} cannot contain unnumbered/LLA addresses",
         category=log.IncorrectType,
-        module='nodes')
+        module='nodes',
+        doc_url='nodes/#node-loopback')
       continue
     if n.loopback.get(af,True) is not True:       # Static loopback address
       continue
@@ -336,7 +346,8 @@ def augment_loopback_interface(n: Box, pools: Box, topology: Box) -> None:
       log.error(
         f'{af} address on the main loopback interface of node {n.name} must be a CIDR prefix',
         category=log.IncorrectType,
-        module='nodes')                           # ... otherwise report an error
+        module='nodes',                           # ... otherwise report an error
+        doc_url='nodes/#node-loopback')
 
   links.check_interface_host_bits(n.loopback,n)
 
@@ -354,7 +365,8 @@ def find_node_device(n: Box, topology: Box) -> bool:
       f'No device type specified for {"unmanaged " if u_node else ""}node {n.name} and there is no default device type',
       log.MissingValue,
       'nodes',
-      hint='unmanaged_device' if u_node else None)
+      hint='unmanaged_device' if u_node else None,
+      doc_url='defaults/#default-device-type')
     return False
 
   try:
@@ -423,7 +435,8 @@ def find_node_image(n: Box, topology: Box) -> bool:
   log.error(
     f'No image specified for device {n.device} (provider {provider}) used by node {n.name}',
     log.MissingValue,
-    'nodes')
+    'nodes',
+    doc_url='defaults/#default-device-image')
 
   return False
 
@@ -443,7 +456,8 @@ def validate_node_provider(n: Box, topology: Box) -> bool:
     log.error(
       f'Provider {n.provider} specified in node {n.name} is not compatible with lab topology provider {topology.provider}',
       log.IncorrectValue,
-      'nodes')
+      'nodes',
+      doc_url='labs/multi-provider/#labs-multi-provider')
     return False
 
   topology[topology.provider].providers[n.provider] = True
@@ -479,7 +493,8 @@ def augment_node_system_data(topology: Box) -> None:
       log.error(
         'defaults.interfaces.mtu setting should be an integer',
         log.IncorrectValue,
-        'topology')
+        'topology',
+        doc_url='links/#links-mtu')
     else:
       for n in topology.nodes.values():
         if not 'mtu' in n:
@@ -489,7 +504,8 @@ def augment_node_system_data(topology: Box) -> None:
             log.error(
               f'nodes.{n.name}.mtu setting should be an integer',
               log.IncorrectValue,
-              'nodes')
+              'nodes',
+              doc_url='links/#links-mtu')
 
 """
 augment_node_device_data: copy attributes that happen to be node attributes from device defaults into node data
@@ -547,7 +563,8 @@ def augment_node_device_data(n: Box, topology: Box) -> None:
         more_hints=[ f'Allowed roles for this device type are: {",".join(allowed_roles) }' ],
         flag='nodes.roles',
         category=log.IncorrectType,
-        module='nodes')
+        module='nodes',
+        doc_url='platforms/#platform-host')
 
   if not features.get('initial.reload',False):
     append_to_list(topology.groups.netlab_no_reload,'members',n.name)
@@ -572,7 +589,8 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
         f'Duplicate static node ID {n.id} on node {n.name}',
         log.IncorrectValue,
         more_hints='Conflicts with gateway ID' if n.id==topology.get('gateway.id') else '', 
-        module='nodes')
+        module='nodes',
+        doc_url='nodes/#node-augment')
 
   log.exit_on_error()
   set_id_counter('node_id',1,MAX_NODE_ID)
@@ -630,7 +648,8 @@ def check_unique_ifnames(n: Box) -> None:
         f'Node {n.name} has overlapping interface name {intf.ifname} ' +\
         f'between interfaces #{intf.ifindex} and #{ifnames[intf.ifname].ifindex}',
         category=log.IncorrectValue,
-        module='nodes')
+        module='nodes',
+        doc_url='links/#links-ifname')
     else:
       ifnames[intf.ifname] = intf
 
@@ -670,19 +689,23 @@ def cleanup_mtu(node: Box, topology: Box) -> None:
       log.error(
         f'Node MTU {node.mtu} on node {node.name} is lower than the minimum physical ' + \
         f'MTU for {node.device} ({features.min_phy_mtu})',
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='platforms/#platform-initial-interfaces')
     elif 'min_mtu' in features and node.mtu < features.min_mtu:
       log.error(
         f'Node MTU {node.mtu} on node {node.name} is lower than the minimum MTU for {node.device} ({features.min_mtu})',
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='platforms/#platform-initial-interfaces')
     elif 'ipv6' in node.get('af',{}) and node.mtu < 1280:
       log.error(
         f'Node MTU cannot be lower than 1280 on IPv6-enabled devices. Node {node.name} has MTU {node.mtu}',
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='links/#links-mtu')
     if 'max_mtu' in features and node.mtu > features.max_mtu:
       log.error(
         f'Node MTU {node.mtu} on node {node.name} is higher than the maximum MTU for {node.device} ({features.max_mtu})',
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='platforms/#platform-initial-interfaces')
 
   for intf in node.interfaces:
     if 'mtu' not in intf:
@@ -694,17 +717,20 @@ def cleanup_mtu(node: Box, topology: Box) -> None:
       log.error(
         f'Interface MTU {intf.mtu} on node {node.name}/{intf.ifname}({intf.name}) is higher '+\
         f'than the maximum MTU for {node.device} ({features.max_mtu})',
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='platforms/#platform-initial-interfaces')
     if 'min_mtu' in features and intf.mtu < features.min_mtu:
       log.error(
         f'Interface MTU {intf.mtu} on node {node.name}/{intf.ifname}({intf.name}) is lower '+\
         f'than the minimum MTU for {node.device} ({features.min_mtu})',
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='platforms/#platform-initial-interfaces')
     elif 'ipv6' in intf and intf.mtu < 1280:
       log.error(
         f'IPv6-enabled interface {intf.ifname}({intf.name}) on node {node.name} cannot have '+\
         f'MTU lower than 1280 (now: {intf.mtu})',
-        category=log.IncorrectValue)
+        category=log.IncorrectValue,
+        doc_url='links/#links-mtu')
     if 'min_phy_mtu' in features and intf.mtu < features.min_phy_mtu:
       intf._use_ip_mtu = True
 
@@ -730,7 +756,8 @@ def check_ipv6_support(node: Box, topology: Box) -> None:
       more_data=f'Found an IPv6 address on {intf.get("ifname","loopback")} ({intf.get("name","loopback")})',
       flag='nodes.ipv6',
       category=log.IncorrectValue,
-      module='nodes')
+      module='nodes',
+      doc_url='platforms/#platform-initial-addresses')
     return
 
 '''
@@ -753,7 +780,8 @@ def check_bandwidth_support(node: Box, topology: Box) -> None:
       text=f'Device {node.device} (node {node.name}) cannot configure interface bandwidth',
       more_data=f'Interface(s) with bandwidth attribute: {", ".join(bw_list)}',
       flag='nodes.bandwidth',
-      module='nodes')
+      module='nodes',
+      doc_url='platforms/#platform-initial-interfaces')
 
 def cleanup(topology: Box) -> None:
   plugin_config = topology.get('_plugin_config',[])

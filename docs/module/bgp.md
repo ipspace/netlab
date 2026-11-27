@@ -87,6 +87,7 @@ The following features are only supported on a subset of platforms:
     bgp.caveats.vrf_import
 ```
 
+(bgp-platform-sessions)=
 These devices support EBGP sessions between IPv6 LLA or IPv4 AF on IPv6 EBGP sessions:
 ```{features}
 - title: IPv6 LLA<br>EBGP<br>sessions
@@ -102,6 +103,7 @@ These devices support EBGP sessions between IPv6 LLA or IPv4 AF on IPv6 EBGP ses
 
 [^RFC8950]: IPv6 next hops for IPv4 prefixes advertised over a regular (non-LLA) IPv6 EBGP session. RFC 8950-style next hops over IPv6 LLA sessions used to implement interface EBGP sessions are documented in the *Unnumbered IPv4 EBGP sessions* column.
 
+(bgp-platform-local-as)=
 These devices support BGP local-AS functionality to build EBGP or IBGP sessions:
 ```{features}
 - title: EBGP<br>local AS
@@ -148,7 +150,9 @@ When building a more complex lab with multiple autonomous systems, you might wan
 
 ```{tip}
 * The elements of the **‌members** and **‌rr** lists can be wildcard- or regular expressions (see [group members](groups-members) for more details)
-* You can override the **‌bgp.as_list** settings with the node attributes.
+* You can override the **‌bgp.as_list** settings (for example, route reflector status) with the node attributes. However, a node listed in the **‌members** list of an autonomous system cannot have a different **bgp.as** value.
+* A node can be a member of a single autonomous system.
+* Route reflectors (**‌rr** list) must also be listed in the **‌members** list.
 ```
 
 For example, use the following configuration to build a core network connected to two external autonomous systems:
@@ -179,6 +183,7 @@ Advanced global configuration parameters include:
 * **bgp.advertise_loopback** -- when set to `True` (default), the loopback IP addresses of the default loopback interface and any other [loopback links](links-loopback) are advertised as a BGP prefix. Set it to `False` in the global defaults or as a node attribute to turn off loopback prefix advertisements. You can also control the advertisement of individual loopback prefixes with the **bgp.advertise** interface attribute.
 * **bgp.rr_mesh** -- Set it to `False` (default: `True`) to remove the IBGP sessions between BGP route reflectors.
 
+(bgp-node-params)=
 ## Node Configuration Parameters
 
 Instead of using a global list of autonomous systems, you could specify a BGP autonomous system and route reflector role on individual nodes using these parameters:
@@ -343,6 +348,11 @@ nodes:
       - "172.16.0.0/19"
 ```
 
+```{warning}
+* Devices that cannot configure [discard static routes](generic-routing-static) can originate only IPv4 prefixes.
+* You can use the **bgp.originate** VRF attribute only on devices that support [VRF discard static routes](generic-routing-static).
+```
+
 (bgp-sessions)=
 ## BGP Sessions
 
@@ -482,6 +492,8 @@ bgp.confederation:
   65000:
     members: [ 65001, 65002, 65003 ]
 ```
+
+A confederation must have at least one member AS, and a member AS can belong to a single confederation; it cannot be a confederation AS itself. Lab devices must use confederation member AS numbers, not the confederation AS number.
 
 EBGP sessions between confederation peers are built the same way as all other EBGP sessions; the session type is set to **confed_ebgp** to allow you to control address family activation and community propagation over confederation EBGP sessions.
 

@@ -89,20 +89,23 @@ def adjust_pfx_min_max(
         f'Cannot use prefix filter {m_kw} keyword with prefix {p_entry[af]}',
         more_data=[f'Node {node.name} (device {node.device}) policy {p_name} sequence# {original_seq}'],
         category=log.IncorrectValue,
-        module='routing')
+        module='routing',
+        doc_url='module/routing/#generic-routing-prefixes')
     else:
       log.error(
         f'Prefix filter {af}.{m_kw} value should be >= {min_pfx_len} (limited by {p_entry[af]})',
         more_data=[f'Node {node.name} (device {node.device}) policy {p_name} sequence# {original_seq}'],
         category=log.IncorrectValue,
-        module='routing')
+        module='routing',
+        doc_url='module/routing/#generic-routing-prefixes')
 
   if m_value > max_pfx_len:
     log.error(
       f'Prefix filter {af}.{m_kw} value should be <= {max_pfx_len} (limited by address family)',
       more_data=[f'Node {node.name} (device {node.device}) policy {p_name} sequence# {original_seq}'],
       category=log.IncorrectValue,
-      module='routing')
+      module='routing',
+      doc_url='module/routing/#generic-routing-prefixes')
 
   p_entry[m_kw] = m_value                         # Replace the min/max dict with per-AF value
 
@@ -151,7 +154,8 @@ def create_pfx_af_entry(
         f'Node {node.name} (device {node.device}) policy {p_name}'
         f' sequence# {original_seq} prefix {af_item}'],
       category=log.IncorrectValue,
-      module='routing')
+      module='routing',
+      doc_url='module/routing/#generic-routing-prefixes')
 
   return af_p_entry
 
