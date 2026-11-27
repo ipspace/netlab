@@ -7,12 +7,10 @@ from box import Box
 
 from .. import data
 from ..augment import devices
-from ..data.types import must_be_list
 from ..utils import log
 from . import _Module, _routing
 
 AF_LIST: typing.Final[list] = ['ipv4','ipv6']
-BGP_SESSIONS: typing.Final[list] = ['ibgp','ebgp']
 
 DEFAULT_BGP_LU: typing.Final[dict] = {
   'ipv4': [ 'ibgp','ebgp' ],
@@ -87,40 +85,19 @@ def node_adjust_ldp(node: Box, topology: Box, features: Box) -> None:
 
   _routing.remove_unused_igp(node,'ldp',remove_module=False)
 
-def validate_mpls_bgp_parameter(node: Box, feature: str) -> bool:
+"""
+A list of BGP session types in mpls.bgp or mpls.vpn applies to all node address families
+(the session types are checked during attribute validation)
+"""
+def expand_mpls_bgp_parameter(node: Box, feature: str) -> None:
   if isinstance(node.mpls[feature],list):
     session_list = node.mpls[feature]
-    if not must_be_list(
-        parent=node.mpls,
-        key=feature,
-        path=f'nodes.{node.name}.mpls.{feature}',
-        valid_values=BGP_SESSIONS,
-        create_empty=False,
-        module='mpls'):
-      return False
-
     node.mpls[feature] = data.get_empty_box()
     for af in node.af:
       node.mpls[feature][af] = session_list
-  elif isinstance(node.mpls[feature],Box):
-    for af in AF_LIST:
-      if not af in node.mpls[feature]:
-        continue
-
-      if not must_be_list(
-          parent=node.mpls,
-          key=f'{feature}.{af}',
-          path=f'nodes.{node.name}.mpls',
-          valid_values=BGP_SESSIONS,
-          create_empty=False,
-          module='mpls'):
-        return False
-
-  return True
 
 def node_adjust_bgplu(node: Box, topology: Box, features: Box) -> None:
-  if not validate_mpls_bgp_parameter(node,'bgp'):
-    return
+  expand_mpls_bgp_parameter(node,'bgp')
 
   if not 'neighbors' in node.get('bgp',{}):
     return
@@ -174,8 +151,7 @@ def prune_mplsvpn_af(setting: Box, node: Box) -> None:
       setting.pop(af,None)
 
 def node_adjust_mplsvpn(node: Box, topology: Box, features: Box) -> None:
-  if not validate_mpls_bgp_parameter(node,'vpn'):
-    return
+  expand_mpls_bgp_parameter(node,'vpn')
 
   if not node.bgp.get('rr',False):
     prune_mplsvpn_af(node.mpls.vpn,node)

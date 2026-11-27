@@ -6,7 +6,7 @@ import typing
 from box import Box
 
 from ..augment import devices
-from ..data.types import must_be_int, must_be_string
+from ..data.types import must_be_string
 from ..utils import log
 from ..utils import routing as _rp_utils
 from . import _dataplane, _Module
@@ -59,7 +59,6 @@ def assign_vni(toponode: Box, obj_path: str, topology: Box) -> None:
     if not vname in toponode.get('vlans',{}):                     # Skip VXLAN-enabled VLANs that are not present on a node
       continue
     vlan_data = toponode.vlans[vname]
-    vpath = f'{obj_path}.vlans.{vname}'
     if vname in topology.get('vlans',{}) and toponode != topology:
       if 'vni' in vlan_data and vlan_data.vni != topology.vlans[vname].get('vni',None):
         log.error(
@@ -73,14 +72,7 @@ def assign_vni(toponode: Box, obj_path: str, topology: Box) -> None:
         continue
       elif vlan_data.vni is True:                                 # Explicit request to assign VNI, pass through
         pass
-      else:                                                       # Otherwise check that VNI is an int
-        must_be_int(
-          parent=vlan_data,
-          key='vni',
-          path=vpath,
-          min_value=2,
-          max_value=16777215,
-          module='vxlan')
+      else:                                                       # Static VNI (validated with VLAN attributes)
         continue
 
     vni_default = topology.defaults.vxlan.start_vni + vlan_data.id  # ... try to build VNI from VLAN ID

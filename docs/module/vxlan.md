@@ -71,7 +71,7 @@ Global VLANs that should be extended with VXLAN transport are specified in the *
 
 VLANs specified in the **vxlan.vlans** list must be valid VLAN names, but do not have to be present on every node.
 
-You can also enable a VLAN for VXLAN transport by setting the **vni** VLAN parameter to an integer value.
+You can also enable a VLAN for VXLAN transport by setting the **vni** VLAN parameter to an integer value (between 2 and 16777215).
 
 ## Auto-Assign VNI
 
