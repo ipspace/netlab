@@ -32,9 +32,11 @@ Merge tool defaults and tool-specific settings, then check that the runtime is v
 """
 def merge_tool_defaults(topology: Box) -> None:
   for tool in topology.tools.keys():
+    if tool not in topology.defaults.tools:         # Invalid tool, reported in validate_tool_attributes
+      continue
     tool_data = topology.defaults.tools[tool] + topology.tools[tool] 
     if not tool_data[tool_data.runtime] or not 'up' in tool_data[tool_data.runtime]:            
-      valid_runtimes = [k for k in tool_data.keys() if 'up' in k ]
+      valid_runtimes = [k for k,v in tool_data.items() if isinstance(v,dict) and 'up' in v ]
       log.error(
         f'Invalid runtime {tool_data.runtime} for tool {tool}',
         log.IncorrectValue,
@@ -70,6 +72,8 @@ attributes are validated. It ignores invalid data; the errors are reported later
 def add_tool_plugins(topology: Box) -> None:
   try:
     for tname in active_tools(topology):
+      if tname not in topology.defaults.tools:              # Invalid tool, reported later (do not create an empty
+        continue                                            # ... defaults.tools entry that would hide the error)
       p_list = (topology.defaults.tools[tname] + (topology.tools.get(tname,{}) or {})).plugin
       if p_list:
         data.append_to_list(topology,'plugin',p_list,flatten=True)
