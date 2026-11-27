@@ -314,6 +314,7 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
         'vlan',
         more_data=strings.format_structured_dict(link),
         doc_url='module/vlan/#module-vlan-interface')
+      link_ok = False
     else:
       for intf in link.interfaces:                                # Now check if every node using native VLAN has it in its trunk
         if 'vlan' in intf:                                        # VLAN attributes on interface?
@@ -328,6 +329,7 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
                 'vlan',
                 more_data=strings.format_structured_dict(link),
                 doc_url='module/vlan/#module-vlan-interface')
+              link_ok = False
             elif node_native not in node_trunk:                   # ... native VLAN not in trunk, that's not valid
               log.error(
                 f'Node {intf.node} is using native VLAN that is not defined in its VLAN trunk',
@@ -335,6 +337,7 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
                 'vlan',
                 more_data=strings.format_structured_dict(link),
                 doc_url='module/vlan/#module-vlan-interface')
+              link_ok = False
           else:                                                   # There's native VLAN on this link, but not on this node
             if isinstance(node_trunk,Box):                        # ... trunk data should be a Box, but mypy doesn't know that ;)
               if v_attr.native.list[0] in node_trunk:             # ... if this node lists native VLAN in its trunk we have  problem
@@ -345,6 +348,7 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
                   'vlan',
                   more_data=strings.format_structured_dict(link),
                   doc_url='module/vlan/#module-vlan-interface')
+                link_ok = False
                 continue
               for af in ('ipv4','ipv6'):                          # Interface is not participating in native VLAN
                 intf[af] = False                                  # ... make sure it's not connected to the native VLAN subnet
