@@ -6,7 +6,6 @@ import inspect
 import os
 import sys
 import typing
-import warnings
 
 import rich.table
 from box import Box
@@ -22,7 +21,6 @@ QUIET : bool = False
 NO_WARNING: bool = False                # Do not display warnings (used in CI tests)
 
 RAISE_ON_ERROR : bool = False
-WARNING : bool = False
 
 AF_LIST = ('ipv4','ipv6')
 BGP_AF  = ('ipv4','ipv6','vpnv4','vpnv6','6pe','evpn')
@@ -234,24 +232,20 @@ def error(
   else:
     _ERROR_LOG.extend(err_line.split("\n"))                         # Append traditional error line to the CI error log
 
-  if WARNING and isinstance(category,Warning):                      # CI flag: raise warning during pytest
-    warnings.warn_explicit(text,category,filename=module,lineno=len(_ERROR_LOG))
-    return
+  if category is not Warning:
+    print_error_header(indent)
+  if strings.rich_err_color and err_name in err_class_map:
+    err_code = err_class_map[err_name]
+    strings.print_colored_text(
+      strings.pad_err_code(err_code,indent),
+      err_color_map.get(err_code,'yellow'),
+      stderr=True)
+    mod_txt = f'{module}: ' if module else ''                       # Skip module header if it's explicitly set to empty
+    if category is FatalError and module == 'netlab':               # ... or if it's a generic fatal error
+      mod_txt = ''
+    print(strings.wrap_error_message(f'{mod_txt}{text}',indent),file=sys.stderr,flush=True)
   else:
-    if category is not Warning:
-      print_error_header(indent)
-    if strings.rich_err_color and err_name in err_class_map:
-      err_code = err_class_map[err_name]
-      strings.print_colored_text(
-        strings.pad_err_code(err_code,indent),
-        err_color_map.get(err_code,'yellow'),
-        stderr=True)
-      mod_txt = f'{module}: ' if module else ''                     # Skip module header if it's explicitly set to empty
-      if category is FatalError and module == 'netlab':             # ... or if it's a generic fatal error
-        mod_txt = ''
-      print(strings.wrap_error_message(f'{mod_txt}{text}',indent),file=sys.stderr,flush=True)
-    else:
-      print(err_line,file=sys.stderr,flush=True)
+    print(err_line,file=sys.stderr,flush=True)
 
   if more_data is not None:                                         # Caller supplied data, print it with DATA label
     print_more_hints(more_data,'DATA','bright_black',h_warning=category is Warning,indent=indent)
@@ -500,10 +494,8 @@ def print_verbose(t: typing.Any) -> None:
 #
 # Sets common flags based on parsed arguments.
 #
-# Internal debugging flags (RAISE_ON_ERROR, WARNING) cannot be set with this function
-#
 def set_logging_flags(args: typing.Union[argparse.Namespace,Box]) -> None:
-  global VERBOSE, LOGGING, DEBUG, QUIET, WARNING, RAISE_ON_ERROR, NO_WARNING
+  global VERBOSE, LOGGING, DEBUG, QUIET, RAISE_ON_ERROR, NO_WARNING
   global _error_header_printed
 
   if 'verbose' in args and args.verbose:
@@ -535,9 +527,6 @@ def set_logging_flags(args: typing.Union[argparse.Namespace,Box]) -> None:
   if 'quiet' in args and args.quiet:
     QUIET = True
 
-  if 'warning' in args and args.warning:
-    WARNING = True
-
   if 'raise_on_error' in args and args.raise_on_error:
     RAISE_ON_ERROR = True
 
@@ -551,15 +540,13 @@ def set_flag(
       quiet: typing.Optional[bool] = None,
       verbose: typing.Optional[int] = None,
       logging: typing.Optional[bool] = None,
-      warning: typing.Optional[bool] = None,
       raise_error: typing.Optional[bool] = None) -> dict:
-  global DEBUG, VERBOSE, LOGGING, QUIET, RAISE_ON_ERROR, WARNING
+  global DEBUG, VERBOSE, LOGGING, QUIET, RAISE_ON_ERROR
 
   DEBUG = debug if debug is not None else DEBUG
   QUIET = quiet if quiet is not None else QUIET
   VERBOSE = verbose if verbose is not None else VERBOSE
   LOGGING = logging if logging is not None else LOGGING
-  WARNING = warning if warning is not None else WARNING
   RAISE_ON_ERROR = raise_error if raise_error is not None else RAISE_ON_ERROR
 
   return {
@@ -567,8 +554,7 @@ def set_flag(
     'quiet': QUIET,
     'verbose': VERBOSE,
     'logging': LOGGING,
-    'raise_on_error': RAISE_ON_ERROR,
-    'warning': WARNING
+    'raise_on_error': RAISE_ON_ERROR
   }
 
 def debug_active(flag: str) -> bool:

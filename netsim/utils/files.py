@@ -9,18 +9,12 @@ import pathlib
 import sys
 import textwrap
 import typing
+from importlib import resources
 
 from box import Box
 
 from ..data import global_vars
 from . import log
-
-try:
-  from importlib import resources
-  new_resources = hasattr(resources,'files')
-except ImportError:
-  new_resources = False
-  import importlib_resources as resources  # type: ignore
 
 #
 # Find paths to module, user and system directory (needed for various templates)
@@ -196,13 +190,8 @@ def get_glob_mtime(dir: str, glob: str) -> typing.Optional[float]:
 def get_traversable_path(dir_name : str) -> typing.Any:
   if 'package:' in dir_name:
     dir_name = dir_name.replace('package:','')
-    pkg_files: typing.Any = None
-
-    if not new_resources:
-      pkg_files = pathlib.Path(get_moddir())
-    else:
-      package = '.'.join(__name__.split('.')[:-2])
-      pkg_files = resources.files(package)        # type: ignore
+    package = '.'.join(__name__.split('.')[:-2])
+    pkg_files: typing.Any = resources.files(package)
     if dir_name == '':
       return pkg_files
     else:
