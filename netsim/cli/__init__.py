@@ -52,7 +52,6 @@ def common_parse_args(debugging: bool = False) -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(description='Common argument parsing',add_help=False)
   parser.add_argument('--log', dest='logging', action='store_true',
                   help='Enable basic logging')
-  parser.add_argument('--warning', dest='warning', action='store_true',help=argparse.SUPPRESS)
   parser.add_argument('--raise_on_error', dest='raise_on_error', action='store_true',help=argparse.SUPPRESS)
   parser_add_verbose(parser)
   if debugging:

@@ -163,7 +163,6 @@ These flags are primarily used for internal testing and CI:
 | Flag | Purpose |
 |------|---------|
 | `--test errors` | Disable error header printing (internal testing) |
-| `--warning` | Raise warnings instead of printing them (CI flag) |
 | `--raise_on_error` | Raise exceptions instead of aborting (CI flag) |
 
 ## Logging Configuration

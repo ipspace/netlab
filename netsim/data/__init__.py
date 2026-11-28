@@ -5,7 +5,6 @@
 import typing
 from collections.abc import Iterable
 
-import typing_extensions
 from box import Box
 
 #
@@ -223,7 +222,7 @@ def bool_to_defaults(obj: Box, attr: str, defvalue: typing.Optional[typing.Any] 
 is_true_int: work around the Python stupidity of bools being ints
 """
 
-def is_true_int(data: typing.Any) -> typing_extensions.TypeGuard[int]:
+def is_true_int(data: typing.Any) -> typing.TypeGuard[int]:
   return isinstance(data,int) and not isinstance(data,bool)
 
 """
