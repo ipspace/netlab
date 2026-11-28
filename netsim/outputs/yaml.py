@@ -1,6 +1,7 @@
 #
 # Create YAML or JSON output
 #
+import json
 import typing
 
 from box import Box, BoxList
@@ -59,7 +60,10 @@ class YAML(_TopologyOutput):
     is_structured = isinstance(cleantopo,Box) or isinstance(cleantopo,BoxList)
     if not is_structured:
       r_fmt = 'str'
-      r_txt = f"{str(cleantopo)}\n"
+      if modname == 'JSON':
+        r_txt = json.dumps(transform_sets(cleantopo),default=str) + '\n'
+      else:
+        r_txt = f"{str(cleantopo)}\n"
     elif modname == 'YAML':
       r_fmt = 'yaml'
       r_txt = strings.get_yaml_string(cleantopo)
