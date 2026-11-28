@@ -51,18 +51,22 @@ def find_playbook(name: str) -> typing.Union[str,None]:
 def inventory(name: str) -> typing.Optional[dict]:
   try:
     result = subprocess.run(['ansible-inventory','--host',name],capture_output=True,check=True,text=True)
-    try:
-      return json.loads(result.stdout)
-    except:
-      log.fatal('Cannot parse JSON data returned by ansible-inventory','inventory')
-
-  except:
-    try:
+  except Exception as ex:
+    try:                                          # Check whether we can execute ansible-inventory at all
       subprocess.run(['ansible-inventory','-h'],capture_output=True,check=True)
-    except Exception as ex:
-      log.fatal('Cannot execute ansible-inventory command','inventory',more_data=str(ex))
+    except Exception as h_ex:
+      log.fatal('Cannot execute ansible-inventory command','inventory',more_data=str(h_ex))
 
-    log.fatal('Cannot get Ansible inventory data for %s with ansible-inventory. Is the host name correct?' % name,'inventory')
+    log.fatal(
+      f'Cannot get Ansible inventory data for {name} with ansible-inventory',
+      'inventory',
+      more_data=(getattr(ex,'stderr','') or str(ex)).strip(),
+      more_hints='Is the host name correct?')
+
+  try:
+    return json.loads(result.stdout)
+  except Exception as ex:
+    log.fatal('Cannot parse JSON data returned by ansible-inventory','inventory',more_data=str(ex))
 
 def playbook(name: str, args: typing.List[str], abort_on_error: bool = True) -> bool:
   pbname = find_playbook(name)

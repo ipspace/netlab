@@ -234,8 +234,8 @@ def create_file_from_text(fname: str, txt: str) -> None:
   fh = open_output_file(fname)
   try:
     fh.write(txt)
-  except Exception:
-    log.fatal('Cannot write to {fname}: {ex}')
+  except Exception as ex:
+    log.fatal(f'Cannot write to {fname}',more_data=str(ex))
     return
   close_output_file(fh)
 
