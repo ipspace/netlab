@@ -39,12 +39,12 @@ def change_status(topology: Box, callback: typing.Callable[[Box,Box], None]) -> 
   status_file = get_status_filename(topology)               # Get status file name from topology defaults
   lock_file   = f'{status_file}.lock'                       # Associated lock file
 
+  status_dir = os.path.dirname(status_file)
   try:
-    status_dir = os.path.dirname(status_file)
     if not os.path.exists(status_dir):
       os.makedirs(status_dir)
-  except:
-    log.fatal(f'Cannot create lab status directory {status_dir}')
+  except Exception as ex:
+    log.fatal(f'Cannot create lab status directory {status_dir}',more_data=str(ex))
 
   try:                                                      # Try to lock the status file          
     lock = FileLock(lock_file, timeout=3)
@@ -52,8 +52,8 @@ def change_status(topology: Box, callback: typing.Callable[[Box,Box], None]) -> 
     if os.path.exists(status_file):                       # If the status file exists, read it
       try:
         status = Box().from_yaml(filename=status_file,default_box=True,box_dots=True)
-      except:
-        log.fatal(f'Cannot read lab status file {status_file}')
+      except Exception as ex:
+        log.fatal(f'Cannot read lab status file {status_file}',more_data=str(ex))
     else:                                                 # Otherwise, create an empty status
       status = get_empty_box()
 
@@ -74,8 +74,8 @@ def read_status(topology: Box) -> Box:
   
   try:
     return Box().from_yaml(filename=status_file,default_box=True,box_dots=True)
-  except:
-    log.fatal(f'Cannot read lab status file {status_file}')
+  except Exception as ex:
+    log.fatal(f'Cannot read lab status file {status_file}',more_data=str(ex))
     return get_empty_box()
 
 '''

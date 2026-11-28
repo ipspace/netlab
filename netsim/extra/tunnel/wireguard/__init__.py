@@ -23,11 +23,12 @@ def public_key_from_private(private_key: str) -> str:
       input=f'{private_key}\n',
       text=True,
       stderr=subprocess.DEVNULL).strip()
-  except (FileNotFoundError, subprocess.CalledProcessError, OSError):
+  except (FileNotFoundError, subprocess.CalledProcessError, OSError) as ex:
     log.fatal(
       'Cannot derive WireGuard public key (install wireguard-tools, '
       'or configure tunnel.private_key and tunnel.public_key)',
-      module='tunnel.wireguard')
+      module='tunnel.wireguard',
+      more_data=str(ex))
 
 def generate_keypair() -> tuple[str, str]:
   '''
@@ -44,11 +45,12 @@ def generate_keypair() -> tuple[str, str]:
       text=True,
       stderr=subprocess.DEVNULL).strip()
     return private_key, public_key
-  except (FileNotFoundError, subprocess.CalledProcessError, OSError):
+  except (FileNotFoundError, subprocess.CalledProcessError, OSError) as ex:
     log.fatal(
       'Cannot generate WireGuard keys (install wireguard-tools, '
       'or configure tunnel.private_key and tunnel.public_key)',
-      module='tunnel.wireguard')
+      module='tunnel.wireguard',
+      more_data=str(ex))
 
 def ensure_tunnel_keys(
       node: str,

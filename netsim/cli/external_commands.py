@@ -112,8 +112,8 @@ def run_command(
   if isinstance(cmd,str):
     try:
       cmd = shlex.split(cmd)
-    except ValueError:
-      log.error(f'Malformed shell command: {cmd}',module='cli',category=log.IncorrectValue)
+    except ValueError as ex:
+      log.error(f'Malformed shell command: {cmd}',module='cli',category=log.IncorrectValue,more_data=str(ex))
       return False
 
   if not cmd:                                               # Skip empty commands

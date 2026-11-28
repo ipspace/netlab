@@ -77,12 +77,12 @@ Used as the first step in updating statistics
 '''
 def lock_and_read_stats() -> typing.Optional[Box]:
   stat_name = get_filename()
+  status_dir = os.path.dirname(stat_name)
   try:
-    status_dir = os.path.dirname(stat_name)
     if not os.path.exists(status_dir):
       os.makedirs(status_dir)
-  except:
-    log.fatal(f'Cannot create lab status directory {status_dir}')
+  except Exception as ex:
+    log.fatal(f'Cannot create lab status directory {status_dir}',more_data=str(ex))
 
   if lock_stats(stat_name):
     s_data = read_stats(stat_name)

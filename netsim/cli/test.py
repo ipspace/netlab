@@ -60,8 +60,8 @@ def copy_topology(args: argparse.Namespace) -> None:
   src_topo = moddir / "templates/tests" / (args.provider + ".yml")
   try:
     shutil.copy(src_topo,"topology.yml")
-  except:
-    log.fatal("Cannot copy test topology file %s into %s" % (src_topo,args.workdir))
+  except Exception as ex:
+    log.fatal(f"Cannot copy test topology file {src_topo} into {args.workdir}",more_data=str(ex))
   if args.verbose:
     print("... done, moving on\n")
 
