@@ -160,7 +160,7 @@ def template_error_location(exc: Exception) -> list:
   while tb:
     f = tb.tb_frame
     if f.f_code.co_filename.endswith('.j2'):
-      loc_txt = f'Line {tb.tb_lineno} @ {f.f_code.co_filename}'
+      loc_txt = f'Line {tb.tb_lineno} @ {template_short_path(f.f_code.co_filename)}'
       if loc_txt not in loc_list:
         loc_list.append(loc_txt)
     tb = tb.tb_next
@@ -350,10 +350,9 @@ def render_config_template(
     node_dict.pop('netlab_config_mode',None)
     return True
   except Exception as ex:                               # Gee, we failed
-    short_path = template_path.replace(str(get_moddir()),'package:')
     log.error(                                          # Report an error and move on
       text=f"Error rendering template {template_id} for node {node.name}/device {node.device}",
-      more_data=[f'Template source: {short_path}',f'error: {str(ex)}'] + template_error_location(ex),
+      more_data=template_error_data(template_short_path(template_path),ex),
       module='initial',
       category=log.IncorrectValue)
     node_dict.pop('netlab_config_mode',None)

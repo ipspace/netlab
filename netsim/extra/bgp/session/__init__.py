@@ -278,12 +278,10 @@ def process_rs_requests(ndata: Box,topology: Box) -> bool:
 '''
 Remove full mesh of EBGP sessions on links with route servers
 
-In the first pass, we identify all links with route servers collecting
-rs_linkindex values from BGP neighbors if the BGP neighbor has rs_client
-flag set.
-
-In the second pass, we zap all BGP neighbors that are not route servers
-or RS clients on links we identified in the first pass.
+A route server client has the rs_client flag set on its EBGP session with
+the route server (see set_rs_client). For every such session, we zap all
+other EBGP sessions of the same node over the same interface unless they
+are route server (rs) or route server client (rs_client) sessions.
 '''
 
 def cleanup_rs_mesh(topology: Box) -> None:
