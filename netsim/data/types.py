@@ -10,7 +10,6 @@ import textwrap
 import typing
 
 import netaddr
-import typing_extensions
 from box import Box
 
 from ..utils import log
@@ -267,12 +266,6 @@ def check_valid_values(
     raise log.IncorrectValue()
   return False
 
-"""
-is_true_int: work around the Python stupidity of bools being ints
-"""
-
-def is_true_int(data: typing.Any) -> typing_extensions.TypeGuard[int]:
-  return isinstance(data,int) and not isinstance(data,bool)
 
 """
 type_test decorator function -- simplifies the type testing functions

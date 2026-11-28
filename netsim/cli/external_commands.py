@@ -208,19 +208,6 @@ def run_probes(settings: Box, provider: str, step: int = 0) -> None:
     log.status_success()
     print(f'{provider} installed and working correctly',flush=True)
 
-def start_lab(
-      settings: Box,
-      provider: str,
-      step: int = 2,
-      cli_command: str = "test",
-      exec_command: typing.Optional[str] = None) -> None:
-
-  if exec_command is None:
-    exec_command = settings.providers[provider].start
-  print_step(step,f"starting the lab -- {provider}: {exec_command}")
-  if not run_command(exec_command):
-    log.fatal(f"{exec_command} failed, aborting...",cli_command)
-
 def deploy_configs(
       command: str = "test",
       fast: typing.Optional[bool] = False,
@@ -240,13 +227,6 @@ def deploy_configs(
 
   log.status_success()
   print("Lab devices configured",flush=True)
-
-def custom_configs(config : str, group: str, step : int = 4, command: str = "test") -> None:
-  print_step(step,"deploying custom configuration template %s for group %s" % (config,group))
-  cmd = ["netlab","config",config,"--limit",group]
-
-  if not run_command(set_ansible_flags(cmd)):
-    log.fatal("netlab config failed, aborting...",command)
 
 def stop_lab(settings: Box, provider: str, command: str = "test", exec_command: typing.Optional[str] = None) -> None:
   if exec_command is None:

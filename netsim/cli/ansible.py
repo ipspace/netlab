@@ -2,9 +2,7 @@
 # Common Ansible interface commands
 #
 
-import json
 import os
-import subprocess
 import sys
 import typing
 from pathlib import Path
@@ -47,26 +45,6 @@ def find_playbook(name: str) -> typing.Union[str,None]:
       return str(dir / name)
 
   return None
-
-def inventory(name: str) -> typing.Optional[dict]:
-  try:
-    result = subprocess.run(['ansible-inventory','--host',name],capture_output=True,check=True,text=True)
-  except Exception as ex:
-    try:                                          # Check whether we can execute ansible-inventory at all
-      subprocess.run(['ansible-inventory','-h'],capture_output=True,check=True)
-    except Exception as h_ex:
-      log.fatal('Cannot execute ansible-inventory command','inventory',more_data=str(h_ex))
-
-    log.fatal(
-      f'Cannot get Ansible inventory data for {name} with ansible-inventory',
-      'inventory',
-      more_data=(getattr(ex,'stderr','') or str(ex)).strip(),
-      more_hints='Is the host name correct?')
-
-  try:
-    return json.loads(result.stdout)
-  except Exception as ex:
-    log.fatal('Cannot parse JSON data returned by ansible-inventory','inventory',more_data=str(ex))
 
 def playbook(name: str, args: typing.List[str], abort_on_error: bool = True) -> bool:
   pbname = find_playbook(name)
