@@ -54,21 +54,6 @@ def write_devices(data: Box, fname: str, fmt: typing.Optional[str]) -> None:
   write_yaml(inventory,fname,header)
   print("Created netlab devices inventory %s" % fname)
 
-def read_inventory(host: str, filename: typing.Optional[str] = None) -> typing.Optional[dict]:
-  filename = filename or os.getenv('NETLAB_DEVICES') or 'netlab-devices.yml'
-  if not os.path.isfile(filename):
-    log.fatal('Cannot read netlab device inventory: %s does not exist')
-    return None
-  try:
-    data = Box().from_yaml(filename=filename,default_box=True,box_dots=True,default_box_none_transform=False)
-  except Exception as ex:
-    log.fatal(f"Cannot read YAML from {filename}",more_data=str(ex))
-
-  if host in (data or {}):
-    return data[host]
-
-  return None
-
 class DeviceInventory(_TopologyOutput):
 
   DESCRIPTION :str = 'Create simple device inventory as a YAML file'

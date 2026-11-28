@@ -31,23 +31,6 @@ def vrf_route_leaking(node: Box) -> None:
         node=node,
         category=log.IncorrectValue)
 
-"""
-Obsolete: this function tested whether we use 'allowas-in' with EVPN. It turned out to be FRR 10.3.1 gotcha;
-the tests work like a charm with 10.2.2.
-"""
-def evpn_allowas_in(node: Box) -> None:
-  for ngb in node.get('bgp.neighbors',[]):
-    if not ngb.get('evpn',None):
-      continue
-    if not ngb.get('allowas_in',None):
-      continue
-    report_quirk(
-      text=f'node {node.name}: cannot use "allowas_in" on BGP neighbor {node.name} with EVPN address family',
-      more_hints = f'It looks SR/OS does not apply AS-path loop detection parameters to EVPN AF',
-      quirk='evpn_allowas_in',
-      node=node,
-      category=log.IncorrectValue)
-
 def set_port_mode(intf: Box, mode: str) -> None:
   if '_port_mode' not in intf:
     intf._port_mode = mode

@@ -220,14 +220,6 @@ def zap_bgp_neighbor(ngb: Box) -> None:
   ngb._zapped = True
 
 '''
-Get link index from an interface index to check whether the BGP neighbor
-is attached to the same link
-'''
-def get_intf_linkindex(ndata: Box, ifindex: int) -> int:
-  t_intf = [ intf for intf in ndata.interfaces if intf.ifindex == ifindex ]
-  return t_intf[0].linkindex if t_intf else 0
-
-'''
 Given a neighbor (ngb) of a route server (ndata), set the rs_client flag on the
 neighbor's EBGP session with the route server.
 

@@ -822,12 +822,6 @@ def get_vlan_data(vlan: str, node: Box, topology: Box, intf: Box) -> typing.Opti
   return vlan_data
 
 """
-get_vlan_mode: Get VLAN mode attribute (node or topology), default 'irb'
-"""
-def get_vlan_mode(node: Box, topology: Box) -> str:
-  return node.get('vlan.mode',None) or topology.get('vlan.mode',None) or 'irb'
-
-"""
 update_vlan_neighbor_list: Build a VLAN-wide list of neighbors
 """
 def update_vlan_neighbor_list(vlan: str, phy_if: Box, svi_if: Box, node: Box,topology: Box) -> None:

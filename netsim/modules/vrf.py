@@ -14,24 +14,6 @@ from ..utils import routing as utils_routing
 from . import _dataplane, _Module, _routing, get_effective_module_attribute, remove_module
 
 #
-# get_node_vrf_data: an abstraction layer that returns node-level VRF data structure
-# as it would appear after the node_post_transform hook
-#
-# You have to use this function instead of 'node or global data' logic whenever you need
-# node VRF data before VRF node_post_transform hook is executed
-#
-
-def get_node_vrf_data(vname: str, node: Box, topology: Box) -> typing.Optional[Box]:
-  topo_data = topology.get('vrfs').get(vname,None)    # Get global VRF data (or none if there's no global data)
-  if not vname in node.get('vrfs',{}):                # If there's no node VRF data
-    return topo_data                                  # ... return global value whatever it is
-  else:
-    node_data = node.vrfs[vname]                      # We have some node VRF data, and we assume it's a Box
-    topo_data = topo_data or {}                       # Global data must be a dict/Box or the merge will fail
-    return topo_data + node_data                      # Now merge global+node data
-                                                      # ... note that the result will always be a Box
-
-#
 # Initialize global data structures needed for ID/RD allocation
 #
 
