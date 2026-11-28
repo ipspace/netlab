@@ -350,6 +350,10 @@ def evaluate_named_prefix(topology: Box, pname: str) -> Box:
       pool_pfx[af] = str(pool_pfx[af])
   if log.debug_active('addr'):                     # pragma: no cover (debugging printout)
     print(f'named prefix {pname} pool allocation {pool_pfx}')
+  # Pool settings provide defaults, while a named prefix's allocation policy
+  # should take precedence over the one configured on the pool.
+  if 'allocation' in topology.prefix[pname]:
+    pool_pfx.pop('allocation',None)
   topology.prefix[pname] = topology.prefix[pname] + pool_pfx
   topology.prefix[pname].pop('pool')
   return topology.prefix[pname]
