@@ -38,7 +38,7 @@ Or lists of strings into a unified dictionary structure
 def create_node_dict(nodes: Box) -> Box:
   if isinstance(nodes,dict):
     node_dict = nodes
-  else:
+  elif nodes is None or isinstance(nodes,list):
     node_dict = data.get_empty_box()
     for n in nodes or []:
       if isinstance(n,dict):
@@ -47,7 +47,22 @@ def create_node_dict(nodes: Box) -> Box:
           continue
       elif isinstance(n,str):
         n = data.get_box({ 'name': n })
+      else:
+        log.error(
+          f'Nodes in a list of nodes must be specified as names or dictionaries, found {n}',
+          log.IncorrectType,
+          'nodes',
+          doc_url='nodes/#topo-nodes')
+        continue
       node_dict[n.name] = n
+  else:
+    log.error(
+      f'Nodes must be specified as a dictionary or a list, found {type(nodes).__name__}',
+      log.IncorrectType,
+      'nodes',
+      more_data=f'nodes: {nodes}',
+      doc_url='nodes/#topo-nodes')
+    node_dict = data.get_empty_box()
 
   for name in list(node_dict.keys()):
     ndata = node_dict[name]
