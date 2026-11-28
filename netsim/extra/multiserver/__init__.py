@@ -308,10 +308,11 @@ def _write_filtered_inventory(src: Path, dst: Path, local_nodes: set) -> None:
     # worker may try to configure nodes that live on other servers, so
     # make the failure visible instead of silently degrading.
     log.error(
-      f"Could not filter Ansible inventory {src} -> {dst}: {e}",
+      f"Could not filter Ansible inventory {src} -> {dst}",
       log.IncorrectValue,
       "multiserver",
       more_hints=["Copied the unfiltered hosts.yml instead; it may list nodes on other servers"],
+      more_data=str(e),
     )
     shutil.copy2(src, dst)
 
@@ -326,9 +327,10 @@ def _copy(src: Path, dst: Path) -> None:
     # node_files/host_vars carry the per-node configs; a silent failure here
     # leaves an incomplete server directory, so surface it instead of swallowing.
     log.error(
-      f"Could not copy {src} -> {dst}: {e}",
+      f"Could not copy {src} -> {dst}",
       log.IncorrectValue,
       "multiserver",
+      more_data=str(e),
     )
 
 

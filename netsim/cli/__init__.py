@@ -216,7 +216,7 @@ def fs_cleanup(filelist: typing.List[str], verbose: bool = False) -> None:
       try:
         shutil.rmtree(fname)
       except Exception as ex:
-        log.fatal(f"Cannot clean up directory {fname}: {ex}")
+        log.fatal(f"Cannot clean up directory {fname}",more_data=str(ex))
     elif os.path.exists(fname):
       if DRY_RUN:
         print(f"DRY RUN: removing {fname}")
@@ -234,7 +234,7 @@ def fs_cleanup(filelist: typing.List[str], verbose: bool = False) -> None:
         except Exception:                           # No worries if we cannot do that
           pass
       except Exception as ex:                             # Finally, report an error if we cannot remove the file
-        log.fatal(f"Cannot remove {fname}: {ex}")
+        log.fatal(f"Cannot remove {fname}",more_data=str(ex))
 
 # Common topology loader (used by create)
 
@@ -271,7 +271,7 @@ def change_lab_instance(instance: typing.Union[int,str], quiet: bool = False) ->
   try:
     os.chdir(target_dir)
   except Exception as ex:
-    log.fatal(f'Cannot change directory to {target_dir}: {str(ex)}')
+    log.fatal(f'Cannot change directory to {target_dir}',more_data=str(ex))
   
   if not quiet:
     log.status_green('CHANGED','')

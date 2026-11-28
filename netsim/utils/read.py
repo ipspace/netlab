@@ -111,7 +111,7 @@ def read_from_pickle(path: str) -> typing.Optional[Box]:
         return None
   except Exception as ex:                         # Failed to unpickle? Too bad...
     if log.VERBOSE or log.debug_active('defaults'):
-      log.warning(text=f'Cannot load pickled topology defaults {str(pickle_path)}: {str(ex)}')
+      log.warning(text=f'Cannot load pickled topology defaults {str(pickle_path)}',more_data=str(ex))
     return None
 
   if 'directory' not in pickle_info:              # Do we have to check the freshness of pickled data?
@@ -174,7 +174,7 @@ def save_to_pickle(path: str, data: Box) -> None:
   except Exception as ex:
     if log.VERBOSE or log.debug_active('defaults'):
       log.warning(
-        text=f'Cannot save pickled data for {path} into {str(pickle_path)})',
+        text=f'Cannot save pickled data for {path} into {pickle_info["pickle"]}',
         more_data=[ str(ex) ],
         module='read')
 
@@ -237,7 +237,7 @@ def read_yaml(filename: typing.Optional[str] = None, string: typing.Optional[str
       include_yaml(yaml_data,filename)
       read_cache[filename] = Box(yaml_data)
     except Exception as ex:
-      log.fatal(f"Cannot read YAML from {filename}: {str(ex)}")
+      log.fatal(f"Cannot read YAML from {filename}",more_data=str(ex))
 
   return yaml_data
 
@@ -460,7 +460,7 @@ def load_pickled_data(snapshot: str) -> Box:
   try:
     pfile = open(snapshot,'rb')
   except Exception as ex:
-    log.fatal(f'Cannot open pickle file {pfile}: {str(ex)}')
+    log.fatal(f'Cannot open pickle file {snapshot}',more_data=str(ex))
 
   try:
     data = pickle.load(pfile)
@@ -468,6 +468,6 @@ def load_pickled_data(snapshot: str) -> Box:
       log.fatal(f'The picked snapshot {snapshot} contains {type(data)}, not a dictionary')
     pfile.close()
   except Exception as ex:
-    log.fatal(f'Cannot read pickled data from {pfile}: {str(ex)}')
+    log.fatal(f'Cannot read pickled data from {snapshot}',more_data=str(ex))
 
   return get_box(data)

@@ -28,13 +28,13 @@ class YAML(_TopologyOutput):
     try:
       output = open(outfile,mode='wb')
     except Exception as ex:
-      log.fatal(f'Cannot open file {outfile} for writing: {str(ex)}',module='pickle')
+      log.fatal(f'Cannot open file {outfile} for writing',module='pickle',more_data=str(ex))
 
     try:
       pickle.dump(topodict,output)
       output.close()
     except Exception as ex:
-      log.fatal(f'Cannot write pickled data to {outfile}: {str(ex)}',module='pickle')
+      log.fatal(f'Cannot write pickled data to {outfile}',module='pickle',more_data=str(ex))
 
     log.status_created()
     print(f"pickled transformed topology data into {outfile}")

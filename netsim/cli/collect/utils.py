@@ -55,7 +55,7 @@ def create_output(path: str) -> None:
   try:
     os.mkdir(path)
   except Exception as ex:
-    log.fatal(f"Cannot create output directory {path}: {ex}")
+    log.fatal(f"Cannot create output directory {path}",more_data=str(ex))
 
   if not log.QUIET:
     log.info(f"Collecting configs into {path}")
@@ -94,7 +94,7 @@ def create_tar(args: argparse.Namespace, run_dir: str) -> None:
       print()
     log.info(f'Tarball {tarball} created from {args.output} config directory')
   except Exception as ex:
-    log.fatal(f"Cannot start tar: {ex}")
+    log.fatal("Cannot start tar",more_data=str(ex))
 
   if args.cleanup:
     if not args.quiet:
@@ -131,4 +131,4 @@ def save_config(filename: str, directory: str, contents: str) -> None:
   except KeyboardInterrupt as ex:
     raise KeyboardInterrupt from ex
   except Exception as ex:
-    log.error(f'Cannot create {filename}: {ex}',module='collect')
+    log.error(f'Cannot create {filename}',module='collect',more_data=str(ex))

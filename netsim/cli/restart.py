@@ -61,7 +61,7 @@ def run(cli_args: typing.List[str]) -> None:
   try:
     topo_name = topology.get('input',[])[0]
   except Exception as ex:
-    log.fatal(f'Cannot find the original topology name from the snapshot file: {str(ex)}')
+    log.fatal('Cannot find the original topology name from the snapshot file',more_data=str(ex))
 
   down.run(down_args(args,with_snapshot=True))
   log.section_header('Progress','Lab has been stopped, starting new instance',color='bright_cyan')

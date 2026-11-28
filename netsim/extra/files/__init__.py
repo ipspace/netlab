@@ -187,7 +187,7 @@ def output(topology: Box) -> None:
       filepath.write_text(file.content)                     # Write file content
       log.info(text=f'Created {file.path}',module='files')  # ... and report success
     except Exception as ex:                                 # ... or failure
-      log.error(f'Cannot create {file.path}: {str(ex)}',category=log.FatalError,module='files')
+      log.error(f'Cannot create {file.path}',category=log.FatalError,module='files',more_data=str(ex))
 
   # Create the list of extra files that 'netlab down --cleanup' should remove
   topology._cleanup.files = [ file.path for file in f_list ]

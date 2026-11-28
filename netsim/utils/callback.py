@@ -31,7 +31,7 @@ class Callback():
 
     except (ImportError, AttributeError) as ex:
       if abort:
-        log.fatal(f"Failed to load specific module: {str(ex)}")
+        log.fatal("Failed to load specific module",more_data=str(ex))
       else:
         print(f"Failed to load specific module: {str(ex)}")
       return None

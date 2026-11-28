@@ -99,7 +99,7 @@ def create(topology: Box) -> Box:
     try:
       inventory.custom_configs.vars.netlab_custom_config = plugin.sort_extra_config(topology)
     except log.FatalError as ex:
-      log.fatal(f'Cannot sort custom configuration requests: {str(ex)}','ansible',header=True)
+      log.fatal('Cannot sort custom configuration requests','ansible',header=True,more_data=str(ex))
 
   if not 'groups' in topology:
     return inventory
@@ -147,8 +147,9 @@ def write_inventory_file(data: Box, fname: str, header: str, filetype: typing.Op
         os.remove(similar)
       except Exception as ex:                               # A failure to remove a similar file is not catastrophic
         log.warning(                                        # ... but deserves a warning
-          text=f'Tried to remove inventory file {similar} but failed: {str(ex)}',
-          module='ansible')
+          text=f'Tried to remove inventory file {similar} but failed',
+          module='ansible',
+          more_data=str(ex))
 
   if filetype in ['yaml','yml']:
     contents = header+"\n"+strings.get_yaml_string(data)

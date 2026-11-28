@@ -33,7 +33,7 @@ def check_version() -> bool:
     if ansible.__version__ >= '2.19':           # Ansible core 2.19 contains significant templating changes
       _VERSION_MISMATCH = True
   except Exception as ex:
-    log.warning(text=f"Cannot determine Ansible version: {str(ex)}",module='ansible')
+    log.warning(text="Cannot determine Ansible version",module='ansible',more_data=str(ex))
 
   return _VERSION_MISMATCH
 

@@ -49,5 +49,5 @@ def collect(node: str, output: str, suffix: str, topology: Box) -> typing.Option
     return True
 
   except Exception as ex:
-    log.error(f'Failed to collect device configuration from {node}: {ex}')
+    log.error(f'Failed to collect device configuration from {node}',more_data=str(ex))
     return False

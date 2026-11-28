@@ -346,7 +346,7 @@ def lp_create_box(args: argparse.Namespace,settings: Box,target: str) -> None:
     else:
       raise Exception('qemu-img failed')
   except Exception as ex:
-    log.fatal(f'Cannot parse qemu-img virtual disk information: {ex}')
+    log.fatal('Cannot parse qemu-img virtual disk information',more_data=str(ex))
 
   v_size = int((img_data['virtual-size'] - 1)/(2**30)) + 1
 

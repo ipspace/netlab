@@ -219,7 +219,7 @@ def ssh_netmiko(
         return True
   except Exception as ex:
     if not quiet:
-      log.error(f'Cannot execute command on {data.name}: {str(ex)}',module='netmiko')
+      log.error(f'Cannot execute command on {data.name}',module='netmiko',more_data=str(ex))
     return False
   finally:
     conn.disconnect()

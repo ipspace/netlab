@@ -126,7 +126,7 @@ class Containerlab(_Provider):
           stat_box[docker_stats['Names']].status = docker_stats.get('Status','')
           stat_box[docker_stats['Names']].image = docker_stats.get('Image','')
       except Exception as ex:
-        log.error(f'Cannot get Docker status: {ex}',category=log.FatalError,module='clab')
+        log.error('Cannot get Docker status',category=log.FatalError,module='clab',more_data=str(ex))
         return stat_box
 
       if collect_status.get('memory',False):
@@ -134,7 +134,7 @@ class Containerlab(_Provider):
 
       return stat_box
     except Exception as ex:
-      log.error(f'Cannot execute "docker ps": {ex}',category=log.FatalError,module='clab')
+      log.error('Cannot execute "docker ps"',category=log.FatalError,module='clab',more_data=str(ex))
       return get_empty_box()
 
   """

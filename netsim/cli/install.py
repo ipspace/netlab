@@ -262,13 +262,13 @@ def script_hook(script: str, hook: str, topology: Box) -> bool:
       else:
         return script_hook(topology)              # Ask the actual hook what to do ;)
     except Exception as ex:                       # Hook execution failed, report error, fall through to "we failed"
-      log.error(f'Error in {script} {hook} call: {ex}')
+      log.error(f'Error in {script} {hook} call',more_data=str(ex))
   except ModuleNotFoundError as ex:
     if ex.name == f'netsim.install.{script}':
       return True
-    log.error(f'Error loading netsim.install.{script} module: {ex}')
+    log.error(f'Error loading netsim.install.{script} module',more_data=str(ex))
   except Exception as ex:                         # Error in installation module: abort, abort, abort
-    log.error(f'Error loading netsim.install.{script} module: {ex}')
+    log.error(f'Error loading netsim.install.{script} module',more_data=str(ex))
 
   return False                                    # Getting so far is a bad omen: do not continue
 
@@ -359,4 +359,4 @@ def run(cli_args: typing.List[str]) -> None:
       print()
       log.fatal('User aborted the installation request')
     except Exception as ex:
-      log.fatal(f'Python exception: {ex}')
+      log.fatal('Python exception',more_data=str(ex))

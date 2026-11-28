@@ -291,7 +291,7 @@ def show_lab(args: argparse.Namespace,lab_states: Box) -> None:
   try:
     os.chdir(wdir)
   except Exception as ex:
-    log.fatal(f'Cannot change directory to {wdir} (instance {iid}): {str(ex)}')
+    log.fatal(f'Cannot change directory to {wdir} (instance {iid})',more_data=str(ex))
 
   snapshot = f'{wdir}/netlab.snapshot.pickle'
 
@@ -373,10 +373,11 @@ the Vagrant and containerlab information has probably been lost.
     subprocess.run(['netlab','down','--cleanup'],capture_output=False,check=True)
   except Exception as ex:
     log.error(
-      f'Error shutting down lab {iid}: {ex}',
+      f'Error shutting down lab {iid}',
       category=log.FatalError,
       module='',
-      more_hints = f'Change directory to { os.getcwd() } and execute "netlab down --cleanup --force"')
+      more_hints = f'Change directory to { os.getcwd() } and execute "netlab down --cleanup --force"',
+      more_data=str(ex))
 
 def reset_lab_status(topology: Box) -> None:
   lab_status_file = status.get_status_filename(topology)
@@ -393,7 +394,7 @@ command only when you're absolutely sure that the lab status shown by
     os.remove(lab_status_file)
     print('Lab status file removed')
   except Exception as ex:
-    log.fatal(f'Cannot remove lab status file: {ex}')
+    log.fatal('Cannot remove lab status file',more_data=str(ex))
 
 def check_conflicting_options(args: argparse.Namespace) -> None:
   var_args = vars(args)

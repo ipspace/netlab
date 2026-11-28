@@ -107,8 +107,9 @@ def render_j2_dockerfile(
       'Dockerfile')
   except (TemplateError, ValueError) as ex:
     log.fatal(
-      f'Failed to render Dockerfile template {os.path.basename(df_path)}: {str(ex)}',
-      module='build')
+      f'Failed to render Dockerfile template {os.path.basename(df_path)}',
+      module='build',
+      more_data=str(ex))
 
   strings.print_colored_text('[RENDERED] ','green',None)
   print("Template rendered to temporary Dockerfile")
